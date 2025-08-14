@@ -2,23 +2,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AvatarSelector } from "./avatar-selector";
 import { BackgroundSelector } from "./background-selector";
-import type { Avatar, Background } from "@/lib/data";
 import { User, Image as ImageIcon } from 'lucide-react';
 
 interface CustomizationPanelProps {
-  avatars: Avatar[];
-  backgrounds: Background[];
-  selectedAvatarId: number;
-  selectedBackgroundId: number;
-  onAvatarSelect: (avatar: Avatar) => void;
-  onBackgroundSelect: (background: Background) => void;
+  avatars: string[];
+  backgrounds: string[];
+  selectedAvatarUrl: string;
+  selectedBackgroundUrl: string;
+  onAvatarSelect: (url: string) => void;
+  onBackgroundSelect: (url: string) => void;
 }
 
 export function CustomizationPanel({
   avatars,
   backgrounds,
-  selectedAvatarId,
-  selectedBackgroundId,
+  selectedAvatarUrl,
+  selectedBackgroundUrl,
   onAvatarSelect,
   onBackgroundSelect,
 }: CustomizationPanelProps) {
@@ -36,14 +35,14 @@ export function CustomizationPanel({
           <TabsContent value="avatars" className="mt-4 flex-grow">
             <AvatarSelector
               avatars={avatars}
-              selectedAvatarId={selectedAvatarId}
+              selectedAvatarUrl={selectedAvatarUrl}
               onSelect={onAvatarSelect}
             />
           </TabsContent>
           <TabsContent value="backgrounds" className="mt-4 flex-grow">
             <BackgroundSelector
               backgrounds={backgrounds}
-              selectedBackgroundId={selectedBackgroundId}
+              selectedBackgroundUrl={selectedBackgroundUrl}
               onSelect={onBackgroundSelect}
             />
           </TabsContent>

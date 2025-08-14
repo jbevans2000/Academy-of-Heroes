@@ -18,6 +18,7 @@ export function AvatarDisplay({ avatarSrc, backgroundSrc, avatarHint, background
         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         className="object-cover transition-all duration-500"
         data-ai-hint={backgroundHint}
+        priority
       />
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="relative w-1/2 h-1/2 md:w-1/3 md:h-2/3">
@@ -28,6 +29,7 @@ export function AvatarDisplay({ avatarSrc, backgroundSrc, avatarHint, background
             sizes="(max-width: 768px) 50vw, 25vw"
             className="object-contain drop-shadow-[0_5px_15px_rgba(0,0,0,0.3)] transition-all duration-500"
             data-ai-hint={avatarHint}
+            priority
            />
         </div>
       </div>

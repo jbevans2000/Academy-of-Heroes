@@ -1,45 +1,63 @@
 "use client";
 
-import { useState } from "react";
-import type { Avatar, Background, Student } from "@/lib/data";
+import { useState, useEffect } from "react";
+import type { Student } from "@/lib/data";
 import { StatsCard } from "./stats-card";
 import { AvatarDisplay } from "./avatar-display";
 import { CustomizationPanel } from "./customization-panel";
 
 interface DashboardClientProps {
   student: Student;
-  avatars: Avatar[];
-  backgrounds: Background[];
+  avatars: string[];
+  backgrounds: string[];
+  onAvatarChange: (url: string) => void;
+  onBackgroundChange: (url: string) => void;
 }
 
-export function DashboardClient({ student, avatars: initialAvatars, backgrounds }: DashboardClientProps) {
-  const [avatars, setAvatars] = useState(initialAvatars);
-  const [selectedAvatar, setSelectedAvatar] = useState<Avatar>(
-    avatars.find((a) => a.id === student.currentAvatarId) || avatars[0]
-  );
-  const [selectedBackground, setSelectedBackground] = useState<Background>(
-    backgrounds.find((b) => b.id === student.currentBackgroundId) || backgrounds[0]
-  );
+export function DashboardClient({ 
+    student, 
+    avatars, 
+    backgrounds, 
+    onAvatarChange, 
+    onBackgroundChange 
+}: DashboardClientProps) {
+  const [selectedAvatar, setSelectedAvatar] = useState(student.avatarUrl);
+  const [selectedBackground, setSelectedBackground] = useState(student.backgroundUrl);
+
+  useEffect(() => {
+    setSelectedAvatar(student.avatarUrl);
+    setSelectedBackground(student.backgroundUrl);
+  }, [student]);
+
+  const handleAvatarSelect = (url: string) => {
+    setSelectedAvatar(url);
+    onAvatarChange(url);
+  };
+
+  const handleBackgroundSelect = (url: string) => {
+    setSelectedBackground(url);
+    onBackgroundChange(url);
+  };
 
   return (
     <div className="grid md:grid-cols-3 gap-6 lg:gap-8 p-4 md:p-6 lg:p-8">
       <div className="md:col-span-2 space-y-6">
         <AvatarDisplay
-          avatarSrc={selectedAvatar.src}
-          backgroundSrc={selectedBackground.src}
-          avatarHint={selectedAvatar.hint}
-          backgroundHint={selectedBackground.hint}
+          avatarSrc={selectedAvatar}
+          backgroundSrc={selectedBackground}
+          avatarHint={"character avatar"}
+          backgroundHint={"scene background"}
         />
-        <StatsCard xp={student.xp} gold={student.gold} name={student.name} />
+        <StatsCard xp={student.xp} gold={student.gold} name={student.characterName} />
       </div>
       <div className="md:col-span-1">
         <CustomizationPanel
           avatars={avatars}
           backgrounds={backgrounds}
-          selectedAvatarId={selectedAvatar.id}
-          selectedBackgroundId={selectedBackground.id}
-          onAvatarSelect={setSelectedAvatar}
-          onBackgroundSelect={setSelectedBackground}
+          selectedAvatarUrl={selectedAvatar}
+          selectedBackgroundUrl={selectedBackground}
+          onAvatarSelect={handleAvatarSelect}
+          onBackgroundSelect={handleBackgroundSelect}
         />
       </div>
     </div>

@@ -9,8 +9,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { auth } from "@/lib/firebase";
+import { signOut } from "firebase/auth";
+import { useRouter } from "next/navigation";
 
-export function DashboardHeader() {
+
+interface DashboardHeaderProps {
+    characterName?: string;
+}
+
+export function DashboardHeader({ characterName = 'Account' }: DashboardHeaderProps) {
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push('/');
+  };
+
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
       <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
@@ -26,13 +41,13 @@ export function DashboardHeader() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Alex's Account</DropdownMenuLabel>
+            <DropdownMenuLabel>{characterName}'s Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>Profile</DropdownMenuItem>
             <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-                <Link href="/">Logout</Link>
+            <DropdownMenuItem onClick={handleLogout}>
+                Logout
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
