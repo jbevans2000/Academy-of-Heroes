@@ -22,21 +22,23 @@ const db = getFirestore(app);
 // Connect to local emulators if running in a browser environment
 if (typeof window !== 'undefined') {
   try {
-    // Check if not already connected.
-    // The properties `emulatorConfig` and `_settings.host` are inspected
-    // to avoid re-connecting errors on Next.js hot reloads.
     // @ts-ignore
     if (!auth.emulatorConfig) {
       connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
       console.log("Connected to local Firebase Auth emulator.");
     }
-    // @ts-ignore
+  } catch (error) {
+    console.error("Error connecting to Auth emulator:", error);
+  }
+
+  try {
+     // @ts-ignore
     if (!db._settings.host) {
       connectFirestoreEmulator(db, '127.0.0.1', 8080);
       console.log("Connected to local Firestore emulator.");
     }
   } catch (error) {
-    console.error("Error connecting to Firebase emulators:", error);
+      console.error("Error connecting to Firestore emulator:", error);
   }
 }
 
