@@ -21,8 +21,8 @@ export function AvatarDisplay({ avatarSrc, backgroundSrc, avatarHint, background
         data-ai-hint={backgroundHint}
         priority
       />
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="relative w-1/2 h-1/2 md:w-1/3 md:h-2/3">
+      <div className="absolute inset-0 flex items-center justify-center p-4">
+        <div className="relative w-1/2 h-full">
            <Image
             src={avatarSrc}
             alt="Selected avatar"
