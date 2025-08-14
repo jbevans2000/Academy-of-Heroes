@@ -21,18 +21,6 @@ export function DashboardClient({ student, avatars: initialAvatars, backgrounds 
     backgrounds.find((b) => b.id === student.currentBackgroundId) || backgrounds[0]
   );
 
-  const handleAddNewAvatar = (newAvatarSrc: string) => {
-    const newAvatar: Avatar = {
-      id: avatars.length + 1,
-      name: `AI Avatar ${avatars.filter(a => a.name.startsWith("AI Avatar")).length + 1}`,
-      src: newAvatarSrc,
-      hint: 'ai generated'
-    };
-    const newAvatars = [...avatars, newAvatar];
-    setAvatars(newAvatars);
-    setSelectedAvatar(newAvatar);
-  };
-
   return (
     <div className="grid md:grid-cols-3 gap-6 lg:gap-8 p-4 md:p-6 lg:p-8">
       <div className="md:col-span-2 space-y-6">
@@ -52,7 +40,6 @@ export function DashboardClient({ student, avatars: initialAvatars, backgrounds 
           selectedBackgroundId={selectedBackground.id}
           onAvatarSelect={setSelectedAvatar}
           onBackgroundSelect={setSelectedBackground}
-          onNewAvatarGenerated={handleAddNewAvatar}
         />
       </div>
     </div>
