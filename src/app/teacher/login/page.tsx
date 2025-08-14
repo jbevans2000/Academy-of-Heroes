@@ -57,7 +57,10 @@ export default function TeacherLoginPage() {
       toast({
         variant: 'destructive',
         title: 'Login Failed',
-        description: 'Invalid email or password. Please try again.',
+        description:
+          error.code === 'auth/invalid-credential'
+            ? 'Invalid email or password.'
+            : `An unexpected error occurred: ${error.code}`,
       });
     } finally {
       setIsLoading(false);
