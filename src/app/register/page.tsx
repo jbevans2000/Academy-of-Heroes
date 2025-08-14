@@ -37,7 +37,14 @@ const classData = {
       'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Images%2FTrickster%208%20(Level%201%20Guardian%20Images).png?alt=media&token=f33d3ca1-a917-4920-bd81-b55141969354',
       'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Images%2FTrickster%206%20(Level%201%20Guardian%20Images).png?alt=media&token=804c9933-d7d9-4336-8bf5-d0cc9e91a5d4'
     ],
-    backgrounds: Array.from({ length: 6 }, (_, i) => `https://placehold.co/800x600/3498db/ffffff?text=BG+${i + 1}`),
+    backgrounds: [
+        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Backgrounds%2FGuardian%201.jpg?alt=media&token=d735a40c-e25e-4fab-98d3-526bb0411dfe',
+        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Backgrounds%2FGuardian%202.jpg?alt=media&token=56ee60eb-b61b-42d2-9e17-a001371676ac',
+        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Backgrounds%2FGuardian%203.jpg?alt=media&token=e76ab493-261d-4169-a8a3-fd1cb9305d25',
+        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Backgrounds%2FGuardian%204.jpg?alt=media&token=48d5dae0-8ac7-478f-b00d-98b60243e9e8',
+        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Backgrounds%2FGuardian%205.jpg?alt=media&token=b52eb943-601c-4565-9277-44bb6ce91672',
+        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Backgrounds%2FGuardian%206.jpg?alt=media&token=f5661f1a-d05e-404d-bfbe-995dbd94ed81',
+    ],
   },
   Healer: {
     avatars: Array.from({ length: 8 }, (_, i) => `https://placehold.co/256x256/2ecc71/ffffff?text=Healer+${i + 1}`),
@@ -181,18 +188,24 @@ export default function RegisterPage() {
                      <Card className="mt-2 p-2 bg-secondary/50">
                       <div className="grid grid-cols-3 gap-2">
                         {classData[selectedClass].backgrounds.map((bg, index) => (
-                          <div
-                            key={index}
-                            onClick={() => !isLoading && setSelectedBackground(bg)}
-                            className={cn(
-                              'cursor-pointer rounded-md overflow-hidden border-2 transition-all duration-200',
-                               selectedBackground === bg
-                                ? 'border-primary ring-2 ring-primary'
-                                : 'border-transparent hover:border-primary/50'
-                            )}
-                          >
-                            <Image src={bg} alt={`Background ${index + 1}`} width={150} height={100} className="w-full aspect-video object-contain" />
-                          </div>
+                          <Tooltip key={index} delayDuration={100}>
+                            <TooltipTrigger asChild>
+                              <div
+                                onClick={() => !isLoading && setSelectedBackground(bg)}
+                                className={cn(
+                                  'cursor-pointer rounded-md overflow-hidden border-2 transition-all duration-200',
+                                   selectedBackground === bg
+                                    ? 'border-primary ring-2 ring-primary'
+                                    : 'border-transparent hover:border-primary/50'
+                                )}
+                              >
+                                <Image src={bg} alt={`Background ${index + 1}`} width={150} height={100} className="w-full aspect-video object-contain" />
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                               <Image src={bg} alt={`Background ${index + 1}`} width={300} height={200} className="w-72 h-48 object-contain" />
+                            </TooltipContent>
+                          </Tooltip>
                         ))}
                       </div>
                     </Card>
@@ -218,3 +231,5 @@ export default function RegisterPage() {
     </TooltipProvider>
   );
 }
+
+    
