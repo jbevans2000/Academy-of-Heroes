@@ -14,23 +14,29 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-let app;
-if (!getApps().length) {
-    app = initializeApp(firebaseConfig);
-} else {
-    app = getApp();
-}
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Connect to local emulators
-try {
-    connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
-    connectFirestoreEmulator(db, '127.0.0.1', 8080);
-    console.log("Connected to local Firebase emulators.");
-} catch (error) {
+// Connect to local emulators if running in a browser environment
+if (typeof window !== 'undefined') {
+  try {
+    // Check if not already connected
+    // The weird _getProvider()._isInitialized check is a workaround to avoid re-connecting errors on hot-reloads
+    // @ts-ignore
+    if (!auth.emulatorConfig) {
+      connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+      console.log("Connected to local Firebase Auth emulator.");
+    }
+    // @ts-ignore
+    if (!db._settings.host) {
+      connectFirestoreEmulator(db, '127.0.0.1', 8080);
+      console.log("Connected to local Firestore emulator.");
+    }
+  } catch (error) {
     console.error("Error connecting to Firebase emulators:", error);
+  }
 }
 
 
