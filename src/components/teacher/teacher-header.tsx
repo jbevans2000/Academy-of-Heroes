@@ -1,7 +1,7 @@
 
 'use client';
 
-import { School, User } from "lucide-react";
+import { School, User, LogOut } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,7 +21,11 @@ export function TeacherHeader() {
   const router = useRouter();
 
   const handleLogout = async () => {
-    await signOut(auth);
+    try {
+        await signOut(auth);
+    } catch(e) {
+        console.error("Error signing out", e);
+    }
     router.push('/');
   };
 
@@ -46,7 +50,8 @@ export function TeacherHeader() {
             <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
-                Logout
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Return to Login</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
