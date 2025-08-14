@@ -67,7 +67,16 @@ const classData = {
     ],
   },
   Mage: {
-    avatars: Array.from({ length: 8 }, (_, i) => `https://placehold.co/256x256/9b59b6/ffffff?text=Mage+${i + 1}`),
+    avatars: [
+      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Mage%20Images%2FArcanist%201%20(Level%201%20Mage%20Images).png?alt=media&token=ad00587d-b1f1-40ec-b6af-d46e8f27a29d',
+      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Mage%20Images%2FArcanist%202%20(Level%201%20Mage%20Images).png?alt=media&token=677a9e7d-85c1-4d28-8a32-8577d8457cd5',
+      'https://placehold.co/256x256/9b59b6/ffffff?text=Mage+3',
+      'https://placehold.co/256x256/9b59b6/ffffff?text=Mage+4',
+      'https://placehold.co/256x256/9b59b6/ffffff?text=Mage+5',
+      'https://placehold.co/256x256/9b59b6/ffffff?text=Mage+6',
+      'https://placehold.co/256x256/9b59b6/ffffff?text=Mage+7',
+      'https://placehold.co/256x256/9b59b6/ffffff?text=Mage+8',
+    ],
     backgrounds: Array.from({ length: 6 }, (_, i) => `https://placehold.co/800x600/9b59b6/ffffff?text=BG+${i + 1}`),
   },
 };
