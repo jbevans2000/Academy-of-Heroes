@@ -20,7 +20,16 @@ type ClassType = 'Guardian' | 'Healer' | 'Mage' | '';
 
 const classData = {
   Guardian: {
-    avatars: Array.from({ length: 8 }, (_, i) => `https://placehold.co/256x256/3498db/ffffff?text=Guardian+${i + 1}`),
+    avatars: [
+      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Images%2FTrickster%201%20(Level%201%20Guardian%20Images).png?alt=media&token=1d82ab1e-9631-4d14-8cac-91c943758b9f',
+      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Images%2FTrickster%202%20(Level%201%20Guardian%20Images).png?alt=media&token=b4d5ba45-2a57-446d-86d6-4183ba231104',
+      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Images%2FTrickster%203%20(Level%201%20Guardian%20Images).png?alt=media&token=dfc45b89-dbd0-4fbd-90ad-d5632cb130ee',
+      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Images%2FTrickster%204%20(Level%201%20Guardian%20Images).png?alt=media&token=d526181b-f8fb-42b6-80a5-ae101d7e63b5',
+      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Images%2FTrickster%205%20(Level%201%20Guardian%20Images).png?alt=media&token=5dbf4c82-f529-4e40-9a95-6ab0de2354da',
+      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Images%2FTrickster%207%20(Level%201%20Guardian%20Images).png?alt=media&token=cbb6584f-f732-4bc5-a538-9ccc08dabef2',
+      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Images%2FTrickster%208%20(Level%201%20Guardian%20Images).png?alt=media&token=f33d3ca1-a917-4920-bd81-b55141969354',
+      `https://placehold.co/256x256/3498db/ffffff?text=Guardian+8`
+    ],
     backgrounds: Array.from({ length: 6 }, (_, i) => `https://placehold.co/800x600/3498db/ffffff?text=BG+${i + 1}`),
   },
   Healer: {
