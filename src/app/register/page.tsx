@@ -57,7 +57,14 @@ const classData = {
       'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Images%2FHealer%207%20(Level%201%20Healer%20Images).png?alt=media&token=d9e5d39f-4b66-4c64-b360-ca18406990ca',
       'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Images%2FHealer%208%20(Level%201%20Healer%20Images).png?alt=media&token=b46f9c42-f533-4dd1-aa61-a014c8656006'
     ],
-    backgrounds: Array.from({ length: 6 }, (_, i) => `https://placehold.co/800x600/2ecc71/ffffff?text=BG+${i + 1}`),
+    backgrounds: [
+        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Backgrounds%2FHealer%201.jpg?alt=media&token=6c41882c-39f1-46a4-9f9f-569dfdaec95d',
+        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Backgrounds%2FHealer%202.jpg?alt=media&token=1dacf27a-6cab-4017-b35c-1cbc2ddf7440',
+        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Backgrounds%2FHealer%203.jpg?alt=media&token=db1e13da-4e76-4158-85ef-b55769172561',
+        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Backgrounds%2FHealer%204.jpg?alt=media&token=2824d55b-945b-443a-a73b-07931dee7cf2',
+        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Backgrounds%2FHealer%205.jpg?alt=media&token=1d8464e7-a187-4e89-804a-5bd90278b730',
+        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Backgrounds%2FHealer%206.jpg?alt=media&token=f55f0039-69b2-4591-a87e-a10fcc2f7224',
+    ],
   },
   Mage: {
     avatars: Array.from({ length: 8 }, (_, i) => `https://placehold.co/256x256/9b59b6/ffffff?text=Mage+${i + 1}`),
@@ -240,5 +247,3 @@ export default function RegisterPage() {
     </TooltipProvider>
   );
 }
-
-    
