@@ -1,3 +1,4 @@
+
 import Image from 'next/image';
 import { Card } from '@/components/ui/card';
 
@@ -10,7 +11,7 @@ interface AvatarDisplayProps {
 
 export function AvatarDisplay({ avatarSrc, backgroundSrc, avatarHint, backgroundHint }: AvatarDisplayProps) {
   return (
-    <Card className="overflow-hidden aspect-[4/3] relative shadow-lg rounded-xl">
+    <Card className="overflow-hidden aspect-video relative shadow-lg rounded-xl">
       <Image
         src={backgroundSrc}
         alt="Selected background"
