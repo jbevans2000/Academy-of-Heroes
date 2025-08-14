@@ -1,14 +1,62 @@
+
+'use client';
+
+import { useEffect, useState } from 'react';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import type { Student } from '@/lib/data';
 import { TeacherHeader } from "@/components/teacher/teacher-header";
 import { StudentList } from "@/components/teacher/student-list";
-import { allStudentData, avatars, backgrounds } from "@/lib/data";
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function TeacherDashboardPage() {
+  const [students, setStudents] = useState<Student[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "students"));
+        const studentsData = querySnapshot.docs.map(doc => ({ ...doc.data() } as Student));
+        setStudents(studentsData);
+      } catch (error) {
+        console.error("Error fetching students: ", error);
+        // Optionally, show an error toast to the teacher
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchStudents();
+  }, []);
+
+  if (isLoading) {
+    return (
+       <div className="flex min-h-screen w-full flex-col">
+        <TeacherHeader />
+        <main className="flex-1 p-4 md:p-6 lg:p-8">
+            <h1 className="text-2xl font-bold mb-4">All Students</h1>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="space-y-2">
+                        <Skeleton className="h-48 w-full rounded-xl" />
+                        <Skeleton className="h-8 w-3/4" />
+                         <Skeleton className="h-6 w-1/2" />
+                    </div>
+                ))}
+            </div>
+        </main>
+      </div>
+    )
+  }
+
+
   return (
     <div className="flex min-h-screen w-full flex-col">
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <h1 className="text-2xl font-bold mb-4">All Students</h1>
-        <StudentList students={allStudentData} avatars={avatars} backgrounds={backgrounds} />
+        <StudentList students={students} />
       </main>
     </div>
   );

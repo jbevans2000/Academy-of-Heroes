@@ -1,43 +1,52 @@
+
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Avatar as AvatarType, Background, Student } from '@/lib/data';
-import { Star, Coins } from 'lucide-react';
+import type { Student } from '@/lib/data';
+import { Star, Coins, User, Gamepad2 } from 'lucide-react';
 
 interface StudentCardProps {
   student: Student;
-  avatar: AvatarType;
-  background: Background;
 }
 
-export function StudentCard({ student, avatar, background }: StudentCardProps) {
+export function StudentCard({ student }: StudentCardProps) {
   return (
     <Card className="shadow-lg rounded-xl flex flex-col overflow-hidden transition-transform hover:scale-105 duration-300">
       <CardHeader className="p-0 relative h-32">
         <Image
-          src={background.src}
-          alt={`${student.name}'s background`}
+          src={student.backgroundUrl}
+          alt={`${student.characterName}'s background`}
           fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           className="object-cover"
-          data-ai-hint={background.hint}
+          data-ai-hint="scene"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         <div className="absolute bottom-2 left-4 flex items-end space-x-3">
           <div className="relative w-16 h-16 border-2 border-primary rounded-full overflow-hidden bg-secondary">
             <Image
-              src={avatar.src}
-              alt={`${student.name}'s avatar`}
+              src={student.avatarUrl}
+              alt={`${student.characterName}'s avatar`}
               fill
+               sizes="(max-width: 768px) 25vw, 10vw"
               className="object-contain"
-              data-ai-hint={avatar.hint}
+              data-ai-hint="character"
             />
           </div>
-          <CardTitle className="text-white text-xl font-bold drop-shadow-md pb-1">{student.name}</CardTitle>
         </div>
       </CardHeader>
-      <CardContent className="p-4 flex-grow">
-        <div className="grid grid-cols-2 gap-4 text-sm">
+      <CardContent className="p-4 flex-grow space-y-3">
+        <CardTitle className="text-xl font-bold truncate">{student.characterName}</CardTitle>
+        <div className="text-sm text-muted-foreground flex items-center gap-2">
+            <User className="w-4 h-4" />
+            <span>{student.studentName}</span>
+        </div>
+        <div className="text-sm text-muted-foreground flex items-center gap-2">
+            <Gamepad2 className="w-4 h-4" />
+            <span>{student.class}</span>
+        </div>
+         <div className="grid grid-cols-2 gap-4 text-sm pt-2">
             <div className="flex items-center space-x-2">
                 <Star className="h-5 w-5 text-yellow-400" />
                 <div className="flex flex-col">
@@ -54,12 +63,10 @@ export function StudentCard({ student, avatar, background }: StudentCardProps) {
             </div>
         </div>
       </CardContent>
-      <CardFooter className="p-2">
-        <Button asChild className="w-full">
-          {/* Note: This currently links to the single student dashboard.
-              In a real app, you'd want this to be a dynamic route like /student/${student.id}
-          */}
-          <Link href="/dashboard">View Dashboard</Link>
+      <CardFooter className="p-2 bg-secondary/30">
+        <Button asChild className="w-full" variant="secondary">
+          {/* This will eventually need to link to a dynamic route like /teacher/student/${student.uid} */}
+          <Link href="#">View Details</Link>
         </Button>
       </CardFooter>
     </Card>

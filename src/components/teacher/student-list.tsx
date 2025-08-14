@@ -1,29 +1,30 @@
+
 'use client';
 
 import { StudentCard } from './student-card';
-import type { Student, Avatar, Background } from '@/lib/data';
+import type { Student } from '@/lib/data';
 
 interface StudentListProps {
   students: Student[];
-  avatars: Avatar[];
-  backgrounds: Background[];
 }
 
-export function StudentList({ students, avatars, backgrounds }: StudentListProps) {
+export function StudentList({ students }: StudentListProps) {
+  if (students.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
+        <p className="text-muted-foreground">No students have registered yet.</p>
+      </div>
+    )
+  }
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-      {students.map((student) => {
-        const studentAvatar = avatars.find(a => a.id === student.currentAvatarId) || avatars[0];
-        const studentBackground = backgrounds.find(b => b.id === student.currentBackgroundId) || backgrounds[0];
-        return (
+      {students.map((student) => (
             <StudentCard
-                key={student.id}
+                key={student.uid}
                 student={student}
-                avatar={studentAvatar}
-                background={studentBackground}
             />
-        )
-      })}
+      ))}
     </div>
   );
 }
