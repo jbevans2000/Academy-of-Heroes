@@ -14,14 +14,9 @@ const firebaseConfig = {
   "messagingSenderId": "237944049269"
 };
 
-// Initialize Firebase
-let app;
-if (!getApps().length) {
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApp();
-}
-
+// This is the robust, standard way to initialize Firebase in a Next.js app.
+// It ensures that we don't try to re-initialize the app on every render.
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 const auth = getAuth(app);
 const db = getFirestore(app);
