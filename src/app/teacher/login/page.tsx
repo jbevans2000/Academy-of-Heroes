@@ -19,7 +19,7 @@ import { Label } from '@/components/ui/label';
 import { School, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-// IMPORTANT: Replace this with the actual teacher's email address
+// IMPORTANT: This is the designated teacher's email address
 const TEACHER_EMAIL = 'jevans@nca.connectionsacademy.org'; 
 
 export default function TeacherLoginPage() {
@@ -54,13 +54,28 @@ export default function TeacherLoginPage() {
       }
     } catch (error: any) {
       console.error(error);
+      let description = 'An unexpected error occurred. Please try again.';
+      if (error.code) {
+        switch (error.code) {
+            case 'auth/invalid-credential':
+            case 'auth/user-not-found':
+            case 'auth/wrong-password':
+                description = 'Invalid email or password.';
+                break;
+            case 'auth/network-request-failed':
+                description = 'Network error. Please check your connection.';
+                break;
+            case 'auth/configuration-not-found':
+                 description = 'Firebase configuration is missing or invalid. Please contact support.';
+                 break;
+            default:
+                description = `An error occurred: ${error.message}`;
+        }
+      }
       toast({
         variant: 'destructive',
         title: 'Login Failed',
-        description:
-          error.code === 'auth/invalid-credential'
-            ? 'Invalid email or password.'
-            : `An unexpected error occurred: ${error.code}`,
+        description: description,
       });
     } finally {
       setIsLoading(false);
