@@ -156,7 +156,7 @@ export default function RegisterPage() {
                               : 'border-transparent hover:border-primary/50'
                           )}
                         >
-                          <Image src={avatar} alt={`Avatar ${index + 1}`} width={100} height={100} className="w-full aspect-square object-cover" />
+                          <Image src={avatar} alt={`Avatar ${index + 1}`} width={100} height={100} className="w-full aspect-square object-contain" />
                         </div>
                       ))}
                     </div>
@@ -177,7 +177,7 @@ export default function RegisterPage() {
                               : 'border-transparent hover:border-primary/50'
                           )}
                         >
-                          <Image src={bg} alt={`Background ${index + 1}`} width={150} height={100} className="w-full aspect-video object-cover" />
+                          <Image src={bg} alt={`Background ${index + 1}`} width={150} height={100} className="w-full aspect-video object-contain" />
                         </div>
                       ))}
                     </div>
