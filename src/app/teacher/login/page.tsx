@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { School, Loader2 } from 'lucide-react';
+import { School, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 // IMPORTANT: This is the designated teacher's email address
@@ -25,6 +25,7 @@ const TEACHER_EMAIL = 'jevans@nca.connectionsacademy.org';
 export default function TeacherLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
@@ -131,14 +132,25 @@ export default function TeacherLoginPage() {
                     Forgot your password?
                   </Link>
                 </div>
-                <Input 
-                  id="password" 
-                  type="password" 
-                  required 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading}
-                />
+                <div className="relative">
+                  <Input 
+                    id="password" 
+                    type={showPassword ? 'text' : 'password'}
+                    required 
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isLoading}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground"
+                    disabled={isLoading}
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
               </div>
               <Button type="button" className="w-full" onClick={handleLogin} disabled={isLoading}>
                  {isLoading ? (

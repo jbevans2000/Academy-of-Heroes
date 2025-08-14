@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Shield, Heart, Wand, User, KeyRound, Star, Eye } from 'lucide-react';
+import { Loader2, Shield, Heart, Wand, User, KeyRound, Star, Eye, EyeOff } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import {
@@ -28,6 +28,7 @@ import { classData, type ClassType } from '@/lib/data';
 export default function RegisterPage() {
   const [studentId, setStudentId] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [studentName, setStudentName] = useState('');
   const [characterName, setCharacterName] = useState('');
   const [selectedClass, setSelectedClass] = useState<ClassType>('');
@@ -123,7 +124,25 @@ export default function RegisterPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password" className="flex items-center"><Eye className="w-4 h-4 mr-2" />Password</Label>
-                <Input id="password" type="password" placeholder="Choose a secure password" value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Choose a secure password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isLoading}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground"
+                    disabled={isLoading}
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="student-name" className="flex items-center"><User className="w-4 h-4 mr-2" />Student Name</Label>
