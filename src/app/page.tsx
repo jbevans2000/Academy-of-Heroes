@@ -5,7 +5,6 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -30,7 +29,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const handleAuth = async (isRegistering: boolean) => {
+  const handleLogin = async () => {
     if (!studentId || !password) {
       toast({
         variant: 'destructive',
@@ -44,21 +43,12 @@ export default function LoginPage() {
     const email = `${studentId}@academy-heroes-mziuf.firebaseapp.com`;
 
     try {
-      if (isRegistering) {
-        await createUserWithEmailAndPassword(auth, email, password);
-        toast({
-          title: 'Account Created!',
-          description: "You've successfully registered.",
-        });
-        router.push('/dashboard');
-      } else {
-        await signInWithEmailAndPassword(auth, email, password);
-        toast({
-          title: 'Login Successful!',
-          description: 'Welcome back to your adventure.',
-        });
-        router.push('/dashboard');
-      }
+      await signInWithEmailAndPassword(auth, email, password);
+      toast({
+        title: 'Login Successful!',
+        description: 'Welcome back to your adventure.',
+      });
+      router.push('/dashboard');
     } catch (error: any) {
       console.error(error);
       toast({
@@ -67,8 +57,6 @@ export default function LoginPage() {
         description:
           error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found'
             ? 'Invalid Student ID or password.'
-            : error.code === 'auth/email-already-in-use'
-            ? 'This Student ID is already registered.'
             : 'An unexpected error occurred. Please try again.',
       });
     } finally {
@@ -128,7 +116,7 @@ export default function LoginPage() {
               <Button
                 type="button"
                 className="w-full"
-                onClick={() => handleAuth(false)}
+                onClick={handleLogin}
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -138,18 +126,15 @@ export default function LoginPage() {
               </Button>
             </div>
             <div className="mt-4 text-center text-sm">
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => handleAuth(true)}
-                disabled={isLoading}
-              >
-                 {isLoading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : null}
-                Create New Avatar
-              </Button>
+                <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => router.push('/register')}
+                    disabled={isLoading}
+                >
+                    Create New Avatar
+                </Button>
             </div>
           </CardContent>
         </Card>
