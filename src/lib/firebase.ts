@@ -22,8 +22,9 @@ const db = getFirestore(app);
 // Connect to local emulators if running in a browser environment
 if (typeof window !== 'undefined') {
   try {
-    // Check if not already connected
-    // The weird _getProvider()._isInitialized check is a workaround to avoid re-connecting errors on hot-reloads
+    // Check if not already connected.
+    // The properties `emulatorConfig` and `_settings.host` are inspected
+    // to avoid re-connecting errors on Next.js hot reloads.
     // @ts-ignore
     if (!auth.emulatorConfig) {
       connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
