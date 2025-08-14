@@ -19,6 +19,8 @@ import { Label } from '@/components/ui/label';
 import { School, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+// IMPORTANT: Replace this with the actual teacher's email address
+const TEACHER_EMAIL = 'teacher@example.com'; 
 
 export default function TeacherLoginPage() {
   const [email, setEmail] = useState('');
@@ -30,12 +32,26 @@ export default function TeacherLoginPage() {
   const handleLogin = async () => {
     setIsLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      toast({
-        title: 'Login Successful!',
-        description: 'Welcome back, teacher.',
-      });
-      router.push('/teacher/dashboard');
+      // Step 1: Authenticate with Firebase
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Step 2: Check if the logged-in user is the designated teacher
+      if (user.email === TEACHER_EMAIL) {
+        toast({
+          title: 'Login Successful!',
+          description: 'Welcome back, teacher.',
+        });
+        router.push('/teacher/dashboard');
+      } else {
+        // If it's a valid user but not the teacher, sign them out and show an error
+        await auth.signOut();
+        toast({
+            variant: 'destructive',
+            title: 'Access Denied',
+            description: 'This login is for teachers only.',
+        });
+      }
     } catch (error: any) {
       console.error(error);
       toast({
@@ -104,6 +120,17 @@ export default function TeacherLoginPage() {
                 ) : null}
                 Login
               </Button>
+            </div>
+             <div className="mt-4 text-center text-sm">
+                <Button
+                    type="button"
+                    variant="link"
+                    className="w-full"
+                    onClick={() => router.push('/')}
+                    disabled={isLoading}
+                >
+                    Back to Student Login
+                </Button>
             </div>
           </CardContent>
         </Card>

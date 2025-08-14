@@ -1,3 +1,6 @@
+
+'use client';
+
 import { School, User } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -9,8 +12,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { auth } from "@/lib/firebase";
+import { signOut } from "firebase/auth";
+import { useRouter } from "next/navigation";
+
 
 export function TeacherHeader() {
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push('/');
+  };
+
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
       <Link href="/teacher/dashboard" className="flex items-center gap-2 font-semibold">
@@ -31,8 +45,8 @@ export function TeacherHeader() {
             <DropdownMenuItem>Profile</DropdownMenuItem>
             <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-                <Link href="/teacher/login">Logout</Link>
+            <DropdownMenuItem onClick={handleLogout}>
+                Logout
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
