@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Gamepad2 } from 'lucide-react';
+import { Gamepad2, School, Separator } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
@@ -122,7 +122,7 @@ export default function LoginPage() {
                 {isLoading ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
-                Login
+                Login as Student
               </Button>
             </div>
             <div className="mt-4 text-center text-sm">
@@ -136,6 +136,25 @@ export default function LoginPage() {
                     Create New Avatar
                 </Button>
             </div>
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">
+                  Or
+                </span>
+              </div>
+            </div>
+             <Button
+              variant="secondary"
+              className="w-full"
+              onClick={() => router.push('/teacher/login')}
+              disabled={isLoading}
+            >
+              <School className="mr-2 h-4 w-4" />
+              Teacher Login
+            </Button>
           </CardContent>
         </Card>
       </div>
