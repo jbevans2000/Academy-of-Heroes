@@ -1,16 +1,18 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Star, Coins } from 'lucide-react';
 
 interface StatsCardProps {
   xp: number;
   gold: number;
+  name: string;
 }
 
-export function StatsCard({ xp, gold }: StatsCardProps) {
+export function StatsCard({ xp, gold, name }: StatsCardProps) {
   return (
     <Card className="shadow-lg rounded-xl">
       <CardHeader>
-        <CardTitle>Your Progress</CardTitle>
+        <CardTitle>{name}'s Progress</CardTitle>
+        <CardDescription>Experience and Gold earned.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

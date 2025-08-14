@@ -1,19 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import type { Avatar, Background } from "@/lib/data";
+import type { Avatar, Background, Student } from "@/lib/data";
 import { StatsCard } from "./stats-card";
 import { AvatarDisplay } from "./avatar-display";
 import { CustomizationPanel } from "./customization-panel";
 
 interface DashboardClientProps {
-  student: {
-    name: string;
-    xp: number;
-    gold: number;
-    currentAvatarId: number;
-    currentBackgroundId: number;
-  };
+  student: Student;
   avatars: Avatar[];
   backgrounds: Background[];
 }
@@ -48,7 +42,7 @@ export function DashboardClient({ student, avatars: initialAvatars, backgrounds 
           avatarHint={selectedAvatar.hint}
           backgroundHint={selectedBackground.hint}
         />
-        <StatsCard xp={student.xp} gold={student.gold} />
+        <StatsCard xp={student.xp} gold={student.gold} name={student.name} />
       </div>
       <div className="md:col-span-1">
         <CustomizationPanel
