@@ -28,7 +28,7 @@ const classData = {
       'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Images%2FTrickster%205%20(Level%201%20Guardian%20Images).png?alt=media&token=5dbf4c82-f529-4e40-9a95-6ab0de2354da',
       'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Images%2FTrickster%207%20(Level%201%20Guardian%20Images).png?alt=media&token=cbb6584f-f732-4bc5-a538-9ccc08dabef2',
       'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Images%2FTrickster%208%20(Level%201%20Guardian%20Images).png?alt=media&token=f33d3ca1-a917-4920-bd81-b55141969354',
-      `https://placehold.co/256x256/3498db/ffffff?text=Guardian+8`
+      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Images%2FTrickster%206%20(Level%201%20Guardian%20Images).png?alt=media&token=804c9933-d7d9-4336-8bf5-d0cc9e91a5d4'
     ],
     backgrounds: Array.from({ length: 6 }, (_, i) => `https://placehold.co/800x600/3498db/ffffff?text=BG+${i + 1}`),
   },
