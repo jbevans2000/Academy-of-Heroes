@@ -20,7 +20,7 @@ import { School, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 // IMPORTANT: Replace this with the actual teacher's email address
-const TEACHER_EMAIL = 'teacher@example.com'; 
+const TEACHER_EMAIL = 'jevans@nca.connectionsacademy.org'; 
 
 export default function TeacherLoginPage() {
   const [email, setEmail] = useState('');
