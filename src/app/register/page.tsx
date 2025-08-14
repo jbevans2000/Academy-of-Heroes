@@ -47,7 +47,16 @@ const classData = {
     ],
   },
   Healer: {
-    avatars: Array.from({ length: 8 }, (_, i) => `https://placehold.co/256x256/2ecc71/ffffff?text=Healer+${i + 1}`),
+    avatars: [
+      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Images%2FHealer%201%20(Level%201%20Healer%20Images).png?alt=media&token=a3d8c43a-5d9e-4fce-9803-4c5481503f96',
+      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Images%2FHealer%202%20(Level%201%20Healer%20Images).png?alt=media&token=35a026ae-c867-43c1-8abe-825fa1c75caf',
+      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Images%2FHealer%203%20(Level%201%20Healer%20Images).png?alt=media&token=d40ad279-8af6-439d-ac51-45a301d85e93',
+      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Images%2FHealer%204%20(Level%201%20Healer%20Images).png?alt=media&token=0b051eac-3d61-4e73-9463-f7b8a7348e78',
+      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Images%2FHealer%205%20(Level%201%20Healer%20Images).png?alt=media&token=ec4dbdd5-b766-4744-9bce-b5e764b5cedb',
+      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Images%2FHealer%206%20(Level%201%20Healer%20Images).png?alt=media&token=eb5da75f-0bb8-4196-85a1-93e0b6d3c7d3',
+      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Images%2FHealer%207%20(Level%201%20Healer%20Images).png?alt=media&token=d9e5d39f-4b66-4c64-b360-ca18406990ca',
+      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Images%2FHealer%208%20(Level%201%20Healer%20Images).png?alt=media&token=b46f9c42-f533-4dd1-aa61-a014c8656006'
+    ],
     backgrounds: Array.from({ length: 6 }, (_, i) => `https://placehold.co/800x600/2ecc71/ffffff?text=BG+${i + 1}`),
   },
   Mage: {
