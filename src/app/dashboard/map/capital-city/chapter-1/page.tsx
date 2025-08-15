@@ -74,6 +74,25 @@ export default function Chapter1Page() {
                                 data-ai-hint="scroll letter"
                             />
                         </div>
+                        <Separator />
+                        <p className="px-4">
+                            In the hours that follow, you prepare for your journey, but something feels wrong. At first, it’s just hushed voices in the library. Conversations that end the moment you step too close. Nervous glances. Concerned whispers among your fellow scholars.
+                        </p>
+                        <p className="px-4">
+                            Then, you begin hearing the rumors. "Did you hear? The livestock in the southern farms are aging too fast. A calf was born last week, and by the third day, it had fully matured—then collapsed, as if its body couldn’t sustain itself."
+                        </p>
+                         <p className="px-4">
+                            "It’s not just animals. The royal gardens had to be burned last night. The plants… changed. Their roots fused together, moving like they were searching for something. As if they were alive."
+                        </p>
+                        <p className="px-4">
+                            "A scholar from the Western Academy collapsed yesterday. His hands—covered in lesions. The healers examined him, and they said his tissue was… mutating. As if something was rewriting him on a cellular level."
+                        </p>
+                        <p className="px-4">
+                            Your pulse quickens. Biology does not work like this. Organisms do not age overnight, plants do not merge into abominations, and people do not mutate for no reason. Something is happening to Luminaria. And whatever it is--it’s the reason you were summoned.
+                        </p>
+                        <p className="px-4">
+                            When the following morning arrives, you leave the library behind. The path before you leads straight to the Royal Court. But you no longer feel like a student. You feel like a scientist searching for answers. Because if the rumors are true, then life itself is unraveling. And you are walking straight into the heart of it.
+                        </p>
                     </CardContent>
                 </Card>
                 <div className="flex justify-center">
@@ -90,4 +109,3 @@ export default function Chapter1Page() {
         </div>
     );
 }
-
