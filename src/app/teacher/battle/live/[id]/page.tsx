@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs, writeBatch, serverTimestamp, setDoc } from 'firebase/firestore';
+import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs, writeBatch, serverTimestamp, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
@@ -96,10 +96,11 @@ export default function TeacherLiveBattlePage() {
     setIsLoading(true);
     const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
     const unsubscribe = onSnapshot(liveBattleRef, (doc) => {
+      const currentState = liveState;
       if (doc.exists()) {
         const newState = doc.data() as LiveBattleState;
         // If the question index changes, clear old responses and results
-        if (liveState && liveState.currentQuestionIndex !== newState.currentQuestionIndex) {
+        if (currentState && currentState.currentQuestionIndex !== newState.currentQuestionIndex) {
             setStudentResponses([]);
             setRoundResults([]);
         }
@@ -115,6 +116,7 @@ export default function TeacherLiveBattlePage() {
       setIsLoading(false);
     });
     return () => unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [battleId, router]);
 
   // Listen for real-time student responses ONLY when the battle is in progress
@@ -158,7 +160,7 @@ export default function TeacherLiveBattlePage() {
           }
       }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [liveState?.status, liveState?.timerEndsAt]);
+  }, [liveState]);
 
   const calculateAndSetResults = async () => {
     if (!battle || liveState === null || isEndingRound) return;
@@ -251,6 +253,29 @@ export default function TeacherLiveBattlePage() {
     }
   };
 
+  const clearBattleData = async () => {
+    const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
+    const batch = writeBatch(db);
+
+    // Delete responses collection
+    const responsesRef = collection(liveBattleRef, 'responses');
+    const responsesSnap = await getDocs(responsesRef);
+    responsesSnap.forEach(doc => batch.delete(doc.ref));
+
+    // Delete studentResponses subcollections
+    const studentResponsesRef = collection(liveBattleRef, 'studentResponses');
+    const studentResponsesSnap = await getDocs(studentResponsesRef);
+    for (const studentDoc of studentResponsesSnap.docs) {
+        const roundsRef = collection(studentDoc.ref, 'rounds');
+        const roundsSnap = await getDocs(roundsRef);
+        roundsSnap.forEach(roundDoc => batch.delete(roundDoc.ref));
+        batch.delete(studentDoc.ref);
+    }
+
+    await batch.commit();
+  }
+
+
   const handleEndBattle = async () => {
       // 1. Save all rounds data to a new collection for review
       const summaryRef = doc(db, `battleSummaries`, battleId);
@@ -268,7 +293,9 @@ export default function TeacherLiveBattlePage() {
           status: 'BATTLE_ENDED',
       });
 
-      // The useEffect will handle the redirect
+      // 3. Clean up the live battle data
+      await clearBattleData();
+      // The useEffect will handle the redirect based on the BATTLE_ENDED status
   };
   
   const handleExport = () => {
@@ -408,3 +435,5 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
+
+    
