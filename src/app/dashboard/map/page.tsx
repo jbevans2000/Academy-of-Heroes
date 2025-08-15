@@ -6,10 +6,24 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from "lucide-react";
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function WorldMapPage() {
     const router = useRouter();
     const worldMapImageUrl = "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FWorld%20Map.JPG?alt=media&token=2d88af7d-a54c-4f34-b4c7-1a7c04485b8b";
+    
+    // NOTE: The map's original dimensions are 2048x1536.
+    // The coordinates are converted to percentages to maintain position on different screen sizes.
+    // X: 1200 -> (1200 / 2048) * 100 = 58.59%
+    // Y: 867 -> (867 / 1536) * 100 = 56.44%
+    const capitalCityNode = {
+      name: 'Capital City',
+      href: '/dashboard/map/capital-city',
+      style: {
+        left: '58.59%',
+        top: '56.44%',
+      },
+    };
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 sm:p-6 lg:p-8">
@@ -18,14 +32,26 @@ export default function WorldMapPage() {
                     <CardTitle className="text-3xl font-bold text-center text-primary">World Map</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="relative aspect-video rounded-lg overflow-hidden bg-muted/50">
+                    <div className="relative aspect-[2048/1536] rounded-lg overflow-hidden bg-muted/50">
                         <Image
                             src={worldMapImageUrl}
                             alt="World Map"
                             fill
-                            className="object-cover"
+                            className="object-contain"
                             priority
                          />
+                         {/* Quest Node */}
+                         <Link href={capitalCityNode.href} passHref>
+                            <div
+                                className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
+                                style={capitalCityNode.style}
+                            >
+                                <div className="absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-white font-bold text-shadow-lg transition-transform duration-300 group-hover:scale-110 bg-black/50 rounded px-2 py-1">
+                                    {capitalCityNode.name}
+                                </div>
+                                <div className="w-5 h-5 bg-yellow-400 rounded-full ring-2 ring-white shadow-xl animate-pulse-glow"></div>
+                            </div>
+                        </Link>
                     </div>
                 </CardContent>
             </Card>
