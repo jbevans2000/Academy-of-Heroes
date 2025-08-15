@@ -100,14 +100,8 @@ export default function TeacherLiveBattlePage() {
     setIsLoading(true);
     const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
     const unsubscribe = onSnapshot(liveBattleRef, (doc) => {
-      const currentState = liveState;
       if (doc.exists()) {
         const newState = doc.data() as LiveBattleState;
-        // If the question index changes, clear old responses and results
-        if (currentState && currentState.currentQuestionIndex !== newState.currentQuestionIndex) {
-            setStudentResponses([]);
-            setRoundResults([]);
-        }
         setLiveState(newState);
 
         if (newState.status === 'BATTLE_ENDED') {
@@ -123,18 +117,17 @@ export default function TeacherLiveBattlePage() {
       setIsLoading(false);
     });
     return () => unsubscribe();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [battleId, router]);
 
-  // Listen for real-time student responses
+  // Listen for real-time student responses for the current question
   useEffect(() => {
+    // When the question changes, always clear the previous round's live responses.
+    setStudentResponses([]);
+    
     if (!liveState || (liveState.status !== 'IN_PROGRESS' && liveState.status !== 'ROUND_ENDING')) {
       return;
     }
     
-    // When the question changes, clear the previous round's responses.
-    setStudentResponses([]);
-
     const responsesRef = collection(db, `liveBattles/active-battle/responses`);
     const q = query(responsesRef);
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -153,11 +146,11 @@ export default function TeacherLiveBattlePage() {
     });
 
     return () => unsubscribe();
-  }, [liveState, liveState?.status, liveState?.currentQuestionIndex]);
+  }, [liveState?.status, liveState?.currentQuestionIndex]);
+
 
   const calculateAndSetResults = useCallback(async () => {
-    if (!battle || !liveState || liveState.status !== 'ROUND_ENDING') return;
-    if (isEndingRound) return;
+    if (!battle || !liveState || liveState.status !== 'ROUND_ENDING' || isEndingRound) return;
 
     setIsEndingRound(true);
     
@@ -208,24 +201,21 @@ export default function TeacherLiveBattlePage() {
 
   // Effect to handle timer expiration
   useEffect(() => {
-      if (liveState?.status === 'ROUND_ENDING' && liveState.timerEndsAt) {
-          const expiryDate = new Date(liveState.timerEndsAt.seconds * 1000);
-          const now = new Date();
-          const timeUntilExpiry = expiryDate.getTime() - now.getTime();
+      if (liveState?.status !== 'ROUND_ENDING' || !liveState.timerEndsAt) return;
 
-          if (timeUntilExpiry <= 0) {
-              calculateAndSetResults();
-          } else {
-              const timer = setTimeout(() => {
-                  calculateAndSetResults();
-              }, timeUntilExpiry);
-              return () => clearTimeout(timer);
-          }
-      }
+      const expiryDate = new Date(liveState.timerEndsAt.seconds * 1000);
+      const now = new Date();
+      const timeUntilExpiry = expiryDate.getTime() - now.getTime();
+
+      const timer = setTimeout(() => {
+          calculateAndSetResults();
+      }, timeUntilExpiry > 0 ? timeUntilExpiry : 0);
+      
+      return () => clearTimeout(timer);
   }, [liveState?.status, liveState?.timerEndsAt, calculateAndSetResults]);
 
   const handleEndRound = async () => {
-    if (!battle || liveState === null) return;
+    if (!battle || liveState === null || isEndingRound) return;
     
     setIsEndingRound(true);
 
@@ -263,6 +253,7 @@ export default function TeacherLiveBattlePage() {
         });
 
         await batch.commit();
+        setRoundResults([]);
     } catch (error) {
         console.error("Error advancing to next question:", error);
     } finally {
@@ -271,7 +262,7 @@ export default function TeacherLiveBattlePage() {
   };
 
   const handleEndBattle = async () => {
-      if (!liveState) return;
+      if (!liveState || !battle) return;
       // 1. Get the final total damage from the live state
       const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
       const finalStateDoc = await getDoc(liveBattleRef);
@@ -352,7 +343,7 @@ export default function TeacherLiveBattlePage() {
                     <div className="mt-6 p-4 border rounded-lg">
                         <h3 className="font-semibold text-lg mb-2">Controls</h3>
                         <div className="flex gap-4">
-                             <Button onClick={handleEndRound} disabled={!isRoundInProgress || isEndingRound || isRoundEnding}>
+                             <Button onClick={handleEndRound} disabled={!isRoundInProgress || isEndingRound}>
                                 {isEndingRound ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                 End Round
                              </Button>
@@ -434,5 +425,3 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
-
-    
