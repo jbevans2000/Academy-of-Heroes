@@ -104,7 +104,8 @@ export default function LiveBattlePage() {
       setIsLoading(false);
     });
     return () => unsubscribe();
-  }, [battleState, router]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router]);
 
   // Effect to fetch the battle details when battleId changes
   useEffect(() => {
