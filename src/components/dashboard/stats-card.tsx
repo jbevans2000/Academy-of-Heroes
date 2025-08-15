@@ -1,6 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Star, Coins, Trophy, Heart, Zap, Shield, Wand2, Flame, Map } from 'lucide-react';
+import { Star, Coins, Trophy, Heart, Zap, Shield, Wand2, Flame, Map, Swords } from 'lucide-react';
 import type { ClassType } from "@/lib/data";
 import {
   DropdownMenu,
@@ -103,6 +103,10 @@ export function StatsCard({ xp, gold, level, hp, mp, characterName, studentName,
                     <Link href="/dashboard/map" passHref>
                         <Button variant="outline" className="mt-2">Continue Quest</Button>
                     </Link>
+                </div>
+                <div className="flex flex-col items-center">
+                    <Swords className="h-8 w-8 text-red-600" />
+                    <Button variant="outline" className="mt-2">Ready for Battle</Button>
                 </div>
              </div>
           </div>
