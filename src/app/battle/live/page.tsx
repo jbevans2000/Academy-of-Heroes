@@ -220,6 +220,7 @@ export default function LiveBattlePage() {
     const currentQuestion = battle.questions[battleState.currentQuestionIndex];
     const bossImage = battle.bossImageUrl || 'https://placehold.co/600x400.png';
     const expiryTimestamp = battleState.timerEndsAt ? new Date(battleState.timerEndsAt.seconds * 1000) : null;
+    const isBattleActive = battleState.status === 'IN_PROGRESS' || battleState.status === 'ROUND_ENDING';
 
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 p-4">
@@ -258,7 +259,7 @@ export default function LiveBattlePage() {
                                 submittedAnswer === index && "bg-primary text-primary-foreground ring-2 ring-offset-2 ring-offset-background ring-primary"
                             )}
                             onClick={() => handleSubmitAnswer(index)}
-                            disabled={submittedAnswer !== null}
+                            disabled={!isBattleActive}
                             >
                             <span className="font-bold mr-4">{String.fromCharCode(65 + index)}.</span>
                             {answer}
@@ -340,3 +341,5 @@ export default function LiveBattlePage() {
     </div>
   );
 }
+
+    
