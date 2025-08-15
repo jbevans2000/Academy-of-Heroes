@@ -85,7 +85,7 @@ export default function TeacherLiveBattlePage() {
       setIsLoading(false);
     });
     return () => unsubscribe();
-  }, [liveState]);
+  }, []);
 
   // Listen for real-time student responses ONLY when the battle is in progress
   useEffect(() => {
@@ -171,11 +171,11 @@ export default function TeacherLiveBattlePage() {
   };
   
   const handleExport = () => {
-    if (!battle || roundResults.length === 0) return;
-    const questionText = battle.questions[liveState!.currentQuestionIndex].questionText;
+    if (!battle || roundResults.length === 0 || !liveState) return;
+    const questionText = battle.questions[liveState.currentQuestionIndex].questionText;
     const headers = ['Student Name', 'Answer', 'Correct'];
     const data = roundResults.map(r => [r.studentName, r.answer, r.isCorrect ? 'Yes' : 'No']);
-    downloadCsv(data, headers, `battle_results_q${liveState!.currentQuestionIndex + 1}.csv`);
+    downloadCsv(data, headers, `battle_results_q${liveState.currentQuestionIndex + 1}.csv`);
   };
 
 
@@ -278,5 +278,3 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
-
-    
