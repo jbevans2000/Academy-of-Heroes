@@ -3,6 +3,7 @@
 import type { ClassType } from "./data";
 
 export function calculateLevel(xp: number): number {
+    if (xp < 0) return 1;
     return Math.floor(xp / 100) + 1;
 }
 
@@ -33,4 +34,25 @@ export function calculateHpGain(
     return totalHpGained;
 }
 
+export function calculateMpGain(
+    characterClass: ClassType, 
+    levelsGained: number
+): number {
+    let totalMpGained = 0;
     
+    const magicDieSides: { [key in ClassType]?: number } = {
+        'Mage': 8,
+        'Healer': 6,
+        'Guardian': 4
+    };
+
+    const dieSides = magicDieSides[characterClass];
+
+    if (dieSides) {
+        for (let i = 0; i < levelsGained; i++) {
+            totalMpGained += rollDie(dieSides);
+        }
+    }
+    
+    return totalMpGained;
+}

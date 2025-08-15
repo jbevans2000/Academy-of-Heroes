@@ -17,12 +17,12 @@ import {
 } from "@/components/ui/dialog"
 import { DashboardClient } from '@/components/dashboard/dashboard-client';
 import { Input } from '@/components/ui/input';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { calculateLevel, calculateHpGain } from '@/lib/game-mechanics';
+import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 
 
 interface StudentCardProps {
@@ -65,19 +65,24 @@ export function StudentCard({ student, isSelected, onSelect, setStudents }: Stud
         const newLevel = calculateLevel(newXp);
         
         let newHp = studentData.hp;
+        let newMp = studentData.mp;
+
         if (newLevel > currentLevel) {
             const levelsGained = newLevel - currentLevel;
-            const hpGained = calculateHpGain(studentData.class, levelsGained, currentLevel);
+            const hpGained = calculateHpGain(studentData.class, levelsGained);
             newHp += hpGained;
+            const mpGained = calculateMpGain(studentData.class, levelsGained);
+            newMp += mpGained;
         }
         
         await updateDoc(studentRef, {
             xp: newXp,
             level: newLevel,
-            hp: newHp
+            hp: newHp,
+            mp: newMp
         });
         
-        const updatedStudent = { ...studentData, xp: newXp, level: newLevel, hp: newHp };
+        const updatedStudent = { ...studentData, xp: newXp, level: newLevel, hp: newHp, mp: newMp };
         
         setStudents(prevStudents => 
             prevStudents.map(s => s.uid === student.uid ? updatedStudent : s)
@@ -85,7 +90,7 @@ export function StudentCard({ student, isSelected, onSelect, setStudents }: Stud
 
         toast({
             title: 'XP Awarded!',
-            description: `${amount > 0 ? '+' : ''}${amount} XP awarded to ${student.characterName}. Level and HP updated.`,
+            description: `${amount > 0 ? '+' : ''}${amount} XP awarded to ${student.characterName}. Level, HP, and MP updated where appropriate.`,
         });
          setXpToAdd('');
 
@@ -119,7 +124,7 @@ export function StudentCard({ student, isSelected, onSelect, setStudents }: Stud
         if (!currentStudentDoc.exists()) throw new Error("Student not found");
         
         const currentStudentData = currentStudentDoc.data() as Student;
-        const newGold = (currentStudentData.gold || 0) + amount;
+        const newGold = Math.max(0, (currentStudentData.gold || 0) + amount);
         
         await updateDoc(studentRef, {
             gold: newGold

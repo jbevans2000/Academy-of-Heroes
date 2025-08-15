@@ -22,7 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Star, Coins } from 'lucide-react';
-import { calculateLevel, calculateHpGain } from '@/lib/game-mechanics';
+import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 
 export default function TeacherDashboardPage() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -105,14 +105,18 @@ export default function TeacherDashboardPage() {
                   const currentLevel = studentData.level || 1;
                   const newLevel = calculateLevel(newXp);
                   
-                  let newHp = studentData.hp || 0;
+                  let newHp = studentData.hp;
+                  let newMp = studentData.mp;
+
                   if (newLevel > currentLevel) {
                       const levelsGained = newLevel - currentLevel;
                       const hpGained = calculateHpGain(studentData.class, levelsGained);
                       newHp += hpGained;
+                      const mpGained = calculateMpGain(studentData.class, levelsGained);
+                      newMp += mpGained;
                   }
 
-                  batch.update(studentDoc.ref, { xp: newXp, level: newLevel, hp: newHp });
+                  batch.update(studentDoc.ref, { xp: newXp, level: newLevel, hp: newHp, mp: newMp });
               }
           }
           
@@ -122,7 +126,7 @@ export default function TeacherDashboardPage() {
 
           toast({
               title: 'XP Awarded!',
-              description: `${amount} XP has been awarded to ${selectedStudents.length} student(s). Levels and HP have been updated.`,
+              description: `${amount} XP has been awarded to ${selectedStudents.length} student(s). Levels, HP, and MP have been updated where appropriate.`,
           });
           setSelectedStudents([]);
           setXpAmount('');
@@ -167,7 +171,7 @@ export default function TeacherDashboardPage() {
           for (const studentDoc of studentDocs) {
               if (studentDoc.exists()) {
                   const currentGold = studentDoc.data().gold || 0;
-                  const newGold = currentGold + amount;
+                  const newGold = Math.max(0, currentGold + amount);
                   batch.update(studentDoc.ref, { gold: newGold });
               }
           }
@@ -316,5 +320,3 @@ export default function TeacherDashboardPage() {
     </div>
   );
 }
-
-    
