@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Gamepad2, School, Eye, EyeOff } from 'lucide-react';
+import { Sword, School, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
@@ -81,7 +81,7 @@ export default function LoginPage() {
     <div className="flex items-center justify-center min-h-screen bg-background p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-6">
-          <Gamepad2 className="h-10 w-10 text-primary" />
+          <Sword className="h-10 w-10 text-primary" />
         </div>
         <Card className="shadow-2xl">
           <CardHeader className="text-center">
