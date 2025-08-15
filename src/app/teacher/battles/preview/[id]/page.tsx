@@ -118,7 +118,7 @@ export default function PreviewBattlePage() {
             <Card className="shadow-2xl overflow-hidden">
                 <CardHeader className="text-center bg-card p-6">
                     <CardTitle className="text-4xl font-bold">{battle.battleName}</CardTitle>
-                    <CardDescription>Student Preview Mode</CardDescription>
+                    <CardDescription>Teacher Preview Mode</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
