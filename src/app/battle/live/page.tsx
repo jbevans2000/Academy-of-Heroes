@@ -130,14 +130,20 @@ export default function LiveBattlePage() {
   }, [battleState?.battleId]);
 
   const handleSubmitAnswer = async (answerIndex: number) => {
-    if (!user || !student || !battleState?.battleId || battleState.status !== 'IN_PROGRESS') return;
+    if (!user || !student || !battleState?.battleId || !battle || battleState.status !== 'IN_PROGRESS') return;
     
     setSubmittedAnswer(answerIndex);
+    
+    const currentQuestion = battle.questions[battleState.currentQuestionIndex];
+    const isCorrect = answerIndex === currentQuestion.correctAnswerIndex;
 
     const responseRef = doc(db, `liveBattles/active-battle/responses`, user.uid);
     await setDoc(responseRef, {
-      studentName: student.characterName, // Using character name for display
+      studentName: student.studentName, // Using real name for display
+      characterName: student.characterName,
+      answer: currentQuestion.answers[answerIndex],
       answerIndex: answerIndex,
+      isCorrect: isCorrect,
       submittedAt: new Date(),
     });
 

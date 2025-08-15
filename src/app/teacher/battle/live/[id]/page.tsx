@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Loader2, Download, Timer, HeartCrack } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { RoundResults, type Result } from '@/components/teacher/round-results';
 import { downloadCsv } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -39,7 +38,10 @@ interface Battle {
 
 interface StudentResponse {
     studentName: string;
+    characterName: string;
+    answer: string;
     answerIndex: number;
+    isCorrect: boolean;
 }
 
 function CountdownTimer({ expiryTimestamp }: { expiryTimestamp: Date }) {
@@ -71,7 +73,7 @@ export default function TeacherLiveBattlePage() {
 
   const [battle, setBattle] = useState<Battle | null>(null);
   const [liveState, setLiveState] = useState<LiveBattleState | null>(null);
-  const [studentResponses, setStudentResponses] = useState<StudentResponse[]>([]);
+  const [studentResponses, setStudentResponses] = useState<Result[]>([]);
   const [roundResults, setRoundResults] = useState<Result[]>([]);
   const [allRoundsData, setAllRoundsData] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -124,29 +126,32 @@ export default function TeacherLiveBattlePage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [battleId, router]);
 
-  // Listen for real-time student responses ONLY when the battle is in progress
+  // Listen for real-time student responses
   useEffect(() => {
-    if (liveState?.status !== 'IN_PROGRESS' && liveState?.status !== 'ROUND_ENDING') {
-        if (liveState?.status !== 'SHOWING_RESULTS') {
-            setStudentResponses([]);
-        }
-        return;
-    };
+    if (!liveState || (liveState.status !== 'IN_PROGRESS' && liveState.status !== 'ROUND_ENDING' && liveState.status !== 'SHOWING_RESULTS')) {
+      setStudentResponses([]);
+      return;
+    }
 
     const responsesRef = collection(db, `liveBattles/active-battle/responses`);
     const q = query(responsesRef);
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const responses: StudentResponse[] = [];
-        querySnapshot.forEach((doc) => {
-            responses.push(doc.data() as StudentResponse);
+      const responses: Result[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data() as StudentResponse;
+        responses.push({
+          studentName: data.studentName, // Now the real name
+          answer: data.answer,
+          isCorrect: data.isCorrect,
         });
-        setStudentResponses(responses);
+      });
+      setStudentResponses(responses);
     }, (error) => {
       console.error("Error listening for student responses:", error);
     });
 
     return () => unsubscribe();
-  }, [liveState?.status]);
+  }, [liveState, liveState?.status]);
 
   const calculateAndSetResults = useCallback(async () => {
     if (!battle || !liveState || liveState.status !== 'ROUND_ENDING') return;
@@ -160,12 +165,11 @@ export default function TeacherLiveBattlePage() {
         const responsesData = responsesSnapshot.docs.map(doc => ({ uid: doc.id, ...(doc.data() as StudentResponse) }));
         
         const currentQuestion = battle.questions[liveState.currentQuestionIndex];
-        const correctAnswerIndex = currentQuestion.correctAnswerIndex;
 
         const results: Result[] = responsesData.map(response => ({
             studentName: response.studentName,
-            answer: currentQuestion.answers[response.answerIndex],
-            isCorrect: response.answerIndex === correctAnswerIndex,
+            answer: response.answer,
+            isCorrect: response.isCorrect,
         }));
         setRoundResults(results);
 
@@ -180,7 +184,7 @@ export default function TeacherLiveBattlePage() {
                     studentUid: r.uid,
                     studentName: r.studentName,
                     answerIndex: r.answerIndex,
-                    isCorrect: r.answerIndex === correctAnswerIndex,
+                    isCorrect: r.isCorrect,
                 }))
             }
         };
@@ -394,20 +398,7 @@ export default function TeacherLiveBattlePage() {
                         <CardDescription>See which students have submitted their answer for the current question.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {studentResponses.length > 0 ? (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                                {studentResponses.map((response, index) => (
-                                    <div key={index} className="flex items-center gap-2 p-2 rounded-md bg-secondary">
-                                        <Avatar className="h-8 w-8">
-                                            <AvatarFallback>{response.studentName.charAt(0)}</AvatarFallback>
-                                        </Avatar>
-                                        <span className="font-medium">{response.studentName}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <p className="text-muted-foreground">Waiting for students to answer...</p>
-                        )}
+                       <RoundResults results={studentResponses} />
                     </CardContent>
                 </Card>
             )}
