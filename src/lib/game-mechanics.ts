@@ -43,26 +43,24 @@ export function calculateLevelUp(student: Pick<Student, 'xp' | 'level' | 'hp' | 
     const oldLevel = student.level;
     const newLevel = Math.floor(newXp / 100) + 1;
     
-    // Use the base HP from classData for level 1, otherwise use the student's current HP
-    // for incremental updates.
-    let startingHp = (student.level === 1 && student.class) ? classData[student.class].baseStats.hp : student.hp;
+    // Always start with the base HP for the class.
+    let finalHp = student.class ? classData[student.class].baseStats.hp : 100;
 
-    let totalHpGain = 0;
-    if (newLevel > oldLevel) {
-        // When recalculating, we need to calculate HP gain for all levels from 1 to newLevel.
-        const startLevel = student.level === 1 ? 2 : oldLevel + 1;
-        for (let i = startLevel; i <= newLevel; i++) {
-            totalHpGain += getHpGainForClass(student.class);
+    // If the student is leveling up or we are recalculating, calculate total HP from scratch.
+    if (newLevel > 1) {
+        // Loop from level 2 up to the new level, accumulating HP gain for each level.
+        for (let i = 2; i <= newLevel; i++) {
+            finalHp += getHpGainForClass(student.class);
         }
-        console.log(`Leveled up! Gained ${newLevel - oldLevel} level(s) and ${totalHpGain} HP.`);
     }
 
-    // If we are recalculating (student level is 1), we start from base HP.
-    // Otherwise, we add to current HP.
-    const finalHp = student.level === 1 ? startingHp + totalHpGain : student.hp + totalHpGain;
+    if (newLevel > oldLevel) {
+        console.log(`Leveled up! ${student.class} went from Lvl ${oldLevel} to ${newLevel}. HP is now ${finalHp}.`);
+    }
 
     return {
         newLevel: newLevel,
         newHp: finalHp,
     };
 }
+

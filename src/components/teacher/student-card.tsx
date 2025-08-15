@@ -62,11 +62,9 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
 
         const updates: Partial<Student> = {
             xp: newXp,
+            level: newLevel,
+            hp: newHp,
         };
-        if (newLevel > currentStudentData.level) {
-            updates.level = newLevel;
-            updates.hp = newHp;
-        }
 
         await updateDoc(studentRef, updates);
         
