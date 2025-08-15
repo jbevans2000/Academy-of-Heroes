@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Trophy, LayoutDashboard } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface Question {
   questionText: string;
@@ -29,6 +30,7 @@ interface StudentRoundResponse {
 
 export default function StudentBattleSummaryPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [summary, setSummary] = useState<BattleSummary | null>(null);
   const [studentResponses, setStudentResponses] = useState<{ [roundIndex: string]: StudentRoundResponse }>({});
@@ -54,9 +56,11 @@ export default function StudentBattleSummaryPage() {
             // 1. Get the active battle to find the battleId
             const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
             const liveBattleSnap = await getDoc(liveBattleRef);
-            if (!liveBattleSnap.exists()) {
-                console.error("Live battle not found.");
-                setIsLoading(false);
+            
+            if (!liveBattleSnap.exists() || !liveBattleSnap.data().battleId) {
+                console.log("No active or summarized battle found. Redirecting to dashboard.");
+                toast({ title: "No Active Battle", description: "The battle has ended." });
+                router.push('/dashboard');
                 return;
             }
             const battleId = liveBattleSnap.data().battleId;
@@ -67,8 +71,9 @@ export default function StudentBattleSummaryPage() {
             if (summarySnap.exists()) {
                 setSummary(summarySnap.data() as BattleSummary);
             } else {
-                 console.error("Summary not found.");
-                 setIsLoading(false);
+                 console.log("Summary not found. Redirecting to dashboard.");
+                 toast({ title: "Summary Not Available", description: "The battle results could not be found." });
+                 router.push('/dashboard');
                  return;
             }
             
@@ -90,7 +95,7 @@ export default function StudentBattleSummaryPage() {
 
     fetchSummaryAndResponses();
 
-  }, [user]);
+  }, [user, router, toast]);
 
   if (isLoading) {
     return (
@@ -190,4 +195,3 @@ export default function StudentBattleSummaryPage() {
     </div>
   );
 }
-
