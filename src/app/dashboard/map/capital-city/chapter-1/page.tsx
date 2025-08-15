@@ -31,6 +31,20 @@ export default function Chapter1Page() {
                                 priority
                             />
                         </div>
+                        <Separator />
+                        <div className="flex justify-center">
+                            <iframe 
+                                width="800" 
+                                height="400" 
+                                src="https://www.youtube.com/embed/6agugBXAKqc" 
+                                title="YouTube video player" 
+                                frameBorder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                allowFullScreen
+                                className="rounded-lg shadow-lg border">
+                            </iframe>
+                        </div>
+                        <Separator />
                         <p className="px-4">
                             The crisp winter air bites at your cheeks as you make your way through the bustling streets of the Capitol. A messenger bearing the royal seal found you this morning, handing you a scroll with a simple, urgent message: "Your presence is requested at the Citadel. The King wishes to speak with you."
                         </p>
