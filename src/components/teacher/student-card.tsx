@@ -36,6 +36,7 @@ export function StudentCard({ student }: StudentCardProps) {
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             className="object-cover"
             data-ai-hint="scene"
+            onError={(e) => (e.currentTarget.src = 'https://placehold.co/600x400.png')}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
           <div className="absolute bottom-2 left-4 flex items-end space-x-3">
@@ -47,6 +48,7 @@ export function StudentCard({ student }: StudentCardProps) {
                 sizes="(max-width: 768px) 25vw, 10vw"
                 className="object-contain"
                 data-ai-hint="character"
+                onError={(e) => (e.currentTarget.src = 'https://placehold.co/100x100.png')}
               />
             </div>
           </div>
