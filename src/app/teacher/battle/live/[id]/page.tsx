@@ -165,7 +165,7 @@ export default function TeacherLiveBattlePage() {
           }
       }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [liveState]);
+  }, [liveState?.status, liveState?.timerEndsAt]);
 
   const calculateAndSetResults = async () => {
     if (!battle || liveState === null || isEndingRound) return;
