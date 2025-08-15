@@ -1,4 +1,6 @@
 
+'use client';
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Star, Coins, Trophy, Heart, Zap, Shield, Wand2, Flame, Map, Swords } from 'lucide-react';
 import type { ClassType } from "@/lib/data";
@@ -12,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 
 interface StatsCardProps {
@@ -33,6 +36,12 @@ const classIconMap = {
 }
 
 export function StatsCard({ xp, gold, level, hp, mp, characterName, studentName, characterClass }: StatsCardProps) {
+  const router = useRouter();
+
+  const handleReadyForBattle = () => {
+    router.push('/battle/live');
+  };
+
   return (
     <Card className="shadow-lg rounded-xl">
       <CardHeader>
@@ -106,7 +115,7 @@ export function StatsCard({ xp, gold, level, hp, mp, characterName, studentName,
                 </div>
                 <div className="flex flex-col items-center">
                     <Swords className="h-8 w-8 text-red-600" />
-                    <Button variant="outline" className="mt-2">Ready for Battle</Button>
+                    <Button variant="outline" className="mt-2" onClick={handleReadyForBattle}>Ready for Battle</Button>
                 </div>
              </div>
           </div>
