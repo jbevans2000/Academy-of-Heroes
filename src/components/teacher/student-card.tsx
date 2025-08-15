@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Student } from '@/lib/data';
-import { Star, Coins, User, Gamepad2, Trophy, Heart, Zap } from 'lucide-react';
+import { Star, Coins, User, Sword, Trophy, Heart, Zap } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -58,7 +58,7 @@ export function StudentCard({ student }: StudentCardProps) {
               <span>{student.studentName}</span>
           </div>
           <div className="text-sm text-muted-foreground flex items-center gap-2">
-              <Gamepad2 className="w-4 h-4" />
+              <Sword className="w-4 h-4" />
               <span>{student.class}</span>
           </div>
           <div className="grid grid-cols-3 gap-2 text-sm pt-2">
