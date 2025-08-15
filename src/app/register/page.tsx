@@ -106,7 +106,7 @@ export default function RegisterPage() {
         style={{
           backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fcharacter%20creation.png?alt=media&token=49e7a6ed-f247-41cf-9cd5-e1a8cd6ebb0e')`,
           backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          backgroundPosition: 'top',
           backgroundRepeat: 'no-repeat',
         }}
       >
