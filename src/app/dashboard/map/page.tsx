@@ -4,7 +4,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from 'next/navigation';
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, LayoutDashboard } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -55,14 +55,15 @@ export default function WorldMapPage() {
                     </div>
                 </CardContent>
             </Card>
-             <Button 
-                onClick={() => router.push('/dashboard')}
-                className="mt-4"
-                variant="outline"
-            >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Return to Dashboard
-            </Button>
+             <div className="flex justify-center gap-4 mt-4">
+                <Button 
+                    onClick={() => router.push('/dashboard')}
+                    variant="outline"
+                >
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    Return to Dashboard
+                </Button>
+            </div>
         </div>
     );
 }

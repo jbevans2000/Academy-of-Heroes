@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useRouter } from 'next/navigation';
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, LayoutDashboard } from "lucide-react";
 import Image from 'next/image';
 import { Separator } from "@/components/ui/separator";
 
@@ -106,7 +106,7 @@ export default function Chapter1Page() {
                         </div>
                     </CardContent>
                 </Card>
-                <div className="flex justify-center">
+                <div className="flex justify-center gap-4 py-4">
                     <Button 
                         onClick={() => router.push('/dashboard/map/capital-city')} 
                         variant="outline"
@@ -114,6 +114,14 @@ export default function Chapter1Page() {
                     >
                         <ArrowLeft className="mr-2 h-5 w-5" />
                         Return to Quest Map
+                    </Button>
+                     <Button 
+                        onClick={() => router.push('/dashboard')} 
+                        variant="outline"
+                        size="lg"
+                    >
+                        <LayoutDashboard className="mr-2 h-5 w-5" />
+                        Return to Dashboard
                     </Button>
                 </div>
             </div>
