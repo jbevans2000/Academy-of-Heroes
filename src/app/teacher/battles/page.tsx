@@ -7,10 +7,22 @@ import { collection, getDocs, doc, writeBatch, deleteDoc } from 'firebase/firest
 import { db } from '@/lib/firebase';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Eye, Loader2, LayoutDashboard } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PlusCircle, Eye, Loader2, LayoutDashboard, Edit, Trash2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+
 
 interface BossBattle {
   id: string;
@@ -24,24 +36,24 @@ export default function BossBattlesPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchBattles = async () => {
-      setIsLoading(true);
-      try {
-        const querySnapshot = await getDocs(collection(db, 'bossBattles'));
-        const battlesData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as BossBattle));
-        setBattles(battlesData);
-      } catch (error) {
-        console.error("Error fetching boss battles: ", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch battle data.' });
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const fetchBattles = async () => {
+    setIsLoading(true);
+    try {
+      const querySnapshot = await getDocs(collection(db, 'bossBattles'));
+      const battlesData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as BossBattle));
+      setBattles(battlesData);
+    } catch (error) {
+      console.error("Error fetching boss battles: ", error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch battle data.' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchBattles();
   }, [toast]);
 
@@ -93,6 +105,25 @@ export default function BossBattlesPage() {
         });
     } finally {
         setStartingBattleId(null);
+    }
+  };
+
+  const handleDeleteBattle = async (battleId: string) => {
+    try {
+        await deleteDoc(doc(db, 'bossBattles', battleId));
+        toast({
+            title: 'Battle Deleted',
+            description: 'The boss battle has been removed successfully.',
+        });
+        // Refetch battles to update the UI
+        fetchBattles();
+    } catch (error) {
+        console.error("Error deleting battle:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Delete Failed',
+            description: 'Could not delete the boss battle. Please try again.',
+        });
     }
   };
 
@@ -158,6 +189,34 @@ export default function BossBattlesPage() {
                             <Eye className="mr-2 h-4 w-4" />
                             Preview Battle
                         </Button>
+                         <Button variant="secondary" className="w-full" onClick={() => router.push(`/teacher/battles/edit/${battle.id}`)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit Battle
+                        </Button>
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" className="w-full">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete Battle
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete the
+                                    <span className="font-bold"> {battle.battleName} </span>
+                                    battle and all of its associated data.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteBattle(battle.id)}>
+                                    Yes, delete battle
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </div>
                 </CardContent>
               </Card>
