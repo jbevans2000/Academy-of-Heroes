@@ -3,12 +3,12 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs, writeBatch } from 'firebase/firestore';
+import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, Download } from 'lucide-react';
+import { Loader2, Download, Timer } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { RoundResults, type Result } from '@/components/teacher/round-results';
@@ -17,8 +17,9 @@ import { downloadCsv } from '@/lib/utils';
 
 interface LiveBattleState {
   battleId: string | null;
-  status: 'WAITING' | 'IN_PROGRESS' | 'SHOWING_RESULTS';
+  status: 'WAITING' | 'IN_PROGRESS' | 'ROUND_ENDING' | 'SHOWING_RESULTS';
   currentQuestionIndex: number;
+  timerEndsAt?: { seconds: number; nanoseconds: number; };
 }
 
 interface Question {
@@ -37,6 +38,28 @@ interface StudentResponse {
     studentName: string;
     answerIndex: number;
 }
+
+function CountdownTimer({ expiryTimestamp }: { expiryTimestamp: Date }) {
+    const [timeLeft, setTimeLeft] = useState(Math.max(0, Math.round((expiryTimestamp.getTime() - new Date().getTime()) / 1000)));
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const newTimeLeft = Math.max(0, Math.round((expiryTimestamp.getTime() - new Date().getTime()) / 1000));
+            setTimeLeft(newTimeLeft);
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [expiryTimestamp]);
+
+    return (
+        <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-yellow-100 dark:bg-yellow-900 border border-yellow-300 dark:border-yellow-700">
+            <Timer className="h-12 w-12 text-yellow-500 mb-2" />
+            <p className="text-4xl font-bold text-yellow-700 dark:text-yellow-300">{timeLeft}</p>
+            <p className="text-sm font-medium text-yellow-600 dark:text-yellow-400">Round ending...</p>
+        </div>
+    );
+}
+
 
 export default function TeacherLiveBattlePage() {
   const params = useParams();
@@ -89,9 +112,9 @@ export default function TeacherLiveBattlePage() {
 
   // Listen for real-time student responses ONLY when the battle is in progress
   useEffect(() => {
-    if (liveState?.status !== 'IN_PROGRESS') {
+    if (liveState?.status !== 'IN_PROGRESS' && liveState?.status !== 'ROUND_ENDING') {
         if (liveState?.status !== 'SHOWING_RESULTS') {
-            setStudentResponses([]); // Clear responses if not in progress or showing results
+            setStudentResponses([]);
         }
         return;
     };
@@ -111,12 +134,29 @@ export default function TeacherLiveBattlePage() {
     return () => unsubscribe();
   }, [liveState?.status]);
 
+  // Effect to handle timer expiration
+  useEffect(() => {
+      if (liveState?.status === 'ROUND_ENDING' && liveState.timerEndsAt) {
+          const expiryDate = new Date(liveState.timerEndsAt.seconds * 1000);
+          const now = new Date();
+          const timeUntilExpiry = expiryDate.getTime() - now.getTime();
 
-  const handleEndRound = async () => {
-    if (!battle || liveState === null) return;
+          if (timeUntilExpiry <= 0) {
+              calculateAndSetResults();
+          } else {
+              const timer = setTimeout(() => {
+                  calculateAndSetResults();
+              }, timeUntilExpiry);
+              return () => clearTimeout(timer);
+          }
+      }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveState?.status, liveState?.timerEndsAt]);
+
+  const calculateAndSetResults = async () => {
+    if (!battle || liveState === null || isEndingRound) return;
+    setIsEndingRound(true); // Use this to prevent multiple executions
     
-    setIsEndingRound(true);
-
     try {
         const responsesRef = collection(db, `liveBattles/active-battle/responses`);
         const responsesSnapshot = await getDocs(responsesRef);
@@ -134,9 +174,28 @@ export default function TeacherLiveBattlePage() {
 
         // Update the central battle state
         const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
-        await updateDoc(liveBattleRef, { status: 'SHOWING_RESULTS' });
+        await updateDoc(liveBattleRef, { status: 'SHOWING_RESULTS', timerEndsAt: null });
     } catch (error) {
-        console.error("Error ending round:", error);
+        console.error("Error calculating results:", error);
+    } finally {
+        setIsEndingRound(false);
+    }
+  }
+
+  const handleEndRound = async () => {
+    if (!battle || liveState === null) return;
+    
+    setIsEndingRound(true);
+
+    try {
+        const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
+        const timerEndsAt = new Date(Date.now() + 10000);
+        await updateDoc(liveBattleRef, { 
+            status: 'ROUND_ENDING',
+            timerEndsAt: timerEndsAt,
+        });
+    } catch (error) {
+        console.error("Error starting round end timer:", error);
     } finally {
         setIsEndingRound(false);
     }
@@ -159,6 +218,7 @@ export default function TeacherLiveBattlePage() {
         batch.update(liveBattleRef, {
             status: 'IN_PROGRESS',
             currentQuestionIndex: liveState.currentQuestionIndex + 1,
+            timerEndsAt: null,
         });
 
         await batch.commit();
@@ -195,8 +255,10 @@ export default function TeacherLiveBattlePage() {
   }
 
   const isRoundInProgress = liveState.status === 'IN_PROGRESS';
+  const isRoundEnding = liveState.status === 'ROUND_ENDING';
   const areResultsShowing = liveState.status === 'SHOWING_RESULTS';
   const isLastQuestion = liveState.currentQuestionIndex >= battle.questions.length - 1;
+  const expiryTimestamp = liveState.timerEndsAt ? new Date(liveState.timerEndsAt.seconds * 1000) : null;
 
 
   return (
@@ -216,7 +278,7 @@ export default function TeacherLiveBattlePage() {
                     <div className="mt-6 p-4 border rounded-lg">
                         <h3 className="font-semibold text-lg mb-2">Controls</h3>
                         <div className="flex gap-4">
-                             <Button onClick={handleEndRound} disabled={!isRoundInProgress || isEndingRound}>
+                             <Button onClick={handleEndRound} disabled={!isRoundInProgress || isEndingRound || isRoundEnding}>
                                 {isEndingRound ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                 End Round
                              </Button>
@@ -230,7 +292,18 @@ export default function TeacherLiveBattlePage() {
                 </CardContent>
             </Card>
 
-            {isRoundInProgress && (
+            {isRoundEnding && expiryTimestamp && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Ending Round...</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <CountdownTimer expiryTimestamp={expiryTimestamp} />
+                    </CardContent>
+                </Card>
+            )}
+
+            {(isRoundInProgress || isRoundEnding) && (
                 <Card>
                     <CardHeader>
                         <CardTitle>Live Student Responses ({studentResponses.length})</CardTitle>

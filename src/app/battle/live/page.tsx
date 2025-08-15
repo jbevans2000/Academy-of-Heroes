@@ -5,18 +5,18 @@ import { useState, useEffect } from 'react';
 import { onSnapshot, doc, getDoc, setDoc } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
-import { Loader2, Shield, Swords, CheckCircle, XCircle, Hourglass } from 'lucide-react';
+import { Loader2, Shield, Swords, Timer } from 'lucide-react';
 import { type Student } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
 import { AnswerResult } from '@/components/battle/answer-result';
 
 interface LiveBattleState {
   battleId: string | null;
-  status: 'WAITING' | 'IN_PROGRESS' | 'SHOWING_RESULTS';
+  status: 'WAITING' | 'IN_PROGRESS' | 'ROUND_ENDING' | 'SHOWING_RESULTS';
   currentQuestionIndex: number;
+  timerEndsAt?: { seconds: number; nanoseconds: number; };
 }
 
 interface Question {
@@ -30,6 +30,27 @@ interface Battle {
   battleName: string;
   bossImageUrl: string;
   questions: Question[];
+}
+
+function CountdownTimer({ expiryTimestamp }: { expiryTimestamp: Date }) {
+    const [timeLeft, setTimeLeft] = useState(Math.max(0, Math.round((expiryTimestamp.getTime() - new Date().getTime()) / 1000)));
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const newTimeLeft = Math.max(0, Math.round((expiryTimestamp.getTime() - new Date().getTime()) / 1000));
+            setTimeLeft(newTimeLeft);
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [expiryTimestamp]);
+
+    return (
+        <div className="text-center py-12">
+            <Timer className="h-16 w-16 text-yellow-500 mx-auto mb-4 animate-bounce" />
+            <h2 className="text-5xl font-bold">{timeLeft}</h2>
+            <p className="text-muted-foreground mt-2 text-lg">The round is ending!</p>
+        </div>
+    );
 }
 
 export default function LiveBattlePage() {
@@ -96,7 +117,7 @@ export default function LiveBattlePage() {
   }, [battleState?.battleId]);
 
   const handleSubmitAnswer = async (answerIndex: number) => {
-    if (!user || !student || !battleState?.battleId) return;
+    if (!user || !student || !battleState?.battleId || battleState.status !== 'IN_PROGRESS') return;
     
     setSubmittedAnswer(answerIndex);
 
@@ -175,6 +196,21 @@ export default function LiveBattlePage() {
     )
   }
 
+  if (battleState.status === 'ROUND_ENDING' && battleState.timerEndsAt) {
+      const expiryTimestamp = new Date(battleState.timerEndsAt.seconds * 1000);
+      return (
+        <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 text-white p-4">
+            <div className="w-full max-w-4xl mx-auto">
+                <Card className="bg-card text-card-foreground border-gray-700 shadow-2xl shadow-primary/20">
+                    <CardContent className="p-6">
+                        <CountdownTimer expiryTimestamp={expiryTimestamp} />
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+      )
+  }
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4 text-center">
         <Swords className="h-24 w-24 text-primary mb-6" />
@@ -184,3 +220,4 @@ export default function LiveBattlePage() {
     </div>
   );
 }
+
