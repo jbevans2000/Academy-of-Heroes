@@ -19,7 +19,7 @@ export default function CapitolCityMapPage() {
     const chapter1Node = {
       name: 'Chapter 1',
       subtitle: 'A Summons from the Throne',
-      href: '#', // Placeholder link
+      href: '/dashboard/map/capital-city/chapter-1',
       style: {
         left: '34.67%',
         top: '17.36%',
