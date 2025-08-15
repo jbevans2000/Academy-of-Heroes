@@ -263,6 +263,9 @@ export default function TeacherLiveBattlePage() {
 
   const handleEndBattle = async () => {
       if (!liveState || !battle) return;
+
+      const batch = writeBatch(db);
+
       // 1. Get the final total damage from the live state
       const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
       const finalStateDoc = await getDoc(liveBattleRef);
@@ -270,7 +273,7 @@ export default function TeacherLiveBattlePage() {
 
       // 2. Save all rounds data to a new collection for review
       const summaryRef = doc(db, `battleSummaries`, battleId);
-      await setDoc(summaryRef, {
+      batch.set(summaryRef, {
           battleId: battleId,
           battleName: battle?.battleName,
           questions: battle?.questions,
@@ -279,15 +282,26 @@ export default function TeacherLiveBattlePage() {
           endedAt: serverTimestamp(),
       });
 
-      // 3. Update live battle state to BATTLE_ENDED. This will trigger the redirect for students.
-      await updateDoc(liveBattleRef, {
-          status: 'BATTLE_ENDED',
+      // 3. Clear the results from all OTHER battle summaries
+      const summariesColRef = collection(db, `battleSummaries`);
+      const allSummariesSnapshot = await getDocs(summariesColRef);
+      allSummariesSnapshot.forEach(summaryDoc => {
+          // Only clear results from old summaries, not the one we just created
+          if (summaryDoc.id !== battleId) {
+              batch.update(summaryDoc.ref, { resultsByRound: {} });
+          }
       });
       
-      // 4. Redirect teacher to the summary page.
+      // 4. Update live battle state to BATTLE_ENDED. This will trigger the redirect for students.
+      batch.update(liveBattleRef, { status: 'BATTLE_ENDED' });
+
+      // 5. Commit all batched writes
+      await batch.commit();
+      
+      // 6. Redirect teacher to the summary page.
       router.push(`/teacher/battle/summary/${battleId}`);
 
-      // 5. After a short delay to allow clients to see the BATTLE_ENDED state,
+      // 7. After a short delay to allow clients to see the BATTLE_ENDED state,
       // delete the live battle document to clean up for the next session.
       setTimeout(async () => {
         await deleteDoc(doc(db, 'liveBattles', 'active-battle'));
