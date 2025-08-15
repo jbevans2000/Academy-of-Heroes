@@ -17,17 +17,17 @@ export function AvatarDisplay({ avatarSrc, backgroundSrc, avatarHint, background
         alt="Selected background"
         fill
         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-        className="object-cover transition-all duration-500 opacity-25"
+        className="object-cover transition-all duration-500"
         data-ai-hint={backgroundHint}
         priority
       />
       <div className="absolute inset-0 flex items-center justify-center p-4">
-        <div className="relative w-1/2 h-full">
+        <div className="flex items-center justify-center">
            <Image
             src={avatarSrc}
             alt="Selected avatar"
-            fill
-            sizes="(max-width: 768px) 50vw, 25vw"
+            width={256}
+            height={256}
             className="object-contain drop-shadow-[0_5px_15px_rgba(0,0,0,0.3)] transition-all duration-500"
             data-ai-hint={avatarHint}
             priority
