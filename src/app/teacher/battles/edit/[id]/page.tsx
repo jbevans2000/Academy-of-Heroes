@@ -51,8 +51,12 @@ export default function EditBossBattlePage() {
                 setBattleTitle(data.battleName || '');
                 setBossImageUrl(data.bossImageUrl || '');
                 setVideoUrl(data.videoUrl || '');
-                // Add a temporary unique ID for React keys, which will be removed on save
-                setQuestions(data.questions.map((q: any, index: number) => ({ ...q, id: Date.now() + index })));
+                // Add a temporary unique ID for React keys, and ensure damage has a default value
+                setQuestions(data.questions.map((q: any, index: number) => ({
+                    ...q,
+                    id: Date.now() + index,
+                    damage: q.damage !== undefined ? q.damage : 10,
+                })));
             } else {
                 toast({
                     variant: 'destructive',
