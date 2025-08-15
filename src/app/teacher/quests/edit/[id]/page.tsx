@@ -232,6 +232,10 @@ export default function EditQuestPage() {
                                 <Input id="deco-image-2" placeholder="https://example.com/deco2.png" value={chapter.decorativeImageUrl2 || ''} onChange={e => handleFieldChange('decorativeImageUrl2', e.target.value)} disabled={isSaving} />
                             </div>
                         </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="story-additional-content">Additional Story Content</Label>
+                            <Textarea id="story-additional-content" placeholder="Add any extra notes, quotes, or content for the story tab..." value={chapter.storyAdditionalContent || ''} onChange={e => handleFieldChange('storyAdditionalContent', e.target.value)} disabled={isSaving} rows={4}/>
+                        </div>
                         {hubMapUrl && (
                             <div className="pt-4 space-y-2">
                                 <Label>Position Chapter on Hub Map</Label>
@@ -281,6 +285,10 @@ export default function EditQuestPage() {
                                 <Label htmlFor="lesson-deco-2">Lesson Decorative Image 2 URL</Label>
                                 <Input id="lesson-deco-2" placeholder="https://example.com/lesson-deco2.png" value={chapter.lessonDecorativeImageUrl2 || ''} onChange={e => handleFieldChange('lessonDecorativeImageUrl2', e.target.value)} disabled={isSaving} />
                             </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="lesson-additional-content">Additional Lesson Content</Label>
+                            <Textarea id="lesson-additional-content" placeholder="Add any extra notes, quotes, or content for the lesson tab..." value={chapter.lessonAdditionalContent || ''} onChange={e => handleFieldChange('lessonAdditionalContent', e.target.value)} disabled={isSaving} rows={4}/>
                         </div>
                     </TabsContent>
                 </Tabs>

@@ -42,12 +42,14 @@ export default function NewQuestPage() {
   const [videoUrl, setVideoUrl] = useState('');
   const [decorativeImageUrl1, setDecorativeImageUrl1] = useState('');
   const [decorativeImageUrl2, setDecorativeImageUrl2] = useState('');
+  const [storyAdditionalContent, setStoryAdditionalContent] = useState('');
   
   const [lessonContent, setLessonContent] = useState('');
   const [lessonMainImageUrl, setLessonMainImageUrl] = useState('');
   const [lessonVideoUrl, setLessonVideoUrl] = useState('');
   const [lessonDecorativeImageUrl1, setLessonDecorativeImageUrl1] = useState('');
   const [lessonDecorativeImageUrl2, setLessonDecorativeImageUrl2] = useState('');
+  const [lessonAdditionalContent, setLessonAdditionalContent] = useState('');
   
   const [chapterCoordinates, setChapterCoordinates] = useState({ x: 50, y: 50 });
 
@@ -140,11 +142,13 @@ export default function NewQuestPage() {
             videoUrl,
             decorativeImageUrl1,
             decorativeImageUrl2,
+            storyAdditionalContent,
             lessonContent,
             lessonMainImageUrl,
             lessonVideoUrl,
             lessonDecorativeImageUrl1,
             lessonDecorativeImageUrl2,
+            lessonAdditionalContent,
             coordinates: chapterCoordinates,
             createdAt: serverTimestamp(),
         });
@@ -296,6 +300,10 @@ export default function NewQuestPage() {
                             <Input id="deco-image-2" placeholder="https://example.com/deco2.png" value={decorativeImageUrl2} onChange={e => setDecorativeImageUrl2(e.target.value)} disabled={isSaving} />
                         </div>
                     </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="story-additional-content">Additional Story Content</Label>
+                        <Textarea id="story-additional-content" placeholder="Add any extra notes, quotes, or content for the story tab..." value={storyAdditionalContent} onChange={e => setStoryAdditionalContent(e.target.value)} disabled={isSaving} rows={4}/>
+                    </div>
                      {hubMapUrl && (
                         <div className="pt-4 space-y-2">
                             <Label>Position Chapter on Hub Map</Label>
@@ -345,6 +353,10 @@ export default function NewQuestPage() {
                             <Label htmlFor="lesson-deco-2">Lesson Decorative Image 2 URL</Label>
                             <Input id="lesson-deco-2" placeholder="https://example.com/lesson-deco2.png" value={lessonDecorativeImageUrl2} onChange={e => setLessonDecorativeImageUrl2(e.target.value)} disabled={isSaving} />
                         </div>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="lesson-additional-content">Additional Lesson Content</Label>
+                        <Textarea id="lesson-additional-content" placeholder="Add any extra notes, quotes, or content for the lesson tab..." value={lessonAdditionalContent} onChange={e => setLessonAdditionalContent(e.target.value)} disabled={isSaving} rows={4}/>
                     </div>
                   </TabsContent>
                 </Tabs>

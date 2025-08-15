@@ -69,7 +69,9 @@ export default function ChapterPage() {
     
     // Simple way to split content into paragraphs
     const storyParagraphs = chapter.storyContent?.split('\\n').map((p, i) => <p key={i} className="px-4">{p}</p>);
+    const storyAdditionalParagraphs = chapter.storyAdditionalContent?.split('\\n').map((p, i) => <p key={i} className="px-4">{p}</p>);
     const lessonParagraphs = chapter.lessonContent?.split('\\n').map((p, i) => <p key={i} className="px-4">{p}</p>);
+    const lessonAdditionalParagraphs = chapter.lessonAdditionalContent?.split('\\n').map((p, i) => <p key={i} className="px-4">{p}</p>);
     const storyVideoSrc = chapter.videoUrl ? getYouTubeEmbedUrl(chapter.videoUrl) : '';
     const lessonVideoSrc = chapter.lessonVideoUrl ? getYouTubeEmbedUrl(chapter.lessonVideoUrl) : '';
 
@@ -133,6 +135,7 @@ export default function ChapterPage() {
                                         data-ai-hint="twig decoration"
                                     />
                                 </div></>}
+                                {chapter.storyAdditionalContent && <><Separator />{storyAdditionalParagraphs}</>}
                             </TabsContent>
                             <TabsContent value="lesson" className="mt-6 space-y-6 text-lg leading-relaxed">
                                  <div className="text-center">
@@ -182,6 +185,7 @@ export default function ChapterPage() {
                                         data-ai-hint="divider"
                                     />
                                 </div></>}
+                                {chapter.lessonAdditionalContent && <><Separator />{lessonAdditionalParagraphs}</>}
                             </TabsContent>
                         </Tabs>
                     </CardContent>

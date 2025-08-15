@@ -17,12 +17,14 @@ export interface Chapter {
     videoUrl: string;
     decorativeImageUrl1: string;
     decorativeImageUrl2: string;
+    storyAdditionalContent: string;
     // Lesson media
     lessonContent: string;
     lessonMainImageUrl: string;
     lessonVideoUrl: string;
     lessonDecorativeImageUrl1: string;
     lessonDecorativeImageUrl2: string;
+    lessonAdditionalContent: string;
     
     coordinates: { x: number; y: number }; // Position on the hub map
 }
