@@ -169,7 +169,7 @@ export default function LiveBattlePage() {
                 <Card className="bg-black/60 backdrop-blur-sm p-8 border-gray-600">
                     <CardContent className="flex flex-col items-center justify-center">
                         <Shield className="h-24 w-24 text-primary mb-6 animate-pulse" />
-                        <h1 className="text-4xl font-bold tracking-tight">Waiting Room</h1>
+                        <h1 className="text-4xl font-bold tracking-tight text-white">Waiting Room</h1>
                         <p className="text-xl text-primary-foreground/80 mt-2">Waiting for the Boss to appear!</p>
                         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mt-8" />
                     </CardContent>
