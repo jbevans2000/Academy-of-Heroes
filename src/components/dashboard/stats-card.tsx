@@ -11,7 +11,7 @@ export function StatsCard({ xp, gold, name }: StatsCardProps) {
   return (
     <Card className="shadow-lg rounded-xl">
       <CardHeader>
-        <CardTitle>{name}'s Progress</CardTitle>
+        <CardTitle>{name}</CardTitle>
         <CardDescription>Experience and Gold earned.</CardDescription>
       </CardHeader>
       <CardContent>
