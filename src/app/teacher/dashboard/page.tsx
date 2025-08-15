@@ -60,6 +60,14 @@ export default function TeacherDashboardPage() {
     );
   };
 
+  const handleSelectAllToggle = () => {
+    if (selectedStudents.length === students.length) {
+      setSelectedStudents([]);
+    } else {
+      setSelectedStudents(students.map(s => s.uid));
+    }
+  };
+
   const handleAwardXp = async () => {
       const amount = Number(xpAmount);
       if (isNaN(amount) || amount === 0) {
@@ -152,43 +160,52 @@ export default function TeacherDashboardPage() {
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="flex justify-between items-center mb-4">
             <h1 className="text-2xl font-bold">All Students</h1>
-             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Star className="mr-2 h-4 w-4" /> Award Experience
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Award Experience to Selected Students</DialogTitle>
-                  <DialogDescription>
-                    Enter a positive value to add XP or a negative value to remove XP. This will apply to all selected students.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="xp-amount" className="text-right">
-                      XP Amount
-                    </Label>
-                    <Input
-                      id="xp-amount"
-                      type="number"
-                      value={xpAmount}
-                      onChange={(e) => setXpAmount(e.target.value)}
-                      className="col-span-3"
-                      placeholder="e.g., 100 or -50"
-                      disabled={isAwarding}
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button onClick={handleAwardXp} disabled={isAwarding || selectedStudents.length === 0}>
-                    {isAwarding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Confirm Award ({selectedStudents.length} selected)
+            <div className="flex items-center gap-2">
+               <Button 
+                variant="outline"
+                onClick={handleSelectAllToggle}
+                disabled={students.length === 0}
+               >
+                {selectedStudents.length === students.length ? 'Deselect All' : 'Select All'}
+               </Button>
+               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Star className="mr-2 h-4 w-4" /> Award Experience
                   </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Award Experience to Selected Students</DialogTitle>
+                    <DialogDescription>
+                      Enter a positive value to add XP or a negative value to remove XP. This will apply to all selected students.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="xp-amount" className="text-right">
+                        XP Amount
+                      </Label>
+                      <Input
+                        id="xp-amount"
+                        type="number"
+                        value={xpAmount}
+                        onChange={(e) => setXpAmount(e.target.value)}
+                        className="col-span-3"
+                        placeholder="e.g., 100 or -50"
+                        disabled={isAwarding}
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button onClick={handleAwardXp} disabled={isAwarding || selectedStudents.length === 0}>
+                      {isAwarding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                      Confirm Award ({selectedStudents.length} selected)
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
         </div>
         <StudentList 
             students={students} 
