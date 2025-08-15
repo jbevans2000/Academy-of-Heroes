@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Loader2 } from 'lucide-react';
-import { doc, setDoc, collection, getDocs } from 'firebase/firestore';
+import { ArrowLeft, Loader2, Save } from 'lucide-react';
+import { doc, setDoc, addDoc, collection, getDocs, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
@@ -87,6 +87,71 @@ export default function NewQuestPage() {
   
   const selectedHub = hubs.find(h => h.id === selectedHubId);
   const hubMapUrl = selectedHub ? selectedHub.worldMapUrl : newHubMapUrl;
+
+  const validateInputs = () => {
+    if (!selectedHubId) {
+        toast({ variant: 'destructive', title: 'Validation Error', description: 'You must select or create a Hub.' });
+        return false;
+    }
+    if (selectedHubId === 'new' && (!newHubName || !newHubMapUrl)) {
+        toast({ variant: 'destructive', title: 'Validation Error', description: 'New Hub Name and Map URL are required.' });
+        return false;
+    }
+     if (!chapterTitle || chapterNumber === '' || !storyContent || !lessonContent) {
+        toast({ variant: 'destructive', title: 'Validation Error', description: 'Please fill out all chapter fields: Title, Number, Story, and Lesson.' });
+        return false;
+    }
+    return true;
+  }
+
+  const handleSaveQuest = async () => {
+    if (!validateInputs()) return;
+    setIsSaving(true);
+    
+    try {
+        let finalHubId = selectedHubId;
+
+        // 1. Create a new hub if necessary
+        if (selectedHubId === 'new') {
+            const newHubRef = doc(collection(db, 'questHubs'));
+            await setDoc(newHubRef, {
+                name: newHubName,
+                worldMapUrl: newHubMapUrl,
+                coordinates: hubCoordinates,
+                createdAt: serverTimestamp(),
+            });
+            finalHubId = newHubRef.id;
+        }
+
+        // 2. Create the new chapter
+        await addDoc(collection(db, 'chapters'), {
+            hubId: finalHubId,
+            title: chapterTitle,
+            chapterNumber: chapterNumber,
+            storyContent,
+            lessonContent,
+            mainImageUrl,
+            videoUrl,
+            decorativeImageUrl1,
+            decorativeImageUrl2,
+            coordinates: chapterCoordinates,
+            createdAt: serverTimestamp(),
+        });
+        
+        toast({
+            title: 'Quest Created!',
+            description: 'The new chapter has been saved and is now live for students.',
+        });
+        
+        router.push('/teacher/quests');
+
+    } catch (error) {
+        console.error("Error saving quest:", error);
+        toast({ variant: 'destructive', title: 'Save Failed', description: 'There was an error saving your quest. Please try again.' });
+    } finally {
+        setIsSaving(false);
+    }
+  }
 
 
   return (
@@ -248,7 +313,8 @@ export default function NewQuestPage() {
               </div>
 
               <div className="flex justify-end pt-4 border-t">
-                <Button size="lg" disabled>
+                <Button size="lg" onClick={handleSaveQuest} disabled={isSaving}>
+                   {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                     Save Quest
                 </Button>
               </div>
