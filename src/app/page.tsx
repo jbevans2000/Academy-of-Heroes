@@ -116,7 +116,7 @@ export default function LoginPage() {
               </div>
               <div className="space-y-2">
                 <div className="flex items-center">
-                  <Label htmlFor="password" className="text-black">Password</Label>
+                  <Label htmlFor="password" className="text-black bg-yellow-300/50 p-1 rounded-md inline-block">Password</Label>
                 </div>
                 <div className="relative">
                   <Input
