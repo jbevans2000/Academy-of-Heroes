@@ -13,8 +13,8 @@ export function StatsCard({ xp, gold, characterName, studentName }: StatsCardPro
   return (
     <Card className="shadow-lg rounded-xl">
       <CardHeader>
-        <CardDescription>{studentName}</CardDescription>
-        <CardTitle>{characterName}</CardTitle>
+        <CardTitle>{studentName}</CardTitle>
+        <CardDescription>{characterName}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
