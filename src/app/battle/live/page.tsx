@@ -58,6 +58,7 @@ export default function LiveBattlePage() {
 
   // Effect to listen for the live battle state
   useEffect(() => {
+    setIsLoading(true);
     const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
     const unsubscribe = onSnapshot(liveBattleRef, (doc) => {
       const currentState = battleState;
@@ -107,7 +108,7 @@ export default function LiveBattlePage() {
     });
   };
 
-  if (isLoading || !battleState || !user) {
+  if (isLoading || !user) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4 text-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
@@ -116,7 +117,7 @@ export default function LiveBattlePage() {
     );
   }
 
-  if (battleState.status === 'WAITING') {
+  if (!battleState || battleState.status === 'WAITING' || !battleState.battleId) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4 text-center">
         <Shield className="h-24 w-24 text-primary mb-6 animate-pulse" />
@@ -183,4 +184,3 @@ export default function LiveBattlePage() {
     </div>
   );
 }
-
