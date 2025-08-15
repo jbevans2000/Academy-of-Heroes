@@ -21,12 +21,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins } from 'lucide-react';
+import { Loader2, Star, Coins, Sparkles } from 'lucide-react';
 import { calculateLevelUp } from '@/lib/game-mechanics';
 
 export default function TeacherDashboardPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRecalculating, setIsRecalculating] = useState(false);
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [xpAmount, setXpAmount] = useState<number | string>('');
   const [goldAmount, setGoldAmount] = useState<number | string>('');
@@ -212,6 +213,55 @@ export default function TeacherDashboardPage() {
           setIsAwarding(false);
       }
   };
+  
+    const handleRecalculateHp = async () => {
+        setIsRecalculating(true);
+        try {
+            const batch = writeBatch(db);
+            const allStudentsSnapshot = await getDocs(collection(db, 'students'));
+            const updatedStudents: Student[] = [];
+
+            allStudentsSnapshot.forEach(studentDoc => {
+                const studentData = studentDoc.data() as Student;
+                const { hp, mp, class: studentClass } = studentData;
+
+                // Create a temporary "level 1" version of the student to calculate from scratch
+                const baseStudent = {
+                    ...studentData,
+                    level: 1,
+                    // hp: classData[studentClass].baseStats.hp,
+                    // For simplicity, we just use the existing base stats from the class data
+                    // This assumes baseStats are always available and correct.
+                };
+
+                const { newLevel, newHp } = calculateLevelUp(baseStudent, studentData.xp);
+
+                const studentRef = doc(db, 'students', studentData.uid);
+                batch.update(studentRef, { hp: newHp, level: newLevel });
+
+                updatedStudents.push({ ...studentData, hp: newHp, level: newLevel });
+            });
+
+            await batch.commit();
+
+            // Update local state
+            setStudents(updatedStudents);
+
+            toast({
+                title: 'HP Recalculated',
+                description: `All student HP values have been updated to match the new level-up system.`,
+            });
+        } catch (error) {
+            console.error('Error recalculating HP:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Recalculation Failed',
+                description: 'Could not update student HP values. Please try again.',
+            });
+        } finally {
+            setIsRecalculating(false);
+        }
+    };
 
 
   if (isLoading) {
@@ -242,6 +292,14 @@ export default function TeacherDashboardPage() {
         <div className="flex justify-between items-center mb-4">
             <h1 className="text-2xl font-bold">All Students</h1>
             <div className="flex items-center gap-2">
+               <Button
+                  variant="outline"
+                  onClick={handleRecalculateHp}
+                  disabled={isRecalculating}
+                >
+                  {isRecalculating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                  Recalculate All HP
+                </Button>
                <Button 
                 onClick={handleSelectAllToggle}
                 disabled={students.length === 0}
