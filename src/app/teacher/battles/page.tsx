@@ -8,7 +8,7 @@ import { db } from '@/lib/firebase';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Eye, Loader2 } from 'lucide-react';
+import { PlusCircle, Eye, Loader2, LayoutDashboard } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 
@@ -91,6 +91,10 @@ export default function BossBattlesPage() {
   const navigateToCreate = () => {
     router.push('/teacher/battles/new');
   };
+  
+  const navigateToDashboard = () => {
+    router.push('/teacher/dashboard');
+  };
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -98,10 +102,16 @@ export default function BossBattlesPage() {
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold">Boss Battles</h1>
-          <Button onClick={navigateToCreate}>
-            <PlusCircle className="mr-2 h-5 w-5" />
-            Create New Boss Battle
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={navigateToDashboard} variant="outline">
+              <LayoutDashboard className="mr-2 h-5 w-5" />
+              Return to Dashboard
+            </Button>
+            <Button onClick={navigateToCreate}>
+              <PlusCircle className="mr-2 h-5 w-5" />
+              Create New Boss Battle
+            </Button>
+          </div>
         </div>
 
         {isLoading ? (
