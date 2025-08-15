@@ -111,6 +111,8 @@ export default function TeacherDashboardPage() {
           const batch = writeBatch(db);
           const studentDocs = await Promise.all(selectedStudents.map(uid => getDoc(doc(db, 'students', uid))));
 
+          const updatedStudentsData: Student[] = [];
+
           for (const studentDoc of studentDocs) {
               if (studentDoc.exists()) {
                   const studentData = studentDoc.data() as Student;
@@ -130,14 +132,22 @@ export default function TeacherDashboardPage() {
                       const mpGained = calculateMpGain(studentData.class, levelsGained);
                       newMp += mpGained;
                   }
-
-                  batch.update(studentDoc.ref, { xp: newXp, level: newLevel, hp: newHp, mp: newMp });
+                  
+                  const updates = { xp: newXp, level: newLevel, hp: newHp, mp: newMp };
+                  batch.update(studentDoc.ref, updates);
+                  updatedStudentsData.push({ ...studentData, ...updates });
               }
           }
           
           await batch.commit();
 
-          await fetchStudents();
+          // Update local state instead of re-fetching
+          setStudents(currentStudents => 
+            currentStudents.map(student => {
+              const updatedStudent = updatedStudentsData.find(u => u.uid === student.uid);
+              return updatedStudent || student;
+            })
+          );
 
           toast({
               title: 'XP Awarded!',
@@ -193,7 +203,14 @@ export default function TeacherDashboardPage() {
 
           await batch.commit();
 
-          await fetchStudents();
+          // Update local state instead of re-fetching
+          setStudents(currentStudents => 
+            currentStudents.map(student => 
+              selectedStudents.includes(student.uid)
+                ? { ...student, gold: Math.max(0, (student.gold || 0) + amount) }
+                : student
+            )
+          );
 
           toast({
               title: 'Gold Awarded!',
@@ -393,4 +410,5 @@ export default function TeacherDashboardPage() {
   );
 }
 
+    
     
