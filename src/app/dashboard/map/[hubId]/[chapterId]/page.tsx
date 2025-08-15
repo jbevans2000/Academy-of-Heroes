@@ -4,8 +4,8 @@
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, LayoutDashboard } from "lucide-react";
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
+import { ArrowLeft, LayoutDashboard, Library } from "lucide-react";
 import Image from 'next/image';
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,10 +17,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function ChapterPage() {
     const router = useRouter();
     const params = useParams();
+    const searchParams = useSearchParams();
     const { hubId, chapterId } = params;
 
     const [chapter, setChapter] = useState<Chapter | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+
+    const fromTeacher = searchParams.get('from') === 'teacher';
 
     useEffect(() => {
         if (!chapterId) return;
@@ -103,6 +106,7 @@ export default function ChapterPage() {
                                     />
                                 </div>}
                                 {chapter.storyContent && <><Separator />{storyParagraphs}</>}
+                                {chapter.storyAdditionalContent && <><Separator />{storyAdditionalParagraphs}</>}
                                 {storyVideoSrc && <><Separator /><div className="flex justify-center">
                                     <iframe 
                                         width="800" 
@@ -125,7 +129,6 @@ export default function ChapterPage() {
                                         data-ai-hint="scroll letter"
                                     />
                                 </div></>}
-                                {chapter.storyAdditionalContent && <><Separator />{storyAdditionalParagraphs}</>}
                                  {chapter.decorativeImageUrl2 && <><Separator /><div className="flex justify-center">
                                      <Image
                                         src={chapter.decorativeImageUrl2}
@@ -153,6 +156,7 @@ export default function ChapterPage() {
                                     />
                                 </div>}
                                 {chapter.lessonContent && <><Separator />{lessonParagraphs}</>}
+                                {chapter.lessonAdditionalContent && <><Separator />{lessonAdditionalParagraphs}</>}
                                 {lessonVideoSrc && <><Separator /><div className="flex justify-center">
                                     <iframe 
                                         width="800" 
@@ -175,7 +179,6 @@ export default function ChapterPage() {
                                         data-ai-hint="old paper"
                                     />
                                 </div></>}
-                                {chapter.lessonAdditionalContent && <><Separator />{lessonAdditionalParagraphs}</>}
                                  {chapter.lessonDecorativeImageUrl2 && <><Separator /><div className="flex justify-center">
                                      <Image
                                         src={chapter.lessonDecorativeImageUrl2}
@@ -199,14 +202,25 @@ export default function ChapterPage() {
                         <ArrowLeft className="mr-2 h-5 w-5" />
                         Return to Quest Map
                     </Button>
-                     <Button 
-                        onClick={() => router.push('/dashboard')} 
-                        variant="outline"
-                        size="lg"
-                    >
-                        <LayoutDashboard className="mr-2 h-5 w-5" />
-                        Return to Dashboard
-                    </Button>
+                    {fromTeacher ? (
+                        <Button 
+                            onClick={() => router.push('/teacher/quests')} 
+                            variant="outline"
+                            size="lg"
+                        >
+                            <Library className="mr-2 h-5 w-5" />
+                            Return to Quests Page
+                        </Button>
+                    ) : (
+                        <Button 
+                            onClick={() => router.push('/dashboard')} 
+                            variant="outline"
+                            size="lg"
+                        >
+                            <LayoutDashboard className="mr-2 h-5 w-5" />
+                            Return to Dashboard
+                        </Button>
+                    )}
                 </div>
             </div>
         </div>
