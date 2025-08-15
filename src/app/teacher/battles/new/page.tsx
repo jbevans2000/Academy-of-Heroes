@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,9 +27,16 @@ export default function NewBossBattlePage() {
   const [bossImageUrl, setBossImageUrl] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [damage, setDamage] = useState<number | string>(10);
-  const [questions, setQuestions] = useState<Question[]>([
-    { id: Date.now(), questionText: '', answers: ['', '', '', ''], correctAnswerIndex: null },
-  ]);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    // This ensures the initial question is only set on the client
+    // after hydration, preventing the server/client mismatch.
+    setQuestions([{ id: Date.now(), questionText: '', answers: ['', '', '', ''], correctAnswerIndex: null }]);
+    setIsClient(true);
+  }, []);
+
 
   const handleAddQuestion = () => {
     setQuestions([
@@ -142,7 +149,7 @@ export default function NewBossBattlePage() {
               </div>
 
               {/* Question Editor */}
-              <div className="space-y-6">
+              {isClient && <div className="space-y-6">
                  <h3 className="text-xl font-semibold">Questions</h3>
                 {questions.map((q, qIndex) => (
                   <Card key={q.id} className="p-6 relative bg-background shadow-md">
@@ -177,13 +184,14 @@ export default function NewBossBattlePage() {
                                 id={`q-${q.id}-a-${aIndex}`}
                                 onClick={() => handleCorrectAnswerChange(q.id, aIndex)}
                               />
-                               <Label htmlFor={`q-${q.id}-a-${aIndex}`} className="flex-grow font-normal cursor-pointer">
+                               <Label htmlFor={`q-${q.id}-a-${aIndex}`} className="sr-only">
+                                Answer {aIndex + 1}
+                               </Label>
                                 <Input
                                   placeholder={`Answer ${aIndex + 1}`}
                                   value={ans}
                                   onChange={(e) => handleAnswerChange(q.id, aIndex, e.target.value)}
                                 />
-                                </Label>
                             </div>
                           ))}
                         </RadioGroup>
@@ -195,7 +203,7 @@ export default function NewBossBattlePage() {
                   <PlusCircle className="mr-2 h-5 w-5" />
                   Add Another Question
                 </Button>
-              </div>
+              </div>}
 
               <div className="flex justify-end gap-4 pt-4 border-t">
                 <Button variant="outline" size="lg" onClick={handlePreviewBattle}>
