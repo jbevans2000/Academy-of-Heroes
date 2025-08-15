@@ -18,9 +18,7 @@ export function DashboardClient({ student }: DashboardClientProps) {
       <div className="mx-auto max-w-4xl space-y-6">
         <AvatarDisplay
           avatarSrc={student.avatarUrl}
-          backgroundSrc={student.backgroundUrl}
           avatarHint={"character avatar"}
-          backgroundHint={"scene background"}
         />
         <StatsCard xp={student.xp} gold={student.gold} name={student.characterName} />
       </div>
