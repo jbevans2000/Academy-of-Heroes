@@ -110,7 +110,7 @@ export default function RegisterPage() {
           backgroundRepeat: 'no-repeat',
         }}
       >
-        <Card className="w-full max-w-4xl shadow-2xl">
+        <Card className="w-full max-w-4xl shadow-2xl bg-card/80 backdrop-blur-sm">
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-headline text-primary">Create Your Hero</CardTitle>
             <CardDescription>Fill in your details and choose your path to begin your adventure in Luminaria.</CardDescription>
