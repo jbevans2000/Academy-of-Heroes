@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, getDocs, writeBatch, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, writeBatch, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import { TeacherHeader } from "@/components/teacher/teacher-header";
@@ -18,10 +18,21 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins } from 'lucide-react';
+import { Loader2, Star, Coins, Trash2 } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 
 export default function TeacherDashboardPage() {
@@ -31,6 +42,7 @@ export default function TeacherDashboardPage() {
   const [xpAmount, setXpAmount] = useState<number | string>('');
   const [goldAmount, setGoldAmount] = useState<number | string>('');
   const [isAwarding, setIsAwarding] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
   const [isXpDialogOpen, setIsXpDialogOpen] = useState(false);
   const [isGoldDialogOpen, setIsGoldDialogOpen] = useState(false);
   const { toast } = useToast();
@@ -55,6 +67,7 @@ export default function TeacherDashboardPage() {
 
   useEffect(() => {
     fetchStudents();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
   const handleToggleStudentSelection = (uid: string) => {
@@ -198,6 +211,35 @@ export default function TeacherDashboardPage() {
           setIsAwarding(false);
       }
   };
+
+  const handleClearAllAnswers = async () => {
+    setIsClearing(true);
+    try {
+        const summariesRef = collection(db, 'battleSummaries');
+        const summariesSnapshot = await getDocs(summariesRef);
+        const batch = writeBatch(db);
+
+        summariesSnapshot.forEach(doc => {
+            batch.update(doc.ref, { resultsByRound: {} });
+        });
+
+        await batch.commit();
+
+        toast({
+            title: 'Success!',
+            description: 'All historical boss battle answers have been cleared.',
+        });
+    } catch (error) {
+        console.error('Error clearing all answers:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Could not clear all boss battle answers. Please try again.',
+        });
+    } finally {
+        setIsClearing(false);
+    }
+  };
   
   if (isLoading) {
     return (
@@ -224,13 +266,16 @@ export default function TeacherDashboardPage() {
     <div className="flex min-h-screen w-full flex-col">
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
-        <div className="flex justify-between items-center mb-4">
-            <h1 className="text-2xl font-bold">All Students</h1>
+        <div className="flex justify-between items-start mb-4">
+            <div>
+                <h1 className="text-2xl font-bold">All Students</h1>
+                 <p className="text-muted-foreground">Select students and award XP or Gold, or manage battle history.</p>
+            </div>
             <div className="flex items-center gap-2">
                <Button 
                 onClick={handleSelectAllToggle}
                 disabled={students.length === 0}
-                className="bg-amber-500 hover:bg-amber-600 text-white"
+                variant="outline"
                >
                 {selectedStudents.length === students.length ? 'Deselect All' : 'Select All'}
                </Button>
@@ -308,6 +353,28 @@ export default function TeacherDashboardPage() {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="destructive">
+                        <Trash2 className="mr-2 h-4 w-4" /> Clear All Boss Battle Answers
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This is a nuclear option. This action will permanently delete all historical student answers from every boss battle summary. This cannot be undone.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isClearing}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleClearAllAnswers} disabled={isClearing}>
+                        {isClearing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        Yes, delete all answers
+                    </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+             </AlertDialog>
             </div>
         </div>
         <StudentList 
@@ -320,3 +387,5 @@ export default function TeacherDashboardPage() {
     </div>
   );
 }
+
+    
