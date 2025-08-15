@@ -1,20 +1,6 @@
 
 export type ClassType = 'Guardian' | 'Healer' | 'Mage' | '';
 
-export type Avatar = {
-  id: number;
-  src: string;
-  name: string;
-  hint: string;
-};
-
-export type Background = {
-  id: number;
-  src: string;
-  name: string;
-  hint: string;
-};
-
 export type Student = {
     uid: string;
     studentId: string;
@@ -46,14 +32,14 @@ export const classData = {
   },
   Healer: {
     avatars: [
-      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Images%2FHealer%201%20(Level%201%20Healer%20Images).png?alt=media&token=a3d8c43a-5d9e-4fce-9803-4c5481503f96',
-      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Images%2FHealer%202%20(Level%201%20Healer%20Images).png?alt=media&token=35a026ae-c867-43c1-8abe-825fa1c75caf',
-      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Images%2FHealer%203%20(Level%201%20Healer%20Images).png?alt=media&token=d40ad279-8af6-439d-ac51-45a301d85e93',
-      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Images%2FHealer%204%20(Level%201%20Healer%20Images).png?alt=media&token=0b051eac-3d61-4e73-9463-f7b8a7348e78',
-      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Images%2FHealer%205%20(Level%201%20Healer%20Images).png?alt=media&token=ec4dbdd5-b766-4744-9bce-b5e764b5cedb',
-      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Images%2FHealer%206%20(Level%201%20Healer%20Images).png?alt=media&token=eb5da75f-0bb8-4196-85a1-93e0b6d3c7d3',
-      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Images%2FHealer%207%20(Level%201%20Healer%20Images).png?alt=media&token=d9e5d39f-4b66-4c64-b360-ca18406990ca',
-      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Images%2FHealer%208%20(Level%201%20Healer%20Images).png?alt=media&token=b46f9c42-f533-4dd1-aa61-a014c8656006'
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%201%20(1).jpg?alt=media&token=785166ae-6bc3-418e-9649-303e503e540b',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%201%20(2).jpg?alt=media&token=3935609f-c09a-4f73-ac42-9e29174851f1',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%201%20(3).jpg?alt=media&token=a8851b5f-34a3-49c8-a2f0-675c76de8c9e',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%201%20(4).jpg?alt=media&token=cf5ca768-65dc-4831-88d9-872dab12710f',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%201%20(5).jpg?alt=media&token=92c781c8-9654-4772-a2b9-f8f79bfed4c4',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%201%20(6).jpg?alt=media&token=1e6d027c-9745-45b4-ad00-1d1e3ee8a4c1',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%201%20(7).jpg?alt=media&token=8c914f55-7faf-4a0a-b21e-82088cca6086',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%201%20(8).jpg?alt=media&token=c283d613-712e-4f78-bc68-3d7d92aa9271'
     ],
     backgrounds: [
         'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Backgrounds%2FHealer%201.jpg?alt=media&token=6c41882c-39f1-46a4-9f9f-569dfdaec95d'
