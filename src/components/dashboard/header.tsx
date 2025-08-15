@@ -30,7 +30,7 @@ export function DashboardHeader({ characterName = 'Account' }: DashboardHeaderPr
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
       <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
         <Gamepad2 className="h-6 w-6 text-primary" />
-        <span className="text-xl">Academy Heroes</span>
+        <span className="text-xl">The Academy of Heroes</span>
       </Link>
       <div className="ml-auto">
         <DropdownMenu>

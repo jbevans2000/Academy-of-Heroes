@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: 'Academy Heroes',
+  title: 'The Academy of Heroes',
   description: 'An online educational game by Classcraft',
 };
 
