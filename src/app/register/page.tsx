@@ -67,6 +67,7 @@ export default function RegisterPage() {
         backgroundUrl: defaultBackground,
         xp: 0,
         gold: 0,
+        level: 1,
       });
       
       toast({

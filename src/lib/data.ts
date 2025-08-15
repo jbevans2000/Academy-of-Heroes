@@ -12,6 +12,7 @@ export type Student = {
     backgroundUrl: string;
     xp: number;
     gold: number;
+    level: number;
 }
 
 export const classData = {
