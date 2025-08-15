@@ -103,7 +103,7 @@ export default function LoginPage() {
           <CardContent>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="student-id" className="text-black bg-white/50 p-1 rounded-md inline-block">Student ID Number</Label>
+                <Label htmlFor="student-id" className="text-black bg-yellow-300/50 p-1 rounded-md inline-block">Student ID Number</Label>
                 <Input
                   id="student-id"
                   type="text"
