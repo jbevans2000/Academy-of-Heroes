@@ -1,18 +1,14 @@
-
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow users to create their own student document
+    // A user can only read/write their own document
     match /students/{userId} {
-      allow create: if request.auth != null && request.auth.uid == userId;
-      
-      // Allow authenticated users to read and update their own document
-      allow read, update: if request.auth != null && request.auth.uid == userId;
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null;
     }
-    
-    // Allow teachers (or any authenticated user, for now) to read the full student list
-    match /students {
+
+    // The teacher dashboard needs to be able to read all student documents
+    match /students/{document=**} {
         allow list: if request.auth != null;
     }
   }
