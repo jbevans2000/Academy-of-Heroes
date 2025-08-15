@@ -26,12 +26,12 @@ export default function WorldMapPage() {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 sm:p-6 lg:p-8">
-            <Card className="w-full max-w-6xl shadow-2xl">
-                <CardHeader>
+        <div className="flex flex-col items-center justify-center min-h-screen bg-background p-2">
+            <Card className="w-full max-w-7xl shadow-2xl">
+                <CardHeader className="py-4">
                     <CardTitle className="text-3xl font-bold text-center text-primary">The World of Luminaria</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-2">
                     <div className="relative aspect-[2048/1536] rounded-lg overflow-hidden bg-muted/50">
                         <Image
                             src={worldMapImageUrl}
@@ -57,7 +57,7 @@ export default function WorldMapPage() {
             </Card>
              <Button 
                 onClick={() => router.back()} 
-                className="mt-6"
+                className="mt-4"
                 variant="outline"
             >
                 <ArrowLeft className="mr-2 h-4 w-4" />
