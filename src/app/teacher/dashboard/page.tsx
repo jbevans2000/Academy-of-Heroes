@@ -162,9 +162,9 @@ export default function TeacherDashboardPage() {
             <h1 className="text-2xl font-bold">All Students</h1>
             <div className="flex items-center gap-2">
                <Button 
-                variant="outline"
                 onClick={handleSelectAllToggle}
                 disabled={students.length === 0}
+                className="bg-amber-500 hover:bg-amber-600 text-white"
                >
                 {selectedStudents.length === students.length ? 'Deselect All' : 'Select All'}
                </Button>
