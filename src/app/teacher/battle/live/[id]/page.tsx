@@ -128,12 +128,11 @@ export default function TeacherLiveBattlePage() {
 
   // Listen for real-time student responses
   useEffect(() => {
-    if (!liveState || (liveState.status !== 'IN_PROGRESS' && liveState.status !== 'ROUND_ENDING' && liveState.status !== 'SHOWING_RESULTS')) {
-      setStudentResponses([]);
+    if (!liveState || (liveState.status !== 'IN_PROGRESS' && liveState.status !== 'ROUND_ENDING')) {
       return;
     }
-
-    // Explicitly clear responses when question index changes to avoid showing stale data
+    
+    // When the question changes, clear the previous round's responses.
     setStudentResponses([]);
 
     const responsesRef = collection(db, `liveBattles/active-battle/responses`);
@@ -143,7 +142,7 @@ export default function TeacherLiveBattlePage() {
       querySnapshot.forEach((doc) => {
         const data = doc.data() as StudentResponse;
         responses.push({
-          studentName: data.studentName, // Now the real name
+          studentName: data.studentName,
           answer: data.answer,
           isCorrect: data.isCorrect,
         });
@@ -435,3 +434,5 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
+
+    
