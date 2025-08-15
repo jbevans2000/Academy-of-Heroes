@@ -11,10 +11,11 @@ import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnswerResult } from '@/components/battle/answer-result';
+import { useRouter } from 'next/navigation';
 
 interface LiveBattleState {
   battleId: string | null;
-  status: 'WAITING' | 'IN_PROGRESS' | 'ROUND_ENDING' | 'SHOWING_RESULTS';
+  status: 'WAITING' | 'IN_PROGRESS' | 'ROUND_ENDING' | 'SHOWING_RESULTS' | 'BATTLE_ENDED';
   currentQuestionIndex: number;
   timerEndsAt?: { seconds: number; nanoseconds: number; };
 }
@@ -60,6 +61,7 @@ export default function LiveBattlePage() {
   const [user, setUser] = useState<User | null>(null);
   const [submittedAnswer, setSubmittedAnswer] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
   // Effect to get current user and their student data
   useEffect(() => {
@@ -71,11 +73,11 @@ export default function LiveBattlePage() {
           setStudent(studentDoc.data() as Student);
         }
       } else {
-        // Redirect or handle unauthenticated user
+        router.push('/');
       }
     });
     return () => unsubscribe();
-  }, []);
+  }, [router]);
 
   // Effect to listen for the live battle state
   useEffect(() => {
@@ -85,11 +87,14 @@ export default function LiveBattlePage() {
       const currentState = battleState;
       if (doc.exists()) {
         const newState = doc.data() as LiveBattleState;
-        // If question changes, reset submitted answer
         if (currentState && newState.currentQuestionIndex !== currentState.currentQuestionIndex) {
           setSubmittedAnswer(null);
         }
         setBattleState(newState);
+
+        if (newState.status === 'BATTLE_ENDED') {
+            router.push('/battle/summary');
+        }
       } else {
         setBattleState({ battleId: null, status: 'WAITING', currentQuestionIndex: 0 });
       }
@@ -99,7 +104,7 @@ export default function LiveBattlePage() {
       setIsLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [battleState, router]);
 
   // Effect to fetch the battle details when battleId changes
   useEffect(() => {
@@ -123,9 +128,14 @@ export default function LiveBattlePage() {
 
     const responseRef = doc(db, `liveBattles/active-battle/responses`, user.uid);
     await setDoc(responseRef, {
-      studentName: student.studentName,
+      studentName: student.characterName, // Using character name for display
       answerIndex: answerIndex,
       submittedAt: new Date(),
+    });
+
+    const studentResponseRef = doc(db, `liveBattles/active-battle/studentResponses/${user.uid}/rounds/${battleState.currentQuestionIndex}`);
+    await setDoc(studentResponseRef, {
+        answerIndex: answerIndex,
     });
   };
 
@@ -154,9 +164,9 @@ export default function LiveBattlePage() {
     const bossImage = battle.bossImageUrl || 'https://placehold.co/600x400.png';
 
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-card p-4">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 p-4">
         <div className="w-full max-w-4xl mx-auto">
-          <Card className="bg-background/90 text-card-foreground border-gray-700 shadow-2xl shadow-primary/20">
+          <Card className="bg-card text-card-foreground border-gray-700 shadow-2xl shadow-primary/20">
              <CardContent className="p-6">
                 <div className="flex justify-center mb-6">
                     <Image 
@@ -217,7 +227,7 @@ export default function LiveBattlePage() {
       const correctAnswerText = lastQuestion.answers[lastQuestion.correctAnswerIndex];
 
       return (
-        <div className="relative flex min-h-screen flex-col items-center justify-center p-4">
+        <div className="relative flex min-h-screen flex-col items-center justify-center p-4 bg-gray-900">
             {battle.bossImageUrl && (
                 <Image
                     src={battle.bossImageUrl}
@@ -228,19 +238,19 @@ export default function LiveBattlePage() {
                 />
             )}
             <div className="w-full max-w-2xl mx-auto z-10">
-                <Card className="text-center shadow-lg bg-card/80 backdrop-blur-sm">
+                <Card className="text-center shadow-lg bg-card/80 backdrop-blur-sm text-card-foreground">
                     <CardHeader>
                         <CardTitle className="text-4xl font-bold tracking-tight">Round Over!</CardTitle>
-                        <CardDescription className="text-lg">Waiting for the next round to begin...</CardDescription>
+                        <CardDescription className="text-lg text-muted-foreground">Waiting for the next round to begin...</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
                         {wasCorrect ? (
-                            <div className="p-4 rounded-md bg-green-100 dark:bg-green-900 border border-green-300 dark:border-green-700 text-green-800 dark:text-green-200">
+                            <div className="p-4 rounded-md bg-green-900/50 border border-green-700 text-green-200">
                                 <CheckCircle className="h-16 w-16 mx-auto mb-4 text-green-500" />
                                 <h3 className="text-2xl font-semibold">You have successfully struck the boss!</h3>
                             </div>
                         ) : (
-                            <div className="p-4 rounded-md bg-red-100 dark:bg-red-900 border border-red-300 dark:border-red-700 text-red-800 dark:text-red-200">
+                            <div className="p-4 rounded-md bg-red-900/50 border border-red-700 text-red-200">
                                 <XCircle className="h-16 w-16 mx-auto mb-4 text-red-500" />
                                 <h3 className="text-2xl font-semibold">Your attack missed!</h3>
                             </div>

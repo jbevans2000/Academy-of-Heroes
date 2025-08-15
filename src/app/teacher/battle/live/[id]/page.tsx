@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs, writeBatch, serverTimestamp, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
@@ -13,11 +13,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { RoundResults, type Result } from '@/components/teacher/round-results';
 import { downloadCsv } from '@/lib/utils';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 
 interface LiveBattleState {
   battleId: string | null;
-  status: 'WAITING' | 'IN_PROGRESS' | 'ROUND_ENDING' | 'SHOWING_RESULTS';
+  status: 'WAITING' | 'IN_PROGRESS' | 'ROUND_ENDING' | 'SHOWING_RESULTS' | 'BATTLE_ENDED';
   currentQuestionIndex: number;
   timerEndsAt?: { seconds: number; nanoseconds: number; };
 }
@@ -70,6 +71,7 @@ export default function TeacherLiveBattlePage() {
   const [liveState, setLiveState] = useState<LiveBattleState | null>(null);
   const [studentResponses, setStudentResponses] = useState<StudentResponse[]>([]);
   const [roundResults, setRoundResults] = useState<Result[]>([]);
+  const [allRoundsData, setAllRoundsData] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isEndingRound, setIsEndingRound] = useState(false);
   const [isAdvancing, setIsAdvancing] = useState(false);
@@ -91,6 +93,7 @@ export default function TeacherLiveBattlePage() {
 
   // Listen for real-time updates on the live battle state
   useEffect(() => {
+    setIsLoading(true);
     const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
     const unsubscribe = onSnapshot(liveBattleRef, (doc) => {
       if (doc.exists()) {
@@ -101,6 +104,10 @@ export default function TeacherLiveBattlePage() {
             setRoundResults([]);
         }
         setLiveState(newState);
+
+        if (newState.status === 'BATTLE_ENDED') {
+            router.push(`/teacher/battle/summary/${battleId}`);
+        }
       }
       setIsLoading(false);
     }, (error) => {
@@ -108,7 +115,7 @@ export default function TeacherLiveBattlePage() {
       setIsLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [battleId, liveState, router]);
 
   // Listen for real-time student responses ONLY when the battle is in progress
   useEffect(() => {
@@ -155,15 +162,14 @@ export default function TeacherLiveBattlePage() {
 
   const calculateAndSetResults = async () => {
     if (!battle || liveState === null || isEndingRound) return;
-    // Check if we are already showing results to prevent re-running this
     if (liveState.status === 'SHOWING_RESULTS') return;
 
-    setIsEndingRound(true); // Use this to prevent multiple executions
+    setIsEndingRound(true);
     
     try {
         const responsesRef = collection(db, `liveBattles/active-battle/responses`);
         const responsesSnapshot = await getDocs(responsesRef);
-        const responsesData = responsesSnapshot.docs.map(doc => doc.data() as StudentResponse);
+        const responsesData = responsesSnapshot.docs.map(doc => ({ uid: doc.id, ...(doc.data() as StudentResponse) }));
         
         const currentQuestion = battle.questions[liveState.currentQuestionIndex];
         const correctAnswerIndex = currentQuestion.correctAnswerIndex;
@@ -175,7 +181,22 @@ export default function TeacherLiveBattlePage() {
         }));
         setRoundResults(results);
 
-        // Update the central battle state
+        // Store this round's data for the final summary
+        const newAllRoundsData = {
+            ...allRoundsData,
+            [liveState.currentQuestionIndex]: {
+                questionText: currentQuestion.questionText,
+                responses: responsesData.map(r => ({
+                    studentUid: r.uid,
+                    studentName: r.studentName,
+                    answerIndex: r.answerIndex,
+                    isCorrect: r.answerIndex === correctAnswerIndex,
+                }))
+            }
+        };
+        setAllRoundsData(newAllRoundsData);
+
+
         const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
         await updateDoc(liveBattleRef, { status: 'SHOWING_RESULTS', timerEndsAt: null });
     } catch (error) {
@@ -211,12 +232,10 @@ export default function TeacherLiveBattlePage() {
     try {
         const batch = writeBatch(db);
 
-        // 1. Clear previous responses
         const responsesRef = collection(db, `liveBattles/active-battle/responses`);
         const responsesSnapshot = await getDocs(responsesRef);
         responsesSnapshot.forEach(doc => batch.delete(doc.ref));
         
-        // 2. Update battle state to the next question
         const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
         batch.update(liveBattleRef, {
             status: 'IN_PROGRESS',
@@ -225,12 +244,31 @@ export default function TeacherLiveBattlePage() {
         });
 
         await batch.commit();
-        // Local state will update via the onSnapshot listener
     } catch (error) {
         console.error("Error advancing to next question:", error);
     } finally {
         setIsAdvancing(false);
     }
+  };
+
+  const handleEndBattle = async () => {
+      // 1. Save all rounds data to a new collection for review
+      const summaryRef = doc(db, `battleSummaries`, battleId);
+      await setDoc(summaryRef, {
+          battleId: battleId,
+          battleName: battle?.battleName,
+          questions: battle?.questions,
+          resultsByRound: allRoundsData,
+          endedAt: serverTimestamp(),
+      });
+
+      // 2. Update live battle state to BATTLE_ENDED
+      const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
+      await updateDoc(liveBattleRef, {
+          status: 'BATTLE_ENDED',
+      });
+
+      // The useEffect will handle the redirect
   };
   
   const handleExport = () => {
@@ -289,7 +327,23 @@ export default function TeacherLiveBattlePage() {
                                 {isAdvancing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                 Next Question
                              </Button>
-                             <Button variant="destructive">End Battle</Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="destructive" disabled={isAdvancing || isEndingRound}>End Battle</Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This action will end the battle for all participants and take you to the summary page. You cannot undo this.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleEndBattle}>Yes, End Battle</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                         </div>
                     </div>
                 </CardContent>
