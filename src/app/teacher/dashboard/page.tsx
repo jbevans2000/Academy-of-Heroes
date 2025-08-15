@@ -285,122 +285,120 @@ export default function TeacherDashboardPage() {
     <div className="flex min-h-screen w-full flex-col">
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
-        <div className="flex justify-between items-start mb-4">
-            <div>
-                <h1 className="text-2xl font-bold">All Students</h1>
-                 <p className="text-muted-foreground">Select students and award XP or Gold, or manage battle history.</p>
-            </div>
-            <div className="flex items-center gap-2">
-               <Button 
-                onClick={handleSelectAllToggle}
-                disabled={students.length === 0}
-                variant="outline"
-               >
-                {selectedStudents.length === students.length ? 'Deselect All' : 'Select All'}
-               </Button>
-               <Button onClick={() => router.push('/teacher/quests')}>
-                 <PlusCircle className="mr-2 h-4 w-4" /> Manage Quests
-               </Button>
-               <Button onClick={() => router.push('/teacher/battles')}>
-                 <Swords className="mr-2 h-4 w-4" /> Manage Boss Battles
-               </Button>
-               <Dialog open={isXpDialogOpen} onOpenChange={setIsXpDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Star className="mr-2 h-4 w-4" /> Award Experience
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle>Award Experience to Selected Students</DialogTitle>
-                    <DialogDescription>
-                      Enter a positive value to add XP or a negative value to remove XP. This will apply to all selected students.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="xp-amount" className="text-right">
-                        XP Amount
-                      </Label>
-                      <Input
-                        id="xp-amount"
-                        type="number"
-                        value={xpAmount}
-                        onChange={(e) => setXpAmount(e.target.value)}
-                        className="col-span-3"
-                        placeholder="e.g., 100 or -50"
-                        disabled={isAwarding}
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button onClick={handleAwardXp} disabled={isAwarding || selectedStudents.length === 0}>
-                      {isAwarding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      Confirm Award ({selectedStudents.length} selected)
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-              <Dialog open={isGoldDialogOpen} onOpenChange={setIsGoldDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="bg-green-600 hover:bg-green-700 text-white">
-                    <Coins className="mr-2 h-4 w-4" /> Award Gold
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle>Award Gold to Selected Students</DialogTitle>
-                    <DialogDescription>
-                      Enter a positive value to add Gold or a negative value to remove it. This will apply to all selected students.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="gold-amount" className="text-right">
-                        Gold Amount
-                      </Label>
-                      <Input
-                        id="gold-amount"
-                        type="number"
-                        value={goldAmount}
-                        onChange={(e) => setGoldAmount(e.target.value)}
-                        className="col-span-3"
-                        placeholder="e.g., 50 or -10"
-                        disabled={isAwarding}
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button onClick={handleAwardGold} disabled={isAwarding || selectedStudents.length === 0} className="bg-green-600 hover:bg-green-700 text-white">
-                      {isAwarding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      Confirm Award ({selectedStudents.length} selected)
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                    <Button variant="destructive">
-                        <Trash2 className="mr-2 h-4 w-4" /> Clear All Boss Battle Answers
-                    </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        This is a nuclear option. This action will permanently delete all historical student answers from every boss battle summary. This cannot be undone.
-                    </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                    <AlertDialogCancel disabled={isClearing}>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleClearAllAnswers} disabled={isClearing}>
-                        {isClearing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        Yes, delete all answers
-                    </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-             </AlertDialog>
-            </div>
+        <div className="mb-4">
+            <h1 className="text-3xl font-bold">All Students</h1>
+            <p className="text-muted-foreground">Select students and award XP or Gold, or manage battle history.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 mb-6">
+            <Button 
+            onClick={handleSelectAllToggle}
+            disabled={students.length === 0}
+            variant="outline"
+            >
+            {selectedStudents.length === students.length ? 'Deselect All' : 'Select All'}
+            </Button>
+            <Button onClick={() => router.push('/teacher/quests')}>
+                <PlusCircle className="mr-2 h-4 w-4" /> Manage Quests
+            </Button>
+            <Button onClick={() => router.push('/teacher/battles')}>
+                <Swords className="mr-2 h-4 w-4" /> Manage Boss Battles
+            </Button>
+            <Dialog open={isXpDialogOpen} onOpenChange={setIsXpDialogOpen}>
+            <DialogTrigger asChild>
+                <Button>
+                <Star className="mr-2 h-4 w-4" /> Award Experience
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                <DialogTitle>Award Experience to Selected Students</DialogTitle>
+                <DialogDescription>
+                    Enter a positive value to add XP or a negative value to remove XP. This will apply to all selected students.
+                </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="xp-amount" className="text-right">
+                    XP Amount
+                    </Label>
+                    <Input
+                    id="xp-amount"
+                    type="number"
+                    value={xpAmount}
+                    onChange={(e) => setXpAmount(e.target.value)}
+                    className="col-span-3"
+                    placeholder="e.g., 100 or -50"
+                    disabled={isAwarding}
+                    />
+                </div>
+                </div>
+                <DialogFooter>
+                <Button onClick={handleAwardXp} disabled={isAwarding || selectedStudents.length === 0}>
+                    {isAwarding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Confirm Award ({selectedStudents.length} selected)
+                </Button>
+                </DialogFooter>
+            </DialogContent>
+            </Dialog>
+            <Dialog open={isGoldDialogOpen} onOpenChange={setIsGoldDialogOpen}>
+            <DialogTrigger asChild>
+                <Button className="bg-green-600 hover:bg-green-700 text-white">
+                <Coins className="mr-2 h-4 w-4" /> Award Gold
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                <DialogTitle>Award Gold to Selected Students</DialogTitle>
+                <DialogDescription>
+                    Enter a positive value to add Gold or a negative value to remove it. This will apply to all selected students.
+                </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="gold-amount" className="text-right">
+                    Gold Amount
+                    </Label>
+                    <Input
+                    id="gold-amount"
+                    type="number"
+                    value={goldAmount}
+                    onChange={(e) => setGoldAmount(e.target.value)}
+                    className="col-span-3"
+                    placeholder="e.g., 50 or -10"
+                    disabled={isAwarding}
+                    />
+                </div>
+                </div>
+                <DialogFooter>
+                <Button onClick={handleAwardGold} disabled={isAwarding || selectedStudents.length === 0} className="bg-green-600 hover:bg-green-700 text-white">
+                    {isAwarding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Confirm Award ({selectedStudents.length} selected)
+                </Button>
+                </DialogFooter>
+            </DialogContent>
+            </Dialog>
+            <AlertDialog>
+            <AlertDialogTrigger asChild>
+                <Button variant="destructive">
+                    <Trash2 className="mr-2 h-4 w-4" /> Clear All Boss Battle Answers
+                </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This is a nuclear option. This action will permanently delete all historical student answers from every boss battle summary. This cannot be undone.
+                </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                <AlertDialogCancel disabled={isClearing}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleClearAllAnswers} disabled={isClearing}>
+                    {isClearing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Yes, delete all answers
+                </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+            </AlertDialog>
         </div>
         <StudentList 
             students={students} 
@@ -412,3 +410,5 @@ export default function TeacherDashboardPage() {
     </div>
   );
 }
+
+    
