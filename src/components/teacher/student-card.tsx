@@ -32,8 +32,7 @@ interface StudentCardProps {
   setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
 }
 
-export function StudentCard({ student: initialStudent, isSelected, onSelect, setStudents }: StudentCardProps) {
-  const [student, setStudent] = useState(initialStudent);
+export function StudentCard({ student, isSelected, onSelect, setStudents }: StudentCardProps) {
   const [xpToAdd, setXpToAdd] = useState<number | string>('');
   const [goldToAdd, setGoldToAdd] = useState<number | string>('');
   const [hpToSet, setHpToSet] = useState<number | string>('');
@@ -72,7 +71,6 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
         setStudents(prevStudents => 
             prevStudents.map(s => s.uid === student.uid ? updatedStudent : s)
         );
-        setStudent(updatedStudent);
 
         toast({
             title: 'XP Awarded!',
@@ -121,7 +119,6 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
         setStudents(prevStudents => 
             prevStudents.map(s => s.uid === student.uid ? updatedStudent : s)
         );
-        setStudent(updatedStudent);
 
         toast({
             title: 'Gold Awarded!',
@@ -164,7 +161,6 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
         setStudents(prevStudents => 
             prevStudents.map(s => s.uid === student.uid ? updatedStudent : s)
         );
-        setStudent(updatedStudent);
 
         toast({
             title: 'HP Set!',
@@ -349,3 +345,5 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
     </Dialog>
   );
 }
+
+    
