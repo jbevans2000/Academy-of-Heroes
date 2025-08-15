@@ -16,8 +16,8 @@ export default function WorldMapPage() {
     // The coordinates are converted to percentages to maintain position on different screen sizes.
     // X: 1200 -> (1200 / 2048) * 100 = 58.59%
     // Y: 1115 -> (1115 / 1536) * 100 = 72.59%
-    const capitalCityNode = {
-      name: 'Capital City',
+    const capitolCityNode = {
+      name: 'Capitol City',
       href: '/dashboard/map/capital-city',
       style: {
         left: '58.59%',
@@ -41,13 +41,13 @@ export default function WorldMapPage() {
                             priority
                          />
                          {/* Quest Node */}
-                         <Link href={capitalCityNode.href} passHref>
+                         <Link href={capitolCityNode.href} passHref>
                             <div
                                 className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
-                                style={capitalCityNode.style}
+                                style={capitolCityNode.style}
                             >
                                 <div className="absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-white font-bold text-shadow-lg transition-transform duration-300 group-hover:scale-110 bg-black/50 rounded px-2 py-1">
-                                    {capitalCityNode.name}
+                                    {capitolCityNode.name}
                                 </div>
                                 <div className="w-5 h-5 bg-yellow-400 rounded-full ring-2 ring-white shadow-xl animate-pulse-glow"></div>
                             </div>
