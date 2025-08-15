@@ -223,15 +223,12 @@ export default function TeacherDashboardPage() {
 
             allStudentsSnapshot.forEach(studentDoc => {
                 const studentData = studentDoc.data() as Student;
-                const { hp, mp, class: studentClass } = studentData;
-
+                
                 // Create a temporary "level 1" version of the student to calculate from scratch
                 const baseStudent = {
                     ...studentData,
                     level: 1,
-                    // hp: classData[studentClass].baseStats.hp,
-                    // For simplicity, we just use the existing base stats from the class data
-                    // This assumes baseStats are always available and correct.
+                    // The calculateLevelUp function will use the base stats from classData for level 1
                 };
 
                 const { newLevel, newHp } = calculateLevelUp(baseStudent, studentData.xp);
