@@ -5,11 +5,11 @@ import { useState, useEffect } from 'react';
 import { onSnapshot, doc, getDoc, setDoc } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
-import { Loader2, Shield, Swords, Timer } from 'lucide-react';
+import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle } from 'lucide-react';
 import { type Student } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnswerResult } from '@/components/battle/answer-result';
 
 interface LiveBattleState {
@@ -154,7 +154,7 @@ export default function LiveBattlePage() {
     const bossImage = battle.bossImageUrl || 'https://placehold.co/600x400.png';
 
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 text-white p-4">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-card p-4">
         <div className="w-full max-w-4xl mx-auto">
           <Card className="bg-card text-card-foreground border-gray-700 shadow-2xl shadow-primary/20">
              <CardContent className="p-6 bg-card/90">
@@ -211,13 +211,39 @@ export default function LiveBattlePage() {
       )
   }
   
-  if (battleState.status === 'SHOWING_RESULTS') {
+  if (battleState.status === 'SHOWING_RESULTS' && battle) {
+      const lastQuestion = battle.questions[battleState.currentQuestionIndex];
+      const wasCorrect = submittedAnswer === lastQuestion.correctAnswerIndex;
+      const correctAnswerText = lastQuestion.answers[lastQuestion.correctAnswerIndex];
+
       return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4 text-center">
-            <Swords className="h-24 w-24 text-primary mb-6" />
-            <h1 className="text-4xl font-bold tracking-tight">Round Over!</h1>
-            <p className="text-xl text-muted-foreground mt-2">Waiting for the next round to begin...</p>
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mt-8" />
+        <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
+            <div className="w-full max-w-2xl mx-auto">
+                <Card className="text-center shadow-lg">
+                    <CardHeader>
+                        <CardTitle className="text-4xl font-bold tracking-tight">Round Over!</CardTitle>
+                        <CardDescription className="text-lg">Waiting for the next round to begin...</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        {wasCorrect ? (
+                            <div className="p-4 rounded-md bg-green-100 dark:bg-green-900 border border-green-300 dark:border-green-700 text-green-800 dark:text-green-200">
+                                <CheckCircle className="h-16 w-16 mx-auto mb-4 text-green-500" />
+                                <h3 className="text-2xl font-semibold">You have successfully struck the boss!</h3>
+                            </div>
+                        ) : (
+                            <div className="p-4 rounded-md bg-red-100 dark:bg-red-900 border border-red-300 dark:border-red-700 text-red-800 dark:text-red-200">
+                                <XCircle className="h-16 w-16 mx-auto mb-4 text-red-500" />
+                                <h3 className="text-2xl font-semibold">Your attack missed!</h3>
+                            </div>
+                        )}
+                        <div className="p-4 rounded-md bg-secondary text-secondary-foreground">
+                            <p className="text-sm text-muted-foreground mb-1">The correct answer was:</p>
+                            <p className="text-xl font-bold">{correctAnswerText}</p>
+                        </div>
+                         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mt-8" />
+                    </CardContent>
+                </Card>
+            </div>
         </div>
       );
   }
@@ -231,4 +257,3 @@ export default function LiveBattlePage() {
     </div>
   );
 }
-
