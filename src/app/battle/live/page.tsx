@@ -5,12 +5,11 @@ import { useState, useEffect } from 'react';
 import { onSnapshot, doc, getDoc, setDoc } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
-import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack } from 'lucide-react';
+import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Hourglass } from 'lucide-react';
 import { type Student } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AnswerResult } from '@/components/battle/answer-result';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
@@ -58,6 +57,19 @@ function SmallCountdownTimer({ expiryTimestamp }: { expiryTimestamp: Date }) {
         </div>
     );
 }
+
+function WaitingForRoundEnd() {
+    return (
+        <div className="text-center p-2 rounded-lg bg-blue-900/80 border border-blue-700 mb-4">
+            <div className="flex items-center justify-center gap-2">
+                <Hourglass className="h-6 w-6 text-blue-300 animate-spin" />
+                <p className="text-lg font-bold text-white">Answer Submitted!</p>
+                <p className="text-sm text-blue-200">Waiting for other players...</p>
+            </div>
+        </div>
+    );
+}
+
 
 export default function LiveBattlePage() {
   const [battleState, setBattleState] = useState<LiveBattleState | null>(null);
@@ -200,21 +212,6 @@ export default function LiveBattlePage() {
     const bossImage = battle.bossImageUrl || 'https://placehold.co/600x400.png';
     const expiryTimestamp = battleState.timerEndsAt ? new Date(battleState.timerEndsAt.seconds * 1000) : null;
 
-    // Show waiting message only if status is IN_PROGRESS and an answer has been submitted
-    if (battleState.status === 'IN_PROGRESS' && submittedAnswer !== null) {
-      return (
-          <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 p-4">
-            <div className="w-full max-w-4xl mx-auto">
-              <Card className="bg-card text-card-foreground border-gray-700 shadow-2xl shadow-primary/20">
-                 <CardContent className="p-6">
-                    <AnswerResult />
-                 </CardContent>
-              </Card>
-            </div>
-          </div>
-        )
-    }
-
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 p-4">
         <div className="w-full max-w-4xl mx-auto">
@@ -234,6 +231,11 @@ export default function LiveBattlePage() {
                 {expiryTimestamp && battleState.status === 'ROUND_ENDING' && (
                   <SmallCountdownTimer expiryTimestamp={expiryTimestamp} />
                 )}
+
+                {submittedAnswer !== null && battleState.status === 'IN_PROGRESS' && (
+                    <WaitingForRoundEnd />
+                )}
+
 
                 <div className="text-center">
                     <h2 className="text-2xl md:text-3xl font-bold mb-6">{currentQuestion.questionText}</h2>
