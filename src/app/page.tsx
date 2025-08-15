@@ -85,7 +85,7 @@ export default function LoginPage() {
         </div>
         <Card className="shadow-2xl">
           <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold text-primary">
+            <CardTitle className="text-3xl font-headline text-primary">
               Welcome to The Academy of Heroes!
             </CardTitle>
             <CardDescription>

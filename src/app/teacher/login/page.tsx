@@ -100,7 +100,7 @@ export default function TeacherLoginPage() {
         </div>
         <Card className="shadow-2xl">
           <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold text-primary">
+            <CardTitle className="text-3xl font-headline text-primary">
               Teacher Dashboard
             </CardTitle>
             <CardDescription>
@@ -124,13 +124,6 @@ export default function TeacherLoginPage() {
               <div className="space-y-2">
                 <div className="flex items-center">
                   <Label htmlFor="password">Password</Label>
-                  <Link
-                    href="#"
-                    className="ml-auto inline-block text-sm underline"
-                    prefetch={false}
-                  >
-                    Forgot your password?
-                  </Link>
                 </div>
                 <div className="relative">
                   <Input 

@@ -26,9 +26,9 @@ interface StatsCardProps {
 }
 
 const classIconMap = {
-    Guardian: <Shield className="h-8 w-8 text-blue-500" />,
-    Healer: <Heart className="h-8 w-8 text-green-500" />,
-    Mage: <Wand2 className="h-8 w-8 text-purple-500" />,
+    Guardian: <Shield className="h-8 w-8 text-primary" />,
+    Healer: <Heart className="h-8 w-8 text-primary" />,
+    Mage: <Wand2 className="h-8 w-8 text-primary" />,
     '': null
 }
 
@@ -36,7 +36,7 @@ export function StatsCard({ xp, gold, level, hp, mp, characterName, studentName,
   return (
     <Card className="shadow-lg rounded-xl">
       <CardHeader>
-        <CardTitle>{studentName}</CardTitle>
+        <CardTitle className="font-headline">{studentName}</CardTitle>
         <CardDescription>{characterName}</CardDescription>
       </CardHeader>
       <CardContent>

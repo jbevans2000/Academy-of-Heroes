@@ -104,7 +104,7 @@ export default function RegisterPage() {
       <div className="flex items-center justify-center min-h-screen bg-background p-4 sm:p-6">
         <Card className="w-full max-w-4xl shadow-2xl">
           <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold text-primary">Create Your Hero</CardTitle>
+            <CardTitle className="text-3xl font-headline text-primary">Create Your Hero</CardTitle>
             <CardDescription>Fill in your details and choose your path to begin your adventure in Luminaria.</CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6">
