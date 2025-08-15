@@ -36,6 +36,7 @@ export function StudentCard({ student, isSelected, onSelect, setStudents }: Stud
   const [xpToAdd, setXpToAdd] = useState<number | string>('');
   const [goldToAdd, setGoldToAdd] = useState<number | string>('');
   const [hpToSet, setHpToSet] = useState<number | string>('');
+  const [mpToSet, setMpToSet] = useState<number | string>('');
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
 
@@ -63,10 +64,10 @@ export function StudentCard({ student, isSelected, onSelect, setStudents }: Stud
         const currentLevel = studentData.level || 1;
         const newLevel = calculateLevel(newXp);
         
-        let newHp = studentData.hp || 0;
+        let newHp = studentData.hp;
         if (newLevel > currentLevel) {
             const levelsGained = newLevel - currentLevel;
-            const hpGained = calculateHpGain(studentData.class, levelsGained);
+            const hpGained = calculateHpGain(studentData.class, levelsGained, currentLevel);
             newHp += hpGained;
         }
         
@@ -193,6 +194,51 @@ export function StudentCard({ student, isSelected, onSelect, setStudents }: Stud
     }
 };
 
+ const handleMpUpdate = async () => {
+    const amount = Number(mpToSet);
+    if (mpToSet === '' || isNaN(amount)) {
+        toast({
+            variant: 'destructive',
+            title: 'Invalid Input',
+            description: 'Please enter a valid number for MP.',
+        });
+        return;
+    }
+
+    setIsUpdating(true);
+    const studentRef = doc(db, 'students', student.uid);
+    try {
+        const currentStudentDoc = await getDoc(studentRef);
+        if (!currentStudentDoc.exists()) throw new Error("Student not found");
+        const currentStudentData = currentStudentDoc.data() as Student;
+
+        await updateDoc(studentRef, {
+            mp: amount
+        });
+
+        const updatedStudent = { ...currentStudentData, mp: amount };
+        
+        setStudents(prevStudents => 
+            prevStudents.map(s => s.uid === student.uid ? updatedStudent : s)
+        );
+
+        toast({
+            title: 'MP Set!',
+            description: `${student.characterName}'s MP has been set to ${amount}.`,
+        });
+        setMpToSet('');
+    } catch (error) {
+        console.error("Error updating MP: ", error);
+        toast({
+            variant: 'destructive',
+            title: 'Update Failed',
+            description: 'Could not update student MP. Please try again.',
+        });
+    } finally {
+        setIsUpdating(false);
+    }
+};
+
 
   const backgroundUrl = student.backgroundUrl || 'https://placehold.co/600x400.png';
   const avatarUrl = student.avatarUrl || 'https://placehold.co/100x100.png';
@@ -261,7 +307,7 @@ export function StudentCard({ student, isSelected, onSelect, setStudents }: Stud
                <div className="flex items-center space-x-1">
                   <Zap className="h-5 w-5 text-yellow-500" />
                   <div>
-                    <p className="font-semibold">{student.mp ?? 100}</p>
+                    <p className="font-semibold">{student.mp ?? 0}</p>
                     <p className="text-xs text-muted-foreground">MP</p>
                   </div>
               </div>
@@ -336,6 +382,28 @@ export function StudentCard({ student, isSelected, onSelect, setStudents }: Stud
                     </Button>
                 </div>
             </div>
+             <div className="space-y-2 pt-2">
+                <label htmlFor={`mp-${student.uid}`} className="text-sm font-medium flex items-center gap-2 text-muted-foreground"><Zap className="w-4 h-4 text-blue-500" /> Magic Points</label>
+                <div className="flex items-center gap-2">
+                    <Input 
+                        id={`mp-${student.uid}`}
+                        type="number"
+                        value={mpToSet}
+                        onChange={(e) => setMpToSet(e.target.value)}
+                        className="h-8"
+                        disabled={isUpdating}
+                        placeholder={`Current: ${student.mp}`}
+                    />
+                    <Button
+                        size="sm"
+                        className="h-8"
+                        onClick={handleMpUpdate}
+                        disabled={isUpdating}
+                    >
+                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Set'}
+                    </Button>
+                </div>
+            </div>
         </CardContent>
         <CardFooter className="p-2 bg-secondary/30 mt-auto">
           <DialogTrigger asChild>
@@ -359,5 +427,3 @@ export function StudentCard({ student, isSelected, onSelect, setStudents }: Stud
     </Dialog>
   );
 }
-
-    
