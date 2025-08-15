@@ -1,6 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Star, Coins, Trophy, Heart, Zap, Shield, Wand2, Flame } from 'lucide-react';
+import { Star, Coins, Trophy, Heart, Zap, Shield, Wand2, Flame, Map } from 'lucide-react';
 import type { ClassType } from "@/lib/data";
 import {
   DropdownMenu,
@@ -11,6 +11,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
+
 
 interface StatsCardProps {
   xp: number;
@@ -81,18 +83,28 @@ export function StatsCard({ xp, gold, level, hp, mp, characterName, studentName,
               <p className="text-xl font-bold">{gold.toLocaleString()}</p>
             </div>
           </div>
-           <div className="flex flex-col items-center justify-center space-y-2 bg-secondary p-4 rounded-lg col-span-2 sm:col-span-3">
-             <Flame className="h-8 w-8 text-red-600" />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="mt-2">View Powers</Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="center">
-                <DropdownMenuLabel>Class Powers</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem disabled>No powers unlocked yet</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+           <div className="flex flex-col items-center justify-center space-y-4 bg-secondary p-4 rounded-lg col-span-2 sm:col-span-3">
+             <div className="flex items-center gap-4">
+                <div className="flex flex-col items-center">
+                    <Flame className="h-8 w-8 text-red-600" />
+                    <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="mt-2">View Powers</Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="center">
+                        <DropdownMenuLabel>Class Powers</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem disabled>No powers unlocked yet</DropdownMenuItem>
+                    </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+                <div className="flex flex-col items-center">
+                    <Map className="h-8 w-8 text-green-600" />
+                    <Link href="/dashboard/map" passHref>
+                        <Button variant="outline" className="mt-2">Continue Quest</Button>
+                    </Link>
+                </div>
+             </div>
           </div>
         </div>
       </CardContent>
