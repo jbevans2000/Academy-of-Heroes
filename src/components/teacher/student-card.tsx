@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog"
 import { DashboardClient } from '@/components/dashboard/dashboard-client';
 import { Input } from '@/components/ui/input';
-import { doc, getDoc, updateDoc, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -33,216 +33,105 @@ interface StudentCardProps {
 }
 
 export function StudentCard({ student, isSelected, onSelect, setStudents }: StudentCardProps) {
-  const [xpToAdd, setXpToAdd] = useState<number | string>('');
-  const [goldToAdd, setGoldToAdd] = useState<number | string>('');
-  const [hpToSet, setHpToSet] = useState<number | string>('');
-  const [mpToSet, setMpToSet] = useState<number | string>('');
+  const [xpValue, setXpValue] = useState<number | string>('');
+  const [goldValue, setGoldValue] = useState<number | string>('');
+  const [hpValue, setHpValue] = useState<number | string>('');
+  const [mpValue, setMpValue] = useState<number | string>('');
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
 
-  const handleXpUpdate = async () => {
-    const amount = Number(xpToAdd);
-    if (xpToAdd === '' || isNaN(amount) || amount === 0) {
-        toast({
+  const handleStatUpdate = async (
+    stat: 'xp' | 'gold' | 'hp' | 'mp',
+    operation: 'add' | 'set',
+    value: number | string
+  ) => {
+    const amount = Number(value);
+    if (value === '' || isNaN(amount)) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid Input',
+        description: `Please enter a valid number for ${stat.toUpperCase()}.`,
+      });
+      return;
+    }
+    // Allow setting to 0, but not adding 0
+    if (amount === 0 && operation === 'add') {
+         toast({
             variant: 'destructive',
             title: 'Invalid Input',
-            description: 'Please enter a valid non-zero number for XP.',
+            description: 'Cannot add zero.',
         });
         return;
     }
 
     setIsUpdating(true);
     const studentRef = doc(db, 'students', student.uid);
-    try {
-        const currentStudentDoc = await getDoc(studentRef);
-        if (!currentStudentDoc.exists()) throw new Error("Student not found");
 
-        const studentData = currentStudentDoc.data() as Student;
+    try {
+      const studentDoc = await getDoc(studentRef);
+      if (!studentDoc.exists()) throw new Error("Student not found");
+
+      const studentData = studentDoc.data() as Student;
+      let updates: Partial<Student> = {};
+
+      // Calculate new values
+      if (stat === 'xp') {
         const currentXp = studentData.xp || 0;
-        const newXp = Math.max(0, currentXp + amount);
-        
+        const newXp = operation === 'add' ? currentXp + amount : amount;
+        updates.xp = Math.max(0, newXp);
+
         const currentLevel = studentData.level || 1;
-        const newLevel = calculateLevel(newXp);
-        
-        let newHp = studentData.hp;
-        let newMp = studentData.mp;
+        const newLevel = calculateLevel(updates.xp);
 
         if (newLevel > currentLevel) {
-            const levelsGained = newLevel - currentLevel;
-            const hpGained = calculateHpGain(studentData.class, levelsGained);
-            newHp += hpGained;
-            const mpGained = calculateMpGain(studentData.class, levelsGained);
-            newMp += mpGained;
+          updates.level = newLevel;
+          const levelsGained = newLevel - currentLevel;
+          updates.hp = studentData.hp + calculateHpGain(studentData.class, levelsGained);
+          updates.mp = studentData.mp + calculateMpGain(studentData.class, levelsGained);
         }
-        
-        await updateDoc(studentRef, {
-            xp: newXp,
-            level: newLevel,
-            hp: newHp,
-            mp: newMp
-        });
-        
-        const updatedStudent = { ...studentData, xp: newXp, level: newLevel, hp: newHp, mp: newMp };
-        
-        setStudents(prevStudents => 
-            prevStudents.map(s => s.uid === student.uid ? updatedStudent : s)
-        );
+      } else if (stat === 'gold') {
+        const currentGold = studentData.gold || 0;
+        const newGold = operation === 'add' ? currentGold + amount : amount;
+        updates.gold = Math.max(0, newGold);
+      } else if (stat === 'hp') {
+        const currentHp = studentData.hp || 0;
+        const newHp = operation === 'add' ? currentHp + amount : amount;
+        updates.hp = Math.max(0, newHp);
+      } else if (stat === 'mp') {
+        const currentMp = studentData.mp || 0;
+        const newMp = operation === 'add' ? currentMp + amount : amount;
+        updates.mp = Math.max(0, newMp);
+      }
 
-        toast({
-            title: 'XP Awarded!',
-            description: `${amount > 0 ? '+' : ''}${amount} XP awarded to ${student.characterName}. Level, HP, and MP updated where appropriate.`,
-        });
-         setXpToAdd('');
+      await updateDoc(studentRef, updates);
+
+      const updatedStudent = { ...studentData, ...updates };
+      setStudents(prevStudents =>
+        prevStudents.map(s => s.uid === student.uid ? updatedStudent : s)
+      );
+
+      toast({
+        title: `${stat.toUpperCase()} Updated!`,
+        description: `${student.characterName}'s ${stat} has been updated.`,
+      });
+
+      // Clear input fields
+      setXpValue('');
+      setGoldValue('');
+      setHpValue('');
+      setMpValue('');
 
     } catch (error) {
-        console.error("Error updating XP: ", error);
-        toast({
-            variant: 'destructive',
-            title: 'Update Failed',
-            description: 'Could not update student XP. Please try again.',
-        });
+      console.error(`Error updating ${stat}: `, error);
+      toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: `Could not update student ${stat}. Please try again.`,
+      });
     } finally {
-        setIsUpdating(false);
+      setIsUpdating(false);
     }
   };
-
-  const handleGoldUpdate = async () => {
-    const amount = Number(goldToAdd);
-    if (goldToAdd === '' || isNaN(amount) || amount === 0) {
-        toast({
-            variant: 'destructive',
-            title: 'Invalid Input',
-            description: 'Please enter a valid non-zero number for Gold.',
-        });
-        return;
-    }
-
-    setIsUpdating(true);
-    const studentRef = doc(db, 'students', student.uid);
-    try {
-        const currentStudentDoc = await getDoc(studentRef);
-        if (!currentStudentDoc.exists()) throw new Error("Student not found");
-        
-        const currentStudentData = currentStudentDoc.data() as Student;
-        const newGold = Math.max(0, (currentStudentData.gold || 0) + amount);
-        
-        await updateDoc(studentRef, {
-            gold: newGold
-        });
-        
-        const updatedStudent = { ...currentStudentData, gold: newGold };
-        
-        setStudents(prevStudents => 
-            prevStudents.map(s => s.uid === student.uid ? updatedStudent : s)
-        );
-
-        toast({
-            title: 'Gold Awarded!',
-            description: `${amount > 0 ? '+' : ''}${amount} Gold awarded to ${student.characterName}.`,
-        });
-        setGoldToAdd('');
-
-    } catch (error) {
-        console.error("Error updating Gold: ", error);
-        toast({
-            variant: 'destructive',
-            title: 'Update Failed',
-            description: 'Could not update student Gold. Please try again.',
-        });
-    } finally {
-        setIsUpdating(false);
-    }
-  };
-
-  const handleHpUpdate = async () => {
-    const amount = Number(hpToSet);
-    if (hpToSet === '' || isNaN(amount)) {
-        toast({
-            variant: 'destructive',
-            title: 'Invalid Input',
-            description: 'Please enter a valid number for HP.',
-        });
-        return;
-    }
-
-    setIsUpdating(true);
-    const studentRef = doc(db, 'students', student.uid);
-    try {
-        const currentStudentDoc = await getDoc(studentRef);
-        if (!currentStudentDoc.exists()) throw new Error("Student not found");
-        const currentStudentData = currentStudentDoc.data() as Student;
-
-        await updateDoc(studentRef, {
-            hp: amount
-        });
-
-        const updatedStudent = { ...currentStudentData, hp: amount };
-        
-        setStudents(prevStudents => 
-            prevStudents.map(s => s.uid === student.uid ? updatedStudent : s)
-        );
-
-        toast({
-            title: 'HP Set!',
-            description: `${student.characterName}'s HP has been set to ${amount}.`,
-        });
-        setHpToSet('');
-    } catch (error) {
-        console.error("Error updating HP: ", error);
-        toast({
-            variant: 'destructive',
-            title: 'Update Failed',
-            description: 'Could not update student HP. Please try again.',
-        });
-    } finally {
-        setIsUpdating(false);
-    }
-};
-
- const handleMpUpdate = async () => {
-    const amount = Number(mpToSet);
-    if (mpToSet === '' || isNaN(amount)) {
-        toast({
-            variant: 'destructive',
-            title: 'Invalid Input',
-            description: 'Please enter a valid number for MP.',
-        });
-        return;
-    }
-
-    setIsUpdating(true);
-    const studentRef = doc(db, 'students', student.uid);
-    try {
-        const currentStudentDoc = await getDoc(studentRef);
-        if (!currentStudentDoc.exists()) throw new Error("Student not found");
-        const currentStudentData = currentStudentDoc.data() as Student;
-
-        await updateDoc(studentRef, {
-            mp: amount
-        });
-
-        const updatedStudent = { ...currentStudentData, mp: amount };
-        
-        setStudents(prevStudents => 
-            prevStudents.map(s => s.uid === student.uid ? updatedStudent : s)
-        );
-
-        toast({
-            title: 'MP Set!',
-            description: `${student.characterName}'s MP has been set to ${amount}.`,
-        });
-        setMpToSet('');
-    } catch (error) {
-        console.error("Error updating MP: ", error);
-        toast({
-            variant: 'destructive',
-            title: 'Update Failed',
-            description: 'Could not update student MP. Please try again.',
-        });
-    } finally {
-        setIsUpdating(false);
-    }
-};
 
 
   const backgroundUrl = student.backgroundUrl || 'https://placehold.co/600x400.png';
@@ -310,7 +199,7 @@ export function StudentCard({ student, isSelected, onSelect, setStudents }: Stud
                   </div>
               </div>
                <div className="flex items-center space-x-1">
-                  <Zap className="h-5 w-5 text-yellow-500" />
+                  <Zap className="h-5 w-5 text-blue-500" />
                   <div>
                     <p className="font-semibold">{student.mp ?? 0}</p>
                     <p className="text-xs text-muted-foreground">MP</p>
@@ -323,88 +212,80 @@ export function StudentCard({ student, isSelected, onSelect, setStudents }: Stud
           </div>
            <div className="space-y-2 pt-2">
                 <label htmlFor={`xp-${student.uid}`} className="text-sm font-medium flex items-center gap-2 text-muted-foreground"><Star className="w-4 h-4 text-yellow-400" /> Experience ({student.xp.toLocaleString()})</label>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                     <Input 
                         id={`xp-${student.uid}`}
                         type="number"
-                        value={xpToAdd}
-                        onChange={(e) => setXpToAdd(e.target.value)}
+                        value={xpValue}
+                        onChange={(e) => setXpValue(e.target.value)}
                         className="h-8"
                         disabled={isUpdating}
-                        placeholder="e.g. 50"
+                        placeholder="Value"
                     />
-                    <Button
-                        size="sm"
-                        className="h-8"
-                        onClick={handleXpUpdate}
-                        disabled={isUpdating}
-                    >
+                    <Button size="sm" className="h-8 px-2" onClick={() => handleStatUpdate('xp', 'add', xpValue)} disabled={isUpdating}>
                         {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add'}
+                    </Button>
+                     <Button size="sm" className="h-8 px-2" onClick={() => handleStatUpdate('xp', 'set', xpValue)} disabled={isUpdating}>
+                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Set'}
                     </Button>
                 </div>
             </div>
              <div className="space-y-2 pt-2">
                 <label htmlFor={`gold-${student.uid}`} className="text-sm font-medium flex items-center gap-2 text-muted-foreground"><Coins className="w-4 h-4 text-amber-500" /> Gold ({student.gold.toLocaleString()})</label>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                     <Input 
                         id={`gold-${student.uid}`}
                         type="number"
-                        value={goldToAdd}
-                        onChange={(e) => setGoldToAdd(e.target.value)}
+                        value={goldValue}
+                        onChange={(e) => setGoldValue(e.target.value)}
                         className="h-8"
                         disabled={isUpdating}
-                        placeholder="e.g. 10"
+                        placeholder="Value"
                     />
-                    <Button
-                        size="sm"
-                        className="h-8"
-                        onClick={handleGoldUpdate}
-                        disabled={isUpdating}
-                    >
+                    <Button size="sm" className="h-8 px-2" onClick={() => handleStatUpdate('gold', 'add', goldValue)} disabled={isUpdating}>
                         {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add'}
+                    </Button>
+                    <Button size="sm" className="h-8 px-2" onClick={() => handleStatUpdate('gold', 'set', goldValue)} disabled={isUpdating}>
+                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Set'}
                     </Button>
                 </div>
             </div>
             <div className="space-y-2 pt-2">
                 <label htmlFor={`hp-${student.uid}`} className="text-sm font-medium flex items-center gap-2 text-muted-foreground"><Heart className="w-4 h-4 text-red-500" /> Health Points</label>
-                <div className="flex items-center gap-2">
+                 <div className="flex items-center gap-1">
                     <Input 
                         id={`hp-${student.uid}`}
                         type="number"
-                        value={hpToSet}
-                        onChange={(e) => setHpToSet(e.target.value)}
+                        value={hpValue}
+                        onChange={(e) => setHpValue(e.target.value)}
                         className="h-8"
                         disabled={isUpdating}
                         placeholder={`Current: ${student.hp}`}
                     />
-                    <Button
-                        size="sm"
-                        className="h-8"
-                        onClick={handleHpUpdate}
-                        disabled={isUpdating}
-                    >
+                     <Button size="sm" className="h-8 px-2" onClick={() => handleStatUpdate('hp', 'add', hpValue)} disabled={isUpdating}>
+                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add'}
+                    </Button>
+                    <Button size="sm" className="h-8 px-2" onClick={() => handleStatUpdate('hp', 'set', hpValue)} disabled={isUpdating}>
                         {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Set'}
                     </Button>
                 </div>
             </div>
              <div className="space-y-2 pt-2">
                 <label htmlFor={`mp-${student.uid}`} className="text-sm font-medium flex items-center gap-2 text-muted-foreground"><Zap className="w-4 h-4 text-blue-500" /> Magic Points</label>
-                <div className="flex items-center gap-2">
+                 <div className="flex items-center gap-1">
                     <Input 
                         id={`mp-${student.uid}`}
                         type="number"
-                        value={mpToSet}
-                        onChange={(e) => setMpToSet(e.target.value)}
+                        value={mpValue}
+                        onChange={(e) => setMpValue(e.target.value)}
                         className="h-8"
                         disabled={isUpdating}
                         placeholder={`Current: ${student.mp}`}
                     />
-                    <Button
-                        size="sm"
-                        className="h-8"
-                        onClick={handleMpUpdate}
-                        disabled={isUpdating}
-                    >
+                    <Button size="sm" className="h-8 px-2" onClick={() => handleStatUpdate('mp', 'add', mpValue)} disabled={isUpdating}>
+                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add'}
+                    </Button>
+                    <Button size="sm" className="h-8 px-2" onClick={() => handleStatUpdate('mp', 'set', mpValue)} disabled={isUpdating}>
                         {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Set'}
                     </Button>
                 </div>
