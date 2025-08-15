@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { onSnapshot, doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
-import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Hourglass } from 'lucide-react';
+import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Hourglass, VolumeX } from 'lucide-react';
 import { type Student } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
@@ -83,7 +83,7 @@ const getYouTubeEmbedUrl = (url: string) => {
     if (ampersandPosition !== -1) {
         videoId = videoId.substring(0, ampersandPosition);
     }
-    return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+    return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`;
 };
 
 
@@ -220,16 +220,22 @@ export default function LiveBattlePage() {
                 <Card className="bg-black/60 backdrop-blur-sm p-8 border-gray-600">
                     <CardContent className="flex flex-col items-center justify-center space-y-4">
                         {videoSrc ? (
-                            <div className="w-full aspect-video">
-                                <iframe
-                                    className="w-full h-full rounded-lg shadow-lg border"
-                                    src={videoSrc}
-                                    title="YouTube video player"
-                                    frameBorder="0"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                    allowFullScreen
-                                ></iframe>
-                            </div>
+                            <>
+                                <div className="w-full aspect-video">
+                                    <iframe
+                                        className="w-full h-full rounded-lg shadow-lg border"
+                                        src={videoSrc}
+                                        title="YouTube video player"
+                                        frameBorder="0"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                        allowFullScreen
+                                    ></iframe>
+                                </div>
+                                <div className="mt-2 flex items-center justify-center gap-2 rounded-md bg-yellow-900/80 px-4 py-2 text-yellow-200 border border-yellow-700">
+                                    <VolumeX className="h-5 w-5" />
+                                    <p className="font-semibold">Video is muted. Click the speaker icon on the video to unmute!</p>
+                                </div>
+                            </>
                         ) : (
                             <>
                                 <Shield className="h-24 w-24 text-primary mb-2 animate-pulse" />
@@ -374,8 +380,3 @@ export default function LiveBattlePage() {
     </div>
   );
 }
-
-    
-
-    
-
