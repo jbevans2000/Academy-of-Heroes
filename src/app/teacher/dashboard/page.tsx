@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, getDocs, writeBatch, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, writeBatch, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import { TeacherHeader } from "@/components/teacher/teacher-header";
@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Star, Coins } from 'lucide-react';
+import { calculateLevel } from '@/lib/game-mechanics';
 
 export default function TeacherDashboardPage() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -97,9 +98,10 @@ export default function TeacherDashboardPage() {
 
           for (const studentDoc of studentDocs) {
               if (studentDoc.exists()) {
-                  const currentXp = studentDoc.data().xp || 0;
-                  const newXp = currentXp + amount;
-                  batch.update(studentDoc.ref, { xp: newXp });
+                  const studentData = studentDoc.data() as Student;
+                  const newXp = (studentData.xp || 0) + amount;
+                  const newLevel = calculateLevel(newXp);
+                  batch.update(studentDoc.ref, { xp: newXp, level: newLevel });
               }
           }
           
@@ -107,11 +109,14 @@ export default function TeacherDashboardPage() {
 
           // Update local state to reflect changes
           setStudents(prevStudents =>
-              prevStudents.map(s =>
-                  selectedStudents.includes(s.uid)
-                      ? { ...s, xp: (s.xp || 0) + amount }
-                      : s
-              )
+              prevStudents.map(s => {
+                  if (selectedStudents.includes(s.uid)) {
+                      const newXp = (s.xp || 0) + amount;
+                      const newLevel = calculateLevel(newXp);
+                      return { ...s, xp: newXp, level: newLevel };
+                  }
+                  return s;
+              })
           );
 
           toast({
@@ -317,3 +322,5 @@ export default function TeacherDashboardPage() {
     </div>
   );
 }
+
+    

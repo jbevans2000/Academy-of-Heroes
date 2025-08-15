@@ -22,6 +22,8 @@ import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
+import { calculateLevel } from '@/lib/game-mechanics';
+
 
 interface StudentCardProps {
   student: Student;
@@ -57,25 +59,25 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
 
         const currentStudentData = currentStudentDoc.data() as Student;
         const newXp = (currentStudentData.xp || 0) + amount;
+        const newLevel = calculateLevel(newXp);
         
         await updateDoc(studentRef, {
-            xp: newXp
+            xp: newXp,
+            level: newLevel,
         });
         
-        const updatedStudent = { ...currentStudentData, xp: newXp };
+        const updatedStudent = { ...currentStudentData, xp: newXp, level: newLevel };
         
-        // Update the single student in the parent state
         setStudents(prevStudents => 
             prevStudents.map(s => s.uid === student.uid ? updatedStudent : s)
         );
-        // Also update local card state
         setStudent(updatedStudent);
 
         toast({
             title: 'XP Awarded!',
             description: `${amount > 0 ? '+' : ''}${amount} XP awarded to ${student.characterName}.`,
         });
-         setXpToAdd(''); // Clear input
+         setXpToAdd('');
 
     } catch (error) {
         console.error("Error updating XP: ", error);
@@ -115,18 +117,16 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
         
         const updatedStudent = { ...currentStudentData, gold: newGold };
         
-        // Update the single student in the parent state
         setStudents(prevStudents => 
             prevStudents.map(s => s.uid === student.uid ? updatedStudent : s)
         );
-        // Also update local card state
         setStudent(updatedStudent);
 
         toast({
             title: 'Gold Awarded!',
             description: `${amount > 0 ? '+' : ''}${amount} Gold awarded to ${student.characterName}.`,
         });
-        setGoldToAdd(''); // Clear input
+        setGoldToAdd('');
 
     } catch (error) {
         console.error("Error updating Gold: ", error);
@@ -260,7 +260,7 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
               </div>
           </div>
            <div className="space-y-2 pt-2">
-                <label htmlFor={`xp-${student.uid}`} className="text-sm font-medium flex items-center gap-2 text-muted-foreground"><Star className="w-4 h-4 text-yellow-400" /> Experience</label>
+                <label htmlFor={`xp-${student.uid}`} className="text-sm font-medium flex items-center gap-2 text-muted-foreground"><Star className="w-4 h-4 text-yellow-400" /> Experience ({student.xp.toLocaleString()})</label>
                 <div className="flex items-center gap-2">
                     <Input 
                         id={`xp-${student.uid}`}
@@ -282,7 +282,7 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
                 </div>
             </div>
              <div className="space-y-2 pt-2">
-                <label htmlFor={`gold-${student.uid}`} className="text-sm font-medium flex items-center gap-2 text-muted-foreground"><Coins className="w-4 h-4 text-amber-500" /> Gold</label>
+                <label htmlFor={`gold-${student.uid}`} className="text-sm font-medium flex items-center gap-2 text-muted-foreground"><Coins className="w-4 h-4 text-amber-500" /> Gold ({student.gold.toLocaleString()})</label>
                 <div className="flex items-center gap-2">
                     <Input 
                         id={`gold-${student.uid}`}
@@ -313,7 +313,7 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
                         onChange={(e) => setHpToSet(e.target.value)}
                         className="h-8"
                         disabled={isUpdating}
-                        placeholder="e.g. 150"
+                        placeholder={`Current: ${student.hp}`}
                     />
                     <Button
                         size="sm"
@@ -348,3 +348,5 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
     </Dialog>
   );
 }
+
+    
