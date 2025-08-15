@@ -2,15 +2,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { onSnapshot, doc, getDoc, collection, query } from 'firebase/firestore';
+import { useParams } from 'next/navigation';
+import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, UserCheck } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { RoundResults, type Result } from '@/components/teacher/round-results';
 
 
 interface LiveBattleState {
@@ -19,24 +20,33 @@ interface LiveBattleState {
   currentQuestionIndex: number;
 }
 
+interface Question {
+  questionText: string;
+  answers: string[];
+  correctAnswerIndex: number;
+}
+
 interface Battle {
     id: string;
     battleName: string;
+    questions: Question[];
 }
 
 interface StudentResponse {
     studentName: string;
+    answerIndex: number;
 }
 
 export default function TeacherLiveBattlePage() {
-  const router = useRouter();
   const params = useParams();
   const battleId = params.id as string;
 
   const [battle, setBattle] = useState<Battle | null>(null);
   const [liveState, setLiveState] = useState<LiveBattleState | null>(null);
   const [studentResponses, setStudentResponses] = useState<StudentResponse[]>([]);
+  const [roundResults, setRoundResults] = useState<Result[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isEndingRound, setIsEndingRound] = useState(false);
 
   // Fetch the static battle definition once
   useEffect(() => {
@@ -59,9 +69,10 @@ export default function TeacherLiveBattlePage() {
     const unsubscribe = onSnapshot(liveBattleRef, (doc) => {
       if (doc.exists()) {
         const newState = doc.data() as LiveBattleState;
-        // If the question index changes, clear old responses
+        // If the question index changes, clear old responses and results
         if (liveState && liveState.currentQuestionIndex !== newState.currentQuestionIndex) {
             setStudentResponses([]);
+            setRoundResults([]);
         }
         setLiveState(newState);
       }
@@ -70,9 +81,14 @@ export default function TeacherLiveBattlePage() {
     return () => unsubscribe();
   }, [liveState]);
 
-  // Listen for real-time student responses
+  // Listen for real-time student responses ONLY when the battle is in progress
   useEffect(() => {
-    if (!liveState || liveState.status !== 'IN_PROGRESS') return;
+    if (!liveState || liveState.status !== 'IN_PROGRESS') {
+        if (liveState?.status !== 'SHOWING_RESULTS') {
+            setStudentResponses([]); // Clear responses if not in progress or showing results
+        }
+        return;
+    };
 
     const responsesRef = collection(db, `liveBattles/active-battle/responses`);
     const q = query(responsesRef);
@@ -85,7 +101,38 @@ export default function TeacherLiveBattlePage() {
     });
 
     return () => unsubscribe();
-  }, [liveState]);
+  }, [liveState, liveState?.status]);
+
+
+  const handleEndRound = async () => {
+    if (!battle || liveState === null) return;
+    
+    setIsEndingRound(true);
+
+    try {
+        const responsesRef = collection(db, `liveBattles/active-battle/responses`);
+        const responsesSnapshot = await getDocs(responsesRef);
+        const responsesData = responsesSnapshot.docs.map(doc => doc.data() as StudentResponse);
+        
+        const currentQuestion = battle.questions[liveState.currentQuestionIndex];
+        const correctAnswerIndex = currentQuestion.correctAnswerIndex;
+
+        const results: Result[] = responsesData.map(response => ({
+            studentName: response.studentName,
+            answer: currentQuestion.answers[response.answerIndex],
+            isCorrect: response.answerIndex === correctAnswerIndex,
+        }));
+        setRoundResults(results);
+
+        // Update the central battle state
+        const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
+        await updateDoc(liveBattleRef, { status: 'SHOWING_RESULTS' });
+    } catch (error) {
+        console.error("Error ending round:", error);
+    } finally {
+        setIsEndingRound(false);
+    }
+  };
 
 
   if (isLoading || !battle || !liveState) {
@@ -103,6 +150,10 @@ export default function TeacherLiveBattlePage() {
     );
   }
 
+  const isRoundInProgress = liveState.status === 'IN_PROGRESS';
+  const areResultsShowing = liveState.status === 'SHOWING_RESULTS';
+
+
   return (
     <div className="flex min-h-screen w-full flex-col">
       <TeacherHeader />
@@ -114,13 +165,16 @@ export default function TeacherLiveBattlePage() {
                     <CardDescription>Live Battle Control Panel</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p>Status: <span className="font-bold text-primary">{liveState.status}</span></p>
-                    <p>Current Question: <span className="font-bold">{liveState.currentQuestionIndex + 1}</span></p>
+                    <p>Status: <span className="font-bold text-primary">{liveState.status.replace('_', ' ')}</span></p>
+                    <p>Current Question: <span className="font-bold">{liveState.currentQuestionIndex + 1} / {battle.questions.length}</span></p>
                     
                     <div className="mt-6 p-4 border rounded-lg">
                         <h3 className="font-semibold text-lg mb-2">Controls</h3>
                         <div className="flex gap-4">
-                             <Button disabled>End Round</Button>
+                             <Button onClick={handleEndRound} disabled={!isRoundInProgress || isEndingRound}>
+                                {isEndingRound ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                End Round
+                             </Button>
                              <Button disabled>Next Question</Button>
                              <Button variant="destructive">End Battle</Button>
                         </div>
@@ -128,28 +182,35 @@ export default function TeacherLiveBattlePage() {
                 </CardContent>
             </Card>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Live Student Responses ({studentResponses.length})</CardTitle>
-                    <CardDescription>See which students have submitted their answer for the current question.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {studentResponses.length > 0 ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                            {studentResponses.map((response, index) => (
-                                <div key={index} className="flex items-center gap-2 p-2 rounded-md bg-secondary">
-                                    <Avatar className="h-8 w-8">
-                                        <AvatarFallback>{response.studentName.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <span className="font-medium">{response.studentName}</span>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                         <p className="text-muted-foreground">Waiting for students to answer...</p>
-                    )}
-                </CardContent>
-            </Card>
+            {isRoundInProgress && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Live Student Responses ({studentResponses.length})</CardTitle>
+                        <CardDescription>See which students have submitted their answer for the current question.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {studentResponses.length > 0 ? (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                {studentResponses.map((response, index) => (
+                                    <div key={index} className="flex items-center gap-2 p-2 rounded-md bg-secondary">
+                                        <Avatar className="h-8 w-8">
+                                            <AvatarFallback>{response.studentName.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <span className="font-medium">{response.studentName}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-muted-foreground">Waiting for students to answer...</p>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
+
+            {areResultsShowing && (
+                <RoundResults results={roundResults} />
+            )}
+
         </div>
       </main>
     </div>
