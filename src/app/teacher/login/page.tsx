@@ -2,10 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -16,60 +13,16 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { School, Loader2, Eye, EyeOff } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-
-// IMPORTANT: This is the designated teacher's email address
-const TEACHER_EMAIL = 'jevans@nca.connectionsacademy.org'; 
+import { School, Loader2 } from 'lucide-react';
 
 export default function TeacherLoginPage() {
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { toast } = useToast();
 
-  const handleLogin = async () => {
+  const handleLogin = () => {
     setIsLoading(true);
-    try {
-      // Step 1: Authenticate with Firebase using the hardcoded teacher email
-      await signInWithEmailAndPassword(auth, TEACHER_EMAIL, password);
-      
-      // Since we're authenticating with the correct email, we can go straight to the dashboard
-      toast({
-        title: 'Login Successful!',
-        description: 'Welcome back, teacher.',
-      });
-      router.push('/teacher/dashboard');
-      
-    } catch (error: any) {
-      console.error(error);
-      let description = 'An unexpected error occurred. Please try again.';
-      if (error.code) {
-        switch (error.code) {
-            case 'auth/invalid-credential':
-            case 'auth/user-not-found':
-            case 'auth/wrong-password':
-                description = 'Invalid password. Please try again.';
-                break;
-            case 'auth/network-request-failed':
-                description = 'Network error. Please check your connection.';
-                break;
-            case 'auth/configuration-not-found':
-                 description = 'Firebase configuration is missing or invalid. Please contact support.';
-                 break;
-            default:
-                description = `An error occurred: ${error.message}`;
-        }
-      }
-      toast({
-        variant: 'destructive',
-        title: 'Login Failed',
-        description: description,
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    // Directly navigate to the dashboard without authentication
+    router.push('/teacher/dashboard');
   };
 
 
@@ -82,44 +35,19 @@ export default function TeacherLoginPage() {
         <Card className="shadow-2xl">
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-headline text-primary">
-              Teacher Login
+              Teacher Dashboard
             </CardTitle>
             <CardDescription>
-              Enter your password to manage your students
+              Click below to view student progress
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                </div>
-                <div className="relative">
-                  <Input 
-                    id="password" 
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Enter your password"
-                    required 
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={isLoading}
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground"
-                    disabled={isLoading}
-                  >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
-                </div>
-              </div>
               <Button type="button" className="w-full" onClick={handleLogin} disabled={isLoading}>
                  {isLoading ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
-                Login
+                View Dashboard
               </Button>
             </div>
              <div className="mt-4 text-center text-sm">

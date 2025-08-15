@@ -4,19 +4,13 @@
 import { School, LogOut } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { auth } from "@/lib/firebase";
-import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 
 export function TeacherHeader() {
   const router = useRouter();
 
-  const handleLogout = async () => {
-    try {
-        await signOut(auth);
-    } catch(e) {
-        console.error("Error signing out", e);
-    }
+  const handleLogout = () => {
+    // Simply redirect to the main login page
     router.push('/');
   };
 
