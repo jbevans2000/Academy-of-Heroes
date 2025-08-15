@@ -110,7 +110,7 @@ export default function EditQuestPage() {
         return false;
     }
      if (!chapter?.title || chapter?.chapterNumber === undefined || !chapter?.storyContent || !chapter?.lessonContent) {
-        toast({ variant: 'destructive', title: 'Validation Error', description: 'Please fill out all chapter fields: Title, Number, Story, and Lesson.' });
+        toast({ variant: 'destructive', title: 'Validation Error', description: 'Please fill out all required chapter fields: Title, Number, Story, and Lesson.' });
         return false;
     }
     return true;

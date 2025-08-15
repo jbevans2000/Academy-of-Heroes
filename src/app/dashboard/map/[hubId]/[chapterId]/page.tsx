@@ -125,6 +125,7 @@ export default function ChapterPage() {
                                         data-ai-hint="scroll letter"
                                     />
                                 </div></>}
+                                {chapter.storyAdditionalContent && <><Separator />{storyAdditionalParagraphs}</>}
                                  {chapter.decorativeImageUrl2 && <><Separator /><div className="flex justify-center">
                                      <Image
                                         src={chapter.decorativeImageUrl2}
@@ -135,7 +136,6 @@ export default function ChapterPage() {
                                         data-ai-hint="twig decoration"
                                     />
                                 </div></>}
-                                {chapter.storyAdditionalContent && <><Separator />{storyAdditionalParagraphs}</>}
                             </TabsContent>
                             <TabsContent value="lesson" className="mt-6 space-y-6 text-lg leading-relaxed">
                                  <div className="text-center">
@@ -175,6 +175,7 @@ export default function ChapterPage() {
                                         data-ai-hint="old paper"
                                     />
                                 </div></>}
+                                {chapter.lessonAdditionalContent && <><Separator />{lessonAdditionalParagraphs}</>}
                                  {chapter.lessonDecorativeImageUrl2 && <><Separator /><div className="flex justify-center">
                                      <Image
                                         src={chapter.lessonDecorativeImageUrl2}
@@ -185,7 +186,6 @@ export default function ChapterPage() {
                                         data-ai-hint="divider"
                                     />
                                 </div></>}
-                                {chapter.lessonAdditionalContent && <><Separator />{lessonAdditionalParagraphs}</>}
                             </TabsContent>
                         </Tabs>
                     </CardContent>
