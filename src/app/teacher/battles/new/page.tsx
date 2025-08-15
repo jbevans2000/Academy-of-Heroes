@@ -20,6 +20,7 @@ interface Question {
   questionText: string;
   answers: string[];
   correctAnswerIndex: number | null;
+  damage: number;
 }
 
 export default function NewBossBattlePage() {
@@ -28,7 +29,6 @@ export default function NewBossBattlePage() {
   const [battleTitle, setBattleTitle] = useState('');
   const [bossImageUrl, setBossImageUrl] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
-  const [damage, setDamage] = useState<number | string>(10);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isClient, setIsClient] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -36,7 +36,7 @@ export default function NewBossBattlePage() {
   useEffect(() => {
     // This ensures the initial question is only set on the client
     // after hydration, preventing the server/client mismatch.
-    setQuestions([{ id: Date.now(), questionText: '', answers: ['', '', '', ''], correctAnswerIndex: null }]);
+    setQuestions([{ id: Date.now(), questionText: '', answers: ['', '', '', ''], correctAnswerIndex: null, damage: 10 }]);
     setIsClient(true);
   }, []);
 
@@ -44,7 +44,7 @@ export default function NewBossBattlePage() {
   const handleAddQuestion = () => {
     setQuestions([
       ...questions,
-      { id: Date.now(), questionText: '', answers: ['', '', '', ''], correctAnswerIndex: null },
+      { id: Date.now(), questionText: '', answers: ['', '', '', ''], correctAnswerIndex: null, damage: 10 },
     ]);
   };
 
@@ -63,6 +63,12 @@ export default function NewBossBattlePage() {
   const handleQuestionChange = (id: number, value: string) => {
     setQuestions(
       questions.map((q) => (q.id === id ? { ...q, questionText: value } : q))
+    );
+  };
+  
+  const handleDamageChange = (id: number, value: string) => {
+    setQuestions(
+      questions.map((q) => (q.id === id ? { ...q, damage: Number(value) } : q))
     );
   };
 
@@ -104,6 +110,10 @@ export default function NewBossBattlePage() {
         toast({ variant: 'destructive', title: 'Validation Error', description: 'Each question must have a correct answer selected.' });
         return false;
     }
+     if (questions.some(q => isNaN(q.damage) || q.damage < 0)) {
+        toast({ variant: 'destructive', title: 'Validation Error', description: 'Damage for incorrect answers must be a non-negative number.' });
+        return false;
+    }
     return true;
   }
 
@@ -120,7 +130,6 @@ export default function NewBossBattlePage() {
             battleName: battleTitle,
             bossImageUrl,
             videoUrl,
-            damage: Number(damage),
             questions: questionsToSave,
             createdAt: new Date(),
         });
@@ -177,10 +186,6 @@ export default function NewBossBattlePage() {
                         <Label htmlFor="battle-name" className="text-base">Boss Battle Title</Label>
                         <Input id="battle-name" placeholder="e.g., The Ancient Karkorah" value={battleTitle} onChange={(e) => setBattleTitle(e.target.value)} disabled={isSaving} />
                     </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="damage" className="text-base">Incorrect Answer Damage</Label>
-                        <Input id="damage" type="number" placeholder="e.g., 10" value={damage} onChange={(e) => setDamage(Number(e.target.value))} disabled={isSaving} />
-                    </div>
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="boss-image" className="text-base">Boss Image URL</Label>
@@ -208,15 +213,29 @@ export default function NewBossBattlePage() {
                         <span className="sr-only">Remove Question</span>
                       </Button>
                     <div className="space-y-4">
-                      <Label htmlFor={`q-text-${q.id}`} className="text-base font-semibold">Question {qIndex + 1}</Label>
-                      <Textarea
-                        id={`q-text-${q.id}`}
-                        placeholder="What is the powerhouse of the cell?"
-                        value={q.questionText}
-                        onChange={(e) => handleQuestionChange(q.id, e.target.value)}
-                        className="text-base"
-                        disabled={isSaving}
-                      />
+                      <div>
+                        <Label htmlFor={`q-text-${q.id}`} className="text-base font-semibold">Question {qIndex + 1}</Label>
+                        <Textarea
+                            id={`q-text-${q.id}`}
+                            placeholder="What is the powerhouse of the cell?"
+                            value={q.questionText}
+                            onChange={(e) => handleQuestionChange(q.id, e.target.value)}
+                            className="text-base mt-2"
+                            disabled={isSaving}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor={`q-damage-${q.id}`} className="text-base">Damage for Incorrect Answer</Label>
+                        <Input
+                            id={`q-damage-${q.id}`}
+                            type="number"
+                            placeholder="e.g., 10"
+                            value={q.damage}
+                            onChange={(e) => handleDamageChange(q.id, e.target.value)}
+                            className="mt-2"
+                            disabled={isSaving}
+                        />
+                      </div>
                       <div className="space-y-2">
                         <Label>Answer Choices (Select the correct one)</Label>
                         <RadioGroup

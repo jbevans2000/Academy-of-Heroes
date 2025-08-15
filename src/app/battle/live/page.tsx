@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { onSnapshot, doc, getDoc, setDoc } from 'firebase/firestore';
+import { onSnapshot, doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
 import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Hourglass } from 'lucide-react';
@@ -26,6 +26,7 @@ interface Question {
   questionText: string;
   answers: string[];
   correctAnswerIndex: number;
+  damage: number;
 }
 
 interface Battle {
@@ -76,6 +77,7 @@ export default function LiveBattlePage() {
   const [student, setStudent] = useState<Student | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [submittedAnswer, setSubmittedAnswer] = useState<number | null>(null);
+  const [lastAnswerCorrect, setLastAnswerCorrect] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
@@ -100,13 +102,13 @@ export default function LiveBattlePage() {
     setIsLoading(true);
     const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
     const unsubscribe = onSnapshot(liveBattleRef, (docSnapshot) => {
-      const currentState = battleState;
       if (docSnapshot.exists()) {
         const newState = docSnapshot.data() as LiveBattleState;
 
-        // If it's a new battle or new question, reset submitted answer
-        if (currentState && (newState.battleId !== currentState.battleId || newState.currentQuestionIndex !== currentState.currentQuestionIndex)) {
+        // If it's a new question, reset submitted answer state
+        if (battleState && newState.currentQuestionIndex !== battleState.currentQuestionIndex) {
           setSubmittedAnswer(null);
+          setLastAnswerCorrect(null);
         }
         
         setBattleState(newState);
@@ -115,8 +117,6 @@ export default function LiveBattlePage() {
             router.push('/battle/summary');
         }
       } else {
-        // If the document does not exist, it means a battle is not active.
-        // Set to WAITING status to show the waiting room.
         setBattleState({ battleId: null, status: 'WAITING', currentQuestionIndex: 0 });
       }
       setIsLoading(false);
@@ -125,8 +125,7 @@ export default function LiveBattlePage() {
       setIsLoading(false);
     });
     return () => unsubscribe();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router]);
+  }, [router, battleState]);
 
   // Effect to fetch the battle details when battleId changes
   useEffect(() => {
@@ -150,10 +149,22 @@ export default function LiveBattlePage() {
     
     const currentQuestion = battle.questions[battleState.currentQuestionIndex];
     const isCorrect = answerIndex === currentQuestion.correctAnswerIndex;
+    setLastAnswerCorrect(isCorrect);
+
+    // If incorrect, apply damage
+    if (!isCorrect) {
+      const damage = currentQuestion.damage || 0;
+      if (damage > 0) {
+        const studentRef = doc(db, 'students', user.uid);
+        await updateDoc(studentRef, {
+          hp: increment(-damage)
+        });
+      }
+    }
 
     const responseRef = doc(db, `liveBattles/active-battle/responses`, user.uid);
     await setDoc(responseRef, {
-      studentName: student.studentName, // Using real name for display
+      studentName: student.studentName,
       characterName: student.characterName,
       answer: currentQuestion.answers[answerIndex],
       answerIndex: answerIndex,
@@ -176,7 +187,7 @@ export default function LiveBattlePage() {
     );
   }
 
-  if (!battleState || battleState.status === 'WAITING' || !battleState.battleId) {
+  if (battleState.status === 'WAITING' || !battleState.battleId) {
     const waitingRoomImageUrl = "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FChatGPT%20Image%20Aug%2015%2C%202025%2C%2008_12_09%20AM.png?alt=media&token=45178e85-0ba2-42ef-b2fa-d76a8732b2c2";
     return (
         <div className="relative flex min-h-screen flex-col items-center justify-center p-4">
@@ -205,7 +216,6 @@ export default function LiveBattlePage() {
     );
   }
 
-  // This block now handles both IN_PROGRESS and ROUND_ENDING states
   if ((battleState.status === 'IN_PROGRESS' || battleState.status === 'ROUND_ENDING') && battle) {
     const currentQuestion = battle.questions[battleState.currentQuestionIndex];
     const bossImage = battle.bossImageUrl || 'https://placehold.co/600x400.png';
@@ -248,6 +258,7 @@ export default function LiveBattlePage() {
                                 submittedAnswer === index && "bg-primary text-primary-foreground ring-2 ring-offset-2 ring-offset-background ring-primary"
                             )}
                             onClick={() => handleSubmitAnswer(index)}
+                            disabled={submittedAnswer !== null}
                             >
                             <span className="font-bold mr-4">{String.fromCharCode(65 + index)}.</span>
                             {answer}
@@ -289,10 +300,17 @@ export default function LiveBattlePage() {
                             <p className="text-lg text-muted-foreground mb-1">The correct answer was:</p>
                             <p className="text-2xl font-bold">{correctAnswerText}</p>
                         </div>
+                        
+                        {lastAnswerCorrect === false && (
+                            <div className="p-4 rounded-md bg-red-900/70 border border-red-700 text-red-200 flex items-center justify-center gap-4">
+                                <HeartCrack className="h-10 w-10 text-red-400" />
+                                <p className="text-xl font-bold">You took {lastQuestion.damage} damage!</p>
+                            </div>
+                        )}
 
                         {battleState.lastRoundDamage !== undefined && battleState.lastRoundDamage > 0 && (
                             <div className="p-4 rounded-md bg-sky-900/70 border border-sky-700 text-sky-200 flex items-center justify-center gap-4">
-                                <HeartCrack className="h-10 w-10 text-sky-400" />
+                                <Swords className="h-10 w-10 text-sky-400" />
                                 <p className="text-xl font-bold">The Party dealt {battleState.lastRoundDamage} damage to the boss this round!</p>
                             </div>
                         )}
@@ -314,7 +332,3 @@ export default function LiveBattlePage() {
     </div>
   );
 }
-
-    
-
-    

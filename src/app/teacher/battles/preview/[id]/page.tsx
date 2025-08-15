@@ -15,13 +15,13 @@ interface Question {
   questionText: string;
   answers: string[];
   correctAnswerIndex: number;
+  damage: number;
 }
 
 interface Battle {
   battleName: string;
   bossImageUrl: string;
   videoUrl: string;
-  damage: number;
   questions: Question[];
 }
 
@@ -150,7 +150,8 @@ export default function PreviewBattlePage() {
                         {/* Right Side: Question & Answers */}
                         <div className="p-8 flex flex-col justify-between">
                             <div>
-                                <h3 className="text-2xl font-semibold mb-6 text-center">{currentQuestion.questionText}</h3>
+                                <h3 className="text-2xl font-semibold mb-2 text-center">{currentQuestion.questionText}</h3>
+                                <p className="text-center text-sm text-red-500 mb-4 font-semibold">Damage on incorrect answer: {currentQuestion.damage} HP</p>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     {currentQuestion.answers.map((answer, index) => (
                                         <Button 
