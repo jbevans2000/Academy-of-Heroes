@@ -265,8 +265,6 @@ export default function LiveBattlePage() {
   
   if (battleState.status === 'SHOWING_RESULTS' && battle) {
       const lastQuestion = battle.questions[battleState.currentQuestionIndex];
-      // This is the critical fix. It ensures we are always checking the correct answer for the completed round.
-      const wasCorrect = submittedAnswer === lastQuestion.correctAnswerIndex;
       const correctAnswerText = lastQuestion.answers[lastQuestion.correctAnswerIndex];
 
       return (
@@ -287,17 +285,10 @@ export default function LiveBattlePage() {
                         <CardDescription className="text-lg text-muted-foreground">Waiting for the next round to begin...</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                        {wasCorrect ? (
-                            <div className="p-4 rounded-md bg-green-900/50 border border-green-700 text-green-200">
-                                <CheckCircle className="h-16 w-16 mx-auto mb-4 text-green-500" />
-                                <h3 className="text-2xl font-semibold">You have successfully struck the boss!</h3>
-                            </div>
-                        ) : (
-                            <div className="p-4 rounded-md bg-red-900/50 border border-red-700 text-red-200">
-                                <XCircle className="h-16 w-16 mx-auto mb-4 text-red-500" />
-                                <h3 className="text-2xl font-semibold">Your attack missed!</h3>
-                            </div>
-                        )}
+                        <div className="p-4 rounded-md bg-secondary text-secondary-foreground">
+                            <p className="text-lg text-muted-foreground mb-1">The correct answer was:</p>
+                            <p className="text-2xl font-bold">{correctAnswerText}</p>
+                        </div>
 
                         {battleState.lastRoundDamage !== undefined && battleState.lastRoundDamage > 0 && (
                             <div className="p-4 rounded-md bg-sky-900/70 border border-sky-700 text-sky-200 flex items-center justify-center gap-4">
@@ -305,11 +296,7 @@ export default function LiveBattlePage() {
                                 <p className="text-xl font-bold">The Party dealt {battleState.lastRoundDamage} damage to the boss this round!</p>
                             </div>
                         )}
-
-                        <div className="p-4 rounded-md bg-secondary text-secondary-foreground">
-                            <p className="text-sm text-muted-foreground mb-1">The correct answer was:</p>
-                            <p className="text-xl font-bold">{correctAnswerText}</p>
-                        </div>
+                        
                          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mt-8" />
                     </CardContent>
                 </Card>
@@ -327,5 +314,7 @@ export default function LiveBattlePage() {
     </div>
   );
 }
+
+    
 
     
