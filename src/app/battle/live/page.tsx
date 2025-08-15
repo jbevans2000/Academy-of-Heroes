@@ -296,11 +296,14 @@ export default function LiveBattlePage() {
                         <CardDescription className="text-lg text-muted-foreground">Waiting for the next round to begin...</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                        <div className="p-4 rounded-md bg-secondary text-secondary-foreground">
-                            <p className="text-lg text-muted-foreground mb-1">The correct answer was:</p>
-                            <p className="text-2xl font-bold">{correctAnswerText}</p>
-                        </div>
                         
+                        {lastAnswerCorrect === true && (
+                            <div className="p-4 rounded-md bg-green-900/70 border border-green-700 text-green-200 flex items-center justify-center gap-4">
+                                <CheckCircle className="h-10 w-10 text-green-400" />
+                                <p className="text-xl font-bold">You scored a hit!</p>
+                            </div>
+                        )}
+
                         {lastAnswerCorrect === false && (
                             <div className="p-4 rounded-md bg-red-900/70 border border-red-700 text-red-200 flex items-center justify-center gap-4">
                                 <HeartCrack className="h-10 w-10 text-red-400" />
@@ -308,6 +311,11 @@ export default function LiveBattlePage() {
                             </div>
                         )}
 
+                        <div className="p-4 rounded-md bg-secondary text-secondary-foreground">
+                            <p className="text-lg text-muted-foreground mb-1">The correct answer was:</p>
+                            <p className="text-2xl font-bold">{correctAnswerText}</p>
+                        </div>
+                        
                         {battleState.lastRoundDamage !== undefined && battleState.lastRoundDamage > 0 && (
                             <div className="p-4 rounded-md bg-sky-900/70 border border-sky-700 text-sky-200 flex items-center justify-center gap-4">
                                 <Swords className="h-10 w-10 text-sky-400" />
