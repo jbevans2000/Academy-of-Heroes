@@ -152,7 +152,6 @@ export function StudentCard({ student, isSelected, onSelect, setStudents }: Stud
     setIsUpdating(true);
     const studentRef = doc(db, 'students', student.uid);
     try {
-        // Fetch the latest document first, similar to how XP and Gold updates work
         const currentStudentDoc = await getDoc(studentRef);
         if (!currentStudentDoc.exists()) throw new Error("Student not found");
         const currentStudentData = currentStudentDoc.data() as Student;
@@ -238,21 +237,21 @@ export function StudentCard({ student, isSelected, onSelect, setStudents }: Stud
               <div className="flex items-center space-x-1">
                   <Trophy className="h-5 w-5 text-orange-400" />
                   <div>
-                    <p className="font-semibold">{student.level || 1}</p>
+                    <p className="font-semibold">{student.level ?? 1}</p>
                     <p className="text-xs text-muted-foreground">Level</p>
                   </div>
               </div>
                <div className="flex items-center space-x-1">
                   <Heart className="h-5 w-5 text-red-500" />
                   <div>
-                    <p className="font-semibold">{student.hp || 100}</p>
+                    <p className="font-semibold">{student.hp ?? 100}</p>
                     <p className="text-xs text-muted-foreground">HP</p>
                   </div>
               </div>
                <div className="flex items-center space-x-1">
                   <Zap className="h-5 w-5 text-yellow-500" />
                   <div>
-                    <p className="font-semibold">{student.mp || 100}</p>
+                    <p className="font-semibold">{student.mp ?? 100}</p>
                     <p className="text-xs text-muted-foreground">MP</p>
                   </div>
               </div>
@@ -350,7 +349,5 @@ export function StudentCard({ student, isSelected, onSelect, setStudents }: Stud
     </Dialog>
   );
 }
-
-    
 
     
