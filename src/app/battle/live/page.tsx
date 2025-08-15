@@ -2,9 +2,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { onSnapshot, doc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { Loader2, Shield } from 'lucide-react';
+import { onSnapshot, doc, getDoc, setDoc } from 'firebase/firestore';
+import { onAuthStateChanged, type User } from 'firebase/auth';
+import { db, auth } from '@/lib/firebase';
+import { Loader2, Shield, Swords, CheckCircle, XCircle, Hourglass } from 'lucide-react';
+import { type Student } from '@/lib/data';
+import { Button } from '@/components/ui/button';
+import Image from 'next/image';
+import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import { AnswerResult } from '@/components/battle/answer-result';
 
 interface LiveBattleState {
   battleId: string | null;
@@ -12,37 +19,94 @@ interface LiveBattleState {
   currentQuestionIndex: number;
 }
 
+interface Question {
+  questionText: string;
+  answers: string[];
+  correctAnswerIndex: number;
+}
+
+interface Battle {
+  id: string;
+  battleName: string;
+  bossImageUrl: string;
+  questions: Question[];
+}
+
 export default function LiveBattlePage() {
   const [battleState, setBattleState] = useState<LiveBattleState | null>(null);
+  const [battle, setBattle] = useState<Battle | null>(null);
+  const [student, setStudent] = useState<Student | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [submittedAnswer, setSubmittedAnswer] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Effect to get current user and their student data
   useEffect(() => {
-    // Listen for real-time updates on the active-battle document
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setUser(user);
+        const studentDoc = await getDoc(doc(db, 'students', user.uid));
+        if (studentDoc.exists()) {
+          setStudent(studentDoc.data() as Student);
+        }
+      } else {
+        // Redirect or handle unauthenticated user
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Effect to listen for the live battle state
+  useEffect(() => {
     const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
-    
     const unsubscribe = onSnapshot(liveBattleRef, (doc) => {
       if (doc.exists()) {
-        setBattleState(doc.data() as LiveBattleState);
+        const newState = doc.data() as LiveBattleState;
+        // If question changes, reset submitted answer
+        if (battleState && newState.currentQuestionIndex !== battleState.currentQuestionIndex) {
+          setSubmittedAnswer(null);
+        }
+        setBattleState(newState);
       } else {
-        // If the document doesn't exist, it means no battle is active.
-        setBattleState({
-          battleId: null,
-          status: 'WAITING',
-          currentQuestionIndex: 0,
-        });
+        setBattleState({ battleId: null, status: 'WAITING', currentQuestionIndex: 0 });
       }
       setIsLoading(false);
     }, (error) => {
       console.error("Error listening to live battle state:", error);
       setIsLoading(false);
-      // You could add a toast message here for the student
     });
-
-    // Cleanup the listener when the component unmounts
     return () => unsubscribe();
-  }, []);
+  }, [battleState]);
 
-  if (isLoading || !battleState) {
+  // Effect to fetch the battle details when battleId changes
+  useEffect(() => {
+    if (battleState?.battleId) {
+      const fetchBattle = async () => {
+        const battleDoc = await getDoc(doc(db, 'bossBattles', battleState.battleId!));
+        if (battleDoc.exists()) {
+          setBattle({ id: battleDoc.id, ...battleDoc.data() } as Battle);
+        }
+      };
+      fetchBattle();
+    } else {
+      setBattle(null);
+    }
+  }, [battleState?.battleId]);
+
+  const handleSubmitAnswer = async (answerIndex: number) => {
+    if (!user || !student || !battleState?.battleId) return;
+    
+    setSubmittedAnswer(answerIndex);
+
+    const responseRef = doc(db, `liveBattles/active-battle/responses`, user.uid);
+    await setDoc(responseRef, {
+      studentName: student.studentName,
+      answerIndex: answerIndex,
+      submittedAt: new Date(),
+    });
+  };
+
+  if (isLoading || !battleState || !user) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4 text-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
@@ -62,12 +126,60 @@ export default function LiveBattlePage() {
     );
   }
 
-  // Placeholder for the active battle view
+  if (battleState.status === 'IN_PROGRESS' && battle) {
+    const currentQuestion = battle.questions[battleState.currentQuestionIndex];
+    const bossImage = battle.bossImageUrl || 'https://placehold.co/600x400.png';
+
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 text-white p-4">
+        <div className="w-full max-w-4xl mx-auto">
+          <Card className="bg-gray-800/50 border-gray-700 shadow-2xl shadow-primary/20">
+             <CardContent className="p-6">
+                <div className="flex justify-center mb-6">
+                    <Image 
+                        src={bossImage}
+                        alt={battle.battleName}
+                        width={300}
+                        height={300}
+                        className="rounded-lg shadow-lg border-4 border-primary/50 object-contain"
+                        data-ai-hint="fantasy monster"
+                    />
+                </div>
+
+                {submittedAnswer !== null ? (
+                    <AnswerResult />
+                ) : (
+                    <div className="text-center">
+                        <h2 className="text-2xl md:text-3xl font-bold mb-6">{currentQuestion.questionText}</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {currentQuestion.answers.map((answer, index) => (
+                                <Button
+                                key={index}
+                                variant="outline"
+                                className="text-lg h-auto py-4 whitespace-normal justify-start text-left bg-gray-700 hover:bg-primary/90 border-gray-600 hover:border-primary"
+                                onClick={() => handleSubmitAnswer(index)}
+                                >
+                                <span className="font-bold mr-4">{String.fromCharCode(65 + index)}.</span>
+                                {answer}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+             </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
-      <h1 className="text-2xl">Battle is in Progress!</h1>
-      <p>Battle ID: {battleState.battleId}</p>
-      <p>Question: {battleState.currentQuestionIndex + 1}</p>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4 text-center">
+        <Swords className="h-24 w-24 text-primary mb-6" />
+        <h1 className="text-4xl font-bold tracking-tight">The Battle is On!</h1>
+        <p className="text-xl text-muted-foreground mt-2">Waiting for the next round...</p>
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mt-8" />
     </div>
   );
 }
+
