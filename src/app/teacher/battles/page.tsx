@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, doc, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, doc, writeBatch, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
@@ -48,18 +48,25 @@ export default function BossBattlesPage() {
   const handleStartBattle = async (battleId: string) => {
     setStartingBattleId(battleId);
     try {
-        // Create a batch to perform multiple writes atomically.
         const batch = writeBatch(db);
 
-        // 1. Set the active battle state
+        // 1. Delete the old active-battle document to ensure a clean slate
         const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
+        await deleteDoc(liveBattleRef).catch(err => {
+            // It's okay if the doc doesn't exist, so we can ignore "not-found" errors.
+            if (err.code !== 'not-found') {
+                throw err;
+            }
+        });
+
+        // 2. Set the new active battle state
         batch.set(liveBattleRef, {
             battleId: battleId,
-            status: 'IN_PROGRESS', // We'll add the video step later
+            status: 'IN_PROGRESS', 
             currentQuestionIndex: 0,
         });
 
-        // 2. Clear any previous responses (as a cleanup step)
+        // 3. Clear any previous responses from the old subcollection (as a safety measure)
         const responsesQuery = await getDocs(collection(liveBattleRef, 'responses'));
         responsesQuery.forEach(doc => {
             batch.delete(doc.ref);
