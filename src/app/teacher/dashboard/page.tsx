@@ -216,28 +216,27 @@ export default function TeacherDashboardPage() {
     const handleRecalculateHp = async () => {
         setIsRecalculating(true);
         try {
-            await runTransaction(db, async (transaction) => {
-              const allStudentsQuery = await getDocs(collection(db, 'students'));
-              const updatedStudents: Student[] = [];
+            const batch = writeBatch(db);
+            const allStudentsQuery = await getDocs(collection(db, 'students'));
+            const studentUpdates = [];
 
-              for (const studentDoc of allStudentsQuery.docs) {
-                  const studentRef = doc(db, 'students', studentDoc.id);
-                  // Get the most up-to-date document within the transaction
-                  const freshStudentDoc = await transaction.get(studentRef);
-                  if (!freshStudentDoc.exists()) continue;
+            // Phase 1: Read all data and prepare updates
+            for (const studentDoc of allStudentsQuery.docs) {
+                const studentData = studentDoc.data() as Student;
+                const { newLevel, newHp } = calculateLevelUp(studentData, studentData.xp);
 
-                  const studentData = freshStudentDoc.data() as Student;
-                  const { newLevel, newHp } = calculateLevelUp(studentData, studentData.xp);
+                const studentRef = doc(db, 'students', studentDoc.id);
+                batch.update(studentRef, { hp: newHp, level: newLevel });
+                
+                // Prepare local state update
+                studentUpdates.push({ ...studentData, hp: newHp, level: newLevel });
+            }
 
-                  transaction.update(studentRef, { hp: newHp, level: newLevel });
-                  updatedStudents.push({ ...studentData, hp: newHp, level: newLevel });
-              }
-              // This state update needs to happen AFTER the transaction is successful.
-              // We'll update the state outside the transaction callback.
-            });
-            
-            // Re-fetch all students from the database to update the local state correctly
-            await fetchStudents();
+            // Phase 2: Commit all writes at once
+            await batch.commit();
+
+            // Phase 3: Update local state
+            setStudents(studentUpdates);
 
             toast({
                 title: 'HP Recalculated',
@@ -386,4 +385,5 @@ export default function TeacherDashboardPage() {
   );
 }
 
+    
     
