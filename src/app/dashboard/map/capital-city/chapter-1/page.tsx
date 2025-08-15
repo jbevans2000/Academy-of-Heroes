@@ -46,10 +46,22 @@ export default function Chapter1Page() {
                         </div>
                         <Separator />
                         <p className="px-4">
-                            The crisp winter air bites at your cheeks as you make your way through the bustling streets of the Capitol. A messenger bearing the royal seal found you this morning, handing you a scroll with a simple, urgent message: "Your presence is requested at the Citadel. The King wishes to speak with you."
+                            You sit at a long oak table, reviewing notes on the aether-blooming fungi, a species known for its unique ability to thrive on both magical and biological energy. The delicate balance of its growth fascinates you—the way it mutates based on its surroundings, shifting between nourishment and toxin. You make a note in the margin of your journal when suddenly-- A shadow falls across your work.
                         </p>
                         <p className="px-4">
-                            Navigating through the crowds of merchants and nobles, you can't help but wonder what the summons could be about. It has been years since you were last called to the palace. As you approach the towering gates of the Citadel, the guards recognize you and grant you immediate entry. The grand halls echo with the quiet footsteps of courtiers, their whispers ceasing as you pass. Finally, you stand before the great oaken doors of the throne room. Taking a deep breath, you push them open and step inside.
+                            Looking up, you see a short, balding man draped in the unmistakable crimson robes of a Royal Herald. His presence is striking—not because of his stature, but because of the silence that follows him. Conversations dull to murmurs. Scholars avert their gazes. Without a word, he places a scroll of yellowed vellum onto the table in front of you. The wax seal is unmistakable--a phoenix entwined with a double helix of golden serpents—the emblem of the Emperor and Empress themselves.
+                        </p>
+                        <p className="px-4">
+                            Then, in a voice that is calm, measured, and absolute, he speaks: "You are hereby summoned to the Royal Court of the Emperor and Empress to continue your studies in the field. This matter is of utmost importance, as you have been identified as an individual who is vital to the future security of the Realm." And just like that--he turns and leaves.
+                        </p>
+                         <p className="px-4">
+                            You stare at the scroll. It almost doesn’t feel real. Your first thought is that it must be a joke. A prank, perhaps, from one of your fellow scholars. But the weight of the parchment in your hands says otherwise. It is thick, official, with golden veins running through the vellum, shimmering under the library’s candlelight. No forger would go to such lengths.
+                        </p>
+                        <p className="px-4">
+                            Your second thought is far more unsettling--are you in trouble? Your studies in the Biological Arts have been respectable, but hardly exceptional. You are no prodigy in Symbiotic Mysteries, nor a pioneer in Metamorphic Studies of Transmutative Anatomy. You are a student. Nothing more. So why summon you?
+                        </p>
+                        <p className="px-4">
+                            You unroll the scroll and read the words that confirm the impossible. Ten days hence, when the Winter Sun hangs lowest in the sky, you are to present yourself at the Royal Court. A summons from the Emperor and Empress. A summons that cannot be ignored.
                         </p>
                     </CardContent>
                 </Card>
@@ -67,3 +79,4 @@ export default function Chapter1Page() {
         </div>
     );
 }
+
