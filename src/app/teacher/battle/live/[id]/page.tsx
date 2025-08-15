@@ -115,7 +115,7 @@ export default function TeacherLiveBattlePage() {
       setIsLoading(false);
     });
     return () => unsubscribe();
-  }, [battleId, liveState, router]);
+  }, [battleId, router]);
 
   // Listen for real-time student responses ONLY when the battle is in progress
   useEffect(() => {
