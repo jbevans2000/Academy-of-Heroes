@@ -23,7 +23,6 @@ import { useToast } from '@/hooks/use-toast';
 const TEACHER_EMAIL = 'jevans@nca.connectionsacademy.org'; 
 
 export default function TeacherLoginPage() {
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -33,26 +32,16 @@ export default function TeacherLoginPage() {
   const handleLogin = async () => {
     setIsLoading(true);
     try {
-      // Step 1: Authenticate with Firebase
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      // Step 2: Check if the logged-in user is the designated teacher
-      if (user.email === TEACHER_EMAIL) {
-        toast({
-          title: 'Login Successful!',
-          description: 'Welcome back, teacher.',
-        });
-        router.push('/teacher/dashboard');
-      } else {
-        // If it's a valid user but not the teacher, sign them out and show an error
-        await auth.signOut();
-        toast({
-            variant: 'destructive',
-            title: 'Access Denied',
-            description: 'This login is for teachers only.',
-        });
-      }
+      // Step 1: Authenticate with Firebase using the hardcoded teacher email
+      await signInWithEmailAndPassword(auth, TEACHER_EMAIL, password);
+      
+      // Since we're authenticating with the correct email, we can go straight to the dashboard
+      toast({
+        title: 'Login Successful!',
+        description: 'Welcome back, teacher.',
+      });
+      router.push('/teacher/dashboard');
+      
     } catch (error: any) {
       console.error(error);
       let description = 'An unexpected error occurred. Please try again.';
@@ -61,7 +50,7 @@ export default function TeacherLoginPage() {
             case 'auth/invalid-credential':
             case 'auth/user-not-found':
             case 'auth/wrong-password':
-                description = 'Invalid email or password.';
+                description = 'Invalid password. Please try again.';
                 break;
             case 'auth/network-request-failed':
                 description = 'Network error. Please check your connection.';
@@ -93,26 +82,14 @@ export default function TeacherLoginPage() {
         <Card className="shadow-2xl">
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-headline text-primary">
-              Teacher Dashboard
+              Teacher Login
             </CardTitle>
             <CardDescription>
-              Enter your credentials to manage your students
+              Enter your password to manage your students
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="teacher@school.edu"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
               <div className="space-y-2">
                 <div className="flex items-center">
                   <Label htmlFor="password">Password</Label>
@@ -121,6 +98,7 @@ export default function TeacherLoginPage() {
                   <Input 
                     id="password" 
                     type={showPassword ? 'text' : 'password'}
+                    placeholder="Enter your password"
                     required 
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
