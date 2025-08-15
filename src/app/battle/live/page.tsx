@@ -83,7 +83,7 @@ const getYouTubeEmbedUrl = (url: string) => {
     if (ampersandPosition !== -1) {
         videoId = videoId.substring(0, ampersandPosition);
     }
-    return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`;
+    return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
 };
 
 
@@ -378,3 +378,4 @@ export default function LiveBattlePage() {
     
 
     
+
