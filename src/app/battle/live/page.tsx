@@ -100,10 +100,10 @@ export default function LiveBattlePage() {
   useEffect(() => {
     setIsLoading(true);
     const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
-    const unsubscribe = onSnapshot(liveBattleRef, (doc) => {
+    const unsubscribe = onSnapshot(liveBattleRef, (docSnapshot) => {
       const currentState = battleState;
-      if (doc.exists()) {
-        const newState = doc.data() as LiveBattleState;
+      if (docSnapshot.exists()) {
+        const newState = docSnapshot.data() as LiveBattleState;
 
         // If it's a new battle or new question, reset submitted answer
         if (currentState && (newState.battleId !== currentState.battleId || newState.currentQuestionIndex !== currentState.currentQuestionIndex)) {
@@ -327,3 +327,4 @@ export default function LiveBattlePage() {
     </div>
   );
 }
+
