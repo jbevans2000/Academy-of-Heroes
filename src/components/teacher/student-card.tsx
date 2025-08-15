@@ -152,11 +152,16 @@ export function StudentCard({ student, isSelected, onSelect, setStudents }: Stud
     setIsUpdating(true);
     const studentRef = doc(db, 'students', student.uid);
     try {
+        // Fetch the latest document first, similar to how XP and Gold updates work
+        const currentStudentDoc = await getDoc(studentRef);
+        if (!currentStudentDoc.exists()) throw new Error("Student not found");
+        const currentStudentData = currentStudentDoc.data() as Student;
+
         await updateDoc(studentRef, {
             hp: amount
         });
 
-        const updatedStudent = { ...student, hp: amount };
+        const updatedStudent = { ...currentStudentData, hp: amount };
         
         setStudents(prevStudents => 
             prevStudents.map(s => s.uid === student.uid ? updatedStudent : s)
@@ -345,5 +350,7 @@ export function StudentCard({ student, isSelected, onSelect, setStudents }: Stud
     </Dialog>
   );
 }
+
+    
 
     
