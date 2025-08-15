@@ -156,8 +156,8 @@ export default function LiveBattlePage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-card p-4">
         <div className="w-full max-w-4xl mx-auto">
-          <Card className="bg-card text-card-foreground border-gray-700 shadow-2xl shadow-primary/20">
-             <CardContent className="p-6 bg-card/90">
+          <Card className="bg-background/90 text-card-foreground border-gray-700 shadow-2xl shadow-primary/20">
+             <CardContent className="p-6">
                 <div className="flex justify-center mb-6">
                     <Image 
                         src={bossImage}
@@ -217,9 +217,18 @@ export default function LiveBattlePage() {
       const correctAnswerText = lastQuestion.answers[lastQuestion.correctAnswerIndex];
 
       return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
-            <div className="w-full max-w-2xl mx-auto">
-                <Card className="text-center shadow-lg">
+        <div className="relative flex min-h-screen flex-col items-center justify-center p-4">
+            {battle.bossImageUrl && (
+                <Image
+                    src={battle.bossImageUrl}
+                    alt="Boss Background"
+                    fill
+                    className="object-cover opacity-20"
+                    data-ai-hint="fantasy monster"
+                />
+            )}
+            <div className="w-full max-w-2xl mx-auto z-10">
+                <Card className="text-center shadow-lg bg-card/80 backdrop-blur-sm">
                     <CardHeader>
                         <CardTitle className="text-4xl font-bold tracking-tight">Round Over!</CardTitle>
                         <CardDescription className="text-lg">Waiting for the next round to begin...</CardDescription>
