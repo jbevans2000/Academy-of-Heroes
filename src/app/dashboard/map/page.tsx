@@ -15,13 +15,13 @@ export default function WorldMapPage() {
     // NOTE: The map's original dimensions are 2048x1536.
     // The coordinates are converted to percentages to maintain position on different screen sizes.
     // X: 1200 -> (1200 / 2048) * 100 = 58.59%
-    // Y: 1000 -> (1000 / 1536) * 100 = 65.1%
+    // Y: 1125 -> (1125 / 1536) * 100 = 73.24%
     const capitalCityNode = {
       name: 'Capital City',
       href: '/dashboard/map/capital-city',
       style: {
         left: '58.59%',
-        top: '65.1%',
+        top: '73.24%',
       },
     };
 
