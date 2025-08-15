@@ -15,9 +15,10 @@ export function AvatarDisplay({ avatarSrc, backgroundSrc, avatarHint, background
       <Image
         src={backgroundSrc}
         alt="Selected background"
-        fill
-        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-        className="object-cover transition-all duration-500"
+        width={1280}
+        height={720}
+        sizes="100vw"
+        className="absolute inset-0 w-full h-full object-cover transition-all duration-500"
         data-ai-hint={backgroundHint}
         priority
       />
