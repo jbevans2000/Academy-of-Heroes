@@ -217,6 +217,7 @@ export default function TeacherDashboardPage() {
 
             if (studentDocs.length === 0) {
                 toast({ title: "No students to update." });
+                setIsRecalculating(false);
                 return;
             }
 
@@ -226,13 +227,13 @@ export default function TeacherDashboardPage() {
             // Phase 1: Read all data from the fetched docs
             for (const studentDoc of studentDocs) {
                 const studentData = studentDoc.data() as Student;
-                const { newLevel, newHp } = calculateLevelUp(studentData, studentData.xp);
+                const newHp = 0; // Set HP to 0 for debugging
 
                 const studentRef = doc(db, 'students', studentDoc.id);
-                batch.update(studentRef, { hp: newHp, level: newLevel });
+                batch.update(studentRef, { hp: newHp });
                 
                 // Prepare local state update with all fields from original data + updates
-                studentUpdatesForState.push({ ...studentData, hp: newHp, level: newLevel });
+                studentUpdatesForState.push({ ...studentData, hp: newHp });
             }
 
             // Phase 2: Commit all writes at once
@@ -242,15 +243,15 @@ export default function TeacherDashboardPage() {
             setStudents(studentUpdatesForState);
 
             toast({
-                title: 'Recalculation Complete',
-                description: `All student HP and Level values have been updated.`,
+                title: 'Operation Complete',
+                description: `All student HP values have been set to 0.`,
             });
         } catch (error) {
-            console.error('Error recalculating HP:', error);
+            console.error('Error setting HP to 0:', error);
             toast({
                 variant: 'destructive',
-                title: 'Recalculation Failed',
-                description: 'Could not update student HP values. Please try again.',
+                title: 'Operation Failed',
+                description: 'Could not set student HP values. Please try again.',
             });
         } finally {
             setIsRecalculating(false);
