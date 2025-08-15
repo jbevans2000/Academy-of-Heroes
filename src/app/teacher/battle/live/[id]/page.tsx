@@ -2,8 +2,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs } from 'firebase/firestore';
+import { useParams, useRouter } from 'next/navigation';
+import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
@@ -39,6 +39,7 @@ interface StudentResponse {
 
 export default function TeacherLiveBattlePage() {
   const params = useParams();
+  const router = useRouter();
   const battleId = params.id as string;
 
   const [battle, setBattle] = useState<Battle | null>(null);
@@ -47,6 +48,7 @@ export default function TeacherLiveBattlePage() {
   const [roundResults, setRoundResults] = useState<Result[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEndingRound, setIsEndingRound] = useState(false);
+  const [isAdvancing, setIsAdvancing] = useState(false);
 
   // Fetch the static battle definition once
   useEffect(() => {
@@ -101,7 +103,7 @@ export default function TeacherLiveBattlePage() {
     });
 
     return () => unsubscribe();
-  }, [liveState, liveState?.status]);
+  }, [liveState?.status, liveState]);
 
 
   const handleEndRound = async () => {
@@ -134,6 +136,34 @@ export default function TeacherLiveBattlePage() {
     }
   };
 
+  const handleNextQuestion = async () => {
+    if (!battle || liveState === null || liveState.currentQuestionIndex >= battle.questions.length - 1) return;
+
+    setIsAdvancing(true);
+    try {
+        const batch = writeBatch(db);
+
+        // 1. Clear previous responses
+        const responsesRef = collection(db, `liveBattles/active-battle/responses`);
+        const responsesSnapshot = await getDocs(responsesRef);
+        responsesSnapshot.forEach(doc => batch.delete(doc.ref));
+        
+        // 2. Update battle state to the next question
+        const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
+        batch.update(liveBattleRef, {
+            status: 'IN_PROGRESS',
+            currentQuestionIndex: liveState.currentQuestionIndex + 1,
+        });
+
+        await batch.commit();
+        // Local state will update via the onSnapshot listener
+    } catch (error) {
+        console.error("Error advancing to next question:", error);
+    } finally {
+        setIsAdvancing(false);
+    }
+  };
+
 
   if (isLoading || !battle || !liveState) {
     return (
@@ -152,6 +182,7 @@ export default function TeacherLiveBattlePage() {
 
   const isRoundInProgress = liveState.status === 'IN_PROGRESS';
   const areResultsShowing = liveState.status === 'SHOWING_RESULTS';
+  const isLastQuestion = liveState.currentQuestionIndex >= battle.questions.length - 1;
 
 
   return (
@@ -175,7 +206,10 @@ export default function TeacherLiveBattlePage() {
                                 {isEndingRound ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                 End Round
                              </Button>
-                             <Button disabled>Next Question</Button>
+                             <Button onClick={handleNextQuestion} disabled={!areResultsShowing || isLastQuestion || isAdvancing}>
+                                {isAdvancing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                Next Question
+                             </Button>
                              <Button variant="destructive">End Battle</Button>
                         </div>
                     </div>
