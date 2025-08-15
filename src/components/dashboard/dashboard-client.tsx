@@ -16,11 +16,12 @@ export function DashboardClient({ student }: DashboardClientProps) {
       <div className="mx-auto max-w-4xl space-y-6">
         <AvatarDisplay
           avatarSrc={student.avatarUrl}
+          avatarHint={student.class}
         />
         <StatsCard 
             xp={student.xp} 
             gold={student.gold}
-            level={student.level}
+            level={student.level || 1}
             characterName={student.characterName} 
             studentName={student.studentName} 
         />
