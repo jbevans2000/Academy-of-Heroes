@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { onSnapshot, doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
@@ -81,6 +81,12 @@ export default function LiveBattlePage() {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
+  // Use a ref to hold the current battle state to avoid it being a dependency in the snapshot listener
+  const battleStateRef = useRef(battleState);
+  useEffect(() => {
+    battleStateRef.current = battleState;
+  }, [battleState]);
+
   // Effect to get current user and their student data
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -104,9 +110,10 @@ export default function LiveBattlePage() {
     const unsubscribe = onSnapshot(liveBattleRef, (docSnapshot) => {
       if (docSnapshot.exists()) {
         const newState = docSnapshot.data() as LiveBattleState;
+        const currentBattleState = battleStateRef.current;
 
         // If it's a new question, reset submitted answer state
-        if (battleState && newState.currentQuestionIndex !== battleState.currentQuestionIndex) {
+        if (currentBattleState && newState.currentQuestionIndex !== currentBattleState.currentQuestionIndex) {
           setSubmittedAnswer(null);
           setLastAnswerCorrect(null);
         }
@@ -117,7 +124,8 @@ export default function LiveBattlePage() {
             router.push('/battle/summary');
         }
       } else {
-        setBattleState({ battleId: null, status: 'WAITING', currentQuestionIndex: 0 });
+        // Use functional update to avoid dependency on battleState
+        setBattleState(prevState => ({ ...prevState, battleId: null, status: 'WAITING', currentQuestionIndex: 0 }));
       }
       setIsLoading(false);
     }, (error) => {
@@ -125,7 +133,7 @@ export default function LiveBattlePage() {
       setIsLoading(false);
     });
     return () => unsubscribe();
-  }, [router, battleState]);
+  }, [router]); // Removed battleState from dependencies
 
   // Effect to fetch the battle details when battleId changes
   useEffect(() => {
