@@ -28,6 +28,7 @@ interface Question {
   questionText: string;
   answers: string[];
   correctAnswerIndex: number;
+  damage: number;
 }
 
 interface Battle {
@@ -155,11 +156,15 @@ export default function TeacherLiveBattlePage() {
     setIsEndingRound(true);
     
     try {
+        const batch = writeBatch(db);
+        const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
+        
         const responsesRef = collection(db, `liveBattles/active-battle/responses`);
         const responsesSnapshot = await getDocs(responsesRef);
         const responsesData = responsesSnapshot.docs.map(doc => ({ uid: doc.id, ...(doc.data() as StudentResponse) }));
         
         const currentQuestion = battle.questions[liveState.currentQuestionIndex];
+        const damage = currentQuestion.damage || 0;
 
         const results: Result[] = responsesData.map(response => ({
             studentName: response.studentName,
@@ -167,6 +172,16 @@ export default function TeacherLiveBattlePage() {
             isCorrect: response.isCorrect,
         }));
         setRoundResults(results);
+
+        // Apply damage for incorrect answers in a batch
+        if (damage > 0) {
+            for (const response of responsesData) {
+                if (!response.isCorrect) {
+                    const studentRef = doc(db, 'students', response.uid);
+                    batch.update(studentRef, { hp: increment(-damage) });
+                }
+            }
+        }
 
         const roundDamage = results.filter(r => r.isCorrect).length;
 
@@ -185,15 +200,19 @@ export default function TeacherLiveBattlePage() {
         };
         setAllRoundsData(newAllRoundsData);
 
-        const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
-        await updateDoc(liveBattleRef, { 
+        // Update the live battle state
+        batch.update(liveBattleRef, { 
             status: 'SHOWING_RESULTS', 
             timerEndsAt: null,
             lastRoundDamage: roundDamage,
             totalDamage: increment(roundDamage)
         });
+
+        // Commit all database changes at once
+        await batch.commit();
+
     } catch (error) {
-        console.error("Error calculating results:", error);
+        console.error("Error calculating results and applying damage:", error);
     } finally {
         setIsEndingRound(false);
     }

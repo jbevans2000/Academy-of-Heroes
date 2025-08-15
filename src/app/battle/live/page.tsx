@@ -159,16 +159,8 @@ export default function LiveBattlePage() {
     const isCorrect = answerIndex === currentQuestion.correctAnswerIndex;
     setLastAnswerCorrect(isCorrect);
 
-    // If incorrect, apply damage
-    if (!isCorrect) {
-      const damage = currentQuestion.damage || 0;
-      if (damage > 0) {
-        const studentRef = doc(db, 'students', user.uid);
-        await updateDoc(studentRef, {
-          hp: increment(-damage)
-        });
-      }
-    }
+    // HP damage is now applied in a batch by the teacher at the end of the round.
+    // No damage deduction here.
 
     const responseRef = doc(db, `liveBattles/active-battle/responses`, user.uid);
     await setDoc(responseRef, {
