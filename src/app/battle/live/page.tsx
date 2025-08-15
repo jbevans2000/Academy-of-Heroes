@@ -157,7 +157,7 @@ export default function LiveBattlePage() {
       <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 text-white p-4">
         <div className="w-full max-w-4xl mx-auto">
           <Card className="bg-card text-card-foreground border-gray-700 shadow-2xl shadow-primary/20">
-             <CardContent className="p-6">
+             <CardContent className="p-6 bg-card/90">
                 <div className="flex justify-center mb-6">
                     <Image 
                         src={bossImage}
@@ -209,6 +209,17 @@ export default function LiveBattlePage() {
             </div>
         </div>
       )
+  }
+  
+  if (battleState.status === 'SHOWING_RESULTS') {
+      return (
+        <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4 text-center">
+            <Swords className="h-24 w-24 text-primary mb-6" />
+            <h1 className="text-4xl font-bold tracking-tight">Round Over!</h1>
+            <p className="text-xl text-muted-foreground mt-2">Waiting for the next round to begin...</p>
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mt-8" />
+        </div>
+      );
   }
 
   return (
