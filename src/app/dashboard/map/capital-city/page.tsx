@@ -17,7 +17,8 @@ export default function CapitolCityMapPage() {
     // X: 710 -> (710 / 2048) * 100 = 34.67%
     // Y: 200 -> (200 / 1152) * 100 = 17.36%
     const chapter1Node = {
-      name: 'Chapter 1 - A Summons from the Throne',
+      name: 'Chapter 1',
+      subtitle: 'A Summons from the Throne',
       href: '#', // Placeholder link
       style: {
         left: '34.67%',
@@ -46,8 +47,13 @@ export default function CapitolCityMapPage() {
                                 className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
                                 style={chapter1Node.style}
                             >
-                                <div className="absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-white font-bold text-shadow-lg transition-transform duration-300 group-hover:scale-110 bg-black/50 rounded px-2 py-1">
-                                    {chapter1Node.name}
+                                <div className="absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap text-center">
+                                    <div className="text-white font-bold text-shadow-lg bg-black/50 rounded px-2 py-1 mb-1">
+                                        {chapter1Node.name}
+                                    </div>
+                                    <div className="text-white font-semibold text-shadow-lg bg-black/50 rounded px-2 py-1 transition-opacity duration-300 opacity-0 group-hover:opacity-100">
+                                        {chapter1Node.subtitle}
+                                    </div>
                                 </div>
                                 <div className="w-5 h-5 bg-yellow-400 rounded-full ring-2 ring-white shadow-xl animate-pulse-glow"></div>
                             </div>
