@@ -60,10 +60,11 @@ export default function LiveBattlePage() {
   useEffect(() => {
     const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
     const unsubscribe = onSnapshot(liveBattleRef, (doc) => {
+      const currentState = battleState;
       if (doc.exists()) {
         const newState = doc.data() as LiveBattleState;
         // If question changes, reset submitted answer
-        if (battleState && newState.currentQuestionIndex !== battleState.currentQuestionIndex) {
+        if (currentState && newState.currentQuestionIndex !== currentState.currentQuestionIndex) {
           setSubmittedAnswer(null);
         }
         setBattleState(newState);
@@ -76,7 +77,7 @@ export default function LiveBattlePage() {
       setIsLoading(false);
     });
     return () => unsubscribe();
-  }, [battleState]);
+  }, []);
 
   // Effect to fetch the battle details when battleId changes
   useEffect(() => {
