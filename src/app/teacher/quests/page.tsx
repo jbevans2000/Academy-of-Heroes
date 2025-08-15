@@ -6,39 +6,76 @@ import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { PlusCircle, LayoutDashboard, Edit, Trash2 } from 'lucide-react';
-import { collection, getDocs } from 'firebase/firestore';
+import { PlusCircle, LayoutDashboard, Edit, Trash2, Loader2 } from 'lucide-react';
+import { collection, getDocs, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { QuestHub, Chapter } from '@/lib/quests';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 export default function QuestsPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [hubs, setHubs] = useState<QuestHub[]>([]);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
+  const fetchQuests = async () => {
+      setIsLoading(true);
+      try {
+          const hubsSnapshot = await getDocs(collection(db, 'questHubs'));
+          const hubsData = hubsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
+          setHubs(hubsData);
+
+          const chaptersSnapshot = await getDocs(collection(db, 'chapters'));
+          const chaptersData = chaptersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
+          setChapters(chaptersData);
+      } catch (error) {
+          console.error("Error fetching quests: ", error);
+          toast({ variant: 'destructive', title: 'Error', description: 'Could not load quest data.' });
+      } finally {
+          setIsLoading(false);
+      }
+  };
 
   useEffect(() => {
-    const fetchQuests = async () => {
-        setIsLoading(true);
-        try {
-            const hubsSnapshot = await getDocs(collection(db, 'questHubs'));
-            const hubsData = hubsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
-            setHubs(hubsData);
-
-            const chaptersSnapshot = await getDocs(collection(db, 'chapters'));
-            const chaptersData = chaptersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
-            setChapters(chaptersData);
-        } catch (error) {
-            console.error("Error fetching quests: ", error);
-            // You might want to add a toast notification here
-        } finally {
-            setIsLoading(false);
-        }
-    };
     fetchQuests();
-  }, []);
+  }, [toast]);
+
+  const handleDeleteChapter = async (chapterId: string) => {
+    setIsDeleting(chapterId);
+    try {
+        await deleteDoc(doc(db, 'chapters', chapterId));
+        toast({
+            title: 'Chapter Deleted',
+            description: 'The chapter has been successfully removed.',
+        });
+        // Refresh the list locally to avoid a full re-fetch
+        setChapters(prevChapters => prevChapters.filter(c => c.id !== chapterId));
+    } catch (error) {
+        console.error('Error deleting chapter:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Delete Failed',
+            description: 'Could not delete the chapter. Please try again.',
+        });
+    } finally {
+        setIsDeleting(null);
+    }
+  };
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -94,12 +131,31 @@ export default function QuestsPage() {
                                                     <li key={chapter.id} className="flex items-center justify-between p-3 rounded-md bg-secondary">
                                                         <span className="font-medium">Chapter {chapter.chapterNumber}: {chapter.title}</span>
                                                         <div className="flex items-center gap-2">
-                                                            <Button variant="outline" size="sm" disabled>
+                                                            <Button variant="outline" size="sm" onClick={() => router.push(`/teacher/quests/edit/${chapter.id}`)}>
                                                                 <Edit className="mr-2 h-4 w-4" /> Edit
                                                             </Button>
-                                                            <Button variant="destructive" size="sm" disabled>
-                                                                <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                                            </Button>
+                                                            <AlertDialog>
+                                                                <AlertDialogTrigger asChild>
+                                                                    <Button variant="destructive" size="sm" disabled={isDeleting === chapter.id}>
+                                                                        {isDeleting === chapter.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                                                                         Delete
+                                                                    </Button>
+                                                                </AlertDialogTrigger>
+                                                                <AlertDialogContent>
+                                                                    <AlertDialogHeader>
+                                                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                                        <AlertDialogDescription>
+                                                                            This action cannot be undone. This will permanently delete the chapter "{chapter.title}".
+                                                                        </AlertDialogDescription>
+                                                                    </AlertDialogHeader>
+                                                                    <AlertDialogFooter>
+                                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                        <AlertDialogAction onClick={() => handleDeleteChapter(chapter.id)}>
+                                                                            Yes, delete chapter
+                                                                        </AlertDialogAction>
+                                                                    </AlertDialogFooter>
+                                                                </AlertDialogContent>
+                                                            </AlertDialog>
                                                         </div>
                                                     </li>
                                                 ))}
