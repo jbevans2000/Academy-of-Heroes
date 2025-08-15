@@ -18,9 +18,8 @@ export function DashboardClient({ student }: DashboardClientProps) {
       <div className="mx-auto max-w-4xl space-y-6">
         <AvatarDisplay
           avatarSrc={student.avatarUrl}
-          avatarHint={"character avatar"}
         />
-        <StatsCard xp={student.xp} gold={student.gold} name={student.characterName} />
+        <StatsCard xp={student.xp} gold={student.gold} characterName={student.characterName} studentName={student.studentName} />
       </div>
     </div>
   );
