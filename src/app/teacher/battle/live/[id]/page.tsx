@@ -3,15 +3,16 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { onSnapshot, doc, getDoc } from 'firebase/firestore';
+import { onSnapshot, doc, getDoc, collection, query } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Loader2, UserCheck } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-// These types will be expanded later
+
 interface LiveBattleState {
   battleId: string | null;
   status: 'WAITING' | 'IN_PROGRESS' | 'SHOWING_RESULTS';
@@ -21,7 +22,10 @@ interface LiveBattleState {
 interface Battle {
     id: string;
     battleName: string;
-    // ... other battle properties
+}
+
+interface StudentResponse {
+    studentName: string;
 }
 
 export default function TeacherLiveBattlePage() {
@@ -31,6 +35,7 @@ export default function TeacherLiveBattlePage() {
 
   const [battle, setBattle] = useState<Battle | null>(null);
   const [liveState, setLiveState] = useState<LiveBattleState | null>(null);
+  const [studentResponses, setStudentResponses] = useState<StudentResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Fetch the static battle definition once
@@ -53,12 +58,35 @@ export default function TeacherLiveBattlePage() {
     const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
     const unsubscribe = onSnapshot(liveBattleRef, (doc) => {
       if (doc.exists()) {
-        setLiveState(doc.data() as LiveBattleState);
+        const newState = doc.data() as LiveBattleState;
+        // If the question index changes, clear old responses
+        if (liveState && liveState.currentQuestionIndex !== newState.currentQuestionIndex) {
+            setStudentResponses([]);
+        }
+        setLiveState(newState);
       }
       setIsLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [liveState]);
+
+  // Listen for real-time student responses
+  useEffect(() => {
+    if (!liveState || liveState.status !== 'IN_PROGRESS') return;
+
+    const responsesRef = collection(db, `liveBattles/active-battle/responses`);
+    const q = query(responsesRef);
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const responses: StudentResponse[] = [];
+        querySnapshot.forEach((doc) => {
+            responses.push(doc.data() as StudentResponse);
+        });
+        setStudentResponses(responses);
+    });
+
+    return () => unsubscribe();
+  }, [liveState]);
+
 
   if (isLoading || !battle || !liveState) {
     return (
@@ -102,10 +130,24 @@ export default function TeacherLiveBattlePage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Live Student Responses</CardTitle>
+                    <CardTitle>Live Student Responses ({studentResponses.length})</CardTitle>
+                    <CardDescription>See which students have submitted their answer for the current question.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-muted-foreground">Response tracking will appear here.</p>
+                    {studentResponses.length > 0 ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                            {studentResponses.map((response, index) => (
+                                <div key={index} className="flex items-center gap-2 p-2 rounded-md bg-secondary">
+                                    <Avatar className="h-8 w-8">
+                                        <AvatarFallback>{response.studentName.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <span className="font-medium">{response.studentName}</span>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                         <p className="text-muted-foreground">Waiting for students to answer...</p>
+                    )}
                 </CardContent>
             </Card>
         </div>
