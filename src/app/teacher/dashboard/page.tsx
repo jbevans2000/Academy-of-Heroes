@@ -36,25 +36,25 @@ export default function TeacherDashboardPage() {
   const [isGoldDialogOpen, setIsGoldDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchStudents = async () => {
-      setIsLoading(true);
-      try {
-        const querySnapshot = await getDocs(collection(db, "students"));
-        const studentsData = querySnapshot.docs.map(doc => ({ ...doc.data() } as Student));
-        setStudents(studentsData);
-      } catch (error) {
-        console.error("Error fetching students: ", error);
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Could not fetch student data.',
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const fetchStudents = async () => {
+    setIsLoading(true);
+    try {
+      const querySnapshot = await getDocs(collection(db, "students"));
+      const studentsData = querySnapshot.docs.map(doc => ({ ...doc.data() } as Student));
+      setStudents(studentsData);
+    } catch (error) {
+      console.error("Error fetching students: ", error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Could not fetch student data.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchStudents();
   }, [toast]);
   
@@ -107,10 +107,9 @@ export default function TeacherDashboardPage() {
                   const newXp = (studentData.xp || 0) + amount;
                   const { newLevel, newHp } = calculateLevelUp(studentData, newXp);
 
-                  const updates: Partial<Student> = { xp: newXp };
+                  const updates: Partial<Student> = { xp: newXp, level: newLevel, hp: newHp };
+                  
                   if (newLevel > studentData.level) {
-                      updates.level = newLevel;
-                      updates.hp = newHp;
                       toast({
                         title: 'Level Up!',
                         description: `${studentData.characterName} is now level ${newLevel}!`,
@@ -217,36 +216,32 @@ export default function TeacherDashboardPage() {
     const handleRecalculateHp = async () => {
         setIsRecalculating(true);
         try {
-            const batch = writeBatch(db);
-            const allStudentsSnapshot = await getDocs(collection(db, 'students'));
-            const updatedStudents: Student[] = [];
+            await runTransaction(db, async (transaction) => {
+              const allStudentsQuery = await getDocs(collection(db, 'students'));
+              const updatedStudents: Student[] = [];
 
-            allStudentsSnapshot.forEach(studentDoc => {
-                const studentData = studentDoc.data() as Student;
-                
-                // Create a temporary "level 1" version of the student to calculate from scratch
-                const baseStudent = {
-                    ...studentData,
-                    level: 1,
-                    // The calculateLevelUp function will use the base stats from classData for level 1
-                };
+              for (const studentDoc of allStudentsQuery.docs) {
+                  const studentRef = doc(db, 'students', studentDoc.id);
+                  // Get the most up-to-date document within the transaction
+                  const freshStudentDoc = await transaction.get(studentRef);
+                  if (!freshStudentDoc.exists()) continue;
 
-                const { newLevel, newHp } = calculateLevelUp(baseStudent, studentData.xp);
+                  const studentData = freshStudentDoc.data() as Student;
+                  const { newLevel, newHp } = calculateLevelUp(studentData, studentData.xp);
 
-                const studentRef = doc(db, 'students', studentData.uid);
-                batch.update(studentRef, { hp: newHp, level: newLevel });
-
-                updatedStudents.push({ ...studentData, hp: newHp, level: newLevel });
+                  transaction.update(studentRef, { hp: newHp, level: newLevel });
+                  updatedStudents.push({ ...studentData, hp: newHp, level: newLevel });
+              }
+              // This state update needs to happen AFTER the transaction is successful.
+              // We'll update the state outside the transaction callback.
             });
-
-            await batch.commit();
-
-            // Update local state
-            setStudents(updatedStudents);
+            
+            // Re-fetch all students from the database to update the local state correctly
+            await fetchStudents();
 
             toast({
                 title: 'HP Recalculated',
-                description: `All student HP values have been updated to match the new level-up system.`,
+                description: `All student HP and Level values have been updated based on their current XP.`,
             });
         } catch (error) {
             console.error('Error recalculating HP:', error);
@@ -390,3 +385,5 @@ export default function TeacherDashboardPage() {
     </div>
   );
 }
+
+    
