@@ -26,7 +26,7 @@ export default function WorldMapPage() {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-background p-2">
+        <div className="flex flex-col items-center justify-start bg-background p-2">
             <Card className="w-full max-w-7xl shadow-2xl">
                 <CardHeader className="py-4">
                     <CardTitle className="text-3xl font-bold text-center text-primary">The World of Luminaria</CardTitle>
