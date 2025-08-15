@@ -13,6 +13,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { RoundResults, type Result } from '@/components/teacher/round-results';
 import { downloadCsv } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
+import type { Student } from '@/lib/data';
 
 
 interface LiveBattleState {
@@ -284,13 +286,55 @@ export default function TeacherLiveBattlePage() {
       if (!liveState || !battle) return;
 
       const batch = writeBatch(db);
+      const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
 
       // 1. Get the final total damage from the live state
-      const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
       const finalStateDoc = await getDoc(liveBattleRef);
       const totalDamage = finalStateDoc.data()?.totalDamage || 0;
 
-      // 2. Save all rounds data to a new collection for review
+      // 2. Calculate final rewards
+      const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
+      Object.values(allRoundsData).forEach((round: any) => {
+          round.responses.forEach((res: any) => {
+              if (res.isCorrect) {
+                  if (!rewardsByStudent[res.studentUid]) {
+                      rewardsByStudent[res.studentUid] = { xpGained: 0, goldGained: 0 };
+                  }
+                  rewardsByStudent[res.studentUid].xpGained += 5;
+                  rewardsByStudent[res.studentUid].goldGained += 10;
+              }
+          });
+      });
+
+      // 3. Batch update student documents with rewards and level ups
+      for (const uid in rewardsByStudent) {
+          const studentRef = doc(db, 'students', uid);
+          const studentSnap = await getDoc(studentRef);
+          if (studentSnap.exists()) {
+              const studentData = studentSnap.data() as Student;
+              const { xpGained, goldGained } = rewardsByStudent[uid];
+
+              const currentXp = studentData.xp || 0;
+              const newXp = currentXp + xpGained;
+              const currentLevel = studentData.level || 1;
+              const newLevel = calculateLevel(newXp);
+              
+              const updates: Partial<Student> = {
+                  xp: newXp,
+                  gold: (studentData.gold || 0) + goldGained,
+              };
+
+              if (newLevel > currentLevel) {
+                  updates.level = newLevel;
+                  const levelsGained = newLevel - currentLevel;
+                  updates.hp = studentData.hp + calculateHpGain(studentData.class, levelsGained);
+                  updates.mp = studentData.mp + calculateMpGain(studentData.class, levelsGained);
+              }
+              batch.update(studentRef, updates);
+          }
+      }
+
+      // 4. Save battle summary
       const summaryRef = doc(db, `battleSummaries`, battleId);
       batch.set(summaryRef, {
           battleId: battleId,
@@ -298,30 +342,20 @@ export default function TeacherLiveBattlePage() {
           questions: battle?.questions,
           resultsByRound: allRoundsData,
           totalDamageDealt: totalDamage,
+          rewards: rewardsByStudent,
           endedAt: serverTimestamp(),
       });
 
-      // 3. Clear the results from all OTHER battle summaries
-      const summariesColRef = collection(db, `battleSummaries`);
-      const allSummariesSnapshot = await getDocs(summariesColRef);
-      allSummariesSnapshot.forEach(summaryDoc => {
-          // Only clear results from old summaries, not the one we just created
-          if (summaryDoc.id !== battleId) {
-              batch.update(summaryDoc.ref, { resultsByRound: {} });
-          }
-      });
-      
-      // 4. Update live battle state to BATTLE_ENDED. This will trigger the redirect for students.
+      // 5. Update live battle state to BATTLE_ENDED
       batch.update(liveBattleRef, { status: 'BATTLE_ENDED' });
 
-      // 5. Commit all batched writes
+      // 6. Commit all batched writes
       await batch.commit();
       
-      // 6. Redirect teacher to the summary page.
+      // 7. Redirect teacher to the summary page.
       router.push(`/teacher/battle/summary/${battleId}`);
 
-      // 7. After a short delay to allow clients to see the BATTLE_ENDED state,
-      // delete the live battle document to clean up for the next session.
+      // 8. After a short delay, delete the live battle document
       setTimeout(async () => {
         await deleteDoc(doc(db, 'liveBattles', 'active-battle'));
       }, 5000); 
@@ -392,7 +426,7 @@ export default function TeacherLiveBattlePage() {
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      This action will end the battle for all participants and take you to the summary page. You cannot undo this.
+                                      This action will end the battle for all participants, award final XP/Gold, and take you to the summary page. You cannot undo this.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
@@ -458,5 +492,3 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
-
-    

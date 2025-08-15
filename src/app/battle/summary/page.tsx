@@ -9,7 +9,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, Trophy, LayoutDashboard, HeartCrack } from 'lucide-react';
+import { CheckCircle, XCircle, Trophy, LayoutDashboard, HeartCrack, Star, Coins } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface Question {
@@ -23,6 +23,12 @@ interface BattleSummary {
   battleName: string;
   questions: Question[];
   totalDamageDealt?: number;
+  rewards?: {
+    [studentUid: string]: {
+      xpGained: number;
+      goldGained: number;
+    }
+  }
 }
 
 interface StudentRoundResponse {
@@ -150,6 +156,8 @@ export default function StudentBattleSummaryPage() {
     }
   });
 
+  const userRewards = user && summary.rewards ? summary.rewards[user.uid] : null;
+
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -167,6 +175,18 @@ export default function StudentBattleSummaryPage() {
                      <div className="p-4 rounded-md bg-sky-900/70 border border-sky-700 text-sky-200 flex items-center justify-center gap-4">
                         <HeartCrack className="h-10 w-10 text-sky-400" />
                         <p className="text-xl font-bold">Your party dealt a total of {summary.totalDamageDealt} damage to the boss!</p>
+                    </div>
+                )}
+                {userRewards && (
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                        <div className="p-4 rounded-md bg-yellow-800/70 border border-yellow-600 text-yellow-200 flex items-center justify-center gap-4">
+                            <Star className="h-10 w-10 text-yellow-400" />
+                            <p className="text-xl font-bold">You earned {userRewards.xpGained} XP!</p>
+                        </div>
+                         <div className="p-4 rounded-md bg-amber-800/70 border border-amber-600 text-amber-200 flex items-center justify-center gap-4">
+                            <Coins className="h-10 w-10 text-amber-400" />
+                            <p className="text-xl font-bold">You earned {userRewards.goldGained} Gold!</p>
+                        </div>
                     </div>
                 )}
              </CardContent>

@@ -9,7 +9,7 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Star, Coins } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 interface Question {
@@ -32,6 +32,12 @@ interface BattleSummary {
       }[];
     };
   };
+  rewards?: {
+    [studentUid: string]: {
+      xpGained: number;
+      goldGained: number;
+    }
+  }
   totalDamageDealt?: number;
 }
 
@@ -103,6 +109,9 @@ export default function TeacherBattleSummaryPage() {
   const totalCorrect = roundKeys.reduce((acc, key) => acc + summary.resultsByRound[key].responses.filter(r => r.isCorrect).length, 0);
   const totalIncorrect = roundKeys.reduce((acc, key) => acc + summary.resultsByRound[key].responses.filter(r => !r.isCorrect).length, 0);
 
+  const totalXpAwarded = summary.rewards ? Object.values(summary.rewards).reduce((acc, reward) => acc + reward.xpGained, 0) : 0;
+  const totalGoldAwarded = summary.rewards ? Object.values(summary.rewards).reduce((acc, reward) => acc + reward.goldGained, 0) : 0;
+
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <TeacherHeader />
@@ -167,21 +176,37 @@ export default function TeacherBattleSummaryPage() {
                 <CardHeader>
                     <CardTitle>Overall Battle Totals</CardTitle>
                 </CardHeader>
-                <CardContent className="flex justify-around items-center text-2xl font-bold">
-                    <div className="text-center text-green-600">
+                <CardContent className="flex justify-around items-center text-center text-xl font-bold">
+                    <div className="flex flex-col items-center gap-2 text-green-600">
+                        <CheckCircle className="h-8 w-8" />
                         <p>{totalCorrect}</p>
                         <p className="text-sm font-medium">Total Correct Answers</p>
                     </div>
-                     <div className="text-center text-red-600">
+                     <div className="flex flex-col items-center gap-2 text-red-600">
+                        <XCircle className="h-8 w-8" />
                         <p>{totalIncorrect}</p>
                         <p className="text-sm font-medium">Total Incorrect Answers</p>
                     </div>
                     {summary.totalDamageDealt !== undefined && (
-                        <div className="text-center text-sky-600 flex flex-col items-center gap-2">
+                        <div className="flex flex-col items-center gap-2 text-sky-600">
                             <HeartCrack className="h-8 w-8" />
                             <p>{summary.totalDamageDealt}</p>
                             <p className="text-sm font-medium">Total Damage Dealt</p>
                         </div>
+                    )}
+                    {summary.rewards && (
+                       <>
+                         <div className="flex flex-col items-center gap-2 text-yellow-500">
+                           <Star className="h-8 w-8" />
+                           <p>{totalXpAwarded}</p>
+                           <p className="text-sm font-medium">Total XP Awarded</p>
+                         </div>
+                         <div className="flex flex-col items-center gap-2 text-amber-600">
+                           <Coins className="h-8 w-8" />
+                           <p>{totalGoldAwarded}</p>
+                           <p className="text-sm font-medium">Total Gold Awarded</p>
+                         </div>
+                       </>
                     )}
                 </CardContent>
             </Card>
