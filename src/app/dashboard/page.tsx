@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import { DashboardHeader } from '@/components/dashboard/header';
@@ -17,25 +17,39 @@ export default function DashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const authUnsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
+        // We have a user, now set up the real-time listener for their data
         const docRef = doc(db, 'students', user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setStudent(docSnap.data() as Student);
-        } else {
-          // Handle case where user exists in Auth but not Firestore
-          console.error("No such student document!");
-          router.push('/');
-        }
+        
+        const snapshotUnsubscribe = onSnapshot(docRef, (docSnap) => {
+          if (docSnap.exists()) {
+            setStudent(docSnap.data() as Student);
+          } else {
+            // This case handles if the student document is ever deleted while they are logged in
+            console.error("No such student document!");
+            router.push('/');
+          }
+          setIsLoading(false);
+        }, (error) => {
+            console.error("Error listening to student document:", error);
+            setIsLoading(false);
+            router.push('/');
+        });
+
+        // Return the unsubscribe function for the snapshot listener
+        // This will be called when the component unmounts
+        return () => snapshotUnsubscribe();
+
       } else {
         // No user is signed in.
+        setIsLoading(false);
         router.push('/');
       }
-      setIsLoading(false);
     });
 
-    return () => unsubscribe();
+    // Return the unsubscribe function for the auth listener
+    return () => authUnsubscribe();
   }, [router]);
 
   if (isLoading || !student) {
