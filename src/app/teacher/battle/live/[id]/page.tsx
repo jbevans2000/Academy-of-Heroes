@@ -155,6 +155,9 @@ export default function TeacherLiveBattlePage() {
 
   const calculateAndSetResults = async () => {
     if (!battle || liveState === null || isEndingRound) return;
+    // Check if we are already showing results to prevent re-running this
+    if (liveState.status === 'SHOWING_RESULTS') return;
+
     setIsEndingRound(true); // Use this to prevent multiple executions
     
     try {
