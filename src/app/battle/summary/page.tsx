@@ -78,32 +78,28 @@ export default function StudentBattleSummaryPage() {
             }
             
             if (!battleId) {
-                 console.log("No active or summarized battle found. Redirecting to dashboard.");
-                 toast({ title: "No Battle Summary", description: "The battle has ended or a summary is not available." });
-                 router.push('/dashboard');
-                 return;
-            }
-
-            // 3. Fetch the battle summary using the determined battleId
-            const summaryRef = doc(db, 'battleSummaries', battleId);
-            const summarySnap = await getDoc(summaryRef);
-            if (summarySnap.exists()) {
-                setSummary(summarySnap.data() as BattleSummary);
+                 console.log("No active or summarized battle found. Not redirecting.");
+                 // Don't redirect, just show the "not available" message by letting summary stay null.
             } else {
-                 console.log("Summary not found for the given battleId. Redirecting to dashboard.");
-                 toast({ title: "Summary Not Available", description: "The battle results could not be found." });
-                 router.push('/dashboard');
-                 return;
+              // 3. Fetch the battle summary using the determined battleId
+              const summaryRef = doc(db, 'battleSummaries', battleId);
+              const summarySnap = await getDoc(summaryRef);
+              if (summarySnap.exists()) {
+                  setSummary(summarySnap.data() as BattleSummary);
+              } else {
+                   console.log("Summary not found for the given battleId.");
+                   // Let summary stay null to show "not available"
+              }
+              
+              // 4. Fetch the specific student's responses for all rounds for that battle
+              const responsesRef = collection(db, `liveBattles/active-battle/studentResponses/${user.uid}/rounds`);
+              const responsesSnap = await getDocs(responsesRef);
+              const responsesData: { [key: string]: StudentRoundResponse } = {};
+              responsesSnap.forEach(doc => {
+                  responsesData[doc.id] = doc.data() as StudentRoundResponse;
+              });
+              setStudentResponses(responsesData);
             }
-            
-            // 4. Fetch the specific student's responses for all rounds for that battle
-            const responsesRef = collection(db, `liveBattles/active-battle/studentResponses/${user.uid}/rounds`);
-            const responsesSnap = await getDocs(responsesRef);
-            const responsesData: { [key: string]: StudentRoundResponse } = {};
-            responsesSnap.forEach(doc => {
-                responsesData[doc.id] = doc.data() as StudentRoundResponse;
-            });
-            setStudentResponses(responsesData);
 
         } catch (error) {
             console.error("Error fetching summary data:", error);

@@ -71,7 +71,7 @@ function WaitingForRoundEnd() {
 
 
 export default function LiveBattlePage() {
-  const [battleState, setBattleState] = useState<LiveBattleState | null>(null);
+  const [battleState, setBattleState] = useState<LiveBattleState>({ battleId: null, status: 'WAITING', currentQuestionIndex: 0 });
   const [battle, setBattle] = useState<Battle | null>(null);
   const [student, setStudent] = useState<Student | null>(null);
   const [user, setUser] = useState<User | null>(null);
