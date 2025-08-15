@@ -32,7 +32,7 @@ export const classData = {
     backgrounds: [
         'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Backgrounds%2FGuardian%201.jpg?alt=media&token=d735a40c-e25e-4fab-98d3-526bb0411dfe'
     ],
-    baseStats: { hp: 120, mp: 50 },
+    baseStats: { hp: 5, mp: 50 },
   },
   Healer: {
     avatars: [
@@ -48,7 +48,7 @@ export const classData = {
     backgrounds: [
         'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Backgrounds%2FHealer%201.jpg?alt=media&token=6c41882c-39f1-46a4-9f9f-569dfdaec95d'
     ],
-    baseStats: { hp: 100, mp: 80 },
+    baseStats: { hp: 4, mp: 80 },
   },
   Mage: {
     avatars: [
@@ -64,6 +64,8 @@ export const classData = {
     backgrounds: [
         'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Mage%20Backgrounds%2FMage%206.jpg?alt=media&token=722b4a2a-1fee-4f8b-8c53-4b60a8ef4b6a'
     ],
-    baseStats: { hp: 80, mp: 120 },
+    baseStats: { hp: 3, mp: 120 },
   },
 };
+
+    

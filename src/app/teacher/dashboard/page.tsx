@@ -22,7 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Star, Coins } from 'lucide-react';
-import { calculateLevel } from '@/lib/game-mechanics';
+import { calculateLevel, calculateHpGain } from '@/lib/game-mechanics';
 
 export default function TeacherDashboardPage() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -101,29 +101,28 @@ export default function TeacherDashboardPage() {
                   const studentData = studentDoc.data() as Student;
                   const currentXp = studentData.xp || 0;
                   const newXp = Math.max(0, currentXp + amount);
+                  
+                  const currentLevel = studentData.level || 1;
                   const newLevel = calculateLevel(newXp);
-                  batch.update(studentDoc.ref, { xp: newXp, level: newLevel });
+                  
+                  let newHp = studentData.hp || 0;
+                  if (newLevel > currentLevel) {
+                      const levelsGained = newLevel - currentLevel;
+                      const hpGained = calculateHpGain(studentData.class, levelsGained);
+                      newHp += hpGained;
+                  }
+
+                  batch.update(studentDoc.ref, { xp: newXp, level: newLevel, hp: newHp });
               }
           }
           
           await batch.commit();
 
-          // Update local state to reflect changes
-          setStudents(prevStudents =>
-              prevStudents.map(s => {
-                  if (selectedStudents.includes(s.uid)) {
-                      const currentXp = s.xp || 0;
-                      const newXp = Math.max(0, currentXp + amount);
-                      const newLevel = calculateLevel(newXp);
-                      return { ...s, xp: newXp, level: newLevel };
-                  }
-                  return s;
-              })
-          );
+          await fetchStudents();
 
           toast({
               title: 'XP Awarded!',
-              description: `${amount} XP has been awarded to ${selectedStudents.length} student(s).`,
+              description: `${amount} XP has been awarded to ${selectedStudents.length} student(s). Levels and HP have been updated.`,
           });
           setSelectedStudents([]);
           setXpAmount('');
@@ -175,14 +174,7 @@ export default function TeacherDashboardPage() {
 
           await batch.commit();
 
-          // Update local state to reflect changes
-          setStudents(prevStudents =>
-              prevStudents.map(s =>
-                  selectedStudents.includes(s.uid)
-                      ? { ...s, gold: (s.gold || 0) + amount }
-                      : s
-              )
-          );
+          await fetchStudents();
 
           toast({
               title: 'Gold Awarded!',
@@ -324,3 +316,5 @@ export default function TeacherDashboardPage() {
     </div>
   );
 }
+
+    

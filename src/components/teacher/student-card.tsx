@@ -22,7 +22,7 @@ import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { calculateLevel } from '@/lib/game-mechanics';
+import { calculateLevel, calculateHpGain } from '@/lib/game-mechanics';
 
 
 interface StudentCardProps {
@@ -56,17 +56,27 @@ export function StudentCard({ student, isSelected, onSelect, setStudents }: Stud
         const currentStudentDoc = await getDoc(studentRef);
         if (!currentStudentDoc.exists()) throw new Error("Student not found");
 
-        const currentStudentData = currentStudentDoc.data() as Student;
-        const currentXp = currentStudentData.xp || 0;
+        const studentData = currentStudentDoc.data() as Student;
+        const currentXp = studentData.xp || 0;
         const newXp = Math.max(0, currentXp + amount);
+        
+        const currentLevel = studentData.level || 1;
         const newLevel = calculateLevel(newXp);
+        
+        let newHp = studentData.hp || 0;
+        if (newLevel > currentLevel) {
+            const levelsGained = newLevel - currentLevel;
+            const hpGained = calculateHpGain(studentData.class, levelsGained);
+            newHp += hpGained;
+        }
         
         await updateDoc(studentRef, {
             xp: newXp,
             level: newLevel,
+            hp: newHp
         });
         
-        const updatedStudent = { ...currentStudentData, xp: newXp, level: newLevel };
+        const updatedStudent = { ...studentData, xp: newXp, level: newLevel, hp: newHp };
         
         setStudents(prevStudents => 
             prevStudents.map(s => s.uid === student.uid ? updatedStudent : s)
@@ -74,7 +84,7 @@ export function StudentCard({ student, isSelected, onSelect, setStudents }: Stud
 
         toast({
             title: 'XP Awarded!',
-            description: `${amount > 0 ? '+' : ''}${amount} XP awarded to ${student.characterName}.`,
+            description: `${amount > 0 ? '+' : ''}${amount} XP awarded to ${student.characterName}. Level and HP updated.`,
         });
          setXpToAdd('');
 
@@ -244,7 +254,7 @@ export function StudentCard({ student, isSelected, onSelect, setStudents }: Stud
                <div className="flex items-center space-x-1">
                   <Heart className="h-5 w-5 text-red-500" />
                   <div>
-                    <p className="font-semibold">{student.hp ?? 100}</p>
+                    <p className="font-semibold">{student.hp ?? 0}</p>
                     <p className="text-xs text-muted-foreground">HP</p>
                   </div>
               </div>
