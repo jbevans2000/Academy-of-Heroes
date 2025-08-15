@@ -29,7 +29,7 @@ export default function WorldMapPage() {
         <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 sm:p-6 lg:p-8">
             <Card className="w-full max-w-6xl shadow-2xl">
                 <CardHeader>
-                    <CardTitle className="text-3xl font-bold text-center text-primary">World Map</CardTitle>
+                    <CardTitle className="text-3xl font-bold text-center text-primary">The World of Luminaria</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="relative aspect-[2048/1536] rounded-lg overflow-hidden bg-muted/50">
