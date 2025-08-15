@@ -9,7 +9,7 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 interface Question {
@@ -32,6 +32,7 @@ interface BattleSummary {
       }[];
     };
   };
+  totalDamageDealt?: number;
 }
 
 export default function TeacherBattleSummaryPage() {
@@ -175,6 +176,13 @@ export default function TeacherBattleSummaryPage() {
                         <p>{totalIncorrect}</p>
                         <p className="text-sm font-medium">Total Incorrect Answers</p>
                     </div>
+                    {summary.totalDamageDealt !== undefined && (
+                        <div className="text-center text-sky-600 flex flex-col items-center gap-2">
+                            <HeartCrack className="h-8 w-8" />
+                            <p>{summary.totalDamageDealt}</p>
+                            <p className="text-sm font-medium">Total Damage Dealt</p>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 

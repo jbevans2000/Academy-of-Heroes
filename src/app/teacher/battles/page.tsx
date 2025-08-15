@@ -67,6 +67,8 @@ export default function BossBattlesPage() {
             battleId: battleId,
             status: 'IN_PROGRESS', 
             currentQuestionIndex: 0,
+            lastRoundDamage: 0,
+            totalDamage: 0,
         });
 
         // No need to clear subcollections here because deleting the document takes care of that.

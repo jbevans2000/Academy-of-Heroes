@@ -9,7 +9,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, Trophy, LayoutDashboard } from 'lucide-react';
+import { CheckCircle, XCircle, Trophy, LayoutDashboard, HeartCrack } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface Question {
@@ -22,6 +22,7 @@ interface BattleSummary {
   battleId: string;
   battleName: string;
   questions: Question[];
+  totalDamageDealt?: number;
 }
 
 interface StudentRoundResponse {
@@ -145,8 +146,14 @@ export default function StudentBattleSummaryPage() {
               <CardTitle className="text-4xl">Battle Complete!</CardTitle>
               <CardDescription className="text-lg">Here is a summary of your performance against {summary.battleName}.</CardDescription>
             </CardHeader>
-             <CardContent>
+             <CardContent className="space-y-4">
                 <p className="text-2xl font-bold">You answered <span className="text-primary">{totalCorrect}</span> out of <span className="text-primary">{summary.questions.length}</span> questions correctly.</p>
+                {summary.totalDamageDealt !== undefined && (
+                     <div className="p-4 rounded-md bg-sky-900/70 border border-sky-700 text-sky-200 flex items-center justify-center gap-4">
+                        <HeartCrack className="h-10 w-10 text-sky-400" />
+                        <p className="text-xl font-bold">Your party dealt a total of {summary.totalDamageDealt} damage to the boss!</p>
+                    </div>
+                )}
              </CardContent>
           </Card>
           

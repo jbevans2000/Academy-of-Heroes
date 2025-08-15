@@ -3,12 +3,12 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs, writeBatch, serverTimestamp, setDoc, deleteDoc } from 'firebase/firestore';
+import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs, writeBatch, serverTimestamp, setDoc, deleteDoc, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, Download, Timer } from 'lucide-react';
+import { Loader2, Download, Timer, HeartCrack } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { RoundResults, type Result } from '@/components/teacher/round-results';
@@ -21,6 +21,8 @@ interface LiveBattleState {
   status: 'WAITING' | 'IN_PROGRESS' | 'ROUND_ENDING' | 'SHOWING_RESULTS' | 'BATTLE_ENDED';
   currentQuestionIndex: number;
   timerEndsAt?: { seconds: number; nanoseconds: number; };
+  lastRoundDamage?: number;
+  totalDamage?: number;
 }
 
 interface Question {
@@ -186,6 +188,8 @@ export default function TeacherLiveBattlePage() {
         }));
         setRoundResults(results);
 
+        const roundDamage = results.filter(r => r.isCorrect).length;
+
         // Store this round's data for the final summary
         const newAllRoundsData = {
             ...allRoundsData,
@@ -201,9 +205,13 @@ export default function TeacherLiveBattlePage() {
         };
         setAllRoundsData(newAllRoundsData);
 
-
         const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
-        await updateDoc(liveBattleRef, { status: 'SHOWING_RESULTS', timerEndsAt: null });
+        await updateDoc(liveBattleRef, { 
+            status: 'SHOWING_RESULTS', 
+            timerEndsAt: null,
+            lastRoundDamage: roundDamage,
+            totalDamage: increment(roundDamage)
+        });
     } catch (error) {
         console.error("Error calculating results:", error);
     } finally {
@@ -246,6 +254,7 @@ export default function TeacherLiveBattlePage() {
             status: 'IN_PROGRESS',
             currentQuestionIndex: liveState.currentQuestionIndex + 1,
             timerEndsAt: null,
+            lastRoundDamage: 0
         });
 
         await batch.commit();
@@ -257,26 +266,32 @@ export default function TeacherLiveBattlePage() {
   };
 
   const handleEndBattle = async () => {
-      // 1. Save all rounds data to a new collection for review
+      if (!liveState) return;
+      // 1. Get the final total damage from the live state
+      const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
+      const finalStateDoc = await getDoc(liveBattleRef);
+      const totalDamage = finalStateDoc.data()?.totalDamage || 0;
+
+      // 2. Save all rounds data to a new collection for review
       const summaryRef = doc(db, `battleSummaries`, battleId);
       await setDoc(summaryRef, {
           battleId: battleId,
           battleName: battle?.battleName,
           questions: battle?.questions,
           resultsByRound: allRoundsData,
+          totalDamageDealt: totalDamage,
           endedAt: serverTimestamp(),
       });
 
-      // 2. Update live battle state to BATTLE_ENDED. This will trigger the redirect for students.
-      const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
+      // 3. Update live battle state to BATTLE_ENDED. This will trigger the redirect for students.
       await updateDoc(liveBattleRef, {
           status: 'BATTLE_ENDED',
       });
       
-      // 3. Redirect teacher to the summary page.
+      // 4. Redirect teacher to the summary page.
       router.push(`/teacher/battle/summary/${battleId}`);
 
-      // 4. After a short delay to allow clients to see the BATTLE_ENDED state,
+      // 5. After a short delay to allow clients to see the BATTLE_ENDED state,
       // delete the live battle document to clean up for the next session.
       setTimeout(async () => {
         await deleteDoc(doc(db, 'liveBattles', 'active-battle'));
@@ -327,7 +342,8 @@ export default function TeacherLiveBattlePage() {
                 <CardContent>
                     <p>Status: <span className="font-bold text-primary">{liveState.status.replace('_', ' ')}</span></p>
                     <p>Current Question: <span className="font-bold">{liveState.currentQuestionIndex + 1} / {battle.questions.length}</span></p>
-                    
+                    <p>Total Damage Dealt So Far: <span className="font-bold text-red-500">{liveState.totalDamage || 0}</span></p>
+
                     <div className="mt-6 p-4 border rounded-lg">
                         <h3 className="font-semibold text-lg mb-2">Controls</h3>
                         <div className="flex gap-4">
@@ -411,6 +427,12 @@ export default function TeacherLiveBattlePage() {
                     </CardHeader>
                     <CardContent>
                         <RoundResults results={roundResults} />
+                        {liveState.lastRoundDamage !== undefined && liveState.lastRoundDamage > 0 && (
+                             <div className="mt-4 p-4 rounded-md bg-sky-900/70 border border-sky-700 text-sky-200 flex items-center justify-center gap-4">
+                                <HeartCrack className="h-8 w-8 text-sky-400" />
+                                <p className="text-lg font-bold">Total Damage Dealt This Round: {liveState.lastRoundDamage}</p>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             )}

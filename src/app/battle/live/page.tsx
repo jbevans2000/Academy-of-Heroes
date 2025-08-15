@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { onSnapshot, doc, getDoc, setDoc } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
-import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard } from 'lucide-react';
+import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack } from 'lucide-react';
 import { type Student } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
@@ -18,6 +18,8 @@ interface LiveBattleState {
   status: 'WAITING' | 'IN_PROGRESS' | 'ROUND_ENDING' | 'SHOWING_RESULTS' | 'BATTLE_ENDED';
   currentQuestionIndex: number;
   timerEndsAt?: { seconds: number; nanoseconds: number; };
+  lastRoundDamage?: number;
+  totalDamage?: number;
 }
 
 interface Question {
@@ -279,6 +281,14 @@ export default function LiveBattlePage() {
                                 <h3 className="text-2xl font-semibold">Your attack missed!</h3>
                             </div>
                         )}
+
+                        {battleState.lastRoundDamage !== undefined && battleState.lastRoundDamage > 0 && (
+                            <div className="p-4 rounded-md bg-sky-900/70 border border-sky-700 text-sky-200 flex items-center justify-center gap-4">
+                                <HeartCrack className="h-10 w-10 text-sky-400" />
+                                <p className="text-xl font-bold">The Party dealt {battleState.lastRoundDamage} damage to the boss this round!</p>
+                            </div>
+                        )}
+
                         <div className="p-4 rounded-md bg-secondary text-secondary-foreground">
                             <p className="text-sm text-muted-foreground mb-1">The correct answer was:</p>
                             <p className="text-xl font-bold">{correctAnswerText}</p>
