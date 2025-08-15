@@ -135,7 +135,7 @@ export default function LiveBattlePage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 text-white p-4">
         <div className="w-full max-w-4xl mx-auto">
-          <Card className="bg-gray-800/50 border-gray-700 shadow-2xl shadow-primary/20">
+          <Card className="bg-card text-card-foreground border-gray-700 shadow-2xl shadow-primary/20">
              <CardContent className="p-6">
                 <div className="flex justify-center mb-6">
                     <Image 
@@ -158,7 +158,7 @@ export default function LiveBattlePage() {
                                 <Button
                                 key={index}
                                 variant="outline"
-                                className="text-lg h-auto py-4 whitespace-normal justify-start text-left bg-gray-700 hover:bg-primary/90 border-gray-600 hover:border-primary"
+                                className="text-lg h-auto py-4 whitespace-normal justify-start text-left hover:bg-primary/90 hover:text-primary-foreground"
                                 onClick={() => handleSubmitAnswer(index)}
                                 >
                                 <span className="font-bold mr-4">{String.fromCharCode(65 + index)}.</span>
