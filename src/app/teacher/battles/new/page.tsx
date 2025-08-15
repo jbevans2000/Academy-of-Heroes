@@ -9,9 +9,11 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ArrowLeft, PlusCircle, Trash2, Eye, GitBranch } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Trash2, Eye, GitBranch, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { addDoc, collection } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 interface Question {
   id: number;
@@ -29,6 +31,7 @@ export default function NewBossBattlePage() {
   const [damage, setDamage] = useState<number | string>(10);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isClient, setIsClient] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     // This ensures the initial question is only set on the client
@@ -84,24 +87,65 @@ export default function NewBossBattlePage() {
     );
   };
 
-  const handleCreateBattle = () => {
-    // Logic to save the battle will go here
-    console.log({
-        battleTitle,
-        bossImageUrl,
-        videoUrl,
-        damage,
-        questions
-    });
-    toast({
-        title: 'Battle Created (Simulated)',
-        description: 'The boss battle has been saved and is ready to be activated.',
-    });
-    router.push('/teacher/battles');
+  const validateBattle = () => {
+    if (!battleTitle.trim()) {
+        toast({ variant: 'destructive', title: 'Validation Error', description: 'Boss Battle Title is required.' });
+        return false;
+    }
+     if (questions.some(q => !q.questionText.trim())) {
+        toast({ variant: 'destructive', title: 'Validation Error', description: 'All questions must have text.' });
+        return false;
+    }
+    if (questions.some(q => q.answers.some(a => !a.trim()))) {
+        toast({ variant: 'destructive', title: 'Validation Error', description: 'All answer choices must be filled in.' });
+        return false;
+    }
+    if (questions.some(q => q.correctAnswerIndex === null)) {
+        toast({ variant: 'destructive', title: 'Validation Error', description: 'Each question must have a correct answer selected.' });
+        return false;
+    }
+    return true;
+  }
+
+  const handleCreateBattle = async () => {
+    if (!validateBattle()) return;
+
+    setIsSaving(true);
+
+    // Remove the temporary `id` field used for React keys
+    const questionsToSave = questions.map(({ id, ...rest }) => rest);
+    
+    try {
+        await addDoc(collection(db, 'bossBattles'), {
+            battleName: battleTitle,
+            bossImageUrl,
+            videoUrl,
+            damage: Number(damage),
+            questions: questionsToSave,
+            createdAt: new Date(),
+        });
+
+        toast({
+            title: 'Battle Created Successfully!',
+            description: 'The boss battle has been saved and is ready to be activated.',
+        });
+        router.push('/teacher/battles');
+    } catch (error) {
+        console.error("Error creating boss battle:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Save Failed',
+            description: 'Could not save the boss battle to the database. Please try again.',
+        });
+    } finally {
+        setIsSaving(false);
+    }
   }
 
   const handlePreviewBattle = () => {
       // Logic for preview will go here
+      if (!validateBattle()) return;
+      
       toast({
           title: 'Preview Mode',
           description: 'This will show you what the battle looks like for students.',
@@ -131,20 +175,20 @@ export default function NewBossBattlePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                         <Label htmlFor="battle-name" className="text-base">Boss Battle Title</Label>
-                        <Input id="battle-name" placeholder="e.g., The Ancient Karkorah" value={battleTitle} onChange={(e) => setBattleTitle(e.target.value)} />
+                        <Input id="battle-name" placeholder="e.g., The Ancient Karkorah" value={battleTitle} onChange={(e) => setBattleTitle(e.target.value)} disabled={isSaving} />
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="damage" className="text-base">Incorrect Answer Damage</Label>
-                        <Input id="damage" type="number" placeholder="e.g., 10" value={damage} onChange={(e) => setDamage(Number(e.target.value))} />
+                        <Input id="damage" type="number" placeholder="e.g., 10" value={damage} onChange={(e) => setDamage(Number(e.target.value))} disabled={isSaving} />
                     </div>
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="boss-image" className="text-base">Boss Image URL</Label>
-                    <Input id="boss-image" placeholder="https://example.com/boss.png" value={bossImageUrl} onChange={(e) => setBossImageUrl(e.target.value)} />
+                    <Input id="boss-image" placeholder="https://example.com/boss.png" value={bossImageUrl} onChange={(e) => setBossImageUrl(e.target.value)} disabled={isSaving} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="video-url" className="text-base">Intro Video URL (YouTube, etc.)</Label>
-                    <Input id="video-url" placeholder="https://www.youtube.com/watch?v=..." value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} />
+                    <Input id="video-url" placeholder="https://www.youtube.com/watch?v=..." value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} disabled={isSaving} />
                 </div>
               </div>
 
@@ -158,6 +202,7 @@ export default function NewBossBattlePage() {
                         size="icon"
                         className="absolute top-2 right-2 text-muted-foreground hover:text-destructive"
                         onClick={() => handleRemoveQuestion(q.id)}
+                        disabled={isSaving}
                       >
                         <Trash2 className="h-5 w-5" />
                         <span className="sr-only">Remove Question</span>
@@ -170,12 +215,14 @@ export default function NewBossBattlePage() {
                         value={q.questionText}
                         onChange={(e) => handleQuestionChange(q.id, e.target.value)}
                         className="text-base"
+                        disabled={isSaving}
                       />
                       <div className="space-y-2">
                         <Label>Answer Choices (Select the correct one)</Label>
                         <RadioGroup
                             value={q.correctAnswerIndex !== null ? `answer-${q.id}-${q.correctAnswerIndex}` : ''}
                             onValueChange={() => {}}
+                            disabled={isSaving}
                          >
                           {q.answers.map((ans, aIndex) => (
                             <div key={aIndex} className="flex items-center gap-4">
@@ -191,6 +238,7 @@ export default function NewBossBattlePage() {
                                   placeholder={`Answer ${aIndex + 1}`}
                                   value={ans}
                                   onChange={(e) => handleAnswerChange(q.id, aIndex, e.target.value)}
+                                  disabled={isSaving}
                                 />
                             </div>
                           ))}
@@ -199,19 +247,19 @@ export default function NewBossBattlePage() {
                     </div>
                   </Card>
                 ))}
-                 <Button variant="outline" onClick={handleAddQuestion}>
+                 <Button variant="outline" onClick={handleAddQuestion} disabled={isSaving}>
                   <PlusCircle className="mr-2 h-5 w-5" />
                   Add Another Question
                 </Button>
               </div>}
 
               <div className="flex justify-end gap-4 pt-4 border-t">
-                <Button variant="outline" size="lg" onClick={handlePreviewBattle}>
+                <Button variant="outline" size="lg" onClick={handlePreviewBattle} disabled={isSaving}>
                     <Eye className="mr-2" />
                     Preview Boss Battle
                 </Button>
-                <Button size="lg" onClick={handleCreateBattle}>
-                    <GitBranch className="mr-2" />
+                <Button size="lg" onClick={handleCreateBattle} disabled={isSaving}>
+                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GitBranch className="mr-2" />}
                     Create Boss Battle
                 </Button>
               </div>
