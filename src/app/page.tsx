@@ -96,7 +96,7 @@ export default function LoginPage() {
             <CardTitle className="text-3xl font-headline text-primary">
               Welcome to The Academy of Heroes!
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-yellow-300">
               Login to Continue Your Quest, or Create a New Avatar Below!
             </CardDescription>
           </CardHeader>
