@@ -38,6 +38,21 @@ export default function ChapterPage() {
         fetchChapter();
     }, [chapterId]);
 
+    const getYouTubeEmbedUrl = (url: string) => {
+        if (!url) return '';
+        let videoId = '';
+        if (url.includes('youtu.be/')) {
+        videoId = url.split('youtu.be/')[1];
+        } else if (url.includes('watch?v=')) {
+        videoId = url.split('watch?v=')[1];
+        }
+        const ampersandPosition = videoId.indexOf('&');
+        if (ampersandPosition !== -1) {
+        videoId = videoId.substring(0, ampersandPosition);
+        }
+        return `https://www.youtube.com/embed/${videoId}`;
+    };
+
     if (isLoading) {
         return (
              <div className="flex flex-col items-center justify-start bg-background p-2 md:p-4">
@@ -53,8 +68,10 @@ export default function ChapterPage() {
     }
     
     // Simple way to split content into paragraphs
-    const storyParagraphs = chapter.storyContent.split('\\n').map((p, i) => <p key={i} className="px-4">{p}</p>);
-    const lessonParagraphs = chapter.lessonContent.split('\\n').map((p, i) => <p key={i} className="px-4">{p}</p>);
+    const storyParagraphs = chapter.storyContent?.split('\\n').map((p, i) => <p key={i} className="px-4">{p}</p>);
+    const lessonParagraphs = chapter.lessonContent?.split('\\n').map((p, i) => <p key={i} className="px-4">{p}</p>);
+    const storyVideoSrc = chapter.videoUrl ? getYouTubeEmbedUrl(chapter.videoUrl) : '';
+    const lessonVideoSrc = chapter.lessonVideoUrl ? getYouTubeEmbedUrl(chapter.lessonVideoUrl) : '';
 
 
     return (
@@ -83,21 +100,19 @@ export default function ChapterPage() {
                                         priority
                                     />
                                 </div>}
-                                <Separator />
-                                {chapter.videoUrl && <div className="flex justify-center">
+                                {chapter.storyContent && <><Separator />{storyParagraphs}</>}
+                                {storyVideoSrc && <><Separator /><div className="flex justify-center">
                                     <iframe 
                                         width="800" 
                                         height="400" 
-                                        src={chapter.videoUrl} 
+                                        src={storyVideoSrc} 
                                         title="YouTube video player" 
                                         frameBorder="0" 
                                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
                                         allowFullScreen
                                         className="rounded-lg shadow-lg border">
                                     </iframe>
-                                </div>}
-                                <Separator />
-                                {storyParagraphs}
+                                </div></>}
                                 {chapter.decorativeImageUrl1 && <><Separator /><div className="flex justify-center">
                                      <Image
                                         src={chapter.decorativeImageUrl1}
@@ -108,7 +123,6 @@ export default function ChapterPage() {
                                         data-ai-hint="scroll letter"
                                     />
                                 </div></>}
-                                <Separator />
                                  {chapter.decorativeImageUrl2 && <><Separator /><div className="flex justify-center">
                                      <Image
                                         src={chapter.decorativeImageUrl2}
@@ -124,7 +138,50 @@ export default function ChapterPage() {
                                  <div className="text-center">
                                     <h3 className="text-3xl font-bold text-primary">Lesson</h3>
                                  </div>
-                                {lessonParagraphs}
+                                {chapter.lessonMainImageUrl && <div className="flex justify-center">
+                                    <Image
+                                        src={chapter.lessonMainImageUrl}
+                                        alt="Lesson main image"
+                                        width={800}
+                                        height={400}
+                                        className="rounded-lg shadow-lg border"
+                                        data-ai-hint="science diagram"
+                                        priority
+                                    />
+                                </div>}
+                                {chapter.lessonContent && <><Separator />{lessonParagraphs}</>}
+                                {lessonVideoSrc && <><Separator /><div className="flex justify-center">
+                                    <iframe 
+                                        width="800" 
+                                        height="400" 
+                                        src={lessonVideoSrc} 
+                                        title="YouTube video player" 
+                                        frameBorder="0" 
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                        allowFullScreen
+                                        className="rounded-lg shadow-lg border">
+                                    </iframe>
+                                </div></>}
+                                {chapter.lessonDecorativeImageUrl1 && <><Separator /><div className="flex justify-center">
+                                     <Image
+                                        src={chapter.lessonDecorativeImageUrl1}
+                                        alt="Lesson decorative image"
+                                        width={800}
+                                        height={400}
+                                        className="rounded-lg shadow-lg border"
+                                        data-ai-hint="old paper"
+                                    />
+                                </div></>}
+                                 {chapter.lessonDecorativeImageUrl2 && <><Separator /><div className="flex justify-center">
+                                     <Image
+                                        src={chapter.lessonDecorativeImageUrl2}
+                                        alt="Lesson decorative twig"
+                                        width={800}
+                                        height={100}
+                                        className="rounded-lg object-contain"
+                                        data-ai-hint="divider"
+                                    />
+                                </div></>}
                             </TabsContent>
                         </Tabs>
                     </CardContent>

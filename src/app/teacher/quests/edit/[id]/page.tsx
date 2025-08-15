@@ -29,10 +29,10 @@ export default function EditQuestPage() {
 
   // State for Hubs
   const [hubs, setHubs] = useState<QuestHub[]>([]);
-  const [selectedHubId, setSelectedHubId] = useState('');
   
   // State for the Chapter
   const [chapter, setChapter] = useState<Partial<Chapter> | null>(null);
+  const [selectedHubId, setSelectedHubId] = useState('');
   const [chapterCoordinates, setChapterCoordinates] = useState({ x: 50, y: 50 });
 
   // Fetch all hubs for the dropdown
@@ -263,6 +263,24 @@ export default function EditQuestPage() {
                         <div className="space-y-2">
                             <Label htmlFor="lesson-content">Lesson Content</Label>
                             <Textarea id="lesson-content" placeholder="Write the educational content for this chapter... Use \n for new paragraphs." value={chapter.lessonContent || ''} onChange={e => handleFieldChange('lessonContent', e.target.value)} disabled={isSaving} rows={8}/>
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="lesson-main-image-url">Main Lesson Image URL</Label>
+                            <Input id="lesson-main-image-url" placeholder="https://example.com/lesson-main.png" value={chapter.lessonMainImageUrl || ''} onChange={e => handleFieldChange('lessonMainImageUrl', e.target.value)} disabled={isSaving} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="lesson-video-url">Lesson YouTube Video URL</Label>
+                            <Input id="lesson-video-url" placeholder="https://youtube.com/watch?v=..." value={chapter.lessonVideoUrl || ''} onChange={e => handleFieldChange('lessonVideoUrl', e.target.value)} disabled={isSaving} />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="lesson-deco-1">Lesson Decorative Image 1 URL</Label>
+                                <Input id="lesson-deco-1" placeholder="https://example.com/lesson-deco1.png" value={chapter.lessonDecorativeImageUrl1 || ''} onChange={e => handleFieldChange('lessonDecorativeImageUrl1', e.target.value)} disabled={isSaving} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="lesson-deco-2">Lesson Decorative Image 2 URL</Label>
+                                <Input id="lesson-deco-2" placeholder="https://example.com/lesson-deco2.png" value={chapter.lessonDecorativeImageUrl2 || ''} onChange={e => handleFieldChange('lessonDecorativeImageUrl2', e.target.value)} disabled={isSaving} />
+                            </div>
                         </div>
                     </TabsContent>
                 </Tabs>

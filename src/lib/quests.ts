@@ -11,11 +11,18 @@ export interface Chapter {
     hubId: string;
     title: string;
     chapterNumber: number;
+    // Story media
     storyContent: string;
-    lessonContent: string;
     mainImageUrl: string;
     videoUrl: string;
     decorativeImageUrl1: string;
     decorativeImageUrl2: string;
+    // Lesson media
+    lessonContent: string;
+    lessonMainImageUrl: string;
+    lessonVideoUrl: string;
+    lessonDecorativeImageUrl1: string;
+    lessonDecorativeImageUrl2: string;
+    
     coordinates: { x: number; y: number }; // Position on the hub map
 }

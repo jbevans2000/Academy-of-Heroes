@@ -38,11 +38,17 @@ export default function NewQuestPage() {
   const [chapterTitle, setChapterTitle] = useState('');
   const [chapterNumber, setChapterNumber] = useState<number | ''>('');
   const [storyContent, setStoryContent] = useState('');
-  const [lessonContent, setLessonContent] = useState('');
   const [mainImageUrl, setMainImageUrl] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [decorativeImageUrl1, setDecorativeImageUrl1] = useState('');
   const [decorativeImageUrl2, setDecorativeImageUrl2] = useState('');
+  
+  const [lessonContent, setLessonContent] = useState('');
+  const [lessonMainImageUrl, setLessonMainImageUrl] = useState('');
+  const [lessonVideoUrl, setLessonVideoUrl] = useState('');
+  const [lessonDecorativeImageUrl1, setLessonDecorativeImageUrl1] = useState('');
+  const [lessonDecorativeImageUrl2, setLessonDecorativeImageUrl2] = useState('');
+  
   const [chapterCoordinates, setChapterCoordinates] = useState({ x: 50, y: 50 });
 
   useEffect(() => {
@@ -130,11 +136,15 @@ export default function NewQuestPage() {
             title: chapterTitle,
             chapterNumber: chapterNumber,
             storyContent,
-            lessonContent,
             mainImageUrl,
             videoUrl,
             decorativeImageUrl1,
             decorativeImageUrl2,
+            lessonContent,
+            lessonMainImageUrl,
+            lessonVideoUrl,
+            lessonDecorativeImageUrl1,
+            lessonDecorativeImageUrl2,
             coordinates: chapterCoordinates,
             createdAt: serverTimestamp(),
         });
@@ -317,6 +327,24 @@ export default function NewQuestPage() {
                      <div className="space-y-2">
                         <Label htmlFor="lesson-content">Lesson Content</Label>
                         <Textarea id="lesson-content" placeholder="Write the educational content for this chapter... Use \n for new paragraphs." value={lessonContent} onChange={e => setLessonContent(e.target.value)} disabled={isSaving} rows={8}/>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="lesson-main-image-url">Main Lesson Image URL</Label>
+                        <Input id="lesson-main-image-url" placeholder="https://example.com/lesson-main.png" value={lessonMainImageUrl} onChange={e => setLessonMainImageUrl(e.target.value)} disabled={isSaving} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="lesson-video-url">Lesson YouTube Video URL</Label>
+                        <Input id="lesson-video-url" placeholder="https://youtube.com/watch?v=..." value={lessonVideoUrl} onChange={e => setLessonVideoUrl(e.target.value)} disabled={isSaving} />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="lesson-deco-1">Lesson Decorative Image 1 URL</Label>
+                            <Input id="lesson-deco-1" placeholder="https://example.com/lesson-deco1.png" value={lessonDecorativeImageUrl1} onChange={e => setLessonDecorativeImageUrl1(e.target.value)} disabled={isSaving} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="lesson-deco-2">Lesson Decorative Image 2 URL</Label>
+                            <Input id="lesson-deco-2" placeholder="https://example.com/lesson-deco2.png" value={lessonDecorativeImageUrl2} onChange={e => setLessonDecorativeImageUrl2(e.target.value)} disabled={isSaving} />
+                        </div>
                     </div>
                   </TabsContent>
                 </Tabs>
