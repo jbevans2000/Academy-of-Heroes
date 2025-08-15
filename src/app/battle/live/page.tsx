@@ -12,6 +12,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnswerResult } from '@/components/battle/answer-result';
 import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
 interface LiveBattleState {
   battleId: string | null;
@@ -35,7 +36,7 @@ interface Battle {
   questions: Question[];
 }
 
-function CountdownTimer({ expiryTimestamp }: { expiryTimestamp: Date }) {
+function SmallCountdownTimer({ expiryTimestamp }: { expiryTimestamp: Date }) {
     const [timeLeft, setTimeLeft] = useState(Math.max(0, Math.round((expiryTimestamp.getTime() - new Date().getTime()) / 1000)));
 
     useEffect(() => {
@@ -48,10 +49,12 @@ function CountdownTimer({ expiryTimestamp }: { expiryTimestamp: Date }) {
     }, [expiryTimestamp]);
 
     return (
-        <div className="text-center py-12">
-            <Timer className="h-16 w-16 text-yellow-500 mx-auto mb-4 animate-bounce" />
-            <h2 className="text-5xl font-bold">{timeLeft}</h2>
-            <p className="text-muted-foreground mt-2 text-lg">The round is ending!</p>
+        <div className="text-center p-2 rounded-lg bg-yellow-900/80 border border-yellow-700 mb-4 animate-pulse">
+            <div className="flex items-center justify-center gap-2">
+                <Timer className="h-6 w-6 text-yellow-400" />
+                <p className="text-xl font-bold text-white">{timeLeft}</p>
+                <p className="text-sm text-yellow-200">The round is ending! Lock in your answer!</p>
+            </div>
         </div>
     );
 }
@@ -130,7 +133,7 @@ export default function LiveBattlePage() {
   }, [battleState?.battleId]);
 
   const handleSubmitAnswer = async (answerIndex: number) => {
-    if (!user || !student || !battleState?.battleId || !battle || battleState.status !== 'IN_PROGRESS') return;
+    if (!user || !student || !battleState?.battleId || !battle || (battleState.status !== 'IN_PROGRESS' && battleState.status !== 'ROUND_ENDING')) return;
     
     setSubmittedAnswer(answerIndex);
     
@@ -191,9 +194,26 @@ export default function LiveBattlePage() {
     );
   }
 
-  if (battleState.status === 'IN_PROGRESS' && battle) {
+  // This block now handles both IN_PROGRESS and ROUND_ENDING states
+  if ((battleState.status === 'IN_PROGRESS' || battleState.status === 'ROUND_ENDING') && battle) {
     const currentQuestion = battle.questions[battleState.currentQuestionIndex];
     const bossImage = battle.bossImageUrl || 'https://placehold.co/600x400.png';
+    const expiryTimestamp = battleState.timerEndsAt ? new Date(battleState.timerEndsAt.seconds * 1000) : null;
+
+    // Show waiting message only if status is IN_PROGRESS and an answer has been submitted
+    if (battleState.status === 'IN_PROGRESS' && submittedAnswer !== null) {
+      return (
+          <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 p-4">
+            <div className="w-full max-w-4xl mx-auto">
+              <Card className="bg-card text-card-foreground border-gray-700 shadow-2xl shadow-primary/20">
+                 <CardContent className="p-6">
+                    <AnswerResult />
+                 </CardContent>
+              </Card>
+            </div>
+          </div>
+        )
+    }
 
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 p-4">
@@ -211,46 +231,35 @@ export default function LiveBattlePage() {
                     />
                 </div>
 
-                {submittedAnswer !== null ? (
-                    <AnswerResult />
-                ) : (
-                    <div className="text-center">
-                        <h2 className="text-2xl md:text-3xl font-bold mb-6">{currentQuestion.questionText}</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {currentQuestion.answers.map((answer, index) => (
-                                <Button
-                                key={index}
-                                variant="outline"
-                                className="text-lg h-auto py-4 whitespace-normal justify-start text-left hover:bg-primary/90 hover:text-primary-foreground"
-                                onClick={() => handleSubmitAnswer(index)}
-                                >
-                                <span className="font-bold mr-4">{String.fromCharCode(65 + index)}.</span>
-                                {answer}
-                                </Button>
-                            ))}
-                        </div>
-                    </div>
+                {expiryTimestamp && battleState.status === 'ROUND_ENDING' && (
+                  <SmallCountdownTimer expiryTimestamp={expiryTimestamp} />
                 )}
+
+                <div className="text-center">
+                    <h2 className="text-2xl md:text-3xl font-bold mb-6">{currentQuestion.questionText}</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {currentQuestion.answers.map((answer, index) => (
+                            <Button
+                            key={index}
+                            variant="outline"
+                            className={cn(
+                                "text-lg h-auto py-4 whitespace-normal justify-start text-left hover:bg-primary/90 hover:text-primary-foreground",
+                                submittedAnswer === index && "bg-primary text-primary-foreground ring-2 ring-offset-2 ring-offset-background ring-primary"
+                            )}
+                            onClick={() => handleSubmitAnswer(index)}
+                            >
+                            <span className="font-bold mr-4">{String.fromCharCode(65 + index)}.</span>
+                            {answer}
+                            </Button>
+                        ))}
+                    </div>
+                </div>
+
              </CardContent>
           </Card>
         </div>
       </div>
     )
-  }
-
-  if (battleState.status === 'ROUND_ENDING' && battleState.timerEndsAt) {
-      const expiryTimestamp = new Date(battleState.timerEndsAt.seconds * 1000);
-      return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 text-white p-4">
-            <div className="w-full max-w-4xl mx-auto">
-                <Card className="bg-card text-card-foreground border-gray-700 shadow-2xl shadow-primary/20">
-                    <CardContent className="p-6">
-                        <CountdownTimer expiryTimestamp={expiryTimestamp} />
-                    </CardContent>
-                </Card>
-            </div>
-        </div>
-      )
   }
   
   if (battleState.status === 'SHOWING_RESULTS' && battle) {
@@ -316,3 +325,5 @@ export default function LiveBattlePage() {
     </div>
   );
 }
+
+    
