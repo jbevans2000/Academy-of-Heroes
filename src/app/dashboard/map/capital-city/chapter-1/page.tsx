@@ -63,6 +63,17 @@ export default function Chapter1Page() {
                         <p className="px-4">
                             You unroll the scroll and read the words that confirm the impossible. Ten days hence, when the Winter Sun hangs lowest in the sky, you are to present yourself at the Royal Court. A summons from the Emperor and Empress. A summons that cannot be ignored.
                         </p>
+                        <Separator />
+                        <div className="flex justify-center">
+                            <Image
+                                src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Chapter%20Images%2Fdcdd4586-fb9e-40d3-b8ca-82fa382c132e_orig%5B1%5D.png?alt=media&token=72ea2558-c5bd-47f5-a4b1-92b635fa92dc"
+                                alt="A mysterious scroll"
+                                width={800}
+                                height={400}
+                                className="rounded-lg shadow-lg border"
+                                data-ai-hint="scroll letter"
+                            />
+                        </div>
                     </CardContent>
                 </Card>
                 <div className="flex justify-center">
