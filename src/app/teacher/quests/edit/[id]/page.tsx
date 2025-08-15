@@ -17,6 +17,7 @@ import { QuestHub, Chapter } from '@/lib/quests';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function EditQuestPage() {
   const router = useRouter();
@@ -193,69 +194,78 @@ export default function EditQuestPage() {
               
               <div className="space-y-6 p-6 border rounded-lg">
                 <h3 className="text-xl font-semibold">Chapter Content</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="chapter-title">Chapter Title</Label>
-                        <Input id="chapter-title" placeholder="e.g., A Summons from the Throne" value={chapter.title || ''} onChange={e => handleFieldChange('title', e.target.value)} disabled={isSaving} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="chapter-number">Chapter Number</Label>
-                        <Input id="chapter-number" type="number" placeholder="e.g., 1" value={chapter.chapterNumber ?? ''} onChange={e => handleFieldChange('chapterNumber', e.target.value === '' ? '' : Number(e.target.value))} disabled={isSaving} />
-                    </div>
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="story-content">Story Content</Label>
-                    <Textarea id="story-content" placeholder="Write the story for this chapter... Use \n for new paragraphs." value={chapter.storyContent || ''} onChange={e => handleFieldChange('storyContent', e.target.value)} disabled={isSaving} rows={8}/>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="main-image-url">Main Image URL</Label>
-                    <Input id="main-image-url" placeholder="https://example.com/main-image.png" value={chapter.mainImageUrl || ''} onChange={e => handleFieldChange('mainImageUrl', e.target.value)} disabled={isSaving} />
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="video-url">YouTube Video URL</Label>
-                    <Input id="video-url" placeholder="https://youtube.com/watch?v=..." value={chapter.videoUrl || ''} onChange={e => handleFieldChange('videoUrl', e.target.value)} disabled={isSaving} />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="deco-image-1">Decorative Image 1 URL</Label>
-                        <Input id="deco-image-1" placeholder="https://example.com/deco1.png" value={chapter.decorativeImageUrl1 || ''} onChange={e => handleFieldChange('decorativeImageUrl1', e.target.value)} disabled={isSaving} />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="deco-image-2">Decorative Image 2 URL</Label>
-                        <Input id="deco-image-2" placeholder="https://example.com/deco2.png" value={chapter.decorativeImageUrl2 || ''} onChange={e => handleFieldChange('decorativeImageUrl2', e.target.value)} disabled={isSaving} />
-                    </div>
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="lesson-content">Lesson Content</Label>
-                    <Textarea id="lesson-content" placeholder="Write the educational content for this chapter... Use \n for new paragraphs." value={chapter.lessonContent || ''} onChange={e => handleFieldChange('lessonContent', e.target.value)} disabled={isSaving} rows={8}/>
-                </div>
-
-                {hubMapUrl && (
-                    <div className="pt-4 space-y-2">
-                        <Label>Position Chapter on Hub Map</Label>
-                         <div 
-                            className="relative aspect-[2048/1152] rounded-lg overflow-hidden bg-muted/50 border cursor-grab"
-                            onMouseDown={(e) => handleMapDrag(e)}
-                        >
-                            <Image
-                                src={hubMapUrl}
-                                alt="Hub Map for Placement"
-                                fill
-                                className="object-contain"
-                                priority
-                            />
-                             <div
-                                className="absolute -translate-x-1/2 -translate-y-1/2 cursor-grabbing"
-                                style={{
-                                    left: `${chapterCoordinates.x}%`,
-                                    top: `${chapterCoordinates.y}%`,
-                                }}
-                            >
-                                <div className="w-5 h-5 bg-yellow-400 rounded-full ring-2 ring-white shadow-xl animate-pulse-glow"></div>
+                <Tabs defaultValue="story" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="story">Story</TabsTrigger>
+                        <TabsTrigger value="lesson">Lesson</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="story" className="mt-6 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="chapter-title">Chapter Title</Label>
+                                <Input id="chapter-title" placeholder="e.g., A Summons from the Throne" value={chapter.title || ''} onChange={e => handleFieldChange('title', e.target.value)} disabled={isSaving} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="chapter-number">Chapter Number</Label>
+                                <Input id="chapter-number" type="number" placeholder="e.g., 1" value={chapter.chapterNumber ?? ''} onChange={e => handleFieldChange('chapterNumber', e.target.value === '' ? '' : Number(e.target.value))} disabled={isSaving} />
                             </div>
                         </div>
-                    </div>
-                )}
+                        <div className="space-y-2">
+                            <Label htmlFor="story-content">Story Content</Label>
+                            <Textarea id="story-content" placeholder="Write the story for this chapter... Use \n for new paragraphs." value={chapter.storyContent || ''} onChange={e => handleFieldChange('storyContent', e.target.value)} disabled={isSaving} rows={8}/>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="main-image-url">Main Image URL</Label>
+                            <Input id="main-image-url" placeholder="https://example.com/main-image.png" value={chapter.mainImageUrl || ''} onChange={e => handleFieldChange('mainImageUrl', e.target.value)} disabled={isSaving} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="video-url">YouTube Video URL</Label>
+                            <Input id="video-url" placeholder="https://youtube.com/watch?v=..." value={chapter.videoUrl || ''} onChange={e => handleFieldChange('videoUrl', e.target.value)} disabled={isSaving} />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="deco-image-1">Decorative Image 1 URL</Label>
+                                <Input id="deco-image-1" placeholder="https://example.com/deco1.png" value={chapter.decorativeImageUrl1 || ''} onChange={e => handleFieldChange('decorativeImageUrl1', e.target.value)} disabled={isSaving} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="deco-image-2">Decorative Image 2 URL</Label>
+                                <Input id="deco-image-2" placeholder="https://example.com/deco2.png" value={chapter.decorativeImageUrl2 || ''} onChange={e => handleFieldChange('decorativeImageUrl2', e.target.value)} disabled={isSaving} />
+                            </div>
+                        </div>
+                        {hubMapUrl && (
+                            <div className="pt-4 space-y-2">
+                                <Label>Position Chapter on Hub Map</Label>
+                                <div 
+                                    className="relative aspect-[2048/1152] rounded-lg overflow-hidden bg-muted/50 border cursor-grab"
+                                    onMouseDown={(e) => handleMapDrag(e)}
+                                >
+                                    <Image
+                                        src={hubMapUrl}
+                                        alt="Hub Map for Placement"
+                                        fill
+                                        className="object-contain"
+                                        priority
+                                    />
+                                    <div
+                                        className="absolute -translate-x-1/2 -translate-y-1/2 cursor-grabbing"
+                                        style={{
+                                            left: `${chapterCoordinates.x}%`,
+                                            top: `${chapterCoordinates.y}%`,
+                                        }}
+                                    >
+                                        <div className="w-5 h-5 bg-yellow-400 rounded-full ring-2 ring-white shadow-xl animate-pulse-glow"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </TabsContent>
+                     <TabsContent value="lesson" className="mt-6 space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="lesson-content">Lesson Content</Label>
+                            <Textarea id="lesson-content" placeholder="Write the educational content for this chapter... Use \n for new paragraphs." value={chapter.lessonContent || ''} onChange={e => handleFieldChange('lessonContent', e.target.value)} disabled={isSaving} rows={8}/>
+                        </div>
+                    </TabsContent>
+                </Tabs>
               </div>
 
               <div className="flex justify-end pt-4 border-t">
