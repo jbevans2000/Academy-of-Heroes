@@ -14,13 +14,13 @@ export default function CapitolCityMapPage() {
 
     // NOTE: The map's original dimensions are 2048x1152.
     // The coordinates are converted to percentages to maintain position on different screen sizes.
-    // X: 460 -> (460 / 2048) * 100 = 22.46%
+    // X: 510 -> (510 / 2048) * 100 = 24.90%
     // Y: 200 -> (200 / 1152) * 100 = 17.36%
     const chapter1Node = {
       name: 'Chapter 1 - A Summons from the Throne',
       href: '#', // Placeholder link
       style: {
-        left: '22.46%',
+        left: '24.90%',
         top: '17.36%',
       },
     };
