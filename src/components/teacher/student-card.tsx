@@ -36,6 +36,7 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
   const [student, setStudent] = useState(initialStudent);
   const [xpToAdd, setXpToAdd] = useState<number | string>('');
   const [goldToAdd, setGoldToAdd] = useState<number | string>('');
+  const [hpToSet, setHpToSet] = useState<number | string>('');
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
 
@@ -152,6 +153,48 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
         setIsUpdating(false);
     }
   };
+
+  const handleHpUpdate = async () => {
+    const amount = Number(hpToSet);
+    if (hpToSet === '' || isNaN(amount)) {
+        toast({
+            variant: 'destructive',
+            title: 'Invalid Input',
+            description: 'Please enter a valid number for HP.',
+        });
+        return;
+    }
+
+    setIsUpdating(true);
+    const studentRef = doc(db, 'students', student.uid);
+    try {
+        await updateDoc(studentRef, {
+            hp: amount
+        });
+
+        const updatedStudent = { ...student, hp: amount };
+        
+        setStudents(prevStudents => 
+            prevStudents.map(s => s.uid === student.uid ? updatedStudent : s)
+        );
+        setStudent(updatedStudent);
+
+        toast({
+            title: 'HP Set!',
+            description: `${student.characterName}'s HP has been set to ${amount}.`,
+        });
+        setHpToSet('');
+    } catch (error) {
+        console.error("Error updating HP: ", error);
+        toast({
+            variant: 'destructive',
+            title: 'Update Failed',
+            description: 'Could not update student HP. Please try again.',
+        });
+    } finally {
+        setIsUpdating(false);
+    }
+};
 
 
   const backgroundUrl = student.backgroundUrl || 'https://placehold.co/600x400.png';
@@ -271,6 +314,28 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
                         disabled={isUpdating}
                     >
                         {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add'}
+                    </Button>
+                </div>
+            </div>
+            <div className="space-y-2 pt-2">
+                <label htmlFor={`hp-${student.uid}`} className="text-sm font-medium flex items-center gap-2 text-muted-foreground"><Heart className="w-4 h-4 text-red-500" /> Health Points</label>
+                <div className="flex items-center gap-2">
+                    <Input 
+                        id={`hp-${student.uid}`}
+                        type="number"
+                        value={hpToSet}
+                        onChange={(e) => setHpToSet(e.target.value)}
+                        className="h-8"
+                        disabled={isUpdating}
+                        placeholder="e.g. 150"
+                    />
+                    <Button
+                        size="sm"
+                        className="h-8"
+                        onClick={handleHpUpdate}
+                        disabled={isUpdating}
+                    >
+                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Set'}
                     </Button>
                 </div>
             </div>
