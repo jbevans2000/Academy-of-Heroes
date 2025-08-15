@@ -11,6 +11,7 @@ interface DashboardClientProps {
 
 export function DashboardClient({ student }: DashboardClientProps) {
   console.log('Attempting to load avatar from URL:', student.avatarUrl);
+  console.log('Attempting to load background from URL:', student.backgroundUrl);
 
   return (
     <div className="p-4 md:p-6 lg:p-8">
