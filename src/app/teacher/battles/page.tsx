@@ -8,7 +8,7 @@ import { db } from '@/lib/firebase';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Eye } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Define a type for the battle document for type safety
@@ -84,7 +84,13 @@ export default function BossBattlesPage() {
                   <CardTitle>{battle.battleName}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full">Start Battle</Button>
+                    <div className="flex flex-col gap-2">
+                        <Button className="w-full">Start Battle</Button>
+                        <Button variant="outline" className="w-full" onClick={() => router.push(`/teacher/battles/preview/${battle.id}`)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            Preview Battle
+                        </Button>
+                    </div>
                 </CardContent>
               </Card>
             ))}
