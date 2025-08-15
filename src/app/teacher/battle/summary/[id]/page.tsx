@@ -9,7 +9,7 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 interface Question {
@@ -107,10 +107,14 @@ export default function TeacherBattleSummaryPage() {
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="max-w-6xl mx-auto space-y-6">
-          <div className="flex justify-between items-center">
+          <div className="flex items-center gap-4">
              <Button variant="outline" onClick={() => router.push('/teacher/battles')}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to All Battles
+              </Button>
+              <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
+                <LayoutDashboard className="mr-2 h-4 w-4" />
+                Return to Dashboard
               </Button>
           </div>
          
