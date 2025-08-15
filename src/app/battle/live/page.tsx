@@ -63,8 +63,7 @@ function WaitingForRoundEnd() {
         <div className="text-center p-2 rounded-lg bg-blue-900/80 border border-blue-700 mb-4">
             <div className="flex items-center justify-center gap-2">
                 <Hourglass className="h-6 w-6 text-blue-300 animate-spin" />
-                <p className="text-lg font-bold text-white">Answer Submitted!</p>
-                <p className="text-sm text-blue-200">Waiting for other players...</p>
+                <p className="text-lg font-bold text-white">Choose Your Answer</p>
             </div>
         </div>
     );
@@ -327,4 +326,3 @@ export default function LiveBattlePage() {
     </div>
   );
 }
-
