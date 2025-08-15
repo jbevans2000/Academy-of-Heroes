@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { onSnapshot, doc, getDoc, setDoc } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
-import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard } from 'lucide-react';
 import { type Student } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
@@ -165,13 +165,17 @@ export default function LiveBattlePage() {
                 className="object-cover opacity-50"
                 priority
             />
-            <div className="z-10 text-center text-white">
+            <div className="z-10 text-center">
                 <Card className="bg-black/60 backdrop-blur-sm p-8 border-gray-600">
-                    <CardContent className="flex flex-col items-center justify-center">
-                        <Shield className="h-24 w-24 text-primary mb-6 animate-pulse" />
+                    <CardContent className="flex flex-col items-center justify-center space-y-4">
+                        <Shield className="h-24 w-24 text-primary mb-2 animate-pulse" />
                         <h1 className="text-4xl font-bold tracking-tight text-white">Waiting Room</h1>
-                        <p className="text-xl text-primary-foreground/80 mt-2">Waiting for the Boss to appear!</p>
-                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mt-8" />
+                        <p className="text-xl text-primary-foreground/80">Waiting for the Boss to appear!</p>
+                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mt-4" />
+                         <Button variant="outline" className="mt-6 bg-black/50 border-gray-400 hover:bg-gray-700 text-white" onClick={() => router.push('/dashboard')}>
+                            <LayoutDashboard className="mr-2 h-4 w-4" />
+                            Return to Dashboard
+                        </Button>
                     </CardContent>
                 </Card>
             </div>
