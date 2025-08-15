@@ -8,7 +8,7 @@ import { db } from '@/lib/firebase';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, Download, Timer, HeartCrack } from 'lucide-react';
+import { Loader2, Download, Timer, HeartCrack, Video } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RoundResults, type Result } from '@/components/teacher/round-results';
 import { downloadCsv } from '@/lib/utils';
@@ -37,6 +37,7 @@ interface Battle {
     id: string;
     battleName: string;
     questions: Question[];
+    videoUrl?: string;
 }
 
 interface StudentResponse {
@@ -67,6 +68,22 @@ function CountdownTimer({ expiryTimestamp }: { expiryTimestamp: Date }) {
         </div>
     );
 }
+
+const getYouTubeEmbedUrl = (url: string) => {
+    if (!url) return '';
+    let videoId = '';
+    if (url.includes('youtu.be/')) {
+        videoId = url.split('youtu.be/')[1];
+    } else if (url.includes('watch?v=')) {
+        videoId = url.split('watch?v=')[1];
+    }
+    const ampersandPosition = videoId.indexOf('&');
+    if (ampersandPosition !== -1) {
+        videoId = videoId.substring(0, ampersandPosition);
+    }
+    // Add autoplay and mute for the teacher's view
+    return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`;
+};
 
 
 export default function TeacherLiveBattlePage() {
@@ -396,6 +413,7 @@ export default function TeacherLiveBattlePage() {
   const areResultsShowing = liveState.status === 'SHOWING_RESULTS';
   const isLastQuestion = liveState.currentQuestionIndex >= battle.questions.length - 1;
   const expiryTimestamp = liveState.timerEndsAt ? new Date(liveState.timerEndsAt.seconds * 1000) : null;
+  const videoSrc = battle.videoUrl ? getYouTubeEmbedUrl(battle.videoUrl) : '';
 
 
   return (
@@ -408,12 +426,30 @@ export default function TeacherLiveBattlePage() {
                     <CardTitle className="text-3xl">{battle.battleName}</CardTitle>
                     <CardDescription>Live Battle Control Panel</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <p>Status: <span className="font-bold text-primary">{liveState.status.replace('_', ' ')}</span></p>
-                    <p>Current Question: <span className="font-bold">{liveState.currentQuestionIndex + 1} / {battle.questions.length}</span></p>
-                    <p>Total Damage Dealt So Far: <span className="font-bold text-red-500">{liveState.totalDamage || 0}</span></p>
+                <CardContent className="space-y-6">
+                    <div>
+                        <p>Status: <span className="font-bold text-primary">{liveState.status.replace('_', ' ')}</span></p>
+                        <p>Current Question: <span className="font-bold">{liveState.currentQuestionIndex + 1} / {battle.questions.length}</span></p>
+                        <p>Total Damage Dealt So Far: <span className="font-bold text-red-500">{liveState.totalDamage || 0}</span></p>
+                    </div>
 
-                    <div className="mt-6 p-4 border rounded-lg">
+                    {isWaitingToStart && videoSrc && (
+                        <div className="p-4 border rounded-lg space-y-2">
+                             <h3 className="font-semibold text-lg flex items-center gap-2"><Video className="w-5 h-5"/> Intro Video Preview</h3>
+                             <div className="w-full aspect-video">
+                                <iframe
+                                    className="w-full h-full rounded-lg shadow-lg border"
+                                    src={videoSrc}
+                                    title="YouTube video player"
+                                    frameBorder="0"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                    allowFullScreen
+                                ></iframe>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="p-4 border rounded-lg">
                         <h3 className="font-semibold text-lg mb-2">Controls</h3>
                         <div className="flex gap-4">
                              {isWaitingToStart && (
