@@ -109,8 +109,8 @@ export default function EditQuestPage() {
         toast({ variant: 'destructive', title: 'Validation Error', description: 'A Hub must be selected.' });
         return false;
     }
-     if (!chapter?.title || chapter?.chapterNumber === undefined || !chapter?.storyContent || !chapter?.lessonContent) {
-        toast({ variant: 'destructive', title: 'Validation Error', description: 'Please fill out all required chapter fields: Title, Number, Story, and Lesson.' });
+     if (!chapter?.title || chapter?.chapterNumber === undefined || chapter.chapterNumber === null || !chapter?.storyContent || !chapter?.lessonContent) {
+        toast({ variant: 'destructive', title: 'Validation Error', description: 'Please fill out all required chapter fields: Title, Number, Story Content, and Lesson Content.' });
         return false;
     }
     return true;

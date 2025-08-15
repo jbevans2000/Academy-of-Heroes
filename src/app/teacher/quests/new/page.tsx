@@ -107,7 +107,7 @@ export default function NewQuestPage() {
         return false;
     }
      if (!chapterTitle || chapterNumber === '' || !storyContent || !lessonContent) {
-        toast({ variant: 'destructive', title: 'Validation Error', description: 'Please fill out all chapter fields: Title, Number, Story, and Lesson.' });
+        toast({ variant: 'destructive', title: 'Validation Error', description: 'Please fill out all required chapter fields: Title, Number, Story Content, and Lesson Content.' });
         return false;
     }
     return true;
@@ -140,15 +140,15 @@ export default function NewQuestPage() {
             storyContent,
             mainImageUrl,
             videoUrl,
+            storyAdditionalContent,
             decorativeImageUrl1,
             decorativeImageUrl2,
-            storyAdditionalContent,
             lessonContent,
             lessonMainImageUrl,
             lessonVideoUrl,
+            lessonAdditionalContent,
             lessonDecorativeImageUrl1,
             lessonDecorativeImageUrl2,
-            lessonAdditionalContent,
             coordinates: chapterCoordinates,
             createdAt: serverTimestamp(),
         });
