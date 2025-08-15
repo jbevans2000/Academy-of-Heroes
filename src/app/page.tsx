@@ -109,13 +109,6 @@ export default function LoginPage() {
               <div className="space-y-2">
                 <div className="flex items-center">
                   <Label htmlFor="password">Password</Label>
-                  <Link
-                    href="#"
-                    className="ml-auto inline-block text-sm underline"
-                    prefetch={false}
-                  >
-                    Forgot your password?
-                  </Link>
                 </div>
                 <div className="relative">
                   <Input
