@@ -20,55 +20,49 @@ export function RoundResults({ results }: RoundResultsProps) {
   const incorrectAnswers = results.length - correctAnswers;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Round Results</CardTitle>
-        <CardDescription>Review of student answers for the last question.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-[200px]">Student</TableHead>
+          <TableHead>Answer</TableHead>
+          <TableHead className="text-right w-[100px]">Result</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {results.map((result, index) => (
+          <TableRow key={index}>
+            <TableCell className="font-medium">{result.studentName}</TableCell>
+            <TableCell>{result.answer}</TableCell>
+            <TableCell className="text-right">
+              {result.isCorrect ? (
+                <CheckCircle className="h-5 w-5 text-green-500 inline-block" />
+              ) : (
+                <XCircle className="h-5 w-5 text-red-500 inline-block" />
+              )}
+            </TableCell>
+          </TableRow>
+        ))}
+         {results.length === 0 && (
             <TableRow>
-              <TableHead className="w-[200px]">Student</TableHead>
-              <TableHead>Answer</TableHead>
-              <TableHead className="text-right w-[100px]">Result</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {results.map((result, index) => (
-              <TableRow key={index}>
-                <TableCell className="font-medium">{result.studentName}</TableCell>
-                <TableCell>{result.answer}</TableCell>
-                <TableCell className="text-right">
-                  {result.isCorrect ? (
-                    <CheckCircle className="h-5 w-5 text-green-500 inline-block" />
-                  ) : (
-                    <XCircle className="h-5 w-5 text-red-500 inline-block" />
-                  )}
+                <TableCell colSpan={3} className="text-center text-muted-foreground">
+                    No answers were submitted for this round.
                 </TableCell>
-              </TableRow>
-            ))}
-             {results.length === 0 && (
-                <TableRow>
-                    <TableCell colSpan={3} className="text-center text-muted-foreground">
-                        No answers were submitted for this round.
-                    </TableCell>
-                </TableRow>
-            )}
-          </TableBody>
-          <TableFooter>
-            <TableRow>
-              <TableCell colSpan={2} className="font-bold text-lg text-right">Totals</TableCell>
-              <TableCell className="text-right font-bold text-lg">
-                <div className="flex flex-col items-end">
-                    <span className="text-green-500">{correctAnswers} Correct</span>
-                    <span className="text-red-500">{incorrectAnswers} Incorrect</span>
-                </div>
-              </TableCell>
             </TableRow>
-          </TableFooter>
-        </Table>
-      </CardContent>
-    </Card>
+        )}
+      </TableBody>
+      <TableFooter>
+        <TableRow>
+          <TableCell colSpan={2} className="font-bold text-lg text-right">Totals</TableCell>
+          <TableCell className="text-right font-bold text-lg">
+            <div className="flex flex-col items-end">
+                <span className="text-green-500">{correctAnswers} Correct</span>
+                <span className="text-red-500">{incorrectAnswers} Incorrect</span>
+            </div>
+          </TableCell>
+        </TableRow>
+      </TableFooter>
+    </Table>
   );
 }
+
+    

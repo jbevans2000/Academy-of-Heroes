@@ -8,10 +8,11 @@ import { db } from '@/lib/firebase';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Download } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { RoundResults, type Result } from '@/components/teacher/round-results';
+import { downloadCsv } from '@/lib/utils';
 
 
 interface LiveBattleState {
@@ -69,20 +70,22 @@ export default function TeacherLiveBattlePage() {
   useEffect(() => {
     const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
     const unsubscribe = onSnapshot(liveBattleRef, (doc) => {
-      const currentState = liveState;
       if (doc.exists()) {
         const newState = doc.data() as LiveBattleState;
         // If the question index changes, clear old responses and results
-        if (currentState && currentState.currentQuestionIndex !== newState.currentQuestionIndex) {
+        if (liveState && liveState.currentQuestionIndex !== newState.currentQuestionIndex) {
             setStudentResponses([]);
             setRoundResults([]);
         }
         setLiveState(newState);
       }
       setIsLoading(false);
+    }, (error) => {
+      console.error("Error listening for live battle state:", error);
+      setIsLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [liveState]);
 
   // Listen for real-time student responses ONLY when the battle is in progress
   useEffect(() => {
@@ -101,6 +104,8 @@ export default function TeacherLiveBattlePage() {
             responses.push(doc.data() as StudentResponse);
         });
         setStudentResponses(responses);
+    }, (error) => {
+      console.error("Error listening for student responses:", error);
     });
 
     return () => unsubscribe();
@@ -163,6 +168,14 @@ export default function TeacherLiveBattlePage() {
     } finally {
         setIsAdvancing(false);
     }
+  };
+  
+  const handleExport = () => {
+    if (!battle || roundResults.length === 0) return;
+    const questionText = battle.questions[liveState!.currentQuestionIndex].questionText;
+    const headers = ['Student Name', 'Answer', 'Correct'];
+    const data = roundResults.map(r => [r.studentName, r.answer, r.isCorrect ? 'Yes' : 'No']);
+    downloadCsv(data, headers, `battle_results_q${liveState!.currentQuestionIndex + 1}.csv`);
   };
 
 
@@ -243,7 +256,21 @@ export default function TeacherLiveBattlePage() {
             )}
 
             {areResultsShowing && (
-                <RoundResults results={roundResults} />
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <div>
+                            <CardTitle>Round Results</CardTitle>
+                            <CardDescription>Review of student answers for the last question.</CardDescription>
+                        </div>
+                        <Button onClick={handleExport} variant="outline" size="sm" disabled={roundResults.length === 0}>
+                            <Download className="mr-2 h-4 w-4" />
+                            Export to CSV
+                        </Button>
+                    </CardHeader>
+                    <CardContent>
+                        <RoundResults results={roundResults} />
+                    </CardContent>
+                </Card>
             )}
 
         </div>
@@ -251,3 +278,5 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
+
+    
