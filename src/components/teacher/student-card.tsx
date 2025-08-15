@@ -20,13 +20,18 @@ import { Input } from '@/components/ui/input';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
+import { cn } from '@/lib/utils';
 
 
 interface StudentCardProps {
   student: Student;
+  isSelected: boolean;
+  onSelect: () => void;
+  setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
 }
 
-export function StudentCard({ student: initialStudent }: StudentCardProps) {
+export function StudentCard({ student: initialStudent, isSelected, onSelect, setStudents }: StudentCardProps) {
   const [student, setStudent] = useState(initialStudent);
   const [newXp, setNewXp] = useState<number | string>(student.xp);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -45,10 +50,18 @@ export function StudentCard({ student: initialStudent }: StudentCardProps) {
     setIsUpdating(true);
     const studentRef = doc(db, 'students', student.uid);
     try {
+        const updatedXp = Number(newXp);
         await updateDoc(studentRef, {
-            xp: Number(newXp)
+            xp: updatedXp
         });
-        setStudent(prev => ({...prev, xp: Number(newXp)}));
+        
+        // Update the single student in the parent state
+        setStudents(prevStudents => 
+            prevStudents.map(s => s.uid === student.uid ? { ...s, xp: updatedXp } : s)
+        );
+        // Also update local card state
+        setStudent(prev => ({...prev, xp: updatedXp}));
+
         toast({
             title: 'XP Updated!',
             description: `${student.characterName}'s XP has been set to ${newXp}.`,
@@ -71,8 +84,16 @@ export function StudentCard({ student: initialStudent }: StudentCardProps) {
 
   return (
     <Dialog>
-      <Card className="shadow-lg rounded-xl flex flex-col overflow-hidden transition-transform hover:scale-105 duration-300">
+      <Card className={cn("shadow-lg rounded-xl flex flex-col overflow-hidden transition-all duration-300", isSelected ? "ring-2 ring-primary scale-105" : "hover:scale-105")}>
         <CardHeader className="p-0 relative h-32">
+          <div className="absolute top-2 right-2 z-10 bg-background/50 rounded-full p-1">
+             <Checkbox
+                checked={isSelected}
+                onCheckedChange={onSelect}
+                aria-label={`Select ${student.characterName}`}
+                className="h-6 w-6"
+            />
+          </div>
           <Image
             src={backgroundUrl}
             alt={`${student.characterName}'s background`}

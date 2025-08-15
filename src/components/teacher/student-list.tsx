@@ -6,9 +6,12 @@ import type { Student } from '@/lib/data';
 
 interface StudentListProps {
   students: Student[];
+  selectedStudents: string[];
+  onSelectStudent: (uid: string) => void;
+  setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
 }
 
-export function StudentList({ students }: StudentListProps) {
+export function StudentList({ students, selectedStudents, onSelectStudent, setStudents }: StudentListProps) {
   if (students.length === 0) {
     return (
       <div className="flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
@@ -23,6 +26,9 @@ export function StudentList({ students }: StudentListProps) {
             <StudentCard
                 key={student.uid}
                 student={student}
+                isSelected={selectedStudents.includes(student.uid)}
+                onSelect={() => onSelectStudent(student.uid)}
+                setStudents={setStudents}
             />
       ))}
     </div>
