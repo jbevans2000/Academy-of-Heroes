@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { onSnapshot, doc, getDoc, collection, query, getDocs, where, limit } from 'firebase/firestore';
+import { onSnapshot, doc, getDoc, collection, query, getDocs, where, limit, orderBy } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,31 +54,49 @@ export default function StudentBattleSummaryPage() {
     const fetchSummaryAndResponses = async () => {
         setIsLoading(true);
         try {
-            // 1. Get the active battle to find the battleId
+            let battleId: string | null = null;
+
+            // 1. Try to get the battleId from the (now temporary) live battle doc
             const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
             const liveBattleSnap = await getDoc(liveBattleRef);
-            
-            if (!liveBattleSnap.exists() || !liveBattleSnap.data().battleId) {
-                console.log("No active or summarized battle found. Redirecting to dashboard.");
-                toast({ title: "No Active Battle", description: "The battle has ended." });
-                router.push('/dashboard');
-                return;
-            }
-            const battleId = liveBattleSnap.data().battleId;
 
-            // 2. Fetch the battle summary using the battleId
+            if (liveBattleSnap.exists() && liveBattleSnap.data().battleId) {
+                battleId = liveBattleSnap.data().battleId;
+            } else {
+                // 2. If it doesn't exist (because it was cleaned up), fetch the most recent summary.
+                // This is a robust fallback.
+                console.log("Live battle doc not found, fetching most recent summary as a fallback.");
+                const summariesQuery = query(
+                    collection(db, 'battleSummaries'), 
+                    orderBy('endedAt', 'desc'), 
+                    limit(1)
+                );
+                const recentSummarySnap = await getDocs(summariesQuery);
+                if (!recentSummarySnap.empty) {
+                    battleId = recentSummarySnap.docs[0].id;
+                }
+            }
+            
+            if (!battleId) {
+                 console.log("No active or summarized battle found. Redirecting to dashboard.");
+                 toast({ title: "No Battle Summary", description: "The battle has ended or a summary is not available." });
+                 router.push('/dashboard');
+                 return;
+            }
+
+            // 3. Fetch the battle summary using the determined battleId
             const summaryRef = doc(db, 'battleSummaries', battleId);
             const summarySnap = await getDoc(summaryRef);
             if (summarySnap.exists()) {
                 setSummary(summarySnap.data() as BattleSummary);
             } else {
-                 console.log("Summary not found. Redirecting to dashboard.");
+                 console.log("Summary not found for the given battleId. Redirecting to dashboard.");
                  toast({ title: "Summary Not Available", description: "The battle results could not be found." });
                  router.push('/dashboard');
                  return;
             }
             
-            // 3. Fetch the specific student's responses for all rounds
+            // 4. Fetch the specific student's responses for all rounds for that battle
             const responsesRef = collection(db, `liveBattles/active-battle/studentResponses/${user.uid}/rounds`);
             const responsesSnap = await getDocs(responsesRef);
             const responsesData: { [key: string]: StudentRoundResponse } = {};
@@ -89,6 +107,7 @@ export default function StudentBattleSummaryPage() {
 
         } catch (error) {
             console.error("Error fetching summary data:", error);
+            toast({ title: "Error", description: "Could not load the battle summary." });
         } finally {
             setIsLoading(false);
         }
