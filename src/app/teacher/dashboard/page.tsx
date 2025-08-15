@@ -21,15 +21,17 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star } from 'lucide-react';
+import { Loader2, Star, Coins } from 'lucide-react';
 
 export default function TeacherDashboardPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [xpAmount, setXpAmount] = useState<number | string>('');
+  const [goldAmount, setGoldAmount] = useState<number | string>('');
   const [isAwarding, setIsAwarding] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isXpDialogOpen, setIsXpDialogOpen] = useState(false);
+  const [isGoldDialogOpen, setIsGoldDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -119,13 +121,77 @@ export default function TeacherDashboardPage() {
           });
           setSelectedStudents([]);
           setXpAmount('');
-          setIsDialogOpen(false);
+          setIsXpDialogOpen(false);
       } catch (error) {
           console.error("Error awarding XP: ", error);
           toast({
               variant: 'destructive',
               title: 'Update Failed',
               description: 'Could not award XP. Please try again.',
+          });
+      } finally {
+          setIsAwarding(false);
+      }
+  };
+
+  const handleAwardGold = async () => {
+      const amount = Number(goldAmount);
+      if (isNaN(amount) || amount === 0) {
+          toast({
+              variant: 'destructive',
+              title: 'Invalid Amount',
+              description: 'Please enter a valid non-zero number for Gold.',
+          });
+          return;
+      }
+      if (selectedStudents.length === 0) {
+          toast({
+              variant: 'destructive',
+              title: 'No Students Selected',
+              description: 'Please select at least one student.',
+          });
+          return;
+      }
+
+      setIsAwarding(true);
+      const batch = writeBatch(db);
+
+      try {
+          const studentPromises = selectedStudents.map(async (uid) => {
+              const studentRef = doc(db, 'students', uid);
+              const studentDoc = await getDoc(studentRef);
+              if (studentDoc.exists()) {
+                  const currentGold = studentDoc.data().gold || 0;
+                  const newGold = currentGold + amount;
+                  batch.update(studentRef, { gold: newGold });
+              }
+          });
+
+          await Promise.all(studentPromises);
+          await batch.commit();
+
+          // Update local state to reflect changes
+          setStudents(prevStudents =>
+              prevStudents.map(s =>
+                  selectedStudents.includes(s.uid)
+                      ? { ...s, gold: (s.gold || 0) + amount }
+                      : s
+              )
+          );
+
+          toast({
+              title: 'Gold Awarded!',
+              description: `${amount} Gold has been awarded to ${selectedStudents.length} student(s).`,
+          });
+          setSelectedStudents([]);
+          setGoldAmount('');
+          setIsGoldDialogOpen(false);
+      } catch (error) {
+          console.error("Error awarding Gold: ", error);
+          toast({
+              variant: 'destructive',
+              title: 'Update Failed',
+              description: 'Could not award Gold. Please try again.',
           });
       } finally {
           setIsAwarding(false);
@@ -168,7 +234,7 @@ export default function TeacherDashboardPage() {
                >
                 {selectedStudents.length === students.length ? 'Deselect All' : 'Select All'}
                </Button>
-               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+               <Dialog open={isXpDialogOpen} onOpenChange={setIsXpDialogOpen}>
                 <DialogTrigger asChild>
                   <Button>
                     <Star className="mr-2 h-4 w-4" /> Award Experience
@@ -199,6 +265,43 @@ export default function TeacherDashboardPage() {
                   </div>
                   <DialogFooter>
                     <Button onClick={handleAwardXp} disabled={isAwarding || selectedStudents.length === 0}>
+                      {isAwarding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                      Confirm Award ({selectedStudents.length} selected)
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              <Dialog open={isGoldDialogOpen} onOpenChange={setIsGoldDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="bg-green-600 hover:bg-green-700 text-white">
+                    <Coins className="mr-2 h-4 w-4" /> Award Gold
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Award Gold to Selected Students</DialogTitle>
+                    <DialogDescription>
+                      Enter a positive value to add Gold or a negative value to remove it. This will apply to all selected students.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="gold-amount" className="text-right">
+                        Gold Amount
+                      </Label>
+                      <Input
+                        id="gold-amount"
+                        type="number"
+                        value={goldAmount}
+                        onChange={(e) => setGoldAmount(e.target.value)}
+                        className="col-span-3"
+                        placeholder="e.g., 50 or -10"
+                        disabled={isAwarding}
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button onClick={handleAwardGold} disabled={isAwarding || selectedStudents.length === 0} className="bg-green-600 hover:bg-green-700 text-white">
                       {isAwarding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                       Confirm Award ({selectedStudents.length} selected)
                     </Button>

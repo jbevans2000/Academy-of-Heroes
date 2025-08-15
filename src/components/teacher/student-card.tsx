@@ -34,6 +34,7 @@ interface StudentCardProps {
 export function StudentCard({ student: initialStudent, isSelected, onSelect, setStudents }: StudentCardProps) {
   const [student, setStudent] = useState(initialStudent);
   const [newXp, setNewXp] = useState<number | string>(student.xp);
+  const [newGold, setNewGold] = useState<number | string>(student.gold);
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
 
@@ -72,6 +73,47 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
             variant: 'destructive',
             title: 'Update Failed',
             description: 'Could not update student XP. Please try again.',
+        });
+    } finally {
+        setIsUpdating(false);
+    }
+  };
+
+  const handleGoldUpdate = async () => {
+    if (newGold === '' || isNaN(Number(newGold))) {
+        toast({
+            variant: 'destructive',
+            title: 'Invalid Input',
+            description: 'Please enter a valid number for Gold.',
+        });
+        return;
+    }
+
+    setIsUpdating(true);
+    const studentRef = doc(db, 'students', student.uid);
+    try {
+        const updatedGold = Number(newGold);
+        await updateDoc(studentRef, {
+            gold: updatedGold
+        });
+        
+        // Update the single student in the parent state
+        setStudents(prevStudents => 
+            prevStudents.map(s => s.uid === student.uid ? { ...s, gold: updatedGold } : s)
+        );
+        // Also update local card state
+        setStudent(prev => ({...prev, gold: updatedGold}));
+
+        toast({
+            title: 'Gold Updated!',
+            description: `${student.characterName}'s Gold has been set to ${newGold}.`,
+        });
+    } catch (error) {
+        console.error("Error updating Gold: ", error);
+        toast({
+            variant: 'destructive',
+            title: 'Update Failed',
+            description: 'Could not update student Gold. Please try again.',
         });
     } finally {
         setIsUpdating(false);
@@ -151,15 +193,12 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
                   </div>
               </div>
               <div className="flex items-center space-x-1">
-                  <Coins className="h-5 w-5 text-amber-500" />
-                  <div>
-                      <p className="font-semibold">{student.gold.toLocaleString()}</p>
-                      <p className="text-xs text-muted-foreground">Gold</p>
-                  </div>
+                  <p className="font-semibold">{student.gold.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">Gold</p>
               </div>
           </div>
            <div className="space-y-2 pt-2">
-                <label htmlFor={`xp-${student.uid}`} className="text-sm font-medium flex items-center gap-2 text-muted-foreground"><Star className="w-4 h-4 text-yellow-400" /> Experience Points</label>
+                <label htmlFor={`xp-${student.uid}`} className="text-sm font-medium flex items-center gap-2 text-muted-foreground"><Star className="w-4 h-4 text-yellow-400" /> Experience</label>
                 <div className="flex items-center gap-2">
                     <Input 
                         id={`xp-${student.uid}`}
@@ -173,6 +212,27 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
                         size="sm"
                         className="h-8"
                         onClick={handleXpUpdate}
+                        disabled={isUpdating}
+                    >
+                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Set'}
+                    </Button>
+                </div>
+            </div>
+             <div className="space-y-2 pt-2">
+                <label htmlFor={`gold-${student.uid}`} className="text-sm font-medium flex items-center gap-2 text-muted-foreground"><Coins className="w-4 h-4 text-amber-500" /> Gold</label>
+                <div className="flex items-center gap-2">
+                    <Input 
+                        id={`gold-${student.uid}`}
+                        type="number"
+                        value={newGold}
+                        onChange={(e) => setNewGold(e.target.value)}
+                        className="h-8"
+                        disabled={isUpdating}
+                    />
+                    <Button
+                        size="sm"
+                        className="h-8"
+                        onClick={handleGoldUpdate}
                         disabled={isUpdating}
                     >
                         {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Set'}
