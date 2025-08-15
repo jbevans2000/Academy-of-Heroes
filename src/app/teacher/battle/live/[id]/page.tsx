@@ -133,6 +133,9 @@ export default function TeacherLiveBattlePage() {
       return;
     }
 
+    // Explicitly clear responses when question index changes to avoid showing stale data
+    setStudentResponses([]);
+
     const responsesRef = collection(db, `liveBattles/active-battle/responses`);
     const q = query(responsesRef);
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -151,7 +154,7 @@ export default function TeacherLiveBattlePage() {
     });
 
     return () => unsubscribe();
-  }, [liveState, liveState?.status]);
+  }, [liveState, liveState?.status, liveState?.currentQuestionIndex]);
 
   const calculateAndSetResults = useCallback(async () => {
     if (!battle || !liveState || liveState.status !== 'ROUND_ENDING') return;
