@@ -1,21 +1,51 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft } from 'lucide-react';
-import { doc, setDoc } from 'firebase/firestore';
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import { doc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { QuestHub } from '@/lib/quests';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function NewQuestPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // State for the new Hub creator
+  const [hubs, setHubs] = useState<QuestHub[]>([]);
+  const [selectedHub, setSelectedHub] = useState('');
+  const [newHubName, setNewHubName] = useState('');
+  const [newHubMapUrl, setNewHubMapUrl] = useState('');
+
+  useEffect(() => {
+    const fetchHubs = async () => {
+        setIsLoading(true);
+        try {
+            const hubsSnapshot = await getDocs(collection(db, 'questHubs'));
+            const hubsData = hubsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
+            setHubs(hubsData);
+        } catch (error) {
+            console.error("Error fetching hubs: ", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch quest hubs.' });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    fetchHubs();
+  }, [toast]);
+
 
   const handleImport = async () => {
     setIsImporting(true);
@@ -68,7 +98,7 @@ export default function NewQuestPage() {
             </CardHeader>
             <CardContent>
                 <Button onClick={handleImport} disabled={isImporting}>
-                    {isImporting ? 'Importing...' : 'Import Existing Content'}
+                    {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Import Existing Content'}
                 </Button>
             </CardContent>
           </Card>
@@ -83,7 +113,54 @@ export default function NewQuestPage() {
               
               <div className="space-y-4 p-6 border rounded-lg">
                 <h3 className="text-xl font-semibold">Phase 1: Quest Hub</h3>
-                <p className="text-muted-foreground">This section will contain the dropdown to select an existing hub or create a new one, including the map for drag-and-drop positioning. (Coming in Phase 2)</p>
+                <p className="text-muted-foreground mb-4">A Hub is a location on the world map that contains multiple chapters, like a city or region.</p>
+                
+                {isLoading ? (
+                    <Skeleton className="h-10 w-full" />
+                ) : (
+                    <div className="space-y-4">
+                        <div>
+                            <Label htmlFor="hub-select">Select an Existing Hub or Create a New One</Label>
+                            <Select onValueChange={setSelectedHub} value={selectedHub} disabled={isSaving}>
+                                <SelectTrigger id="hub-select">
+                                    <SelectValue placeholder="Choose a Hub..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="new">-- Create a New Hub --</SelectItem>
+                                    {hubs.map(hub => (
+                                        <SelectItem key={hub.id} value={hub.id}>{hub.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        {selectedHub === 'new' && (
+                            <div className="p-4 border bg-secondary/50 rounded-md space-y-4">
+                                <h4 className="font-semibold text-md">New Hub Details</h4>
+                                <div className="space-y-2">
+                                    <Label htmlFor="new-hub-name">New Hub Name</Label>
+                                    <Input 
+                                        id="new-hub-name"
+                                        placeholder="e.g., The Whispering Woods"
+                                        value={newHubName}
+                                        onChange={e => setNewHubName(e.target.value)}
+                                        disabled={isSaving}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="new-hub-map">URL for Hub's Regional Map</Label>
+                                    <Input 
+                                        id="new-hub-map"
+                                        placeholder="https://example.com/map.png"
+                                        value={newHubMapUrl}
+                                        onChange={e => setNewHubMapUrl(e.target.value)}
+                                        disabled={isSaving}
+                                    />
+                                </div>
+                                <p className="text-sm text-muted-foreground">The drag-and-drop map to place this hub on the world map will appear here in the next phase.</p>
+                            </div>
+                        )}
+                    </div>
+                )}
               </div>
               
               <div className="space-y-6">
@@ -104,3 +181,5 @@ export default function NewQuestPage() {
     </div>
   );
 }
+
+    
