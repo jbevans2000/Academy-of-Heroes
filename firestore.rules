@@ -4,10 +4,9 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /students/{studentId} {
-      // Anyone can read student data for the teacher dashboard
-      allow read: if true;
-      // Only the authenticated student can write to their own document
-      allow write: if request.auth != null && request.auth.uid == studentId;
+      // Allow public read and write access for the teacher dashboard.
+      // In a production app, you would want more granular security here.
+      allow read, write: if true;
     }
   }
 }
