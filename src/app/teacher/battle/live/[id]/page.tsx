@@ -109,6 +109,9 @@ export default function TeacherLiveBattlePage() {
         if (newState.status === 'BATTLE_ENDED') {
             router.push(`/teacher/battle/summary/${battleId}`);
         }
+      } else {
+        // If the document doesn't exist, it could mean the battle has ended and been cleaned up.
+        // Or it hasn't started. The redirect logic in `handleEndBattle` should handle this.
       }
       setIsLoading(false);
     }, (error) => {
@@ -253,29 +256,6 @@ export default function TeacherLiveBattlePage() {
     }
   };
 
-  const clearBattleData = async () => {
-    const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
-    const batch = writeBatch(db);
-
-    // Delete responses collection
-    const responsesRef = collection(liveBattleRef, 'responses');
-    const responsesSnap = await getDocs(responsesRef);
-    responsesSnap.forEach(doc => batch.delete(doc.ref));
-
-    // Delete studentResponses subcollections
-    const studentResponsesRef = collection(liveBattleRef, 'studentResponses');
-    const studentResponsesSnap = await getDocs(studentResponsesRef);
-    for (const studentDoc of studentResponsesSnap.docs) {
-        const roundsRef = collection(studentDoc.ref, 'rounds');
-        const roundsSnap = await getDocs(roundsRef);
-        roundsSnap.forEach(roundDoc => batch.delete(roundDoc.ref));
-        batch.delete(studentDoc.ref);
-    }
-
-    await batch.commit();
-  }
-
-
   const handleEndBattle = async () => {
       // 1. Save all rounds data to a new collection for review
       const summaryRef = doc(db, `battleSummaries`, battleId);
@@ -287,15 +267,20 @@ export default function TeacherLiveBattlePage() {
           endedAt: serverTimestamp(),
       });
 
-      // 2. Update live battle state to BATTLE_ENDED
+      // 2. Update live battle state to BATTLE_ENDED. This will trigger the redirect for students.
       const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
       await updateDoc(liveBattleRef, {
           status: 'BATTLE_ENDED',
       });
+      
+      // 3. Redirect teacher to the summary page.
+      router.push(`/teacher/battle/summary/${battleId}`);
 
-      // 3. Clean up the live battle data
-      await clearBattleData();
-      // The useEffect will handle the redirect based on the BATTLE_ENDED status
+      // 4. After a short delay to allow clients to see the BATTLE_ENDED state,
+      // delete the live battle document to clean up for the next session.
+      setTimeout(async () => {
+        await deleteDoc(doc(db, 'liveBattles', 'active-battle'));
+      }, 5000); 
   };
   
   const handleExport = () => {
@@ -435,5 +420,3 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
-
-    
