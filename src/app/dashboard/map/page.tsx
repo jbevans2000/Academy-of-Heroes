@@ -56,7 +56,7 @@ export default function WorldMapPage() {
                 </CardContent>
             </Card>
              <Button 
-                onClick={() => router.back()} 
+                onClick={() => router.push('/dashboard')}
                 className="mt-4"
                 variant="outline"
             >
