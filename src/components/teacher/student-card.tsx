@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog"
 import { DashboardClient } from '@/components/dashboard/dashboard-client';
 import { Input } from '@/components/ui/input';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -34,17 +34,18 @@ interface StudentCardProps {
 
 export function StudentCard({ student: initialStudent, isSelected, onSelect, setStudents }: StudentCardProps) {
   const [student, setStudent] = useState(initialStudent);
-  const [newXp, setNewXp] = useState<number | string>(student.xp);
-  const [newGold, setNewGold] = useState<number | string>(student.gold);
+  const [xpToAdd, setXpToAdd] = useState<number | string>('');
+  const [goldToAdd, setGoldToAdd] = useState<number | string>('');
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
 
   const handleXpUpdate = async () => {
-    if (newXp === '' || isNaN(Number(newXp))) {
+    const amount = Number(xpToAdd);
+    if (xpToAdd === '' || isNaN(amount) || amount === 0) {
         toast({
             variant: 'destructive',
             title: 'Invalid Input',
-            description: 'Please enter a valid number for XP.',
+            description: 'Please enter a valid non-zero number for XP.',
         });
         return;
     }
@@ -52,20 +53,24 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
     setIsUpdating(true);
     const studentRef = doc(db, 'students', student.uid);
     try {
-        const updatedXp = Number(newXp);
-        const { newLevel, newHp } = calculateLevelUp(student, updatedXp);
+        const currentStudentDoc = await getDoc(studentRef);
+        if (!currentStudentDoc.exists()) throw new Error("Student not found");
+
+        const currentStudentData = currentStudentDoc.data() as Student;
+        const newXp = (currentStudentData.xp || 0) + amount;
+        const { newLevel, newHp } = calculateLevelUp(currentStudentData, newXp);
 
         const updates: Partial<Student> = {
-            xp: updatedXp,
+            xp: newXp,
         };
-        if (newLevel > student.level) {
+        if (newLevel > currentStudentData.level) {
             updates.level = newLevel;
             updates.hp = newHp;
         }
 
         await updateDoc(studentRef, updates);
         
-        const updatedStudent = { ...student, ...updates };
+        const updatedStudent = { ...currentStudentData, ...updates };
         
         // Update the single student in the parent state
         setStudents(prevStudents => 
@@ -75,9 +80,10 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
         setStudent(updatedStudent);
 
         toast({
-            title: 'XP Updated!',
-            description: `${student.characterName}'s XP has been set to ${newXp}.`,
+            title: 'XP Awarded!',
+            description: `${amount > 0 ? '+' : ''}${amount} XP awarded to ${student.characterName}.`,
         });
+         setXpToAdd(''); // Clear input
 
         if (newLevel > student.level) {
           toast({
@@ -99,11 +105,12 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
   };
 
   const handleGoldUpdate = async () => {
-    if (newGold === '' || isNaN(Number(newGold))) {
+    const amount = Number(goldToAdd);
+    if (goldToAdd === '' || isNaN(amount) || amount === 0) {
         toast({
             variant: 'destructive',
             title: 'Invalid Input',
-            description: 'Please enter a valid number for Gold.',
+            description: 'Please enter a valid non-zero number for Gold.',
         });
         return;
     }
@@ -111,22 +118,31 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
     setIsUpdating(true);
     const studentRef = doc(db, 'students', student.uid);
     try {
-        const updatedGold = Number(newGold);
+        const currentStudentDoc = await getDoc(studentRef);
+        if (!currentStudentDoc.exists()) throw new Error("Student not found");
+        
+        const currentStudentData = currentStudentDoc.data() as Student;
+        const newGold = (currentStudentData.gold || 0) + amount;
+        
         await updateDoc(studentRef, {
-            gold: updatedGold
+            gold: newGold
         });
+        
+        const updatedStudent = { ...currentStudentData, gold: newGold };
         
         // Update the single student in the parent state
         setStudents(prevStudents => 
-            prevStudents.map(s => s.uid === student.uid ? { ...s, gold: updatedGold } : s)
+            prevStudents.map(s => s.uid === student.uid ? updatedStudent : s)
         );
         // Also update local card state
-        setStudent(prev => ({...prev, gold: updatedGold}));
+        setStudent(updatedStudent);
 
         toast({
-            title: 'Gold Updated!',
-            description: `${student.characterName}'s Gold has been set to ${newGold}.`,
+            title: 'Gold Awarded!',
+            description: `${amount > 0 ? '+' : ''}${amount} Gold awarded to ${student.characterName}.`,
         });
+        setGoldToAdd(''); // Clear input
+
     } catch (error) {
         console.error("Error updating Gold: ", error);
         toast({
@@ -222,10 +238,11 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
                     <Input 
                         id={`xp-${student.uid}`}
                         type="number"
-                        value={newXp}
-                        onChange={(e) => setNewXp(e.target.value)}
+                        value={xpToAdd}
+                        onChange={(e) => setXpToAdd(e.target.value)}
                         className="h-8"
                         disabled={isUpdating}
+                        placeholder="e.g. 50"
                     />
                     <Button
                         size="sm"
@@ -233,7 +250,7 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
                         onClick={handleXpUpdate}
                         disabled={isUpdating}
                     >
-                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Set'}
+                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add'}
                     </Button>
                 </div>
             </div>
@@ -243,10 +260,11 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
                     <Input 
                         id={`gold-${student.uid}`}
                         type="number"
-                        value={newGold}
-                        onChange={(e) => setNewGold(e.target.value)}
+                        value={goldToAdd}
+                        onChange={(e) => setGoldToAdd(e.target.value)}
                         className="h-8"
                         disabled={isUpdating}
+                        placeholder="e.g. 10"
                     />
                     <Button
                         size="sm"
@@ -254,7 +272,7 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
                         onClick={handleGoldUpdate}
                         disabled={isUpdating}
                     >
-                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Set'}
+                        {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add'}
                     </Button>
                 </div>
             </div>
