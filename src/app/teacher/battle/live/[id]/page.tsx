@@ -69,10 +69,11 @@ export default function TeacherLiveBattlePage() {
   useEffect(() => {
     const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
     const unsubscribe = onSnapshot(liveBattleRef, (doc) => {
+      const currentState = liveState;
       if (doc.exists()) {
         const newState = doc.data() as LiveBattleState;
         // If the question index changes, clear old responses and results
-        if (liveState && liveState.currentQuestionIndex !== newState.currentQuestionIndex) {
+        if (currentState && currentState.currentQuestionIndex !== newState.currentQuestionIndex) {
             setStudentResponses([]);
             setRoundResults([]);
         }
@@ -81,11 +82,11 @@ export default function TeacherLiveBattlePage() {
       setIsLoading(false);
     });
     return () => unsubscribe();
-  }, [liveState]);
+  }, []);
 
   // Listen for real-time student responses ONLY when the battle is in progress
   useEffect(() => {
-    if (!liveState || liveState.status !== 'IN_PROGRESS') {
+    if (liveState?.status !== 'IN_PROGRESS') {
         if (liveState?.status !== 'SHOWING_RESULTS') {
             setStudentResponses([]); // Clear responses if not in progress or showing results
         }
@@ -103,7 +104,7 @@ export default function TeacherLiveBattlePage() {
     });
 
     return () => unsubscribe();
-  }, [liveState?.status, liveState]);
+  }, [liveState?.status]);
 
 
   const handleEndRound = async () => {
