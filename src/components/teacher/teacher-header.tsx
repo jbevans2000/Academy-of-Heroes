@@ -1,7 +1,7 @@
 
 'use client';
 
-import { School, LogOut, ShieldAlert } from "lucide-react";
+import { School, LogOut } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -21,10 +21,6 @@ export function TeacherHeader() {
         <span className="text-xl">Teacher Dashboard</span>
       </Link>
       <div className="ml-auto flex items-center gap-4">
-        <Button onClick={() => router.push('/teacher/battles')} variant="outline">
-          <ShieldAlert className="mr-2 h-5 w-5" />
-          Boss Battles
-        </Button>
         <Button onClick={handleLogout} className="bg-amber-500 hover:bg-amber-600 text-white">
           <LogOut className="mr-2 h-5 w-5" />
           Logout
