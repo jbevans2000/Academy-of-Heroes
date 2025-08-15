@@ -91,7 +91,7 @@ export default function LoginPage() {
         <div className="flex justify-center mb-6">
           <Sword className="h-10 w-10 text-primary" />
         </div>
-        <Card className="shadow-2xl bg-card/80 backdrop-blur-sm">
+        <Card className="shadow-2xl bg-card/30 backdrop-blur-sm">
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-headline text-primary">
               Welcome to The Academy of Heroes!
