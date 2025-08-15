@@ -235,6 +235,11 @@ export default function TeacherLiveBattlePage() {
       return () => clearTimeout(timer);
   }, [liveState?.status, liveState?.timerEndsAt, calculateAndSetResults]);
 
+  const handleStartFirstQuestion = async () => {
+    const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
+    await updateDoc(liveBattleRef, { status: 'IN_PROGRESS' });
+  };
+  
   const handleEndRound = async () => {
     if (!battle || liveState === null || isEndingRound) return;
     
@@ -384,7 +389,8 @@ export default function TeacherLiveBattlePage() {
         </>
     );
   }
-
+  
+  const isWaitingToStart = liveState.status === 'WAITING';
   const isRoundInProgress = liveState.status === 'IN_PROGRESS';
   const isRoundEnding = liveState.status === 'ROUND_ENDING';
   const areResultsShowing = liveState.status === 'SHOWING_RESULTS';
@@ -410,6 +416,9 @@ export default function TeacherLiveBattlePage() {
                     <div className="mt-6 p-4 border rounded-lg">
                         <h3 className="font-semibold text-lg mb-2">Controls</h3>
                         <div className="flex gap-4">
+                             {isWaitingToStart && (
+                                <Button onClick={handleStartFirstQuestion} size="lg">Start First Question</Button>
+                             )}
                              <Button onClick={handleEndRound} disabled={!isRoundInProgress || isEndingRound}>
                                 {isEndingRound ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                 End Round
@@ -439,6 +448,17 @@ export default function TeacherLiveBattlePage() {
                     </div>
                 </CardContent>
             </Card>
+            
+            {isWaitingToStart && (
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Waiting for Students</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground">Students are now in the pre-battle waiting room. They can see the intro video if one was provided. When you are ready, click "Start First Question" to begin the battle.</p>
+                    </CardContent>
+                </Card>
+            )}
 
             {isRoundEnding && expiryTimestamp && (
                 <Card>
@@ -492,3 +512,5 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
+
+    

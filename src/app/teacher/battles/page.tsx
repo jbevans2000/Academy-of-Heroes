@@ -77,7 +77,7 @@ export default function BossBattlesPage() {
         // 2. Set the new active battle state
         batch.set(liveBattleRef, {
             battleId: battleId,
-            status: 'IN_PROGRESS', 
+            status: 'WAITING', 
             currentQuestionIndex: 0,
             lastRoundDamage: 0,
             totalDamage: 0,
@@ -227,3 +227,5 @@ export default function BossBattlesPage() {
     </div>
   );
 }
+
+    
