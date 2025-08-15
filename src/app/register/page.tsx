@@ -53,8 +53,9 @@ export default function RegisterPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Assign the first background from the selected class by default
-      const defaultBackground = classData[selectedClass].backgrounds[0];
+      const classInfo = classData[selectedClass];
+      const defaultBackground = classInfo.backgrounds[0];
+      const baseStats = classInfo.baseStats;
 
       await setDoc(doc(db, 'students', user.uid), {
         uid: user.uid,
@@ -68,6 +69,8 @@ export default function RegisterPage() {
         xp: 0,
         gold: 0,
         level: 1,
+        hp: baseStats.hp,
+        mp: baseStats.mp,
       });
       
       toast({

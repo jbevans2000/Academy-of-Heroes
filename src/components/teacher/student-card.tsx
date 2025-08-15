@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Student } from '@/lib/data';
-import { Star, Coins, User, Gamepad2, Trophy } from 'lucide-react';
+import { Star, Coins, User, Gamepad2, Trophy, Heart, Zap } from 'lucide-react';
 
 interface StudentCardProps {
   student: Student;
@@ -50,8 +50,22 @@ export function StudentCard({ student }: StudentCardProps) {
             <div className="flex items-center space-x-2">
                 <Trophy className="h-5 w-5 text-orange-400" />
                 <div className="flex flex-col">
-                <span className="font-semibold">{student.level}</span>
+                <span className="font-semibold">{student.level || 1}</span>
                 <span className="text-xs text-muted-foreground">Level</span>
+                </div>
+            </div>
+             <div className="flex items-center space-x-2">
+                <Heart className="h-5 w-5 text-red-500" />
+                <div className="flex flex-col">
+                <span className="font-semibold">{student.hp || 100}</span>
+                <span className="text-xs text-muted-foreground">HP</span>
+                </div>
+            </div>
+             <div className="flex items-center space-x-2">
+                <Zap className="h-5 w-5 text-yellow-500" />
+                <div className="flex flex-col">
+                <span className="font-semibold">{student.mp || 100}</span>
+                <span className="text-xs text-muted-foreground">MP</span>
                 </div>
             </div>
             <div className="flex items-center space-x-2">

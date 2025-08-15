@@ -22,8 +22,11 @@ export function DashboardClient({ student }: DashboardClientProps) {
             xp={student.xp} 
             gold={student.gold}
             level={student.level || 1}
+            hp={student.hp || 100}
+            mp={student.mp || 100}
             characterName={student.characterName} 
-            studentName={student.studentName} 
+            studentName={student.studentName}
+            characterClass={student.class}
         />
       </div>
     </div>
