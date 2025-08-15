@@ -155,13 +155,27 @@ export default function LiveBattlePage() {
   }
 
   if (!battleState || battleState.status === 'WAITING' || !battleState.battleId) {
+    const waitingRoomImageUrl = "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FChatGPT%20Image%20Aug%2015%2C%202025%2C%2008_12_09%20AM.png?alt=media&token=45178e85-0ba2-42ef-b2fa-d76a8732b2c2";
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4 text-center">
-        <Shield className="h-24 w-24 text-primary mb-6 animate-pulse" />
-        <h1 className="text-4xl font-bold tracking-tight">Waiting Room</h1>
-        <p className="text-xl text-muted-foreground mt-2">Waiting for the Boss to appear!</p>
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mt-8" />
-      </div>
+        <div className="relative flex min-h-screen flex-col items-center justify-center p-4">
+            <Image
+                src={waitingRoomImageUrl}
+                alt="A shadowy figure awaits"
+                fill
+                className="object-cover opacity-50"
+                priority
+            />
+            <div className="z-10 text-center text-white">
+                <Card className="bg-black/60 backdrop-blur-sm p-8 border-gray-600">
+                    <CardContent className="flex flex-col items-center justify-center">
+                        <Shield className="h-24 w-24 text-primary mb-6 animate-pulse" />
+                        <h1 className="text-4xl font-bold tracking-tight">Waiting Room</h1>
+                        <p className="text-xl text-primary-foreground/80 mt-2">Waiting for the Boss to appear!</p>
+                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mt-8" />
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
     );
   }
 
