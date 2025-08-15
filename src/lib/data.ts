@@ -1,3 +1,4 @@
+
 export type ClassType = 'Guardian' | 'Healer' | 'Mage' | '';
 
 export type Avatar = {
@@ -40,12 +41,7 @@ export const classData = {
       'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Images%2FTrickster%206%20(Level%201%20Guardian%20Images).png?alt=media&token=804c9933-d7d9-4336-8bf5-d0cc9e91a5d4'
     ],
     backgrounds: [
-        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Backgrounds%2FGuardian%201.jpg?alt=media&token=d735a40c-e25e-4fab-98d3-526bb0411dfe',
-        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Backgrounds%2FGuardian%202.jpg?alt=media&token=56ee60eb-b61b-42d2-9e17-a001371676ac',
-        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Backgrounds%2FGuardian%203.jpg?alt=media&token=e76ab493-261d-4169-a8a3-fd1cb9305d25',
-        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Backgrounds%2FGuardian%204.jpg?alt=media&token=48d5dae0-8ac7-478f-b00d-98b60243e9e8',
-        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Backgrounds%2FGuardian%205.jpg?alt=media&token=b52eb943-601c-4565-9277-44bb6ce91672',
-        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Backgrounds%2FGuardian%206.jpg?alt=media&token=f5661f1a-d05e-404d-bfbe-995dbd94ed81',
+        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Backgrounds%2FGuardian%201.jpg?alt=media&token=d735a40c-e25e-4fab-98d3-526bb0411dfe'
     ],
   },
   Healer: {
@@ -60,12 +56,7 @@ export const classData = {
       'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Images%2FHealer%208%20(Level%201%20Healer%20Images).png?alt=media&token=b46f9c42-f533-4dd1-aa61-a014c8656006'
     ],
     backgrounds: [
-        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Backgrounds%2FHealer%201.jpg?alt=media&token=6c41882c-39f1-46a4-9f9f-569dfdaec95d',
-        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Backgrounds%2FHealer%202.jpg?alt=media&token=1dacf27a-6cab-4017-b35c-1cbc2ddf7440',
-        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Backgrounds%2FHealer%203.jpg?alt=media&token=db1e13da-4e76-4158-85ef-b55769172561',
-        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Backgrounds%2FHealer%204.jpg?alt=media&token=2824d55b-945b-443a-a73b-07931dee7cf2',
-        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Backgrounds%2FHealer%205.jpg?alt=media&token=1d8464e7-a187-4e89-804a-5bd90278b730',
-        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Backgrounds%2FHealer%206.jpg?alt=media&token=f55f0039-69b2-4591-a87e-a10fcc2f7224',
+        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Backgrounds%2FHealer%201.jpg?alt=media&token=6c41882c-39f1-46a4-9f9f-569dfdaec95d'
     ],
   },
   Mage: {
@@ -80,12 +71,7 @@ export const classData = {
       'https://placehold.co/256x256/9b59b6/ffffff?text=Mage+8',
     ],
     backgrounds: [
-        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Mage%20Backgrounds%2FMage%206.jpg?alt=media&token=722b4a2a-1fee-4f8b-8c53-4b60a8ef4b6a',
-        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Mage%20Backgrounds%2Fmage%201.jpg?alt=media&token=5650b386-264c-4429-a2f5-44d10a255815',
-        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Mage%20Backgrounds%2Fmage%202.jpg?alt=media&token=b1ab5725-d274-49ca-b4fd-3592df620f08',
-        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Mage%20Backgrounds%2Fmage%203.jpg?alt=media&token=35cc4faf-8009-40b4-a9b7-3b886ac6e45d',
-        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Mage%20Backgrounds%2Fmage%204.jpg?alt=media&token=00278e1e-cbc4-4ee6-a63f-dbd17f4a0cad',
-        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Mage%20Backgrounds%2Fmage%205.jpg?alt=media&token=cc876575-c0da-4d0e-af52-249ac60631cb'
+        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Mage%20Backgrounds%2FMage%206.jpg?alt=media&token=722b4a2a-1fee-4f8b-8c53-4b60a8ef4b6a'
     ],
   },
 };

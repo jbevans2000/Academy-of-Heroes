@@ -33,17 +33,16 @@ export default function RegisterPage() {
   const [characterName, setCharacterName] = useState('');
   const [selectedClass, setSelectedClass] = useState<ClassType>('');
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
-  const [selectedBackground, setSelectedBackground] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
   const handleSubmit = async () => {
-    if (!studentId || !password || !studentName || !characterName || !selectedClass || !selectedAvatar || !selectedBackground) {
+    if (!studentId || !password || !studentName || !characterName || !selectedClass || !selectedAvatar) {
       toast({
         variant: 'destructive',
         title: 'Missing Information',
-        description: 'Please fill out all fields and make your selections.',
+        description: 'Please fill out all fields and select your class and avatar.',
       });
       return;
     }
@@ -54,6 +53,9 @@ export default function RegisterPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
+      // Assign the first background from the selected class by default
+      const defaultBackground = classData[selectedClass].backgrounds[0];
+
       await setDoc(doc(db, 'students', user.uid), {
         uid: user.uid,
         studentId: studentId,
@@ -62,7 +64,7 @@ export default function RegisterPage() {
         characterName: characterName,
         class: selectedClass,
         avatarUrl: selectedAvatar,
-        backgroundUrl: selectedBackground,
+        backgroundUrl: defaultBackground,
         xp: 0,
         gold: 0,
       });
@@ -91,7 +93,6 @@ export default function RegisterPage() {
     const classValue = value as ClassType;
     setSelectedClass(classValue);
     setSelectedAvatar(null);
-    setSelectedBackground(null);
   };
 
   return (
@@ -155,26 +156,26 @@ export default function RegisterPage() {
             </div>
 
             {/* Right Column: Selections */}
-            <div className="space-y-6">
+            <div className="space-y-6 flex flex-col justify-center">
               {selectedClass ? (
                 <>
                   <div>
                     <Label className="text-lg font-semibold">Choose Your Avatar</Label>
-                    <Card className="mt-2 p-2 bg-secondary/50">
-                      <div className="grid grid-cols-4 gap-2">
+                    <Card className="mt-2 p-4 bg-secondary/50">
+                      <div className="grid grid-cols-4 gap-4">
                         {classData[selectedClass].avatars.map((avatar, index) => (
                           <Tooltip key={index} delayDuration={100}>
                             <TooltipTrigger asChild>
                               <div
                                 onClick={() => !isLoading && setSelectedAvatar(avatar)}
                                 className={cn(
-                                  'cursor-pointer rounded-md overflow-hidden border-2 transition-all duration-200',
+                                  'cursor-pointer rounded-md overflow-hidden border-2 transition-all duration-200 aspect-square flex items-center justify-center',
                                   selectedAvatar === avatar
                                     ? 'border-primary ring-2 ring-primary'
                                     : 'border-transparent hover:border-primary/50'
                                 )}
                               >
-                                <Image src={avatar} alt={`Avatar ${index + 1}`} width={100} height={100} className="w-full aspect-square object-contain" />
+                                <Image src={avatar} alt={`Avatar ${index + 1}`} width={100} height={100} className="object-contain" />
                               </div>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -185,37 +186,10 @@ export default function RegisterPage() {
                       </div>
                     </Card>
                   </div>
-                  <div>
-                    <Label className="text-lg font-semibold">Choose Your Background</Label>
-                     <Card className="mt-2 p-2 bg-secondary/50">
-                      <div className="grid grid-cols-3 gap-2">
-                        {classData[selectedClass].backgrounds.map((bg, index) => (
-                          <Tooltip key={index} delayDuration={100}>
-                            <TooltipTrigger asChild>
-                              <div
-                                onClick={() => !isLoading && setSelectedBackground(bg)}
-                                className={cn(
-                                  'cursor-pointer rounded-md overflow-hidden border-2 transition-all duration-200',
-                                   selectedBackground === bg
-                                    ? 'border-primary ring-2 ring-primary'
-                                    : 'border-transparent hover:border-primary/50'
-                                )}
-                              >
-                                <Image src={bg} alt={`Background ${index + 1}`} width={150} height={100} className="w-full aspect-video object-contain" />
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                               <Image src={bg} alt={`Background ${index + 1}`} width={300} height={200} className="w-72 h-48 object-contain" />
-                            </TooltipContent>
-                          </Tooltip>
-                        ))}
-                      </div>
-                    </Card>
-                  </div>
                 </>
               ) : (
                 <div className="flex items-center justify-center h-full bg-secondary/30 rounded-lg">
-                  <p className="text-muted-foreground">Please select a class to see options.</p>
+                  <p className="text-muted-foreground">Please select a class to see avatar options.</p>
                 </div>
               )}
             </div>
