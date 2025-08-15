@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { collection, getDocs, writeBatch, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
@@ -32,7 +33,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, Trash2 } from 'lucide-react';
+import { Loader2, Star, Coins, Trash2, Swords } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 
 export default function TeacherDashboardPage() {
@@ -46,6 +47,7 @@ export default function TeacherDashboardPage() {
   const [isXpDialogOpen, setIsXpDialogOpen] = useState(false);
   const [isGoldDialogOpen, setIsGoldDialogOpen] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   const fetchStudents = async () => {
     setIsLoading(true);
@@ -278,6 +280,9 @@ export default function TeacherDashboardPage() {
                 variant="outline"
                >
                 {selectedStudents.length === students.length ? 'Deselect All' : 'Select All'}
+               </Button>
+               <Button onClick={() => router.push('/teacher/battles')}>
+                 <Swords className="mr-2 h-4 w-4" /> Manage Boss Battles
                </Button>
                <Dialog open={isXpDialogOpen} onOpenChange={setIsXpDialogOpen}>
                 <DialogTrigger asChild>
