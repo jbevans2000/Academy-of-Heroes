@@ -32,13 +32,6 @@ export default function TeacherLoginPage() {
 
   const handleLogin = async () => {
     setIsLoading(true);
-    // --- TEMPORARY BYPASS FOR DEVELOPMENT ---
-    // This will always redirect to the dashboard.
-    // We will need to restore the actual login logic later.
-    router.push('/teacher/dashboard');
-    
-    // The original login logic is commented out below:
-    /*
     try {
       // Step 1: Authenticate with Firebase
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -88,7 +81,6 @@ export default function TeacherLoginPage() {
     } finally {
       setIsLoading(false);
     }
-    */
   };
 
 
