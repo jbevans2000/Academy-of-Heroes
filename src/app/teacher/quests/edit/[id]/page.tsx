@@ -207,10 +207,6 @@ export default function EditQuestPage() {
                     <Label htmlFor="story-content">Story Content</Label>
                     <Textarea id="story-content" placeholder="Write the story for this chapter... Use \n for new paragraphs." value={chapter.storyContent || ''} onChange={e => handleFieldChange('storyContent', e.target.value)} disabled={isSaving} rows={8}/>
                 </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="lesson-content">Lesson Content</Label>
-                    <Textarea id="lesson-content" placeholder="Write the educational content for this chapter... Use \n for new paragraphs." value={chapter.lessonContent || ''} onChange={e => handleFieldChange('lessonContent', e.target.value)} disabled={isSaving} rows={8}/>
-                </div>
                 <div className="space-y-2">
                     <Label htmlFor="main-image-url">Main Image URL</Label>
                     <Input id="main-image-url" placeholder="https://example.com/main-image.png" value={chapter.mainImageUrl || ''} onChange={e => handleFieldChange('mainImageUrl', e.target.value)} disabled={isSaving} />
@@ -228,6 +224,10 @@ export default function EditQuestPage() {
                         <Label htmlFor="deco-image-2">Decorative Image 2 URL</Label>
                         <Input id="deco-image-2" placeholder="https://example.com/deco2.png" value={chapter.decorativeImageUrl2 || ''} onChange={e => handleFieldChange('decorativeImageUrl2', e.target.value)} disabled={isSaving} />
                     </div>
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="lesson-content">Lesson Content</Label>
+                    <Textarea id="lesson-content" placeholder="Write the educational content for this chapter... Use \n for new paragraphs." value={chapter.lessonContent || ''} onChange={e => handleFieldChange('lessonContent', e.target.value)} disabled={isSaving} rows={8}/>
                 </div>
 
                 {hubMapUrl && (

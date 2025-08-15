@@ -261,10 +261,6 @@ export default function NewQuestPage() {
                     <Label htmlFor="story-content">Story Content</Label>
                     <Textarea id="story-content" placeholder="Write the story for this chapter... Use \n for new paragraphs." value={storyContent} onChange={e => setStoryContent(e.target.value)} disabled={isSaving} rows={8}/>
                 </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="lesson-content">Lesson Content</Label>
-                    <Textarea id="lesson-content" placeholder="Write the educational content for this chapter... Use \n for new paragraphs." value={lessonContent} onChange={e => setLessonContent(e.target.value)} disabled={isSaving} rows={8}/>
-                </div>
                 <div className="space-y-2">
                     <Label htmlFor="main-image-url">Main Image URL</Label>
                     <Input id="main-image-url" placeholder="https://example.com/main-image.png" value={mainImageUrl} onChange={e => setMainImageUrl(e.target.value)} disabled={isSaving} />
@@ -282,6 +278,10 @@ export default function NewQuestPage() {
                         <Label htmlFor="deco-image-2">Decorative Image 2 URL</Label>
                         <Input id="deco-image-2" placeholder="https://example.com/deco2.png" value={decorativeImageUrl2} onChange={e => setDecorativeImageUrl2(e.target.value)} disabled={isSaving} />
                     </div>
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="lesson-content">Lesson Content</Label>
+                    <Textarea id="lesson-content" placeholder="Write the educational content for this chapter... Use \n for new paragraphs." value={lessonContent} onChange={e => setLessonContent(e.target.value)} disabled={isSaving} rows={8}/>
                 </div>
 
                 {hubMapUrl && (
@@ -326,5 +326,3 @@ export default function NewQuestPage() {
     </div>
   );
 }
-
-    
