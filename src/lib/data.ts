@@ -31,14 +31,14 @@ export type Student = {
 export const classData = {
   Guardian: {
     avatars: [
-      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Images%2FTrickster%201%20(Level%201%20Guardian%20Images).png?alt=media&token=1d82ab1e-9631-4d14-8cac-91c943758b9f',
-      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Images%2FTrickster%202%20(Level%201%20Guardian%20Images).png?alt=media&token=b4d5ba45-2a57-446d-86d6-4183ba231104',
-      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Images%2FTrickster%203%20(Level%201%20Guardian%20Images).png?alt=media&token=dfc45b89-dbd0-4fbd-90ad-d5632cb130ee',
-      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Images%2FTrickster%204%20(Level%201%20Guardian%20Images).png?alt=media&token=d526181b-f8fb-42b6-80a5-ae101d7e63b5',
-      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Images%2FTrickster%205%20(Level%201%20Guardian%20Images).png?alt=media&token=5dbf4c82-f529-4e40-9a95-6ab0de2354da',
-      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Images%2FTrickster%207%20(Level%201%20Guardian%20Images).png?alt=media&token=cbb6584f-f732-4bc5-a538-9ccc08dabef2',
-      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Images%2FTrickster%208%20(Level%201%20Guardian%20Images).png?alt=media&token=f33d3ca1-a917-4920-bd81-b55141969354',
-      'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Images%2FTrickster%206%20(Level%201%20Guardian%20Images).png?alt=media&token=804c9933-d7d9-4336-8bf5-d0cc9e91a5d4'
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FLevel%201%20Guardian%20(1).jpg?alt=media&token=2761d6ca-be36-4fe6-9265-8aa558884049',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FLevel%201%20Guardian%20(2).jpg?alt=media&token=bb71385e-827f-419d-b890-75cff842e63f',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FLevel%201%20Guardian%20(3).jpg?alt=media&token=44d4a143-1a3a-4f86-a8cd-202a3c1e2027',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FLevel%201%20Guardian%20(4).jpg?alt=media&token=07a33df5-1792-4eb9-8cc0-6a76cd58b9ef',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FLevel%201%20Guardian%20(5).jpg?alt=media&token=cbd4643d-8a57-4b01-badc-e970378c58ef',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FLevel%201%20Guardian%20(6).jpg?alt=media&token=f107f3b2-762b-41b7-8b08-6c5276550bb4',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FLevel%201%20Guardian%20(7).jpg?alt=media&token=79549f62-d40e-4538-8a84-a96c8aace7be',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FLevel%201%20Guardian%20(8).jpg?alt=media&token=8a6ff376-8bf5-40ed-b0cd-f515f7fe9e7e'
     ],
     backgrounds: [
         'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Backgrounds%2FGuardian%201.jpg?alt=media&token=d735a40c-e25e-4fab-98d3-526bb0411dfe'
