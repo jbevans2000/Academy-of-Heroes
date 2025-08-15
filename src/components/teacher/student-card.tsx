@@ -58,7 +58,8 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
         if (!currentStudentDoc.exists()) throw new Error("Student not found");
 
         const currentStudentData = currentStudentDoc.data() as Student;
-        const newXp = (currentStudentData.xp || 0) + amount;
+        const currentXp = currentStudentData.xp || 0;
+        const newXp = Math.max(0, currentXp + amount);
         const newLevel = calculateLevel(newXp);
         
         await updateDoc(studentRef, {
@@ -348,5 +349,3 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
     </Dialog>
   );
 }
-
-    

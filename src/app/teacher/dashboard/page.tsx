@@ -99,7 +99,8 @@ export default function TeacherDashboardPage() {
           for (const studentDoc of studentDocs) {
               if (studentDoc.exists()) {
                   const studentData = studentDoc.data() as Student;
-                  const newXp = (studentData.xp || 0) + amount;
+                  const currentXp = studentData.xp || 0;
+                  const newXp = Math.max(0, currentXp + amount);
                   const newLevel = calculateLevel(newXp);
                   batch.update(studentDoc.ref, { xp: newXp, level: newLevel });
               }
@@ -111,7 +112,8 @@ export default function TeacherDashboardPage() {
           setStudents(prevStudents =>
               prevStudents.map(s => {
                   if (selectedStudents.includes(s.uid)) {
-                      const newXp = (s.xp || 0) + amount;
+                      const currentXp = s.xp || 0;
+                      const newXp = Math.max(0, currentXp + amount);
                       const newLevel = calculateLevel(newXp);
                       return { ...s, xp: newXp, level: newLevel };
                   }
@@ -322,5 +324,3 @@ export default function TeacherDashboardPage() {
     </div>
   );
 }
-
-    
