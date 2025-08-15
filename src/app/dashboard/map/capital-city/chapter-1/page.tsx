@@ -22,7 +22,7 @@ export default function Chapter1Page() {
                     <CardContent className="space-y-6 text-lg leading-relaxed">
                         <div className="flex justify-center">
                             <Image
-                                src="https://placehold.co/800x400.png"
+                                src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Chapter%20Images%2F699033fa-5147-43c3-848f-182414887097_orig%5B1%5D.png?alt=media&token=363e71c9-5df5-4102-9138-120577b26b08"
                                 alt="A grand throne room"
                                 width={800}
                                 height={400}
