@@ -22,8 +22,6 @@ import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { calculateLevelUp } from '@/lib/game-mechanics';
-
 
 interface StudentCardProps {
   student: Student;
@@ -59,17 +57,12 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
 
         const currentStudentData = currentStudentDoc.data() as Student;
         const newXp = (currentStudentData.xp || 0) + amount;
-        const { newLevel, newHp } = calculateLevelUp(currentStudentData, newXp);
-
-        const updates: Partial<Student> = {
-            xp: newXp,
-            level: newLevel,
-            hp: newHp,
-        };
-
-        await updateDoc(studentRef, updates);
         
-        const updatedStudent = { ...currentStudentData, ...updates };
+        await updateDoc(studentRef, {
+            xp: newXp
+        });
+        
+        const updatedStudent = { ...currentStudentData, xp: newXp };
         
         // Update the single student in the parent state
         setStudents(prevStudents => 
@@ -83,13 +76,6 @@ export function StudentCard({ student: initialStudent, isSelected, onSelect, set
             description: `${amount > 0 ? '+' : ''}${amount} XP awarded to ${student.characterName}.`,
         });
          setXpToAdd(''); // Clear input
-
-        if (newLevel > student.level) {
-          toast({
-            title: 'Level Up!',
-            description: `${student.characterName} is now level ${newLevel}!`,
-          })
-        }
 
     } catch (error) {
         console.error("Error updating XP: ", error);

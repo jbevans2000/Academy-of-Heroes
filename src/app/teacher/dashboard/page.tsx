@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, getDocs, writeBatch, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, writeBatch, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import { TeacherHeader } from "@/components/teacher/teacher-header";
@@ -21,13 +21,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, Sparkles, Heart } from 'lucide-react';
-import { calculateLevelUp } from '@/lib/game-mechanics';
+import { Loader2, Star, Coins } from 'lucide-react';
 
 export default function TeacherDashboardPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRecalculating, setIsRecalculating] = useState(false);
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [xpAmount, setXpAmount] = useState<number | string>('');
   const [goldAmount, setGoldAmount] = useState<number | string>('');
@@ -93,38 +91,27 @@ export default function TeacherDashboardPage() {
 
       setIsAwarding(true);
       
-      const updatedStudentsState: Student[] = [];
-
       try {
-          for (const uid of selectedStudents) {
-            const studentRef = doc(db, 'students', uid);
-            const studentDoc = await getDoc(studentRef);
+          const batch = writeBatch(db);
+          const studentDocs = await Promise.all(selectedStudents.map(uid => getDoc(doc(db, 'students', uid))));
 
-            if (studentDoc.exists()) {
-                const studentData = studentDoc.data() as Student;
-                const newXp = (studentData.xp || 0) + amount;
-                const { newLevel, newHp } = calculateLevelUp(studentData, newXp);
-
-                const updates: Partial<Student> = { xp: newXp, level: newLevel, hp: newHp };
-                
-                await writeBatch(db).update(studentRef, updates).commit();
-
-                if (newLevel > studentData.level) {
-                    toast({
-                      title: 'Level Up!',
-                      description: `${studentData.characterName} is now level ${newLevel}!`,
-                    })
-                }
-                updatedStudentsState.push({ ...studentData, ...updates });
-            }
+          for (const studentDoc of studentDocs) {
+              if (studentDoc.exists()) {
+                  const currentXp = studentDoc.data().xp || 0;
+                  const newXp = currentXp + amount;
+                  batch.update(studentDoc.ref, { xp: newXp });
+              }
           }
           
+          await batch.commit();
+
           // Update local state to reflect changes
           setStudents(prevStudents =>
-              prevStudents.map(s => {
-                const updated = updatedStudentsState.find(u => u.uid === s.uid);
-                return updated || s;
-              })
+              prevStudents.map(s =>
+                  selectedStudents.includes(s.uid)
+                      ? { ...s, xp: (s.xp || 0) + amount }
+                      : s
+              )
           );
 
           toast({
@@ -209,56 +196,6 @@ export default function TeacherDashboardPage() {
       }
   };
   
-    const handleRecalculateHp = async () => {
-        setIsRecalculating(true);
-        try {
-            const allStudentsQuery = await getDocs(collection(db, 'students'));
-            const studentDocs = allStudentsQuery.docs;
-
-            if (studentDocs.length === 0) {
-                toast({ title: "No students to update." });
-                setIsRecalculating(false);
-                return;
-            }
-
-            const batch = writeBatch(db);
-            const studentUpdatesForState: Student[] = [];
-
-            // Phase 1: Read all data from the fetched docs
-            for (const studentDoc of studentDocs) {
-                const studentData = studentDoc.data() as Student;
-                const newHp = 0; // Set HP to 0 for debugging
-
-                const studentRef = doc(db, 'students', studentDoc.id);
-                batch.update(studentRef, { hp: newHp });
-                
-                // Prepare local state update with all fields from original data + updates
-                studentUpdatesForState.push({ ...studentData, hp: newHp });
-            }
-
-            // Phase 2: Commit all writes at once
-            await batch.commit();
-
-            // Phase 3: Update local state with the prepared updates
-            setStudents(studentUpdatesForState);
-
-            toast({
-                title: 'Operation Complete',
-                description: `All student HP values have been set to 0.`,
-            });
-        } catch (error) {
-            console.error('Error setting HP to 0:', error);
-            toast({
-                variant: 'destructive',
-                title: 'Operation Failed',
-                description: 'Could not set student HP values. Please try again.',
-            });
-        } finally {
-            setIsRecalculating(false);
-        }
-    };
-
-
   if (isLoading) {
     return (
        <div className="flex min-h-screen w-full flex-col">
@@ -287,14 +224,6 @@ export default function TeacherDashboardPage() {
         <div className="flex justify-between items-center mb-4">
             <h1 className="text-2xl font-bold">All Students</h1>
             <div className="flex items-center gap-2">
-               <Button
-                  variant="outline"
-                  onClick={handleRecalculateHp}
-                  disabled={isRecalculating}
-                >
-                  {isRecalculating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                  Recalculate All HP
-                </Button>
                <Button 
                 onClick={handleSelectAllToggle}
                 disabled={students.length === 0}

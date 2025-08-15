@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, getDocs, writeBatch, doc, getDoc, runTransaction } from 'firebase/firestore';
+import { collection, getDocs, writeBatch, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import { TeacherHeader } from "@/components/teacher/teacher-header";
@@ -21,13 +21,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, Sparkles } from 'lucide-react';
-import { calculateLevelUp } from '@/lib/game-mechanics';
+import { Loader2, Star, Coins } from 'lucide-react';
 
 export default function TeacherDashboardPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRecalculating, setIsRecalculating] = useState(false);
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [xpAmount, setXpAmount] = useState<number | string>('');
   const [goldAmount, setGoldAmount] = useState<number | string>('');
@@ -105,16 +103,9 @@ export default function TeacherDashboardPage() {
               if (studentDoc.exists()) {
                   const studentData = studentDoc.data() as Student;
                   const newXp = (studentData.xp || 0) + amount;
-                  const { newLevel, newHp } = calculateLevelUp(studentData, newXp);
-
-                  const updates: Partial<Student> = { xp: newXp, level: newLevel, hp: newHp };
                   
-                  if (newLevel > studentData.level) {
-                      toast({
-                        title: 'Level Up!',
-                        description: `${studentData.characterName} is now level ${newLevel}!`,
-                      })
-                  }
+                  const updates: Partial<Student> = { xp: newXp };
+                  
                   batch.update(studentRef, updates);
                   updatedStudents.push({ ...studentData, ...updates });
               }
@@ -213,47 +204,6 @@ export default function TeacherDashboardPage() {
       }
   };
   
-    const handleRecalculateHp = async () => {
-        setIsRecalculating(true);
-        try {
-            const batch = writeBatch(db);
-            const allStudentsSnapshot = await getDocs(collection(db, 'students'));
-            const updatedStudents: Student[] = [];
-
-            allStudentsSnapshot.forEach(studentDoc => {
-                const studentData = studentDoc.data() as Student;
-                
-                // The calculateLevelUp function will now recalculate from base stats correctly.
-                const { newLevel, newHp } = calculateLevelUp(studentData, studentData.xp);
-
-                const studentRef = doc(db, 'students', studentData.uid);
-                batch.update(studentRef, { hp: newHp, level: newLevel });
-
-                updatedStudents.push({ ...studentData, hp: newHp, level: newLevel });
-            });
-
-            await batch.commit();
-
-            // Update local state
-            setStudents(updatedStudents);
-
-            toast({
-                title: 'HP Recalculated',
-                description: `All student HP and Level values have been updated based on their current XP.`,
-            });
-        } catch (error) {
-            console.error('Error recalculating HP:', error);
-            toast({
-                variant: 'destructive',
-                title: 'Recalculation Failed',
-                description: 'Could not update student HP values. Please try again.',
-            });
-        } finally {
-            setIsRecalculating(false);
-        }
-    };
-
-
   if (isLoading) {
     return (
        <div className="flex min-h-screen w-full flex-col">
@@ -282,14 +232,6 @@ export default function TeacherDashboardPage() {
         <div className="flex justify-between items-center mb-4">
             <h1 className="text-2xl font-bold">All Students</h1>
             <div className="flex items-center gap-2">
-               <Button
-                  variant="outline"
-                  onClick={handleRecalculateHp}
-                  disabled={isRecalculating}
-                >
-                  {isRecalculating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                  Recalculate All HP
-                </Button>
                <Button 
                 onClick={handleSelectAllToggle}
                 disabled={students.length === 0}
