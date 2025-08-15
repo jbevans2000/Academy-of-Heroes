@@ -89,7 +89,7 @@ export default function LoginPage() {
               Welcome to The Academy of Heroes!
             </CardTitle>
             <CardDescription>
-              Enter your credentials to begin your adventure
+              Login to Continue Your Quest, or Create a New Avatar Below!
             </CardDescription>
           </CardHeader>
           <CardContent>
