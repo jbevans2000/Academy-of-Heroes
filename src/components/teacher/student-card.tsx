@@ -11,11 +11,14 @@ interface StudentCardProps {
 }
 
 export function StudentCard({ student }: StudentCardProps) {
+  const backgroundUrl = student.backgroundUrl || 'https://placehold.co/600x400.png';
+  const avatarUrl = student.avatarUrl || 'https://placehold.co/100x100.png';
+
   return (
     <Card className="shadow-lg rounded-xl flex flex-col overflow-hidden transition-transform hover:scale-105 duration-300">
       <CardHeader className="p-0 relative h-32">
         <Image
-          src={student.backgroundUrl}
+          src={backgroundUrl}
           alt={`${student.characterName}'s background`}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -26,7 +29,7 @@ export function StudentCard({ student }: StudentCardProps) {
         <div className="absolute bottom-2 left-4 flex items-end space-x-3">
           <div className="relative w-16 h-16 border-2 border-primary rounded-full overflow-hidden bg-secondary">
             <Image
-              src={student.avatarUrl}
+              src={avatarUrl}
               alt={`${student.characterName}'s avatar`}
               fill
                sizes="(max-width: 768px) 25vw, 10vw"
