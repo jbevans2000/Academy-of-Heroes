@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs, writeBatch, serverTimestamp, setDoc, deleteDoc, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -148,28 +148,9 @@ export default function TeacherLiveBattlePage() {
     return () => unsubscribe();
   }, [liveState?.status]);
 
-  // Effect to handle timer expiration
-  useEffect(() => {
-      if (liveState?.status === 'ROUND_ENDING' && liveState.timerEndsAt) {
-          const expiryDate = new Date(liveState.timerEndsAt.seconds * 1000);
-          const now = new Date();
-          const timeUntilExpiry = expiryDate.getTime() - now.getTime();
-
-          if (timeUntilExpiry <= 0) {
-              calculateAndSetResults();
-          } else {
-              const timer = setTimeout(() => {
-                  calculateAndSetResults();
-              }, timeUntilExpiry);
-              return () => clearTimeout(timer);
-          }
-      }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [liveState?.status, liveState?.timerEndsAt]);
-
-  const calculateAndSetResults = async () => {
-    if (!battle || liveState === null || isEndingRound) return;
-    if (liveState.status === 'SHOWING_RESULTS') return;
+  const calculateAndSetResults = useCallback(async () => {
+    if (!battle || !liveState || liveState.status !== 'ROUND_ENDING') return;
+    if (isEndingRound) return;
 
     setIsEndingRound(true);
     
@@ -217,7 +198,25 @@ export default function TeacherLiveBattlePage() {
     } finally {
         setIsEndingRound(false);
     }
-  }
+  }, [battle, liveState, isEndingRound, allRoundsData]);
+
+  // Effect to handle timer expiration
+  useEffect(() => {
+      if (liveState?.status === 'ROUND_ENDING' && liveState.timerEndsAt) {
+          const expiryDate = new Date(liveState.timerEndsAt.seconds * 1000);
+          const now = new Date();
+          const timeUntilExpiry = expiryDate.getTime() - now.getTime();
+
+          if (timeUntilExpiry <= 0) {
+              calculateAndSetResults();
+          } else {
+              const timer = setTimeout(() => {
+                  calculateAndSetResults();
+              }, timeUntilExpiry);
+              return () => clearTimeout(timer);
+          }
+      }
+  }, [liveState?.status, liveState?.timerEndsAt, calculateAndSetResults]);
 
   const handleEndRound = async () => {
     if (!battle || liveState === null) return;
