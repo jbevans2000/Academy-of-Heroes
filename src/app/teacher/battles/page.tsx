@@ -48,17 +48,20 @@ export default function BossBattlesPage() {
   const handleStartBattle = async (battleId: string) => {
     setStartingBattleId(battleId);
     try {
-        const batch = writeBatch(db);
-
-        // 1. Delete the old active-battle document to ensure a clean slate
         const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
+
+        // 1. Explicitly delete the old active battle document first to ensure a clean slate.
+        // This prevents students from loading into an old battle's summary page.
         await deleteDoc(liveBattleRef).catch(err => {
-            // It's okay if the doc doesn't exist, so we can ignore "not-found" errors.
+            // It's okay if the doc doesn't exist, this is just a cleanup step.
             if (err.code !== 'not-found') {
-                throw err;
+                console.warn("Could not delete old live battle doc, it might not exist.", err);
             }
         });
 
+        // Use a batch to perform the next operations atomically
+        const batch = writeBatch(db);
+        
         // 2. Set the new active battle state
         batch.set(liveBattleRef, {
             battleId: battleId,
@@ -66,11 +69,7 @@ export default function BossBattlesPage() {
             currentQuestionIndex: 0,
         });
 
-        // 3. Clear any previous responses from the old subcollection (as a safety measure)
-        const responsesQuery = await getDocs(collection(liveBattleRef, 'responses'));
-        responsesQuery.forEach(doc => {
-            batch.delete(doc.ref);
-        });
+        // No need to clear subcollections here because deleting the document takes care of that.
 
         // Commit the batch
         await batch.commit();

@@ -99,6 +99,8 @@ export default function LiveBattlePage() {
             router.push('/battle/summary');
         }
       } else {
+        // If the document does not exist, it means a battle is not active.
+        // Set to WAITING status to show the waiting room.
         setBattleState({ battleId: null, status: 'WAITING', currentQuestionIndex: 0 });
       }
       setIsLoading(false);
