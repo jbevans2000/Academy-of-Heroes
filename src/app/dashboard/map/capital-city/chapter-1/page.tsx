@@ -98,9 +98,9 @@ export default function Chapter1Page() {
                             <Image
                                 src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Chapter%20Images%2Ftwig-with-leaves-curved-wavy-free-vector%5B1%5D.jpg?alt=media&token=9958448c-9456-4279-9433-e8a00cb638e5"
                                 alt="A decorative twig"
-                                width={200}
+                                width={800}
                                 height={100}
-                                className="rounded-lg"
+                                className="rounded-lg object-contain"
                                 data-ai-hint="twig decoration"
                             />
                         </div>
