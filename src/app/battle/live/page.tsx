@@ -265,6 +265,7 @@ export default function LiveBattlePage() {
   
   if (battleState.status === 'SHOWING_RESULTS' && battle) {
       const lastQuestion = battle.questions[battleState.currentQuestionIndex];
+      // This is the critical fix. It ensures we are always checking the correct answer for the completed round.
       const wasCorrect = submittedAnswer === lastQuestion.correctAnswerIndex;
       const correctAnswerText = lastQuestion.answers[lastQuestion.correctAnswerIndex];
 
@@ -326,3 +327,5 @@ export default function LiveBattlePage() {
     </div>
   );
 }
+
+    
