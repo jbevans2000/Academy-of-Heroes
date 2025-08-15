@@ -87,9 +87,12 @@ export default function LiveBattlePage() {
       const currentState = battleState;
       if (doc.exists()) {
         const newState = doc.data() as LiveBattleState;
-        if (currentState && newState.currentQuestionIndex !== currentState.currentQuestionIndex) {
+
+        // If it's a new battle or new question, reset submitted answer
+        if (currentState && (newState.battleId !== currentState.battleId || newState.currentQuestionIndex !== currentState.currentQuestionIndex)) {
           setSubmittedAnswer(null);
         }
+        
         setBattleState(newState);
 
         if (newState.status === 'BATTLE_ENDED') {
