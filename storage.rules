@@ -1,16 +1,16 @@
-
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allow read access to all files by default
+    // Allow read access for everyone, as images need to be public
     match /{allPaths=**} {
       allow read;
     }
 
-    // Allow write access only to the "Boss Images" folder
+    // Allow write access only to the "Boss Images" folder.
+    // This is where the AI image generator saves the boss pictures.
     match /Boss Images/{imageId} {
-      allow write: if request.auth != null;
+      allow write;
     }
   }
 }
