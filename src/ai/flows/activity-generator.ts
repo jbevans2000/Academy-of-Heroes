@@ -6,6 +6,7 @@
  * - generateActivity - A function that calls the AI to generate an activity.
  * - Activity - The output type for the generated activity.
  */
+import '@/ai/genkit'; // Ensure Genkit is initialized
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
