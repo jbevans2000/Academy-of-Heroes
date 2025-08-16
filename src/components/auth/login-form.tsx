@@ -165,7 +165,7 @@ export function LoginForm() {
             </span>
           </div>
         </div>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 rounded-lg bg-background/80 p-4">
             <Button
               variant="secondary"
               className="w-full"
