@@ -231,6 +231,7 @@ export default function TeacherHelpPage() {
                                 <CardHeader className="items-center text-center">
                                     {topic.icon}
                                     <CardTitle className="mt-2">{topic.title}</CardTitle>
+
                                 </CardHeader>
                                 <CardContent>
                                     <p className="text-sm text-muted-foreground">{topic.description}</p>
