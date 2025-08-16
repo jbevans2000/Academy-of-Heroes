@@ -9,11 +9,12 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ArrowLeft, PlusCircle, Trash2, Eye, GitBranch, Loader2, Save, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Trash2, Eye, GitBranch, Loader2, Save, Sparkles, Image as ImageIcon, Upload } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db, auth } from '@/lib/firebase';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, auth, app } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { Separator } from '@/components/ui/separator';
@@ -21,6 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { generateQuizQuestions, type QuizGeneratorInput } from '@/ai/flows/quiz-generator';
 import NextImage from 'next/image';
 import { generateAndUploadBossImage } from '@/ai/flows/image-generator';
+import { v4 as uuidv4 } from 'uuid';
 
 const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
@@ -45,6 +47,10 @@ export default function EditBossBattlePage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Image Upload State
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   // AI Question Generation State
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
@@ -108,6 +114,31 @@ export default function EditBossBattlePage() {
 
     fetchBattleData();
   }, [battleId, router, toast, teacher]);
+  
+  const handleUploadImage = async () => {
+    if (!imageFile || !teacher) {
+        toast({ variant: 'destructive', title: 'No File Selected', description: 'Please choose an image file to upload.' });
+        return;
+    }
+    setIsUploading(true);
+    try {
+        const storage = getStorage(app);
+        const imageId = uuidv4();
+        const storageRef = ref(storage, `boss-images/${imageId}`);
+        
+        await uploadBytes(storageRef, imageFile);
+        const downloadUrl = await getDownloadURL(storageRef);
+
+        setBossImageUrl(downloadUrl);
+        toast({ title: 'Upload Successful!', description: 'The boss image URL has been updated.' });
+    } catch (error) {
+        console.error("Error uploading image:", error);
+        toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload the image. Please check storage rules and try again.' });
+    } finally {
+        setIsUploading(false);
+        setImageFile(null);
+    }
+  };
 
   const handleGenerateQuestions = async () => {
     if (!aiSubject || !aiGradeLevel || !aiNumQuestions) {
@@ -317,7 +348,17 @@ export default function EditBossBattlePage() {
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="boss-image" className="text-base">Boss Image URL</Label>
-                    <Input id="boss-image" placeholder="https://example.com/boss.png or generate one below" value={bossImageUrl} onChange={(e) => setBossImageUrl(e.target.value)} disabled={isSaving} />
+                    <Input id="boss-image" placeholder="https://example.com/boss.png or upload/generate one below" value={bossImageUrl} onChange={(e) => setBossImageUrl(e.target.value)} disabled={isSaving} />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="image-upload" className="text-base">Or Upload Your Own Image</Label>
+                    <div className="flex items-center gap-2">
+                      <Input id="image-upload" type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files ? e.target.files[0] : null)} className="flex-grow" disabled={isUploading}/>
+                      <Button onClick={handleUploadImage} disabled={!imageFile || isUploading}>
+                        {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                         Upload
+                      </Button>
+                    </div>
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="video-url" className="text-base">Intro Video URL (YouTube, etc.)</Label>
