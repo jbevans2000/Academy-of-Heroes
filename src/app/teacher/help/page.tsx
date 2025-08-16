@@ -66,18 +66,20 @@ export default function TeacherHelpPage() {
                 return (
                     <>
                         <AlertDialogTitle className="text-2xl">Getting Students Signed Up</AlertDialogTitle>
-                        <AlertDialogDescription className="text-base text-foreground space-y-4">
-                            <p>Here is the simple, 3-step process for students to create their accounts and join your class:</p>
-                            <ol className="list-decimal list-inside space-y-2">
-                                <li><strong>Navigate Home:</strong> Direct students to the application's main home page.</li>
-                                <li><strong>Create a Hero:</strong> They should click the "Create New Hero & Join a Class" button.</li>
-                                <li><strong>Enter Class Code:</strong> On the registration page, the most important step is to enter your unique Class Code below.</li>
-                            </ol>
-                            <div className="text-center p-4 bg-primary/10 rounded-lg">
-                                <p className="font-semibold">Your Unique Class Code:</p>
-                                <div className="flex items-center justify-center gap-2 mt-1">
-                                    <strong className="text-3xl font-mono tracking-widest text-primary">{teacherData?.classCode || 'Loading...'}</strong>
-                                    <Button size="icon" variant="ghost" onClick={copyClassCode}><Copy className="w-5 h-5" /></Button>
+                        <AlertDialogDescription asChild>
+                            <div className="text-base text-foreground space-y-4">
+                                <p>Here is the simple, 3-step process for students to create their accounts and join your class:</p>
+                                <ol className="list-decimal list-inside space-y-2">
+                                    <li><strong>Navigate Home:</strong> Direct students to the application's main home page.</li>
+                                    <li><strong>Create a Hero:</strong> They should click the "Create New Hero & Join a Class" button.</li>
+                                    <li><strong>Enter Class Code:</strong> On the registration page, the most important step is to enter your unique Class Code below.</li>
+                                </ol>
+                                <div className="text-center p-4 bg-primary/10 rounded-lg">
+                                    <p className="font-semibold">Your Unique Class Code:</p>
+                                    <div className="flex items-center justify-center gap-2 mt-1">
+                                        <strong className="text-3xl font-mono tracking-widest text-primary">{teacherData?.classCode || 'Loading...'}</strong>
+                                        <Button size="icon" variant="ghost" onClick={copyClassCode}><Copy className="w-5 h-5" /></Button>
+                                    </div>
                                 </div>
                             </div>
                         </AlertDialogDescription>
