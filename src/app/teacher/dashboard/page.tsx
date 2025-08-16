@@ -33,9 +33,18 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, UserX, Swords, PlusCircle, BookOpen, Wrench } from 'lucide-react';
+import { Loader2, Star, Coins, UserX, Swords, PlusCircle, BookOpen, Wrench, Dices } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
+import { StudentCard } from '@/components/teacher/student-card';
+
+const selectionCaptions = [
+    "The King has chosen you for a quest!",
+    "The Oracle's gaze falls upon you!",
+    "A mysterious scroll has appeared with your name on it!",
+    "Destiny calls! Step forward, hero!",
+    "The Council of Elders summons you!",
+];
 
 export default function TeacherDashboardPage() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -48,6 +57,11 @@ export default function TeacherDashboardPage() {
   const [isXpDialogOpen, setIsXpDialogOpen] = useState(false);
   const [isGoldDialogOpen, setIsGoldDialogOpen] = useState(false);
   const router = useRouter();
+
+  // State for the random student picker
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [pickedStudent, setPickedStudent] = useState<Student | null>(null);
+  const [pickedCaption, setPickedCaption] = useState('');
 
   // State for controlling the delete dialogs
   const [isDeleteStep1Open, setIsDeleteStep1Open] = useState(false);
@@ -278,6 +292,17 @@ export default function TeacherDashboardPage() {
       }
   };
   
+  const handleRandomStudentPick = () => {
+      if (students.length === 0) return;
+      const randomIndex = Math.floor(Math.random() * students.length);
+      const randomStudent = students[randomIndex];
+      const randomCaptionIndex = Math.floor(Math.random() * selectionCaptions.length);
+      
+      setPickedStudent(randomStudent);
+      setPickedCaption(selectionCaptions[randomCaptionIndex]);
+      setIsPickerOpen(true);
+  };
+  
   if (isLoading) {
     return (
        <div className="flex min-h-screen w-full flex-col">
@@ -447,6 +472,37 @@ export default function TeacherDashboardPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+            
+            {/* Random Student Picker */}
+            <Dialog open={isPickerOpen} onOpenChange={setIsPickerOpen}>
+                <DialogTrigger asChild>
+                     <Button 
+                        variant="outline" 
+                        onClick={handleRandomStudentPick}
+                        disabled={students.length === 0}
+                    >
+                        <Dices className="mr-2 h-4 w-4" /> Randomly Select Student
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-center text-2xl font-headline text-primary">{pickedCaption}</DialogTitle>
+                    </DialogHeader>
+                    {pickedStudent && (
+                        <div className="scale-75">
+                         <StudentCard 
+                            student={pickedStudent}
+                            isSelected={false}
+                            onSelect={() => {}} // No-op for the dialog view
+                            setStudents={setStudents}
+                        />
+                        </div>
+                    )}
+                     <DialogFooter>
+                        <Button onClick={handleRandomStudentPick}>Pick Another Student</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
         </div>
         <StudentList 

@@ -23,13 +23,6 @@ const tools = [
         disabled: true,
     },
     {
-        title: 'Random Student Picker',
-        description: 'A fantasy-themed way to randomly select a student.',
-        icon: <Users className="h-10 w-10 text-primary" />,
-        path: '/teacher/tools/random-student',
-        disabled: true,
-    },
-    {
         title: 'Random Activity Generator',
         description: 'Get fun, fantasy-themed activities for the class to do in real time.',
         icon: <Dices className="h-10 w-10 text-primary" />,
