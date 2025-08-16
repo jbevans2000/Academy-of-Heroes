@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, User, KeyRound, School, Briefcase, Phone } from 'lucide-react';
+import { Loader2, User, KeyRound, School, Briefcase, Phone, Check, Star } from 'lucide-react';
 import Link from 'next/link';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
@@ -46,6 +46,10 @@ export default function TeacherRegisterPage() {
         toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill in your name, email, and password.' });
         return;
     }
+     if (step === 2 && (!schoolName || !className)) {
+        toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill in your school and class name.' });
+        return;
+    }
     setStep(s => s + 1);
   }
 
@@ -54,10 +58,7 @@ export default function TeacherRegisterPage() {
   }
 
   const handleSubmit = async () => {
-     if (!schoolName || !className) {
-        toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill in your school and class name.' });
-        return;
-    }
+    // This is where final submission happens. For now, we skip actual payment.
     setIsLoading(true);
     
     try {
@@ -130,15 +131,19 @@ export default function TeacherRegisterPage() {
             <div className="flex justify-center items-center mb-6">
                 <div className="flex items-center">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>1</div>
-                    <div className={`w-24 h-1 ${step > 1 ? 'bg-primary' : 'bg-muted'}`}></div>
+                    <div className={`w-16 h-1 ${step > 1 ? 'bg-primary' : 'bg-muted'}`}></div>
                 </div>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>2</div>
+                 <div className="flex items-center">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>2</div>
+                    <div className={`w-16 h-1 ${step > 2 ? 'bg-primary' : 'bg-muted'}`}></div>
+                </div>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 3 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>3</div>
             </div>
 
             {/* Step 1: Account Info */}
             {step === 1 && (
                 <div className="space-y-4 animate-in fade-in-50">
-                    <h3 className="text-xl font-semibold text-center">Account Information</h3>
+                    <h3 className="text-xl font-semibold text-center">Step 1: Account Information</h3>
                     <div className="space-y-2">
                         <Label htmlFor="name"><User className="inline-block mr-2" />Full Name</Label>
                         <Input id="name" placeholder="e.g., Jane Doe" value={name} onChange={(e) => setName(e.target.value)} />
@@ -161,7 +166,7 @@ export default function TeacherRegisterPage() {
             {/* Step 2: School Info */}
             {step === 2 && (
                 <div className="space-y-4 animate-in fade-in-50">
-                    <h3 className="text-xl font-semibold text-center">Class Information</h3>
+                    <h3 className="text-xl font-semibold text-center">Step 2: Class Information</h3>
                     <div className="space-y-2">
                         <Label htmlFor="school-name"><School className="inline-block mr-2" />School Name</Label>
                         <Input id="school-name" placeholder="e.g., Luminaria High" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} />
@@ -172,18 +177,65 @@ export default function TeacherRegisterPage() {
                     </div>
                 </div>
             )}
+
+             {/* Step 3: Billing Placeholder */}
+            {step === 3 && (
+                <div className="space-y-4 animate-in fade-in-50">
+                    <h3 className="text-xl font-semibold text-center">Step 3: Choose Your Plan</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Free Plan */}
+                        <Card className="p-4 flex flex-col text-center">
+                             <CardHeader>
+                                <CardTitle>Free Plan</CardTitle>
+                                <CardDescription>$0 / month</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex-grow">
+                                <ul className="space-y-2 text-sm text-muted-foreground text-left">
+                                    <li className="flex items-center"><Check className="w-4 h-4 mr-2 text-green-500" />Up to 30 students</li>
+                                    <li className="flex items-center"><Check className="w-4 h-4 mr-2 text-green-500" />Basic questing</li>
+                                    <li className="flex items-center"><Check className="w-4 h-4 mr-2 text-green-500" />Basic tools</li>
+                                </ul>
+                            </CardContent>
+                            <CardFooter>
+                                <Button variant="outline" className="w-full" onClick={handleSubmit} disabled={isLoading}>
+                                     {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Select Free Plan
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                         {/* Premium Plan */}
+                        <Card className="p-4 flex flex-col text-center border-primary border-2 relative">
+                            <div className="absolute top-0 -translate-y-1/2 w-full">
+                                <div className="mx-auto bg-primary text-primary-foreground text-sm font-bold px-3 py-1 rounded-full w-fit">Most Popular</div>
+                            </div>
+                             <CardHeader>
+                                <CardTitle>Premium Plan</CardTitle>
+                                <CardDescription>$12 / month</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex-grow">
+                                <ul className="space-y-2 text-sm text-muted-foreground text-left">
+                                    <li className="flex items-center"><Star className="w-4 h-4 mr-2 text-yellow-500" />Unlimited students</li>
+                                    <li className="flex items-center"><Star className="w-4 h-4 mr-2 text-yellow-500" />Advanced customization</li>
+                                    <li className="flex items-center"><Star className="w-4 h-4 mr-2 text-yellow-500" />All classroom tools</li>
+                                    <li className="flex items-center"><Star className="w-4 h-4 mr-2 text-yellow-500" />Priority support</li>
+                                </ul>
+                            </CardContent>
+                             <CardFooter>
+                                <Button className="w-full" onClick={handleSubmit} disabled={isLoading}>
+                                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Select Premium Plan
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    </div>
+                </div>
+            )}
             
         </CardContent>
         <CardFooter className="flex justify-between">
             {step > 1 ? (
                  <Button variant="outline" onClick={handlePrevStep} disabled={isLoading}>Previous</Button>
             ) : <div />}
-            {step < 2 ? (
-                <Button onClick={handleNextStep}>Next</Button>
-            ) : (
-                <Button onClick={handleSubmit} disabled={isLoading}>
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Complete Registration'}
-                </Button>
+            {step < 3 && (
+                <Button onClick={handleNextStep} disabled={isLoading}>Next</Button>
             )}
         </CardFooter>
         <div className="text-center text-sm pb-4 text-muted-foreground">
