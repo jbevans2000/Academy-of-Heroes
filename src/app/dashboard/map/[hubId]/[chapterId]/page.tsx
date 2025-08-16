@@ -230,11 +230,6 @@ export default function ChapterPage() {
         }
     }
     
-    // Simple way to split content into paragraphs
-    const storyParagraphs = chapter.storyContent?.split('\\n').map((p, i) => <p key={i} className="px-4">{p}</p>);
-    const storyAdditionalParagraphs = chapter.storyAdditionalContent?.split('\\n').map((p, i) => <p key={i} className="px-4">{p}</p>);
-    const lessonParagraphs = chapter.lessonContent?.split('\\n').map((p, i) => <p key={i} className="px-4">{p}</p>);
-    const lessonAdditionalParagraphs = chapter.lessonAdditionalContent?.split('\\n').map((p, i) => <p key={i} className="px-4">{p}</p>);
     const storyVideoSrc = chapter.videoUrl ? getYouTubeEmbedUrl(chapter.videoUrl) : '';
     const lessonVideoSrc = chapter.lessonVideoUrl ? getYouTubeEmbedUrl(chapter.lessonVideoUrl) : '';
 
@@ -269,8 +264,8 @@ export default function ChapterPage() {
                                         priority
                                     />
                                 </div>}
-                                {chapter.storyContent && <><Separator />{storyParagraphs}</>}
-                                {chapter.storyAdditionalContent && <><Separator />{storyAdditionalParagraphs}</>}
+                                {chapter.storyContent && <><Separator /><div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: chapter.storyContent }} /></>}
+                                {chapter.storyAdditionalContent && <><Separator /><div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: chapter.storyAdditionalContent }} /></>}
                                 {storyVideoSrc && <><Separator /><div className="flex justify-center">
                                     <iframe 
                                         width="800" 
@@ -319,8 +314,8 @@ export default function ChapterPage() {
                                         priority
                                     />
                                 </div>}
-                                {chapter.lessonContent && <><Separator />{lessonParagraphs}</>}
-                                {chapter.lessonAdditionalContent && <><Separator />{lessonAdditionalParagraphs}</>}
+                                {chapter.lessonContent && <><Separator /><div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: chapter.lessonContent }} /></>}
+                                {chapter.lessonAdditionalContent && <><Separator /><div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: chapter.lessonAdditionalContent }} /></>}
                                 {lessonVideoSrc && <><Separator /><div className="flex justify-center">
                                     <iframe 
                                         width="800" 

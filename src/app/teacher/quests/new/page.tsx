@@ -15,9 +15,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { QuestHub } from '@/lib/quests';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import RichTextEditor from '@/components/teacher/rich-text-editor';
+
 
 export default function NewQuestPage() {
   const router = useRouter();
@@ -295,7 +296,7 @@ export default function NewQuestPage() {
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="story-content">Story Content</Label>
-                        <Textarea id="story-content" placeholder="Write the story for this chapter... Use \n for new paragraphs." value={storyContent} onChange={e => setStoryContent(e.target.value)} disabled={isSaving} rows={8}/>
+                        <RichTextEditor value={storyContent} onChange={setStoryContent} />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="main-image-url">Main Image URL</Label>
@@ -307,7 +308,7 @@ export default function NewQuestPage() {
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="story-additional-content">Additional Story Content</Label>
-                        <Textarea id="story-additional-content" placeholder="Add any extra notes, quotes, or content for the story tab..." value={storyAdditionalContent} onChange={e => setStoryAdditionalContent(e.target.value)} disabled={isSaving} rows={4}/>
+                        <RichTextEditor value={storyAdditionalContent} onChange={setStoryAdditionalContent} />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -349,7 +350,7 @@ export default function NewQuestPage() {
                   <TabsContent value="lesson" className="mt-6 space-y-4">
                      <div className="space-y-2">
                         <Label htmlFor="lesson-content">Lesson Content</Label>
-                        <Textarea id="lesson-content" placeholder="Write the educational content for this chapter... Use \n for new paragraphs." value={lessonContent} onChange={e => setLessonContent(e.target.value)} disabled={isSaving} rows={8}/>
+                        <RichTextEditor value={lessonContent} onChange={setLessonContent} />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="lesson-main-image-url">Main Lesson Image URL</Label>
@@ -361,7 +362,7 @@ export default function NewQuestPage() {
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="lesson-additional-content">Additional Lesson Content</Label>
-                        <Textarea id="lesson-additional-content" placeholder="Add any extra notes, quotes, or content for the lesson tab..." value={lessonAdditionalContent} onChange={e => setLessonAdditionalContent(e.target.value)} disabled={isSaving} rows={4}/>
+                        <RichTextEditor value={lessonAdditionalContent} onChange={setLessonAdditionalContent} />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">

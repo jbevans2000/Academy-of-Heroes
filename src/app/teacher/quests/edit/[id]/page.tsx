@@ -15,9 +15,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { QuestHub, Chapter } from '@/lib/quests';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import RichTextEditor from '@/components/teacher/rich-text-editor';
 
 export default function EditQuestPage() {
   const router = useRouter();
@@ -213,7 +213,7 @@ export default function EditQuestPage() {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="story-content">Story Content</Label>
-                            <Textarea id="story-content" placeholder="Write the story for this chapter... Use \n for new paragraphs." value={chapter.storyContent || ''} onChange={e => handleFieldChange('storyContent', e.target.value)} disabled={isSaving} rows={8}/>
+                            <RichTextEditor value={chapter.storyContent || ''} onChange={value => handleFieldChange('storyContent', value)} />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="main-image-url">Main Image URL</Label>
@@ -225,7 +225,7 @@ export default function EditQuestPage() {
                         </div>
                          <div className="space-y-2">
                             <Label htmlFor="story-additional-content">Additional Story Content</Label>
-                            <Textarea id="story-additional-content" placeholder="Add any extra notes, quotes, or content for the story tab..." value={chapter.storyAdditionalContent || ''} onChange={e => handleFieldChange('storyAdditionalContent', e.target.value)} disabled={isSaving} rows={4}/>
+                             <RichTextEditor value={chapter.storyAdditionalContent || ''} onChange={value => handleFieldChange('storyAdditionalContent', value)} />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
@@ -267,7 +267,7 @@ export default function EditQuestPage() {
                      <TabsContent value="lesson" className="mt-6 space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="lesson-content">Lesson Content</Label>
-                            <Textarea id="lesson-content" placeholder="Write the educational content for this chapter... Use \n for new paragraphs." value={chapter.lessonContent || ''} onChange={e => handleFieldChange('lessonContent', e.target.value)} disabled={isSaving} rows={8}/>
+                            <RichTextEditor value={chapter.lessonContent || ''} onChange={value => handleFieldChange('lessonContent', value)} />
                         </div>
                          <div className="space-y-2">
                             <Label htmlFor="lesson-main-image-url">Main Lesson Image URL</Label>
@@ -279,7 +279,7 @@ export default function EditQuestPage() {
                         </div>
                          <div className="space-y-2">
                             <Label htmlFor="lesson-additional-content">Additional Lesson Content</Label>
-                            <Textarea id="lesson-additional-content" placeholder="Add any extra notes, quotes, or content for the lesson tab..." value={chapter.lessonAdditionalContent || ''} onChange={e => handleFieldChange('lessonAdditionalContent', e.target.value)} disabled={isSaving} rows={4}/>
+                            <RichTextEditor value={chapter.lessonAdditionalContent || ''} onChange={value => handleFieldChange('lessonAdditionalContent', value)} />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
