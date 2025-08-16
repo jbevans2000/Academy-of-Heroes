@@ -2,10 +2,22 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import React from 'react';
 import 'react-quill/dist/quill.snow.css';
+import type { ReactQuillProps } from 'react-quill';
 
-// Dynamically import ReactQuill to avoid SSR issues
-const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
+// Dynamically import ReactQuill to avoid SSR issues, and wrap it in a forwardRef
+const ReactQuill = dynamic(
+  async () => {
+    const { default: RQ } = await import('react-quill');
+    // eslint-disable-next-line react/display-name
+    return ({ forwardedRef, ...props }: ReactQuillProps & { forwardedRef: React.Ref<any> }) => (
+      <RQ ref={forwardedRef} {...props} />
+    );
+  },
+  { ssr: false }
+);
+
 
 interface RichTextEditorProps {
   value: string;
@@ -29,10 +41,11 @@ const formats = [
   'link', 'image'
 ];
 
-export default function RichTextEditor({ value, onChange }: RichTextEditorProps) {
+function RichTextEditor({ value, onChange }: RichTextEditorProps, ref: React.Ref<any>) {
   return (
     <div className="bg-background">
         <ReactQuill
+        forwardedRef={ref}
         theme="snow"
         value={value}
         onChange={onChange}
@@ -42,3 +55,5 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
     </div>
   );
 }
+
+export default React.forwardRef(RichTextEditor);

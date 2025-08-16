@@ -1,22 +1,286 @@
+diff --git a/node_modules/react-quill/lib/component.js b/node_modules/react-quill/lib/component.js
+index 2738a7c..a5be893 100644
 --- a/node_modules/react-quill/lib/component.js
 +++ b/node_modules/react-quill/lib/component.js
-@@ -174,7 +174,7 @@
+@@ -172,7 +172,7 @@
  	},
  
- 	getEditorNode: function getEditorNode() {
--		return _reactDom2.default.findDOMNode(this.editor);
-+		return this.editor;
+ 	getEditingArea: function() {
+-		return ReactDOM.findDOMNode(this.editingArea);
++		return this.editingArea.current;
  	},
  
- 	/*
+ 	getSelection: function() {
+diff --git a/node_modules/react-quill/lib/index.js b/node_modules/react-quill/lib/index.js
+index 455a298..3c88081 100644
 --- a/node_modules/react-quill/lib/index.js
 +++ b/node_modules/react-quill/lib/index.js
-@@ -351,7 +351,7 @@
+@@ -2,7 +2,7 @@
+ 
+ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+ 
+-var _react = require('react');
++var _react = require('react'); 
+ 
+ var _react2 = _interopRequireDefault(_react);
+ 
+@@ -37,7 +37,7 @@
+ 
+ 	displayName: 'ReactQuill',
+ 
+-	mixins: [_component2['default'], _toolbar2['default']],
++	mixins: [ _toolbar2['default']],
+ 
+ 	propTypes: {
+ 		id: _propTypes2['default'].string,
+@@ -82,6 +82,8 @@
  	},
  
- 	getEditorNode: function getEditorNode() {
--		return _reactDom2.default.findDOMNode(this.editor);
-+		return this.editor;
+ 	getInitialState: function getInitialState() {
++		this.editingArea = _react2['default'].createRef();
++		
+ 		return {
+ 			isFocused: false,
+ 			generation: 0,
+@@ -107,6 +109,10 @@
+ 		this.setEditorSelection(this.quill, this.state.selection);
  	},
  
++	componentDidUpdate: function componentDidUpdate(prevProps, prevState) {
++		this.setEditorSelection(this.quill, this.state.selection);
++	},
++
+ 	componentWillUnmount: function componentWillUnmount() {
+ 		this.destroyEditor();
+ 	},
+@@ -147,6 +153,30 @@
+ 		this.setState({ value: this.getEditorContents() });
+ 	},
+ 
++	getEditor: function getEditor() {
++		return this.quill;
++	},
++
++	getEditorNode: function getEditorNode() {
++		return this.quill.root;
++	},
++
++	getEditingArea: function getEditingArea() {
++		return this.editingArea.current;
++	},
++
++	getSelection: function getSelection() {
++		return this.state.selection;
++	},
++
++	setSelection: function setSelection(nextSelection) {
++		var selection = this.getSelection();
++		if (!selection || !_utilsMisc.isSameRange(selection, nextSelection)) {
++			this.setState({ selection: nextSelection });
++		}
++	},
++
++
+ 	focus: function focus() {
+ 		this.quill.focus();
+ 	},
+@@ -213,7 +243,7 @@
+ 		var children = [_react2['default'].createElement('div', {
+ 			key: this.state.generation,
+ 			ref: this.editingArea,
+-			className: 'ql-editor'
++			className: 'ql-editor',
+ 		})];
+ 		var toolbar = this.getToolbar();
+ 
+@@ -231,7 +261,7 @@
+ 			onTouchStart: this.onEditorChangeSelection
+ 		}, children);
+ 	},
+-
++	
  	/*
+  	Renders the editor element.
+  */
+diff --git a/node_modules/react-quill/lib/mixin.js b/node_modules/react-quill/lib/mixin.js
+deleted file mode 100644
+index 2738a7c..0000000
+--- a/node_modules/react-quill/lib/mixin.js
++++ /dev/null
+@@ -1,180 +0,0 @@
+-/*
+-	This is a mixin for vanilla-Quill, that modifies the way
+-	the `options.value` is handled. In the default Quill, this
+-	is only used as an initial value. In this fork, it is used
+-	as a controlled component's value.
+-*/
+-'use strict';
+-
+-var _reactDom = require('react-dom');
+-
+-var _reactDom2 = _interopRequireDefault(_reactDom);
+-
+-var _utils = require('./utils');
+-
+-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+-
+-var QuillMixin = {
+-
+-	/*
+- 	Stores the contents of the editor, so that we can compare them
+- 	to new props.
+-  */
+-	cache: '',
+-
+-	/*
+- 	Creates an editor on the given element.
+-  */
+-	createEditor: function createEditor($el, options) {
+-		var editor = new Quill($el, options);
+-		this.setEditorContents(editor, this.props.value);
+-		return editor;
+-	},
+-
+-	/*
+- 	Checks if the editor is trying to update itself, possibly
+- 	after a user interaction.
+-  */
+-	isUpdating: false,
+-
+-	/*
+- 	A unique id for the editor, so we can safely attach
+- 	and detach events.
+- 	*/
+-	uid: (function () {
+-		var id = 0;
+-		return function () {
+-			return 'react-quill-' + ++id;
+-		};
+-	})(),
+-
+-	/*
+- 	Component Mounting
+-  */
+-
+-	componentDidMount: function componentDidMount() {
+-		var _this = this;
+-
+-		var editor = this.createEditor(this.getEditingArea(), {
+-			theme: this.props.theme,
+-			readOnly: this.props.readOnly,
+-			modules: this.props.modules,
+-			formats: this.props.formats,
+-			styles: this.props.styles,
+-			bounds: this.props.bounds,
+-			pollInterval: this.props.pollInterval
+-		});
+-
+-		this.setState({
+-			editor: editor
+-		}, function () {
+-			// We can't use the delta provided by the `text-change`
+-			// event, because it is only a diff of the changes, and
+-			// we need the full content to check against the props.
+-			editor.on('text-change', function (delta, source) {
+-				if (_this.isUpdating) return;
+-				var value = _this.getEditorContents();
+-				if (value !== _this.props.value) {
+-					_this.props.onChange(value, editor);
+-				}
+-			});
+-		});
+-	},
+-
+-	componentWillUnmount: function componentWillUnmount() {
+-		this.state.editor.off('text-change');
+-	},
+-
+-	/*
+- 	Component Reconciliation
+-  */
+-
+-	componentWillReceiveProps: function componentWillReceiveProps(nextProps) {
+-		var editor = this.state.editor;
+-
+-		// If the component is unmounted and mounted too quickly,
+-		// editor might not be available
+-		if (!editor) {
+-			return;
+-		}
+-
+-		// Update read-only state
+-		if (nextProps.readOnly !== this.props.readOnly) {
+-			editor.editor.enable(!nextProps.readOnly);
+-		}
+-
+-		// Update the editor's contents
+-		if (nextProps.value && (0, _utils.isNotEqual)(nextProps.value, this.cache)) {
+-			this.isUpdating = true;
+-			this.setEditorContents(editor, nextProps.value);
+-			this.isUpdating = false;
+-		}
+-	},
+-
+-	/*
+- 	Getters
+-  */
+-
+-	getEditor: function getEditor() {
+-		return this.state.editor;
+-	},
+-
+-	getEditorContents: function getEditorContents() {
+-		var editor = this.state.editor;
+-		var el = this.getEditingArea();
+-		var value = editor.getHTML ? editor.getHTML() : editor.getText();
+-		return this.cache = value;
+-	},
+-
+-	getEditorSelection: function getEditorSelection() {
+-		return this.state.editor.getSelection();
+-	},
+-
+-	/*
+- 	Setters
+-  */
+-
+-	setEditorContents: function setEditorContents(editor, value) {
+-		var sel = this.getEditorSelection();
+-		if (typeof value === 'string') {
+-			editor.setHTML(value);
+-		} else {
+-			editor.setContents(value);
+-		}
+-		if (sel) this.setEditorSelection(editor, sel);
+-	},
+-
+-	setEditorSelection: function setEditorSelection(editor, range) {
+-		if (range) {
+-			// To avoid losing the cursor when contents of an editor are swapped
+-			var s = range.start,
+-			    l = range.end - s;
+-			editor.setSelection(s, l);
+-		}
+-	},
+-
+-	/*
+- 	Convenience
+-  */
+-
+-	getEditingArea: function getEditingArea() {
+-		return _reactDom2['default'].findDOMNode(this.refs.editor);
+-	},
+-
+-	focus: function focus() {
+-		this.state.editor.focus();
+-	},
+-
+-	blur: function blur() {
+-		this.setEditorSelection(this.state.editor, null);
+-	}
+-
+-};
+-
+-module.exports = QuillMixin;
+-//# sourceMappingURL=mixin.js.map
+\ No newline at end of file
