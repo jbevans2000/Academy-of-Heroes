@@ -88,7 +88,7 @@ export default function LoginPage() {
                  <Link href="/teacher/register" passHref>
                     <Button size="lg" variant="secondary" className="w-full text-lg py-6">
                         <UserCheck className="mr-3 h-6 w-6" />
-                        New Teacher Registration
+                        Teacher Registration
                     </Button>
                 </Link>
             </div>
@@ -97,7 +97,7 @@ export default function LoginPage() {
         </Card>
          <div className="text-center mt-4">
             <Link href="/" passHref>
-                <Button variant="outline" className="bg-black/20">
+                <Button variant="outline" className="bg-black/20 text-white hover:text-white hover:bg-black/40">
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back to Home
                 </Button>
