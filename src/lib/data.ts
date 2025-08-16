@@ -15,6 +15,8 @@ export type Student = {
     level: number;
     hp: number;
     mp: number;
+    questProgress: { [hubId: string]: number }; // e.g., { hubId1: 2, hubId2: 0 } means chapter 2 is last completed in hub1
+    hubsCompleted: number; // The order number of the last hub completed
 }
 
 export const classData = {

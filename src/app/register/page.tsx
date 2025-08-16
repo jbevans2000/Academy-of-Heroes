@@ -71,6 +71,8 @@ export default function RegisterPage() {
         level: 1,
         hp: baseStats.hp,
         mp: baseStats.mp,
+        questProgress: {},
+        hubsCompleted: 0,
       });
       
       toast({

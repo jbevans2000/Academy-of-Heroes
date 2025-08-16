@@ -7,7 +7,7 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
-import { doc, setDoc, addDoc, collection, getDocs, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, addDoc, collection, getDocs, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
@@ -32,6 +32,7 @@ export default function NewQuestPage() {
   const [selectedHubId, setSelectedHubId] = useState('');
   const [newHubName, setNewHubName] = useState('');
   const [newHubMapUrl, setNewHubMapUrl] = useState('');
+  const [newHubOrder, setNewHubOrder] = useState<number>(1);
   const [hubCoordinates, setHubCoordinates] = useState({ x: 50, y: 50 });
 
   // State for the new Chapter creator
@@ -57,9 +58,11 @@ export default function NewQuestPage() {
     const fetchHubs = async () => {
         setIsLoading(true);
         try {
-            const hubsSnapshot = await getDocs(collection(db, 'questHubs'));
+            const hubsQuery = query(collection(db, 'questHubs'), orderBy('hubOrder'));
+            const hubsSnapshot = await getDocs(hubsQuery);
             const hubsData = hubsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
             setHubs(hubsData);
+            setNewHubOrder(hubsData.length + 1); // Default next hub order
         } catch (error) {
             console.error("Error fetching hubs: ", error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch quest hubs.' });
@@ -102,8 +105,8 @@ export default function NewQuestPage() {
         toast({ variant: 'destructive', title: 'Validation Error', description: 'You must select or create a Hub.' });
         return false;
     }
-    if (selectedHubId === 'new' && (!newHubName || !newHubMapUrl)) {
-        toast({ variant: 'destructive', title: 'Validation Error', description: 'New Hub Name and Map URL are required.' });
+    if (selectedHubId === 'new' && (!newHubName || !newHubMapUrl || !newHubOrder)) {
+        toast({ variant: 'destructive', title: 'Validation Error', description: 'New Hub Name, Map URL, and Order are required.' });
         return false;
     }
      if (!chapterTitle || chapterNumber === '' || !storyContent || !lessonContent) {
@@ -127,6 +130,7 @@ export default function NewQuestPage() {
                 name: newHubName,
                 worldMapUrl: newHubMapUrl,
                 coordinates: hubCoordinates,
+                hubOrder: newHubOrder,
                 createdAt: serverTimestamp(),
             });
             finalHubId = newHubRef.id;
@@ -204,7 +208,7 @@ export default function NewQuestPage() {
                                 <SelectContent>
                                     <SelectItem value="new">-- Create a New Hub --</SelectItem>
                                     {hubs.map(hub => (
-                                        <SelectItem key={hub.id} value={hub.id}>{hub.name}</SelectItem>
+                                        <SelectItem key={hub.id} value={hub.id}>{hub.name} (Order: {hub.hubOrder})</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -219,6 +223,17 @@ export default function NewQuestPage() {
                                         placeholder="e.g., The Whispering Woods"
                                         value={newHubName}
                                         onChange={e => setNewHubName(e.target.value)}
+                                        disabled={isSaving}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="new-hub-order">Hub Order</Label>
+                                    <Input 
+                                        id="new-hub-order"
+                                        type="number"
+                                        placeholder="e.g., 2"
+                                        value={newHubOrder}
+                                        onChange={e => setNewHubOrder(Number(e.target.value))}
                                         disabled={isSaving}
                                     />
                                 </div>

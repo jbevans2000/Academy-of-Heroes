@@ -3,43 +3,136 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import { ArrowLeft, LayoutDashboard, Library } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, Library, CheckCircle, Loader2 } from "lucide-react";
 import Image from 'next/image';
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import type { Chapter } from '@/lib/quests';
+import { doc, getDoc, updateDoc, collection, getDocs, where, query } from 'firebase/firestore';
+import { db, auth } from '@/lib/firebase';
+import { onAuthStateChanged, type User } from 'firebase/auth';
+import type { Chapter, QuestHub } from '@/lib/quests';
+import type { Student } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ChapterPage() {
     const router = useRouter();
     const params = useParams();
     const searchParams = useSearchParams();
+    const { toast } = useToast();
     const { hubId, chapterId } = params;
 
     const [chapter, setChapter] = useState<Chapter | null>(null);
+    const [hub, setHub] = useState<QuestHub | null>(null);
+    const [student, setStudent] = useState<Student | null>(null);
+    const [user, setUser] = useState<User | null>(null);
+    const [totalChaptersInHub, setTotalChaptersInHub] = useState(0);
+
     const [isLoading, setIsLoading] = useState(true);
+    const [isCompleting, setIsCompleting] = useState(false);
 
     const fromTeacher = searchParams.get('from') === 'teacher';
 
-    useEffect(() => {
-        if (!chapterId) return;
-
-        const fetchChapter = async () => {
-            setIsLoading(true);
-            const docRef = doc(db, 'chapters', chapterId as string);
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-                setChapter(docSnap.data() as Chapter);
+     useEffect(() => {
+        const authUnsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            if (currentUser) {
+                setUser(currentUser);
+                const studentDocRef = doc(db, 'students', currentUser.uid);
+                const studentUnsubscribe = getDoc(studentDocRef).then(docSnap => {
+                    if (docSnap.exists()) {
+                        setStudent(docSnap.data() as Student);
+                    }
+                });
+            } else if (!fromTeacher) {
+                router.push('/');
             }
-            setIsLoading(false);
+        });
+        return () => authUnsubscribe();
+    }, [router, fromTeacher]);
+
+    useEffect(() => {
+        if (!chapterId || !hubId) return;
+
+        const fetchChapterData = async () => {
+            setIsLoading(true);
+            try {
+                const chapterDocRef = doc(db, 'chapters', chapterId as string);
+                const chapterSnap = await getDoc(chapterDocRef);
+                if (chapterSnap.exists()) {
+                    setChapter(chapterSnap.data() as Chapter);
+
+                    const hubDocRef = doc(db, 'questHubs', hubId as string);
+                    const hubSnap = await getDoc(hubDocRef);
+                    if (hubSnap.exists()) {
+                        setHub(hubSnap.data() as QuestHub);
+                    }
+                    
+                    const chaptersInHubQuery = query(collection(db, 'chapters'), where('hubId', '==', hubId as string));
+                    const chaptersSnapshot = await getDocs(chaptersInHubQuery);
+                    setTotalChaptersInHub(chaptersSnapshot.size);
+
+                } else {
+                    toast({ title: "Not Found", description: "This chapter could not be found.", variant: 'destructive' });
+                    router.push(`/dashboard/map/${hubId}`);
+                }
+            } catch (error) {
+                 toast({ title: "Error", description: "Failed to load chapter data.", variant: 'destructive' });
+            } finally {
+                setIsLoading(false);
+            }
         };
 
-        fetchChapter();
-    }, [chapterId]);
+        fetchChapterData();
+    }, [chapterId, hubId, router, toast]);
+
+    const handleMarkComplete = async () => {
+        if (!user || !student || !chapter || !hub) return;
+        setIsCompleting(true);
+
+        try {
+            const studentRef = doc(db, 'students', user.uid);
+            
+            const currentProgress = student.questProgress?.[hubId as string] || 0;
+            // Ensure we don't accidentally mark an old chapter complete and mess up progress
+            if (chapter.chapterNumber !== currentProgress + 1) {
+                toast({ title: "Sequence Error", description: "This chapter cannot be marked as complete yet." });
+                setIsCompleting(false);
+                return;
+            }
+
+            const newProgress = {
+                ...student.questProgress,
+                [hubId as string]: chapter.chapterNumber
+            };
+
+            const updates: Partial<Student> = {
+                questProgress: newProgress
+            };
+
+            // Check if this is the last chapter of the hub to update hubsCompleted
+            if (chapter.chapterNumber === totalChaptersInHub) {
+                if ((student.hubsCompleted || 0) < hub.hubOrder) {
+                    updates.hubsCompleted = hub.hubOrder;
+                }
+            }
+            
+            await updateDoc(studentRef, updates);
+            
+            // Update local student state to reflect immediate change
+            setStudent(prev => prev ? ({ ...prev, ...updates }) : null);
+
+            toast({ title: "Quest Complete!", description: `You have completed Chapter ${chapter.chapterNumber}: ${chapter.title}.` });
+
+        } catch (error) {
+            console.error("Error completing quest:", error);
+            toast({ title: "Error", description: "Could not save your progress.", variant: "destructive" });
+        } finally {
+            setIsCompleting(false);
+        }
+    };
+
 
     const getYouTubeEmbedUrl = (url: string) => {
         if (!url) return '';
@@ -56,7 +149,7 @@ export default function ChapterPage() {
         return `https://www.youtube.com/embed/${videoId}`;
     };
 
-    if (isLoading) {
+    if (isLoading || ( !student && !fromTeacher)) {
         return (
              <div className="flex flex-col items-center justify-start bg-background p-2 md:p-4">
                 <div className="w-full max-w-4xl space-y-4">
@@ -65,9 +158,32 @@ export default function ChapterPage() {
             </div>
         );
     }
+    
+    if (!chapter || !hub) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Chapter Not Found</CardTitle>
+                        <CardDescription>This chapter may have been moved or deleted.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button onClick={() => router.push('/dashboard/map')}>Return to World Map</Button>
+                    </CardContent>
+                </Card>
+            </div>
+        )
+    }
 
-    if (!chapter) {
-        return <p>Chapter not found.</p>;
+    if (!fromTeacher && student) {
+        const lastCompletedChapter = student.questProgress?.[hubId as string] || 0;
+        const lastCompletedHub = student.hubsCompleted || 0;
+        if(hub.hubOrder > lastCompletedHub + 1) {
+            return <p>You have not unlocked this area yet.</p>;
+        }
+        if (chapter.chapterNumber > lastCompletedChapter + 1) {
+            return <p>You have not unlocked this chapter yet.</p>;
+        }
     }
     
     // Simple way to split content into paragraphs
@@ -77,6 +193,10 @@ export default function ChapterPage() {
     const lessonAdditionalParagraphs = chapter.lessonAdditionalContent?.split('\\n').map((p, i) => <p key={i} className="px-4">{p}</p>);
     const storyVideoSrc = chapter.videoUrl ? getYouTubeEmbedUrl(chapter.videoUrl) : '';
     const lessonVideoSrc = chapter.lessonVideoUrl ? getYouTubeEmbedUrl(chapter.lessonVideoUrl) : '';
+
+    const lastCompletedChapterForHub = student?.questProgress?.[hubId as string] || 0;
+    const isCurrentChapter = chapter.chapterNumber === lastCompletedChapterForHub + 1;
+    const canComplete = !fromTeacher && isCurrentChapter;
 
 
     return (
@@ -193,35 +313,47 @@ export default function ChapterPage() {
                         </Tabs>
                     </CardContent>
                 </Card>
-                <div className="flex justify-center gap-4 py-4">
-                    <Button 
-                        onClick={() => router.push(`/dashboard/map/${hubId}`)} 
-                        variant="outline"
-                        size="lg"
-                    >
-                        <ArrowLeft className="mr-2 h-5 w-5" />
-                        Return to Quest Map
-                    </Button>
-                    {fromTeacher ? (
+                 <div className="flex justify-center flex-col items-center gap-4 py-4">
+                     {canComplete && (
                         <Button 
-                            onClick={() => router.push('/teacher/quests')} 
+                            size="lg" 
+                            onClick={handleMarkComplete}
+                            disabled={isCompleting}
+                        >
+                            {isCompleting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CheckCircle className="mr-2 h-5 w-5" />}
+                            Mark Quest as Complete
+                        </Button>
+                     )}
+                     <div className="flex justify-center gap-4">
+                        <Button 
+                            onClick={() => router.push(`/dashboard/map/${hubId}`)} 
                             variant="outline"
                             size="lg"
                         >
-                            <Library className="mr-2 h-5 w-5" />
-                            Return to Quests Page
+                            <ArrowLeft className="mr-2 h-5 w-5" />
+                            Return to Quest Map
                         </Button>
-                    ) : (
-                        <Button 
-                            onClick={() => router.push('/dashboard')} 
-                            variant="outline"
-                            size="lg"
-                        >
-                            <LayoutDashboard className="mr-2 h-5 w-5" />
-                            Return to Dashboard
-                        </Button>
-                    )}
-                </div>
+                        {fromTeacher ? (
+                            <Button 
+                                onClick={() => router.push('/teacher/quests')} 
+                                variant="outline"
+                                size="lg"
+                            >
+                                <Library className="mr-2 h-5 w-5" />
+                                Return to Quests Page
+                            </Button>
+                        ) : (
+                            <Button 
+                                onClick={() => router.push('/dashboard')} 
+                                variant="outline"
+                                size="lg"
+                            >
+                                <LayoutDashboard className="mr-2 h-5 w-5" />
+                                Return to Dashboard
+                            </Button>
+                        )}
+                     </div>
+                 </div>
             </div>
         </div>
     );

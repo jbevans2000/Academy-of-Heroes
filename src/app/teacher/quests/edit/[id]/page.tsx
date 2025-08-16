@@ -7,7 +7,7 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
-import { doc, getDoc, setDoc, collection, getDocs, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
@@ -39,7 +39,8 @@ export default function EditQuestPage() {
   useEffect(() => {
     const fetchHubs = async () => {
         try {
-            const hubsSnapshot = await getDocs(collection(db, 'questHubs'));
+            const hubsQuery = query(collection(db, 'questHubs'), orderBy('hubOrder'));
+            const hubsSnapshot = await getDocs(hubsQuery);
             const hubsData = hubsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
             setHubs(hubsData);
         } catch (error) {
@@ -185,7 +186,7 @@ export default function EditQuestPage() {
                         </SelectTrigger>
                         <SelectContent>
                             {hubs.map(hub => (
-                                <SelectItem key={hub.id} value={hub.id}>{hub.name}</SelectItem>
+                                <SelectItem key={hub.id} value={hub.id}>{hub.name} (Order: {hub.hubOrder})</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>

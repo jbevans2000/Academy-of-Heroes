@@ -8,32 +8,56 @@ import { useRouter } from 'next/navigation';
 import { LayoutDashboard } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { collection, getDocs, doc, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { db, auth } from '@/lib/firebase';
+import { onAuthStateChanged, type User } from 'firebase/auth';
 import type { QuestHub } from '@/lib/quests';
+import type { Student } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function WorldMapPage() {
     const router = useRouter();
     const [hubs, setHubs] = useState<QuestHub[]>([]);
+    const [student, setStudent] = useState<Student | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const worldMapImageUrl = "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FWorld%20Map.JPG?alt=media&token=2d88af7d-a54c-4f34-b4c7-1a7c04485b8b";
 
     useEffect(() => {
+        const authUnsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                const studentDocRef = doc(db, 'students', user.uid);
+                const studentUnsubscribe = onSnapshot(studentDocRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        setStudent(docSnap.data() as Student);
+                    } else {
+                        router.push('/');
+                    }
+                    setIsLoading(false);
+                });
+                return () => studentUnsubscribe();
+            } else {
+                router.push('/');
+                setIsLoading(false);
+            }
+        });
+        return () => authUnsubscribe();
+    }, [router]);
+
+    useEffect(() => {
         const fetchHubs = async () => {
-            setIsLoading(true);
             try {
-                const querySnapshot = await getDocs(collection(db, 'questHubs'));
+                const hubsQuery = query(collection(db, 'questHubs'), orderBy('hubOrder'));
+                const querySnapshot = await getDocs(hubsQuery);
                 const hubsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
                 setHubs(hubsData);
             } catch (error) {
                 console.error("Error fetching quest hubs:", error);
-            } finally {
-                setIsLoading(false);
             }
         };
         fetchHubs();
     }, []);
+
+    const unlockedHubs = student ? hubs.filter(hub => hub.hubOrder <= (student.hubsCompleted || 0) + 1) : [];
 
     return (
         <div className="flex flex-col items-center justify-start bg-background p-2">
@@ -55,7 +79,7 @@ export default function WorldMapPage() {
                                <Skeleton className="w-24 h-8" />
                             </div>
                          ) : (
-                            hubs.map(hub => (
+                            unlockedHubs.map(hub => (
                                 <Link key={hub.id} href={`/dashboard/map/${hub.id}`} passHref>
                                     <div
                                         className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer group"

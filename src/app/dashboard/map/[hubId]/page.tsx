@@ -8,9 +8,11 @@ import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, LayoutDashboard } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
-import { collection, getDocs, doc, getDoc, query, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { collection, getDocs, doc, getDoc, query, where, onSnapshot } from 'firebase/firestore';
+import { db, auth } from '@/lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 import type { QuestHub, Chapter } from '@/lib/quests';
+import type { Student } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function HubMapPage() {
@@ -20,7 +22,27 @@ export default function HubMapPage() {
 
     const [hub, setHub] = useState<QuestHub | null>(null);
     const [chapters, setChapters] = useState<Chapter[]>([]);
+    const [student, setStudent] = useState<Student | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const authUnsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                const studentDocRef = doc(db, 'students', user.uid);
+                const studentUnsubscribe = onSnapshot(studentDocRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        setStudent(docSnap.data() as Student);
+                    } else {
+                        router.push('/');
+                    }
+                });
+                return () => studentUnsubscribe();
+            } else {
+                router.push('/');
+            }
+        });
+        return () => authUnsubscribe();
+    }, [router]);
 
     useEffect(() => {
         if (!hubId) return;
@@ -35,10 +57,11 @@ export default function HubMapPage() {
                     setHub({ id: hubDocSnap.id, ...hubDocSnap.data() } as QuestHub);
                 }
 
-                // Fetch chapters for this hub
+                // Fetch chapters for this hub, ordered by chapter number
                 const chaptersQuery = query(collection(db, 'chapters'), where('hubId', '==', hubId));
                 const chaptersSnapshot = await getDocs(chaptersQuery);
-                const chaptersData = chaptersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
+                let chaptersData = chaptersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
+                chaptersData.sort((a, b) => a.chapterNumber - b.chapterNumber);
                 setChapters(chaptersData);
 
             } catch (error) {
@@ -51,8 +74,10 @@ export default function HubMapPage() {
         fetchHubData();
     }, [hubId]);
 
+    const lastCompletedChapter = student?.questProgress?.[hubId] || 0;
+    const unlockedChapters = chapters.filter(chapter => chapter.chapterNumber <= lastCompletedChapter + 1);
 
-    if (isLoading) {
+    if (isLoading || !student) {
         return (
              <div className="flex flex-col items-center justify-start bg-background p-2">
                 <Skeleton className="h-24 w-full max-w-7xl" />
@@ -83,7 +108,7 @@ export default function HubMapPage() {
                             className="object-contain"
                             priority
                          />
-                         {chapters.map(chapter => (
+                         {unlockedChapters.map(chapter => (
                              <Link key={chapter.id} href={`/dashboard/map/${hubId}/${chapter.id}`} passHref>
                                 <div
                                     className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
