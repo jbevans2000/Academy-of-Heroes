@@ -236,14 +236,14 @@ export default function RegisterPage() {
                 </div>
                 <div className="space-y-2">
                     <Label>Need help with a name?</Label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 gap-2">
                         <Button variant="outline" size="sm" onClick={() => handleGenerateName('Male')} disabled={isGeneratingName}>
                            {isGeneratingName ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Random Male'}
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => handleGenerateName('Female')} disabled={isGeneratingName}>
                            {isGeneratingName ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Random Female'}
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleGenerateName('Non-binary')} disabled={isGeneratingName} className="col-span-2 sm:col-span-1">
+                        <Button variant="outline" size="sm" onClick={() => handleGenerateName('Non-binary')} disabled={isGeneratingName} className="col-span-2">
                            {isGeneratingName ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Random Non-binary'}
                         </Button>
                     </div>
@@ -303,5 +303,3 @@ export default function RegisterPage() {
     </TooltipProvider>
   );
 }
-
-    
