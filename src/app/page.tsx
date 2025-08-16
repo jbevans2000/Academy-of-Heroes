@@ -29,7 +29,7 @@ export default function SplashPage() {
         
         {/* Banner Image */}
         <div className="w-full max-w-4xl px-4">
-            <div className="relative w-full" style={{ paddingBottom: '25%' /* 4:1 Aspect Ratio */ }}>
+            <div className="relative w-full rounded-lg overflow-hidden" style={{ paddingBottom: '25%' /* 4:1 Aspect Ratio */ }}>
                 <Image
                     src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Aug%2016%2C%202025%2C%2011_00_06%20AM.png?alt=media&token=aacf3b7b-649a-4c93-82ac-c736cc4b91eb"
                     alt="Academy of Heroes Banner"
