@@ -7,7 +7,8 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Dices, Loader2, BrainCircuit, PersonStanding } from 'lucide-react';
-import { generateActivity, type Activity, type ActivityInput } from '@/ai/flows/activity-generator';
+import { generateActivity } from '@/ai/flows/activity-generator';
+import type { Activity, ActivityInput } from '@/ai/flows/activity-generator';
 
 
 export default function RandomActivityPage() {

@@ -4,14 +4,12 @@
  * @fileOverview A flow for generating random, fantasy-themed classroom activities.
  *
  * - generateActivity - A function that calls the AI to generate an activity.
- * - Activity - The output type for the generated activity.
- * - ActivityInput - The input type for specifying mental or physical tasks.
  */
 import '@/ai/genkit'; // Ensure Genkit is initialized
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const ActivityInputSchema = z.object({
+const ActivityInputSchema = z.object({
   activityType: z.enum(['Mental', 'Physical']),
 });
 export type ActivityInput = z.infer<typeof ActivityInputSchema>;
