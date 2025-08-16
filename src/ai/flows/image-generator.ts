@@ -1,23 +1,26 @@
 
 'use server';
 /**
- * @fileOverview A flow for generating a boss image and uploading it to Firebase Storage.
+ * @fileOverview A flow for generating a boss image.
  * 
- * - generateAndUploadBossImage - A function that calls the AI to generate an image and then uploads it.
+ * - generateBossImage - A function that calls the AI to generate an image and returns the data URI.
  * - ImageGeneratorInput - The input type for the function.
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { getStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
-import { app } from '@/lib/firebase'; // Ensure Firebase app is initialized
-import { v4 as uuidv4 } from 'uuid';
 
 const ImageGeneratorInputSchema = z.object({
   prompt: z.string().describe('A text description of the boss image to generate.'),
 });
 export type ImageGeneratorInput = z.infer<typeof ImageGeneratorInputSchema>;
 
-export async function generateAndUploadBossImage(input: ImageGeneratorInput): Promise<string> {
+/**
+ * Generates an image using an AI model and returns it as a data URI.
+ * The client is then responsible for uploading this data to storage.
+ * @param input The prompt for the image generation.
+ * @returns A promise that resolves to the data URI (e.g., 'data:image/png;base64,...') of the generated image.
+ */
+export async function generateBossImage(input: ImageGeneratorInput): Promise<string> {
     const { prompt } = input;
 
     // 1. Generate the image using the specified model
@@ -33,26 +36,6 @@ export async function generateAndUploadBossImage(input: ImageGeneratorInput): Pr
         throw new Error('AI did not return an image.');
     }
 
-    const dataUri = media.url;
-
-    // 2. Upload the generated image data URI to Firebase Storage
-    const storage = getStorage(app);
-    const imageId = uuidv4();
-    const storageRef = ref(storage, `boss-images/${imageId}.png`);
-
-    try {
-        // Correctly handle the data URI on the server.
-        // We need to extract the base64 part of the string for server-side uploads.
-        const base64Data = dataUri.substring(dataUri.indexOf(',') + 1);
-        
-        await uploadString(storageRef, base64Data, 'base64');
-        
-        // 3. Get the public download URL for the uploaded image
-        const downloadUrl = await getDownloadURL(storageRef);
-        return downloadUrl;
-
-    } catch (error: any) {
-        console.error("Full Firebase Storage Error:", JSON.stringify(error, null, 2));
-        throw new Error(`Failed to save the generated image. Firebase code: ${error.code}`);
-    }
+    // 2. Return the data URI directly to the client
+    return media.url;
 }

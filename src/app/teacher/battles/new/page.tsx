@@ -13,14 +13,14 @@ import { ArrowLeft, PlusCircle, Trash2, Eye, GitBranch, Loader2, Sparkles, Image
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref, uploadBytes, getDownloadURL, uploadString } from 'firebase/storage';
 import { db, auth, app } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { generateQuizQuestions, type QuizGeneratorInput } from '@/ai/flows/quiz-generator';
 import NextImage from 'next/image';
-import { generateAndUploadBossImage } from '@/ai/flows/image-generator';
+import { generateBossImage } from '@/ai/flows/image-generator';
 import { v4 as uuidv4 } from 'uuid';
 
 const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
@@ -143,18 +143,29 @@ export default function NewBossBattlePage() {
   };
 
   const handleGenerateImage = async () => {
-    if (!aiImagePrompt) {
+    if (!aiImagePrompt || !teacher) {
         toast({ variant: 'destructive', title: 'Missing Prompt', description: 'Please enter a description for the image.' });
         return;
     }
     setIsGeneratingImage(true);
     try {
-        const imageUrl = await generateAndUploadBossImage({ prompt: aiImagePrompt });
-        setBossImageUrl(imageUrl);
-        toast({ title: 'Image Generated!', description: 'The new boss image has been created and the URL has been set.' });
+        const dataUri = await generateBossImage({ prompt: aiImagePrompt });
+        
+        // The client now receives the data URI and handles the upload.
+        const storage = getStorage(app);
+        const imageId = uuidv4();
+        const storageRef = ref(storage, `boss-images/${imageId}`);
+        
+        // The 'data_url' string format is directly supported by uploadString on the client.
+        await uploadString(storageRef, dataUri, 'data_url');
+        
+        const downloadUrl = await getDownloadURL(storageRef);
+        setBossImageUrl(downloadUrl);
+        toast({ title: 'Image Generated & Uploaded!', description: 'The new boss image has been created and set.' });
+
     } catch (error) {
-        console.error("Error generating image:", error);
-        toast({ variant: 'destructive', title: 'Image Generation Failed', description: 'Could not generate the boss image. Please try again.' });
+        console.error("Error generating or uploading image:", error);
+        toast({ variant: 'destructive', title: 'Image Generation Failed', description: 'Could not generate or upload the boss image. Please try again.' });
     } finally {
         setIsGeneratingImage(false);
     }
@@ -335,7 +346,7 @@ export default function NewBossBattlePage() {
                     <Label htmlFor="ai-image-prompt">Image Description</Label>
                     <Textarea id="ai-image-prompt" placeholder="e.g., A giant three-headed dragon made of crystal, fantasy art" value={aiImagePrompt} onChange={(e) => setAiImagePrompt(e.target.value)} disabled={isGeneratingImage} />
                  </div>
-                 <Button onClick={handleGenerateImage} disabled={isGeneratingImage}>
+                 <Button onClick={handleGenerateImage} disabled={isGeneratingImage || !aiImagePrompt}>
                     {isGeneratingImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                     Generate Image
                  </Button>
