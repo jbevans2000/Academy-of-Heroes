@@ -13,16 +13,46 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { School, Loader2 } from 'lucide-react';
+import { School, Loader2, KeyRound, Mail } from 'lucide-react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 export default function TeacherLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const router = useRouter();
+  const { toast } = useToast();
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
+    if (!email || !password) {
+        toast({
+            variant: 'destructive',
+            title: 'Missing Fields',
+            description: 'Please enter both your email and password.',
+        });
+        return;
+    }
     setIsLoading(true);
-    // Directly navigate to the dashboard without authentication
-    router.push('/teacher/dashboard');
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+        toast({
+            title: 'Login Successful!',
+            description: 'Welcome back to the dashboard.',
+        });
+        router.push('/teacher/dashboard');
+    } catch (error: any) {
+        console.error(error);
+        toast({
+            variant: 'destructive',
+            title: 'Authentication Failed',
+            description: 'Invalid email or password. Please try again.',
+        });
+    } finally {
+        setIsLoading(false);
+    }
   };
 
 
@@ -35,31 +65,45 @@ export default function TeacherLoginPage() {
         <Card className="shadow-2xl">
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-headline text-primary">
-              Teacher Dashboard
+              Teacher Dashboard Login
             </CardTitle>
             <CardDescription>
-              Click below to view student progress
+              Please sign in to manage your classroom.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <Button type="button" className="w-full" onClick={handleLogin} disabled={isLoading}>
-                 {isLoading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : null}
-                View Dashboard
-              </Button>
-            </div>
-             <div className="mt-4 text-center text-sm">
-                <Button
-                    type="button"
-                    variant="link"
-                    className="w-full"
-                    onClick={() => router.push('/')}
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+                <Label htmlFor="email"><Mail className="inline-block mr-2 h-4 w-4" />Email</Label>
+                <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="teacher@example.com" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     disabled={isLoading}
-                >
-                    Back to Student Login
-                </Button>
+                />
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="password"><KeyRound className="inline-block mr-2 h-4 w-4" />Password</Label>
+                <Input 
+                    id="password" 
+                    type="password" 
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isLoading}
+                />
+            </div>
+            <Button type="button" className="w-full" onClick={handleLogin} disabled={isLoading}>
+                {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                Login
+            </Button>
+             <div className="mt-4 text-center text-sm">
+                Don't have an account?{' '}
+                <Link href="/teacher/register" className="underline">
+                    Register here
+                </Link>
             </div>
           </CardContent>
         </Card>

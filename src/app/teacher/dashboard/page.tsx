@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, getDocs, writeBatch, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import { TeacherHeader } from "@/components/teacher/teacher-header";
 import { StudentList } from "@/components/teacher/student-list";
@@ -34,7 +34,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -42,6 +41,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Star, Coins, UserX, Swords, PlusCircle, BookOpen, Wrench, ChevronDown } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
+import { onAuthStateChanged } from 'firebase/auth';
 
 export default function TeacherDashboardPage() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -60,6 +60,20 @@ export default function TeacherDashboardPage() {
   const [isDeleteStep2Open, setIsDeleteStep2Open] = useState(false);
 
   const { toast } = useToast();
+  
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, user => {
+        if (user) {
+            // User is signed in.
+            fetchStudents();
+        } else {
+            // No user is signed in.
+            router.push('/teacher/login');
+        }
+    });
+    return () => unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router]);
 
   const fetchStudents = async () => {
     setIsLoading(true);
@@ -78,11 +92,6 @@ export default function TeacherDashboardPage() {
       setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchStudents();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
   
   const handleToggleStudentSelection = (uid: string) => {
     setSelectedStudents(prev =>
@@ -482,9 +491,3 @@ export default function TeacherDashboardPage() {
     </div>
   );
 }
-
-    
-
-    
-
-    

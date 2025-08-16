@@ -5,13 +5,30 @@ import { School, LogOut } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { auth } from "@/lib/firebase";
+import { signOut } from "firebase/auth";
+import { useToast } from "@/hooks/use-toast";
 
 export function TeacherHeader() {
   const router = useRouter();
+  const { toast } = useToast();
 
-  const handleLogout = () => {
-    // Simply redirect to the main login page
-    router.push('/');
+  const handleLogout = async () => {
+    try {
+        await signOut(auth);
+        toast({
+            title: 'Logged Out',
+            description: 'You have been successfully logged out.',
+        });
+        router.push('/teacher/login');
+    } catch (error) {
+        console.error("Error signing out: ", error);
+        toast({
+            variant: 'destructive',
+            title: 'Logout Failed',
+            description: 'There was an issue signing you out. Please try again.',
+        });
+    }
   };
 
   return (
