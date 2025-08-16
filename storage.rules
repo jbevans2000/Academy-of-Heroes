@@ -1,0 +1,16 @@
+
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Allow read access to all files by default
+    match /{allPaths=**} {
+      allow read;
+    }
+
+    // Allow write access only to the "Boss Images" folder
+    match /Boss Images/{imageId} {
+      allow write: if request.auth != null;
+    }
+  }
+}
