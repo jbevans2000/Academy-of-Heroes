@@ -21,13 +21,22 @@ const namePrompt = ai.definePrompt({
     prompt: `You are an expert in fantasy world-building. 
     
 Generate a single, cool-sounding, fantasy-style character name.
+{{#if isNonBinary}}
+The name should be gender-neutral, not sounding distinctly male or female.
+{{else}}
 The name should be appropriate for a {{gender}} character.
+{{/if}}
 
 Do not provide any explanation or surrounding text. Only provide the name itself.
 `,
 });
 
 export async function generateName(input: NameInput): Promise<string> {
-  const {text} = await namePrompt(input);
+  const isNonBinary = input.gender === 'Non-binary';
+
+  const {text} = await namePrompt({
+    ...input,
+    isNonBinary,
+  });
   return text;
 }
