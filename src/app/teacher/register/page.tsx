@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, User, KeyRound, School, Briefcase } from 'lucide-react';
+import { Loader2, User, KeyRound, School, Briefcase, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
@@ -32,6 +32,7 @@ export default function TeacherRegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [schoolName, setSchoolName] = useState('');
   const [className, setClassName] = useState('');
 
@@ -66,16 +67,22 @@ export default function TeacherRegisterPage() {
         // Generate a unique class code for the new teacher
         const classCode = generateClassCode();
 
-        // Save teacher info to a new document in the 'teachers' collection
-        // The document ID will be the new user's UID
-        await setDoc(doc(db, "teachers", user.uid), {
+        const teacherData: any = {
             uid: user.uid,
             name: name,
             email: email,
             schoolName: schoolName,
             className: className,
             classCode: classCode, // Save the generated class code
-        });
+        };
+
+        if (phoneNumber) {
+            teacherData.phoneNumber = phoneNumber;
+        }
+
+        // Save teacher info to a new document in the 'teachers' collection
+        // The document ID will be the new user's UID
+        await setDoc(doc(db, "teachers", user.uid), teacherData);
 
         toast({
             title: 'Registration Successful!',
@@ -143,6 +150,10 @@ export default function TeacherRegisterPage() {
                     <div className="space-y-2">
                         <Label htmlFor="password"><KeyRound className="inline-block mr-2" />Password</Label>
                         <Input id="password" type="password" placeholder="Choose a secure password (at least 6 characters)" value={password} onChange={(e) => setPassword(e.target.value)} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="phone"><Phone className="inline-block mr-2" />Phone Number (Optional)</Label>
+                        <Input id="phone" type="tel" placeholder="For optional two-factor authentication" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
                     </div>
                 </div>
             )}
