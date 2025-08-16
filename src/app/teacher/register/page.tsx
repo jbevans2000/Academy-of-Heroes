@@ -10,6 +10,9 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, User, KeyRound, School, Briefcase, CreditCard, Calendar, Lock } from 'lucide-react';
 import Link from 'next/link';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth, db } from '@/lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 export default function TeacherRegisterPage() {
   const [step, setStep] = useState(1);
@@ -20,13 +23,6 @@ export default function TeacherRegisterPage() {
   const [password, setPassword] = useState('');
   const [schoolName, setSchoolName] = useState('');
   const [className, setClassName] = useState('');
-  
-  // Dummy Billing State
-  const [cardName, setCardName] = useState('');
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvc, setCardCvc] = useState('');
-
 
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -38,10 +34,6 @@ export default function TeacherRegisterPage() {
         toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill in your name, email, and password.' });
         return;
     }
-     if (step === 2 && (!schoolName || !className)) {
-        toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill in your school and class name.' });
-        return;
-    }
     setStep(s => s + 1);
   }
 
@@ -50,27 +42,56 @@ export default function TeacherRegisterPage() {
   }
 
   const handleSubmit = async () => {
-    if (!cardName || !cardNumber || !cardExpiry || !cardCvc) {
-        toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill in all payment details.' });
+     if (!schoolName || !className) {
+        toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill in your school and class name.' });
         return;
     }
     setIsLoading(true);
     
-    // In a real application, you would now:
-    // 1. Send payment info to a service like Stripe to get a payment token.
-    // 2. Create the user account using Firebase Auth.
-    // 3. Save the teacher's info (name, school, class) and the Stripe customer ID to your Firestore 'teachers' collection.
-    
-    // For this prototype, we'll just simulate success.
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
 
-    toast({
-      title: 'Registration Successful!',
-      description: "Welcome! Your account has been created.",
-    });
-    router.push('/teacher/dashboard');
-    
-    setIsLoading(false);
+        // Save teacher info to a new document in the 'teachers' collection
+        // The document ID will be the new user's UID
+        await setDoc(doc(db, "teachers", user.uid), {
+            uid: user.uid,
+            name: name,
+            email: email,
+            schoolName: schoolName,
+            className: className,
+        });
+
+        toast({
+            title: 'Registration Successful!',
+            description: "Welcome! Your account has been created.",
+        });
+        router.push('/teacher/dashboard');
+
+    } catch (error: any) {
+        console.error("Error creating teacher account:", error);
+        let description = 'An unexpected error occurred. Please try again.';
+        if (error.code) {
+            switch(error.code) {
+                case 'auth/email-already-in-use':
+                    description = 'An account with this email address already exists.';
+                    break;
+                case 'auth/invalid-email':
+                    description = 'The email address is not valid.';
+                    break;
+                case 'auth/weak-password':
+                    description = 'The password is too weak. Please choose a stronger password.';
+                    break;
+            }
+        }
+        toast({
+            variant: 'destructive',
+            title: 'Registration Failed',
+            description: description,
+        });
+    } finally {
+        setIsLoading(false);
+    }
   };
   
   return (
@@ -87,13 +108,9 @@ export default function TeacherRegisterPage() {
             <div className="flex justify-center items-center mb-6">
                 <div className="flex items-center">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>1</div>
-                    <div className={`w-16 h-1 ${step > 1 ? 'bg-primary' : 'bg-muted'}`}></div>
+                    <div className={`w-24 h-1 ${step > 1 ? 'bg-primary' : 'bg-muted'}`}></div>
                 </div>
-                <div className="flex items-center">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>2</div>
-                    <div className={`w-16 h-1 ${step > 2 ? 'bg-primary' : 'bg-muted'}`}></div>
-                </div>
-                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 3 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>3</div>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>2</div>
             </div>
 
             {/* Step 1: Account Info */}
@@ -110,7 +127,7 @@ export default function TeacherRegisterPage() {
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="password"><KeyRound className="inline-block mr-2" />Password</Label>
-                        <Input id="password" type="password" placeholder="Choose a secure password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                        <Input id="password" type="password" placeholder="Choose a secure password (at least 6 characters)" value={password} onChange={(e) => setPassword(e.target.value)} />
                     </div>
                 </div>
             )}
@@ -130,36 +147,12 @@ export default function TeacherRegisterPage() {
                 </div>
             )}
             
-            {/* Step 3: Billing Info */}
-            {step === 3 && (
-                <div className="space-y-4 animate-in fade-in-50">
-                    <h3 className="text-xl font-semibold text-center">Billing Information</h3>
-                     <div className="space-y-2">
-                        <Label htmlFor="card-name"><CreditCard className="inline-block mr-2" />Name on Card</Label>
-                        <Input id="card-name" placeholder="e.g., Jane M. Doe" value={cardName} onChange={(e) => setCardName(e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="card-number">Card Number</Label>
-                        <Input id="card-number" placeholder="0000 0000 0000 0000" value={cardNumber} onChange={(e) => setCardNumber(e.target.value)} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="card-expiry"><Calendar className="inline-block mr-2" />Expiry</Label>
-                            <Input id="card-expiry" placeholder="MM / YY" value={cardExpiry} onChange={(e) => setCardExpiry(e.target.value)} />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="card-cvc"><Lock className="inline-block mr-2" />CVC</Label>
-                            <Input id="card-cvc" placeholder="123" value={cardCvc} onChange={(e) => setCardCvc(e.target.value)} />
-                        </div>
-                    </div>
-                </div>
-            )}
         </CardContent>
         <CardFooter className="flex justify-between">
             {step > 1 ? (
                  <Button variant="outline" onClick={handlePrevStep} disabled={isLoading}>Previous</Button>
             ) : <div />}
-            {step < 3 ? (
+            {step < 2 ? (
                 <Button onClick={handleNextStep}>Next</Button>
             ) : (
                 <Button onClick={handleSubmit} disabled={isLoading}>
