@@ -243,9 +243,9 @@ export default function RegisterPage() {
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
-                                    <DropdownMenuItem onClick={() => handleGenerateName('Male')}>Male Name</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleGenerateName('Female')}>Female Name</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleGenerateName('Non-binary')}>Non-binary Name</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleGenerateName('Male')}>Random Male Name</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleGenerateName('Female')}>Random Female Name</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleGenerateName('Non-binary')}>Random Non-binary Name</DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </TooltipTrigger>
