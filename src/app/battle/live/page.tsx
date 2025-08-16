@@ -282,6 +282,7 @@ export default function LiveBattlePage() {
                                 "text-white shadow-lg",
                                 student.class === 'Mage' && "bg-blue-600/80 border-blue-500 hover:bg-blue-500/90",
                                 student.class === 'Guardian' && "bg-amber-500/80 border-amber-400 hover:bg-amber-500/90",
+                                student.class === 'Healer' && "bg-green-600/80 border-green-500 hover:bg-green-500/90",
                             )}
                             onClick={() => setIsPowersSheetOpen(true)}
                         >
@@ -410,5 +411,3 @@ export default function LiveBattlePage() {
     </div>
   );
 }
-
-    

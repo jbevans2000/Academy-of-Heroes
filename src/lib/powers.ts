@@ -114,6 +114,53 @@ export const classPowers: ClassPowers = {
     },
   ],
   Healer: [
-    // To be added later
+    {
+      name: 'Nature’s Guidance',
+      description: 'One of the incorrect answers will be removed from the multiple choices in a boss battle.',
+      level: 1,
+      type: 'utility',
+    },
+    {
+      name: 'Lesser Heal',
+      description: 'Restores 1d6 + your level in hit points to 3 random party members.',
+      level: 3,
+      type: 'healing',
+    },
+    {
+      name: 'Solar Empowerment',
+      description: 'Redirects the sun\'s energy to 3 random Mages, increasing their max HP by 5 for the battle.',
+      level: 5,
+      type: 'support',
+    },
+    {
+      name: 'Heal 2',
+      description: 'Restores 2d6 + your level in hit points to 5 random party members.',
+      level: 7,
+      type: 'healing',
+    },
+    {
+      name: 'Enduring Spirit',
+      description: 'If a player falls to 0 HP, you can resurrect them to continue the game.',
+      level: 9,
+      type: 'healing',
+    },
+    {
+      name: 'Cosmic Divination',
+      description: 'Allows the team to skip the current question and damages the boss equal to your level.',
+      level: 11,
+      type: 'utility',
+    },
+    {
+      name: 'Regeneration Field',
+      description: 'Restores 20% of their level value as HP to every player.',
+      level: 13,
+      type: 'healing',
+    },
+    {
+      name: 'Divine Sacrifice',
+      description: 'Your HP falls to 0, but all players gain +5 Max HP, restore 10 HP, and get a 25% XP boost.',
+      level: 15,
+      type: 'utility',
+    },
   ],
 };
