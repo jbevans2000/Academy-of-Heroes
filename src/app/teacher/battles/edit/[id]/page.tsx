@@ -9,15 +9,18 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ArrowLeft, PlusCircle, Trash2, Eye, GitBranch, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Trash2, Eye, GitBranch, Loader2, Save, Sparkles } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
+import { onAuthStateChanged, type User } from 'firebase/auth';
+import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { generateQuizQuestions, type QuizGeneratorInput } from '@/ai/flows/quiz-generator';
 
-// HARDCODED TEACHER UID
-const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
 interface Question {
   id: number;
@@ -32,6 +35,7 @@ export default function EditBossBattlePage() {
   const params = useParams();
   const battleId = params.id as string;
   const { toast } = useToast();
+  const [teacher, setTeacher] = useState<User | null>(null);
 
   const [battleTitle, setBattleTitle] = useState('');
   const [bossImageUrl, setBossImageUrl] = useState('');
@@ -40,13 +44,30 @@ export default function EditBossBattlePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
+  // AI Generation State
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiSubject, setAiSubject] = useState('');
+  const [aiGradeLevel, setAiGradeLevel] = useState('');
+  const [aiNumQuestions, setAiNumQuestions] = useState<number | string>(5);
+
   useEffect(() => {
-    if (!battleId) return;
+    const unsubscribe = onAuthStateChanged(auth, user => {
+      if (user) {
+        setTeacher(user);
+      } else {
+        router.push('/teacher/login');
+      }
+    });
+    return () => unsubscribe();
+  }, [router]);
+
+  useEffect(() => {
+    if (!battleId || !teacher) return;
 
     const fetchBattleData = async () => {
         setIsLoading(true);
         try {
-            const battleRef = doc(db, 'teachers', TEACHER_UID, 'bossBattles', battleId);
+            const battleRef = doc(db, 'teachers', teacher.uid, 'bossBattles', battleId);
             const battleSnap = await getDoc(battleRef);
 
             if (battleSnap.exists()) {
@@ -54,7 +75,6 @@ export default function EditBossBattlePage() {
                 setBattleTitle(data.battleName || '');
                 setBossImageUrl(data.bossImageUrl || '');
                 setVideoUrl(data.videoUrl || '');
-                // Add a temporary unique ID for React keys, and ensure damage has a default value
                 setQuestions(data.questions.map((q: any, index: number) => ({
                     ...q,
                     id: Date.now() + index,
@@ -81,8 +101,50 @@ export default function EditBossBattlePage() {
     }
 
     fetchBattleData();
-  }, [battleId, router, toast]);
+  }, [battleId, router, toast, teacher]);
 
+  const handleGenerateQuestions = async () => {
+    if (!aiSubject || !aiGradeLevel || !aiNumQuestions) {
+      toast({
+        variant: 'destructive',
+        title: 'Missing Information',
+        description: 'Please provide a subject, grade level, and number of questions.',
+      });
+      return;
+    }
+    setIsGenerating(true);
+    try {
+      const result = await generateQuizQuestions({
+        subject: aiSubject,
+        gradeLevel: aiGradeLevel as QuizGeneratorInput['gradeLevel'],
+        numberOfQuestions: Number(aiNumQuestions),
+      });
+
+      const newQuestions = result.questions.map((q, index) => ({
+        id: Date.now() + index,
+        questionText: q.questionText,
+        answers: q.answers,
+        correctAnswerIndex: q.correctAnswerIndex,
+        damage: 10,
+      }));
+
+      setQuestions(newQuestions);
+      toast({
+        title: 'The Oracle has spoken!',
+        description: `${newQuestions.length} questions have been generated and populated below.`,
+      });
+
+    } catch (error) {
+       console.error("Error generating quiz questions:", error);
+       toast({
+         variant: 'destructive',
+         title: 'The Oracle is Silent',
+         description: 'The AI failed to generate questions. Please try again.',
+       });
+    } finally {
+        setIsGenerating(false);
+    }
+  };
 
   const handleAddQuestion = () => {
     setQuestions([
@@ -161,21 +223,19 @@ export default function EditBossBattlePage() {
   }
 
   const handleSaveChanges = async () => {
-    if (!validateBattle()) return;
+    if (!validateBattle() || !teacher) return;
 
     setIsSaving(true);
-
-    // Remove the temporary `id` field used for React keys
     const questionsToSave = questions.map(({ id, ...rest }) => rest);
     
     try {
-        const battleRef = doc(db, 'teachers', TEACHER_UID, 'bossBattles', battleId);
+        const battleRef = doc(db, 'teachers', teacher.uid, 'bossBattles', battleId);
         await setDoc(battleRef, {
             battleName: battleTitle,
             bossImageUrl,
             videoUrl,
             questions: questionsToSave,
-        }, { merge: true }); // Use set with merge to update or create
+        }, { merge: true });
 
         toast({
             title: 'Battle Updated Successfully!',
@@ -225,14 +285,11 @@ export default function EditBossBattlePage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-8">
-              {/* Battle Details Form */}
               <div className="space-y-4 p-6 border rounded-lg">
                  <h3 className="text-xl font-semibold">Battle Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                        <Label htmlFor="battle-name" className="text-base">Boss Battle Title</Label>
-                        <Input id="battle-name" placeholder="e.g., The Ancient Karkorah" value={battleTitle} onChange={(e) => setBattleTitle(e.target.value)} disabled={isSaving} />
-                    </div>
+                <div className="space-y-2">
+                    <Label htmlFor="battle-name" className="text-base">Boss Battle Title</Label>
+                    <Input id="battle-name" placeholder="e.g., The Ancient Karkorah" value={battleTitle} onChange={(e) => setBattleTitle(e.target.value)} disabled={isSaving} />
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="boss-image" className="text-base">Boss Image URL</Label>
@@ -244,7 +301,33 @@ export default function EditBossBattlePage() {
                 </div>
               </div>
 
-              {/* Question Editor */}
+               <Separator />
+
+              <div className="space-y-4 p-6 border rounded-lg bg-secondary/30">
+                <h3 className="text-xl font-semibold flex items-center gap-2"><Sparkles className="text-primary" /> Generate Questions with the Oracle</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="ai-subject">Subject / Topic</Label>
+                        <Input id="ai-subject" placeholder="e.g. Photosynthesis" value={aiSubject} onChange={(e) => setAiSubject(e.target.value)} disabled={isGenerating} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="ai-grade">Grade Level</Label>
+                         <Select onValueChange={setAiGradeLevel} value={aiGradeLevel} disabled={isGenerating}>
+                            <SelectTrigger id="ai-grade"><SelectValue placeholder="Choose a grade..." /></SelectTrigger>
+                            <SelectContent>{gradeLevels.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+                        </Select>
+                    </div>
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="ai-num-questions">Number of Questions (1-10)</Label>
+                    <Input id="ai-num-questions" type="number" min="1" max="10" value={aiNumQuestions} onChange={(e) => setAiNumQuestions(e.target.value)} disabled={isGenerating} />
+                 </div>
+                 <Button onClick={handleGenerateQuestions} disabled={isGenerating}>
+                    {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                    Consult the Oracle
+                 </Button>
+              </div>
+
               <div className="space-y-6">
                  <h3 className="text-xl font-semibold">Questions</h3>
                 {questions.map((q, qIndex) => (
