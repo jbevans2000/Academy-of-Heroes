@@ -41,7 +41,7 @@ export default function TeacherLoginPage() {
         await signInWithEmailAndPassword(auth, email, password);
         toast({
             title: 'Login Successful!',
-            description: 'Welcome back to the dashboard.',
+            description: 'Welcome back to the Academy of Heroes, Wise One!',
         });
         router.push('/teacher/dashboard');
     } catch (error: any) {
