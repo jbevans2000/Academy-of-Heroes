@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { School, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { School, Eye, EyeOff, Loader2, UserPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
 import { doc, getDoc } from 'firebase/firestore';
@@ -175,9 +175,15 @@ export function LoginForm() {
               <School className="mr-2 h-4 w-4" />
               Teacher Login
             </Button>
-            <Link href="/teacher/register" className="text-center text-sm text-primary hover:underline">
-                Teacher Registration
-            </Link>
+             <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => router.push('/teacher/register')}
+              disabled={isLoading}
+            >
+              <UserPlus className="mr-2 h-4 w-4" />
+              Teacher Registration
+            </Button>
         </div>
       </CardContent>
     </Card>
