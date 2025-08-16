@@ -34,7 +34,7 @@ export default function SplashPage() {
                     src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Aug%2016%2C%202025%2C%2011_00_06%20AM.png?alt=media&token=aacf3b7b-649a-4c93-82ac-c736cc4b91eb"
                     alt="Academy of Heroes Banner"
                     fill
-                    className="object-cover"
+                    className="object-fill"
                     data-ai-hint="fantasy banner"
                     priority
                 />
