@@ -4,7 +4,7 @@
 import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Timer, Volume2, Users, Dices, Wrench, Swords } from 'lucide-react';
+import { ArrowLeft, Timer, Volume2, Users, Dices, Wrench, Swords, ScrollText } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
@@ -49,6 +49,14 @@ const tools = [
         path: '/teacher/tools/group-generator',
         disabled: false,
         bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2FGroup%20Guilder.jpg?alt=media&token=8e9b015e-8a29-4f7f-8591-62d98d898a33',
+    },
+    {
+        title: 'The Royal Scribe',
+        description: 'Generate grade-specific writing prompts for fiction and non-fiction.',
+        icon: <ScrollText className="h-10 w-10 text-primary" />,
+        path: '/teacher/tools/the-royal-scribe',
+        disabled: false,
+        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-4f51950d-83b5-4b55-8664-8178a9c277f0.jpg?alt=media&token=c2c101cb-e71e-42c2-b5e1-85b6727a8581',
     }
 ]
 
@@ -82,7 +90,7 @@ export default function ClassroomToolsPage() {
                             </div>
                         </div>
                     </div>
-                     <div className="grid gap-6 md:grid-cols-2">
+                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                         {tools.map((tool, index) => (
                              <Link href={tool.disabled ? '#' : tool.path} key={index} className={cn("group", tool.disabled && "pointer-events-none")}>
                                 <div className="relative flex flex-col justify-between h-64 p-6 rounded-lg overflow-hidden border shadow-sm transition-transform hover:scale-105 bg-card">
