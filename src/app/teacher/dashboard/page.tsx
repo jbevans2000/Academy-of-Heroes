@@ -370,16 +370,16 @@ export default function TeacherDashboardPage() {
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <AlertDialog open={showWelcomeDialog} onOpenChange={setShowWelcomeDialog}>
-            <AlertDialogContent>
+            <AlertDialogContent className="max-w-2xl">
                 <AlertDialogHeader>
-                    <AlertDialogTitle className="text-2xl">Welcome to The Academy of Heroes!</AlertDialogTitle>
-                    <AlertDialogDescription>
+                    <AlertDialogTitle className="text-3xl">Welcome to The Academy of Heroes!</AlertDialogTitle>
+                    <AlertDialogDescription className="text-base">
                         Your classroom is ready! To get your students started, give them your unique Class Code and instruct them to follow these steps:
-                        <ol className="list-decimal list-inside mt-4 space-y-2 text-foreground">
+                        <ol className="list-decimal list-inside mt-4 space-y-2 text-foreground text-lg">
                            <li>Go to the main login page.</li>
                            <li>Click "Create New Hero & Join a Class".</li>
                            <li>Enter your Class Code: 
-                                <strong className="font-mono text-lg bg-primary/10 px-2 py-1 rounded-md mx-1">{teacherData?.classCode}</strong>
+                                <strong className="font-mono text-xl bg-primary/10 px-2 py-1 rounded-md mx-1">{teacherData?.classCode}</strong>
                            </li>
                            <li>Fill out the rest of the form to create their character.</li>
                         </ol>
