@@ -51,8 +51,8 @@ export async function generateAndUploadBossImage(input: ImageGeneratorInput): Pr
         const downloadUrl = await getDownloadURL(storageRef);
         return downloadUrl;
 
-    } catch (error) {
-        console.error("Error uploading image to Firebase Storage:", error);
-        throw new Error("Failed to save the generated image.");
+    } catch (error: any) {
+        console.error("Full Firebase Storage Error:", JSON.stringify(error, null, 2));
+        throw new Error(`Failed to save the generated image. Firebase code: ${error.code}`);
     }
 }

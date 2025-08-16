@@ -3,12 +3,14 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allow public write access ONLY to the boss-images folder
+    // Allow anyone to write to the boss-images folder.
+    // This is for the server-side image generation flow.
     match /boss-images/{imageId} {
       allow write: if true;
     }
 
-    // All other paths in the bucket remain private and require authentication
+    // Default rule: all other paths require authentication to read or write.
+    // This protects student data and other potential uploads.
     match /{allPaths=**} {
       allow read, write: if request.auth != null;
     }
