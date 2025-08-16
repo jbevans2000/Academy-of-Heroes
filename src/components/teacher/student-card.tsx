@@ -206,8 +206,11 @@ export function StudentCard({ student, isSelected, onSelect, setStudents }: Stud
                   </div>
               </div>
               <div className="flex items-center space-x-1">
-                  <p className="font-semibold">{student.gold.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">Gold</p>
+                  <Coins className="h-5 w-5 text-amber-500" />
+                  <div>
+                    <p className="font-semibold">{student.gold.toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground">Gold</p>
+                  </div>
               </div>
           </div>
            <div className="space-y-2 pt-2">
