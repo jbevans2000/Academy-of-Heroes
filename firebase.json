@@ -3,6 +3,12 @@
     "rules": "firestore.rules"
   },
   "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
     "source": ".",
     "frameworksBackend": {
       "region": "us-central1"
