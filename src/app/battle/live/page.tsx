@@ -274,6 +274,18 @@ export default function LiveBattlePage() {
             <div className="w-full max-w-4xl mx-auto">
             <Card className="bg-card text-card-foreground border-gray-700 shadow-2xl shadow-primary/20">
                 <CardContent className="p-6">
+                    <div className="flex justify-center mb-6">
+                        <Button 
+                            size="lg"
+                            variant="default" 
+                            className="bg-blue-600/80 border-blue-500 hover:bg-blue-500/90 text-white shadow-lg"
+                            onClick={() => setIsPowersSheetOpen(true)}
+                        >
+                            <Flame className="mr-2 h-5 w-5" />
+                            View Powers
+                        </Button>
+                    </div>
+
                     <div className="flex flex-col md:flex-row gap-6 mb-6">
                         <div className="flex-shrink-0 mx-auto">
                              <Image 
@@ -287,14 +299,6 @@ export default function LiveBattlePage() {
                         </div>
                         <div className="flex-grow flex flex-col justify-center items-center text-center">
                             <h2 className="text-2xl md:text-3xl font-bold">{currentQuestion.questionText}</h2>
-                             <Button 
-                                variant="outline" 
-                                className="mt-4 bg-orange-600/20 border-orange-500 hover:bg-orange-500/40 text-white"
-                                onClick={() => setIsPowersSheetOpen(true)}
-                            >
-                                <Flame className="mr-2 h-5 w-5" />
-                                View Powers
-                            </Button>
                         </div>
                     </div>
                     
@@ -402,3 +406,5 @@ export default function LiveBattlePage() {
     </div>
   );
 }
+
+    
