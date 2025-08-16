@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { doc, onSnapshot, collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { doc, onSnapshot, collection, getDocs, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import { DashboardHeader } from '@/components/dashboard/header';
