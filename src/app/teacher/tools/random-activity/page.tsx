@@ -50,8 +50,8 @@ export default function RandomActivityPage() {
                             <div className="flex justify-center mb-2">
                                 <Dices className="h-12 w-12 text-primary" />
                             </div>
-                            <CardTitle className="text-3xl">A Task from the Throne</CardTitle>
-                            <CardDescription>Click the button below to get a new fun, fantasy-themed activity for your class!</CardDescription>
+                            <CardTitle className="text-3xl text-black">A Task from the Throne</CardTitle>
+                            <CardDescription className="text-black/80">Click the button below to get a new fun, fantasy-themed activity for your class!</CardDescription>
                         </CardHeader>
                         <CardContent className="min-h-[200px] flex items-center justify-center">
                             {isLoading ? (
@@ -62,7 +62,7 @@ export default function RandomActivityPage() {
                                     <p className="text-muted-foreground mt-2">{currentActivity.description}</p>
                                 </div>
                             ) : (
-                                <p className="text-muted-foreground">Click the button to generate an activity!</p>
+                                <p className="text-black/60">Click the button to generate an activity!</p>
                             )}
                         </CardContent>
                     </Card>
