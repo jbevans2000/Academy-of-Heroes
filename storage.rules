@@ -1,16 +1,21 @@
-
 rules_version = '2';
-
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allow anyone to write to the boss-images folder.
-    // This is for the server-side image generation flow.
+    // Rule for AI-generated boss images (server-side upload)
+    // Allows public write access ONLY to this specific folder.
     match /boss-images/{imageId} {
       allow write: if true;
+      allow read: if true; // Allow public read for displaying images
     }
 
-    // Default rule: all other paths require authentication to read or write.
-    // This protects student data and other potential uploads.
+    // Rule for user-uploaded avatars (client-side upload)
+    // Allows a logged-in user to write ONLY to their own folder.
+    match /avatars/{userId}/{fileName} {
+      allow read: if true; // Anyone can read avatars
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Fallback rule: By default, all other paths require authentication.
     match /{allPaths=**} {
       allow read, write: if request.auth != null;
     }
