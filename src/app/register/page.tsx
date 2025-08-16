@@ -153,19 +153,6 @@ export default function RegisterPage() {
                 <Input id="class-code" placeholder="Enter the code from your teacher" value={classCode} onChange={(e) => setClassCode(e.target.value)} disabled={isLoading} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="class" className="flex items-center"><Wand className="w-4 h-4 mr-2" />Select Your Class</Label>
-                <Select onValueChange={handleClassChange} disabled={isLoading} value={selectedClass}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose your destiny" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Guardian"><Shield className="w-4 h-4 mr-2" />Guardian</SelectItem>
-                    <SelectItem value="Healer"><Heart className="w-4 h-4 mr-2" />Healer</SelectItem>
-                    <SelectItem value="Mage"><Wand className="w-4 h-4 mr-2" />Mage</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="student-id" className="flex items-center"><KeyRound className="w-4 h-4 mr-2" />Username</Label>
                 <Input id="student-id" placeholder="Choose a username" value={studentId} onChange={(e) => setStudentId(e.target.value)} disabled={isLoading} />
               </div>
@@ -194,6 +181,19 @@ export default function RegisterPage() {
               <div className="space-y-2">
                 <Label htmlFor="student-name" className="flex items-center"><User className="w-4 h-4 mr-2" />Student Name</Label>
                 <Input id="student-name" placeholder="Your real name" value={studentName} onChange={(e) => setStudentName(e.target.value)} disabled={isLoading} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="class" className="flex items-center"><Wand className="w-4 h-4 mr-2" />Select Your Class</Label>
+                <Select onValueChange={handleClassChange} disabled={isLoading} value={selectedClass}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose your destiny" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Guardian"><Shield className="w-4 h-4 mr-2" />Guardian</SelectItem>
+                    <SelectItem value="Healer"><Heart className="w-4 h-4 mr-2" />Healer</SelectItem>
+                    <SelectItem value="Mage"><Wand className="w-4 h-4 mr-2" />Mage</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="character-name" className="flex items-center"><Star className="w-4 h-4 mr-2" />Character Name</Label>
@@ -253,5 +253,7 @@ export default function RegisterPage() {
     </TooltipProvider>
   );
 }
+
+    
 
     
