@@ -29,6 +29,7 @@ export default function FixHubsPage() {
           title: 'Hub Not Found',
           description: 'Could not find a hub named "The Capitol City of Luminaria" to update.',
         });
+        setIsFixing(false);
         return;
       }
 

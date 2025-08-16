@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { PlusCircle, LayoutDashboard, Edit, Trash2, Loader2, Eye } from 'lucide-react';
+import { PlusCircle, LayoutDashboard, Edit, Trash2, Loader2, Eye, Wrench } from 'lucide-react';
 import { collection, getDocs, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { QuestHub, Chapter } from '@/lib/quests';
@@ -94,6 +94,20 @@ export default function QuestsPage() {
             </Button>
           </div>
         </div>
+
+         <Card className="mb-6 bg-amber-50 border-amber-200">
+            <CardHeader>
+                <CardTitle className="text-amber-900 flex items-center gap-2"><Wrench/> Data Fix Utility</CardTitle>
+                <CardDescription className="text-amber-800">
+                    If your first quest hub isn't appearing for students, click here to run a one-time fix to update its progression data.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Button variant="secondary" onClick={() => router.push('/teacher/fix-hubs')}>
+                    Go to Hub Fix Page
+                </Button>
+            </CardContent>
+         </Card>
         
         {isLoading ? (
              <div className="space-y-4">
