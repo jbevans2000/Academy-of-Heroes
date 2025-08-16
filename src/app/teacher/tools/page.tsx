@@ -4,7 +4,7 @@
 import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Timer, Volume2, Users, Dices, Wrench } from 'lucide-react';
+import { ArrowLeft, Timer, Volume2, Users, Dices, Wrench, Swords } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
@@ -41,6 +41,14 @@ const tools = [
         path: '/teacher/tools/random-activity',
         disabled: false,
         bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-5eb79f48-b727-4971-a208-eb220e1a80f7.jpg?alt=media&token=4029ebc5-ca5f-4408-a498-20f0751c1853',
+    },
+    {
+        title: 'Group Guilder',
+        description: 'Randomly sort students into guilds for collaborative quests.',
+        icon: <Swords className="h-10 w-10 text-primary" />,
+        path: '/teacher/tools/group-generator',
+        disabled: false,
+        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2FGroup%20Guilder.jpg?alt=media&token=8e9b015e-8a29-4f7f-8591-62d98d898a33',
     }
 ]
 
