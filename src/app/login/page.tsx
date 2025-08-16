@@ -66,7 +66,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <Link href="/teacher/register" passHref>
+            <Link href="/teacher/register" passHref className="mt-4 block">
                 <Button size="lg" className="w-full text-lg py-8 bg-blue-600 hover:bg-blue-700">
                     <School className="mr-3 h-6 w-6" />
                     New Teacher Registration
