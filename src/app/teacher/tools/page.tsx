@@ -48,14 +48,16 @@ export default function ClassroomToolsPage() {
     const router = useRouter();
 
     return (
-        <div 
-            className="flex min-h-screen w-full flex-col"
-            style={{
-                backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-32456d61-e39a-4301-8c45-cd0f0ff33e52.jpg?alt=media&token=5ffefaa6-38e0-4661-8ae5-be3b004d855e')`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-            }}
-        >
+        <div className="relative min-h-screen w-full flex flex-col">
+            <div 
+                className="absolute inset-0 -z-10"
+                style={{
+                    backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-32456d61-e39a-4301-8c45-cd0f0ff33e52.jpg?alt=media&token=5ffefaa6-38e0-4661-8ae5-be3b004d855e')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    opacity: 0.5,
+                }}
+            />
             <TeacherHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="max-w-5xl mx-auto space-y-6">
