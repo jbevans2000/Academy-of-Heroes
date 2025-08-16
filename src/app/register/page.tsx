@@ -148,7 +148,7 @@ export default function RegisterPage() {
           <CardContent className="space-y-6 p-6">
             <div className="space-y-2 text-center bg-primary/10 p-4 rounded-lg">
                 <Label htmlFor="class-code" className="flex items-center justify-center text-lg font-semibold"><BookUser className="w-5 h-5 mr-2" />Class Code</Label>
-                 <p className="text-sm text-muted-foreground">This is the most important step! Get this code from your teacher.</p>
+                 <p className="text-base text-black">This is the most important step! Get this code from your teacher.</p>
                 <Input 
                     id="class-code" 
                     placeholder="ENTER TEACHER CODE" 
