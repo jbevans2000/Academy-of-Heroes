@@ -12,14 +12,18 @@ import {z} from 'zod';
 
 const NameInputSchema = z.object({
   gender: z.enum(['Male', 'Female', 'Non-binary']),
-  // This is a dummy field to ensure the prompt is always unique.
-  randomSeed: z.number().optional(),
 });
 export type NameInput = z.infer<typeof NameInputSchema>;
 
+// Internal schema includes the random seed
+const InternalNameInputSchema = NameInputSchema.extend({
+    isNonBinary: z.boolean(),
+    randomSeed: z.number(),
+});
+
 const namePrompt = ai.definePrompt({
     name: 'namePrompt',
-    input: { schema: NameInputSchema },
+    input: { schema: InternalNameInputSchema },
     prompt: `You are an expert in fantasy world-building. 
     
 Generate a single, cool-sounding, fantasy-style character name that includes a first name and a last name.
@@ -31,6 +35,8 @@ The name should be appropriate for a {{gender}} character.
 {{/if}}
 
 Do not provide any explanation or surrounding text. Only provide the name itself.
+
+// Unique seed to prevent caching: {{randomSeed}}
 `,
 });
 
