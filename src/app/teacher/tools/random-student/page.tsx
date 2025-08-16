@@ -74,7 +74,7 @@ export default function RandomStudentPage() {
                             <div className="flex justify-center mb-2">
                                 <Users className="h-12 w-12 text-primary" />
                             </div>
-                            <CardTitle className="text-3xl">Random Student Picker</CardTitle>
+                            <CardTitle className="text-3xl">Call to Duty</CardTitle>
                             <CardDescription>Click the button below to randomly select a student from your class roster.</CardDescription>
                         </CardHeader>
                         <CardContent className="min-h-[450px] flex flex-col items-center justify-center">
