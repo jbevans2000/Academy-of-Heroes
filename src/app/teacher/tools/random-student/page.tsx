@@ -83,10 +83,7 @@ export default function RandomStudentPage() {
                                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
                             ) : pickedStudent ? (
                                 <div className="space-y-4 animate-in fade-in-50">
-                                    <h3 className={cn(
-                                        "text-2xl font-bold font-headline",
-                                        pickedCaption === "Destiny calls! Step forward, hero!" ? "text-black" : "text-primary"
-                                    )}>{pickedCaption}</h3>
+                                    <h3 className="text-2xl font-bold font-headline text-black">{pickedCaption}</h3>
                                     <div className="relative w-64 h-64 mx-auto">
                                         <Image 
                                             src={pickedStudent.avatarUrl}
