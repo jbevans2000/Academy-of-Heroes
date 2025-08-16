@@ -43,19 +43,27 @@ export default function RandomActivityPage() {
         if (!currentActivity?.documentContent) return;
 
         const doc = new jsPDF();
-        doc.text(currentActivity.documentContent, 10, 10);
+        
+        // Basic Markdown to PDF conversion
+        const lines = doc.splitTextToSize(currentActivity.documentContent, 180);
+        doc.text(lines, 10, 10);
+        
         doc.save(`${currentActivity.title.replace(/ /g, '_')}.pdf`);
     };
 
     return (
         <div 
-            className="flex min-h-screen w-full flex-col"
-            style={{
-                backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Aug%2016%2C%202025%2C%2009_52_37%20PM.png?alt=media&token=c138d6cf-3580-4161-9f93-1678122d25d1')`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-            }}
+            className="relative flex min-h-screen w-full flex-col"
         >
+             <div 
+                className="absolute inset-0 -z-10"
+                style={{
+                    backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-07b697e9-e16a-401c-9e91-79ead990b2f4.jpg?alt=media&token=f87c0edc-3042-4b55-a2a2-bb67de99ef36')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    opacity: 0.25,
+                }}
+            />
             <TeacherHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8 flex flex-col items-center justify-center">
                 <div className="w-full max-w-2xl space-y-6">
