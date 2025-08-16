@@ -72,7 +72,7 @@ export function PowersSheet({ isOpen, onOpenChange, student }: PowersSheetProps)
                         </div>
                         <p className={cn(
                             "text-xs font-semibold mt-2 text-right",
-                            isUnlocked ? "text-green-400" : "text-yellow-400"
+                            isUnlocked ? "text-green-400" : "text-green-400"
                         )}>
                             {isUnlocked ? "Unlocked" : `Unlocks at Level ${power.level}`}
                         </p>
