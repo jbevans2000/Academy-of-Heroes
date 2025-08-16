@@ -6,13 +6,14 @@ import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Dices, Loader2, BrainCircuit, PersonStanding } from 'lucide-react';
-import { generateActivity } from '@/ai/flows/activity-generator';
-import type { Activity, ActivityInput } from '@/ai/flows/activity-generator';
-
+import { ArrowLeft, Dices, Loader2, BrainCircuit, PersonStanding, Download } from 'lucide-react';
+import { generateActivity, type Activity, type ActivityInput } from '@/ai/flows/activity-generator';
+import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
 
 export default function RandomActivityPage() {
     const router = useRouter();
+    const { toast } = useToast();
     const [currentActivity, setCurrentActivity] = useState<Activity | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [loadingType, setLoadingType] = useState<'Mental' | 'Physical' | null>(null);
@@ -26,11 +27,29 @@ export default function RandomActivityPage() {
             setCurrentActivity(activity);
         } catch (error) {
             console.error("Error generating activity:", error);
-            // Optionally, show a toast notification to the user
+            toast({
+                variant: 'destructive',
+                title: 'AI Error',
+                description: 'The AI failed to generate an activity. Please try again.',
+            })
         } finally {
             setIsLoading(false);
             setLoadingType(null);
         }
+    };
+
+    const handleDownload = () => {
+        if (!currentActivity?.documentContent) return;
+
+        const blob = new Blob([currentActivity.documentContent], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${currentActivity.title.replace(/ /g, '_')}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     };
 
     return (
@@ -57,13 +76,30 @@ export default function RandomActivityPage() {
                             <CardTitle className="text-3xl text-black">A Task from the Throne</CardTitle>
                             <CardDescription className="text-black">Choose a type of task to generate a fun, fantasy-themed activity for your class!</CardDescription>
                         </CardHeader>
-                        <CardContent className="min-h-[200px] flex items-center justify-center">
+                        <CardContent className="min-h-[200px] flex items-center justify-center p-6">
                             {isLoading ? (
                                  <Loader2 className="h-12 w-12 text-primary animate-spin" />
                             ) : currentActivity ? (
-                                <div className="p-6 border-2 border-dashed border-primary rounded-lg bg-background animate-in fade-in-50">
-                                    <h3 className="text-2xl font-bold font-headline text-black">{currentActivity.title}</h3>
-                                    <p className="text-black mt-2">{currentActivity.description}</p>
+                                <div className="p-4 border-2 border-dashed border-primary rounded-lg bg-background/80 w-full animate-in fade-in-50 text-left">
+                                    <h3 className="text-2xl font-bold font-headline text-black text-center">{currentActivity.title}</h3>
+                                    <p className="text-black mt-2 text-center">{currentActivity.description}</p>
+                                    
+                                    {currentActivity.documentContent && (
+                                        <>
+                                            <Separator className="my-4" />
+                                            <div 
+                                                className="prose prose-sm max-w-none text-black text-left whitespace-pre-wrap"
+                                            >
+                                                {currentActivity.documentContent}
+                                            </div>
+                                            <div className="text-center mt-4">
+                                                <Button onClick={handleDownload}>
+                                                    <Download className="mr-2 h-4 w-4" />
+                                                    Download Task
+                                                </Button>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             ) : (
                                 <p className="text-black">Choose a task type below to generate an activity!</p>
