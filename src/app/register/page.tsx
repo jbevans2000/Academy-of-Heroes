@@ -115,7 +115,7 @@ export default function RegisterPage() {
         title: 'Registration Failed',
         description:
           error.code === 'auth/email-already-in-use'
-            ? 'This Student ID is already registered for this class.'
+            ? 'This Username is already registered for this class.'
             : 'An unexpected error occurred. Please try again.',
       });
     } finally {
@@ -166,8 +166,8 @@ export default function RegisterPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="student-id" className="flex items-center"><KeyRound className="w-4 h-4 mr-2" />Student ID</Label>
-                <Input id="student-id" placeholder="Your school ID number" value={studentId} onChange={(e) => setStudentId(e.target.value)} disabled={isLoading} />
+                <Label htmlFor="student-id" className="flex items-center"><KeyRound className="w-4 h-4 mr-2" />Username</Label>
+                <Input id="student-id" placeholder="Choose a username" value={studentId} onChange={(e) => setStudentId(e.target.value)} disabled={isLoading} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password" className="flex items-center"><Eye className="w-4 h-4 mr-2" />Password</Label>
@@ -253,3 +253,5 @@ export default function RegisterPage() {
     </TooltipProvider>
   );
 }
+
+    
