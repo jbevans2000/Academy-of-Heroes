@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Timer, Volume2, Users, Dices, Wrench } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 const tools = [
     {
@@ -67,37 +68,36 @@ export default function ClassroomToolsPage() {
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="grid gap-6 md:grid-cols-2">
+                             <div className="grid gap-6 md:grid-cols-2">
                                 {tools.map((tool, index) => (
-                                    <Card key={index} className="flex flex-col relative overflow-hidden">
-                                        {tool.bgImage && (
-                                            <>
-                                                <Image 
-                                                    src={tool.bgImage}
-                                                    alt={tool.title}
-                                                    fill
-                                                    className="object-cover opacity-10"
-                                                />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/50" />
-                                            </>
-                                        )}
-                                        <div className="relative z-10 flex flex-col flex-grow">
-                                            <CardHeader className="flex flex-row items-center gap-4">
-                                                {tool.icon}
-                                                <div>
-                                                    <CardTitle>{tool.title}</CardTitle>
+                                     <Link href={tool.disabled ? '#' : tool.path} key={index} className={cn("rounded-lg border bg-card text-card-foreground shadow-sm transition-transform hover:scale-105", tool.disabled && "pointer-events-none")}>
+                                        <div
+                                            className="relative flex flex-col justify-between h-64 p-6 rounded-lg overflow-hidden"
+                                            style={{
+                                                backgroundImage: tool.bgImage ? `url(${tool.bgImage})` : 'none',
+                                                backgroundSize: 'cover',
+                                                backgroundPosition: 'center',
+                                            }}
+                                        >
+                                            {/* Overlay */}
+                                            <div className="absolute inset-0 bg-black/60"></div>
+                                            
+                                            {/* Content */}
+                                            <div className="relative z-10 text-white">
+                                                <div className="flex items-center gap-4 mb-2">
+                                                    {tool.icon}
+                                                    <h3 className="text-xl font-bold">{tool.title}</h3>
                                                 </div>
-                                            </CardHeader>
-                                            <CardContent className="flex-grow">
-                                                <p className="text-muted-foreground">{tool.description}</p>
-                                            </CardContent>
-                                            <div className="p-6 pt-0">
-                                                <Button className="w-full" onClick={() => router.push(tool.path)} disabled={tool.disabled}>
+                                                <p className="text-sm text-white/80">{tool.description}</p>
+                                            </div>
+
+                                            <div className="relative z-10">
+                                                <Button className="w-full" variant="secondary" disabled={tool.disabled}>
                                                     {tool.disabled ? "Coming Soon" : "Launch Tool"}
                                                 </Button>
                                             </div>
                                         </div>
-                                    </Card>
+                                    </Link>
                                 ))}
                             </div>
                         </CardContent>
