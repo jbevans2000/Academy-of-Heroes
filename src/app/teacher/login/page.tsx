@@ -8,12 +8,13 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { School, Loader2, KeyRound, Mail } from 'lucide-react';
+import { School, Loader2, KeyRound, Mail, ArrowLeft } from 'lucide-react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -100,12 +101,18 @@ export default function TeacherLoginPage() {
                 Login
             </Button>
              <div className="mt-4 text-center text-sm">
-                Don't have an account?{' '}
+                Don&apos;t have an account?{' '}
                 <Link href="/teacher/register" className="underline">
                     Register here
                 </Link>
             </div>
           </CardContent>
+          <CardFooter>
+            <Button variant="outline" className="w-full" onClick={() => router.push('/')}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Return to Main Login
+            </Button>
+          </CardFooter>
         </Card>
       </div>
     </div>
