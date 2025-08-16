@@ -6,6 +6,8 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Timer, Volume2, Users, Dices, Wrench } from 'lucide-react';
+import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 const tools = [
     {
@@ -14,6 +16,7 @@ const tools = [
         icon: <Timer className="h-10 w-10 text-primary" />,
         path: '/teacher/tools/timer',
         disabled: true,
+        bgImage: '',
     },
     {
         title: 'Sleeping Dragon',
@@ -21,6 +24,7 @@ const tools = [
         icon: <Volume2 className="h-10 w-10 text-primary" />,
         path: '/teacher/tools/sleeping-dragon',
         disabled: false,
+        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2FSleeping%20Dragon.jpg?alt=media&token=97f4f83a-f195-47ca-9a8f-bde50dfa5e48'
     },
     {
         title: 'Random Student Picker',
@@ -28,6 +32,7 @@ const tools = [
         icon: <Users className="h-10 w-10 text-primary" />,
         path: '/teacher/tools/random-student',
         disabled: false,
+        bgImage: '',
     },
     {
         title: 'Random Activity Generator',
@@ -35,6 +40,7 @@ const tools = [
         icon: <Dices className="h-10 w-10 text-primary" />,
         path: '/teacher/tools/random-activity',
         disabled: false,
+        bgImage: '',
     }
 ]
 
@@ -63,20 +69,33 @@ export default function ClassroomToolsPage() {
                         <CardContent>
                             <div className="grid gap-6 md:grid-cols-2">
                                 {tools.map((tool, index) => (
-                                    <Card key={index} className="flex flex-col">
-                                        <CardHeader className="flex flex-row items-center gap-4">
-                                            {tool.icon}
-                                            <div>
-                                                <CardTitle>{tool.title}</CardTitle>
+                                    <Card key={index} className="flex flex-col relative overflow-hidden">
+                                         {tool.bgImage && (
+                                            <>
+                                                <Image 
+                                                    src={tool.bgImage}
+                                                    alt={tool.title}
+                                                    fill
+                                                    className="object-cover opacity-10"
+                                                />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/50" />
+                                            </>
+                                        )}
+                                        <div className="relative z-10 flex flex-col flex-grow">
+                                            <CardHeader className="flex flex-row items-center gap-4">
+                                                {tool.icon}
+                                                <div>
+                                                    <CardTitle>{tool.title}</CardTitle>
+                                                </div>
+                                            </CardHeader>
+                                            <CardContent className="flex-grow">
+                                                <p className="text-muted-foreground">{tool.description}</p>
+                                            </CardContent>
+                                            <div className="p-6 pt-0">
+                                                <Button className="w-full" onClick={() => router.push(tool.path)} disabled={tool.disabled}>
+                                                    {tool.disabled ? "Coming Soon" : "Launch Tool"}
+                                                </Button>
                                             </div>
-                                        </CardHeader>
-                                        <CardContent className="flex-grow">
-                                            <p className="text-muted-foreground">{tool.description}</p>
-                                        </CardContent>
-                                        <div className="p-6 pt-0">
-                                            <Button className="w-full" onClick={() => router.push(tool.path)} disabled={tool.disabled}>
-                                                {tool.disabled ? "Coming Soon" : "Launch Tool"}
-                                            </Button>
                                         </div>
                                     </Card>
                                 ))}
