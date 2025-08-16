@@ -1,4 +1,6 @@
 
+'use client';
+
 import { Sword, UserPlus, LogIn, ArrowLeft, School } from 'lucide-react';
 import { LoginForm } from '@/components/auth/login-form';
 import {
@@ -28,10 +30,29 @@ export default function LoginPage() {
              <div className="flex justify-center mb-4">
                 <Sword className="h-12 w-12 text-primary" />
              </div>
-            <CardTitle className="text-3xl font-headline">Welcome Back!</CardTitle>
-            <CardDescription>Login to continue your adventure.</CardDescription>
+            <CardTitle className="text-3xl font-headline">Welcome!</CardTitle>
+            <CardDescription>Join a class or login to continue your adventure.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            
+            <Link href="/register" passHref>
+                <Button size="lg" className="w-full text-lg py-8">
+                    <UserPlus className="mr-3 h-6 w-6" />
+                    Create New Hero & Join a Class
+                </Button>
+            </Link>
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">
+                  Or Login If You Have An Account
+                </span>
+              </div>
+            </div>
+
             <LoginForm />
 
             <div className="relative">
@@ -40,7 +61,7 @@ export default function LoginPage() {
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-card px-2 text-muted-foreground">
-                  Or
+                  Are you a teacher?
                 </span>
               </div>
             </div>
