@@ -6,10 +6,12 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Mic, MicOff, Volume2 } from 'lucide-react';
+import { ArrowLeft, Mic, MicOff, Volume2, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Slider } from '@/components/ui/slider';
+import { Label } from '@/components/ui/label';
 
 type DragonState = 'green' | 'yellow' | 'red';
 
@@ -34,6 +36,7 @@ export default function SleepingDragonPage() {
     const [dragonState, setDragonState] = useState<DragonState>('green');
     const [volume, setVolume] = useState(0);
     const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+    const [sensitivity, setSensitivity] = useState([50]);
     const audioContextRef = useRef<AudioContext | null>(null);
     const analyserRef = useRef<AnalyserNode | null>(null);
     const animationFrameRef = useRef<number>();
@@ -91,14 +94,17 @@ export default function SleepingDragonPage() {
             analyserRef.current.getByteFrequencyData(dataArray);
             const average = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
             
-            const normalizedVolume = Math.min(100, Math.floor(average));
+            // Adjust volume based on sensitivity
+            const sensitivityFactor = sensitivity[0] / 50; // Center point is 1.0
+            const adjustedAverage = average * sensitivityFactor;
+            const normalizedVolume = Math.min(100, Math.floor(adjustedAverage));
             setVolume(normalizedVolume);
 
             // Determine the potential new state based on current volume
             let newPotentialState: DragonState;
-            if (normalizedVolume > 50) {
+            if (normalizedVolume > 60) { // Increased threshold for red to give more leeway
                 newPotentialState = 'red';
-            } else if (normalizedVolume > 25) {
+            } else if (normalizedVolume > 30) { // Increased threshold for yellow
                 newPotentialState = 'yellow';
             } else {
                 newPotentialState = 'green';
@@ -173,7 +179,7 @@ export default function SleepingDragonPage() {
                     </div>
                 </div>
 
-                <div className="flex-shrink-0 pt-8 space-y-4">
+                <div className="flex-shrink-0 pt-8 space-y-6">
                      {hasPermission === false && (
                          <Alert variant="destructive" className="max-w-xl mx-auto">
                             <MicOff className="h-4 w-4" />
@@ -184,7 +190,7 @@ export default function SleepingDragonPage() {
                         </Alert>
                      )}
                      {hasPermission === true && (
-                        <div className="w-full max-w-xl mx-auto bg-black/30 rounded-lg p-4 text-center space-y-2">
+                        <div className="w-full max-w-xl mx-auto bg-black/30 rounded-lg p-4 text-center space-y-4">
                            <div className="flex items-center justify-center gap-2 text-muted-foreground">
                              <Volume2 className="h-5 w-5"/>
                              <p>Classroom Noise Level</p>
@@ -199,6 +205,21 @@ export default function SleepingDragonPage() {
                                     )}
                                     style={{ width: `${volume}%` }}
                                 ></div>
+                            </div>
+                            <div className="pt-2 space-y-2">
+                                <Label htmlFor="sensitivity" className="flex items-center justify-center gap-2 text-muted-foreground">
+                                    <Settings className="h-5 w-5" />
+                                    Microphone Sensitivity
+                                </Label>
+                                <Slider
+                                    id="sensitivity"
+                                    defaultValue={[50]}
+                                    value={sensitivity}
+                                    onValueChange={setSensitivity}
+                                    max={100}
+                                    step={1}
+                                    className="mx-auto w-4/5"
+                                />
                             </div>
                         </div>
                      )}
