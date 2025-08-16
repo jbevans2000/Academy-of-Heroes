@@ -6,26 +6,29 @@ import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Dices, RefreshCw, Loader2 } from 'lucide-react';
-import { generateActivity, type Activity } from '@/ai/flows/activity-generator';
+import { ArrowLeft, Dices, Loader2, BrainCircuit, PersonStanding } from 'lucide-react';
+import { generateActivity, type Activity, type ActivityInput } from '@/ai/flows/activity-generator';
 
 
 export default function RandomActivityPage() {
     const router = useRouter();
     const [currentActivity, setCurrentActivity] = useState<Activity | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [loadingType, setLoadingType] = useState<'Mental' | 'Physical' | null>(null);
 
-    const handleGenerateActivity = async () => {
+    const handleGenerateActivity = async (activityType: 'Mental' | 'Physical') => {
         setIsLoading(true);
+        setLoadingType(activityType);
         setCurrentActivity(null);
         try {
-            const activity = await generateActivity();
+            const activity = await generateActivity({ activityType });
             setCurrentActivity(activity);
         } catch (error) {
             console.error("Error generating activity:", error);
             // Optionally, show a toast notification to the user
         } finally {
             setIsLoading(false);
+            setLoadingType(null);
         }
     };
 
@@ -51,7 +54,7 @@ export default function RandomActivityPage() {
                                 <Dices className="h-12 w-12 text-primary" />
                             </div>
                             <CardTitle className="text-3xl text-black">A Task from the Throne</CardTitle>
-                            <CardDescription className="text-black">Click the button below to get a new fun, fantasy-themed activity for your class!</CardDescription>
+                            <CardDescription className="text-black">Choose a type of task to generate a fun, fantasy-themed activity for your class!</CardDescription>
                         </CardHeader>
                         <CardContent className="min-h-[200px] flex items-center justify-center">
                             {isLoading ? (
@@ -62,18 +65,28 @@ export default function RandomActivityPage() {
                                     <p className="text-black mt-2">{currentActivity.description}</p>
                                 </div>
                             ) : (
-                                <p className="text-black">Click the button to generate an activity!</p>
+                                <p className="text-black">Choose a task type below to generate an activity!</p>
                             )}
                         </CardContent>
                     </Card>
-                     <Button size="lg" className="w-full text-xl py-8" onClick={handleGenerateActivity} disabled={isLoading}>
-                        {isLoading ? (
-                            <Loader2 className="mr-4 h-6 w-6 animate-spin" />
-                        ) : (
-                            <RefreshCw className="mr-4 h-6 w-6" />
-                        )}
-                        Generate New Activity!
-                    </Button>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Button size="lg" className="text-lg py-8" onClick={() => handleGenerateActivity('Mental')} disabled={isLoading}>
+                            {isLoading && loadingType === 'Mental' ? (
+                                <Loader2 className="mr-4 h-6 w-6 animate-spin" />
+                            ) : (
+                                <BrainCircuit className="mr-4 h-6 w-6" />
+                            )}
+                            Generate Mental Task
+                        </Button>
+                         <Button size="lg" className="text-lg py-8" onClick={() => handleGenerateActivity('Physical')} disabled={isLoading}>
+                            {isLoading && loadingType === 'Physical' ? (
+                                <Loader2 className="mr-4 h-6 w-6 animate-spin" />
+                            ) : (
+                                <PersonStanding className="mr-4 h-6 w-6" />
+                            )}
+                            Generate Physical Task
+                        </Button>
+                    </div>
                 </div>
             </main>
         </div>
