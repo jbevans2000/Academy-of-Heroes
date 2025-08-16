@@ -39,7 +39,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, UserX, Swords, PlusCircle, BookOpen, Wrench, ChevronDown } from 'lucide-react';
+import { Loader2, Star, Coins, UserX, Swords, PlusCircle, BookOpen, Wrench, ChevronDown, Move } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -363,6 +363,10 @@ export default function TeacherDashboardPage() {
                         <BookOpen className="mr-2 h-4 w-4" />
                         <span>Game Log</span>
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push('/teacher/migrate-data')}>
+                        <Move className="mr-2 h-4 w-4" />
+                        <span>Data Migration Tool</span>
+                    </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
 
@@ -497,3 +501,5 @@ export default function TeacherDashboardPage() {
     </div>
   );
 }
+
+    
