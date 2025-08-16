@@ -15,38 +15,28 @@ const NameInputSchema = z.object({
 });
 export type NameInput = z.infer<typeof NameInputSchema>;
 
-// Internal schema includes the random seed
-const InternalNameInputSchema = NameInputSchema.extend({
-    isNonBinary: z.boolean(),
-    randomSeed: z.number(),
-});
+export async function generateName(input: NameInput): Promise<string> {
+    const { gender } = input;
+    const isNonBinary = gender === 'Non-binary';
+    const randomSeed = Math.random();
 
-const namePrompt = ai.definePrompt({
-    name: 'namePrompt',
-    input: { schema: InternalNameInputSchema },
-    prompt: `You are an expert in fantasy world-building. 
+    let genderInstruction = `The name should be appropriate for a ${gender} character.`;
+    if (isNonBinary) {
+        genderInstruction = `The name should be gender-neutral, not sounding distinctly male or female.`;
+    }
+
+    const { text } = await ai.generate({
+        prompt: `You are an expert in fantasy world-building. 
     
 Generate a single, cool-sounding, fantasy-style character name that includes a first name and a last name.
 
-{{#if isNonBinary}}
-The name should be gender-neutral, not sounding distinctly male or female.
-{{else}}
-The name should be appropriate for a {{gender}} character.
-{{/if}}
+${genderInstruction}
 
 Do not provide any explanation or surrounding text. Only provide the name itself.
 
-This is a unique request, identified by the number {{randomSeed}}.
+This is a unique request, identified by the number ${randomSeed}.
 `,
-});
+    });
 
-export async function generateName(input: NameInput): Promise<string> {
-  const isNonBinary = input.gender === 'Non-binary';
-
-  const {text} = await namePrompt({
-    ...input,
-    isNonBinary,
-    randomSeed: Math.random(),
-  });
-  return text;
+    return text;
 }
