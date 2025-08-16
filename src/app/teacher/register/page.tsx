@@ -129,7 +129,6 @@ export default function TeacherRegisterPage() {
                 backgroundPosition: 'center',
             }}
         />
-        <div className="absolute inset-0 -z-10 bg-black/75" />
       <Card className="w-full max-w-lg shadow-2xl bg-card/90">
         <CardHeader className="text-center">
             <CardTitle className="text-3xl font-headline text-primary">Teacher Registration</CardTitle>
