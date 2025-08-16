@@ -37,6 +37,7 @@ export default function SleepingDragonPage() {
     const audioContextRef = useRef<AudioContext | null>(null);
     const analyserRef = useRef<AnalyserNode | null>(null);
     const animationFrameRef = useRef<number>();
+    const stateDowngradeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         const getMicPermission = async () => {
@@ -63,6 +64,9 @@ export default function SleepingDragonPage() {
             if (animationFrameRef.current) {
                 cancelAnimationFrame(animationFrameRef.current);
             }
+             if (stateDowngradeTimeoutRef.current) {
+                clearTimeout(stateDowngradeTimeoutRef.current);
+            }
             if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
                 audioContextRef.current.close();
             }
@@ -83,21 +87,57 @@ export default function SleepingDragonPage() {
         const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
         const updateVolume = () => {
-            analyser.getByteFrequencyData(dataArray);
+            if (!analyserRef.current) return;
+            analyserRef.current.getByteFrequencyData(dataArray);
             const average = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
             
-            // Normalize volume to a 0-100 scale
             const normalizedVolume = Math.min(100, Math.floor(average));
             setVolume(normalizedVolume);
 
-            // Update dragon state based on volume
+            // Determine the potential new state based on current volume
+            let newPotentialState: DragonState;
             if (normalizedVolume > 50) {
-                setDragonState('red');
+                newPotentialState = 'red';
             } else if (normalizedVolume > 25) {
-                setDragonState('yellow');
+                newPotentialState = 'yellow';
             } else {
-                setDragonState('green');
+                newPotentialState = 'green';
             }
+
+            setDragonState(currentDragonState => {
+                const stateOrder = { green: 0, yellow: 1, red: 2 };
+                const currentOrder = stateOrder[currentDragonState];
+                const newOrder = stateOrder[newPotentialState];
+
+                // If volume increases, change state immediately and cancel any pending downgrade
+                if (newOrder > currentOrder) {
+                    if (stateDowngradeTimeoutRef.current) {
+                        clearTimeout(stateDowngradeTimeoutRef.current);
+                        stateDowngradeTimeoutRef.current = null;
+                    }
+                    return newPotentialState;
+                }
+                
+                // If volume decreases, start a timer to downgrade the state
+                if (newOrder < currentOrder) {
+                    if (!stateDowngradeTimeoutRef.current) {
+                        stateDowngradeTimeoutRef.current = setTimeout(() => {
+                            setDragonState(newPotentialState);
+                            stateDowngradeTimeoutRef.current = null;
+                        }, 5000); // 5-second delay
+                    }
+                    return currentDragonState; // Return current state while waiting
+                }
+
+                // If state is the same, do nothing but ensure no downgrade is pending
+                if (newOrder === currentOrder && stateDowngradeTimeoutRef.current) {
+                     clearTimeout(stateDowngradeTimeoutRef.current);
+                     stateDowngradeTimeoutRef.current = null;
+                }
+
+                return currentDragonState;
+            });
+
 
             animationFrameRef.current = requestAnimationFrame(updateVolume);
         };
