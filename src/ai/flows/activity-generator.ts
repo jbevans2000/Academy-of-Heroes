@@ -9,11 +9,11 @@
  */
 import '@/ai/genkit'; // Ensure Genkit is initialized
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z} from 'zod';
 
 const ActivityInputSchema = z.object({
   activityType: z.enum(['Mental', 'Physical']),
-  gradeLevel: z.enum(['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade']),
+  gradeLevel: z.enum(['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade']),
 });
 export type ActivityInput = z.infer<typeof ActivityInputSchema>;
 
