@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, writeBatch, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, writeBatch, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import { TeacherHeader } from "@/components/teacher/teacher-header";
@@ -33,7 +33,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, Trash2, Swords, PlusCircle } from 'lucide-react';
+import { Loader2, Star, Coins, Trash2, Swords, PlusCircle, UserX } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 
 export default function TeacherDashboardPage() {
@@ -43,7 +43,7 @@ export default function TeacherDashboardPage() {
   const [xpAmount, setXpAmount] = useState<number | string>('');
   const [goldAmount, setGoldAmount] = useState<number | string>('');
   const [isAwarding, setIsAwarding] = useState(false);
-  const [isClearing, setIsClearing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isXpDialogOpen, setIsXpDialogOpen] = useState(false);
   const [isGoldDialogOpen, setIsGoldDialogOpen] = useState(false);
   const { toast } = useToast();
@@ -231,33 +231,38 @@ export default function TeacherDashboardPage() {
       }
   };
 
-  const handleClearAllAnswers = async () => {
-    setIsClearing(true);
-    try {
-        const summariesRef = collection(db, 'battleSummaries');
-        const summariesSnapshot = await getDocs(summariesRef);
-        const batch = writeBatch(db);
+  const handleDeleteStudents = async () => {
+      if (selectedStudents.length === 0) return;
+      setIsDeleting(true);
 
-        summariesSnapshot.forEach(doc => {
-            batch.update(doc.ref, { resultsByRound: {} });
-        });
+      try {
+          const batch = writeBatch(db);
+          for (const uid of selectedStudents) {
+              const studentRef = doc(db, 'students', uid);
+              batch.delete(studentRef);
+          }
+          await batch.commit();
 
-        await batch.commit();
+          // Update local state
+          setStudents(prev => prev.filter(s => !selectedStudents.includes(s.uid)));
+          setSelectedStudents([]);
+          
+          toast({
+              title: 'Student Data Deleted',
+              description: 'IMPORTANT: You must now manually delete the user(s) from the Firebase Authentication console to prevent them from logging back in.',
+              duration: 10000,
+          });
 
-        toast({
-            title: 'Success!',
-            description: 'All historical boss battle answers have been cleared.',
-        });
-    } catch (error) {
-        console.error('Error clearing all answers:', error);
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Could not clear all boss battle answers. Please try again.',
-        });
-    } finally {
-        setIsClearing(false);
-    }
+      } catch (error) {
+          console.error("Error deleting students:", error);
+          toast({
+              variant: 'destructive',
+              title: 'Deletion Failed',
+              description: 'Could not delete student data from Firestore.',
+          });
+      } finally {
+          setIsDeleting(false);
+      }
   };
   
   if (isLoading) {
@@ -287,7 +292,7 @@ export default function TeacherDashboardPage() {
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="mb-4">
             <h1 className="text-3xl font-bold">All Students</h1>
-            <p className="text-muted-foreground">Select students and award XP or Gold, or manage battle history.</p>
+            <p className="text-muted-foreground">Select students and award XP or Gold, or manage quests and battles.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 mb-6">
             <Button 
@@ -305,7 +310,7 @@ export default function TeacherDashboardPage() {
             </Button>
             <Dialog open={isXpDialogOpen} onOpenChange={setIsXpDialogOpen}>
             <DialogTrigger asChild>
-                <Button>
+                <Button disabled={selectedStudents.length === 0}>
                 <Star className="mr-2 h-4 w-4" /> Award Experience
                 </Button>
             </DialogTrigger>
@@ -342,7 +347,7 @@ export default function TeacherDashboardPage() {
             </Dialog>
             <Dialog open={isGoldDialogOpen} onOpenChange={setIsGoldDialogOpen}>
             <DialogTrigger asChild>
-                <Button className="bg-green-600 hover:bg-green-700 text-white">
+                <Button className="bg-green-600 hover:bg-green-700 text-white" disabled={selectedStudents.length === 0}>
                 <Coins className="mr-2 h-4 w-4" /> Award Gold
                 </Button>
             </DialogTrigger>
@@ -378,26 +383,44 @@ export default function TeacherDashboardPage() {
             </DialogContent>
             </Dialog>
             <AlertDialog>
-            <AlertDialogTrigger asChild>
-                <Button variant="destructive">
-                    <Trash2 className="mr-2 h-4 w-4" /> Clear All Boss Battle Answers
-                </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    This is a nuclear option. This action will permanently delete all historical student answers from every boss battle summary. This cannot be undone.
-                </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                <AlertDialogCancel disabled={isClearing}>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleClearAllAnswers} disabled={isClearing}>
-                    {isClearing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Yes, delete all answers
-                </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
+                <AlertDialogTrigger asChild>
+                    <Button variant="destructive" disabled={selectedStudents.length === 0}>
+                        <UserX className="mr-2 h-4 w-4" /> Delete Selected
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure? (Step 1 of 2)</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete all character data (XP, Gold, Level, etc.) for the
+                            <span className="font-bold"> {selectedStudents.length} selected student(s)</span>.
+                            This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <AlertDialogAction>Continue to Final Confirmation</AlertDialogAction>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Final Confirmation (Step 2 of 2)</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This is your final warning. Deleting this data is permanent. After this, you must also delete the user from Firebase Authentication to fully remove them.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleDeleteStudents} disabled={isDeleting}>
+                                        {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                        Yes, Delete All Character Data
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
             </AlertDialog>
         </div>
         <StudentList 
@@ -410,5 +433,3 @@ export default function TeacherDashboardPage() {
     </div>
   );
 }
-
-    
