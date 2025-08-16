@@ -19,6 +19,7 @@ import { School, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
 import { doc, getDoc } from 'firebase/firestore';
+import Link from 'next/link';
 
 export function LoginForm() {
   const [studentId, setStudentId] = useState('');
@@ -164,15 +165,20 @@ export function LoginForm() {
             </span>
           </div>
         </div>
-        <Button
-          variant="secondary"
-          className="w-full"
-          onClick={() => router.push('/teacher/login')}
-          disabled={isLoading}
-        >
-          <School className="mr-2 h-4 w-4" />
-          Teacher Login
-        </Button>
+        <div className="flex flex-col gap-2">
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={() => router.push('/teacher/login')}
+              disabled={isLoading}
+            >
+              <School className="mr-2 h-4 w-4" />
+              Teacher Login
+            </Button>
+            <Link href="/teacher/register" className="text-center text-sm text-primary hover:underline">
+                Teacher Registration
+            </Link>
+        </div>
       </CardContent>
     </Card>
   );
