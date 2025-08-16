@@ -51,18 +51,18 @@ export default function RandomActivityPage() {
                                 <Dices className="h-12 w-12 text-primary" />
                             </div>
                             <CardTitle className="text-3xl text-black">A Task from the Throne</CardTitle>
-                            <CardDescription className="text-black/80">Click the button below to get a new fun, fantasy-themed activity for your class!</CardDescription>
+                            <CardDescription className="text-black">Click the button below to get a new fun, fantasy-themed activity for your class!</CardDescription>
                         </CardHeader>
                         <CardContent className="min-h-[200px] flex items-center justify-center">
                             {isLoading ? (
                                  <Loader2 className="h-12 w-12 text-primary animate-spin" />
                             ) : currentActivity ? (
                                 <div className="p-6 border-2 border-dashed border-primary rounded-lg bg-background animate-in fade-in-50">
-                                    <h3 className="text-2xl font-bold font-headline text-primary">{currentActivity.title}</h3>
-                                    <p className="text-muted-foreground mt-2">{currentActivity.description}</p>
+                                    <h3 className="text-2xl font-bold font-headline text-black">{currentActivity.title}</h3>
+                                    <p className="text-black mt-2">{currentActivity.description}</p>
                                 </div>
                             ) : (
-                                <p className="text-black/60">Click the button to generate an activity!</p>
+                                <p className="text-black">Click the button to generate an activity!</p>
                             )}
                         </CardContent>
                     </Card>
