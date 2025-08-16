@@ -13,15 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
-export function LoginForm() {
-  const [studentId, setStudentId] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
-  const { toast } = useToast();
-
-  const findStudentAndTeacher = async (uid: string): Promise<{ studentName: string | null, teacherUid: string | null }> => {
+const findStudentAndTeacher = async (uid: string): Promise<{ studentName: string | null, teacherUid: string | null }> => {
     const teachersRef = collection(db, 'teachers');
     const teacherSnapshot = await getDocs(teachersRef);
 
@@ -34,6 +26,14 @@ export function LoginForm() {
     }
     return { studentName: null, teacherUid: null };
   };
+
+export function LoginForm() {
+  const [studentId, setStudentId] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
 
   const handleLogin = async () => {
     if (!studentId || !password) {
@@ -54,9 +54,12 @@ export function LoginForm() {
       const user = userCredential.user;
 
       // After successful login, find which teacher this student belongs to
-      const { studentName } = await findStudentAndTeacher(user.uid);
+      const { studentName, teacherUid } = await findStudentAndTeacher(user.uid);
       
-      if (studentName) {
+      if (studentName && teacherUid) {
+        // NOTE: The logGameEvent function uses a hardcoded teacher UID.
+        // For accurate, per-teacher logging, that function would need to be updated
+        // to accept a teacher UID as a parameter.
         await logGameEvent('ACCOUNT', `${studentName} logged in.`);
       } else {
          // This case would be rare, meaning a user exists in Auth but has no student document

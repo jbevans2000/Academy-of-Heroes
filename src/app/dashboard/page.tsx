@@ -3,16 +3,27 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { onAuthStateChanged } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { onAuthStateChanged, type User } from 'firebase/auth';
+import { doc, onSnapshot, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { DashboardClient } from '@/components/dashboard/dashboard-client';
 import { Skeleton } from '@/components/ui/skeleton';
 
-// HARDCODED TEACHER UID
-const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+const findTeacherForStudent = async (studentUid: string): Promise<string | null> => {
+    const teachersRef = collection(db, 'teachers');
+    const teacherSnapshot = await getDocs(teachersRef);
+
+    for (const teacherDoc of teacherSnapshot.docs) {
+      const studentDocRef = doc(db, 'teachers', teacherDoc.id, 'students', studentUid);
+      const studentSnap = await getDoc(studentDocRef);
+      if (studentSnap.exists()) {
+        return teacherDoc.id;
+      }
+    }
+    return null;
+}
 
 export default function DashboardPage() {
   const [student, setStudent] = useState<Student | null>(null);
@@ -20,29 +31,34 @@ export default function DashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const authUnsubscribe = onAuthStateChanged(auth, (user) => {
+    const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // We have a user, now set up the real-time listener for their data
-        const docRef = doc(db, 'teachers', TEACHER_UID, 'students', user.uid);
-        
-        const snapshotUnsubscribe = onSnapshot(docRef, (docSnap) => {
-          if (docSnap.exists()) {
-            setStudent(docSnap.data() as Student);
-          } else {
-            // This case handles if the student document is ever deleted while they are logged in
-            console.error("No such student document!");
-            router.push('/');
-          }
-          setIsLoading(false);
-        }, (error) => {
-            console.error("Error listening to student document:", error);
-            setIsLoading(false);
-            router.push('/');
-        });
+        // Dynamically find the teacher for the logged-in student
+        const teacherUid = await findTeacherForStudent(user.uid);
 
-        // Return the unsubscribe function for the snapshot listener
-        // This will be called when the component unmounts
-        return () => snapshotUnsubscribe();
+        if (teacherUid) {
+            const docRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
+            
+            const snapshotUnsubscribe = onSnapshot(docRef, (docSnap) => {
+              if (docSnap.exists()) {
+                setStudent(docSnap.data() as Student);
+              } else {
+                console.error("Student document not found for a validated user. This could happen if the document was deleted after login.");
+                router.push('/');
+              }
+              setIsLoading(false);
+            }, (error) => {
+                console.error("Error listening to student document:", error);
+                setIsLoading(false);
+                router.push('/');
+            });
+            return () => snapshotUnsubscribe();
+        } else {
+             // This case handles if a user is authenticated but has no student record under ANY teacher.
+             console.error(`No teacher found for student with UID: ${user.uid}`);
+             router.push('/');
+             setIsLoading(false);
+        }
 
       } else {
         // No user is signed in.
