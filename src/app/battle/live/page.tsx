@@ -278,7 +278,11 @@ export default function LiveBattlePage() {
                         <Button 
                             size="lg"
                             variant="default" 
-                            className="bg-blue-600/80 border-blue-500 hover:bg-blue-500/90 text-white shadow-lg"
+                            className={cn(
+                                "text-white shadow-lg",
+                                student.class === 'Mage' && "bg-blue-600/80 border-blue-500 hover:bg-blue-500/90",
+                                student.class === 'Guardian' && "bg-amber-500/80 border-amber-400 hover:bg-amber-500/90",
+                            )}
                             onClick={() => setIsPowersSheetOpen(true)}
                         >
                             <Flame className="mr-2 h-5 w-5" />
