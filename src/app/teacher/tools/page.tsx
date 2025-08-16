@@ -58,14 +58,6 @@ const tools = [
         disabled: false,
         bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-4f51950d-83b5-4b55-8664-8178a9c277f0.jpg?alt=media&token=c2c101cb-e71e-42c2-b5e1-85b6727a8581',
     },
-    {
-        title: 'Database Migration',
-        description: 'One-time tool to move collections to their correct location.',
-        icon: <DatabaseZap className="h-10 w-10 text-destructive" />,
-        path: '/teacher/tools/migration',
-        disabled: false,
-        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-7e04f981-d101-449e-b816-f3316bca8b6f.jpg?alt=media&token=0ac161be-a083-42e7-8b01-f51c72ea8c80',
-    }
 ]
 
 export default function ClassroomToolsPage() {
