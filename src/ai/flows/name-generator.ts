@@ -36,7 +36,7 @@ The name should be appropriate for a {{gender}} character.
 
 Do not provide any explanation or surrounding text. Only provide the name itself.
 
-// Unique seed to prevent caching: {{randomSeed}}
+This is a unique request, identified by the number {{randomSeed}}.
 `,
 });
 
