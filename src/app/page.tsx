@@ -50,6 +50,7 @@ export default function SplashPage() {
           <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center text-sm">
             <p>&copy; {new Date().getFullYear()} Academy of Heroes. All rights reserved.</p>
             <div className="flex gap-4 mt-2 sm:mt-0">
+                <Link href="/support" className="hover:text-white transition-colors">Support</Link>
                 <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>
                 <Link href="#" className="hover:text-white transition-colors">Terms of Service</Link>
             </div>
