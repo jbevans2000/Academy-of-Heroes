@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
+import { classData } from '@/lib/data';
 
 // HARDCODED TEACHER UID
 const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
@@ -155,7 +156,17 @@ interface StudentCardProps {
 }
 
 export function StudentCard({ student, isSelected, onSelect, setStudents }: StudentCardProps) {
-  const backgroundUrl = student.backgroundUrl || 'https://placehold.co/600x400.png';
+  const backgroundUrl = useMemo(() => {
+    if (student.backgroundUrl) {
+      return student.backgroundUrl;
+    }
+    const backgrounds = classData[student.class]?.backgrounds;
+    if (backgrounds && backgrounds.length > 0) {
+      return backgrounds[Math.floor(Math.random() * backgrounds.length)];
+    }
+    return 'https://placehold.co/600x400.png';
+  }, [student.backgroundUrl, student.class]);
+
   const avatarUrl = student.avatarUrl || 'https://placehold.co/100x100.png';
 
   return (
@@ -264,3 +275,5 @@ export function StudentCard({ student, isSelected, onSelect, setStudents }: Stud
     </Dialog>
   );
 }
+
+    

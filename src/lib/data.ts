@@ -32,7 +32,11 @@ export const classData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FLevel%201%20Guardian%20(8).jpg?alt=media&token=8a6ff376-8bf5-40ed-b0cd-f515f7fe9e7e'
     ],
     backgrounds: [
-        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Guardian%20Backgrounds%2FGuardian%201.jpg?alt=media&token=d735a40c-e25e-4fab-98d3-526bb0411dfe'
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Backgrounds%2FGuardian%201.jpg?alt=media&token=2622436e-2178-42f0-8c24-b55219219b16',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Backgrounds%2FGuardian%202.jpg?alt=media&token=5b26284f-e228-4e89-8a54-3e9a4f6d4d10',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Backgrounds%2FGuardian%203.jpg?alt=media&token=a3e8e1a8-c3e0-4131-9a7e-4ac4e09315f6',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Backgrounds%2FGuardian%204.jpg?alt=media&token=3819c946-0c6d-49f3-80d5-1f9c5d18e8b2',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Backgrounds%2FGuardian%205.jpg?alt=media&token=b30e1523-88c9-42b7-a309-17d476657984',
     ],
     baseStats: { hp: 5, mp: 4 },
   },
@@ -48,7 +52,11 @@ export const classData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%201%20(8).jpg?alt=media&token=c283d613-712e-4f78-bc68-3d7d92aa9271'
     ],
     backgrounds: [
-        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Healer%20Backgrounds%2FHealer%201.jpg?alt=media&token=6c41882c-39f1-46a4-9f9f-569dfdaec95d'
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Backgrounds%2FHealer%201.jpg?alt=media&token=81d23467-31a8-4428-86d1-43542283e58b',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Backgrounds%2FHealer%202.jpg?alt=media&token=5a576b01-5221-4a41-b847-f417f7762c41',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Backgrounds%2FHealer%203.jpg?alt=media&token=70b36879-1991-443b-8c8a-f5a6a6865201',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Backgrounds%2FHealer%204.jpg?alt=media&token=605f6312-320d-4f73-9a1b-6eb6d7616b25',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Backgrounds%2FHealer%205.jpg?alt=media&token=8233b860-f1d2-4e1b-8012-70b9e89d9703',
     ],
     baseStats: { hp: 4, mp: 6 },
   },
@@ -64,8 +72,15 @@ export const classData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FLevel%201%20Mage%201%20(8).jpg?alt=media&token=c3f4688e-f03a-4e26-a10b-d27c529cf3a9'
     ],
     backgrounds: [
-        'https://firebasestorage.googleapis.com/v0/b/classcraft-c7d14.firebasestorage.app/o/Mage%20Backgrounds%2FMage%206.jpg?alt=media&token=722b4a2a-1fee-4f8b-8c53-4b60a8ef4b6a'
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Backgrounds%2FMage%201.jpg?alt=media&token=362d2d6c-7e61-4603-a131-7e89db1f22a5',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Backgrounds%2FMage%202.jpg?alt=media&token=9825b035-18db-4e76-888e-6c8411b65e93',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Backgrounds%2FMage%203.jpg?alt=media&token=3269b76c-18f4-4a4b-8e14-22d76a7d6537',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Backgrounds%2FMage%204.jpg?alt=media&token=6b677a29-c852-4a7a-b44c-1e8ea31f13b6',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Backgrounds%2FMage%205.jpg?alt=media&token=8e9e4f51-2475-433b-8219-48ab50e82c5f',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Backgrounds%2FMage%206.jpg?alt=media&token=627f5413-568d-4f81-893c-a9e9e1f57451',
     ],
     baseStats: { hp: 3, mp: 8 },
   },
 };
+
+    
