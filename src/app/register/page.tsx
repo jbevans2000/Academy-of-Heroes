@@ -217,7 +217,7 @@ export default function RegisterPage() {
                     <Label htmlFor="student-name" className="flex items-center"><User className="w-4 h-4 mr-2" />Student Name</Label>
                     <Input id="student-name" placeholder="Your real name" value={studentName} onChange={(e) => setStudentName(e.target.value)} disabled={isLoading} />
                 </div>
-                <div className="space-y-2">
+                 <div className="space-y-2">
                     <Label htmlFor="class" className="flex items-center"><Wand className="w-4 h-4 mr-2" />Select Your Class</Label>
                     <Select onValueChange={handleClassChange} disabled={isLoading} value={selectedClass}>
                     <SelectTrigger>
@@ -231,31 +231,22 @@ export default function RegisterPage() {
                     </Select>
                 </div>
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
                     <Label htmlFor="character-name" className="flex items-center"><Star className="w-4 h-4 mr-2" />Character Name</Label>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm" disabled={isGeneratingName}>
-                                        {isGeneratingName ? <Loader2 className="h-4 w-4 animate-spin" /> : <ChevronsUpDown className="h-4 w-4" />}
-                                        <span className="sr-only">Generate Name</span>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                    <DropdownMenuItem onClick={() => handleGenerateName('Male')}>Random Male Name</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleGenerateName('Female')}>Random Female Name</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleGenerateName('Non-binary')}>Random Non-binary Name</DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Generate a random name</p>
-                        </TooltipContent>
-                    </Tooltip>
-
-                  </div>
                     <Input id="character-name" placeholder="Your hero's name" value={characterName} onChange={(e) => setCharacterName(e.target.value)} disabled={isLoading || isGeneratingName} />
+                </div>
+                <div className="space-y-2">
+                    <Label>Need help with a name?</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handleGenerateName('Male')} disabled={isGeneratingName}>
+                           {isGeneratingName ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Random Male'}
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => handleGenerateName('Female')} disabled={isGeneratingName}>
+                           {isGeneratingName ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Random Female'}
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => handleGenerateName('Non-binary')} disabled={isGeneratingName}>
+                           {isGeneratingName ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Random Non-binary'}
+                        </Button>
+                    </div>
                 </div>
                 </div>
 
