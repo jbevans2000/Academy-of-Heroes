@@ -119,9 +119,18 @@ export default function TeacherRegisterPage() {
   
   return (
     <div 
-      className="flex items-center justify-center min-h-screen bg-muted/40 p-4"
+        className="relative flex items-center justify-center min-h-screen p-4"
     >
-      <Card className="w-full max-w-lg shadow-2xl">
+        <div 
+            className="absolute inset-0 -z-10"
+            style={{
+                backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-b2ed6807-b64f-48e1-9b8c-a2d0b719db78.jpg?alt=media&token=793c0484-06f3-49ab-9557-9ca0a9b0f6bf')`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+            }}
+        />
+        <div className="absolute inset-0 -z-10 bg-black/75" />
+      <Card className="w-full max-w-lg shadow-2xl bg-card/90">
         <CardHeader className="text-center">
             <CardTitle className="text-3xl font-headline text-primary">Teacher Registration</CardTitle>
             <CardDescription>Join the Academy of Heroes and bring your classroom to life.</CardDescription>
