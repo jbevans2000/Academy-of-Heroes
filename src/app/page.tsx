@@ -1,22 +1,48 @@
-import { Sword } from 'lucide-react';
-import { LoginForm } from '@/components/auth/login-form';
+import { Button } from '@/components/ui/button';
+import { LogIn, Shield, UserPlus } from 'lucide-react';
+import Link from 'next/link';
+import Image from 'next/image';
 
-export default function LoginPage() {
+export default function SplashPage() {
   return (
-    <div
-      className="flex items-center justify-center min-h-screen bg-background p-4 sm:p-6 lg:p-8"
-      style={{
-        backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Aug%2014%2C%202025%2C%2009_44_22%20PM.png?alt=media&token=cb2379fa-3333-44f9-b4fb-b4a72672a312')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-      }}
-    >
-      <div className="w-full max-w-md">
-        <div className="flex justify-center mb-6">
-          <Sword className="h-10 w-10 text-primary" />
+    <div className="relative min-h-screen w-full flex flex-col items-center justify-center p-4 text-center text-white">
+      {/* Background Image */}
+      <Image
+        src="https://placehold.co/1920x1080.png"
+        alt="A vibrant fantasy landscape with floating islands and a castle."
+        fill
+        className="object-cover -z-10"
+        data-ai-hint="fantasy landscape castle"
+        priority
+      />
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/60 -z-10" />
+
+      {/* Content */}
+      <div className="z-10 flex flex-col items-center space-y-8 animate-in fade-in-50 duration-1000">
+        <header className="space-y-4">
+          <h1 className="text-5xl md:text-7xl font-bold font-headline text-shadow-lg">
+            Turn Any Lesson Into an Epic Quest.
+          </h1>
+          <p className="text-lg md:text-xl max-w-3xl mx-auto text-white/90 text-shadow-lg">
+            Capture student imagination by transforming your curriculum into a thrilling fantasy adventure. Boost engagement, reward progress, and make learning unforgettable with the power of swords, sorcery, and storytelling.
+          </p>
+        </header>
+
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <Link href="/login" passHref>
+            <Button size="lg" className="w-full sm:w-auto text-lg py-7 px-8">
+              <LogIn className="mr-2" />
+              Student & Teacher Login
+            </Button>
+          </Link>
+           <Link href="/register" passHref>
+             <Button size="lg" variant="secondary" className="w-full sm:w-auto text-lg py-7 px-8">
+                <UserPlus className="mr-2" />
+                Create a Student Avatar
+             </Button>
+           </Link>
         </div>
-        <LoginForm />
       </div>
     </div>
   );

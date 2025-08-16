@@ -244,7 +244,7 @@ export default function TeacherRegisterPage() {
              </div>
              <Button variant="link" className="w-full text-muted-foreground" onClick={() => router.push('/')}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Return to Main Login
+                Return to Splash Page
             </Button>
         </CardFooter>
       </Card>

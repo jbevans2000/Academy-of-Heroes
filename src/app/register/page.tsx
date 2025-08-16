@@ -245,7 +245,7 @@ export default function RegisterPage() {
                 {isLoading ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : 'Create My Hero and Enter Luminaria'}
               </Button>
               <p className="text-center text-sm mt-4 text-muted-foreground">
-                Already have a hero? <Link href="/" className="underline text-primary">Login here</Link>.
+                Already have a hero? <Link href="/login" className="underline text-primary">Login here</Link>.
               </p>
            </div>
         </Card>

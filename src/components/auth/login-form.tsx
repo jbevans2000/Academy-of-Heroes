@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { School, Eye, EyeOff, Loader2, UserPlus, BookUser } from 'lucide-react';
+import { School, Eye, EyeOff, Loader2, UserPlus, BookUser, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
 import { doc, getDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
@@ -115,10 +115,10 @@ export function LoginForm() {
     <Card className="shadow-2xl bg-card/30 backdrop-blur-sm">
       <CardHeader className="text-center">
         <CardTitle className="text-3xl font-headline text-primary">
-          Welcome to The Academy of Heroes!
+          Welcome Back, Hero!
         </CardTitle>
         <CardDescription className="text-yellow-300">
-          Login to Continue Your Quest, or Create a New Avatar Below!
+          Enter your credentials to continue your quest.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -224,6 +224,10 @@ export function LoginForm() {
               Teacher Registration
             </Button>
         </div>
+        <Button variant="link" className="w-full mt-4" onClick={() => router.push('/')}>
+            <ArrowLeft className="mr-2" />
+            Back to Splash Page
+        </Button>
       </CardContent>
     </Card>
   );
