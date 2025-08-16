@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ArrowLeft, PlusCircle, Trash2, Eye, GitBranch, Loader2, Sparkles, Image as ImageIcon, Upload } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Trash2, Eye, GitBranch, Loader2, Sparkles, Image as ImageIcon, Upload, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection } from 'firebase/firestore';
@@ -305,15 +305,21 @@ export default function NewBossBattlePage() {
                     <Label htmlFor="boss-image" className="text-base">Boss Image URL</Label>
                     <Input id="boss-image" placeholder="https://example.com/boss.png or upload/generate one below" value={bossImageUrl} onChange={(e) => setBossImageUrl(e.target.value)} disabled={isSaving} />
                 </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="image-upload" className="text-base">Or Upload Your Own Image</Label>
+                 <div className="space-y-2 p-4 border rounded-md">
+                    <Label htmlFor="image-upload" className="text-base font-medium">Or Upload Your Own Image</Label>
                     <div className="flex items-center gap-2">
                       <Input id="image-upload" type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files ? e.target.files[0] : null)} className="flex-grow" disabled={isUploading}/>
-                      <Button onClick={handleUploadImage} disabled={!imageFile || isUploading}>
-                        {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                         Upload
-                      </Button>
+                      {imageFile && (
+                          <Button variant="ghost" size="icon" onClick={() => setImageFile(null)}>
+                              <X className="h-4 w-4" />
+                          </Button>
+                      )}
                     </div>
+                     {imageFile && <p className="text-sm text-muted-foreground">Selected: {imageFile.name}</p>}
+                     <Button onClick={handleUploadImage} disabled={!imageFile || isUploading} className="mt-2">
+                        {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                         Upload Selected Image
+                      </Button>
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="video-url" className="text-base">Intro Video URL (YouTube, etc.)</Label>
