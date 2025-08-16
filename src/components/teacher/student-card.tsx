@@ -162,10 +162,13 @@ export function StudentCard({ student, isSelected, onSelect, setStudents }: Stud
     }
     const backgrounds = classData[student.class]?.backgrounds;
     if (backgrounds && backgrounds.length > 0) {
-      return backgrounds[Math.floor(Math.random() * backgrounds.length)];
+      // Use a simple hashing function on the UID to get a consistent index
+      const hash = student.uid.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      const index = hash % backgrounds.length;
+      return backgrounds[index];
     }
     return 'https://placehold.co/600x400.png';
-  }, [student.backgroundUrl, student.class]);
+  }, [student.backgroundUrl, student.class, student.uid]);
 
   const avatarUrl = student.avatarUrl || 'https://placehold.co/100x100.png';
 
@@ -275,5 +278,3 @@ export function StudentCard({ student, isSelected, onSelect, setStudents }: Stud
     </Dialog>
   );
 }
-
-    
