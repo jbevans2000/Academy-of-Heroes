@@ -373,7 +373,7 @@ export default function TeacherDashboardPage() {
             <AlertDialogContent className="max-w-2xl">
                 <AlertDialogHeader>
                     <AlertDialogTitle className="text-3xl">Welcome to The Academy of Heroes!</AlertDialogTitle>
-                    <AlertDialogDescription className="text-base">
+                    <AlertDialogDescription className="text-base text-black">
                         Your classroom is ready! To get your students started, give them your unique Class Code and instruct them to follow these steps:
                         <ol className="list-decimal list-inside mt-4 space-y-2 text-foreground text-lg">
                            <li>Go to the main login page.</li>
