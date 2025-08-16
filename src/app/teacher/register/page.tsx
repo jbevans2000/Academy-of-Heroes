@@ -89,7 +89,7 @@ export default function TeacherRegisterPage() {
             title: 'Registration Successful!',
             description: "Welcome! Your account has been created.",
         });
-        router.push('/teacher/dashboard');
+        router.push('/teacher/dashboard?new=true');
 
     } catch (error: any) {
         console.error("Error creating teacher account:", error);

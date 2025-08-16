@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { collection, getDocs, writeBatch, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
@@ -63,10 +63,12 @@ export default function TeacherDashboardPage() {
   const [teacher, setTeacher] = useState<User | null>(null);
   const [teacherData, setTeacherData] = useState<TeacherData | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // State for controlling the delete dialogs
   const [isDeleteStep1Open, setIsDeleteStep1Open] = useState(false);
   const [isDeleteStep2Open, setIsDeleteStep2Open] = useState(false);
+  const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
 
   const { toast } = useToast();
   
@@ -106,6 +108,11 @@ export default function TeacherDashboardPage() {
             router.push('/teacher/login');
         }
     });
+
+    if (searchParams.get('new') === 'true') {
+        setShowWelcomeDialog(true);
+    }
+
     return () => unsubscribe();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
@@ -362,6 +369,32 @@ export default function TeacherDashboardPage() {
     <div className="flex min-h-screen w-full flex-col">
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
+        <AlertDialog open={showWelcomeDialog} onOpenChange={setShowWelcomeDialog}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle className="text-2xl">Welcome to The Academy of Heroes!</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Your classroom is ready! To get your students started, give them your unique Class Code and instruct them to follow these steps:
+                        <ol className="list-decimal list-inside mt-4 space-y-2 text-foreground">
+                           <li>Go to the main login page.</li>
+                           <li>Click "Create New Hero & Join a Class".</li>
+                           <li>Enter your Class Code: 
+                                <strong className="font-mono text-lg bg-primary/10 px-2 py-1 rounded-md mx-1">{teacherData?.classCode}</strong>
+                           </li>
+                           <li>Fill out the rest of the form to create their character.</li>
+                        </ol>
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogAction onClick={() => {
+                        setShowWelcomeDialog(false)
+                        copyClassCode()
+                        }}>
+                        <Copy className="mr-2 h-4 w-4" /> Copy Code & Close
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
         <div className="mb-4">
             <h1 className="text-3xl font-bold">{teacherData?.className || 'Dashboard'}</h1>
              {teacherData?.classCode && (
