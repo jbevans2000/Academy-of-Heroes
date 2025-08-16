@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Shield, Heart, Wand, User, KeyRound, Star, Eye, EyeOff, BookUser } from 'lucide-react';
+import { Loader2, Shield, Heart, Wand, User, KeyRound, Star, Eye, EyeOff, BookUser, ChevronsUpDown } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import {
@@ -22,8 +22,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { classData, type ClassType } from '@/lib/data';
 import { logGameEvent } from '@/lib/gamelog';
+import { generateName, type NameInput } from '@/ai/flows/name-generator';
 
 export default function RegisterPage() {
   const [classCode, setClassCode] = useState('');
@@ -35,6 +42,7 @@ export default function RegisterPage() {
   const [selectedClass, setSelectedClass] = useState<ClassType>('');
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingName, setIsGeneratingName] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -50,6 +58,23 @@ export default function RegisterPage() {
     
     return querySnapshot.docs[0].id;
   }
+
+  const handleGenerateName = async (gender: NameInput['gender']) => {
+    setIsGeneratingName(true);
+    try {
+        const name = await generateName({ gender });
+        setCharacterName(name);
+    } catch (error) {
+        console.error("Error generating name:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Name Generation Failed',
+            description: 'The AI could not generate a name. Please try again or enter one manually.',
+        });
+    } finally {
+        setIsGeneratingName(false);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!classCode || !studentId || !password || !studentName || !characterName || !selectedClass || !selectedAvatar) {
@@ -206,8 +231,23 @@ export default function RegisterPage() {
                     </Select>
                 </div>
                 <div className="space-y-2">
+                  <div className="flex items-center justify-between">
                     <Label htmlFor="character-name" className="flex items-center"><Star className="w-4 h-4 mr-2" />Character Name</Label>
-                    <Input id="character-name" placeholder="Your hero's name" value={characterName} onChange={(e) => setCharacterName(e.target.value)} disabled={isLoading} />
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" disabled={isGeneratingName}>
+                                {isGeneratingName ? <Loader2 className="h-4 w-4 animate-spin" /> : <ChevronsUpDown className="h-4 w-4" />}
+                                <span className="sr-only">Generate Name</span>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => handleGenerateName('Male')}>Male Name</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleGenerateName('Female')}>Female Name</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleGenerateName('Non-binary')}>Non-binary Name</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                    <Input id="character-name" placeholder="Your hero's name" value={characterName} onChange={(e) => setCharacterName(e.target.value)} disabled={isLoading || isGeneratingName} />
                 </div>
                 </div>
 
