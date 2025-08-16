@@ -41,8 +41,11 @@ export async function generateAndUploadBossImage(input: ImageGeneratorInput): Pr
     const storageRef = ref(storage, `boss-images/${imageId}.png`);
 
     try {
-        // Upload the base64 part of the data URI
-        await uploadString(storageRef, dataUri, 'data_url');
+        // Correctly handle the data URI on the server.
+        // We need to extract the base64 part of the string for server-side uploads.
+        const base64Data = dataUri.substring(dataUri.indexOf(',') + 1);
+        
+        await uploadString(storageRef, base64Data, 'base64');
         
         // 3. Get the public download URL for the uploaded image
         const downloadUrl = await getDownloadURL(storageRef);
