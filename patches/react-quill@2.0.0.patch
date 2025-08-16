@@ -1,0 +1,40 @@
+diff --git a/node_modules/react-quill/lib/component.js b/node_modules/react-quill/lib/component.js
+index 21356f3..435c5b1 100644
+--- a/node_modules/react-quill/lib/component.js
++++ b/node_modules/react-quill/lib/component.js
+@@ -10,7 +10,7 @@
+ 	forwardRef,
+ } = require('react');
+ const {
+-	findDOMNode,
++	// findDOMNode,
+ 	unmountComponentAtNode
+ } = require('react-dom');
+ const PropTypes = require('prop-types');
+@@ -216,7 +216,7 @@
+ 	 */
+ 	getEditor: function() {
+ 		if (!this.editor) throw new Error('Accessing editor before it is mounted');
+-		return this.editor;
++		return this.editor
+ 	},
+ 
+ 	/**
+@@ -226,7 +226,7 @@
+ 	 * Note that this is not the Quill instance itself. Use `getEditor`
+ 	 * for that.
+ 	 */
+-	getEditorNode: function() {
++	getEditorNode: function () {
+ 		return this.editingArea;
+ 	},
+ 
+@@ -375,7 +375,7 @@
+ 		// NOTE: This will be called repeatedly on typing in React 16+ due to
+ 		// retaining the SyntheticEvent. This is fine, as it's a no-op.
+ 		if (this.lastDelta && this.lastDelta === this.editor.getContents()) return;
+-		this.lastDelta = this.editor.getContents()
++		this.lastDelta = this.editor.getContents();
+ 		// NOTE: Get the real DOM node of the editor, not the component, to
+ 		// avoid issues with wrapped components when using `findDOMNode`.
+ 		var editorNode = this.getEditorNode();

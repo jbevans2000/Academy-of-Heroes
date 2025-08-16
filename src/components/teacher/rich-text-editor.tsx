@@ -1,59 +1,80 @@
 
 'use client';
 
-import dynamic from 'next/dynamic';
-import React from 'react';
-import 'react-quill/dist/quill.snow.css';
-import type { ReactQuillProps } from 'react-quill';
-
-// Dynamically import ReactQuill to avoid SSR issues, and wrap it in a forwardRef
-const ReactQuill = dynamic(
-  async () => {
-    const { default: RQ } = await import('react-quill');
-    // eslint-disable-next-line react/display-name
-    return ({ forwardedRef, ...props }: ReactQuillProps & { forwardedRef: React.Ref<any> }) => (
-      <RQ ref={forwardedRef} {...props} />
-    );
-  },
-  { ssr: false }
-);
-
+import React, { useRef, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Bold, Link, Image as ImageIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
+  className?: string;
 }
 
-const modules = {
-  toolbar: [
-    [{ 'header': [1, 2, 3, false] }],
-    ['bold', 'italic', 'underline', 'strike', 'blockquote'],
-    [{'list': 'ordered'}, {'list': 'bullet'}, {'indent': '-1'}, {'indent': '+1'}],
-    ['link', 'image'],
-    ['clean']
-  ],
-};
+const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => {
+  const editorRef = useRef<HTMLDivElement>(null);
 
-const formats = [
-  'header',
-  'bold', 'italic', 'underline', 'strike', 'blockquote',
-  'list', 'bullet', 'indent',
-  'link', 'image'
-];
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (editor && value !== editor.innerHTML) {
+      editor.innerHTML = value;
+    }
+  }, [value]);
 
-function RichTextEditor({ value, onChange }: RichTextEditorProps, ref: React.Ref<any>) {
+  const handleInput = () => {
+    if (editorRef.current) {
+      onChange(editorRef.current.innerHTML);
+    }
+  };
+  
+  const execCommand = (command: string, value?: string) => {
+    document.execCommand(command, false, value);
+    if(editorRef.current) {
+      editorRef.current.focus();
+      handleInput(); // Update state after command
+    }
+  };
+
+  const handleBold = () => execCommand('bold');
+
+  const handleLink = () => {
+    const url = prompt('Enter the URL:');
+    if (url) {
+      execCommand('createLink', url);
+    }
+  };
+
+  const handleImage = () => {
+    const url = prompt('Enter the image URL:');
+    if (url) {
+      const imgTag = `<img src="${url}" alt="user image" style="max-width: 100%; height: auto; border-radius: 8px;" />`;
+      execCommand('insertHTML', imgTag);
+    }
+  };
+
   return (
-    <div className="bg-background">
-        <ReactQuill
-        forwardedRef={ref}
-        theme="snow"
-        value={value}
-        onChange={onChange}
-        modules={modules}
-        formats={formats}
+    <div className={cn("border rounded-md", className)}>
+      <div className="flex items-center gap-2 p-2 border-b bg-muted/50">
+        <Button size="sm" variant="outline" onMouseDown={(e) => e.preventDefault()} onClick={handleBold} title="Bold">
+          <Bold className="h-4 w-4" />
+        </Button>
+        <Button size="sm" variant="outline" onMouseDown={(e) => e.preventDefault()} onClick={handleLink} title="Link">
+          <Link className="h-4 w-4" />
+        </Button>
+        <Button size="sm" variant="outline" onMouseDown={(e) => e.preventDefault()} onClick={handleImage} title="Image">
+          <ImageIcon className="h-4 w-4" />
+        </Button>
+      </div>
+      <div
+        ref={editorRef}
+        contentEditable
+        onInput={handleInput}
+        className="prose prose-sm max-w-none p-3 min-h-[150px] outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-b-md"
+        dangerouslySetInnerHTML={{ __html: value }}
         />
     </div>
   );
-}
+};
 
-export default React.forwardRef(RichTextEditor);
+export default RichTextEditor;
