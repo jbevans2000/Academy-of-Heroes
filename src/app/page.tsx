@@ -19,7 +19,7 @@ export default function SplashPage() {
       <div className="absolute inset-0 bg-black/60 -z-10" />
 
       {/* Content */}
-      <div className="z-10 flex flex-col items-center space-y-8 animate-in fade-in-50 duration-1000">
+      <main className="z-10 flex flex-grow flex-col items-center justify-center space-y-8 animate-in fade-in-50 duration-1000">
         <header className="space-y-4">
           <h1 className="text-5xl md:text-7xl font-bold font-headline text-shadow-lg">
             Turn Any Lesson Into an Epic Quest.
@@ -43,7 +43,18 @@ export default function SplashPage() {
              </Button>
            </Link>
         </div>
-      </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="z-10 w-full max-w-5xl py-4 text-white/70">
+          <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center text-sm">
+            <p>&copy; {new Date().getFullYear()} Academy of Heroes. All rights reserved.</p>
+            <div className="flex gap-4 mt-2 sm:mt-0">
+                <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>
+                <Link href="#" className="hover:text-white transition-colors">Terms of Service</Link>
+            </div>
+          </div>
+      </footer>
     </div>
   );
 }
