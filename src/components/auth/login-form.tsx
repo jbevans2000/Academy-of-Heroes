@@ -6,23 +6,14 @@ import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { School, Eye, EyeOff, Loader2, UserPlus, BookUser, ArrowLeft, KeyRound } from 'lucide-react';
+import { Eye, EyeOff, Loader2, KeyRound } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
-import { doc, getDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
-import Link from 'next/link';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
 export function LoginForm() {
-  const [classCode, setClassCode] = useState('');
   const [studentId, setStudentId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -30,45 +21,51 @@ export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
 
-   const getTeacherUidFromClassCode = async (code: string): Promise<string | null> => {
-    const uppercaseCode = code.toUpperCase();
-    const teachersRef = collection(db, 'teachers');
-    const q = query(teachersRef, where('classCode', '==', uppercaseCode), limit(1));
-    const querySnapshot = await getDocs(q);
-
-    if (querySnapshot.empty) {
-        return null;
-    }
-    
-    return querySnapshot.docs[0].id;
-  }
-
   const handleLogin = async () => {
-    if (!classCode || !studentId || !password) {
+    if (!studentId || !password) {
       toast({
         variant: 'destructive',
         title: 'Missing Fields',
-        description: 'Please enter your Class Code, Username, and Password.',
+        description: 'Please enter your Username and Password.',
       });
       return;
     }
 
     setIsLoading(true);
 
-    const teacherUid = await getTeacherUidFromClassCode(classCode);
-    if (!teacherUid) {
-        toast({
-            variant: 'destructive',
-            title: 'Invalid Class Code',
-            description: 'The Class Code you entered does not exist. Please check with your teacher.',
-        });
-        setIsLoading(false);
-        return;
-    }
-    
-    const email = `${studentId}-${teacherUid.slice(0,5)}@academy-heroes-mziuf.firebaseapp.com`;
-
     try {
+      // Since studentId is not globally unique, we must search for them across all teachers.
+      const allStudentsQuery = query(collection(db, 'teachers'), where('students', 'array-contains', studentId));
+      const teachersSnapshot = await getDocs(query(collection(db, 'teachers')));
+      
+      let foundStudent = null;
+      let teacherUid = null;
+
+      // This is inefficient, but necessary with the current data model.
+      // A better model would have a top-level students collection.
+      for (const teacherDoc of teachersSnapshot.docs) {
+          const studentQuery = query(collection(db, 'teachers', teacherDoc.id, 'students'), where('studentId', '==', studentId));
+          const studentSnapshot = await getDocs(studentQuery);
+          if (!studentSnapshot.empty) {
+              foundStudent = studentSnapshot.docs[0].data();
+              teacherUid = teacherDoc.id;
+              break;
+          }
+      }
+
+      if (!foundStudent || !teacherUid) {
+          toast({
+              variant: 'destructive',
+              title: 'Login Failed',
+              description: 'Username not found. Please check your spelling or create a new hero.',
+          });
+          setIsLoading(false);
+          return;
+      }
+      
+      // Now that we have the teacher, we can construct the email and attempt to sign in.
+      const email = `${studentId}-${teacherUid.slice(0,5)}@academy-heroes-mziuf.firebaseapp.com`;
+
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
       const studentRef = doc(db, 'teachers', teacherUid, 'students', userCredential.user.uid);
@@ -83,6 +80,7 @@ export function LoginForm() {
         description: 'Welcome back to your adventure.',
       });
       router.push('/dashboard');
+
     } catch (error: any) {
       console.error(error);
       let description = 'An unexpected error occurred. Please try again.';
@@ -91,7 +89,7 @@ export function LoginForm() {
           case 'auth/invalid-credential':
           case 'auth/user-not-found':
           case 'auth/wrong-password':
-            description = 'Invalid Student ID or password for the provided Class Code.';
+            description = 'Invalid username or password.';
             break;
           case 'auth/network-request-failed':
             description = 'Network error. Please check your connection.';
@@ -109,25 +107,9 @@ export function LoginForm() {
       setIsLoading(false);
     }
   };
-  
-  const handleTeacherLoginRedirect = () => {
-    router.push('/teacher/login');
-  }
 
   return (
     <div className="space-y-4 rounded-lg bg-background/50 p-4 border">
-         <div className="space-y-2">
-            <Label htmlFor="class-code"><BookUser className="inline-block mr-2 h-4 w-4" />Class Code</Label>
-            <Input
-                id="class-code"
-                type="text"
-                placeholder="Enter your teacher's code"
-                required
-                value={classCode}
-                onChange={(e) => setClassCode(e.target.value)}
-                disabled={isLoading}
-            />
-        </div>
         <div className="space-y-2">
             <Label htmlFor="student-id"><KeyRound className="inline-block mr-2 h-4 w-4" />Username</Label>
             <Input
@@ -146,6 +128,7 @@ export function LoginForm() {
                 <Input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
+                placeholder="Enter your password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -171,7 +154,7 @@ export function LoginForm() {
         {isLoading ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : null}
-        Login
+        Login to My Hero
         </Button>
     </div>
   );

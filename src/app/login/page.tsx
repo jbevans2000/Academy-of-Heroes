@@ -12,8 +12,11 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useState } from 'react';
 
 export default function LoginPage() {
+  const [showStudentLogin, setShowStudentLogin] = useState(false);
+
   return (
     <div
       className="flex items-center justify-center min-h-screen bg-background p-4 sm:p-6 lg:p-8"
@@ -48,12 +51,22 @@ export default function LoginPage() {
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-card px-2 text-muted-foreground font-headline">
-                  Or Login If You Have An Account
+                  Or
                 </span>
               </div>
             </div>
 
-            <LoginForm />
+            {!showStudentLogin ? (
+                <Button size="lg" variant="secondary" className="w-full text-lg py-8" onClick={() => setShowStudentLogin(true)}>
+                    <LogIn className="mr-3 h-6 w-6" />
+                    Login as Existing Hero
+                </Button>
+            ) : (
+                <div className="animate-in fade-in-50">
+                    <h3 className="text-center font-headline text-lg mb-2">Existing Hero Login</h3>
+                    <LoginForm />
+                </div>
+            )}
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -65,17 +78,11 @@ export default function LoginPage() {
                 </span>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-                <Link href="/teacher/login" passHref className="mt-4 block">
-                    <Button size="lg" className="w-full text-lg py-8 bg-blue-600 hover:bg-blue-700">
-                        <LogIn className="mr-3 h-6 w-6" />
-                        Teacher Login
-                    </Button>
-                </Link>
-                <Link href="/teacher/register" passHref className="mt-4 block">
-                    <Button size="lg" className="w-full text-lg py-8 bg-blue-600 hover:bg-blue-700">
+            <div className="grid grid-cols-1">
+                <Link href="/teacher/login" passHref className="mt-2 block">
+                    <Button size="lg" className="w-full text-lg py-6 bg-blue-600 hover:bg-blue-700">
                         <School className="mr-3 h-6 w-6" />
-                        New Teacher
+                        Teacher Login / Registration
                     </Button>
                 </Link>
             </div>
