@@ -145,102 +145,112 @@ export default function RegisterPage() {
             <CardTitle className="text-3xl font-headline text-primary">Create Your Hero</CardTitle>
             <CardDescription>Fill in your details and choose your path to begin your adventure in Luminaria.</CardDescription>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6">
-            {/* Left Column: Form Inputs */}
-            <div className="space-y-4">
-               <div className="space-y-2">
-                <Label htmlFor="class-code" className="flex items-center"><BookUser className="w-4 h-4 mr-2" />Class Code</Label>
-                <Input id="class-code" placeholder="Enter the code from your teacher" value={classCode} onChange={(e) => setClassCode(e.target.value)} disabled={isLoading} />
+          <CardContent className="space-y-6 p-6">
+            <div className="space-y-2 text-center bg-primary/10 p-4 rounded-lg">
+                <Label htmlFor="class-code" className="flex items-center justify-center text-lg font-semibold"><BookUser className="w-5 h-5 mr-2" />Class Code</Label>
+                 <p className="text-sm text-muted-foreground">This is the most important step! Get this code from your teacher.</p>
+                <Input 
+                    id="class-code" 
+                    placeholder="ENTER TEACHER CODE" 
+                    value={classCode} 
+                    onChange={(e) => setClassCode(e.target.value)} 
+                    disabled={isLoading} 
+                    className="max-w-xs mx-auto text-center h-12 text-lg tracking-widest font-bold"
+                />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="student-id" className="flex items-center"><KeyRound className="w-4 h-4 mr-2" />Username</Label>
-                <Input id="student-id" placeholder="Choose a username" value={studentId} onChange={(e) => setStudentId(e.target.value)} disabled={isLoading} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password" className="flex items-center"><Eye className="w-4 h-4 mr-2" />Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Choose a secure password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={isLoading}
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground"
-                    disabled={isLoading}
-                  >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="student-name" className="flex items-center"><User className="w-4 h-4 mr-2" />Student Name</Label>
-                <Input id="student-name" placeholder="Your real name" value={studentName} onChange={(e) => setStudentName(e.target.value)} disabled={isLoading} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="class" className="flex items-center"><Wand className="w-4 h-4 mr-2" />Select Your Class</Label>
-                <Select onValueChange={handleClassChange} disabled={isLoading} value={selectedClass}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose your destiny" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Guardian"><Shield className="w-4 h-4 mr-2" />Guardian</SelectItem>
-                    <SelectItem value="Healer"><Heart className="w-4 h-4 mr-2" />Healer</SelectItem>
-                    <SelectItem value="Mage"><Wand className="w-4 h-4 mr-2" />Mage</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="character-name" className="flex items-center"><Star className="w-4 h-4 mr-2" />Character Name</Label>
-                <Input id="character-name" placeholder="Your hero's name" value={characterName} onChange={(e) => setCharacterName(e.target.value)} disabled={isLoading} />
-              </div>
-            </div>
 
-            {/* Right Column: Selections */}
-            <div className="space-y-6 flex flex-col justify-center">
-              {selectedClass ? (
-                <>
-                  <div>
-                    <Label className="text-lg font-semibold">Choose Your Avatar</Label>
-                    <Card className="mt-2 p-4 bg-secondary/50">
-                      <div className="grid grid-cols-4 gap-4">
-                        {classData[selectedClass].avatars.map((avatar, index) => (
-                          <Tooltip key={index} delayDuration={100}>
-                            <TooltipTrigger asChild>
-                              <div
-                                onClick={() => !isLoading && setSelectedAvatar(avatar)}
-                                className={cn(
-                                  'cursor-pointer rounded-md overflow-hidden border-2 transition-all duration-200 aspect-square flex items-center justify-center',
-                                  selectedAvatar === avatar
-                                    ? 'border-primary ring-2 ring-primary'
-                                    : 'border-transparent hover:border-primary/50'
-                                )}
-                              >
-                                <Image src={avatar} alt={`Avatar ${index + 1}`} width={100} height={100} className="object-contain" />
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                               <Image src={avatar} alt={`Avatar ${index + 1}`} width={256} height={256} className="w-64 h-64 object-contain" />
-                            </TooltipContent>
-                          </Tooltip>
-                        ))}
-                      </div>
-                    </Card>
-                  </div>
-                </>
-              ) : (
-                <div className="flex items-center justify-center h-full bg-secondary/30 rounded-lg">
-                  <p className="text-muted-foreground">Please select a class to see avatar options.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Left Column: Form Inputs */}
+                <div className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="student-id" className="flex items-center"><KeyRound className="w-4 h-4 mr-2" />Username</Label>
+                    <Input id="student-id" placeholder="Choose a username" value={studentId} onChange={(e) => setStudentId(e.target.value)} disabled={isLoading} />
                 </div>
-              )}
+                <div className="space-y-2">
+                    <Label htmlFor="password" className="flex items-center"><Eye className="w-4 h-4 mr-2" />Password</Label>
+                    <div className="relative">
+                    <Input
+                        id="password"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Choose a secure password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        disabled={isLoading}
+                        className="pr-10"
+                    />
+                    <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground"
+                        disabled={isLoading}
+                    >
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="student-name" className="flex items-center"><User className="w-4 h-4 mr-2" />Student Name</Label>
+                    <Input id="student-name" placeholder="Your real name" value={studentName} onChange={(e) => setStudentName(e.target.value)} disabled={isLoading} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="class" className="flex items-center"><Wand className="w-4 h-4 mr-2" />Select Your Class</Label>
+                    <Select onValueChange={handleClassChange} disabled={isLoading} value={selectedClass}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Choose your destiny" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="Guardian"><Shield className="w-4 h-4 mr-2" />Guardian</SelectItem>
+                        <SelectItem value="Healer"><Heart className="w-4 h-4 mr-2" />Healer</SelectItem>
+                        <SelectItem value="Mage"><Wand className="w-4 h-4 mr-2" />Mage</SelectItem>
+                    </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="character-name" className="flex items-center"><Star className="w-4 h-4 mr-2" />Character Name</Label>
+                    <Input id="character-name" placeholder="Your hero's name" value={characterName} onChange={(e) => setCharacterName(e.target.value)} disabled={isLoading} />
+                </div>
+                </div>
+
+                {/* Right Column: Selections */}
+                <div className="space-y-6 flex flex-col justify-center">
+                {selectedClass ? (
+                    <>
+                    <div>
+                        <Label className="text-lg font-semibold">Choose Your Avatar</Label>
+                        <Card className="mt-2 p-4 bg-secondary/50">
+                        <div className="grid grid-cols-4 gap-4">
+                            {classData[selectedClass].avatars.map((avatar, index) => (
+                            <Tooltip key={index} delayDuration={100}>
+                                <TooltipTrigger asChild>
+                                <div
+                                    onClick={() => !isLoading && setSelectedAvatar(avatar)}
+                                    className={cn(
+                                    'cursor-pointer rounded-md overflow-hidden border-2 transition-all duration-200 aspect-square flex items-center justify-center',
+                                    selectedAvatar === avatar
+                                        ? 'border-primary ring-2 ring-primary'
+                                        : 'border-transparent hover:border-primary/50'
+                                    )}
+                                >
+                                    <Image src={avatar} alt={`Avatar ${index + 1}`} width={100} height={100} className="object-contain" />
+                                </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                <Image src={avatar} alt={`Avatar ${index + 1}`} width={256} height={256} className="w-64 h-64 object-contain" />
+                                </TooltipContent>
+                            </Tooltip>
+                            ))}
+                        </div>
+                        </Card>
+                    </div>
+                    </>
+                ) : (
+                    <div className="flex items-center justify-center h-full bg-secondary/30 rounded-lg">
+                    <p className="text-muted-foreground">Please select a class to see avatar options.</p>
+                    </div>
+                )}
+                </div>
             </div>
-          </CardContent>
-           <div className="col-span-1 md:col-span-2 px-6 pb-6">
+           <div className="col-span-1 md:col-span-2 pt-6">
               <Button onClick={handleSubmit} disabled={isLoading} className="w-full text-lg py-6">
                 {isLoading ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : 'Create My Hero and Enter Luminaria'}
               </Button>
@@ -248,12 +258,9 @@ export default function RegisterPage() {
                 Already have a hero? <Link href="/login" className="underline text-primary">Login here</Link>.
               </p>
            </div>
+          </CardContent>
         </Card>
       </div>
     </TooltipProvider>
   );
 }
-
-    
-
-    
