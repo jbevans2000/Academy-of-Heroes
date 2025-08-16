@@ -33,7 +33,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, UserX, Swords, PlusCircle, BookOpen } from 'lucide-react';
+import { Loader2, Star, Coins, UserX, Swords, PlusCircle, BookOpen, Wrench } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 
@@ -320,6 +320,9 @@ export default function TeacherDashboardPage() {
             </Button>
             <Button onClick={() => router.push('/teacher/battles')}>
                 <Swords className="mr-2 h-4 w-4" /> Manage Boss Battles
+            </Button>
+             <Button onClick={() => router.push('/teacher/tools')}>
+                <Wrench className="mr-2 h-4 w-4" /> Classroom Tools
             </Button>
              <Button onClick={() => router.push('/teacher/gamelog')} variant="secondary">
                 <BookOpen className="mr-2 h-4 w-4" /> Game Log
