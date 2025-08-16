@@ -70,7 +70,7 @@ export default function ClassroomToolsPage() {
                             <div className="grid gap-6 md:grid-cols-2">
                                 {tools.map((tool, index) => (
                                     <Card key={index} className="flex flex-col relative overflow-hidden">
-                                         {tool.bgImage && (
+                                        {tool.bgImage && (
                                             <>
                                                 <Image 
                                                     src={tool.bgImage}
