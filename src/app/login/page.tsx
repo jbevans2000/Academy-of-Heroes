@@ -65,13 +65,20 @@ export default function LoginPage() {
                 </span>
               </div>
             </div>
-
-            <Link href="/teacher/register" passHref className="mt-4 block">
-                <Button size="lg" className="w-full text-lg py-8 bg-blue-600 hover:bg-blue-700">
-                    <School className="mr-3 h-6 w-6" />
-                    New Teacher Registration
-                </Button>
-            </Link>
+            <div className="grid grid-cols-2 gap-4">
+                <Link href="/teacher/login" passHref className="mt-4 block">
+                    <Button size="lg" className="w-full text-lg py-8 bg-blue-600 hover:bg-blue-700">
+                        <LogIn className="mr-3 h-6 w-6" />
+                        Teacher Login
+                    </Button>
+                </Link>
+                <Link href="/teacher/register" passHref className="mt-4 block">
+                    <Button size="lg" className="w-full text-lg py-8 bg-blue-600 hover:bg-blue-700">
+                        <School className="mr-3 h-6 w-6" />
+                        New Teacher
+                    </Button>
+                </Link>
+            </div>
 
           </CardContent>
         </Card>
