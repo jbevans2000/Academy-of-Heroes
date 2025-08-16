@@ -27,6 +27,7 @@ export function DashboardClient({ student }: DashboardClientProps) {
             characterName={student.characterName} 
             studentName={student.studentName}
             characterClass={student.class}
+            student={student}
         />
       </div>
     </div>

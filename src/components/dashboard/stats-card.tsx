@@ -1,20 +1,14 @@
 
 'use client';
 
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Star, Coins, Trophy, Heart, Zap, Shield, Wand2, Flame, Map, Swords } from 'lucide-react';
-import type { ClassType } from "@/lib/data";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import type { ClassType, Student } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { PowersSheet } from './powers-sheet';
 
 
 interface StatsCardProps {
@@ -26,6 +20,7 @@ interface StatsCardProps {
   characterName: string;
   studentName: string;
   characterClass: ClassType;
+  student: Student;
 }
 
 const classIconMap = {
@@ -35,14 +30,21 @@ const classIconMap = {
     '': null
 }
 
-export function StatsCard({ xp, gold, level, hp, mp, characterName, studentName, characterClass }: StatsCardProps) {
+export function StatsCard({ xp, gold, level, hp, mp, characterName, studentName, characterClass, student }: StatsCardProps) {
   const router = useRouter();
+  const [isPowersSheetOpen, setIsPowersSheetOpen] = useState(false);
 
   const handleReadyForBattle = () => {
     router.push('/battle/live');
   };
 
   return (
+    <>
+    <PowersSheet
+        isOpen={isPowersSheetOpen}
+        onOpenChange={setIsPowersSheetOpen}
+        student={student}
+    />
     <Card className="shadow-lg rounded-xl">
       <CardHeader>
         <CardTitle className="font-headline">{studentName}</CardTitle>
@@ -96,16 +98,9 @@ export function StatsCard({ xp, gold, level, hp, mp, characterName, studentName,
              <div className="flex items-center gap-4">
                 <div className="flex flex-col items-center">
                     <Flame className="h-8 w-8 text-red-600" />
-                    <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="mt-2">View Powers</Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="center">
-                        <DropdownMenuLabel>Class Powers</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem disabled>No powers unlocked yet</DropdownMenuItem>
-                    </DropdownMenuContent>
-                    </DropdownMenu>
+                    <Button variant="outline" className="mt-2" onClick={() => setIsPowersSheetOpen(true)}>
+                        View Powers
+                    </Button>
                 </div>
                 <div className="flex flex-col items-center">
                     <Map className="h-8 w-8 text-green-600" />
@@ -122,5 +117,6 @@ export function StatsCard({ xp, gold, level, hp, mp, characterName, studentName,
         </div>
       </CardContent>
     </Card>
+    </>
   );
 }
