@@ -21,6 +21,9 @@ import { logGameEvent } from '@/lib/gamelog';
 import { doc, getDoc } from 'firebase/firestore';
 import Link from 'next/link';
 
+// HARDCODED TEACHER UID
+const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+
 export function LoginForm() {
   const [studentId, setStudentId] = useState('');
   const [password, setPassword] = useState('');
@@ -45,7 +48,7 @@ export function LoginForm() {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
-      const studentRef = doc(db, 'students', userCredential.user.uid);
+      const studentRef = doc(db, 'teachers', TEACHER_UID, 'students', userCredential.user.uid);
       const studentSnap = await getDoc(studentRef);
       if (studentSnap.exists()) {
         const studentName = studentSnap.data().studentName || 'A student';
