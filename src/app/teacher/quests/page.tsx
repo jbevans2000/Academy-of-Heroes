@@ -55,6 +55,7 @@ export default function QuestsPage() {
 
     const unsubHubs = onSnapshot(hubsRef, (querySnapshot) => {
         const hubsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
+        hubsData.sort((a,b) => a.hubOrder - b.hubOrder);
         setHubs(hubsData);
     }, (error) => {
         console.error("Error fetching quest hubs: ", error);
@@ -153,9 +154,6 @@ export default function QuestsPage() {
                                                     <li key={chapter.id} className="flex items-center justify-between p-3 rounded-md bg-secondary">
                                                         <span className="font-medium">Chapter {chapter.chapterNumber}: {chapter.title}</span>
                                                         <div className="flex items-center gap-2">
-                                                            <Button variant="outline" size="sm" onClick={() => router.push(`/dashboard/map/${chapter.hubId}/${chapter.id}?from=teacher`)}>
-                                                                <Eye className="mr-2 h-4 w-4" /> View
-                                                            </Button>
                                                             <Button variant="outline" size="sm" onClick={() => router.push(`/teacher/quests/edit/${chapter.id}`)}>
                                                                 <Edit className="mr-2 h-4 w-4" /> Edit
                                                             </Button>
