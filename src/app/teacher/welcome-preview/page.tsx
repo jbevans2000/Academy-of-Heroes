@@ -48,7 +48,8 @@ export default function WelcomePreviewPage() {
               <AlertDialogTitle className="text-3xl">Welcome to The Academy of Heroes!</AlertDialogTitle>
               <AlertDialogDescription className="text-base text-black">
                 Your classroom is ready! To get your students started, give them your unique Class Code and instruct them to follow these steps:
-                <ol className="list-decimal list-inside mt-4 space-y-2 text-foreground text-lg">
+              </AlertDialogDescription>
+              <ol className="list-decimal list-inside space-y-2 pt-2 text-foreground text-lg">
                   <li>Go to the main login page.</li>
                   <li>Click "Create New Hero & Join a Class".</li>
                   <li>
@@ -57,7 +58,6 @@ export default function WelcomePreviewPage() {
                   </li>
                   <li>Fill out the rest of the form to create their character.</li>
                 </ol>
-              </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogAction onClick={copyClassCode}>

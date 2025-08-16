@@ -375,15 +375,15 @@ export default function TeacherDashboardPage() {
                     <AlertDialogTitle className="text-3xl">Welcome to The Academy of Heroes!</AlertDialogTitle>
                     <AlertDialogDescription className="text-base text-black">
                         Your classroom is ready! To get your students started, give them your unique Class Code and instruct them to follow these steps:
-                        <ol className="list-decimal list-inside mt-4 space-y-2 text-foreground text-lg">
-                           <li>Go to the main login page.</li>
-                           <li>Click "Create New Hero & Join a Class".</li>
-                           <li>Enter your Class Code: 
-                                <strong className="font-mono text-xl bg-primary/10 px-2 py-1 rounded-md mx-1">{teacherData?.classCode}</strong>
-                           </li>
-                           <li>Fill out the rest of the form to create their character.</li>
-                        </ol>
                     </AlertDialogDescription>
+                    <ol className="list-decimal list-inside space-y-2 pt-2 text-foreground text-lg">
+                        <li>Go to the main login page.</li>
+                        <li>Click "Create New Hero & Join a Class".</li>
+                        <li>Enter your Class Code: 
+                            <strong className="font-mono text-xl bg-primary/10 px-2 py-1 rounded-md mx-1">{teacherData?.classCode}</strong>
+                        </li>
+                        <li>Fill out the rest of the form to create their character.</li>
+                    </ol>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogAction onClick={() => {
