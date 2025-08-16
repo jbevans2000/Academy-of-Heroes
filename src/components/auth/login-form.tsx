@@ -8,25 +8,39 @@ import { auth, db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Eye, EyeOff, Loader2, KeyRound } from 'lucide-react';
+import { Eye, EyeOff, Loader2, KeyRound, BookUser } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
 
 export function LoginForm() {
   const [studentId, setStudentId] = useState('');
   const [password, setPassword] = useState('');
+  const [classCode, setClassCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
+   const getTeacherUidFromClassCode = async (code: string): Promise<string | null> => {
+    const uppercaseCode = code.toUpperCase();
+    const teachersRef = collection(db, 'teachers');
+    const q = query(teachersRef, where('classCode', '==', uppercaseCode), limit(1));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+        return null;
+    }
+    
+    return querySnapshot.docs[0].id;
+  }
+
   const handleLogin = async () => {
-    if (!studentId || !password) {
+    if (!studentId || !password || !classCode) {
       toast({
         variant: 'destructive',
         title: 'Missing Fields',
-        description: 'Please enter your Username and Password.',
+        description: 'Please enter your Class Code, Username, and Password.',
       });
       return;
     }
@@ -34,36 +48,18 @@ export function LoginForm() {
     setIsLoading(true);
 
     try {
-      // Since studentId is not globally unique, we must search for them across all teachers.
-      const allStudentsQuery = query(collection(db, 'teachers'), where('students', 'array-contains', studentId));
-      const teachersSnapshot = await getDocs(query(collection(db, 'teachers')));
-      
-      let foundStudent = null;
-      let teacherUid = null;
+      const teacherUid = await getTeacherUidFromClassCode(classCode);
 
-      // This is inefficient, but necessary with the current data model.
-      // A better model would have a top-level students collection.
-      for (const teacherDoc of teachersSnapshot.docs) {
-          const studentQuery = query(collection(db, 'teachers', teacherDoc.id, 'students'), where('studentId', '==', studentId));
-          const studentSnapshot = await getDocs(studentQuery);
-          if (!studentSnapshot.empty) {
-              foundStudent = studentSnapshot.docs[0].data();
-              teacherUid = teacherDoc.id;
-              break;
-          }
-      }
-
-      if (!foundStudent || !teacherUid) {
+      if (!teacherUid) {
           toast({
               variant: 'destructive',
               title: 'Login Failed',
-              description: 'Username not found. Please check your spelling or create a new hero.',
+              description: 'Invalid Class Code. Please check with your teacher.',
           });
           setIsLoading(false);
           return;
       }
       
-      // Now that we have the teacher, we can construct the email and attempt to sign in.
       const email = `${studentId}-${teacherUid.slice(0,5)}@academy-heroes-mziuf.firebaseapp.com`;
 
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -89,7 +85,7 @@ export function LoginForm() {
           case 'auth/invalid-credential':
           case 'auth/user-not-found':
           case 'auth/wrong-password':
-            description = 'Invalid username or password.';
+            description = 'Invalid username, password, or class code.';
             break;
           case 'auth/network-request-failed':
             description = 'Network error. Please check your connection.';
@@ -110,6 +106,18 @@ export function LoginForm() {
 
   return (
     <div className="space-y-4 rounded-lg bg-background/50 p-4 border">
+        <div className="space-y-2">
+            <Label htmlFor="class-code"><BookUser className="inline-block mr-2 h-4 w-4" />Class Code</Label>
+            <Input
+                id="class-code"
+                type="text"
+                placeholder="Enter your class code"
+                required
+                value={classCode}
+                onChange={(e) => setClassCode(e.target.value)}
+                disabled={isLoading}
+            />
+        </div>
         <div className="space-y-2">
             <Label htmlFor="student-id"><KeyRound className="inline-block mr-2 h-4 w-4" />Username</Label>
             <Input
