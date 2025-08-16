@@ -248,7 +248,7 @@ export default function TeacherRegisterPage() {
                 )}
              </div>
              <div className="text-center text-sm text-muted-foreground">
-                Already a teacher? <Link href="/teacher/login" className="underline text-primary">Login here</Link>.
+                Already Registered? <Link href="/teacher/login" className="underline text-primary">Login here</Link>.
              </div>
              <Button variant="link" className="w-full text-muted-foreground" onClick={() => router.push('/')}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
