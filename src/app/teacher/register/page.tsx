@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, User, KeyRound, School, Briefcase, Phone, Check, Star } from 'lucide-react';
+import { Loader2, User, KeyRound, School, Briefcase, Phone, Check, Star, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
@@ -230,17 +230,23 @@ export default function TeacherRegisterPage() {
             )}
             
         </CardContent>
-        <CardFooter className="flex justify-between">
-            {step > 1 ? (
-                 <Button variant="outline" onClick={handlePrevStep} disabled={isLoading}>Previous</Button>
-            ) : <div />}
-            {step < 3 && (
-                <Button onClick={handleNextStep} disabled={isLoading}>Next</Button>
-            )}
+        <CardFooter className="flex flex-col gap-4">
+             <div className="flex justify-between w-full">
+                {step > 1 ? (
+                    <Button variant="outline" onClick={handlePrevStep} disabled={isLoading}>Previous</Button>
+                ) : <div />}
+                {step < 3 && (
+                    <Button onClick={handleNextStep} disabled={isLoading}>Next</Button>
+                )}
+             </div>
+             <div className="text-center text-sm text-muted-foreground">
+                Already a teacher? <Link href="/teacher/login" className="underline text-primary">Login here</Link>.
+             </div>
+             <Button variant="link" className="w-full text-muted-foreground" onClick={() => router.push('/')}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Return to Main Login
+            </Button>
         </CardFooter>
-        <div className="text-center text-sm pb-4 text-muted-foreground">
-             Already a teacher? <Link href="/teacher/login" className="underline text-primary">Login here</Link>.
-        </div>
       </Card>
     </div>
   );
