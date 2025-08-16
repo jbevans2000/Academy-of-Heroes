@@ -46,8 +46,13 @@ export default function TeacherDashboardPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isXpDialogOpen, setIsXpDialogOpen] = useState(false);
   const [isGoldDialogOpen, setIsGoldDialogOpen] = useState(false);
-  const { toast } = useToast();
   const router = useRouter();
+
+  // State for controlling the delete dialogs
+  const [isDeleteStep1Open, setIsDeleteStep1Open] = useState(false);
+  const [isDeleteStep2Open, setIsDeleteStep2Open] = useState(false);
+
+  const { toast } = useToast();
 
   const fetchStudents = async () => {
     setIsLoading(true);
@@ -262,6 +267,7 @@ export default function TeacherDashboardPage() {
           });
       } finally {
           setIsDeleting(false);
+          setIsDeleteStep2Open(false); // Close the final dialog
       }
   };
   
@@ -382,7 +388,9 @@ export default function TeacherDashboardPage() {
                 </DialogFooter>
             </DialogContent>
             </Dialog>
-            <AlertDialog>
+            
+            {/* Delete Button and Dialogs */}
+            <AlertDialog open={isDeleteStep1Open} onOpenChange={setIsDeleteStep1Open}>
                 <AlertDialogTrigger asChild>
                     <Button variant="destructive" disabled={selectedStudents.length === 0}>
                         <UserX className="mr-2 h-4 w-4" /> Delete Selected
@@ -399,29 +407,34 @@ export default function TeacherDashboardPage() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <AlertDialogAction>Continue to Final Confirmation</AlertDialogAction>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Final Confirmation (Step 2 of 2)</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        This is your final warning. Deleting this data is permanent. After this, you must also delete the user from Firebase Authentication to fully remove them.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleDeleteStudents} disabled={isDeleting}>
-                                        {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                        Yes, Delete All Character Data
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
+                        <AlertDialogAction onClick={() => {
+                            setIsDeleteStep1Open(false);
+                            setIsDeleteStep2Open(true);
+                        }}>
+                            Continue to Final Confirmation
+                        </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+            
+            <AlertDialog open={isDeleteStep2Open} onOpenChange={setIsDeleteStep2Open}>
+                 <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Final Confirmation (Step 2 of 2)</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This is your final warning. Deleting this data is permanent. After this, you must also delete the user from Firebase Authentication to fully remove them.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteStudents} disabled={isDeleting}>
+                            {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Yes, Delete All Character Data
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
         </div>
         <StudentList 
             students={students} 
@@ -433,3 +446,5 @@ export default function TeacherDashboardPage() {
     </div>
   );
 }
+
+    
