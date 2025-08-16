@@ -177,7 +177,7 @@ export function LoginForm() {
             </Button>
              <Button
               variant="outline"
-              className="w-full"
+              className="w-full bg-cyan-600 hover:bg-cyan-700 text-white border-cyan-700"
               onClick={() => router.push('/teacher/register')}
               disabled={isLoading}
             >
