@@ -10,12 +10,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Swords, Loader2, RefreshCw } from 'lucide-react';
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
-
-// HARDCODED TEACHER UID
-const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+import { onAuthStateChanged, type User } from 'firebase/auth';
 
 const guildNames = [
     "The Griffin Guard", "The Shadow Syndicate", "The Crimson Blades", "The Golden Lions",
@@ -43,12 +41,25 @@ export default function GroupGeneratorPage() {
     const [groupSize, setGroupSize] = useState<number | string>(2);
     const [generatedGroups, setGeneratedGroups] = useState<Student[][]>([]);
     const [generatedGuildNames, setGeneratedGuildNames] = useState<string[]>([]);
+    const [teacher, setTeacher] = useState<User | null>(null);
+
+     useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, user => {
+            if (user) {
+                setTeacher(user);
+            } else {
+                router.push('/teacher/login');
+            }
+        });
+        return () => unsubscribe();
+     }, [router]);
     
     useEffect(() => {
+        if (!teacher) return;
         const fetchStudents = async () => {
             setIsLoading(true);
             try {
-                const querySnapshot = await getDocs(collection(db, "teachers", TEACHER_UID, "students"));
+                const querySnapshot = await getDocs(collection(db, "teachers", teacher.uid, "students"));
                 const studentsData = querySnapshot.docs.map(doc => ({ ...doc.data() } as Student));
                 setStudents(studentsData);
             } catch (error) {
@@ -59,7 +70,7 @@ export default function GroupGeneratorPage() {
             }
         };
         fetchStudents();
-    }, [toast]);
+    }, [teacher, toast]);
 
     const handleGenerateGroups = () => {
         const size = Number(groupSize);

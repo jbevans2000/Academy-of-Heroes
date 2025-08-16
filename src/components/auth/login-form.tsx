@@ -57,13 +57,10 @@ export function LoginForm() {
       const { studentName, teacherUid } = await findStudentAndTeacher(user.uid);
       
       if (studentName && teacherUid) {
-        // NOTE: The logGameEvent function uses a hardcoded teacher UID.
-        // For accurate, per-teacher logging, that function would need to be updated
-        // to accept a teacher UID as a parameter.
-        await logGameEvent('ACCOUNT', `${studentName} logged in.`);
+        await logGameEvent(teacherUid, 'ACCOUNT', `${studentName} logged in.`);
       } else {
          // This case would be rare, meaning a user exists in Auth but has no student document
-         await logGameEvent('ACCOUNT', `A user with UID ${user.uid} logged in but has no student record.`);
+         console.warn(`A user with UID ${user.uid} logged in but has no student record.`);
       }
 
       toast({

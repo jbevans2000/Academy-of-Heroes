@@ -18,14 +18,11 @@ import {
 import { DashboardClient } from '@/components/dashboard/dashboard-client';
 import { Input } from '@/components/ui/input';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
-
-// HARDCODED TEACHER UID
-const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
 
 interface EditableStatProps {
     student: Student;
@@ -33,9 +30,10 @@ interface EditableStatProps {
     icon: React.ReactNode;
     label: string;
     setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
+    teacherUid: string;
 }
 
-function EditableStat({ student, stat, icon, label, setStudents }: EditableStatProps) {
+function EditableStat({ student, stat, icon, label, setStudents, teacherUid }: EditableStatProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [value, setValue] = useState(student[stat]);
     const [isLoading, setIsLoading] = useState(false);
@@ -65,7 +63,7 @@ function EditableStat({ student, stat, icon, label, setStudents }: EditableStatP
             return;
         }
 
-        const studentRef = doc(db, 'teachers', TEACHER_UID, 'students', student.uid);
+        const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
         try {
             const studentDoc = await getDoc(studentRef);
             if (!studentDoc.exists()) throw new Error("Student not found");
@@ -152,9 +150,10 @@ interface StudentCardProps {
   isSelected: boolean;
   onSelect: () => void;
   setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
+  teacherUid: string;
 }
 
-export function StudentCard({ student, isSelected, onSelect, setStudents }: StudentCardProps) {
+export function StudentCard({ student, isSelected, onSelect, setStudents, teacherUid }: StudentCardProps) {
   const avatarUrl = student.avatarUrl || 'https://placehold.co/100x100.png';
 
   return (
@@ -205,6 +204,7 @@ export function StudentCard({ student, isSelected, onSelect, setStudents }: Stud
                 label="Experience"
                 icon={<Star className="h-5 w-5 text-yellow-400" />}
                 setStudents={setStudents}
+                teacherUid={teacherUid}
             />
             <EditableStat 
                 student={student}
@@ -212,6 +212,7 @@ export function StudentCard({ student, isSelected, onSelect, setStudents }: Stud
                 label="HP"
                 icon={<Heart className="h-5 w-5 text-red-500" />}
                 setStudents={setStudents}
+                teacherUid={teacherUid}
             />
             <EditableStat 
                 student={student}
@@ -219,6 +220,7 @@ export function StudentCard({ student, isSelected, onSelect, setStudents }: Stud
                 label="MP"
                 icon={<Zap className="h-5 w-5 text-blue-500" />}
                 setStudents={setStudents}
+                teacherUid={teacherUid}
             />
              <EditableStat 
                 student={student}
@@ -226,6 +228,7 @@ export function StudentCard({ student, isSelected, onSelect, setStudents }: Stud
                 label="Gold"
                 icon={<Coins className="h-5 w-5 text-amber-500" />}
                 setStudents={setStudents}
+                teacherUid={teacherUid}
             />
           </div>
         </CardContent>

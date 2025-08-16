@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, query, onSnapshot, orderBy, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,9 +12,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, BookOpen } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatDistanceToNow } from 'date-fns';
-
-// HARDCODED TEACHER UID
-const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+import { onAuthStateChanged, type User } from 'firebase/auth';
 
 interface GameLogEntry {
   id: string;
@@ -32,10 +30,24 @@ export default function GameLogPage() {
   const [filteredLogs, setFilteredLogs] = useState<GameLogEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
+  const [teacher, setTeacher] = useState<User | null>(null);
 
   useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, user => {
+        if (user) {
+            setTeacher(user);
+        } else {
+            router.push('/teacher/login');
+        }
+    });
+    return () => unsubscribe();
+  }, [router]);
+
+  useEffect(() => {
+    if (!teacher) return;
+
     setIsLoading(true);
-    const logsQuery = query(collection(db, 'teachers', TEACHER_UID, 'gameLog'), orderBy('timestamp', 'desc'));
+    const logsQuery = query(collection(db, 'teachers', teacher.uid, 'gameLog'), orderBy('timestamp', 'desc'));
     
     const unsubscribe = onSnapshot(logsQuery, (querySnapshot) => {
       const logsData = querySnapshot.docs.map(doc => ({
@@ -51,7 +63,7 @@ export default function GameLogPage() {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [teacher]);
   
   useEffect(() => {
       if (activeTab === 'all') {

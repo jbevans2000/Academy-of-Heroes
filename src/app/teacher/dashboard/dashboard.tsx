@@ -117,25 +117,6 @@ export default function Dashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
-  const fetchStudents = async () => {
-    if (!teacher) return;
-    setIsLoading(true);
-    try {
-      const querySnapshot = await getDocs(collection(db, "teachers", teacher.uid, "students"));
-      const studentsData = querySnapshot.docs.map(doc => ({ ...doc.data() } as Student));
-      setStudents(studentsData);
-    } catch (error) {
-      console.error("Error fetching students: ", error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Could not fetch student data.',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
   const handleToggleStudentSelection = (uid: string) => {
     setSelectedStudents(prev =>
       prev.includes(uid) ? prev.filter(id => id !== uid) : [...prev, uid]
@@ -213,7 +194,7 @@ export default function Dashboard() {
             })
           );
           
-          await logGameEvent('GAMEMASTER', `Awarded ${amount} XP to ${selectedStudents.length} student(s).`);
+          await logGameEvent(teacher!.uid, 'GAMEMASTER', `Awarded ${amount} XP to ${selectedStudents.length} student(s).`);
 
           toast({
               title: 'XP Awarded!',
@@ -278,7 +259,7 @@ export default function Dashboard() {
             )
           );
           
-          await logGameEvent('GAMEMASTER', `Awarded ${amount} Gold to ${selectedStudents.length} student(s).`);
+          await logGameEvent(teacher!.uid, 'GAMEMASTER', `Awarded ${amount} Gold to ${selectedStudents.length} student(s).`);
 
           toast({
               title: 'Gold Awarded!',
@@ -314,7 +295,7 @@ export default function Dashboard() {
           // Update local state
           setStudents(prev => prev.filter(s => !selectedStudents.includes(s.uid)));
           
-          await logGameEvent('GAMEMASTER', `Deleted ${selectedStudents.length} student(s) from the database.`);
+          await logGameEvent(teacher.uid, 'GAMEMASTER', `Deleted ${selectedStudents.length} student(s) from the database.`);
           setSelectedStudents([]);
           
           toast({
@@ -373,17 +354,19 @@ export default function Dashboard() {
             <AlertDialogContent className="max-w-2xl">
                 <AlertDialogHeader>
                     <AlertDialogTitle className="text-3xl">Welcome to The Academy of Heroes!</AlertDialogTitle>
-                    <AlertDialogDescription className="text-base text-black">
-                        Your classroom is ready! To get your students started, give them your unique Class Code and instruct them to follow these steps:
+                    <AlertDialogDescription asChild>
+                      <div className="text-base text-foreground space-y-4">
+                        <p>Your classroom is ready! To get your students started, give them your unique Class Code and instruct them to follow these steps:</p>
+                        <ol className="list-decimal list-inside space-y-2 pt-2 text-foreground text-lg">
+                            <li>Go to the main login page.</li>
+                            <li>Click "Create New Hero & Join a Class".</li>
+                            <li>Enter your Class Code: 
+                                <strong className="font-mono text-xl bg-primary/10 px-2 py-1 rounded-md mx-1">{teacherData?.classCode}</strong>
+                            </li>
+                            <li>Fill out the rest of the form to create their character.</li>
+                        </ol>
+                      </div>
                     </AlertDialogDescription>
-                    <ol className="list-decimal list-inside space-y-2 pt-2 text-foreground text-lg">
-                        <li>Go to the main login page.</li>
-                        <li>Click "Create New Hero & Join a Class".</li>
-                        <li>Enter your Class Code: 
-                            <strong className="font-mono text-xl bg-primary/10 px-2 py-1 rounded-md mx-1">{teacherData?.classCode}</strong>
-                        </li>
-                        <li>Fill out the rest of the form to create their character.</li>
-                    </ol>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogAction onClick={() => {
@@ -570,6 +553,7 @@ export default function Dashboard() {
             selectedStudents={selectedStudents}
             onSelectStudent={handleToggleStudentSelection}
             setStudents={setStudents}
+            teacherUid={teacher.uid}
         />
       </main>
     </div>

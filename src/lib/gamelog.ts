@@ -6,20 +6,22 @@ import { db } from './firebase';
 
 export type LogCategory = 'BOSS_BATTLE' | 'CHAPTER' | 'ACCOUNT' | 'GAMEMASTER';
 
-// HARDCODED TEACHER UID
-const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
-
 /**
  * Records an event to the game log collection in Firestore.
  * This is designed to be a "fire-and-forget" operation.
  * If it fails, it will log an error to the console but will not
  * disrupt the user-facing application flow.
+ * @param teacherUid The UID of the teacher to whose log the event will be written.
  * @param category The category of the event for filtering.
  * @param description A human-readable string describing the event.
  */
-export async function logGameEvent(category: LogCategory, description: string): Promise<void> {
+export async function logGameEvent(teacherUid: string, category: LogCategory, description: string): Promise<void> {
+    if (!teacherUid) {
+        console.error("Failed to write to game log: teacherUid is missing.");
+        return;
+    }
     try {
-        await addDoc(collection(db, 'teachers', TEACHER_UID, 'gameLog'), {
+        await addDoc(collection(db, 'teachers', teacherUid, 'gameLog'), {
             timestamp: serverTimestamp(),
             category,
             description,

@@ -3,8 +3,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, doc, writeBatch, deleteDoc, setDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { collection, getDocs, doc, writeBatch, deleteDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { db, auth } from '@/lib/firebase';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,9 +23,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { logGameEvent } from '@/lib/gamelog';
-
-// HARDCODED TEACHER UID
-const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+import { onAuthStateChanged, type User } from 'firebase/auth';
 
 interface BossBattle {
   id: string;
@@ -38,42 +36,52 @@ export default function BossBattlesPage() {
   const [startingBattleId, setStartingBattleId] = useState<string | null>(null);
   const router = useRouter();
   const { toast } = useToast();
-
-  const fetchBattles = async () => {
-    setIsLoading(true);
-    try {
-      const querySnapshot = await getDocs(collection(db, 'teachers', TEACHER_UID, 'bossBattles'));
-      const battlesData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as BossBattle));
-      setBattles(battlesData);
-    } catch (error) {
-      console.error("Error fetching boss battles: ", error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch battle data.' });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const [teacher, setTeacher] = useState<User | null>(null);
 
   useEffect(() => {
-    fetchBattles();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const unsubscribe = onAuthStateChanged(auth, user => {
+        if (user) {
+            setTeacher(user);
+        } else {
+            router.push('/teacher/login');
+        }
+    });
+    return () => unsubscribe();
+  }, [router]);
+
+
+  useEffect(() => {
+    if (!teacher) return;
+    setIsLoading(true);
+    const battlesRef = collection(db, 'teachers', teacher.uid, 'bossBattles');
+    const unsubscribe = onSnapshot(battlesRef, (querySnapshot) => {
+        const battlesData = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        } as BossBattle));
+        setBattles(battlesData);
+        setIsLoading(false);
+    }, (error) => {
+        console.error("Error fetching boss battles: ", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch battle data.' });
+        setIsLoading(false);
+    });
+    
+    return () => unsubscribe();
+  }, [teacher, toast]);
 
   const handleStartBattle = async (battle: BossBattle) => {
+    if (!teacher) return;
     setStartingBattleId(battle.id);
     try {
-        const liveBattleRef = doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle');
+        const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
 
-        // Explicitly delete the old active battle document first to ensure a clean slate.
         await deleteDoc(liveBattleRef).catch(err => {
             if (err.code !== 'not-found') {
                 console.warn("Could not delete old live battle doc, it might not exist.", err);
             }
         });
 
-        // Set the new active battle state
         await setDoc(liveBattleRef, {
             battleId: battle.id,
             status: 'WAITING', 
@@ -82,7 +90,7 @@ export default function BossBattlesPage() {
             totalDamage: 0,
         });
 
-        await logGameEvent('BOSS_BATTLE', `Boss Battle '${battle.battleName}' has been activated.`);
+        await logGameEvent(teacher.uid, 'BOSS_BATTLE', `Boss Battle '${battle.battleName}' has been activated.`);
 
         toast({
             title: 'Battle Started!',
@@ -104,16 +112,17 @@ export default function BossBattlesPage() {
   };
 
   const handleDeleteBattle = async (battleId: string) => {
+    if (!teacher) return;
     try {
         const battleToDelete = battles.find(b => b.id === battleId);
-        await deleteDoc(doc(db, 'teachers', TEACHER_UID, 'bossBattles', battleId));
-        await logGameEvent('GAMEMASTER', `Deleted Boss Battle: '${battleToDelete?.battleName || battleId}'.`);
+        await deleteDoc(doc(db, 'teachers', teacher.uid, 'bossBattles', battleId));
+        await logGameEvent(teacher.uid, 'GAMEMASTER', `Deleted Boss Battle: '${battleToDelete?.battleName || battleId}'.`);
 
         toast({
             title: 'Battle Deleted',
             description: 'The boss battle has been removed successfully.',
         });
-        fetchBattles();
+        // No need to call fetchBattles, onSnapshot will update the UI
     } catch (error) {
         console.error("Error deleting battle:", error);
         toast({
