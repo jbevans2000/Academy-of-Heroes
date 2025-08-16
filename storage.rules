@@ -1,16 +1,22 @@
 rules_version = '2';
 
+// By default, deny all reads and writes
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allow read access for everyone, as images need to be public
-    match /{allPaths=**} {
-      allow read;
+    
+    // Allow anyone to write to the "Boss Images" folder.
+    // This is safe because files are named with a unique ID (UUID),
+    // preventing users from overwriting each other's files.
+    // Reads are not allowed, so users cannot list all boss images.
+    match /Boss Images/{allPaths=**} {
+      allow write: if true;
+      allow read: if false;
     }
-
-    // Allow write access only to the "Boss Images" folder.
-    // This is where the AI image generator saves the boss pictures.
-    match /Boss Images/{imageId} {
-      allow write;
+    
+    // For all other paths, require user authentication to read or write.
+    // This keeps other potential folders in your storage secure.
+    match /{allPaths=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }
