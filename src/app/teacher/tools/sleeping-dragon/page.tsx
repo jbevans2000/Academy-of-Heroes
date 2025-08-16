@@ -77,6 +77,26 @@ export default function SleepingDragonPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    useEffect(() => {
+        // This is a dependency array that includes sensitivity.
+        // It's a bit complex because we need to restart the audio processing
+        // if sensitivity changes, but only if we already have permission.
+        // The main `useEffect` handles the initial permission request.
+        if (hasPermission) {
+            // If there's an existing audio context, close it before creating a new one.
+            if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+                audioContextRef.current.close();
+            }
+            if(animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+            
+            // Re-initialize audio processing with new sensitivity.
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                 setupAudioProcessing(stream);
+            });
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [sensitivity, hasPermission]);
+
     const setupAudioProcessing = (stream: MediaStream) => {
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         audioContextRef.current = audioContext;
