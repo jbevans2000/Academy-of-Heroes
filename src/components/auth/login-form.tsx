@@ -34,7 +34,7 @@ export function LoginForm() {
       toast({
         variant: 'destructive',
         title: 'Missing Fields',
-        description: 'Please enter your Student ID and Password.',
+        description: 'Please enter your username/email and password.',
       });
       return;
     }
@@ -105,11 +105,11 @@ export function LoginForm() {
   return (
     <div className="space-y-4 rounded-lg bg-background/50 p-4 border">
         <div className="space-y-2">
-        <Label htmlFor="student-id">Student ID Number</Label>
+        <Label htmlFor="student-id">Username / Email</Label>
         <Input
             id="student-id"
             type="text"
-            placeholder="Enter your ID number"
+            placeholder="Enter your username or email"
             required
             value={studentId}
             onChange={(e) => setStudentId(e.target.value)}
