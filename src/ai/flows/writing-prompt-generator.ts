@@ -28,12 +28,18 @@ The prompt MUST be appropriate for the following grade level: **{{gradeLevel}}**
 
 The type of prompt to generate is: **{{promptType}}**.
 
-The genre or subject for the prompt is: **{{genreOrSubject}}**.
+{{#if (eq promptType "Fiction")}}
+The genre for the prompt is: **{{genreOrSubject}}**.
+{{/if}}
+{{#if (eq promptType "Non-Fiction")}}
+The subject for the prompt is: **{{genreOrSubject}}**.
 
 {{#if specificTopic}}
 For this non-fiction prompt, focus specifically on: **{{specificTopic}}**. If the topic is broad, narrow it down to a specific, age-appropriate question or sub-topic.
-{{else if (eq promptType "Non-Fiction")}}
+{{else}}
 For this non-fiction prompt, you can be creative and choose a specific, interesting, and age-appropriate topic within the subject of {{genreOrSubject}}.
+{{/if}}
+
 {{/if}}
 
 The final output should be ONLY the text of the writing prompt itself, with no extra titles, headings, or explanations.
