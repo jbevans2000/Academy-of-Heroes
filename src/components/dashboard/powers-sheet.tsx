@@ -71,8 +71,8 @@ export function PowersSheet({ isOpen, onOpenChange, student }: PowersSheetProps)
                             </Button>
                         </div>
                         <p className={cn(
-                            "text-xs font-semibold mt-2 text-right",
-                            isUnlocked ? "text-green-400" : "text-green-400"
+                            "font-semibold mt-2 text-right",
+                            isUnlocked ? "text-green-400 text-xs" : "text-black text-sm"
                         )}>
                             {isUnlocked ? "Unlocked" : `Unlocks at Level ${power.level}`}
                         </p>
