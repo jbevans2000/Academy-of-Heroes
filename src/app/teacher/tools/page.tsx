@@ -70,7 +70,7 @@ export default function ClassroomToolsPage() {
                             <Wrench className="h-8 w-8 text-primary" />
                             <div>
                                 <h1 className="text-3xl font-bold">Classroom Tools</h1>
-                                <p className="text-muted-foreground">A collection of useful utilities to help manage your classroom with a fantasy twist.</p>
+                                <p className="text-black">A collection of useful utilities to help manage your classroom with a fantasy twist.</p>
                             </div>
                         </div>
                     </div>
