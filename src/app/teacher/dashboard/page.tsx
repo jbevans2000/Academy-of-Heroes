@@ -33,7 +33,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, Trash2, Swords, PlusCircle, UserX, BookOpen } from 'lucide-react';
+import { Loader2, Star, Coins, UserX, Swords, PlusCircle, BookOpen } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 
@@ -139,7 +139,7 @@ export default function TeacherDashboardPage() {
                       newMp += mpGained;
                   }
                   
-                  const updates = { xp: newXp, level: newLevel, hp: newHp, mp: newMp };
+                  const updates: any = { xp: newXp, level: newLevel, hp: newHp, mp: newMp };
                   batch.update(studentDoc.ref, updates);
                   updatedStudentsData.push({ ...studentData, ...updates });
               }
@@ -456,5 +456,7 @@ export default function TeacherDashboardPage() {
     </div>
   );
 }
+
+    
 
     
