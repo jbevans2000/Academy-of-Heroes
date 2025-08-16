@@ -98,7 +98,7 @@ export default function MysticalClockPage() {
                 autoPlay
                 loop
                 muted
-                className="fixed top-0 left-0 w-full h-full object-cover -z-10 opacity-30"
+                className="fixed top-0 left-0 w-full h-full object-cover -z-10"
             >
                 <source src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fmystical%20clock.mp4?alt=media&token=cf18c172-b935-4610-b8d5-0a769001f531" type="video/mp4" />
             </video>
