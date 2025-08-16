@@ -20,7 +20,7 @@ const tools = [
         description: 'A tool to motivate quiet. Don\'t wake the sleeping dragon!',
         icon: <Volume2 className="h-10 w-10 text-primary" />,
         path: '/teacher/tools/sleeping-dragon',
-        disabled: true,
+        disabled: false,
     },
     {
         title: 'Random Student Picker',
