@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import { ArrowLeft, LayoutDashboard, Library, CheckCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, Library, CheckCircle, Loader2, RotateCcw } from "lucide-react";
 import Image from 'next/image';
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,6 +32,7 @@ export default function ChapterPage() {
 
     const [isLoading, setIsLoading] = useState(true);
     const [isCompleting, setIsCompleting] = useState(false);
+    const [isUncompleting, setIsUncompleting] = useState(false);
 
     const fromTeacher = searchParams.get('from') === 'teacher';
 
@@ -132,6 +133,48 @@ export default function ChapterPage() {
             setIsCompleting(false);
         }
     };
+    
+    const handleUnmarkComplete = async () => {
+        if (!user || !student || !chapter) return;
+        setIsUncompleting(true);
+
+        try {
+            const studentRef = doc(db, 'students', user.uid);
+            
+            const currentProgress = student.questProgress?.[hubId as string] || 0;
+            
+            if (chapter.chapterNumber > currentProgress) {
+                toast({ title: "Cannot Unmark", description: "This chapter has not been completed yet." });
+                return;
+            }
+            if (chapter.chapterNumber === 0) return; // Should not happen with 1-based chapter numbers
+
+            // Set progress back to the previous chapter number
+            const newProgressValue = chapter.chapterNumber - 1;
+            
+            const newProgress = {
+                ...student.questProgress,
+                [hubId as string]: newProgressValue
+            };
+
+            const updates: Partial<Student> = {
+                questProgress: newProgress
+            };
+
+            await updateDoc(studentRef, updates);
+            
+            setStudent(prev => prev ? ({ ...prev, ...updates }) : null);
+
+            toast({ title: "Quest Progress Rolled Back", description: `Progress has been reset to Chapter ${newProgressValue}.` });
+            router.push(`/dashboard/map/${hubId}`);
+
+        } catch (error) {
+            console.error("Error unmarking quest:", error);
+            toast({ title: "Error", description: "Could not save your progress.", variant: "destructive" });
+        } finally {
+            setIsUncompleting(false);
+        }
+    };
 
 
     const getYouTubeEmbedUrl = (url: string) => {
@@ -197,6 +240,8 @@ export default function ChapterPage() {
     const lastCompletedChapterForHub = student?.questProgress?.[hubId as string] || 0;
     const isCurrentChapter = chapter.chapterNumber === lastCompletedChapterForHub + 1;
     const canComplete = !fromTeacher && isCurrentChapter;
+    const isCompletedChapter = student && chapter.chapterNumber <= lastCompletedChapterForHub;
+    const canUnmark = fromTeacher && student && isCompletedChapter;
 
 
     return (
@@ -324,6 +369,17 @@ export default function ChapterPage() {
                             Mark Quest as Complete
                         </Button>
                      )}
+                     {canUnmark && (
+                         <Button 
+                            size="lg" 
+                            variant="destructive"
+                            onClick={handleUnmarkComplete}
+                            disabled={isUncompleting}
+                        >
+                            {isUncompleting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <RotateCcw className="mr-2 h-5 w-5" />}
+                            (Teacher) Unmark Quest as Complete
+                        </Button>
+                     )}
                      <div className="flex justify-center gap-4">
                         <Button 
                             onClick={() => router.push(`/dashboard/map/${hubId}`)} 
@@ -358,3 +414,5 @@ export default function ChapterPage() {
         </div>
     );
 }
+
+    
