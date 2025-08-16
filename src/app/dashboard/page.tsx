@@ -11,6 +11,9 @@ import { DashboardHeader } from '@/components/dashboard/header';
 import { DashboardClient } from '@/components/dashboard/dashboard-client';
 import { Skeleton } from '@/components/ui/skeleton';
 
+// HARDCODED TEACHER UID
+const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+
 export default function DashboardPage() {
   const [student, setStudent] = useState<Student | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -20,7 +23,7 @@ export default function DashboardPage() {
     const authUnsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         // We have a user, now set up the real-time listener for their data
-        const docRef = doc(db, 'students', user.uid);
+        const docRef = doc(db, 'teachers', TEACHER_UID, 'students', user.uid);
         
         const snapshotUnsubscribe = onSnapshot(docRef, (docSnap) => {
           if (docSnap.exists()) {

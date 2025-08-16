@@ -15,6 +15,9 @@ import type { QuestHub, Chapter } from '@/lib/quests';
 import type { Student } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 
+// HARDCODED TEACHER UID
+const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+
 export default function HubMapPage() {
     const router = useRouter();
     const params = useParams();
@@ -28,7 +31,7 @@ export default function HubMapPage() {
     useEffect(() => {
         const authUnsubscribe = onAuthStateChanged(auth, (user) => {
             if (user) {
-                const studentDocRef = doc(db, 'students', user.uid);
+                const studentDocRef = doc(db, 'teachers', TEACHER_UID, 'students', user.uid);
                 const studentUnsubscribe = onSnapshot(studentDocRef, (docSnap) => {
                     if (docSnap.exists()) {
                         setStudent(docSnap.data() as Student);
@@ -51,14 +54,14 @@ export default function HubMapPage() {
             setIsLoading(true);
             try {
                 // Fetch hub details
-                const hubDocRef = doc(db, 'questHubs', hubId);
+                const hubDocRef = doc(db, 'teachers', TEACHER_UID, 'questHubs', hubId);
                 const hubDocSnap = await getDoc(hubDocRef);
                 if (hubDocSnap.exists()) {
                     setHub({ id: hubDocSnap.id, ...hubDocSnap.data() } as QuestHub);
                 }
 
                 // Fetch chapters for this hub, ordered by chapter number
-                const chaptersQuery = query(collection(db, 'chapters'), where('hubId', '==', hubId));
+                const chaptersQuery = query(collection(db, 'teachers', TEACHER_UID, 'chapters'), where('hubId', '==', hubId));
                 const chaptersSnapshot = await getDocs(chaptersQuery);
                 let chaptersData = chaptersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
                 chaptersData.sort((a, b) => a.chapterNumber - b.chapterNumber);

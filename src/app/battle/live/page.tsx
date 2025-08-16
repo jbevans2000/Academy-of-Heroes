@@ -14,6 +14,9 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { PowersSheet } from '@/components/dashboard/powers-sheet';
 
+// HARDCODED TEACHER UID
+const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+
 interface LiveBattleState {
   battleId: string | null;
   status: 'WAITING' | 'IN_PROGRESS' | 'ROUND_ENDING' | 'SHOWING_RESULTS' | 'BATTLE_ENDED';
@@ -110,7 +113,7 @@ export default function LiveBattlePage() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUser(user);
-        const studentDoc = await getDoc(doc(db, 'students', user.uid));
+        const studentDoc = await getDoc(doc(db, 'teachers', TEACHER_UID, 'students', user.uid));
         if (studentDoc.exists()) {
           setStudent(studentDoc.data() as Student);
         }
@@ -124,7 +127,7 @@ export default function LiveBattlePage() {
   // Effect to listen for the live battle state
   useEffect(() => {
     setIsLoading(true);
-    const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
+    const liveBattleRef = doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle');
     const unsubscribe = onSnapshot(liveBattleRef, (docSnapshot) => {
       if (docSnapshot.exists()) {
         const newState = docSnapshot.data() as LiveBattleState;
@@ -157,7 +160,7 @@ export default function LiveBattlePage() {
   useEffect(() => {
     if (battleState?.battleId) {
       const fetchBattle = async () => {
-        const battleDoc = await getDoc(doc(db, 'bossBattles', battleState.battleId!));
+        const battleDoc = await getDoc(doc(db, 'teachers', TEACHER_UID, 'bossBattles', battleState.battleId!));
         if (battleDoc.exists()) {
           setBattle({ id: battleDoc.id, ...battleDoc.data() } as Battle);
         }
@@ -180,7 +183,7 @@ export default function LiveBattlePage() {
     // HP damage is now applied in a batch by the teacher at the end of the round.
     // No damage deduction here.
 
-    const responseRef = doc(db, `liveBattles/active-battle/responses`, user.uid);
+    const responseRef = doc(db, 'teachers', TEACHER_UID, `liveBattles/active-battle/responses`, user.uid);
     await setDoc(responseRef, {
       studentName: student.studentName,
       characterName: student.characterName,
@@ -190,7 +193,7 @@ export default function LiveBattlePage() {
       submittedAt: new Date(),
     });
 
-    const studentResponseRef = doc(db, `liveBattles/active-battle/studentResponses/${user.uid}/rounds/${battleState.currentQuestionIndex}`);
+    const studentResponseRef = doc(db, 'teachers', TEACHER_UID, `liveBattles/active-battle/studentResponses/${user.uid}/rounds/${battleState.currentQuestionIndex}`);
     await setDoc(studentResponseRef, {
         answerIndex: answerIndex,
     });

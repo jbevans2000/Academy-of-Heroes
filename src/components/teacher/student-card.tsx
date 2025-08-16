@@ -24,6 +24,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 
+// HARDCODED TEACHER UID
+const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
 
 interface EditableStatProps {
     student: Student;
@@ -63,7 +65,7 @@ function EditableStat({ student, stat, icon, label, setStudents }: EditableStatP
             return;
         }
 
-        const studentRef = doc(db, 'students', student.uid);
+        const studentRef = doc(db, 'teachers', TEACHER_UID, 'students', student.uid);
         try {
             const studentDoc = await getDoc(studentRef);
             if (!studentDoc.exists()) throw new Error("Student not found");

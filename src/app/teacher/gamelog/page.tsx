@@ -13,6 +13,9 @@ import { ArrowLeft, BookOpen } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatDistanceToNow } from 'date-fns';
 
+// HARDCODED TEACHER UID
+const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+
 interface GameLogEntry {
   id: string;
   timestamp: {
@@ -32,7 +35,7 @@ export default function GameLogPage() {
 
   useEffect(() => {
     setIsLoading(true);
-    const logsQuery = query(collection(db, 'gameLog'), orderBy('timestamp', 'desc'));
+    const logsQuery = query(collection(db, 'teachers', TEACHER_UID, 'gameLog'), orderBy('timestamp', 'desc'));
     
     const unsubscribe = onSnapshot(logsQuery, (querySnapshot) => {
       const logsData = querySnapshot.docs.map(doc => ({

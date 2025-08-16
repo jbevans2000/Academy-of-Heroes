@@ -19,6 +19,9 @@ import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RichTextEditor from '@/components/teacher/rich-text-editor';
 
+// HARDCODED TEACHER UID
+const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+
 export default function EditQuestPage() {
   const router = useRouter();
   const params = useParams();
@@ -39,7 +42,7 @@ export default function EditQuestPage() {
   useEffect(() => {
     const fetchHubs = async () => {
         try {
-            const hubsQuery = query(collection(db, 'questHubs'), orderBy('hubOrder'));
+            const hubsQuery = query(collection(db, 'teachers', TEACHER_UID, 'questHubs'), orderBy('hubOrder'));
             const hubsSnapshot = await getDocs(hubsQuery);
             const hubsData = hubsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
             setHubs(hubsData);
@@ -57,7 +60,7 @@ export default function EditQuestPage() {
     const fetchChapter = async () => {
         setIsLoading(true);
         try {
-            const chapterRef = doc(db, 'chapters', chapterId);
+            const chapterRef = doc(db, 'teachers', TEACHER_UID, 'chapters', chapterId);
             const chapterSnap = await getDoc(chapterRef);
 
             if (chapterSnap.exists()) {
@@ -122,7 +125,7 @@ export default function EditQuestPage() {
     setIsSaving(true);
     
     try {
-        const chapterRef = doc(db, 'chapters', chapterId);
+        const chapterRef = doc(db, 'teachers', TEACHER_UID, 'chapters', chapterId);
         await setDoc(chapterRef, {
             ...chapter,
             hubId: selectedHubId,

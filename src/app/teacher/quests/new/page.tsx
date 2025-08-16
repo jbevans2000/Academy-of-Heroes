@@ -19,6 +19,8 @@ import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RichTextEditor from '@/components/teacher/rich-text-editor';
 
+// HARDCODED TEACHER UID
+const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
 
 export default function NewQuestPage() {
   const router = useRouter();
@@ -59,7 +61,7 @@ export default function NewQuestPage() {
     const fetchHubs = async () => {
         setIsLoading(true);
         try {
-            const hubsQuery = query(collection(db, 'questHubs'), orderBy('hubOrder'));
+            const hubsQuery = query(collection(db, 'teachers', TEACHER_UID, 'questHubs'), orderBy('hubOrder'));
             const hubsSnapshot = await getDocs(hubsQuery);
             const hubsData = hubsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
             setHubs(hubsData);
@@ -126,7 +128,7 @@ export default function NewQuestPage() {
 
         // 1. Create a new hub if necessary
         if (selectedHubId === 'new') {
-            const newHubRef = doc(collection(db, 'questHubs'));
+            const newHubRef = doc(collection(db, 'teachers', TEACHER_UID, 'questHubs'));
             await setDoc(newHubRef, {
                 name: newHubName,
                 worldMapUrl: newHubMapUrl,
@@ -138,7 +140,7 @@ export default function NewQuestPage() {
         }
 
         // 2. Create the new chapter
-        await addDoc(collection(db, 'chapters'), {
+        await addDoc(collection(db, 'teachers', TEACHER_UID, 'chapters'), {
             hubId: finalHubId,
             title: chapterTitle,
             chapterNumber: chapterNumber,

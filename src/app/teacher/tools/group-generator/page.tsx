@@ -14,6 +14,9 @@ import { db } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 
+// HARDCODED TEACHER UID
+const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+
 const guildNames = [
     "The Griffin Guard", "The Shadow Syndicate", "The Crimson Blades", "The Golden Lions",
     "The Azure Order", "The Iron Wolves", "The Serpent's Coil", "The Dragon Riders",
@@ -45,7 +48,7 @@ export default function GroupGeneratorPage() {
         const fetchStudents = async () => {
             setIsLoading(true);
             try {
-                const querySnapshot = await getDocs(collection(db, "students"));
+                const querySnapshot = await getDocs(collection(db, "teachers", TEACHER_UID, "students"));
                 const studentsData = querySnapshot.docs.map(doc => ({ ...doc.data() } as Student));
                 setStudents(studentsData);
             } catch (error) {

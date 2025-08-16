@@ -6,6 +6,9 @@ import { db } from './firebase';
 
 export type LogCategory = 'BOSS_BATTLE' | 'CHAPTER' | 'ACCOUNT' | 'GAMEMASTER';
 
+// HARDCODED TEACHER UID
+const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+
 /**
  * Records an event to the game log collection in Firestore.
  * This is designed to be a "fire-and-forget" operation.
@@ -16,7 +19,7 @@ export type LogCategory = 'BOSS_BATTLE' | 'CHAPTER' | 'ACCOUNT' | 'GAMEMASTER';
  */
 export async function logGameEvent(category: LogCategory, description: string): Promise<void> {
     try {
-        await addDoc(collection(db, 'gameLog'), {
+        await addDoc(collection(db, 'teachers', TEACHER_UID, 'gameLog'), {
             timestamp: serverTimestamp(),
             category,
             description,

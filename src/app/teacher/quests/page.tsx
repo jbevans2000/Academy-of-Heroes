@@ -25,6 +25,9 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 
+// HARDCODED TEACHER UID
+const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+
 export default function QuestsPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -36,11 +39,11 @@ export default function QuestsPage() {
   const fetchQuests = async () => {
       setIsLoading(true);
       try {
-          const hubsSnapshot = await getDocs(collection(db, 'questHubs'));
+          const hubsSnapshot = await getDocs(collection(db, 'teachers', TEACHER_UID, 'questHubs'));
           const hubsData = hubsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
           setHubs(hubsData);
 
-          const chaptersSnapshot = await getDocs(collection(db, 'chapters'));
+          const chaptersSnapshot = await getDocs(collection(db, 'teachers', TEACHER_UID, 'chapters'));
           const chaptersData = chaptersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
           setChapters(chaptersData);
       } catch (error) {
@@ -53,12 +56,13 @@ export default function QuestsPage() {
 
   useEffect(() => {
     fetchQuests();
-  }, [toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleDeleteChapter = async (chapterId: string) => {
     setIsDeleting(chapterId);
     try {
-        await deleteDoc(doc(db, 'chapters', chapterId));
+        await deleteDoc(doc(db, 'teachers', TEACHER_UID, 'chapters', chapterId));
         toast({
             title: 'Chapter Deleted',
             description: 'The chapter has been successfully removed.',

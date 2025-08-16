@@ -11,6 +11,9 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
 
+// HARDCODED TEACHER UID
+const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+
 interface Question {
   questionText: string;
   answers: string[];
@@ -40,7 +43,7 @@ export default function PreviewBattlePage() {
     const fetchBattle = async () => {
       setIsLoading(true);
       try {
-        const docRef = doc(db, 'bossBattles', battleId);
+        const docRef = doc(db, 'teachers', TEACHER_UID, 'bossBattles', battleId);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {

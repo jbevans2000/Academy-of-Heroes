@@ -13,6 +13,8 @@ import type { Student } from '@/lib/data';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
+// HARDCODED TEACHER UID
+const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
 
 const selectionCaptions = [
     "The King has chosen you for a quest!",
@@ -33,7 +35,7 @@ export default function RandomStudentPage() {
         const fetchStudents = async () => {
             setIsLoading(true);
             try {
-                const querySnapshot = await getDocs(collection(db, "students"));
+                const querySnapshot = await getDocs(collection(db, "teachers", TEACHER_UID, "students"));
                 const studentsData = querySnapshot.docs.map(doc => ({ ...doc.data() } as Student));
                 setStudents(studentsData);
             } catch (error) {

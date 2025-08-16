@@ -12,6 +12,9 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Star, Coins } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
+// HARDCODED TEACHER UID
+const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+
 interface Question {
   questionText: string;
   answers: string[];
@@ -54,7 +57,7 @@ export default function TeacherBattleSummaryPage() {
 
     const fetchSummary = async () => {
       setIsLoading(true);
-      const summaryRef = doc(db, 'battleSummaries', battleId);
+      const summaryRef = doc(db, 'teachers', TEACHER_UID, 'battleSummaries', battleId);
       const docSnap = await getDoc(summaryRef);
 
       if (docSnap.exists()) {

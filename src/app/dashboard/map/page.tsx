@@ -15,6 +15,9 @@ import type { QuestHub } from '@/lib/quests';
 import type { Student } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 
+// HARDCODED TEACHER UID
+const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+
 export default function WorldMapPage() {
     const router = useRouter();
     const [hubs, setHubs] = useState<QuestHub[]>([]);
@@ -25,7 +28,7 @@ export default function WorldMapPage() {
     useEffect(() => {
         const authUnsubscribe = onAuthStateChanged(auth, (user) => {
             if (user) {
-                const studentDocRef = doc(db, 'students', user.uid);
+                const studentDocRef = doc(db, 'teachers', TEACHER_UID, 'students', user.uid);
                 const studentUnsubscribe = onSnapshot(studentDocRef, (docSnap) => {
                     if (docSnap.exists()) {
                         setStudent(docSnap.data() as Student);
@@ -46,7 +49,7 @@ export default function WorldMapPage() {
     useEffect(() => {
         const fetchHubs = async () => {
             try {
-                const hubsQuery = query(collection(db, 'questHubs'), orderBy('hubOrder'));
+                const hubsQuery = query(collection(db, 'teachers', TEACHER_UID, 'questHubs'), orderBy('hubOrder'));
                 const querySnapshot = await getDocs(hubsQuery);
                 const hubsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
                 setHubs(hubsData);

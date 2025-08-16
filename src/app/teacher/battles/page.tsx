@@ -24,6 +24,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { logGameEvent } from '@/lib/gamelog';
 
+// HARDCODED TEACHER UID
+const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
 
 interface BossBattle {
   id: string;
@@ -40,7 +42,7 @@ export default function BossBattlesPage() {
   const fetchBattles = async () => {
     setIsLoading(true);
     try {
-      const querySnapshot = await getDocs(collection(db, 'bossBattles'));
+      const querySnapshot = await getDocs(collection(db, 'teachers', TEACHER_UID, 'bossBattles'));
       const battlesData = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -56,12 +58,13 @@ export default function BossBattlesPage() {
 
   useEffect(() => {
     fetchBattles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleStartBattle = async (battle: BossBattle) => {
     setStartingBattleId(battle.id);
     try {
-        const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
+        const liveBattleRef = doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle');
 
         // Explicitly delete the old active battle document first to ensure a clean slate.
         await deleteDoc(liveBattleRef).catch(err => {
@@ -103,7 +106,7 @@ export default function BossBattlesPage() {
   const handleDeleteBattle = async (battleId: string) => {
     try {
         const battleToDelete = battles.find(b => b.id === battleId);
-        await deleteDoc(doc(db, 'bossBattles', battleId));
+        await deleteDoc(doc(db, 'teachers', TEACHER_UID, 'bossBattles', battleId));
         await logGameEvent('GAMEMASTER', `Deleted Boss Battle: '${battleToDelete?.battleName || battleId}'.`);
 
         toast({
@@ -221,5 +224,3 @@ export default function BossBattlesPage() {
     </div>
   );
 }
-
-    

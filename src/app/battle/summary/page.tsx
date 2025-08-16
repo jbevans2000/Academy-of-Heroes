@@ -12,6 +12,9 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Trophy, LayoutDashboard, HeartCrack, Star, Coins } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+// HARDCODED TEACHER UID
+const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+
 interface Question {
   questionText: string;
   answers: string[];
@@ -63,7 +66,7 @@ export default function StudentBattleSummaryPage() {
             let battleId: string | null = null;
 
             // 1. Try to get the battleId from the (now temporary) live battle doc
-            const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
+            const liveBattleRef = doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle');
             const liveBattleSnap = await getDoc(liveBattleRef);
 
             if (liveBattleSnap.exists() && liveBattleSnap.data().battleId) {
@@ -73,7 +76,7 @@ export default function StudentBattleSummaryPage() {
                 // This is a robust fallback.
                 console.log("Live battle doc not found, fetching most recent summary as a fallback.");
                 const summariesQuery = query(
-                    collection(db, 'battleSummaries'), 
+                    collection(db, 'teachers', TEACHER_UID, 'battleSummaries'), 
                     orderBy('endedAt', 'desc'), 
                     limit(1)
                 );
@@ -88,7 +91,7 @@ export default function StudentBattleSummaryPage() {
                  // Don't redirect, just show the "not available" message by letting summary stay null.
             } else {
               // 3. Fetch the battle summary using the determined battleId
-              const summaryRef = doc(db, 'battleSummaries', battleId);
+              const summaryRef = doc(db, 'teachers', TEACHER_UID, 'battleSummaries', battleId);
               const summarySnap = await getDoc(summaryRef);
               if (summarySnap.exists()) {
                   setSummary(summarySnap.data() as BattleSummary);
@@ -98,7 +101,7 @@ export default function StudentBattleSummaryPage() {
               }
               
               // 4. Fetch the specific student's responses for all rounds for that battle
-              const responsesRef = collection(db, `liveBattles/active-battle/studentResponses/${user.uid}/rounds`);
+              const responsesRef = collection(db, 'teachers', TEACHER_UID, `liveBattles/active-battle/studentResponses/${user.uid}/rounds`);
               const responsesSnap = await getDocs(responsesRef);
               const responsesData: { [key: string]: StudentRoundResponse } = {};
               responsesSnap.forEach(doc => {

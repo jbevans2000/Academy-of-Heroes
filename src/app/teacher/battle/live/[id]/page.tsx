@@ -17,6 +17,8 @@ import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mec
 import type { Student } from '@/lib/data';
 import { logGameEvent } from '@/lib/gamelog';
 
+// HARDCODED TEACHER UID
+const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
 
 interface LiveBattleState {
   battleId: string | null;
@@ -105,7 +107,7 @@ export default function TeacherLiveBattlePage() {
   useEffect(() => {
     if (!battleId) return;
     const fetchBattle = async () => {
-      const docRef = doc(db, 'bossBattles', battleId);
+      const docRef = doc(db, 'teachers', TEACHER_UID, 'bossBattles', battleId);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         setBattle({ id: docSnap.id, ...docSnap.data() } as Battle);
@@ -119,7 +121,7 @@ export default function TeacherLiveBattlePage() {
   // Listen for real-time updates on the live battle state
   useEffect(() => {
     setIsLoading(true);
-    const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
+    const liveBattleRef = doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle');
     const unsubscribe = onSnapshot(liveBattleRef, (doc) => {
       if (doc.exists()) {
         const newState = doc.data() as LiveBattleState;
@@ -149,7 +151,7 @@ export default function TeacherLiveBattlePage() {
       return;
     }
     
-    const responsesRef = collection(db, `liveBattles/active-battle/responses`);
+    const responsesRef = collection(db, 'teachers', TEACHER_UID, `liveBattles/active-battle/responses`);
     const q = query(responsesRef);
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const responses: Result[] = [];
@@ -177,9 +179,9 @@ export default function TeacherLiveBattlePage() {
     
     try {
         const batch = writeBatch(db);
-        const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
+        const liveBattleRef = doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle');
         
-        const responsesRef = collection(db, `liveBattles/active-battle/responses`);
+        const responsesRef = collection(db, 'teachers', TEACHER_UID, `liveBattles/active-battle/responses`);
         const responsesSnapshot = await getDocs(responsesRef);
         const responsesData = responsesSnapshot.docs.map(doc => ({ uid: doc.id, ...(doc.data() as StudentResponse) }));
         
@@ -197,7 +199,7 @@ export default function TeacherLiveBattlePage() {
         if (damage > 0) {
             for (const response of responsesData) {
                 if (!response.isCorrect) {
-                    const studentRef = doc(db, 'students', response.uid);
+                    const studentRef = doc(db, 'teachers', TEACHER_UID, 'students', response.uid);
                     batch.update(studentRef, { hp: increment(-damage) });
                 }
             }
@@ -254,7 +256,7 @@ export default function TeacherLiveBattlePage() {
   }, [liveState?.status, liveState?.timerEndsAt, calculateAndSetResults]);
 
   const handleStartFirstQuestion = async () => {
-    const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
+    const liveBattleRef = doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle');
     await updateDoc(liveBattleRef, { status: 'IN_PROGRESS' });
     if(battle) {
         await logGameEvent('BOSS_BATTLE', `Round 1 of '${battle.battleName}' has started.`);
@@ -267,7 +269,7 @@ export default function TeacherLiveBattlePage() {
     setIsEndingRound(true);
 
     try {
-        const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
+        const liveBattleRef = doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle');
         const timerEndsAt = new Date(Date.now() + 10000);
         await updateDoc(liveBattleRef, { 
             status: 'ROUND_ENDING',
@@ -287,11 +289,11 @@ export default function TeacherLiveBattlePage() {
     try {
         const batch = writeBatch(db);
 
-        const responsesRef = collection(db, `liveBattles/active-battle/responses`);
+        const responsesRef = collection(db, 'teachers', TEACHER_UID, `liveBattles/active-battle/responses`);
         const responsesSnapshot = await getDocs(responsesRef);
         responsesSnapshot.forEach(doc => batch.delete(doc.ref));
         
-        const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
+        const liveBattleRef = doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle');
         const nextQuestionIndex = liveState.currentQuestionIndex + 1;
         batch.update(liveBattleRef, {
             status: 'IN_PROGRESS',
@@ -314,7 +316,7 @@ export default function TeacherLiveBattlePage() {
       if (!liveState || !battle) return;
 
       const batch = writeBatch(db);
-      const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
+      const liveBattleRef = doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle');
 
       // 1. Get the final total damage from the live state
       const finalStateDoc = await getDoc(liveBattleRef);
@@ -337,7 +339,7 @@ export default function TeacherLiveBattlePage() {
 
       // 3. Batch update student documents with rewards and level ups
       for (const uid in rewardsByStudent) {
-          const studentRef = doc(db, 'students', uid);
+          const studentRef = doc(db, 'teachers', TEACHER_UID, 'students', uid);
           const studentSnap = await getDoc(studentRef);
           if (studentSnap.exists()) {
               const studentData = studentSnap.data() as Student;
@@ -364,7 +366,7 @@ export default function TeacherLiveBattlePage() {
       }
 
       // 4. Save battle summary
-      const summaryRef = doc(db, `battleSummaries`, battleId);
+      const summaryRef = doc(db, 'teachers', TEACHER_UID, `battleSummaries`, battleId);
       batch.set(summaryRef, {
           battleId: battleId,
           battleName: battle?.battleName,
@@ -387,7 +389,7 @@ export default function TeacherLiveBattlePage() {
 
       // 8. After a short delay, delete the live battle document
       setTimeout(async () => {
-        await deleteDoc(doc(db, 'liveBattles', 'active-battle'));
+        await deleteDoc(doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle'));
       }, 5000); 
   };
   
@@ -556,5 +558,3 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
-
-    

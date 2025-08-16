@@ -16,6 +16,9 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 
+// HARDCODED TEACHER UID
+const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+
 interface Question {
   id: number;
   questionText: string;
@@ -43,7 +46,7 @@ export default function EditBossBattlePage() {
     const fetchBattleData = async () => {
         setIsLoading(true);
         try {
-            const battleRef = doc(db, 'bossBattles', battleId);
+            const battleRef = doc(db, 'teachers', TEACHER_UID, 'bossBattles', battleId);
             const battleSnap = await getDoc(battleRef);
 
             if (battleSnap.exists()) {
@@ -166,7 +169,7 @@ export default function EditBossBattlePage() {
     const questionsToSave = questions.map(({ id, ...rest }) => rest);
     
     try {
-        const battleRef = doc(db, 'bossBattles', battleId);
+        const battleRef = doc(db, 'teachers', TEACHER_UID, 'bossBattles', battleId);
         await setDoc(battleRef, {
             battleName: battleTitle,
             bossImageUrl,

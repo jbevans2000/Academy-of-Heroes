@@ -42,7 +42,10 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Star, Coins, UserX, Swords, PlusCircle, BookOpen, Wrench, ChevronDown } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, type User } from 'firebase/auth';
+
+// HARDCODED TEACHER UID
+const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
 
 export default function TeacherDashboardPage() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -54,6 +57,7 @@ export default function TeacherDashboardPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isXpDialogOpen, setIsXpDialogOpen] = useState(false);
   const [isGoldDialogOpen, setIsGoldDialogOpen] = useState(false);
+  const [teacher, setTeacher] = useState<User | null>(null);
   const router = useRouter();
 
   // State for controlling the delete dialogs
@@ -64,11 +68,12 @@ export default function TeacherDashboardPage() {
   
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
-        if (user) {
+        if (user && user.uid === TEACHER_UID) {
             // User is signed in.
+            setTeacher(user);
             fetchStudents();
         } else {
-            // No user is signed in.
+            // No user is signed in, or it's not the designated teacher.
             router.push('/teacher/login');
         }
     });
@@ -79,7 +84,7 @@ export default function TeacherDashboardPage() {
   const fetchStudents = async () => {
     setIsLoading(true);
     try {
-      const querySnapshot = await getDocs(collection(db, "students"));
+      const querySnapshot = await getDocs(collection(db, "teachers", TEACHER_UID, "students"));
       const studentsData = querySnapshot.docs.map(doc => ({ ...doc.data() } as Student));
       setStudents(studentsData);
     } catch (error) {
@@ -131,7 +136,7 @@ export default function TeacherDashboardPage() {
       
       try {
           const batch = writeBatch(db);
-          const studentDocs = await Promise.all(selectedStudents.map(uid => getDoc(doc(db, 'students', uid))));
+          const studentDocs = await Promise.all(selectedStudents.map(uid => getDoc(doc(db, 'teachers', TEACHER_UID, 'students', uid))));
 
           const updatedStudentsData: Student[] = [];
 
@@ -215,7 +220,7 @@ export default function TeacherDashboardPage() {
 
       try {
           const batch = writeBatch(db);
-          const studentDocs = await Promise.all(selectedStudents.map(uid => getDoc(doc(db, 'students', uid))));
+          const studentDocs = await Promise.all(selectedStudents.map(uid => getDoc(doc(db, 'teachers', TEACHER_UID, 'students', uid))));
 
           for (const studentDoc of studentDocs) {
               if (studentDoc.exists()) {
@@ -264,7 +269,7 @@ export default function TeacherDashboardPage() {
       try {
           const batch = writeBatch(db);
           for (const uid of selectedStudents) {
-              const studentRef = doc(db, 'students', uid);
+              const studentRef = doc(db, 'teachers', TEACHER_UID, 'students', uid);
               batch.delete(studentRef);
           }
           await batch.commit();
@@ -295,7 +300,7 @@ export default function TeacherDashboardPage() {
   };
   
 
-  if (isLoading) {
+  if (isLoading || !teacher) {
     return (
        <div className="flex min-h-screen w-full flex-col">
         <TeacherHeader />

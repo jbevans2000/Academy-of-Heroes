@@ -15,6 +15,9 @@ import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
+// HARDCODED TEACHER UID
+const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+
 interface Question {
   id: number;
   questionText: string;
@@ -126,7 +129,7 @@ export default function NewBossBattlePage() {
     const questionsToSave = questions.map(({ id, ...rest }) => rest);
     
     try {
-        await addDoc(collection(db, 'bossBattles'), {
+        await addDoc(collection(db, 'teachers', TEACHER_UID, 'bossBattles'), {
             battleName: battleTitle,
             bossImageUrl,
             videoUrl,

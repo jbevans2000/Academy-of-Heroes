@@ -18,6 +18,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
 
+// HARDCODED TEACHER UID
+const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+
 export default function ChapterPage() {
     const router = useRouter();
     const params = useParams();
@@ -38,7 +41,7 @@ export default function ChapterPage() {
         const authUnsubscribe = onAuthStateChanged(auth, (currentUser) => {
             if (currentUser) {
                 setUser(currentUser);
-                getDoc(doc(db, 'students', currentUser.uid)).then(docSnap => {
+                getDoc(doc(db, 'teachers', TEACHER_UID, 'students', currentUser.uid)).then(docSnap => {
                     if (docSnap.exists()) {
                         setStudent(docSnap.data() as Student);
                     }
@@ -56,18 +59,18 @@ export default function ChapterPage() {
         const fetchChapterData = async () => {
             setIsLoading(true);
             try {
-                const chapterDocRef = doc(db, 'chapters', chapterId as string);
+                const chapterDocRef = doc(db, 'teachers', TEACHER_UID, 'chapters', chapterId as string);
                 const chapterSnap = await getDoc(chapterDocRef);
                 if (chapterSnap.exists()) {
                     setChapter(chapterSnap.data() as Chapter);
 
-                    const hubDocRef = doc(db, 'questHubs', hubId as string);
+                    const hubDocRef = doc(db, 'teachers', TEACHER_UID, 'questHubs', hubId as string);
                     const hubSnap = await getDoc(hubDocRef);
                     if (hubSnap.exists()) {
                         setHub(hubSnap.data() as QuestHub);
                     }
                     
-                    const chaptersInHubQuery = query(collection(db, 'chapters'), where('hubId', '==', hubId as string));
+                    const chaptersInHubQuery = query(collection(db, 'teachers', TEACHER_UID, 'chapters'), where('hubId', '==', hubId as string));
                     const chaptersSnapshot = await getDocs(chaptersInHubQuery);
                     setTotalChaptersInHub(chaptersSnapshot.size);
 
@@ -90,7 +93,7 @@ export default function ChapterPage() {
         setIsCompleting(true);
 
         try {
-            const studentRef = doc(db, 'students', user.uid);
+            const studentRef = doc(db, 'teachers', TEACHER_UID, 'students', user.uid);
             
             const currentProgress = student.questProgress?.[hubId as string] || 0;
             // Ensure we don't accidentally mark an old chapter complete and mess up progress
@@ -138,7 +141,7 @@ export default function ChapterPage() {
         setIsUncompleting(true);
 
         try {
-            const studentRef = doc(db, 'students', user.uid);
+            const studentRef = doc(db, 'teachers', TEACHER_UID, 'students', user.uid);
             
             const currentProgress = student.questProgress?.[hubId as string] || 0;
             
@@ -397,7 +400,3 @@ export default function ChapterPage() {
         </div>
     );
 }
-
-    
-
-    

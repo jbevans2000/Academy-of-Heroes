@@ -25,6 +25,8 @@ import {
 import { classData, type ClassType } from '@/lib/data';
 import { logGameEvent } from '@/lib/gamelog';
 
+// HARDCODED TEACHER UID
+const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
 
 export default function RegisterPage() {
   const [studentId, setStudentId] = useState('');
@@ -58,7 +60,7 @@ export default function RegisterPage() {
       const defaultBackground = classInfo.backgrounds[0];
       const baseStats = classInfo.baseStats;
 
-      await setDoc(doc(db, 'students', user.uid), {
+      await setDoc(doc(db, 'teachers', TEACHER_UID, 'students', user.uid), {
         uid: user.uid,
         studentId: studentId,
         email: email,
