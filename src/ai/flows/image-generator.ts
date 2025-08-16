@@ -38,7 +38,7 @@ export async function generateAndUploadBossImage(input: ImageGeneratorInput): Pr
     // 2. Upload the generated image data URI to Firebase Storage
     const storage = getStorage(app);
     const imageId = uuidv4();
-    const storageRef = ref(storage, `Boss Images/${imageId}.png`);
+    const storageRef = ref(storage, `boss-images/${imageId}.png`);
 
     try {
         // Upload the base64 part of the data URI
