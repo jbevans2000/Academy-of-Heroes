@@ -11,6 +11,7 @@ import { generateActivity, type Activity } from '@/ai/flows/activity-generator';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
+import { marked } from 'marked';
 
 export default function RandomActivityPage() {
     const router = useRouter();
@@ -85,7 +86,11 @@ export default function RandomActivityPage() {
                             ) : currentActivity ? (
                                 <div className="p-4 border-2 border-dashed border-primary rounded-lg bg-background/80 w-full animate-in fade-in-50 text-left">
                                     <h3 className="text-2xl font-bold font-headline text-black text-center">{currentActivity.title}</h3>
-                                    <p className="text-black mt-2 text-center">{currentActivity.description}</p>
+                                    
+                                     <div
+                                        className="prose prose-sm max-w-none text-black text-center"
+                                        dangerouslySetInnerHTML={{ __html: marked(currentActivity.description) as string }}
+                                    />
                                     
                                     {currentActivity.documentContent && (
                                         <>

@@ -45,7 +45,9 @@ For PHYSICAL tasks, the 'description' field MUST contain two parts:
 Example of a Physical task description:
 "Hark, young squires! You must mimic the mighty Golem of the Gray Mountains! Stand tall and stretch your arms to the sky like stony peaks, then bend down to touch the cavern floor!
 
-Teacher Instructions: Have students stand up and do a simple stretch, reaching for the ceiling and then touching their toes."
+---
+
+**Teacher Instructions:** Have students stand up and do a simple stretch, reaching for the ceiling and then touching their toes."
 
 Do not repeat activities from this list:
 - Design a Coat of Arms

@@ -56,7 +56,7 @@ export default function BossBattlesPage() {
 
   useEffect(() => {
     fetchBattles();
-  }, [toast]);
+  }, []);
 
   const handleStartBattle = async (battle: BossBattle) => {
     setStartingBattleId(battle.id);
