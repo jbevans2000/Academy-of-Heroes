@@ -5,13 +5,14 @@ import { useState, useEffect, useRef } from 'react';
 import { onSnapshot, doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
-import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Hourglass, VolumeX } from 'lucide-react';
+import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Hourglass, VolumeX, Flame } from 'lucide-react';
 import { type Student } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { PowersSheet } from '@/components/dashboard/powers-sheet';
 
 interface LiveBattleState {
   battleId: string | null;
@@ -95,6 +96,7 @@ export default function LiveBattlePage() {
   const [submittedAnswer, setSubmittedAnswer] = useState<number | null>(null);
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPowersSheetOpen, setIsPowersSheetOpen] = useState(false);
   const router = useRouter();
 
   // Use a ref to hold the current battle state to avoid it being a dependency in the snapshot listener
@@ -194,7 +196,7 @@ export default function LiveBattlePage() {
     });
   };
 
-  if (isLoading || !user) {
+  if (isLoading || !user || !student) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4 text-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
@@ -262,55 +264,75 @@ export default function LiveBattlePage() {
     const isBattleActive = battleState.status === 'IN_PROGRESS' || battleState.status === 'ROUND_ENDING';
 
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 p-4">
-        <div className="w-full max-w-4xl mx-auto">
-          <Card className="bg-card text-card-foreground border-gray-700 shadow-2xl shadow-primary/20">
-             <CardContent className="p-6">
-                <div className="flex justify-center mb-6">
-                    <Image 
-                        src={bossImage}
-                        alt={battle.battleName}
-                        width={300}
-                        height={300}
-                        className="rounded-lg shadow-lg border-4 border-primary/50 object-contain"
-                        data-ai-hint="fantasy monster"
-                    />
-                </div>
-
-                {expiryTimestamp && battleState.status === 'ROUND_ENDING' && (
-                  <SmallCountdownTimer expiryTimestamp={expiryTimestamp} />
-                )}
-
-                {submittedAnswer !== null && battleState.status === 'IN_PROGRESS' && (
-                    <WaitingForRoundEnd />
-                )}
-
-
-                <div className="text-center">
-                    <h2 className="text-2xl md:text-3xl font-bold mb-6">{currentQuestion.questionText}</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {currentQuestion.answers.map((answer, index) => (
-                            <Button
-                            key={index}
-                            variant="outline"
-                            className={cn(
-                                "text-lg h-auto py-4 whitespace-normal justify-start text-left hover:bg-primary/90 hover:text-primary-foreground",
-                                submittedAnswer === index && "bg-primary text-primary-foreground ring-2 ring-offset-2 ring-offset-background ring-primary"
-                            )}
-                            onClick={() => handleSubmitAnswer(index)}
-                            disabled={!isBattleActive}
+      <>
+        <PowersSheet
+          isOpen={isPowersSheetOpen}
+          onOpenChange={setIsPowersSheetOpen}
+          student={student}
+        />
+        <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 p-4">
+            <div className="w-full max-w-4xl mx-auto">
+            <Card className="bg-card text-card-foreground border-gray-700 shadow-2xl shadow-primary/20">
+                <CardContent className="p-6">
+                    <div className="flex flex-col md:flex-row gap-6 mb-6">
+                        <div className="flex-shrink-0 mx-auto">
+                             <Image 
+                                src={bossImage}
+                                alt={battle.battleName}
+                                width={250}
+                                height={250}
+                                className="rounded-lg shadow-lg border-4 border-primary/50 object-contain"
+                                data-ai-hint="fantasy monster"
+                            />
+                        </div>
+                        <div className="flex-grow flex flex-col justify-center items-center text-center">
+                            <h2 className="text-2xl md:text-3xl font-bold">{currentQuestion.questionText}</h2>
+                             <Button 
+                                variant="outline" 
+                                className="mt-4 bg-orange-600/20 border-orange-500 hover:bg-orange-500/40 text-white"
+                                onClick={() => setIsPowersSheetOpen(true)}
                             >
-                            <span className="font-bold mr-4">{String.fromCharCode(65 + index)}.</span>
-                            {answer}
+                                <Flame className="mr-2 h-5 w-5" />
+                                View Powers
                             </Button>
-                        ))}
+                        </div>
                     </div>
-                </div>
+                    
 
-             </CardContent>
-          </Card>
+                    {expiryTimestamp && battleState.status === 'ROUND_ENDING' && (
+                    <SmallCountdownTimer expiryTimestamp={expiryTimestamp} />
+                    )}
+
+                    {submittedAnswer !== null && battleState.status === 'IN_PROGRESS' && (
+                        <WaitingForRoundEnd />
+                    )}
+
+
+                    <div className="text-center">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {currentQuestion.answers.map((answer, index) => (
+                                <Button
+                                key={index}
+                                variant="outline"
+                                className={cn(
+                                    "text-lg h-auto py-4 whitespace-normal justify-start text-left hover:bg-primary/90 hover:text-primary-foreground",
+                                    submittedAnswer === index && "bg-primary text-primary-foreground ring-2 ring-offset-2 ring-offset-background ring-primary"
+                                )}
+                                onClick={() => handleSubmitAnswer(index)}
+                                disabled={!isBattleActive}
+                                >
+                                <span className="font-bold mr-4">{String.fromCharCode(65 + index)}.</span>
+                                {answer}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
+
+                </CardContent>
+            </Card>
+            </div>
         </div>
-      </div>
+      </>
     )
   }
   
