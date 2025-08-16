@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A flow for generating random, fantasy-themed classroom activities.
@@ -8,7 +9,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const ActivitySchema = z.object({
+const ActivitySchema = z.object({
   title: z.string().describe('A short, catchy, fantasy-themed title for the activity (e.g., "Design a Coat of Arms").'),
   description: z.string().describe('A brief, one or two sentence description of the activity for the teacher to announce to the class.'),
 });
