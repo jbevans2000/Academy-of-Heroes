@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Sword, UserPlus, LogIn, ArrowLeft, School } from 'lucide-react';
+import { Sword, UserPlus, LogIn, ArrowLeft, School, UserCheck } from 'lucide-react';
 import { LoginForm } from '@/components/auth/login-form';
 import {
   Card,
@@ -74,15 +74,21 @@ export default function LoginPage() {
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-card px-2 text-muted-foreground font-headline">
-                  Are you a teacher?
+                  For Teachers
                 </span>
               </div>
             </div>
-            <div className="grid grid-cols-1">
-                <Link href="/teacher/login" passHref className="mt-2 block">
+            <div className="grid grid-cols-1 gap-4">
+                <Link href="/teacher/login" passHref>
                     <Button size="lg" className="w-full text-lg py-6 bg-blue-600 hover:bg-blue-700">
                         <School className="mr-3 h-6 w-6" />
                         Teacher Login
+                    </Button>
+                </Link>
+                 <Link href="/teacher/register" passHref>
+                    <Button size="lg" variant="secondary" className="w-full text-lg py-6">
+                        <UserCheck className="mr-3 h-6 w-6" />
+                        New Teacher Registration
                     </Button>
                 </Link>
             </div>
