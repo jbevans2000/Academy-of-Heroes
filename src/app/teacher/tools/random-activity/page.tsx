@@ -7,9 +7,10 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Dices, Loader2, BrainCircuit, PersonStanding, Download } from 'lucide-react';
-import { generateActivity, type Activity, type ActivityInput } from '@/ai/flows/activity-generator';
+import { generateActivity, type Activity } from '@/ai/flows/activity-generator';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
+import jsPDF from 'jspdf';
 
 export default function RandomActivityPage() {
     const router = useRouter();
@@ -41,15 +42,9 @@ export default function RandomActivityPage() {
     const handleDownload = () => {
         if (!currentActivity?.documentContent) return;
 
-        const blob = new Blob([currentActivity.documentContent], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${currentActivity.title.replace(/ /g, '_')}.txt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        const doc = new jsPDF();
+        doc.text(currentActivity.documentContent, 10, 10);
+        doc.save(`${currentActivity.title.replace(/ /g, '_')}.pdf`);
     };
 
     return (
@@ -95,7 +90,7 @@ export default function RandomActivityPage() {
                                             <div className="text-center mt-4">
                                                 <Button onClick={handleDownload}>
                                                     <Download className="mr-2 h-4 w-4" />
-                                                    Download Task
+                                                    Download Task as PDF
                                                 </Button>
                                             </div>
                                         </>
