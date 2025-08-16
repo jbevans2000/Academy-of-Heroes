@@ -46,10 +46,25 @@ export default function TeacherLoginPage() {
         router.push('/teacher/dashboard');
     } catch (error: any) {
         console.error(error);
+        let description = 'An unexpected error occurred. Please try again.';
+        if (error.code) {
+            switch (error.code) {
+                case 'auth/invalid-credential':
+                case 'auth/user-not-found':
+                case 'auth/wrong-password':
+                    description = 'Invalid email or password. Please check your credentials and try again.';
+                    break;
+                case 'auth/network-request-failed':
+                    description = 'Network error. Please check your internet connection.';
+                    break;
+                default:
+                    description = `An error occurred: ${error.message}`;
+            }
+        }
         toast({
             variant: 'destructive',
             title: 'Authentication Failed',
-            description: 'Invalid email or password. Please try again.',
+            description: description,
         });
     } finally {
         setIsLoading(false);
