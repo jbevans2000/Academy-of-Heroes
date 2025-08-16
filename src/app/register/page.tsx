@@ -6,14 +6,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Shield, Heart, Wand, User, KeyRound, Star, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Shield, Heart, Wand, User, KeyRound, Star, Eye, EyeOff, BookUser } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import {
@@ -25,10 +25,8 @@ import {
 import { classData, type ClassType } from '@/lib/data';
 import { logGameEvent } from '@/lib/gamelog';
 
-// HARDCODED TEACHER UID
-const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
-
 export default function RegisterPage() {
+  const [classCode, setClassCode] = useState('');
   const [studentId, setStudentId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -40,17 +38,42 @@ export default function RegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
 
+  const getTeacherUidFromClassCode = async (code: string): Promise<string | null> => {
+    const uppercaseCode = code.toUpperCase();
+    const teachersRef = collection(db, 'teachers');
+    const q = query(teachersRef, where('classCode', '==', uppercaseCode), limit(1));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+        return null;
+    }
+    
+    return querySnapshot.docs[0].id;
+  }
+
   const handleSubmit = async () => {
-    if (!studentId || !password || !studentName || !characterName || !selectedClass || !selectedAvatar) {
+    if (!classCode || !studentId || !password || !studentName || !characterName || !selectedClass || !selectedAvatar) {
       toast({
         variant: 'destructive',
         title: 'Missing Information',
-        description: 'Please fill out all fields and select your class and avatar.',
+        description: 'Please fill out all fields, including the Class Code, and select your class and avatar.',
       });
       return;
     }
     setIsLoading(true);
-    const email = `${studentId}@academy-heroes-mziuf.firebaseapp.com`;
+
+    const teacherUid = await getTeacherUidFromClassCode(classCode);
+    if (!teacherUid) {
+        toast({
+            variant: 'destructive',
+            title: 'Invalid Class Code',
+            description: 'The Class Code you entered does not exist. Please check with your teacher.',
+        });
+        setIsLoading(false);
+        return;
+    }
+
+    const email = `${studentId}-${teacherUid.slice(0,5)}@academy-heroes-mziuf.firebaseapp.com`;
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -60,7 +83,7 @@ export default function RegisterPage() {
       const defaultBackground = classInfo.backgrounds[0];
       const baseStats = classInfo.baseStats;
 
-      await setDoc(doc(db, 'teachers', TEACHER_UID, 'students', user.uid), {
+      await setDoc(doc(db, 'teachers', teacherUid, 'students', user.uid), {
         uid: user.uid,
         studentId: studentId,
         email: email,
@@ -92,7 +115,7 @@ export default function RegisterPage() {
         title: 'Registration Failed',
         description:
           error.code === 'auth/email-already-in-use'
-            ? 'This Student ID is already registered.'
+            ? 'This Student ID is already registered for this class.'
             : 'An unexpected error occurred. Please try again.',
       });
     } finally {
@@ -125,6 +148,10 @@ export default function RegisterPage() {
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6">
             {/* Left Column: Form Inputs */}
             <div className="space-y-4">
+               <div className="space-y-2">
+                <Label htmlFor="class-code" className="flex items-center"><BookUser className="w-4 h-4 mr-2" />Class Code</Label>
+                <Input id="class-code" placeholder="Enter the code from your teacher" value={classCode} onChange={(e) => setClassCode(e.target.value)} disabled={isLoading} />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="class" className="flex items-center"><Wand className="w-4 h-4 mr-2" />Select Your Class</Label>
                 <Select onValueChange={handleClassChange} disabled={isLoading} value={selectedClass}>
@@ -215,7 +242,7 @@ export default function RegisterPage() {
           </CardContent>
            <div className="col-span-1 md:col-span-2 px-6 pb-6">
               <Button onClick={handleSubmit} disabled={isLoading} className="w-full text-lg py-6">
-                {isLoading ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : 'Generate Avatar and Enter Luminaria'}
+                {isLoading ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : 'Create My Hero and Enter Luminaria'}
               </Button>
               <p className="text-center text-sm mt-4 text-muted-foreground">
                 Already have a hero? <Link href="/" className="underline text-primary">Login here</Link>.

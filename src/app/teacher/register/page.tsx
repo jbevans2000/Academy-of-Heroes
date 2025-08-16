@@ -8,11 +8,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, User, KeyRound, School, Briefcase, CreditCard, Calendar, Lock } from 'lucide-react';
+import { Loader2, User, KeyRound, School, Briefcase } from 'lucide-react';
 import Link from 'next/link';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
+
+// Function to generate a random, easy-to-read class code
+const generateClassCode = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Omitted I, O, 0, 1 for clarity
+    let result = '';
+    for (let i = 0; i < 6; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+        if (i === 2) {
+            result += '-';
+        }
+    }
+    return result;
+};
+
 
 export default function TeacherRegisterPage() {
   const [step, setStep] = useState(1);
@@ -52,6 +66,9 @@ export default function TeacherRegisterPage() {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
+        // Generate a unique class code for the new teacher
+        const classCode = generateClassCode();
+
         // Save teacher info to a new document in the 'teachers' collection
         // The document ID will be the new user's UID
         await setDoc(doc(db, "teachers", user.uid), {
@@ -60,6 +77,7 @@ export default function TeacherRegisterPage() {
             email: email,
             schoolName: schoolName,
             className: className,
+            classCode: classCode, // Save the generated class code
         });
 
         toast({

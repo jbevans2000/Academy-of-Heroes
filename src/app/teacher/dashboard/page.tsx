@@ -39,13 +39,16 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, UserX, Swords, PlusCircle, BookOpen, Wrench, ChevronDown } from 'lucide-react';
+import { Loader2, Star, Coins, UserX, Swords, PlusCircle, BookOpen, Wrench, ChevronDown, Copy } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 
-// HARDCODED TEACHER UID
-const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+interface TeacherData {
+    name: string;
+    className: string;
+    classCode: string;
+}
 
 export default function TeacherDashboardPage() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -58,6 +61,7 @@ export default function TeacherDashboardPage() {
   const [isXpDialogOpen, setIsXpDialogOpen] = useState(false);
   const [isGoldDialogOpen, setIsGoldDialogOpen] = useState(false);
   const [teacher, setTeacher] = useState<User | null>(null);
+  const [teacherData, setTeacherData] = useState<TeacherData | null>(null);
   const router = useRouter();
 
   // State for controlling the delete dialogs
@@ -66,14 +70,39 @@ export default function TeacherDashboardPage() {
 
   const { toast } = useToast();
   
+  const fetchTeacherAndStudentData = async (user: User) => {
+    setIsLoading(true);
+    try {
+      // Fetch teacher data
+      const teacherRef = doc(db, 'teachers', user.uid);
+      const teacherSnap = await getDoc(teacherRef);
+      if (teacherSnap.exists()) {
+        setTeacherData(teacherSnap.data() as TeacherData);
+      }
+
+      // Fetch students for that teacher
+      const studentsQuerySnapshot = await getDocs(collection(db, "teachers", user.uid, "students"));
+      const studentsData = studentsQuerySnapshot.docs.map(doc => ({ ...doc.data() } as Student));
+      setStudents(studentsData);
+
+    } catch (error) {
+       console.error("Error fetching data: ", error);
+       toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Could not fetch your class data.',
+      });
+    } finally {
+        setIsLoading(false);
+    }
+  }
+  
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
-        if (user && user.uid === TEACHER_UID) {
-            // User is signed in.
+        if (user) {
             setTeacher(user);
-            fetchStudents();
+            fetchTeacherAndStudentData(user);
         } else {
-            // No user is signed in, or it's not the designated teacher.
             router.push('/teacher/login');
         }
     });
@@ -82,9 +111,10 @@ export default function TeacherDashboardPage() {
   }, [router]);
 
   const fetchStudents = async () => {
+    if (!teacher) return;
     setIsLoading(true);
     try {
-      const querySnapshot = await getDocs(collection(db, "teachers", TEACHER_UID, "students"));
+      const querySnapshot = await getDocs(collection(db, "teachers", teacher.uid, "students"));
       const studentsData = querySnapshot.docs.map(doc => ({ ...doc.data() } as Student));
       setStudents(studentsData);
     } catch (error) {
@@ -136,7 +166,7 @@ export default function TeacherDashboardPage() {
       
       try {
           const batch = writeBatch(db);
-          const studentDocs = await Promise.all(selectedStudents.map(uid => getDoc(doc(db, 'teachers', TEACHER_UID, 'students', uid))));
+          const studentDocs = await Promise.all(selectedStudents.map(uid => getDoc(doc(db, 'teachers', teacher!.uid, 'students', uid))));
 
           const updatedStudentsData: Student[] = [];
 
@@ -220,7 +250,7 @@ export default function TeacherDashboardPage() {
 
       try {
           const batch = writeBatch(db);
-          const studentDocs = await Promise.all(selectedStudents.map(uid => getDoc(doc(db, 'teachers', TEACHER_UID, 'students', uid))));
+          const studentDocs = await Promise.all(selectedStudents.map(uid => getDoc(doc(db, 'teachers', teacher!.uid, 'students', uid))));
 
           for (const studentDoc of studentDocs) {
               if (studentDoc.exists()) {
@@ -263,13 +293,13 @@ export default function TeacherDashboardPage() {
   };
 
   const handleDeleteStudents = async () => {
-      if (selectedStudents.length === 0) return;
+      if (selectedStudents.length === 0 || !teacher) return;
       setIsDeleting(true);
 
       try {
           const batch = writeBatch(db);
           for (const uid of selectedStudents) {
-              const studentRef = doc(db, 'teachers', TEACHER_UID, 'students', uid);
+              const studentRef = doc(db, 'teachers', teacher.uid, 'students', uid);
               batch.delete(studentRef);
           }
           await batch.commit();
@@ -299,6 +329,13 @@ export default function TeacherDashboardPage() {
       }
   };
   
+  const copyClassCode = () => {
+    if (teacherData?.classCode) {
+        navigator.clipboard.writeText(teacherData.classCode);
+        toast({ title: "Class Code Copied!", description: "You can now share it with your students." });
+    }
+  }
+
 
   if (isLoading || !teacher) {
     return (
@@ -326,8 +363,16 @@ export default function TeacherDashboardPage() {
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="mb-4">
-            <h1 className="text-3xl font-bold">All Students</h1>
-            <p className="text-muted-foreground">Select students and award XP or Gold, or manage quests and battles.</p>
+            <h1 className="text-3xl font-bold">{teacherData?.className || 'Dashboard'}</h1>
+             {teacherData?.classCode && (
+                <div className="flex items-center gap-2 mt-2">
+                    <p className="text-muted-foreground">Your Class Code:</p>
+                    <span className="font-mono text-lg font-bold bg-primary/10 px-2 py-1 rounded-md">{teacherData.classCode}</span>
+                    <Button variant="ghost" size="icon" onClick={copyClassCode}>
+                        <Copy className="h-5 w-5" />
+                    </Button>
+                </div>
+            )}
         </div>
         <div className="flex flex-wrap items-center gap-2 mb-6">
             <Button 
