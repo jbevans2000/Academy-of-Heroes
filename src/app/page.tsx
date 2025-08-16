@@ -59,12 +59,6 @@ export default function SplashPage() {
                   Student & Teacher Login
                 </Button>
               </Link>
-               <Link href="/register" passHref>
-                 <Button size="lg" variant="secondary" className="w-full sm:w-auto text-lg py-7 px-8">
-                    <UserPlus className="mr-2" />
-                    Create a Student Avatar
-                 </Button>
-               </Link>
             </div>
         </div>
 
