@@ -1,3 +1,4 @@
+
 import { Button } from '@/components/ui/button';
 import { LogIn, Shield, UserPlus } from 'lucide-react';
 import Link from 'next/link';
@@ -6,15 +7,20 @@ import Image from 'next/image';
 export default function SplashPage() {
   return (
     <div className="relative min-h-screen w-full flex flex-col items-center justify-center p-4 text-center text-white">
-      {/* Background Image */}
-      <Image
-        src="https://placehold.co/1920x1080.png"
-        alt="A vibrant fantasy landscape with floating islands and a castle."
-        fill
-        className="object-cover -z-10"
-        data-ai-hint="fantasy landscape castle"
-        priority
-      />
+      {/* Background Video */}
+      <video
+        autoPlay
+        loop
+        muted
+        className="absolute top-0 left-0 w-full h-full object-cover -z-10"
+      >
+        <source 
+            src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato_video_gen_Aug_16_2025_17_50_14.mp4?alt=media&token=d32b0924-e480-4138-a031-a15d18096a12" 
+            type="video/mp4" 
+        />
+        Your browser does not support the video tag.
+      </video>
+      
       {/* Overlay */}
       <div className="absolute inset-0 bg-black/60 -z-10" />
 
