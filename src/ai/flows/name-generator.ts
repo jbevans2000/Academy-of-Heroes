@@ -12,6 +12,8 @@ import {z} from 'zod';
 
 const NameInputSchema = z.object({
   gender: z.enum(['Male', 'Female', 'Non-binary']),
+  // This is a dummy field to ensure the prompt is always unique.
+  randomSeed: z.number().optional(),
 });
 export type NameInput = z.infer<typeof NameInputSchema>;
 
@@ -38,6 +40,7 @@ export async function generateName(input: NameInput): Promise<string> {
   const {text} = await namePrompt({
     ...input,
     isNonBinary,
+    randomSeed: Math.random(),
   });
   return text;
 }
