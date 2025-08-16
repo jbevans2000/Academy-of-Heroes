@@ -8,39 +8,39 @@ import { auth, db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Eye, EyeOff, Loader2, KeyRound, BookUser } from 'lucide-react';
+import { Eye, EyeOff, Loader2, KeyRound } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
-import { doc, getDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
 export function LoginForm() {
   const [studentId, setStudentId] = useState('');
   const [password, setPassword] = useState('');
-  const [classCode, setClassCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
-   const getTeacherUidFromClassCode = async (code: string): Promise<string | null> => {
-    const uppercaseCode = code.toUpperCase();
+  const findStudentAndTeacher = async (uid: string): Promise<{ studentName: string | null, teacherUid: string | null }> => {
     const teachersRef = collection(db, 'teachers');
-    const q = query(teachersRef, where('classCode', '==', uppercaseCode), limit(1));
-    const querySnapshot = await getDocs(q);
+    const teacherSnapshot = await getDocs(teachersRef);
 
-    if (querySnapshot.empty) {
-        return null;
+    for (const teacherDoc of teacherSnapshot.docs) {
+      const studentDocRef = doc(db, 'teachers', teacherDoc.id, 'students', uid);
+      const studentSnap = await getDoc(studentDocRef);
+      if (studentSnap.exists()) {
+        return { studentName: studentSnap.data().studentName || null, teacherUid: teacherDoc.id };
+      }
     }
-    
-    return querySnapshot.docs[0].id;
-  }
+    return { studentName: null, teacherUid: null };
+  };
 
   const handleLogin = async () => {
-    if (!studentId || !password || !classCode) {
+    if (!studentId || !password) {
       toast({
         variant: 'destructive',
         title: 'Missing Fields',
-        description: 'Please enter your Class Code, Username, and Password.',
+        description: 'Please enter your Username and Password.',
       });
       return;
     }
@@ -48,27 +48,19 @@ export function LoginForm() {
     setIsLoading(true);
 
     try {
-      const teacherUid = await getTeacherUidFromClassCode(classCode);
-
-      if (!teacherUid) {
-          toast({
-              variant: 'destructive',
-              title: 'Login Failed',
-              description: 'Invalid Class Code. Please check with your teacher.',
-          });
-          setIsLoading(false);
-          return;
-      }
-      
-      const email = `${studentId}-${teacherUid.slice(0,5)}@academy-heroes-mziuf.firebaseapp.com`;
+      const email = `${studentId}@academy-heroes-mziuf.firebaseapp.com`;
 
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // After successful login, find which teacher this student belongs to
+      const { studentName } = await findStudentAndTeacher(user.uid);
       
-      const studentRef = doc(db, 'teachers', teacherUid, 'students', userCredential.user.uid);
-      const studentSnap = await getDoc(studentRef);
-      if (studentSnap.exists()) {
-        const studentName = studentSnap.data().studentName || 'A student';
-         await logGameEvent('ACCOUNT', `${studentName} logged in.`);
+      if (studentName) {
+        await logGameEvent('ACCOUNT', `${studentName} logged in.`);
+      } else {
+         // This case would be rare, meaning a user exists in Auth but has no student document
+         await logGameEvent('ACCOUNT', `A user with UID ${user.uid} logged in but has no student record.`);
       }
 
       toast({
@@ -85,7 +77,7 @@ export function LoginForm() {
           case 'auth/invalid-credential':
           case 'auth/user-not-found':
           case 'auth/wrong-password':
-            description = 'Invalid username, password, or class code.';
+            description = 'Invalid username or password.';
             break;
           case 'auth/network-request-failed':
             description = 'Network error. Please check your connection.';
@@ -106,18 +98,6 @@ export function LoginForm() {
 
   return (
     <div className="space-y-4 rounded-lg bg-background/50 p-4 border">
-        <div className="space-y-2">
-            <Label htmlFor="class-code"><BookUser className="inline-block mr-2 h-4 w-4" />Class Code</Label>
-            <Input
-                id="class-code"
-                type="text"
-                placeholder="Enter your class code"
-                required
-                value={classCode}
-                onChange={(e) => setClassCode(e.target.value)}
-                disabled={isLoading}
-            />
-        </div>
         <div className="space-y-2">
             <Label htmlFor="student-id"><KeyRound className="inline-block mr-2 h-4 w-4" />Username</Label>
             <Input

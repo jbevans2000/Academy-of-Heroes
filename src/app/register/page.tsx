@@ -98,7 +98,7 @@ export default function RegisterPage() {
         return;
     }
 
-    const email = `${studentId}-${teacherUid.slice(0,5)}@academy-heroes-mziuf.firebaseapp.com`;
+    const email = `${studentId}@academy-heroes-mziuf.firebaseapp.com`;
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
