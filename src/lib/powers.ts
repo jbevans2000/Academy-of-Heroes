@@ -64,7 +64,54 @@ export const classPowers: ClassPowers = {
     },
   ],
   Guardian: [
-    // To be added later
+    {
+      name: 'Guard',
+      description: 'Shield 3 players this round, redirecting a portion of the damage to themselves.',
+      level: 1,
+      type: 'support',
+    },
+    {
+      name: 'Intercept',
+      description: 'Answer a question on a teammate\'s behalf. A correct answer deals 5 base damage to the boss.',
+      level: 3,
+      type: 'damage',
+    },
+    {
+      name: 'Absorb',
+      description: 'Soak an amount of damage for the party that is TRIPLE your current level.',
+      level: 5,
+      type: 'support',
+    },
+    {
+      name: 'Berserker Strike',
+      description: 'Roll 1d20. On 11+, deal that much damage + your level. On 1-10, you take 5 damage.',
+      level: 7,
+      type: 'damage',
+    },
+    {
+      name: 'Arcane Redirect',
+      description: 'Causes all damage done by Wildfires to be tripled this round.',
+      level: 9,
+      type: 'support',
+    },
+    {
+      name: 'Zen Shield',
+      description: 'Shields the entire team from one instance of damage from the boss.',
+      level: 11,
+      type: 'support',
+    },
+    {
+      name: 'Inspiring Strike',
+      description: 'Inspires allies, causing TRIPLE base damage for the party on a hit. (1 use per battle)',
+      level: 13,
+      type: 'damage',
+    },
+    {
+      name: 'Sacrifice',
+      description: 'Your HP drops to zero, but all allies receive a 50% XP bonus for the battle.',
+      level: 15,
+      type: 'utility',
+    },
   ],
   Healer: [
     // To be added later
