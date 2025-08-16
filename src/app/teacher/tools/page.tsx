@@ -12,25 +12,29 @@ const tools = [
         title: 'Fantasy Timer',
         description: 'A fantasy-themed timer or stopwatch for classroom activities.',
         icon: <Timer className="h-10 w-10 text-primary" />,
-        path: '/teacher/tools/timer'
+        path: '/teacher/tools/timer',
+        disabled: true,
     },
     {
         title: 'Sleeping Dragon',
         description: 'A tool to motivate quiet. Don\'t wake the sleeping dragon!',
         icon: <Volume2 className="h-10 w-10 text-primary" />,
-        path: '/teacher/tools/sleeping-dragon'
+        path: '/teacher/tools/sleeping-dragon',
+        disabled: true,
     },
     {
         title: 'Random Student Picker',
         description: 'A fantasy-themed way to randomly select a student.',
         icon: <Users className="h-10 w-10 text-primary" />,
-        path: '/teacher/tools/random-student'
+        path: '/teacher/tools/random-student',
+        disabled: true,
     },
     {
         title: 'Random Activity Generator',
         description: 'Get fun, fantasy-themed activities for the class to do in real time.',
         icon: <Dices className="h-10 w-10 text-primary" />,
-        path: '/teacher/tools/random-activity'
+        path: '/teacher/tools/random-activity',
+        disabled: false,
     }
 ]
 
@@ -70,7 +74,9 @@ export default function ClassroomToolsPage() {
                                             <p className="text-muted-foreground">{tool.description}</p>
                                         </CardContent>
                                         <div className="p-6 pt-0">
-                                            <Button className="w-full" onClick={() => router.push(tool.path)}>Launch Tool</Button>
+                                            <Button className="w-full" onClick={() => router.push(tool.path)} disabled={tool.disabled}>
+                                                {tool.disabled ? "Coming Soon" : "Launch Tool"}
+                                            </Button>
                                         </div>
                                     </Card>
                                 ))}
