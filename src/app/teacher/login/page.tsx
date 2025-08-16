@@ -132,7 +132,7 @@ export default function TeacherLoginPage() {
           <CardFooter>
             <Button variant="outline" className="w-full" onClick={() => router.push('/')}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Return to Splash Page
+                Return to Home Page
             </Button>
           </CardFooter>
         </Card>
