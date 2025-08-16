@@ -6,6 +6,8 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Timer, Volume2, Users, Dices, Wrench } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 const tools = [
     {
@@ -13,7 +15,7 @@ const tools = [
         description: 'A fantasy-themed timer or stopwatch for classroom activities.',
         icon: <Timer className="h-10 w-10 text-primary" />,
         path: '/teacher/tools/timer',
-        disabled: true,
+        disabled: false,
         bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fmystical%20clock.jpg?alt=media&token=5374acb2-6f27-43fe-a9b8-036184f9c810',
     },
     {
@@ -63,25 +65,28 @@ export default function ClassroomToolsPage() {
                     </div>
                      <div className="grid gap-6 md:grid-cols-2">
                         {tools.map((tool, index) => (
-                             <Link href={tool.disabled ? '#' : tool.path} key={index} className="group">
-                                <div
-                                    className="relative flex flex-col justify-between h-64 p-6 rounded-lg overflow-hidden border shadow-sm transition-transform hover:scale-105 bg-cover bg-center"
-                                    style={{ backgroundImage: tool.bgImage ? `url(${tool.bgImage})` : 'none', backgroundColor: !tool.bgImage ? 'hsl(var(--card))' : '' }}
-                                >
-                                    <div className="absolute inset-0 bg-black/60 group-hover:bg-black/70 transition-colors"></div>
-                                    
-                                    <div className="relative z-10 text-white">
+                             <Link href={tool.disabled ? '#' : tool.path} key={index} className={cn("group", tool.disabled && "pointer-events-none")}>
+                                <div className="relative flex flex-col justify-between h-64 p-6 rounded-lg overflow-hidden border shadow-sm transition-transform hover:scale-105 bg-card">
+                                    <div className="absolute inset-0">
+                                        <Image
+                                            src={tool.bgImage}
+                                            alt={`${tool.title} background`}
+                                            fill
+                                            className="object-cover"
+                                        />
+                                        <div className="absolute inset-0 bg-black/60 group-hover:bg-black/70 transition-colors" />
+                                    </div>
+                                    <div className="relative z-10 flex flex-col h-full text-white">
                                         <div className="flex items-center gap-4 mb-2">
                                             {tool.icon}
                                             <h3 className="text-xl font-bold">{tool.title}</h3>
                                         </div>
                                         <p className="text-sm text-white/80">{tool.description}</p>
-                                    </div>
-
-                                    <div className="relative z-10">
-                                        <Button className="w-full" variant="secondary" disabled={tool.disabled}>
-                                            {tool.disabled ? "Coming Soon" : "Launch Tool"}
-                                        </Button>
+                                        <div className="mt-auto">
+                                            <Button className="w-full" variant="secondary" disabled={tool.disabled}>
+                                                {tool.disabled ? "Coming Soon" : "Launch Tool"}
+                                            </Button>
+                                        </div>
                                     </div>
                                 </div>
                             </Link>
