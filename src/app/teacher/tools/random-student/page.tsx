@@ -93,7 +93,7 @@ export default function RandomStudentPage() {
                                     </div>
                                 </div>
                             ) : (
-                                <p className="text-muted-foreground">Click the button to select a student!</p>
+                                <p className="text-muted-foreground text-lg">Click the button to select a hero!</p>
                             )}
                         </CardContent>
                     </Card>
