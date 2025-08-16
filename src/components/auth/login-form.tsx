@@ -110,125 +110,80 @@ export function LoginForm() {
       setIsLoading(false);
     }
   };
+  
+  const handleTeacherLoginRedirect = () => {
+    router.push('/teacher/login');
+  }
 
   return (
-    <Card className="shadow-2xl bg-card/30 backdrop-blur-sm">
-      <CardHeader className="text-center">
-        <CardTitle className="text-3xl font-headline text-primary">
-          Welcome Back, Hero!
-        </CardTitle>
-        <CardDescription className="text-yellow-300">
-          Enter your credentials to continue your quest.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-           <div className="space-y-2">
-            <Label htmlFor="class-code" className="text-black bg-yellow-300/50 p-1 rounded-md inline-block flex items-center"><BookUser className="w-4 h-4 mr-2"/>Class Code</Label>
-            <Input
-              id="class-code"
-              type="text"
-              placeholder="Enter the code from your teacher"
-              required
-              value={classCode}
-              onChange={(e) => setClassCode(e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="student-id" className="text-black bg-yellow-300/50 p-1 rounded-md inline-block">Student ID Number</Label>
-            <Input
-              id="student-id"
-              type="text"
-              placeholder="Enter your ID number"
-              required
-              value={studentId}
-              onChange={(e) => setStudentId(e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center">
-              <Label htmlFor="password" className="text-black bg-yellow-300/50 p-1 rounded-md inline-block">Password</Label>
-            </div>
-            <div className="relative">
-              <Input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isLoading}
-                className="pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground"
-                disabled={isLoading}
-              >
-                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-              </button>
-            </div>
-          </div>
-          <Button
-            type="button"
-            className="w-full"
-            onClick={handleLogin}
+    <div className="space-y-4 rounded-lg bg-background/50 p-4 border">
+        <div className="space-y-2">
+        <Label htmlFor="class-code">Class Code</Label>
+        <Input
+            id="class-code"
+            type="text"
+            placeholder="Enter the code from your teacher"
+            required
+            value={classCode}
+            onChange={(e) => setClassCode(e.target.value)}
             disabled={isLoading}
-          >
-            {isLoading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : null}
-            Login as Student
-          </Button>
+        />
         </div>
-        <div className="mt-4 text-center text-sm">
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            onClick={() => router.push('/register')}
+        <div className="space-y-2">
+        <Label htmlFor="student-id">Student ID Number</Label>
+        <Input
+            id="student-id"
+            type="text"
+            placeholder="Enter your ID number"
+            required
+            value={studentId}
+            onChange={(e) => setStudentId(e.target.value)}
             disabled={isLoading}
-          >
-            Create New Avatar
-          </Button>
+        />
         </div>
-        <div className="relative my-4">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card px-2 text-muted-foreground">
-              Or
-            </span>
-          </div>
-        </div>
-        <div className="flex flex-col gap-2 rounded-lg bg-background/80 p-4">
-            <Button
-              variant="secondary"
-              className="w-full"
-              onClick={() => router.push('/teacher/login')}
-              disabled={isLoading}
+        <div className="space-y-2">
+        <Label htmlFor="password">Password</Label>
+        <div className="relative">
+            <Input
+            id="password"
+            type={showPassword ? 'text' : 'password'}
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={isLoading}
+            className="pr-10"
+            />
+            <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground"
+            disabled={isLoading}
             >
-              <School className="mr-2 h-4 w-4" />
-              Teacher Login
-            </Button>
-             <Button
-              variant="outline"
-              className="w-full bg-cyan-600 hover:bg-cyan-700 text-white border-cyan-700"
-              onClick={() => router.push('/teacher/register')}
-              disabled={isLoading}
-            >
-              <UserPlus className="mr-2 h-4 w-4" />
-              Teacher Registration
-            </Button>
+            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            </button>
         </div>
-        <Button variant="link" className="w-full mt-4" onClick={() => router.push('/')}>
-            <ArrowLeft className="mr-2" />
-            Back to Splash Page
+        </div>
+        <Button
+        type="button"
+        className="w-full"
+        onClick={handleLogin}
+        disabled={isLoading}
+        >
+        {isLoading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : null}
+        Login as Student
         </Button>
-      </CardContent>
-    </Card>
+        <Button
+            type="button"
+            variant="secondary"
+            className="w-full"
+            onClick={handleTeacherLoginRedirect}
+            disabled={isLoading}
+        >
+            <School className="mr-2 h-4 w-4" />
+            Teacher Login
+        </Button>
+    </div>
   );
 }

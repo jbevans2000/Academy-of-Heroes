@@ -1,5 +1,15 @@
-import { Sword } from 'lucide-react';
+
+import { Sword, UserPlus, LogIn, ArrowLeft } from 'lucide-react';
 import { LoginForm } from '@/components/auth/login-form';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 export default function LoginPage() {
   return (
@@ -13,10 +23,48 @@ export default function LoginPage() {
       }}
     >
       <div className="w-full max-w-md">
-        <div className="flex justify-center mb-6">
-          <Sword className="h-10 w-10 text-primary" />
+        <Card className="shadow-2xl bg-card/80 backdrop-blur-sm">
+          <CardHeader className="text-center">
+             <div className="flex justify-center mb-4">
+                <Sword className="h-12 w-12 text-primary" />
+             </div>
+            <CardTitle className="text-3xl font-headline">Welcome, Adventurer!</CardTitle>
+            <CardDescription>Are you new to these lands or a returning hero?</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <Link href="/register" passHref>
+                <Button size="lg" className="w-full text-lg py-8 bg-blue-600 hover:bg-blue-700">
+                    <UserPlus className="mr-3 h-6 w-6" />
+                    Create New Hero and Join a Class
+                </Button>
+            </Link>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">
+                  Or
+                </span>
+              </div>
+            </div>
+
+            <div>
+                <h3 className="text-center text-lg font-semibold mb-4">Returning Hero & Teacher Login</h3>
+                <LoginForm />
+            </div>
+
+          </CardContent>
+        </Card>
+         <div className="text-center mt-4">
+            <Link href="/" passHref>
+                <Button variant="outline" className="bg-black/20">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to Home
+                </Button>
+            </Link>
         </div>
-        <LoginForm />
       </div>
     </div>
   );
