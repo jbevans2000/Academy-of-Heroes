@@ -1,5 +1,5 @@
 
-import { Sword, UserPlus, LogIn, ArrowLeft } from 'lucide-react';
+import { Sword, UserPlus, LogIn, ArrowLeft, School } from 'lucide-react';
 import { LoginForm } from '@/components/auth/login-form';
 import {
   Card,
@@ -28,16 +28,11 @@ export default function LoginPage() {
              <div className="flex justify-center mb-4">
                 <Sword className="h-12 w-12 text-primary" />
              </div>
-            <CardTitle className="text-3xl font-headline">Welcome, Adventurer!</CardTitle>
-            <CardDescription>Are you new to these lands or a returning hero?</CardDescription>
+            <CardTitle className="text-3xl font-headline">Welcome Back!</CardTitle>
+            <CardDescription>Login to continue your adventure.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <Link href="/register" passHref>
-                <Button size="lg" className="w-full text-lg py-8 bg-blue-600 hover:bg-blue-700">
-                    <UserPlus className="mr-3 h-6 w-6" />
-                    Create New Hero and Join a Class
-                </Button>
-            </Link>
+            <LoginForm />
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -50,10 +45,12 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div>
-                <h3 className="text-center text-lg font-semibold mb-4">Returning Hero & Teacher Login</h3>
-                <LoginForm />
-            </div>
+            <Link href="/teacher/register" passHref>
+                <Button size="lg" className="w-full text-lg py-8 bg-blue-600 hover:bg-blue-700">
+                    <School className="mr-3 h-6 w-6" />
+                    New Teacher Registration
+                </Button>
+            </Link>
 
           </CardContent>
         </Card>

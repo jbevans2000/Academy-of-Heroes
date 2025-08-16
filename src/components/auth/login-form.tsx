@@ -134,7 +134,7 @@ export function LoginForm() {
             className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground"
             disabled={isLoading}
             >
-            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-s5" />}
             </button>
         </div>
         </div>
@@ -147,17 +147,7 @@ export function LoginForm() {
         {isLoading ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : null}
-        Login as Student
-        </Button>
-        <Button
-            type="button"
-            variant="secondary"
-            className="w-full"
-            onClick={handleTeacherLoginRedirect}
-            disabled={isLoading}
-        >
-            <School className="mr-2 h-4 w-4" />
-            Teacher Login
+        Login
         </Button>
     </div>
   );
