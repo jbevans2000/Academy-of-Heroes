@@ -67,7 +67,7 @@ export default function TeacherHelpPage() {
                     <>
                         <AlertDialogTitle className="text-2xl">Getting Students Signed Up</AlertDialogTitle>
                         <AlertDialogDescription asChild>
-                            <div className="text-base text-foreground space-y-4">
+                            <div className="text-base text-black space-y-4">
                                 <p>Here is the simple, 3-step process for students to create their accounts and join your class:</p>
                                 <ol className="list-decimal list-inside space-y-2">
                                     <li><strong>Navigate Home:</strong> Direct students to the application's main home page.</li>
@@ -75,7 +75,7 @@ export default function TeacherHelpPage() {
                                     <li><strong>Enter Class Code:</strong> On the registration page, the most important step is to enter your unique Class Code below.</li>
                                 </ol>
                                 <div className="text-center p-4 bg-primary/10 rounded-lg">
-                                    <p className="font-semibold">Your Unique Class Code:</p>
+                                    <p className="font-semibold text-black">Your Unique Class Code:</p>
                                     <div className="flex items-center justify-center gap-2 mt-1">
                                         <strong className="text-3xl font-mono tracking-widest text-primary">{teacherData?.classCode || 'Loading...'}</strong>
                                         <Button size="icon" variant="ghost" onClick={copyClassCode}><Copy className="w-5 h-5" /></Button>
@@ -90,7 +90,7 @@ export default function TeacherHelpPage() {
                     <>
                         <AlertDialogTitle className="text-2xl">Understanding the Dashboard</AlertDialogTitle>
                         <AlertDialogDescription asChild>
-                            <div className="text-base text-foreground space-y-4">
+                            <div className="text-base text-black space-y-4">
                                 <p>The Teacher Dashboard is your central command center. Here’s a quick breakdown:</p>
                                 <Image src="https://placehold.co/800x400.png" alt="Placeholder for dashboard screenshot" width={800} height={400} className="rounded-lg border" data-ai-hint="dashboard interface" />
                                 <ul className="list-disc list-inside space-y-2">
@@ -109,7 +109,7 @@ export default function TeacherHelpPage() {
                     <>
                         <AlertDialogTitle className="text-2xl">Awarding XP & Gold</AlertDialogTitle>
                         <AlertDialogDescription asChild>
-                             <div className="text-base text-foreground space-y-4">
+                             <div className="text-base text-black space-y-4">
                                 <p>You can award Experience Points (XP) and Gold to students individually or in groups.</p>
                                 <ol className="list-decimal list-inside space-y-2">
                                     <li><strong>Select Students:</strong> On the dashboard, click the checkbox on the cards of the students you want to reward. Use "Select All" for the whole class.</li>
@@ -127,7 +127,7 @@ export default function TeacherHelpPage() {
                     <>
                         <AlertDialogTitle className="text-2xl">Creating Quests & Chapters</AlertDialogTitle>
                          <AlertDialogDescription asChild>
-                           <div className="text-base text-foreground space-y-4">
+                           <div className="text-base text-black space-y-4">
                                 <p>The Quest system is how you deliver your curriculum content through a story.</p>
                                 <Image src="https://placehold.co/800x400.png" alt="Placeholder for quest creation screenshot" width={800} height={400} className="rounded-lg border" data-ai-hint="quest map" />
                                 <h3 className="font-bold">Key Concepts:</h3>
@@ -152,7 +152,7 @@ export default function TeacherHelpPage() {
                     <>
                         <AlertDialogTitle className="text-2xl">Running Boss Battles</AlertDialogTitle>
                          <AlertDialogDescription asChild>
-                             <div className="text-base text-foreground space-y-4">
+                             <div className="text-base text-black space-y-4">
                                 <p>Boss Battles are live, timed quiz games for the whole class.</p>
                                 <ol className="list-decimal list-inside space-y-2">
                                     <li><strong>Create a Battle:</strong> Go to "Manage Boss Battles" and click "Create New". Give it a name, a boss image/video, and add your questions, answers, and the HP damage for incorrect answers.</li>
@@ -175,7 +175,7 @@ export default function TeacherHelpPage() {
                     <>
                         <AlertDialogTitle className="text-2xl">Using Classroom Tools</AlertDialogTitle>
                          <AlertDialogDescription asChild>
-                           <div className="text-base text-foreground space-y-4">
+                           <div className="text-base text-black space-y-4">
                                 <p>The Classroom Tools are utilities to help you manage your class with a fantasy theme.</p>
                                 <ul className="list-disc list-inside space-y-2">
                                     <li><strong>Mystical Clock:</strong> A themed timer and stopwatch.</li>
