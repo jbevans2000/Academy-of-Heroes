@@ -25,7 +25,7 @@ export default function SplashPage() {
       <div className="absolute inset-0 bg-black/60 -z-10" />
 
       {/* Content */}
-      <main className="z-10 flex flex-grow flex-col items-center justify-center space-y-8 animate-in fade-in-50 duration-1000">
+      <main className="z-10 flex flex-grow flex-col items-center justify-center space-y-6 animate-in fade-in-50 duration-1000">
         
         {/* Banner Image */}
         <div className="w-full max-w-4xl px-4">
