@@ -192,12 +192,10 @@ export default function EditBossBattlePage() {
     try {
         const dataUri = await generateBossImage({ prompt: aiImagePrompt });
         
-        // The client now receives the data URI and handles the upload.
         const storage = getStorage(app);
         const imageId = uuidv4();
         const storageRef = ref(storage, `boss-images/${imageId}`);
         
-        // The 'data_url' string format is directly supported by uploadString on the client.
         await uploadString(storageRef, dataUri, 'data_url');
         
         const downloadUrl = await getDownloadURL(storageRef);
@@ -357,12 +355,8 @@ export default function EditBossBattlePage() {
                     <Label htmlFor="battle-name" className="text-base">Boss Battle Title</Label>
                     <Input id="battle-name" placeholder="e.g., The Ancient Karkorah" value={battleTitle} onChange={(e) => setBattleTitle(e.target.value)} disabled={isSaving} />
                 </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="boss-image" className="text-base">Boss Image URL</Label>
-                    <Input id="boss-image" placeholder="https://example.com/boss.png or upload/generate one below" value={bossImageUrl} onChange={(e) => setBossImageUrl(e.target.value)} disabled={isSaving} />
-                </div>
                  <div className="space-y-2 p-4 border rounded-md">
-                    <Label htmlFor="image-upload" className="text-base font-medium">Or Upload Your Own Image</Label>
+                    <Label htmlFor="image-upload" className="text-base font-medium">Upload Boss Image</Label>
                     <div className="flex items-center gap-2">
                       <Input id="image-upload" type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files ? e.target.files[0] : null)} className="flex-grow" disabled={isUploading}/>
                       {imageFile && (
