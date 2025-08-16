@@ -40,7 +40,7 @@ const tools = [
         icon: <Dices className="h-10 w-10 text-primary" />,
         path: '/teacher/tools/random-activity',
         disabled: false,
-        bgImage: '',
+        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Aug%2016%2C%202025%2C%2009_52_37%20PM.png?alt=media&token=c138d6cf-3580-4161-9f93-1678122d25d1',
     }
 ]
 
