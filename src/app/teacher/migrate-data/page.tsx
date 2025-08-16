@@ -23,9 +23,8 @@ export default function MigrateDataPage() {
         setLogs([]);
 
         try {
-            const result = await migrateData((log) => {
-                setLogs(prev => [...prev, log]);
-            });
+            const result = await migrateData();
+            setLogs(result.logs);
 
             if(result.success) {
                 toast({
@@ -47,6 +46,7 @@ export default function MigrateDataPage() {
                 title: 'An Unexpected Error Occurred',
                 description: error.message || 'Please check the console for details.',
             });
+             setLogs(prev => [...prev, `FATAL ERROR: ${error.message}`]);
         } finally {
             setIsLoading(false);
         }
@@ -115,5 +115,3 @@ export default function MigrateDataPage() {
         </div>
     );
 }
-
-    
