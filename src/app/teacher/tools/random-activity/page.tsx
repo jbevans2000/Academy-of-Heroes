@@ -6,16 +6,27 @@ import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Dices, RefreshCw } from 'lucide-react';
-import { activities, type Activity } from '@/lib/activities';
+import { ArrowLeft, Dices, RefreshCw, Loader2 } from 'lucide-react';
+import { generateActivity, type Activity } from '@/ai/flows/activity-generator';
+
 
 export default function RandomActivityPage() {
     const router = useRouter();
     const [currentActivity, setCurrentActivity] = useState<Activity | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const generateActivity = () => {
-        const randomIndex = Math.floor(Math.random() * activities.length);
-        setCurrentActivity(activities[randomIndex]);
+    const handleGenerateActivity = async () => {
+        setIsLoading(true);
+        setCurrentActivity(null);
+        try {
+            const activity = await generateActivity();
+            setCurrentActivity(activity);
+        } catch (error) {
+            console.error("Error generating activity:", error);
+            // Optionally, show a toast notification to the user
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -39,11 +50,13 @@ export default function RandomActivityPage() {
                             <div className="flex justify-center mb-2">
                                 <Dices className="h-12 w-12 text-primary" />
                             </div>
-                            <CardTitle className="text-3xl">Random Activity Generator</CardTitle>
+                            <CardTitle className="text-3xl">A Task from the Throne</CardTitle>
                             <CardDescription>Click the button below to get a new fun, fantasy-themed activity for your class!</CardDescription>
                         </CardHeader>
                         <CardContent className="min-h-[200px] flex items-center justify-center">
-                            {currentActivity ? (
+                            {isLoading ? (
+                                 <Loader2 className="h-12 w-12 text-primary animate-spin" />
+                            ) : currentActivity ? (
                                 <div className="p-6 border-2 border-dashed border-primary rounded-lg bg-background animate-in fade-in-50">
                                     <h3 className="text-2xl font-bold font-headline text-primary">{currentActivity.title}</h3>
                                     <p className="text-muted-foreground mt-2">{currentActivity.description}</p>
@@ -53,8 +66,12 @@ export default function RandomActivityPage() {
                             )}
                         </CardContent>
                     </Card>
-                     <Button size="lg" className="w-full text-xl py-8" onClick={generateActivity}>
-                        <RefreshCw className="mr-4 h-6 w-6" />
+                     <Button size="lg" className="w-full text-xl py-8" onClick={handleGenerateActivity} disabled={isLoading}>
+                        {isLoading ? (
+                            <Loader2 className="mr-4 h-6 w-6 animate-spin" />
+                        ) : (
+                            <RefreshCw className="mr-4 h-6 w-6" />
+                        )}
                         Generate New Activity!
                     </Button>
                 </div>
