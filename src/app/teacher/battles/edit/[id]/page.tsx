@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ArrowLeft, PlusCircle, Trash2, Eye, GitBranch, Loader2, Save, Sparkles } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Trash2, Eye, GitBranch, Loader2, Save, Sparkles, Image as ImageIcon } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -19,6 +19,8 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { generateQuizQuestions, type QuizGeneratorInput } from '@/ai/flows/quiz-generator';
+import NextImage from 'next/image';
+import { generateAndUploadBossImage } from '@/ai/flows/image-generator';
 
 const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
@@ -44,11 +46,15 @@ export default function EditBossBattlePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  // AI Generation State
-  const [isGenerating, setIsGenerating] = useState(false);
+  // AI Question Generation State
+  const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
   const [aiSubject, setAiSubject] = useState('');
   const [aiGradeLevel, setAiGradeLevel] = useState('');
   const [aiNumQuestions, setAiNumQuestions] = useState<number | string>(5);
+
+  // AI Image Generation State
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [aiImagePrompt, setAiImagePrompt] = useState('');
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -112,7 +118,7 @@ export default function EditBossBattlePage() {
       });
       return;
     }
-    setIsGenerating(true);
+    setIsGeneratingQuestions(true);
     try {
       const result = await generateQuizQuestions({
         subject: aiSubject,
@@ -142,7 +148,25 @@ export default function EditBossBattlePage() {
          description: 'The AI failed to generate questions. Please try again.',
        });
     } finally {
-        setIsGenerating(false);
+        setIsGeneratingQuestions(false);
+    }
+  };
+
+  const handleGenerateImage = async () => {
+    if (!aiImagePrompt) {
+        toast({ variant: 'destructive', title: 'Missing Prompt', description: 'Please enter a description for the image.' });
+        return;
+    }
+    setIsGeneratingImage(true);
+    try {
+        const imageUrl = await generateAndUploadBossImage({ prompt: aiImagePrompt });
+        setBossImageUrl(imageUrl);
+        toast({ title: 'Image Generated!', description: 'The new boss image has been created and the URL has been set.' });
+    } catch (error) {
+        console.error("Error generating image:", error);
+        toast({ variant: 'destructive', title: 'Image Generation Failed', description: 'Could not generate the boss image. Please try again.' });
+    } finally {
+        setIsGeneratingImage(false);
     }
   };
 
@@ -293,7 +317,7 @@ export default function EditBossBattlePage() {
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="boss-image" className="text-base">Boss Image URL</Label>
-                    <Input id="boss-image" placeholder="https://example.com/boss.png" value={bossImageUrl} onChange={(e) => setBossImageUrl(e.target.value)} disabled={isSaving} />
+                    <Input id="boss-image" placeholder="https://example.com/boss.png or generate one below" value={bossImageUrl} onChange={(e) => setBossImageUrl(e.target.value)} disabled={isSaving} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="video-url" className="text-base">Intro Video URL (YouTube, etc.)</Label>
@@ -302,17 +326,44 @@ export default function EditBossBattlePage() {
               </div>
 
                <Separator />
+               
+               <div className="space-y-4 p-6 border rounded-lg bg-secondary/30">
+                 <h3 className="text-xl font-semibold flex items-center gap-2"><ImageIcon className="text-primary" /> Generate Boss Image with AI</h3>
+                 <div className="space-y-2">
+                    <Label htmlFor="ai-image-prompt">Image Description</Label>
+                    <Textarea id="ai-image-prompt" placeholder="e.g., A giant three-headed dragon made of crystal, fantasy art" value={aiImagePrompt} onChange={(e) => setAiImagePrompt(e.target.value)} disabled={isGeneratingImage} />
+                 </div>
+                 <Button onClick={handleGenerateImage} disabled={isGeneratingImage}>
+                    {isGeneratingImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                    Generate Image
+                 </Button>
+                 {(isGeneratingImage || bossImageUrl) && (
+                    <div className="pt-4">
+                        <Label>Image Preview</Label>
+                        <div className="mt-2 flex justify-center items-center p-4 border rounded-md bg-background h-64">
+                            {isGeneratingImage ? (
+                                <div className="text-center">
+                                    <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-2" />
+                                    <p className="text-muted-foreground">The AI is painting your masterpiece...</p>
+                                </div>
+                            ) : bossImageUrl ? (
+                                <NextImage src={bossImageUrl} alt="Generated Boss" width={250} height={250} className="rounded-lg object-contain h-full" />
+                            ) : null}
+                        </div>
+                    </div>
+                 )}
+               </div>
 
               <div className="space-y-4 p-6 border rounded-lg bg-secondary/30">
                 <h3 className="text-xl font-semibold flex items-center gap-2"><Sparkles className="text-primary" /> Generate Questions with the Oracle</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <Label htmlFor="ai-subject">Subject / Topic</Label>
-                        <Input id="ai-subject" placeholder="e.g. Photosynthesis" value={aiSubject} onChange={(e) => setAiSubject(e.target.value)} disabled={isGenerating} />
+                        <Input id="ai-subject" placeholder="e.g. Photosynthesis" value={aiSubject} onChange={(e) => setAiSubject(e.target.value)} disabled={isGeneratingQuestions} />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="ai-grade">Grade Level</Label>
-                         <Select onValueChange={setAiGradeLevel} value={aiGradeLevel} disabled={isGenerating}>
+                         <Select onValueChange={setAiGradeLevel} value={aiGradeLevel} disabled={isGeneratingQuestions}>
                             <SelectTrigger id="ai-grade"><SelectValue placeholder="Choose a grade..." /></SelectTrigger>
                             <SelectContent>{gradeLevels.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
                         </Select>
@@ -320,10 +371,10 @@ export default function EditBossBattlePage() {
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="ai-num-questions">Number of Questions (1-10)</Label>
-                    <Input id="ai-num-questions" type="number" min="1" max="10" value={aiNumQuestions} onChange={(e) => setAiNumQuestions(e.target.value)} disabled={isGenerating} />
+                    <Input id="ai-num-questions" type="number" min="1" max="10" value={aiNumQuestions} onChange={(e) => setAiNumQuestions(e.target.value)} disabled={isGeneratingQuestions} />
                  </div>
-                 <Button onClick={handleGenerateQuestions} disabled={isGenerating}>
-                    {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                 <Button onClick={handleGenerateQuestions} disabled={isGeneratingQuestions}>
+                    {isGeneratingQuestions ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                     Consult the Oracle
                  </Button>
               </div>
