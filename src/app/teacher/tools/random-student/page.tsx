@@ -99,7 +99,7 @@ export default function RandomStudentPage() {
                     </Card>
                      <Button size="lg" className="w-full text-xl py-8" onClick={generateStudent} disabled={isLoading || students.length === 0}>
                         <RefreshCw className="mr-4 h-6 w-6" />
-                        {students.length === 0 ? 'No Students in Roster' : 'Select a Random Student!'}
+                        {students.length === 0 ? 'No Students in Roster' : 'Select a Random Hero!'}
                     </Button>
                 </div>
             </main>
