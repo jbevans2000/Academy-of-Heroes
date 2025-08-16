@@ -20,14 +20,14 @@ export default function FixHubsPage() {
     setIsFixing(true);
     try {
       const hubsRef = collection(db, 'questHubs');
-      const q = query(hubsRef, where('name', '==', 'The Capitol City of Luminaria'));
+      const q = query(hubsRef, where('name', '==', 'Capitol City of the Luminaria'));
       const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
         toast({
           variant: 'destructive',
           title: 'Hub Not Found',
-          description: 'Could not find a hub named "The Capitol City of Luminaria" to update.',
+          description: 'Could not find a hub named "Capitol City of the Luminaria" to update.',
         });
         setIsFixing(false);
         return;
@@ -48,7 +48,7 @@ export default function FixHubsPage() {
         await batch.commit();
         toast({
             title: 'Hub Updated!',
-            description: '"The Capitol City of Luminaria" has been set as the first hub in the sequence.',
+            description: '"Capitol City of the Luminaria" has been set as the first hub in the sequence.',
         });
       } else {
          toast({
@@ -79,7 +79,7 @@ export default function FixHubsPage() {
           <CardHeader>
             <CardTitle>Quest Hub Data Fix</CardTitle>
             <CardDescription>
-              This is a one-time utility to ensure your existing "The Capitol City of Luminaria" quest hub is correctly configured as the first hub in the new progression system.
+              This is a one-time utility to ensure your existing "Capitol City of the Luminaria" quest hub is correctly configured as the first hub in the new progression system.
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center">
