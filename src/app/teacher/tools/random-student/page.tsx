@@ -10,8 +10,8 @@ import { ArrowLeft, Users, RefreshCw, Loader2 } from 'lucide-react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
-import { StudentCard } from '@/components/teacher/student-card';
-import { Skeleton } from '@/components/ui/skeleton';
+import Image from 'next/image';
+
 
 const selectionCaptions = [
     "The King has chosen you for a quest!",
@@ -83,14 +83,17 @@ export default function RandomStudentPage() {
                             ) : pickedStudent ? (
                                 <div className="space-y-4 animate-in fade-in-50">
                                     <h3 className="text-2xl font-bold font-headline text-primary">{pickedCaption}</h3>
-                                     <div className="scale-125">
-                                        <StudentCard 
-                                            student={pickedStudent}
-                                            isSelected={false}
-                                            onSelect={() => {}} // No-op for this view
-                                            setStudents={setStudents}
+                                    <div className="relative w-64 h-64 mx-auto">
+                                        <Image 
+                                            src={pickedStudent.avatarUrl}
+                                            alt={pickedStudent.characterName}
+                                            fill
+                                            className="object-contain drop-shadow-lg"
+                                            priority
                                         />
                                     </div>
+                                    <h4 className="text-3xl font-bold">{pickedStudent.characterName}</h4>
+                                    <p className="text-lg text-muted-foreground">{pickedStudent.studentName}</p>
                                 </div>
                             ) : (
                                 <p className="text-muted-foreground text-lg">Click the button to select a hero!</p>
