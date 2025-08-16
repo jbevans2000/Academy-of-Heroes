@@ -14,7 +14,7 @@ const tools = [
         icon: <Timer className="h-10 w-10 text-primary" />,
         path: '/teacher/tools/timer',
         disabled: true,
-        bgImage: '',
+        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fmystical%20clock.jpg?alt=media&token=5374acb2-6f27-43fe-a9b8-036184f9c810',
     },
     {
         title: 'Sleeping Dragon',
@@ -30,7 +30,7 @@ const tools = [
         icon: <Users className="h-10 w-10 text-primary" />,
         path: '/teacher/tools/random-student',
         disabled: false,
-        bgImage: '',
+        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Aug%2016%2C%202025%2C%2009_52_37%20PM.png?alt=media&token=c138d6cf-3580-4161-9f93-1678122d25d1',
     },
     {
         title: 'Random Activity Generator',
@@ -65,12 +65,9 @@ export default function ClassroomToolsPage() {
                         {tools.map((tool, index) => (
                              <Link href={tool.disabled ? '#' : tool.path} key={index} className="group">
                                 <div
-                                    className="relative flex flex-col justify-between h-64 p-6 rounded-lg overflow-hidden border shadow-sm transition-transform hover:scale-105"
+                                    className="relative flex flex-col justify-between h-64 p-6 rounded-lg overflow-hidden border shadow-sm transition-transform hover:scale-105 bg-cover bg-center"
+                                    style={{ backgroundImage: tool.bgImage ? `url(${tool.bgImage})` : 'none', backgroundColor: !tool.bgImage ? 'hsl(var(--card))' : '' }}
                                 >
-                                    <div 
-                                        className="absolute inset-0 bg-cover bg-center"
-                                        style={{ backgroundImage: tool.bgImage ? `url(${tool.bgImage})` : 'none' }}
-                                    ></div>
                                     <div className="absolute inset-0 bg-black/60 group-hover:bg-black/70 transition-colors"></div>
                                     
                                     <div className="relative z-10 text-white">
