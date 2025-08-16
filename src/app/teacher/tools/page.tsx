@@ -40,7 +40,7 @@ const tools = [
         icon: <Dices className="h-10 w-10 text-primary" />,
         path: '/teacher/tools/random-activity',
         disabled: false,
-        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Aug%2016%2C%202025%2C%2009_52_37%20PM.png?alt=media&token=c138d6cf-3580-4161-9f93-1678122d25d1',
+        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-5eb79f48-b727-4971-a208-eb220e1a80f7.jpg?alt=media&token=4029ebc5-ca5f-4408-a498-20f0751c1853',
     }
 ]
 
