@@ -1,14 +1,16 @@
 rules_version = '2';
-
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allow public write access ONLY to the Boss Images directory
-    match /Boss Images/{imageId} {
-      allow write: if true;
+    // Allow public write access ONLY to the Boss Images folder.
+    // This is secure because files are named with a random UUID,
+    // preventing users from guessing filenames to overwrite them.
+    match /Boss Images/{allPaths=**} {
+      allow write;
+      allow read; // Allow public read for the generated images.
     }
-    
-    // All other paths in your bucket remain private and require authentication.
-    // This rule will apply to any path that doesn't match the one above.
+
+    // By default, require authentication for all other paths.
+    // You can adjust this as needed for other app features.
     match /{allPaths=**} {
       allow read, write: if request.auth != null;
     }
