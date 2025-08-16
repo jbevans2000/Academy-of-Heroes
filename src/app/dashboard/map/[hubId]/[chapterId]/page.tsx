@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { useRouter, useParams, useSearchParams } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, LayoutDashboard, Library, CheckCircle, Loader2, RotateCcw } from "lucide-react";
 import Image from 'next/image';
 import { Separator } from "@/components/ui/separator";
@@ -20,7 +20,6 @@ import { useToast } from '@/hooks/use-toast';
 export default function ChapterPage() {
     const router = useRouter();
     const params = useParams();
-    const searchParams = useSearchParams();
     const { toast } = useToast();
     const { hubId, chapterId } = params;
 
@@ -34,24 +33,21 @@ export default function ChapterPage() {
     const [isCompleting, setIsCompleting] = useState(false);
     const [isUncompleting, setIsUncompleting] = useState(false);
 
-    const fromTeacher = searchParams.get('from') === 'teacher';
-
      useEffect(() => {
         const authUnsubscribe = onAuthStateChanged(auth, (currentUser) => {
             if (currentUser) {
                 setUser(currentUser);
-                const studentDocRef = doc(db, 'students', currentUser.uid);
-                const studentUnsubscribe = getDoc(studentDocRef).then(docSnap => {
+                getDoc(doc(db, 'students', currentUser.uid)).then(docSnap => {
                     if (docSnap.exists()) {
                         setStudent(docSnap.data() as Student);
                     }
                 });
-            } else if (!fromTeacher) {
+            } else {
                 router.push('/');
             }
         });
         return () => authUnsubscribe();
-    }, [router, fromTeacher]);
+    }, [router]);
 
     useEffect(() => {
         if (!chapterId || !hubId) return;
@@ -192,7 +188,7 @@ export default function ChapterPage() {
         return `https://www.youtube.com/embed/${videoId}`;
     };
 
-    if (isLoading || ( !student && !fromTeacher)) {
+    if (isLoading || !student) {
         return (
              <div className="flex flex-col items-center justify-start bg-background p-2 md:p-4">
                 <div className="w-full max-w-4xl space-y-4">
@@ -218,7 +214,7 @@ export default function ChapterPage() {
         )
     }
 
-    if (!fromTeacher && student) {
+    if (student) {
         const lastCompletedChapter = student.questProgress?.[hubId as string] || 0;
         const lastCompletedHub = student.hubsCompleted || 0;
         if(hub.hubOrder > lastCompletedHub + 1) {
@@ -239,9 +235,7 @@ export default function ChapterPage() {
 
     const lastCompletedChapterForHub = student?.questProgress?.[hubId as string] || 0;
     const isCurrentChapter = chapter.chapterNumber === lastCompletedChapterForHub + 1;
-    const canComplete = !fromTeacher && isCurrentChapter;
-    const isCompletedChapter = student && chapter.chapterNumber <= lastCompletedChapterForHub;
-    const canUnmark = fromTeacher && student && isCompletedChapter;
+    const isCompletedChapter = chapter.chapterNumber <= lastCompletedChapterForHub;
 
 
     return (
@@ -359,7 +353,7 @@ export default function ChapterPage() {
                     </CardContent>
                 </Card>
                  <div className="flex justify-center flex-col items-center gap-4 py-4">
-                     {canComplete && (
+                     {isCurrentChapter && (
                         <Button 
                             size="lg" 
                             onClick={handleMarkComplete}
@@ -369,7 +363,7 @@ export default function ChapterPage() {
                             Mark Quest as Complete
                         </Button>
                      )}
-                     {canUnmark && (
+                     {isCompletedChapter && (
                          <Button 
                             size="lg" 
                             variant="destructive"
@@ -377,7 +371,7 @@ export default function ChapterPage() {
                             disabled={isUncompleting}
                         >
                             {isUncompleting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <RotateCcw className="mr-2 h-5 w-5" />}
-                            (Teacher) Unmark Quest as Complete
+                            Unmark Quest as Complete
                         </Button>
                      )}
                      <div className="flex justify-center gap-4">
@@ -389,30 +383,21 @@ export default function ChapterPage() {
                             <ArrowLeft className="mr-2 h-5 w-5" />
                             Return to Quest Map
                         </Button>
-                        {fromTeacher ? (
-                            <Button 
-                                onClick={() => router.push('/teacher/quests')} 
-                                variant="outline"
-                                size="lg"
-                            >
-                                <Library className="mr-2 h-5 w-5" />
-                                Return to Quests Page
-                            </Button>
-                        ) : (
-                            <Button 
-                                onClick={() => router.push('/dashboard')} 
-                                variant="outline"
-                                size="lg"
-                            >
-                                <LayoutDashboard className="mr-2 h-5 w-5" />
-                                Return to Dashboard
-                            </Button>
-                        )}
+                        <Button 
+                            onClick={() => router.push('/dashboard')} 
+                            variant="outline"
+                            size="lg"
+                        >
+                            <LayoutDashboard className="mr-2 h-5 w-5" />
+                            Return to Dashboard
+                        </Button>
                      </div>
                  </div>
             </div>
         </div>
     );
 }
+
+    
 
     
