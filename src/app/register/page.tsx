@@ -105,7 +105,6 @@ export default function RegisterPage() {
       const user = userCredential.user;
 
       const classInfo = classData[selectedClass];
-      const defaultBackground = classInfo.backgrounds[0];
       const baseStats = classInfo.baseStats;
 
       await setDoc(doc(db, 'teachers', teacherUid, 'students', user.uid), {
@@ -116,7 +115,7 @@ export default function RegisterPage() {
         characterName: characterName,
         class: selectedClass,
         avatarUrl: selectedAvatar,
-        backgroundUrl: defaultBackground,
+        backgroundUrl: '', // Backgrounds are no longer used
         xp: 0,
         gold: 0,
         level: 1,

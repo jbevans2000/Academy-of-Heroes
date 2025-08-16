@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,7 +23,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
-import { classData } from '@/lib/data';
 
 // HARDCODED TEACHER UID
 const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
@@ -156,57 +155,31 @@ interface StudentCardProps {
 }
 
 export function StudentCard({ student, isSelected, onSelect, setStudents }: StudentCardProps) {
-  const backgroundUrl = useMemo(() => {
-    if (student.backgroundUrl) {
-      return student.backgroundUrl;
-    }
-    const backgrounds = classData[student.class]?.backgrounds;
-    if (backgrounds && backgrounds.length > 0) {
-      // Use a simple hashing function on the UID to get a consistent index
-      const hash = student.uid.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-      const index = hash % backgrounds.length;
-      return backgrounds[index];
-    }
-    return 'https://placehold.co/600x400.png';
-  }, [student.backgroundUrl, student.class, student.uid]);
-
   const avatarUrl = student.avatarUrl || 'https://placehold.co/100x100.png';
 
   return (
     <Dialog>
       <Card className={cn("shadow-lg rounded-xl flex flex-col overflow-hidden transition-all duration-300", isSelected ? "ring-2 ring-primary scale-105" : "hover:scale-105")}>
-        <CardHeader className="p-0 relative h-32">
-          <div className="absolute top-2 right-2 z-10 bg-background/50 rounded-full p-1">
-             <Checkbox
-                checked={isSelected}
-                onCheckedChange={onSelect}
-                aria-label={`Select ${student.characterName}`}
-                className="h-6 w-6"
-            />
-          </div>
-          <Image
-            src={backgroundUrl}
-            alt={`${student.characterName}'s background`}
-            fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            className="object-cover"
-            data-ai-hint="scene"
-            onError={(e) => (e.currentTarget.src = 'https://placehold.co/600x400.png')}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-          <div className="absolute bottom-2 left-4 flex items-end space-x-3">
-            <div className="relative w-16 h-16 border-2 border-primary rounded-full overflow-hidden bg-secondary">
-              <Image
-                src={avatarUrl}
-                alt={`${student.characterName}'s avatar`}
-                fill
-                sizes="(max-width: 768px) 25vw, 10vw"
-                className="object-contain"
-                data-ai-hint="character"
-                onError={(e) => (e.currentTarget.src = 'https://placehold.co/100x100.png')}
-              />
+        <CardHeader className="p-4 relative h-40 bg-secondary/30 flex items-center justify-center">
+            <div className="absolute top-2 right-2 z-10 bg-background/50 rounded-full p-1">
+                <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={onSelect}
+                    aria-label={`Select ${student.characterName}`}
+                    className="h-6 w-6"
+                />
             </div>
-          </div>
+            <div className="relative w-24 h-24">
+                <Image
+                    src={avatarUrl}
+                    alt={`${student.characterName}'s avatar`}
+                    fill
+                    sizes="100px"
+                    className="object-contain drop-shadow-lg"
+                    data-ai-hint="character"
+                    onError={(e) => (e.currentTarget.src = 'https://placehold.co/100x100.png')}
+                />
+            </div>
         </CardHeader>
         <CardContent className="p-4 flex-grow space-y-3">
           <CardTitle className="text-xl font-bold truncate">{student.characterName}</CardTitle>
