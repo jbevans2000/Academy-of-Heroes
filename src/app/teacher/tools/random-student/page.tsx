@@ -83,7 +83,7 @@ export default function RandomStudentPage() {
                             ) : pickedStudent ? (
                                 <div className="space-y-4 animate-in fade-in-50">
                                     <h3 className="text-2xl font-bold font-headline text-primary">{pickedCaption}</h3>
-                                     <div className="scale-75">
+                                     <div className="scale-125">
                                         <StudentCard 
                                             student={pickedStudent}
                                             isSelected={false}
