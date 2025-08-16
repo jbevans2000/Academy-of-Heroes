@@ -47,7 +47,7 @@ export default function LoginPage() {
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">
+                <span className="bg-card px-2 text-muted-foreground font-headline">
                   Or Login If You Have An Account
                 </span>
               </div>
@@ -60,7 +60,7 @@ export default function LoginPage() {
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">
+                <span className="bg-card px-2 text-muted-foreground font-headline">
                   Are you a teacher?
                 </span>
               </div>
