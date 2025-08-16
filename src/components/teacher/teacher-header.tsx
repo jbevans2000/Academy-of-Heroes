@@ -1,4 +1,3 @@
-
 'use client';
 
 import { School, LogOut } from "lucide-react";
@@ -20,7 +19,7 @@ export function TeacherHeader() {
             title: 'Logged Out',
             description: 'You have been successfully logged out.',
         });
-        router.push('/teacher/login');
+        router.push('/');
     } catch (error) {
         console.error("Error signing out: ", error);
         toast({
