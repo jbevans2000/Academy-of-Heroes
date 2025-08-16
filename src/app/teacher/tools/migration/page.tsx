@@ -30,7 +30,6 @@ export default function MigrationPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [isMigrating, setIsMigrating] = useState(false);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
     
     const handleMigration = async () => {
         setIsMigrating(true);
@@ -64,16 +63,19 @@ export default function MigrationPage() {
             });
             router.push('/teacher/tools');
 
-        } catch (error) {
+        } catch (error: any) {
              console.error("Error during migration: ", error);
+             let description = 'Could not move the data. Please check the console for errors.';
+             if (error.code === 'permission-denied') {
+                description = "Permission Denied. Please ensure your Firestore security rules allow you to read from the top-level 'liveBattles' collection to perform this migration."
+             }
              toast({
                 variant: 'destructive',
                 title: 'Migration Failed',
-                description: 'Could not move the data. Please check the console for errors.',
+                description: description,
              });
         } finally {
             setIsMigrating(false);
-            setIsDialogOpen(false);
         }
     };
 
@@ -103,7 +105,7 @@ export default function MigrationPage() {
                              Press the button below to start the migration process. This will read all documents from the top-level `liveBattles` collection, copy them to `teachers/{'{YOUR_ID}'}/liveBattles`, and then delete the old documents.
                            </p>
 
-                            <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                            <AlertDialog>
                                <AlertDialogTrigger asChild>
                                     <Button variant="destructive" size="lg" disabled={isMigrating}>
                                         {isMigrating ? (
