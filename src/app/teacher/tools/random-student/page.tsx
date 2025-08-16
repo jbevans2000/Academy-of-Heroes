@@ -57,7 +57,7 @@ export default function RandomStudentPage() {
         <div 
             className="flex min-h-screen w-full flex-col"
             style={{
-                backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Aug%2016%2C%202025%2C%2009_52_37%20PM.png?alt=media&token=c138d6cf-3580-4161-9f93-1678122d25d1')`,
+                backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-01eb6e6f-c49f-49a6-8296-3b97d092a4c2.jpg?alt=media&token=6fe54bce-fef4-4ad1-92a2-fdef04425008')`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
             }}
@@ -75,7 +75,7 @@ export default function RandomStudentPage() {
                                 <Users className="h-12 w-12 text-primary" />
                             </div>
                             <CardTitle className="text-3xl">Call to Duty</CardTitle>
-                            <CardDescription>Click the button below to randomly select a student from your class roster.</CardDescription>
+                            <CardDescription>Click the Button below to randomly call a hero to action!</CardDescription>
                         </CardHeader>
                         <CardContent className="min-h-[450px] flex flex-col items-center justify-center">
                             {isLoading ? (
