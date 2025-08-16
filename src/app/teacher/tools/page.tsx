@@ -4,7 +4,7 @@
 import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Timer, Volume2, Users, Dices, Wrench, Swords, ScrollText } from 'lucide-react';
+import { ArrowLeft, Timer, Volume2, Users, Dices, Wrench, Swords, ScrollText, DatabaseZap } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
@@ -57,6 +57,14 @@ const tools = [
         path: '/teacher/tools/the-royal-scribe',
         disabled: false,
         bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-4f51950d-83b5-4b55-8664-8178a9c277f0.jpg?alt=media&token=c2c101cb-e71e-42c2-b5e1-85b6727a8581',
+    },
+    {
+        title: 'Database Migration',
+        description: 'One-time tool to move collections to their correct location.',
+        icon: <DatabaseZap className="h-10 w-10 text-destructive" />,
+        path: '/teacher/tools/migration',
+        disabled: false,
+        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-7e04f981-d101-449e-b816-f3316bca8b6f.jpg?alt=media&token=0ac161be-a083-42e7-8b01-f51c72ea8c80',
     }
 ]
 
@@ -110,7 +118,7 @@ export default function ClassroomToolsPage() {
                                         </div>
                                         <p className="text-sm text-white/80">{tool.description}</p>
                                         <div className="mt-auto">
-                                            <Button className="w-full" variant="secondary" disabled={tool.disabled}>
+                                            <Button className="w-full" variant={tool.title === 'Database Migration' ? 'destructive' : 'secondary'} disabled={tool.disabled}>
                                                 {tool.disabled ? "Coming Soon" : "Launch Tool"}
                                             </Button>
                                         </div>
