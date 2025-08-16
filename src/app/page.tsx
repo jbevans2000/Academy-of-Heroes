@@ -1,6 +1,6 @@
 
 import { Button } from '@/components/ui/button';
-import { LogIn, Shield, UserPlus } from 'lucide-react';
+import { LogIn, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -26,6 +26,21 @@ export default function SplashPage() {
 
       {/* Content */}
       <main className="z-10 flex flex-grow flex-col items-center justify-center space-y-8 animate-in fade-in-50 duration-1000">
+        
+        {/* Banner Image */}
+        <div className="w-full max-w-4xl px-4">
+            <div className="relative w-full" style={{ paddingBottom: '25%' /* 4:1 Aspect Ratio */ }}>
+                <Image
+                    src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Aug%2016%2C%202025%2C%2011_00_06%20AM.png?alt=media&token=aacf3b7b-649a-4c93-82ac-c736cc4b91eb"
+                    alt="Academy of Heroes Banner"
+                    fill
+                    className="object-cover"
+                    data-ai-hint="fantasy banner"
+                    priority
+                />
+            </div>
+        </div>
+
         <header className="space-y-4">
           <h1 className="text-5xl md:text-7xl font-bold font-headline text-shadow-lg">
             Turn Any Lesson Into an Epic Quest.
