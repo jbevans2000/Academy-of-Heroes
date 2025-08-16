@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -17,6 +17,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { School, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { logGameEvent } from '@/lib/gamelog';
+import { doc, getDoc } from 'firebase/firestore';
 
 export function LoginForm() {
   const [studentId, setStudentId] = useState('');
@@ -40,7 +42,15 @@ export function LoginForm() {
     const email = `${studentId}@academy-heroes-mziuf.firebaseapp.com`;
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      const studentRef = doc(db, 'students', userCredential.user.uid);
+      const studentSnap = await getDoc(studentRef);
+      if (studentSnap.exists()) {
+        const studentName = studentSnap.data().studentName || 'A student';
+         await logGameEvent('ACCOUNT', `${studentName} logged in.`);
+      }
+
       toast({
         title: 'Login Successful!',
         description: 'Welcome back to your adventure.',

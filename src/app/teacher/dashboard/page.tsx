@@ -33,8 +33,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, Trash2, Swords, PlusCircle, UserX } from 'lucide-react';
+import { Loader2, Star, Coins, Trash2, Swords, PlusCircle, UserX, BookOpen } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
+import { logGameEvent } from '@/lib/gamelog';
 
 export default function TeacherDashboardPage() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -153,6 +154,8 @@ export default function TeacherDashboardPage() {
               return updatedStudent || student;
             })
           );
+          
+          await logGameEvent('GAMEMASTER', `Awarded ${amount} XP to ${selectedStudents.length} student(s).`);
 
           toast({
               title: 'XP Awarded!',
@@ -216,6 +219,8 @@ export default function TeacherDashboardPage() {
                 : student
             )
           );
+          
+          await logGameEvent('GAMEMASTER', `Awarded ${amount} Gold to ${selectedStudents.length} student(s).`);
 
           toast({
               title: 'Gold Awarded!',
@@ -250,6 +255,8 @@ export default function TeacherDashboardPage() {
 
           // Update local state
           setStudents(prev => prev.filter(s => !selectedStudents.includes(s.uid)));
+          
+          await logGameEvent('GAMEMASTER', `Deleted ${selectedStudents.length} student(s) from the database.`);
           setSelectedStudents([]);
           
           toast({
@@ -313,6 +320,9 @@ export default function TeacherDashboardPage() {
             </Button>
             <Button onClick={() => router.push('/teacher/battles')}>
                 <Swords className="mr-2 h-4 w-4" /> Manage Boss Battles
+            </Button>
+             <Button onClick={() => router.push('/teacher/gamelog')} variant="secondary">
+                <BookOpen className="mr-2 h-4 w-4" /> Game Log
             </Button>
             <Dialog open={isXpDialogOpen} onOpenChange={setIsXpDialogOpen}>
             <DialogTrigger asChild>

@@ -23,6 +23,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { classData, type ClassType } from '@/lib/data';
+import { logGameEvent } from '@/lib/gamelog';
 
 
 export default function RegisterPage() {
@@ -74,6 +75,8 @@ export default function RegisterPage() {
         questProgress: {},
         hubsCompleted: 0,
       });
+
+      await logGameEvent('ACCOUNT', `${studentName} created a new ${selectedClass} avatar named '${characterName}'.`);
       
       toast({
         title: 'Account Created!',

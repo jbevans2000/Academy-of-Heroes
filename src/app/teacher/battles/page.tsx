@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, doc, writeBatch, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, writeBatch, deleteDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { logGameEvent } from '@/lib/gamelog';
 
 
 interface BossBattle {
@@ -57,44 +58,35 @@ export default function BossBattlesPage() {
     fetchBattles();
   }, [toast]);
 
-  const handleStartBattle = async (battleId: string) => {
-    setStartingBattleId(battleId);
+  const handleStartBattle = async (battle: BossBattle) => {
+    setStartingBattleId(battle.id);
     try {
         const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
 
-        // 1. Explicitly delete the old active battle document first to ensure a clean slate.
-        // This prevents students from loading into an old battle's summary page.
+        // Explicitly delete the old active battle document first to ensure a clean slate.
         await deleteDoc(liveBattleRef).catch(err => {
-            // It's okay if the doc doesn't exist, this is just a cleanup step.
             if (err.code !== 'not-found') {
                 console.warn("Could not delete old live battle doc, it might not exist.", err);
             }
         });
 
-        // Use a batch to perform the next operations atomically
-        const batch = writeBatch(db);
-        
-        // 2. Set the new active battle state
-        batch.set(liveBattleRef, {
-            battleId: battleId,
+        // Set the new active battle state
+        await setDoc(liveBattleRef, {
+            battleId: battle.id,
             status: 'WAITING', 
             currentQuestionIndex: 0,
             lastRoundDamage: 0,
             totalDamage: 0,
         });
 
-        // No need to clear subcollections here because deleting the document takes care of that.
-
-        // Commit the batch
-        await batch.commit();
+        await logGameEvent('BOSS_BATTLE', `Boss Battle '${battle.battleName}' has been activated.`);
 
         toast({
             title: 'Battle Started!',
             description: 'Students can now join the battle.',
         });
 
-        // Navigate the teacher to their live battle view
-        router.push(`/teacher/battle/live/${battleId}`);
+        router.push(`/teacher/battle/live/${battle.id}`);
 
     } catch (error) {
         console.error("Error starting battle:", error);
@@ -110,12 +102,14 @@ export default function BossBattlesPage() {
 
   const handleDeleteBattle = async (battleId: string) => {
     try {
+        const battleToDelete = battles.find(b => b.id === battleId);
         await deleteDoc(doc(db, 'bossBattles', battleId));
+        await logGameEvent('GAMEMASTER', `Deleted Boss Battle: '${battleToDelete?.battleName || battleId}'.`);
+
         toast({
             title: 'Battle Deleted',
             description: 'The boss battle has been removed successfully.',
         });
-        // Refetch battles to update the UI
         fetchBattles();
     } catch (error) {
         console.error("Error deleting battle:", error);
@@ -179,7 +173,7 @@ export default function BossBattlesPage() {
                     <div className="flex flex-col gap-2">
                         <Button 
                             className="w-full" 
-                            onClick={() => handleStartBattle(battle.id)}
+                            onClick={() => handleStartBattle(battle)}
                             disabled={startingBattleId === battle.id}
                         >
                             {startingBattleId === battle.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}

@@ -16,6 +16,7 @@ import type { Chapter, QuestHub } from '@/lib/quests';
 import type { Student } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { logGameEvent } from '@/lib/gamelog';
 
 export default function ChapterPage() {
     const router = useRouter();
@@ -120,6 +121,8 @@ export default function ChapterPage() {
             // Update local student state to reflect immediate change
             setStudent(prev => prev ? ({ ...prev, ...updates }) : null);
 
+            await logGameEvent('CHAPTER', `${student.studentName} completed Chapter ${chapter.chapterNumber}: ${chapter.title}.`);
+
             toast({ title: "Quest Complete!", description: `You have completed Chapter ${chapter.chapterNumber}: ${chapter.title}.` });
 
         } catch (error) {
@@ -160,6 +163,8 @@ export default function ChapterPage() {
             await updateDoc(studentRef, updates);
             
             setStudent(prev => prev ? ({ ...prev, ...updates }) : null);
+
+            await logGameEvent('CHAPTER', `${student.studentName} rolled back progress on Chapter ${chapter.chapterNumber}: ${chapter.title}.`);
 
             toast({ title: "Quest Progress Rolled Back", description: `Progress has been reset to Chapter ${newProgressValue}.` });
             router.push(`/dashboard/map/${hubId}`);

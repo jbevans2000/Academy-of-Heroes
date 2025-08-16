@@ -15,6 +15,7 @@ import { downloadCsv } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 import type { Student } from '@/lib/data';
+import { logGameEvent } from '@/lib/gamelog';
 
 
 interface LiveBattleState {
@@ -255,6 +256,9 @@ export default function TeacherLiveBattlePage() {
   const handleStartFirstQuestion = async () => {
     const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
     await updateDoc(liveBattleRef, { status: 'IN_PROGRESS' });
+    if(battle) {
+        await logGameEvent('BOSS_BATTLE', `Round 1 of '${battle.battleName}' has started.`);
+    }
   };
   
   const handleEndRound = async () => {
@@ -288,15 +292,17 @@ export default function TeacherLiveBattlePage() {
         responsesSnapshot.forEach(doc => batch.delete(doc.ref));
         
         const liveBattleRef = doc(db, 'liveBattles', 'active-battle');
+        const nextQuestionIndex = liveState.currentQuestionIndex + 1;
         batch.update(liveBattleRef, {
             status: 'IN_PROGRESS',
-            currentQuestionIndex: liveState.currentQuestionIndex + 1,
+            currentQuestionIndex: nextQuestionIndex,
             timerEndsAt: null,
             lastRoundDamage: 0
         });
 
         await batch.commit();
         setRoundResults([]);
+        await logGameEvent('BOSS_BATTLE', `Round ${nextQuestionIndex + 1} of '${battle.battleName}' has started.`);
     } catch (error) {
         console.error("Error advancing to next question:", error);
     } finally {
@@ -313,6 +319,7 @@ export default function TeacherLiveBattlePage() {
       // 1. Get the final total damage from the live state
       const finalStateDoc = await getDoc(liveBattleRef);
       const totalDamage = finalStateDoc.data()?.totalDamage || 0;
+      await logGameEvent('BOSS_BATTLE', `The party dealt a total of ${totalDamage} damage during '${battle.battleName}'.`);
 
       // 2. Calculate final rewards
       const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
@@ -367,6 +374,7 @@ export default function TeacherLiveBattlePage() {
           rewards: rewardsByStudent,
           endedAt: serverTimestamp(),
       });
+      await logGameEvent('BOSS_BATTLE', `Battle summary for '${battle.battleName}' was saved.`);
 
       // 5. Update live battle state to BATTLE_ENDED
       batch.update(liveBattleRef, { status: 'BATTLE_ENDED' });
