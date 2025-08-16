@@ -35,7 +35,7 @@ const tools = [
         bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-01eb6e6f-c49f-49a6-8296-3b97d092a4c2.jpg?alt=media&token=6fe54bce-fef4-4ad1-92a2-fdef04425008',
     },
     {
-        title: 'Random Activity Generator',
+        title: 'A Task from the Throne',
         description: 'Get fun, fantasy-themed activities for the class to do in real time.',
         icon: <Dices className="h-10 w-10 text-primary" />,
         path: '/teacher/tools/random-activity',
