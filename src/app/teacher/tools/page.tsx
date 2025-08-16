@@ -48,19 +48,28 @@ export default function ClassroomToolsPage() {
     const router = useRouter();
 
     return (
-        <div className="flex min-h-screen w-full flex-col bg-muted/40">
+        <div 
+            className="flex min-h-screen w-full flex-col"
+            style={{
+                backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-32456d61-e39a-4301-8c45-cd0f0ff33e52.jpg?alt=media&token=5ffefaa6-38e0-4661-8ae5-be3b004d855e')`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+            }}
+        >
             <TeacherHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="max-w-5xl mx-auto space-y-6">
-                    <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
+                    <Button variant="outline" onClick={() => router.push('/teacher/dashboard')} className="bg-background/80 hover:bg-background/90">
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Back to Dashboard
                     </Button>
-                    <div className="flex items-center gap-4">
-                        <Wrench className="h-8 w-8 text-primary" />
-                        <div>
-                            <h1 className="text-3xl font-bold">Classroom Tools</h1>
-                            <p className="text-muted-foreground">A collection of useful utilities to help manage your classroom with a fantasy twist.</p>
+                    <div className="p-6 rounded-lg bg-background/80 backdrop-blur-sm">
+                        <div className="flex items-center gap-4">
+                            <Wrench className="h-8 w-8 text-primary" />
+                            <div>
+                                <h1 className="text-3xl font-bold">Classroom Tools</h1>
+                                <p className="text-muted-foreground">A collection of useful utilities to help manage your classroom with a fantasy twist.</p>
+                            </div>
                         </div>
                     </div>
                      <div className="grid gap-6 md:grid-cols-2">
