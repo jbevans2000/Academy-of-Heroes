@@ -28,10 +28,10 @@ The prompt MUST be appropriate for the following grade level: **{{gradeLevel}}**
 
 The type of prompt to generate is: **{{promptType}}**.
 
-{{#if (eq promptType "Fiction")}}
+{{#if isFiction}}
 The genre for the prompt is: **{{genreOrSubject}}**.
 {{/if}}
-{{#if (eq promptType "Non-Fiction")}}
+{{#if isNonFiction}}
 The subject for the prompt is: **{{genreOrSubject}}**.
 
 {{#if specificTopic}}
@@ -47,6 +47,13 @@ The final output should be ONLY the text of the writing prompt itself, with no e
 });
 
 export async function generateWritingPrompt(input: WritingPromptInput): Promise<string> {
-  const {text} = await writingPrompt(input);
+  const isFiction = input.promptType === 'Fiction';
+  const isNonFiction = input.promptType === 'Non-Fiction';
+
+  const {text} = await writingPrompt({
+    ...input,
+    isFiction,
+    isNonFiction,
+  });
   return text;
 }
