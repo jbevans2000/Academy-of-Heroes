@@ -7,11 +7,15 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Dices, Loader2, BrainCircuit, PersonStanding, Download } from 'lucide-react';
-import { generateActivity, type Activity } from '@/ai/flows/activity-generator';
+import { generateActivity, type ActivityInput, type Activity } from '@/ai/flows/activity-generator';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import { marked } from 'marked';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+
+const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade'];
 
 export default function RandomActivityPage() {
     const router = useRouter();
@@ -19,13 +23,26 @@ export default function RandomActivityPage() {
     const [currentActivity, setCurrentActivity] = useState<Activity | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [loadingType, setLoadingType] = useState<'Mental' | 'Physical' | null>(null);
+    const [selectedGrade, setSelectedGrade] = useState<string>('');
 
     const handleGenerateActivity = async (activityType: 'Mental' | 'Physical') => {
+        if (!selectedGrade) {
+            toast({
+                variant: 'destructive',
+                title: 'Please select a grade level first.',
+            });
+            return;
+        }
+
         setIsLoading(true);
         setLoadingType(activityType);
         setCurrentActivity(null);
+
         try {
-            const activity = await generateActivity({ activityType });
+            const activity = await generateActivity({ 
+                activityType, 
+                gradeLevel: selectedGrade as ActivityInput['gradeLevel'] 
+            });
             setCurrentActivity(activity);
         } catch (error) {
             console.error("Error generating activity:", error);
@@ -45,11 +62,19 @@ export default function RandomActivityPage() {
 
         const doc = new jsPDF();
         
-        // Basic Markdown to PDF conversion
-        const lines = doc.splitTextToSize(currentActivity.documentContent, 180);
-        doc.text(lines, 10, 10);
+        // This is a simplified conversion. For complex markdown, a more robust library would be needed.
+        // For now, we'll replace some basic markdown for PDF output.
+        const html = marked(currentActivity.documentContent);
         
-        doc.save(`${currentActivity.title.replace(/ /g, '_')}.pdf`);
+        doc.html(html, {
+            callback: function(doc) {
+                doc.save(`${currentActivity.title.replace(/ /g, '_')}.pdf`);
+            },
+            x: 10,
+            y: 10,
+            width: 180,
+            windowWidth: 800 
+        });
     };
 
     return (
@@ -78,44 +103,60 @@ export default function RandomActivityPage() {
                                 <Dices className="h-12 w-12 text-primary" />
                             </div>
                             <CardTitle className="text-3xl text-black">A Task from the Throne</CardTitle>
-                            <CardDescription className="text-black">Choose a type of task to generate a fun, fantasy-themed activity for your class!</CardDescription>
+                            <CardDescription className="text-black">Choose a grade and task type to generate a fun activity for your class!</CardDescription>
                         </CardHeader>
-                        <CardContent className="min-h-[200px] flex items-center justify-center p-6">
-                            {isLoading ? (
-                                 <Loader2 className="h-12 w-12 text-primary animate-spin" />
-                            ) : currentActivity ? (
-                                <div className="p-4 border-2 border-dashed border-primary rounded-lg bg-background/80 w-full animate-in fade-in-50 text-left">
-                                    <h3 className="text-2xl font-bold font-headline text-black text-center">{currentActivity.title}</h3>
-                                    
-                                     <div
-                                        className="prose prose-sm max-w-none text-black text-center"
-                                        dangerouslySetInnerHTML={{ __html: marked(currentActivity.description) as string }}
-                                    />
-                                    
-                                    {currentActivity.documentContent && (
-                                        <>
-                                            <Separator className="my-4" />
-                                            <div 
-                                                className="prose prose-sm max-w-none text-black text-left whitespace-pre-wrap"
-                                            >
-                                                {currentActivity.documentContent}
-                                            </div>
-                                            <div className="text-center mt-4">
-                                                <Button onClick={handleDownload}>
-                                                    <Download className="mr-2 h-4 w-4" />
-                                                    Download Task as PDF
-                                                </Button>
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                            ) : (
-                                <p className="text-black">Choose a task type below to generate an activity!</p>
-                            )}
+                        <CardContent className="min-h-[200px] flex flex-col items-center justify-center p-6 space-y-4">
+                             <div className="w-full max-w-xs">
+                                <Label htmlFor="grade-select" className="text-black">Select Grade Level</Label>
+                                <Select onValueChange={setSelectedGrade} value={selectedGrade} disabled={isLoading}>
+                                    <SelectTrigger id="grade-select">
+                                        <SelectValue placeholder="Choose a grade..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {gradeLevels.map(grade => (
+                                            <SelectItem key={grade} value={grade}>{grade}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="w-full">
+                                {isLoading ? (
+                                    <Loader2 className="h-12 w-12 text-primary animate-spin" />
+                                ) : currentActivity ? (
+                                    <div className="p-4 border-2 border-dashed border-primary rounded-lg bg-background/80 w-full animate-in fade-in-50 text-left">
+                                        <h3 className="text-2xl font-bold font-headline text-black text-center">{currentActivity.title}</h3>
+                                        
+                                        <div
+                                            className="prose prose-sm max-w-none text-black text-center"
+                                            dangerouslySetInnerHTML={{ __html: marked(currentActivity.description) as string }}
+                                        />
+                                        
+                                        {currentActivity.documentContent && (
+                                            <>
+                                                <Separator className="my-4" />
+                                                <div 
+                                                    className="prose prose-sm max-w-none text-black text-left whitespace-pre-wrap"
+                                                >
+                                                    {currentActivity.documentContent}
+                                                </div>
+                                                <div className="text-center mt-4">
+                                                    <Button onClick={handleDownload}>
+                                                        <Download className="mr-2 h-4 w-4" />
+                                                        Download Task as PDF
+                                                    </Button>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <p className="text-muted-foreground">Choose a task type below to generate an activity!</p>
+                                )}
+                            </div>
                         </CardContent>
                     </Card>
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Button size="lg" className="text-lg py-8" onClick={() => handleGenerateActivity('Mental')} disabled={isLoading}>
+                        <Button size="lg" className="text-lg py-8" onClick={() => handleGenerateActivity('Mental')} disabled={isLoading || !selectedGrade}>
                             {isLoading && loadingType === 'Mental' ? (
                                 <Loader2 className="mr-4 h-6 w-6 animate-spin" />
                             ) : (
@@ -123,7 +164,7 @@ export default function RandomActivityPage() {
                             )}
                             Generate Mental Task
                         </Button>
-                         <Button size="lg" className="text-lg py-8" onClick={() => handleGenerateActivity('Physical')} disabled={isLoading}>
+                         <Button size="lg" className="text-lg py-8" onClick={() => handleGenerateActivity('Physical')} disabled={isLoading || !selectedGrade}>
                             {isLoading && loadingType === 'Physical' ? (
                                 <Loader2 className="mr-4 h-6 w-6 animate-spin" />
                             ) : (

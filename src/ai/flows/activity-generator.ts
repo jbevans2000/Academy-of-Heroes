@@ -4,6 +4,8 @@
  * @fileOverview A flow for generating random, fantasy-themed classroom activities.
  *
  * - generateActivity - A function that calls the AI to generate an activity.
+ * - ActivityInput - The input type for the generateActivity function.
+ * - Activity - The return type for the generateActivity function.
  */
 import '@/ai/genkit'; // Ensure Genkit is initialized
 import {ai} from '@/ai/genkit';
@@ -11,6 +13,7 @@ import {z} from 'genkit';
 
 const ActivityInputSchema = z.object({
   activityType: z.enum(['Mental', 'Physical']),
+  gradeLevel: z.enum(['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade']),
 });
 export type ActivityInput = z.infer<typeof ActivityInputSchema>;
 
@@ -27,7 +30,7 @@ const activityPrompt = ai.definePrompt({
     output: { schema: ActivitySchema },
     prompt: `You are a creative assistant for a teacher using a fantasy-themed classroom management game.
 
-Generate a single, fun, and simple classroom activity suitable for children aged 6-11. The activity should take 5-15 minutes and require minimal materials (paper, pencils, classroom objects).
+Generate a single, fun, and simple classroom activity appropriate for {{gradeLevel}} students. The activity should take 5-15 minutes and require minimal materials (paper, pencils, classroom objects).
 
 The activity MUST be a {{activityType}} task.
 - A Mental task should involve thinking, writing, drawing, or problem-solving.
@@ -38,7 +41,7 @@ The activity must have a clear fantasy or medieval theme (e.g., dragons, knights
 If the task is 'Mental', you MUST generate content for the 'documentContent' field. This content should be a simple document (formatted in Markdown with headings, lists, etc.) that the teacher can either display on screen or print for the students. Examples: a list of riddles, a set of instructions for a creative writing prompt, a table for a code-breaking activity.
 If the task is 'Physical', the 'documentContent' field MUST be an empty string.
 
-For PHYSICAL tasks, the 'description' field MUST contain two parts:
+For PHYSICAL tasks, the 'description' field MUST contain two parts separated by a markdown horizontal rule:
 1.  The fun, fantasy-themed instructions for the teacher to announce to the students.
 2.  A clear, simple "Teacher Instructions" section below it that explains the real-world actions students should perform (e.g., "Teacher Instructions: Have students stand up and stretch their arms to the ceiling, then touch their toes."). This part is for the teacher only.
 
