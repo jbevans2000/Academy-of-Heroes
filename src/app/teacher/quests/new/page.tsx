@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import { doc, setDoc, addDoc, collection, getDocs, serverTimestamp, query, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,9 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RichTextEditor from '@/components/teacher/rich-text-editor';
-
-// HARDCODED TEACHER UID
-const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+import { onAuthStateChanged, type User } from 'firebase/auth';
 
 export default function NewQuestPage() {
   const router = useRouter();
@@ -28,7 +26,7 @@ export default function NewQuestPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const worldMapImageUrl = "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FWorld%20Map.JPG?alt=media&token=2d88af7d-a54c-4f34-b4c7-1a7c04485b8b";
-
+  const [teacher, setTeacher] = useState<User | null>(null);
 
   // State for the new Hub creator
   const [hubs, setHubs] = useState<QuestHub[]>([]);
@@ -58,10 +56,22 @@ export default function NewQuestPage() {
   const [chapterCoordinates, setChapterCoordinates] = useState({ x: 50, y: 50 });
 
   useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, user => {
+        if (user) {
+            setTeacher(user);
+        } else {
+            router.push('/teacher/login');
+        }
+    });
+    return () => unsubscribe();
+  }, [router]);
+
+  useEffect(() => {
+    if (!teacher) return;
     const fetchHubs = async () => {
         setIsLoading(true);
         try {
-            const hubsQuery = query(collection(db, 'teachers', TEACHER_UID, 'questHubs'), orderBy('hubOrder'));
+            const hubsQuery = query(collection(db, 'teachers', teacher.uid, 'questHubs'), orderBy('hubOrder'));
             const hubsSnapshot = await getDocs(hubsQuery);
             const hubsData = hubsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
             setHubs(hubsData);
@@ -74,7 +84,7 @@ export default function NewQuestPage() {
         }
     };
     fetchHubs();
-  }, [toast]);
+  }, [teacher, toast]);
   
   const handleMapDrag = (e: React.MouseEvent<HTMLDivElement, MouseEvent>, type: 'hub' | 'chapter') => {
     const map = e.currentTarget;
@@ -120,7 +130,7 @@ export default function NewQuestPage() {
   }
 
   const handleSaveQuest = async () => {
-    if (!validateInputs()) return;
+    if (!validateInputs() || !teacher) return;
     setIsSaving(true);
     
     try {
@@ -128,7 +138,7 @@ export default function NewQuestPage() {
 
         // 1. Create a new hub if necessary
         if (selectedHubId === 'new') {
-            const newHubRef = doc(collection(db, 'teachers', TEACHER_UID, 'questHubs'));
+            const newHubRef = doc(collection(db, 'teachers', teacher.uid, 'questHubs'));
             await setDoc(newHubRef, {
                 name: newHubName,
                 worldMapUrl: newHubMapUrl,
@@ -140,7 +150,7 @@ export default function NewQuestPage() {
         }
 
         // 2. Create the new chapter
-        await addDoc(collection(db, 'teachers', TEACHER_UID, 'chapters'), {
+        await addDoc(collection(db, 'teachers', teacher.uid, 'chapters'), {
             hubId: finalHubId,
             title: chapterTitle,
             chapterNumber: chapterNumber,

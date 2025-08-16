@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import { doc, getDoc, setDoc, collection, getDocs, serverTimestamp, query, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,9 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RichTextEditor from '@/components/teacher/rich-text-editor';
-
-// HARDCODED TEACHER UID
-const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+import { onAuthStateChanged, type User } from 'firebase/auth';
 
 export default function EditQuestPage() {
   const router = useRouter();
@@ -29,6 +27,7 @@ export default function EditQuestPage() {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [teacher, setTeacher] = useState<User | null>(null);
 
   // State for Hubs
   const [hubs, setHubs] = useState<QuestHub[]>([]);
@@ -38,11 +37,23 @@ export default function EditQuestPage() {
   const [selectedHubId, setSelectedHubId] = useState('');
   const [chapterCoordinates, setChapterCoordinates] = useState({ x: 50, y: 50 });
 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, user => {
+        if (user) {
+            setTeacher(user);
+        } else {
+            router.push('/teacher/login');
+        }
+    });
+    return () => unsubscribe();
+  }, [router]);
+
   // Fetch all hubs for the dropdown
   useEffect(() => {
+    if (!teacher) return;
     const fetchHubs = async () => {
         try {
-            const hubsQuery = query(collection(db, 'teachers', TEACHER_UID, 'questHubs'), orderBy('hubOrder'));
+            const hubsQuery = query(collection(db, 'teachers', teacher.uid, 'questHubs'), orderBy('hubOrder'));
             const hubsSnapshot = await getDocs(hubsQuery);
             const hubsData = hubsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
             setHubs(hubsData);
@@ -52,15 +63,15 @@ export default function EditQuestPage() {
         }
     };
     fetchHubs();
-  }, [toast]);
+  }, [teacher, toast]);
   
   // Fetch the specific chapter data to edit
   useEffect(() => {
-    if (!chapterId) return;
+    if (!chapterId || !teacher) return;
     const fetchChapter = async () => {
         setIsLoading(true);
         try {
-            const chapterRef = doc(db, 'teachers', TEACHER_UID, 'chapters', chapterId);
+            const chapterRef = doc(db, 'teachers', teacher.uid, 'chapters', chapterId);
             const chapterSnap = await getDoc(chapterRef);
 
             if (chapterSnap.exists()) {
@@ -80,7 +91,7 @@ export default function EditQuestPage() {
         }
     }
     fetchChapter();
-  }, [chapterId, router, toast]);
+  }, [chapterId, router, toast, teacher]);
 
   const handleMapDrag = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     const map = e.currentTarget;
@@ -121,11 +132,11 @@ export default function EditQuestPage() {
   }
 
   const handleSaveChanges = async () => {
-    if (!validateInputs() || !chapter) return;
+    if (!validateInputs() || !chapter || !teacher) return;
     setIsSaving(true);
     
     try {
-        const chapterRef = doc(db, 'teachers', TEACHER_UID, 'chapters', chapterId);
+        const chapterRef = doc(db, 'teachers', teacher.uid, 'chapters', chapterId);
         await setDoc(chapterRef, {
             ...chapter,
             hubId: selectedHubId,

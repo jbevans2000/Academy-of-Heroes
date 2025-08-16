@@ -8,13 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Users, RefreshCw, Loader2 } from 'lucide-react';
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-
-// HARDCODED TEACHER UID
-const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+import { onAuthStateChanged, type User } from 'firebase/auth';
 
 const selectionCaptions = [
     "The King has chosen you for a quest!",
@@ -30,12 +28,25 @@ export default function RandomStudentPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [pickedStudent, setPickedStudent] = useState<Student | null>(null);
     const [pickedCaption, setPickedCaption] = useState('');
+    const [teacher, setTeacher] = useState<User | null>(null);
 
     useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, user => {
+            if (user) {
+                setTeacher(user);
+            } else {
+                router.push('/teacher/login');
+            }
+        });
+        return () => unsubscribe();
+    }, [router]);
+
+    useEffect(() => {
+        if (!teacher) return;
         const fetchStudents = async () => {
             setIsLoading(true);
             try {
-                const querySnapshot = await getDocs(collection(db, "teachers", TEACHER_UID, "students"));
+                const querySnapshot = await getDocs(collection(db, "teachers", teacher.uid, "students"));
                 const studentsData = querySnapshot.docs.map(doc => ({ ...doc.data() } as Student));
                 setStudents(studentsData);
             } catch (error) {
@@ -45,7 +56,7 @@ export default function RandomStudentPage() {
             }
         };
         fetchStudents();
-    }, []);
+    }, [teacher]);
 
     const generateStudent = () => {
         if (students.length === 0) return;

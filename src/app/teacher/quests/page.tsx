@@ -7,8 +7,8 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { PlusCircle, LayoutDashboard, Edit, Trash2, Loader2, Eye, Wrench } from 'lucide-react';
-import { collection, getDocs, doc, deleteDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { collection, getDocs, doc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { db, auth } from '@/lib/firebase';
 import type { QuestHub, Chapter } from '@/lib/quests';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -24,9 +24,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-
-// HARDCODED TEACHER UID
-const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+import { onAuthStateChanged, type User } from 'firebase/auth';
 
 export default function QuestsPage() {
   const router = useRouter();
@@ -35,40 +33,60 @@ export default function QuestsPage() {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
-
-  const fetchQuests = async () => {
-      setIsLoading(true);
-      try {
-          const hubsSnapshot = await getDocs(collection(db, 'teachers', TEACHER_UID, 'questHubs'));
-          const hubsData = hubsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
-          setHubs(hubsData);
-
-          const chaptersSnapshot = await getDocs(collection(db, 'teachers', TEACHER_UID, 'chapters'));
-          const chaptersData = chaptersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
-          setChapters(chaptersData);
-      } catch (error) {
-          console.error("Error fetching quests: ", error);
-          toast({ variant: 'destructive', title: 'Error', description: 'Could not load quest data.' });
-      } finally {
-          setIsLoading(false);
-      }
-  };
+  const [teacher, setTeacher] = useState<User | null>(null);
 
   useEffect(() => {
-    fetchQuests();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const unsubscribe = onAuthStateChanged(auth, user => {
+        if (user) {
+            setTeacher(user);
+        } else {
+            router.push('/teacher/login');
+        }
+    });
+    return () => unsubscribe();
+  }, [router]);
+
+  useEffect(() => {
+    if (!teacher) return;
+    setIsLoading(true);
+
+    const hubsRef = collection(db, 'teachers', teacher.uid, 'questHubs');
+    const chaptersRef = collection(db, 'teachers', teacher.uid, 'chapters');
+
+    const unsubHubs = onSnapshot(hubsRef, (querySnapshot) => {
+        const hubsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
+        setHubs(hubsData);
+    }, (error) => {
+        console.error("Error fetching quest hubs: ", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not load quest hubs data.' });
+    });
+    
+    const unsubChapters = onSnapshot(chaptersRef, (querySnapshot) => {
+        const chaptersData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
+        setChapters(chaptersData);
+        setIsLoading(false); // Set loading to false after both are fetched
+    }, (error) => {
+        console.error("Error fetching chapters: ", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not load chapters data.' });
+        setIsLoading(false);
+    });
+
+    return () => {
+        unsubHubs();
+        unsubChapters();
+    };
+  }, [teacher, toast]);
 
   const handleDeleteChapter = async (chapterId: string) => {
+    if (!teacher) return;
     setIsDeleting(chapterId);
     try {
-        await deleteDoc(doc(db, 'teachers', TEACHER_UID, 'chapters', chapterId));
+        await deleteDoc(doc(db, 'teachers', teacher.uid, 'chapters', chapterId));
         toast({
             title: 'Chapter Deleted',
             description: 'The chapter has been successfully removed.',
         });
-        // Refresh the list locally to avoid a full re-fetch
-        setChapters(prevChapters => prevChapters.filter(c => c.id !== chapterId));
+        // No need to manually filter, onSnapshot will update the state
     } catch (error) {
         console.error('Error deleting chapter:', error);
         toast({
