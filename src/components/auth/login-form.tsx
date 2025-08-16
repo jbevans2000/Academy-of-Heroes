@@ -15,16 +15,14 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { School, Eye, EyeOff, Loader2, UserPlus } from 'lucide-react';
+import { School, Eye, EyeOff, Loader2, UserPlus, BookUser } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import Link from 'next/link';
 
-// HARDCODED TEACHER UID
-const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
-
 export function LoginForm() {
+  const [classCode, setClassCode] = useState('');
   const [studentId, setStudentId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -32,23 +30,49 @@ export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
 
+  const getTeacherUidFromClassCode = async (code: string): Promise<string | null> => {
+    const uppercaseCode = code.toUpperCase();
+    const teachersRef = collection(db, 'teachers');
+    const q = query(teachersRef, where('classCode', '==', uppercaseCode), limit(1));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+        return null;
+    }
+    
+    return querySnapshot.docs[0].id;
+  }
+
+
   const handleLogin = async () => {
-    if (!studentId || !password) {
+    if (!studentId || !password || !classCode) {
       toast({
         variant: 'destructive',
         title: 'Missing Fields',
-        description: 'Please enter both Student ID and Password.',
+        description: 'Please enter your Class Code, Student ID, and Password.',
       });
       return;
     }
 
     setIsLoading(true);
-    const email = `${studentId}@academy-heroes-mziuf.firebaseapp.com`;
+
+    const teacherUid = await getTeacherUidFromClassCode(classCode);
+    if (!teacherUid) {
+        toast({
+            variant: 'destructive',
+            title: 'Invalid Class Code',
+            description: 'The Class Code you entered does not exist. Please check with your teacher.',
+        });
+        setIsLoading(false);
+        return;
+    }
+
+    const email = `${studentId}-${teacherUid.slice(0,5)}@academy-heroes-mziuf.firebaseapp.com`;
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
-      const studentRef = doc(db, 'teachers', TEACHER_UID, 'students', userCredential.user.uid);
+      const studentRef = doc(db, 'teachers', teacherUid, 'students', userCredential.user.uid);
       const studentSnap = await getDoc(studentRef);
       if (studentSnap.exists()) {
         const studentName = studentSnap.data().studentName || 'A student';
@@ -68,7 +92,7 @@ export function LoginForm() {
           case 'auth/invalid-credential':
           case 'auth/user-not-found':
           case 'auth/wrong-password':
-            description = 'Invalid Student ID or password.';
+            description = 'Invalid Student ID or password for the provided Class Code.';
             break;
           case 'auth/network-request-failed':
             description = 'Network error. Please check your connection.';
@@ -99,6 +123,18 @@ export function LoginForm() {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
+           <div className="space-y-2">
+            <Label htmlFor="class-code" className="text-black bg-yellow-300/50 p-1 rounded-md inline-block flex items-center"><BookUser className="w-4 h-4 mr-2"/>Class Code</Label>
+            <Input
+              id="class-code"
+              type="text"
+              placeholder="Enter the code from your teacher"
+              required
+              value={classCode}
+              onChange={(e) => setClassCode(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
           <div className="space-y-2">
             <Label htmlFor="student-id" className="text-black bg-yellow-300/50 p-1 rounded-md inline-block">Student ID Number</Label>
             <Input

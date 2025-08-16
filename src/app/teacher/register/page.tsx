@@ -20,11 +20,8 @@ const generateClassCode = () => {
     let result = '';
     for (let i = 0; i < 6; i++) {
         result += chars.charAt(Math.floor(Math.random() * chars.length));
-        if (i === 2) {
-            result += '-';
-        }
     }
-    return result;
+    return result.match(/.{1,3}/g)!.join('-'); // Add a hyphen in the middle
 };
 
 
