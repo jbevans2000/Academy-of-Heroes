@@ -20,7 +20,8 @@ const namePrompt = ai.definePrompt({
     input: { schema: NameInputSchema },
     prompt: `You are an expert in fantasy world-building. 
     
-Generate a single, cool-sounding, fantasy-style character name.
+Generate a single, cool-sounding, fantasy-style character name that includes a first name and a last name.
+
 {{#if isNonBinary}}
 The name should be gender-neutral, not sounding distinctly male or female.
 {{else}}
