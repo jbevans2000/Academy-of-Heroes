@@ -1,16 +1,44 @@
 
+'use client';
+
+import { useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { LogIn, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
 export default function SplashPage() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const loopCount = useRef(0);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleVideoEnd = () => {
+      loopCount.current += 1;
+      if (loopCount.current < 5) {
+        video.play();
+      } else {
+        // After 5 loops, it will stop on the last frame automatically
+        // because the 'loop' attribute is removed.
+      }
+    };
+
+    video.addEventListener('ended', handleVideoEnd);
+
+    // Cleanup the event listener when the component unmounts
+    return () => {
+      video.removeEventListener('ended', handleVideoEnd);
+    };
+  }, []);
+
   return (
     <div className="relative min-h-screen w-full flex flex-col p-4 text-center text-white">
       {/* Background Video */}
       <video
+        ref={videoRef}
         autoPlay
-        loop
         muted
         className="absolute top-0 left-0 w-full h-full object-cover -z-10"
       >
