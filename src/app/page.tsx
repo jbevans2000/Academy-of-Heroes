@@ -6,7 +6,7 @@ import Image from 'next/image';
 
 export default function SplashPage() {
   return (
-    <div className="relative min-h-screen w-full flex flex-col items-center justify-center p-4 text-center text-white">
+    <div className="relative min-h-screen w-full flex flex-col p-4 text-center text-white">
       {/* Background Video */}
       <video
         autoPlay
@@ -25,7 +25,7 @@ export default function SplashPage() {
       <div className="absolute inset-0 bg-black/60 -z-10" />
 
       {/* Content */}
-      <main className="z-10 flex flex-grow flex-col items-center justify-center space-y-6 animate-in fade-in-50 duration-1000">
+      <main className="z-10 flex-grow flex flex-col items-center justify-start pt-8 space-y-6 animate-in fade-in-50 duration-1000">
         
         {/* Banner Image */}
         <div className="w-full max-w-4xl px-4">
@@ -67,7 +67,7 @@ export default function SplashPage() {
       </main>
 
       {/* Footer */}
-      <footer className="z-10 w-full max-w-5xl py-4 text-white/70">
+      <footer className="z-10 w-full max-w-5xl py-4 text-white/70 mx-auto">
           <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center text-sm">
             <p>&copy; {new Date().getFullYear()} Academy of Heroes. All rights reserved.</p>
             <div className="flex gap-4 mt-2 sm:mt-0">
