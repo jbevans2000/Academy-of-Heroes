@@ -11,6 +11,12 @@ import { StudentList } from "@/components/teacher/student-list";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -33,7 +39,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, UserX, Swords, PlusCircle, BookOpen, Wrench } from 'lucide-react';
+import { Loader2, Star, Coins, UserX, Swords, PlusCircle, BookOpen, Wrench, ChevronDown } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 
@@ -316,18 +322,35 @@ export default function TeacherDashboardPage() {
             >
             {selectedStudents.length === students.length ? 'Deselect All' : 'Select All'}
             </Button>
-            <Button onClick={() => router.push('/teacher/quests')}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Manage Quests
-            </Button>
-            <Button onClick={() => router.push('/teacher/battles')}>
-                <Swords className="mr-2 h-4 w-4" /> Manage Boss Battles
-            </Button>
-             <Button onClick={() => router.push('/teacher/tools')}>
-                <Wrench className="mr-2 h-4 w-4" /> Classroom Tools
-            </Button>
-             <Button onClick={() => router.push('/teacher/gamelog')} variant="secondary">
-                <BookOpen className="mr-2 h-4 w-4" /> Game Log
-            </Button>
+            
+             <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline">
+                    <Wrench className="mr-2 h-4 w-4" />
+                    Manage
+                    <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => router.push('/teacher/quests')}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        <span>Manage Quests</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push('/teacher/battles')}>
+                        <Swords className="mr-2 h-4 w-4" />
+                        <span>Manage Boss Battles</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push('/teacher/tools')}>
+                        <Wrench className="mr-2 h-4 w-4" />
+                        <span>Classroom Tools</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push('/teacher/gamelog')}>
+                        <BookOpen className="mr-2 h-4 w-4" />
+                        <span>Game Log</span>
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+
             <Dialog open={isXpDialogOpen} onOpenChange={setIsXpDialogOpen}>
             <DialogTrigger asChild>
                 <Button disabled={selectedStudents.length === 0}>
@@ -459,6 +482,8 @@ export default function TeacherDashboardPage() {
     </div>
   );
 }
+
+    
 
     
 
