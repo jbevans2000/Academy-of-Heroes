@@ -200,7 +200,7 @@ export default function NewQuestPage() {
         
         const result = await generateStory({
             gradeLevel: oracleGradeLevel as any,
-            keyElements: oracleKeyElements,
+            keyElements: oracleMode === 'standalone' ? oracleKeyElements : undefined,
             chapterTitle: chapterTitle,
             mode: oracleMode,
             previousHubSummary,
