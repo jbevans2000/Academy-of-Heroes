@@ -18,6 +18,7 @@ interface PowersSheetProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   student: Student;
+  isBattleView?: boolean; // New prop
 }
 
 const powerTypeStyles: { [key in PowerType]: string } = {
@@ -33,7 +34,7 @@ const classIconMap: { [key: string]: React.ReactNode } = {
     Mage: <Wand2 className="h-8 w-8 text-primary" />,
 };
 
-export function PowersSheet({ isOpen, onOpenChange, student }: PowersSheetProps) {
+export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = false }: PowersSheetProps) {
   const powers = classPowers[student.class] || [];
 
   return (
@@ -66,9 +67,11 @@ export function PowersSheet({ isOpen, onOpenChange, student }: PowersSheetProps)
                                 <h3 className={cn("text-lg font-bold", isUnlocked ? "text-white" : "")}>{power.name}</h3>
                                 <p className={cn("text-sm", isUnlocked ? "text-white/80" : "")}>{power.description}</p>
                             </div>
-                            <Button size="sm" disabled={!isUnlocked} variant={isUnlocked ? 'secondary' : 'ghost'}>
-                                Use Power
-                            </Button>
+                            {isBattleView && (
+                                <Button size="sm" disabled={!isUnlocked} variant={isUnlocked ? 'secondary' : 'ghost'}>
+                                    Use Power
+                                </Button>
+                            )}
                         </div>
                         <p className={cn(
                             "font-semibold mt-2 text-right",

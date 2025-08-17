@@ -273,6 +273,7 @@ export default function LiveBattlePage() {
           isOpen={isPowersSheetOpen}
           onOpenChange={setIsPowersSheetOpen}
           student={student}
+          isBattleView={true}
         />
         <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 p-4">
             <div className="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
