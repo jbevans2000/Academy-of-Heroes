@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Users, RefreshCw, Loader2, Sparkles } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Loader2, Sparkles } from 'lucide-react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
@@ -110,61 +110,75 @@ export default function RandomStudentPage() {
                         <CardContent className="min-h-[450px] flex flex-col items-center justify-center overflow-hidden p-6 space-y-6">
                              {isLoading ? (
                                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                            ) : isShuffling ? (
-                                <div className="grid grid-cols-4 gap-4 animate-in fade-in-50">
-                                    {Array.from({ length: numRunes }).map((_, i) => (
-                                        <div key={i} className="animate-pulse">
-                                            <Image 
-                                                src={runeImageSrc}
-                                                alt="A glowing rune"
-                                                width={80}
-                                                height={80}
-                                                className="object-contain"
-                                                style={{ animation: `spin ${Math.random() * 2 + 1}s linear infinite, float ${Math.random() * 3 + 2}s ease-in-out infinite` }}
-                                            />
-                                        </div>
-                                    ))}
-                                    <style jsx global>{`
-                                        @keyframes spin {
-                                            from { transform: rotate(0deg); }
-                                            to { transform: rotate(360deg); }
-                                        }
-                                        @keyframes float {
-                                            0% { transform: translateY(0px); }
-                                            50% { transform: translateY(-10px); }
-                                            100% { transform: translateY(0px); }
-                                        }
-                                    `}</style>
-                                </div>
-                            ) : pickedStudent ? (
-                                <>
-                                <div className="space-y-4 animate-in fade-in-50 zoom-in-75">
-                                    <h3 className="text-2xl font-bold font-headline text-black">{pickedCaption}</h3>
-                                    <div className="relative w-64 h-64 mx-auto">
-                                        <Image 
-                                            src={pickedStudent.avatarUrl}
-                                            alt={pickedStudent.characterName}
-                                            fill
-                                            className="object-contain drop-shadow-lg"
-                                            priority
-                                        />
-                                    </div>
-                                    <h4 className="text-3xl font-bold">{pickedStudent.characterName}</h4>
-                                    <p className="text-lg text-muted-foreground">{pickedStudent.studentName}</p>
-                                </div>
-                                <Button size="lg" className="w-full max-w-xs text-xl py-8 mt-4" onClick={generateStudent} disabled={isLoading || isShuffling || students.length === 0}>
-                                    <RefreshCw className="mr-4 h-6 w-6" />
-                                    Choose Again
-                                </Button>
-                                </>
                             ) : (
-                                <div className="flex flex-col items-center justify-center gap-4">
-                                    <p className="text-muted-foreground text-lg">Click the button to consult the runes!</p>
-                                    <Button size="lg" className="w-full max-w-xs text-xl py-8" onClick={generateStudent} disabled={isLoading || isShuffling || students.length === 0}>
-                                        <RefreshCw className="mr-4 h-6 w-6" />
-                                        {students.length === 0 ? 'No Students in Roster' : 'Consult the Runes!'}
-                                    </Button>
-                                </div>
+                                <>
+                                    <div className={cn(
+                                        "transition-opacity duration-500",
+                                        isShuffling ? "opacity-100" : "opacity-0 absolute",
+                                    )}>
+                                        <div className="grid grid-cols-4 gap-4 animate-in fade-in-50">
+                                            {Array.from({ length: numRunes }).map((_, i) => (
+                                                <div key={i} className="animate-pulse">
+                                                    <Image 
+                                                        src={runeImageSrc}
+                                                        alt="A glowing rune"
+                                                        width={80}
+                                                        height={80}
+                                                        className="object-contain"
+                                                        style={{ animation: `spin ${Math.random() * 2 + 1}s linear infinite, float ${Math.random() * 3 + 2}s ease-in-out infinite` }}
+                                                    />
+                                                </div>
+                                            ))}
+                                            <style jsx global>{`
+                                                @keyframes spin {
+                                                    from { transform: rotate(0deg); }
+                                                    to { transform: rotate(360deg); }
+                                                }
+                                                @keyframes float {
+                                                    0% { transform: translateY(0px); }
+                                                    50% { transform: translateY(-10px); }
+                                                    100% { transform: translateY(0px); }
+                                                }
+                                            `}</style>
+                                        </div>
+                                    </div>
+                                    <div className={cn(
+                                        "transition-opacity duration-500 delay-500",
+                                        pickedStudent && !isShuffling ? "opacity-100" : "opacity-0 absolute"
+                                    )}>
+                                        {pickedStudent && (
+                                            <div className="space-y-4">
+                                                <h3 className="text-2xl font-bold font-headline text-black">{pickedCaption}</h3>
+                                                <div className="relative w-64 h-64 mx-auto">
+                                                    <Image 
+                                                        src={pickedStudent.avatarUrl}
+                                                        alt={pickedStudent.characterName}
+                                                        fill
+                                                        className="object-contain drop-shadow-lg"
+                                                        priority
+                                                    />
+                                                </div>
+                                                <h4 className="text-3xl font-bold">{pickedStudent.characterName}</h4>
+                                                <p className="text-lg text-muted-foreground">{pickedStudent.studentName}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className={cn(
+                                        "transition-opacity duration-500",
+                                        !pickedStudent && !isShuffling ? "opacity-100" : "opacity-0 absolute"
+                                    )}>
+                                        <div className="flex flex-col items-center justify-center gap-4">
+                                            <p className="text-muted-foreground text-lg">Click the button to consult the runes!</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-auto pt-6">
+                                         <Button size="lg" className="w-full max-w-xs text-xl py-8" onClick={generateStudent} disabled={isLoading || isShuffling || students.length === 0}>
+                                            <RefreshCw className="mr-4 h-6 w-6" />
+                                            {students.length === 0 ? 'No Students in Roster' : 'Consult the Runes!'}
+                                        </Button>
+                                    </div>
+                                </>
                             )}
                         </CardContent>
                     </Card>
