@@ -17,9 +17,9 @@ export const classPowers: ClassPowers = {
   Mage: [
     {
       name: 'Wildfire',
-      description: 'Deals 2d6 + your Level in damage to the boss on a correct answer.',
+      description: 'On a correct answer, deals 2d6 + your Level in damage to the boss. Damage is rolled when cast.',
       level: 1,
-      mpCost: 10,
+      mpCost: 3,
       type: 'damage',
     },
     {
@@ -124,7 +124,7 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Sacrifice',
-      description: 'Your HP drops to zero, but all allies receive a 50% XP bonus for the battle.',
+      description: 'Your HP drops to 0, but all allies receive a 50% XP bonus for the battle.',
       level: 15,
       mpCost: 5,
       type: 'utility',

@@ -22,21 +22,28 @@ import { BattleChatBox } from '@/components/battle/chat-box';
 // HARDCODED TEACHER UID
 const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
 
+interface QueuedPower {
+    casterUid: string;
+    powerName: 'Wildfire';
+    damage: number;
+}
+
 interface LiveBattleState {
   battleId: string | null;
   status: 'WAITING' | 'IN_PROGRESS' | 'ROUND_ENDING' | 'SHOWING_RESULTS' | 'BATTLE_ENDED';
   currentQuestionIndex: number;
   timerEndsAt?: { seconds: number; nanoseconds: number; };
-  lastRoundDamage?: number; // Kept for backwards compatibility / simple display
+  lastRoundDamage?: number;
   lastRoundBaseDamage?: number;
   lastRoundPowerDamage?: number;
-  lastRoundPowersUsed?: string[]; // Simple array of power names for now
+  lastRoundPowersUsed?: string[]; 
   totalDamage?: number;
   totalBaseDamage?: number;
   totalPowerDamage?: number;
   removedAnswerIndices?: number[];
   powerEventMessage?: string;
   powerUsersThisRound?: { [key: string]: string[] }; // { studentUid: [powerName, ...] }
+  queuedPowers?: QueuedPower[];
 }
 
 interface PowerActivation {
@@ -220,7 +227,7 @@ export default function TeacherLiveBattlePage() {
     return () => unsubscribe();
   }, [liveState?.status, liveState?.currentQuestionIndex]);
   
-  // Power Activation Listener
+    // Power Activation Listener
     useEffect(() => {
         if (!liveState || !battle || liveState.status !== 'IN_PROGRESS') return;
 
@@ -232,11 +239,12 @@ export default function TeacherLiveBattlePage() {
                 if (change.type === 'added') {
                     const activation = { id: change.doc.id, ...change.doc.data() } as PowerActivation;
                     
-                    // Natures Guidance Logic
+                    // Route to the correct handler based on power name
                     if (activation.powerName === 'Nature’s Guidance') {
                         await handleNaturesGuidance(activation);
+                    } else if (activation.powerName === 'Wildfire') {
+                        await handleWildfire(activation);
                     }
-                    // Future powers would have their own handlers here
                     
                     // Delete the activation doc so it doesn't run again on a reload
                     await deleteDoc(doc(db, 'teachers', TEACHER_UID, `liveBattles/active-battle/powerActivations`, activation.id!));
@@ -262,8 +270,8 @@ export default function TeacherLiveBattlePage() {
         const currentQuestion = battle!.questions[battleData.currentQuestionIndex];
         
         // --- Validation ---
-        if (studentData.mp < activation.powerMpCost) return; // Not enough MP
-        if ((battleData.powerUsersThisRound?.[activation.studentUid] || []).includes(activation.powerName)) return; // Already used this round
+        if (studentData.mp < activation.powerMpCost) return; 
+        if ((battleData.powerUsersThisRound?.[activation.studentUid] || []).includes(activation.powerName)) return;
 
         // --- Execution ---
         const incorrectAnswerIndices = currentQuestion.answers
@@ -272,17 +280,13 @@ export default function TeacherLiveBattlePage() {
             
         const removableIndices = incorrectAnswerIndices.filter(i => !(battleData.removedAnswerIndices || []).includes(i));
         
-        if (removableIndices.length === 0) return; // All incorrect answers already removed
+        if (removableIndices.length === 0) return;
 
         const indexToRemove = removableIndices[Math.floor(Math.random() * removableIndices.length)];
 
         // --- Database Updates ---
         const batch = writeBatch(db);
-        
-        // 1. Update student's MP
         batch.update(studentRef, { mp: increment(-activation.powerMpCost) });
-        
-        // 2. Update battle state
         batch.update(liveBattleRef, {
             removedAnswerIndices: arrayUnion(indexToRemove),
             [`powerUsersThisRound.${activation.studentUid}`]: arrayUnion(activation.powerName),
@@ -290,16 +294,51 @@ export default function TeacherLiveBattlePage() {
         });
 
         await batch.commit();
-
-        // 3. Log event
         await logGameEvent(TEACHER_UID, 'BOSS_BATTLE', `${activation.studentName} used Nature's Guidance.`);
-
-        // Clear the event message after a few seconds
         setTimeout(async () => {
             await updateDoc(liveBattleRef, { powerEventMessage: '' });
         }, 5000);
     };
 
+    const handleWildfire = async (activation: PowerActivation) => {
+        const liveBattleRef = doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle');
+        const studentRef = doc(db, 'teachers', TEACHER_UID, 'students', activation.studentUid);
+        
+        const battleDoc = await getDoc(liveBattleRef);
+        const studentDoc = await getDoc(studentRef);
+
+        if (!battleDoc.exists() || !studentDoc.exists()) return;
+
+        const battleData = battleDoc.data() as LiveBattleState;
+        const studentData = studentDoc.data() as Student;
+
+        if (studentData.mp < activation.powerMpCost) return;
+        if ((battleData.powerUsersThisRound?.[activation.studentUid] || []).includes(activation.powerName)) return;
+
+        const roll1 = Math.floor(Math.random() * 6) + 1;
+        const roll2 = Math.floor(Math.random() * 6) + 1;
+        const damage = roll1 + roll2 + (studentData.level || 1);
+
+        const newQueuedPower: QueuedPower = {
+            casterUid: activation.studentUid,
+            powerName: 'Wildfire',
+            damage: damage,
+        };
+
+        const batch = writeBatch(db);
+        batch.update(studentRef, { mp: increment(-activation.powerMpCost) });
+        batch.update(liveBattleRef, {
+            queuedPowers: arrayUnion(newQueuedPower),
+            [`powerUsersThisRound.${activation.studentUid}`]: arrayUnion(activation.powerName),
+            powerEventMessage: `${activation.studentName} has cast Wildfire! Their foe will receive ${damage} points of damage if their spell strikes true!`
+        });
+
+        await batch.commit();
+        await logGameEvent(TEACHER_UID, 'BOSS_BATTLE', `${activation.studentName} cast Wildfire, queueing ${damage} damage.`);
+        setTimeout(async () => {
+            await updateDoc(liveBattleRef, { powerEventMessage: '' });
+        }, 5000);
+    };
 
 
   const calculateAndSetResults = useCallback(async () => {
@@ -316,7 +355,7 @@ export default function TeacherLiveBattlePage() {
         const responsesData = responsesSnapshot.docs.map(doc => ({ uid: doc.id, ...(doc.data() as StudentResponse) }));
         
         const currentQuestion = battle.questions[liveState.currentQuestionIndex];
-        const damage = currentQuestion.damage || 0;
+        const damageOnIncorrect = currentQuestion.damage || 0;
 
         const results: Result[] = responsesData.map(response => ({
             studentName: response.studentName,
@@ -326,18 +365,33 @@ export default function TeacherLiveBattlePage() {
         setRoundResults(results);
 
         // Apply damage for incorrect answers in a batch
-        if (damage > 0) {
+        if (damageOnIncorrect > 0) {
             for (const response of responsesData) {
                 if (!response.isCorrect) {
                     const studentRef = doc(db, 'teachers', TEACHER_UID, 'students', response.uid);
-                    batch.update(studentRef, { hp: increment(-damage) });
+                    batch.update(studentRef, { hp: increment(-damageOnIncorrect) });
                 }
             }
         }
+        
+        // --- POWER DAMAGE CALCULATION ---
+        let powerDamage = 0;
+        const powersUsedThisRound: string[] = [];
+
+        liveState.queuedPowers?.forEach(power => {
+            const casterResponse = responsesData.find(res => res.uid === power.casterUid);
+            if (casterResponse?.isCorrect) {
+                powerDamage += power.damage;
+                powersUsedThisRound.push(`${power.powerName} (${power.damage} dmg)`);
+                logGameEvent(TEACHER_UID, 'BOSS_BATTLE', `${casterResponse.characterName}'s Wildfire struck true for ${power.damage} damage.`);
+            } else {
+                 logGameEvent(TEACHER_UID, 'BOSS_BATTLE', `${casterResponse?.characterName || 'A mage'}'s Wildfire fizzled as they answered incorrectly.`);
+            }
+        });
+
 
         const baseDamage = results.filter(r => r.isCorrect).length;
-        const powerDamage = 0; // Placeholder for now
-        const powersUsed: string[] = []; // Placeholder
+        const totalDamageThisRound = baseDamage + powerDamage;
 
         // Store this round's data for the final summary
         const newAllRoundsData = {
@@ -350,20 +404,19 @@ export default function TeacherLiveBattlePage() {
                     answerIndex: r.answerIndex,
                     isCorrect: r.isCorrect,
                 })),
-                powersUsed,
+                powersUsed: powersUsedThisRound,
             }
         };
         setAllRoundsData(newAllRoundsData);
 
         // Update the live battle state
-        const totalDamageThisRound = baseDamage + powerDamage;
         batch.update(liveBattleRef, { 
             status: 'SHOWING_RESULTS', 
             timerEndsAt: null,
             lastRoundDamage: totalDamageThisRound,
             lastRoundBaseDamage: baseDamage,
             lastRoundPowerDamage: powerDamage,
-            lastRoundPowersUsed: powersUsed,
+            lastRoundPowersUsed: powersUsedThisRound,
             totalDamage: increment(totalDamageThisRound),
             totalBaseDamage: increment(baseDamage),
             totalPowerDamage: increment(powerDamage)
@@ -442,10 +495,10 @@ export default function TeacherLiveBattlePage() {
             lastRoundBaseDamage: 0,
             lastRoundPowerDamage: 0,
             lastRoundPowersUsed: [],
-            naturesGuidanceUses: 0,
             removedAnswerIndices: [],
             powerEventMessage: '',
             powerUsersThisRound: {},
+            queuedPowers: [],
         });
 
         await batch.commit();
