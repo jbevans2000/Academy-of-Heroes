@@ -71,6 +71,7 @@ interface Battle {
 }
 
 interface StudentResponse {
+    uid: string;
     studentName: string;
     characterName: string;
     answer: string;
@@ -200,7 +201,6 @@ export default function TeacherLiveBattlePage() {
 
   // Listen for real-time student responses for the current question
   useEffect(() => {
-    // When the question changes, always clear the previous round's live responses.
     setStudentResponses([]);
     
     if (!liveState || (liveState.status !== 'IN_PROGRESS' && liveState.status !== 'ROUND_ENDING')) {
@@ -213,10 +213,13 @@ export default function TeacherLiveBattlePage() {
       const responses: Result[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data() as StudentResponse;
+        const powerUsed = liveState.powerUsersThisRound?.[doc.id]?.join(', ') || undefined;
+
         responses.push({
           studentName: data.studentName,
           answer: data.answer,
           isCorrect: data.isCorrect,
+          powerUsed: powerUsed,
         });
       });
       setStudentResponses(responses);
@@ -225,7 +228,7 @@ export default function TeacherLiveBattlePage() {
     });
 
     return () => unsubscribe();
-  }, [liveState?.status, liveState?.currentQuestionIndex]);
+  }, [liveState, liveState?.status, liveState?.currentQuestionIndex]);
   
     // Power Activation Listener
     useEffect(() => {
@@ -361,6 +364,7 @@ export default function TeacherLiveBattlePage() {
             studentName: response.studentName,
             answer: response.answer,
             isCorrect: response.isCorrect,
+            powerUsed: liveState.powerUsersThisRound?.[response.uid]?.join(', ') || undefined,
         }));
         setRoundResults(results);
 

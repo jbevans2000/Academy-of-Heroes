@@ -9,6 +9,7 @@ export interface Result {
   studentName: string;
   answer: string;
   isCorrect: boolean;
+  powerUsed?: string;
 }
 
 interface RoundResultsProps {
@@ -33,6 +34,7 @@ export function RoundResults({ results }: RoundResultsProps) {
         <TableRow>
           <TableHead className="w-[200px]">Student</TableHead>
           <TableHead>Answer</TableHead>
+          <TableHead>Power Used</TableHead>
           <TableHead className="text-right w-[100px]">Result</TableHead>
         </TableRow>
       </TableHeader>
@@ -41,6 +43,7 @@ export function RoundResults({ results }: RoundResultsProps) {
           <TableRow key={index}>
             <TableCell className="font-medium">{result.studentName}</TableCell>
             <TableCell>{result.answer}</TableCell>
+            <TableCell className="font-semibold text-primary">{result.powerUsed || '---'}</TableCell>
             <TableCell className="text-right">
               {result.isCorrect ? (
                 <CheckCircle className="h-5 w-5 text-green-500 inline-block" />
@@ -53,7 +56,7 @@ export function RoundResults({ results }: RoundResultsProps) {
       </TableBody>
       <TableFooter>
         <TableRow>
-          <TableCell colSpan={2} className="font-bold text-lg text-right">Totals</TableCell>
+          <TableCell colSpan={3} className="font-bold text-lg text-right">Totals</TableCell>
           <TableCell className="text-right font-bold text-lg">
             <div className="flex flex-col items-end">
                 <span className="text-green-500">{correctAnswers} Correct</span>
