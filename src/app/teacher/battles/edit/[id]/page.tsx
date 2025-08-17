@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +23,7 @@ import { generateQuizQuestions, type QuizGeneratorInput } from '@/ai/flows/quiz-
 import NextImage from 'next/image';
 import { generateBossImage } from '@/ai/flows/image-generator';
 import { v4 as uuidv4 } from 'uuid';
+import { cn } from '@/lib/utils';
 
 const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
@@ -192,11 +193,16 @@ export default function EditBossBattlePage() {
     try {
         const dataUri = await generateBossImage({ prompt: aiImagePrompt });
         
+        // Convert data URI to blob for upload
+        const response = await fetch(dataUri);
+        const blob = await response.blob();
+        const file = new File([blob], "ai-generated-boss.png", { type: blob.type });
+
         const storage = getStorage(app);
         const imageId = uuidv4();
         const storageRef = ref(storage, `boss-images/${imageId}`);
         
-        await uploadString(storageRef, dataUri, 'data_url');
+        await uploadBytes(storageRef, file);
         
         const downloadUrl = await getDownloadURL(storageRef);
         setBossImageUrl(downloadUrl);
@@ -356,20 +362,26 @@ export default function EditBossBattlePage() {
                     <Input id="battle-name" placeholder="e.g., The Ancient Karkorah" value={battleTitle} onChange={(e) => setBattleTitle(e.target.value)} disabled={isSaving} />
                 </div>
                  <div className="space-y-2 p-4 border rounded-md">
-                    <Label htmlFor="image-upload" className="text-base font-medium">Upload Boss Image</Label>
+                    <Label className="text-base font-medium">Upload Boss Image</Label>
                     <div className="flex items-center gap-2">
-                      <Input id="image-upload" type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files ? e.target.files[0] : null)} className="flex-grow" disabled={isUploading}/>
+                      <Label htmlFor="image-upload" className={cn(buttonVariants({ variant: 'default' }), "cursor-pointer")}>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Choose File
+                      </Label>
+                      <Input id="image-upload" type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files ? e.target.files[0] : null)} className="hidden" disabled={isUploading}/>
                       {imageFile && (
-                          <Button variant="ghost" size="icon" onClick={() => setImageFile(null)}>
-                              <X className="h-4 w-4" />
-                          </Button>
+                          <>
+                            <Button onClick={handleUploadImage} disabled={!imageFile || isUploading}>
+                                {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                                Upload Selected Image
+                            </Button>
+                             <Button variant="ghost" size="icon" onClick={() => setImageFile(null)}>
+                                <X className="h-4 w-4" />
+                            </Button>
+                          </>
                       )}
                     </div>
                      {imageFile && <p className="text-sm text-muted-foreground">Selected: {imageFile.name}</p>}
-                     <Button onClick={handleUploadImage} disabled={!imageFile || isUploading} className="mt-2">
-                        {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                         Upload Selected Image
-                      </Button>
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="video-url" className="text-base">Intro Video URL (YouTube, etc.)</Label>
