@@ -7,6 +7,9 @@ export interface Power {
     level: number;
     mpCost: number;
     type: PowerType;
+    target?: 'ally';
+    targetCount?: number;
+    // eligibilityCheck?: (caster: Student, target: Student) => boolean; // For more complex rules later
 }
 
 interface ClassPowers {
@@ -144,6 +147,8 @@ export const classPowers: ClassPowers = {
       level: 3,
       mpCost: 12,
       type: 'healing',
+      target: 'ally',
+      targetCount: 3,
     },
     {
       name: 'Solar Empowerment',

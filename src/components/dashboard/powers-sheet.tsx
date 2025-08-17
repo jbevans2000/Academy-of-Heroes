@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -15,8 +15,9 @@ import { classPowers, type Power, type PowerType } from "@/lib/powers";
 import { cn } from "@/lib/utils";
 import { Wand2, Zap, Shield, Heart, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { TargetingDialog } from '@/components/battle/targeting-dialog';
 
 interface PowersSheetProps {
   isOpen: boolean;
@@ -45,9 +46,39 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
   const { toast } = useToast();
   const [isCasting, setIsCasting] = useState<string | null>(null);
 
-  const handleUsePower = async (power: Power) => {
+  // State for targeting dialog
+  const [isTargeting, setIsTargeting] = useState(false);
+  const [selectedPower, setSelectedPower] = useState<Power | null>(null);
+  const [partyMembers, setPartyMembers] = useState<Student[]>([]);
+
+  // Fetch all students in the battle when in battle view
+  useEffect(() => {
+    if (isBattleView && teacherUid) {
+      const fetchPartyMembers = async () => {
+        try {
+          const studentsRef = collection(db, 'teachers', teacherUid, 'students');
+          const snapshot = await getDocs(studentsRef);
+          const allStudents = snapshot.docs.map(doc => doc.data() as Student);
+          setPartyMembers(allStudents);
+        } catch (error) {
+          console.error("Failed to fetch party members:", error);
+        }
+      };
+      fetchPartyMembers();
+    }
+  }, [isBattleView, teacherUid]);
+
+
+  const handleUsePower = async (power: Power, targets?: string[]) => {
     if (!isBattleView || !teacherUid || !battleId) {
         toast({ variant: 'destructive', title: 'Error', description: 'Powers can only be used inside a live battle.' });
+        return;
+    }
+    
+    // If a power requires a target and none are provided, open the targeting dialog
+    if (power.target && !targets) {
+        setSelectedPower(power);
+        setIsTargeting(true);
         return;
     }
     
@@ -59,6 +90,7 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
             studentName: student.characterName,
             powerName: power.name,
             powerMpCost: power.mpCost,
+            targets: targets || [], // Include targets in the activation
             timestamp: serverTimestamp(),
         });
 
@@ -70,74 +102,88 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
         toast({ variant: 'destructive', title: 'Error', description: 'An unexpected error occurred while using the power.' });
     } finally {
         setIsCasting(null);
+        setIsTargeting(false);
+        setSelectedPower(null);
     }
   }
 
   return (
-    <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-        <SheetHeader>
-          <div className="flex items-center gap-4">
-             {classIconMap[student.class]}
-             <div>
-                <SheetTitle className="text-2xl">{student.class} Powers</SheetTitle>
-                <SheetDescription>
-                    New powers are unlocked as you gain levels.
-                </SheetDescription>
-             </div>
+    <>
+      <Sheet open={isOpen} onOpenChange={onOpenChange}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <div className="flex items-center gap-4">
+              {classIconMap[student.class]}
+              <div>
+                  <SheetTitle className="text-2xl">{student.class} Powers</SheetTitle>
+                  <SheetDescription>
+                      New powers are unlocked as you gain levels.
+                  </SheetDescription>
+              </div>
+            </div>
+          </SheetHeader>
+          <div className="py-4 space-y-4">
+              {powers.length > 0 ? powers.map((power, index) => {
+                  const isUnlocked = student.level >= power.level;
+                  const hasEnoughMp = student.mp >= power.mpCost;
+                  const canUsePower = isUnlocked && hasEnoughMp && isBattleView && !isCasting;
+                  
+                  return (
+                      <div 
+                          key={index}
+                          className={cn(
+                              "p-4 rounded-lg border-2 transition-all",
+                              isUnlocked ? powerTypeStyles[power.type] : "border-muted/30 bg-muted/20 text-muted-foreground"
+                          )}
+                      >
+                          <div className="flex justify-between items-start gap-4">
+                              <div className="flex-grow">
+                                  <h3 className={cn("text-lg font-bold", isUnlocked ? "text-white" : "")}>{power.name}</h3>
+                                  <p className={cn("text-sm", isUnlocked ? "text-white/80" : "")}>{power.description}</p>
+                              </div>
+                              {isBattleView && (
+                                  <Button size="sm" disabled={!canUsePower} variant={isUnlocked ? 'secondary' : 'ghost'} onClick={() => handleUsePower(power)}>
+                                      {isCasting === power.name ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Use Power'}
+                                  </Button>
+                              )}
+                          </div>
+                          <div className="flex justify-between items-end mt-2">
+                              <p className={cn(
+                                  "font-semibold text-sm",
+                                  isUnlocked && hasEnoughMp ? "text-blue-400" : "text-gray-400"
+                              )}>
+                                  MP Cost: {power.mpCost}
+                              </p>
+                              <p className={cn(
+                                  "font-semibold text-sm",
+                                  isUnlocked ? "text-green-400" : "text-black"
+                              )}>
+                                  {!isUnlocked 
+                                      ? `Unlocks at Level ${power.level}`
+                                      : !hasEnoughMp
+                                      ? `Not enough MP`
+                                      : "Unlocked"
+                                  }
+                              </p>
+                          </div>
+                      </div>
+                  )
+              }) : (
+                  <p className="text-center text-muted-foreground p-8">This class does not have any powers defined yet.</p>
+              )}
           </div>
-        </SheetHeader>
-        <div className="py-4 space-y-4">
-            {powers.length > 0 ? powers.map((power, index) => {
-                const isUnlocked = student.level >= power.level;
-                const hasEnoughMp = student.mp >= power.mpCost;
-                const canUsePower = isUnlocked && hasEnoughMp && isBattleView && !isCasting;
-                
-                return (
-                    <div 
-                        key={index}
-                        className={cn(
-                            "p-4 rounded-lg border-2 transition-all",
-                            isUnlocked ? powerTypeStyles[power.type] : "border-muted/30 bg-muted/20 text-muted-foreground"
-                        )}
-                    >
-                        <div className="flex justify-between items-start gap-4">
-                            <div className="flex-grow">
-                                <h3 className={cn("text-lg font-bold", isUnlocked ? "text-white" : "")}>{power.name}</h3>
-                                <p className={cn("text-sm", isUnlocked ? "text-white/80" : "")}>{power.description}</p>
-                            </div>
-                            {isBattleView && (
-                                <Button size="sm" disabled={!canUsePower} variant={isUnlocked ? 'secondary' : 'ghost'} onClick={() => handleUsePower(power)}>
-                                    {isCasting === power.name ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Use Power'}
-                                </Button>
-                            )}
-                        </div>
-                        <div className="flex justify-between items-end mt-2">
-                             <p className={cn(
-                                "font-semibold text-sm",
-                                isUnlocked && hasEnoughMp ? "text-blue-400" : "text-gray-400"
-                            )}>
-                                MP Cost: {power.mpCost}
-                            </p>
-                            <p className={cn(
-                                "font-semibold text-sm",
-                                isUnlocked ? "text-green-400" : "text-black"
-                            )}>
-                                {!isUnlocked 
-                                    ? `Unlocks at Level ${power.level}`
-                                    : !hasEnoughMp
-                                    ? `Not enough MP`
-                                    : "Unlocked"
-                                }
-                            </p>
-                        </div>
-                    </div>
-                )
-            }) : (
-                <p className="text-center text-muted-foreground p-8">This class does not have any powers defined yet.</p>
-            )}
-        </div>
-      </SheetContent>
-    </Sheet>
+        </SheetContent>
+      </Sheet>
+      {selectedPower && (
+          <TargetingDialog
+              isOpen={isTargeting}
+              onOpenChange={setIsTargeting}
+              power={selectedPower}
+              students={partyMembers}
+              caster={student}
+              onConfirm={(targets) => handleUsePower(selectedPower, targets)}
+          />
+      )}
+    </>
   );
 }

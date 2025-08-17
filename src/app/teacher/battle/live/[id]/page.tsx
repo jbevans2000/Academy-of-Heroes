@@ -52,6 +52,7 @@ interface PowerActivation {
     studentName: string;
     powerName: string;
     powerMpCost: number;
+    targets: string[];
     timestamp: any;
 }
 
@@ -201,34 +202,36 @@ export default function TeacherLiveBattlePage() {
 
   // Listen for real-time student responses for the current question
   useEffect(() => {
-    setStudentResponses([]);
-    
     if (!liveState || (liveState.status !== 'IN_PROGRESS' && liveState.status !== 'ROUND_ENDING')) {
-      return;
+        setStudentResponses([]);
+        return;
     }
     
     const responsesRef = collection(db, 'teachers', TEACHER_UID, `liveBattles/active-battle/responses`);
     const q = query(responsesRef);
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const responses: Result[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data() as StudentResponse;
-        const powerUsed = liveState.powerUsersThisRound?.[doc.id]?.join(', ') || undefined;
+        const responses: Result[] = [];
+        const powerUsers = liveState.powerUsersThisRound || {};
 
-        responses.push({
-          studentName: data.studentName,
-          answer: data.answer,
-          isCorrect: data.isCorrect,
-          powerUsed: powerUsed,
+        querySnapshot.forEach((doc) => {
+            const data = doc.data() as StudentResponse;
+            // Join the array of power names for the specific user
+            const powerUsed = powerUsers[doc.id]?.join(', ') || undefined;
+
+            responses.push({
+                studentName: data.studentName,
+                answer: data.answer,
+                isCorrect: data.isCorrect,
+                powerUsed: powerUsed,
+            });
         });
-      });
-      setStudentResponses(responses);
+        setStudentResponses(responses);
     }, (error) => {
-      console.error("Error listening for student responses:", error);
+        console.error("Error listening for student responses:", error);
     });
 
     return () => unsubscribe();
-  }, [liveState, liveState?.status, liveState?.currentQuestionIndex]);
+}, [liveState, liveState?.status, liveState?.currentQuestionIndex]);
   
     // Power Activation Listener
     useEffect(() => {
