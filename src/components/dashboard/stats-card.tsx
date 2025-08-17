@@ -17,6 +17,8 @@ interface StatsCardProps {
   level: number;
   hp: number;
   mp: number;
+  maxHp: number;
+  maxMp: number;
   characterName: string;
   studentName: string;
   characterClass: ClassType;
@@ -30,7 +32,7 @@ const classIconMap = {
     '': null
 }
 
-export function StatsCard({ xp, gold, level, hp, mp, characterName, studentName, characterClass, student }: StatsCardProps) {
+export function StatsCard({ xp, gold, level, hp, mp, maxHp, maxMp, characterName, studentName, characterClass, student }: StatsCardProps) {
   const router = useRouter();
   const [isPowersSheetOpen, setIsPowersSheetOpen] = useState(false);
 
@@ -70,14 +72,14 @@ export function StatsCard({ xp, gold, level, hp, mp, characterName, studentName,
             <Heart className="h-8 w-8 text-red-500" />
             <div>
               <p className="text-sm text-muted-foreground">HP</p>
-              <p className="text-xl font-bold">{hp}</p>
+              <p className="text-xl font-bold">{hp} / {maxHp}</p>
             </div>
           </div>
           <div className="flex flex-col items-center justify-center space-y-2 bg-secondary p-4 rounded-lg">
             <Zap className="h-8 w-8 text-yellow-500" />
             <div>
               <p className="text-sm text-muted-foreground">MP</p>
-              <p className="text-xl font-bold">{mp}</p>
+              <p className="text-xl font-bold">{mp} / {maxMp}</p>
             </div>
           </div>
            <div className="flex flex-col items-center justify-center space-y-2 bg-secondary p-4 rounded-lg">

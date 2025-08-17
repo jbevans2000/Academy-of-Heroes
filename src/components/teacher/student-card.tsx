@@ -23,15 +23,27 @@ import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
+import { Label } from '../ui/label';
 
 interface EditableStatProps {
     student: Student;
-    stat: 'xp' | 'gold' | 'hp' | 'mp';
+    stat: 'xp' | 'gold';
     icon: React.ReactNode;
     label: string;
     setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
     teacherUid: string;
 }
+
+interface EditablePairedStatProps {
+    student: Student;
+    stat: 'hp' | 'mp';
+    maxStat: 'maxHp' | 'maxMp';
+    icon: React.ReactNode;
+    label: string;
+    setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
+    teacherUid: string;
+}
+
 
 function EditableStat({ student, stat, icon, label, setStudents, teacherUid }: EditableStatProps) {
     const [isEditing, setIsEditing] = useState(false);
@@ -48,7 +60,6 @@ function EditableStat({ student, stat, icon, label, setStudents, teacherUid }: E
     }, [isEditing]);
     
      useEffect(() => {
-        // Update local value if student prop changes from parent
         setValue(student[stat]);
     }, [student, stat]);
 
@@ -57,7 +68,7 @@ function EditableStat({ student, stat, icon, label, setStudents, teacherUid }: E
         const amount = Number(value);
         if (isNaN(amount) || amount < 0) {
             toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please enter a non-negative number.' });
-            setValue(student[stat]); // Reset to original value
+            setValue(student[stat]);
             setIsEditing(false);
             setIsLoading(false);
             return;
@@ -80,23 +91,22 @@ function EditableStat({ student, stat, icon, label, setStudents, teacherUid }: E
                     updates.level = newLevel;
                     const levelsGained = newLevel - currentLevel;
                     updates.hp = studentData.hp + calculateHpGain(studentData.class, levelsGained);
+                    updates.maxHp = studentData.maxHp + calculateHpGain(studentData.class, levelsGained);
                     updates.mp = studentData.mp + calculateMpGain(studentData.class, levelsGained);
+                    updates.maxMp = studentData.maxMp + calculateMpGain(studentData.class, levelsGained);
                 }
             } else {
                 updates[stat] = amount;
             }
 
             await updateDoc(studentRef, updates);
-
-            // Update parent state to reflect changes across the app
             setStudents(prev => prev.map(s => s.uid === student.uid ? { ...s, ...updates } : s));
-
             toast({ title: 'Stat Updated!', description: `${student.characterName}'s ${label} has been set to ${amount}.` });
 
         } catch (error) {
             console.error(`Error updating ${stat}:`, error);
             toast({ variant: 'destructive', title: 'Update Failed', description: `Could not update ${label}.` });
-            setValue(student[stat]); // Revert on failure
+            setValue(student[stat]);
         } finally {
             setIsEditing(false);
             setIsLoading(false);
@@ -104,9 +114,8 @@ function EditableStat({ student, stat, icon, label, setStudents, teacherUid }: E
     };
     
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter') {
-            handleSave();
-        } else if (e.key === 'Escape') {
+        if (e.key === 'Enter') handleSave();
+        else if (e.key === 'Escape') {
             setValue(student[stat]);
             setIsEditing(false);
         }
@@ -138,6 +147,85 @@ function EditableStat({ student, stat, icon, label, setStudents, teacherUid }: E
             {icon}
             <div className="flex-grow">
                 <p className="font-semibold">{value.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">{label}</p>
+            </div>
+            <Edit className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
+    );
+}
+
+function EditablePairedStat({ student, stat, maxStat, icon, label, setStudents, teacherUid }: EditablePairedStatProps) {
+    const [isEditing, setIsEditing] = useState(false);
+    const [currentValue, setCurrentValue] = useState(student[stat]);
+    const [maxValue, setMaxValue] = useState(student[maxStat]);
+    const [isLoading, setIsLoading] = useState(false);
+    const { toast } = useToast();
+
+     useEffect(() => {
+        setCurrentValue(student[stat]);
+        setMaxValue(student[maxStat]);
+    }, [student, stat, maxStat]);
+
+    const handleSave = async () => {
+        setIsLoading(true);
+        const currentAmount = Number(currentValue);
+        const maxAmount = Number(maxValue);
+
+        if (isNaN(currentAmount) || isNaN(maxAmount) || currentAmount < 0 || maxAmount < 0) {
+            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please enter non-negative numbers.' });
+            setIsLoading(false);
+            return;
+        }
+
+        const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
+        try {
+            const updates: Partial<Student> = {
+                [stat]: currentAmount,
+                [maxStat]: maxAmount,
+            };
+
+            await updateDoc(studentRef, updates);
+            setStudents(prev => prev.map(s => s.uid === student.uid ? { ...s, ...updates } : s));
+            toast({ title: 'Stat Updated!', description: `${student.characterName}'s ${label} has been updated.` });
+
+        } catch (error) {
+            console.error(`Error updating ${label}:`, error);
+            toast({ variant: 'destructive', title: 'Update Failed', description: `Could not update ${label}.` });
+        } finally {
+            setIsEditing(false);
+            setIsLoading(false);
+        }
+    };
+
+    if (isEditing) {
+        return (
+            <div className="col-span-2 space-y-2 p-2 border rounded-md">
+                <div className="flex items-center gap-2">
+                    <Label htmlFor={`${stat}-current`}>Current {label}:</Label>
+                    <Input id={`${stat}-current`} type="number" value={currentValue} onChange={(e) => setCurrentValue(Number(e.target.value))} className="h-8" />
+                </div>
+                 <div className="flex items-center gap-2">
+                    <Label htmlFor={`${stat}-max`}>Max {label}:</Label>
+                    <Input id={`${stat}-max`} type="number" value={maxValue} onChange={(e) => setMaxValue(Number(e.target.value))} className="h-8" />
+                </div>
+                <div className="flex gap-2">
+                    <Button size="sm" onClick={handleSave} disabled={isLoading}>
+                         {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
+                    </Button>
+                     <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)}>Cancel</Button>
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div 
+            className="flex items-center space-x-1 cursor-pointer group"
+            onClick={() => setIsEditing(true)}
+        >
+            {icon}
+            <div className="flex-grow">
+                <p className="font-semibold">{currentValue} / {maxValue}</p>
                 <p className="text-xs text-muted-foreground">{label}</p>
             </div>
             <Edit className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -206,17 +294,19 @@ export function StudentCard({ student, isSelected, onSelect, setStudents, teache
                 setStudents={setStudents}
                 teacherUid={teacherUid}
             />
-            <EditableStat 
+            <EditablePairedStat
                 student={student}
                 stat="hp"
+                maxStat="maxHp"
                 label="HP"
                 icon={<Heart className="h-5 w-5 text-red-500" />}
                 setStudents={setStudents}
                 teacherUid={teacherUid}
             />
-            <EditableStat 
+             <EditablePairedStat
                 student={student}
                 stat="mp"
+                maxStat="maxMp"
                 label="MP"
                 icon={<Zap className="h-5 w-5 text-blue-500" />}
                 setStudents={setStudents}

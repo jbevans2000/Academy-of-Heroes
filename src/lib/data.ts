@@ -15,6 +15,8 @@ export type Student = {
     level: number;
     hp: number;
     mp: number;
+    maxHp: number;
+    maxMp: number;
     questProgress: { [hubId: string]: number }; // e.g., { hubId1: 2, hubId2: 0 } means chapter 2 is last completed in hub1
     hubsCompleted: number; // The order number of the last hub completed
 }
@@ -32,7 +34,7 @@ export const classData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FLevel%201%20Guardian%20(8).jpg?alt=media&token=8a6ff376-8bf5-40ed-b0cd-f515f7fe9e7e'
     ],
     backgrounds: [],
-    baseStats: { hp: 5, mp: 4 },
+    baseStats: { hp: 12, mp: 8 },
   },
   Healer: {
     avatars: [
@@ -46,7 +48,7 @@ export const classData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%201%20(8).jpg?alt=media&token=c283d613-712e-4f78-bc68-3d7d92aa9271'
     ],
     backgrounds: [],
-    baseStats: { hp: 4, mp: 6 },
+    baseStats: { hp: 8, mp: 12 },
   },
   Mage: {
     avatars: [
@@ -60,6 +62,6 @@ export const classData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FLevel%201%20Mage%201%20(8).jpg?alt=media&token=c3f4688e-f03a-4e26-a10b-d27c529cf3a9'
     ],
     backgrounds: [],
-    baseStats: { hp: 3, mp: 8 },
+    baseStats: { hp: 6, mp: 15 },
   },
 };

@@ -121,11 +121,13 @@ export default function RegisterPage() {
         level: 1,
         hp: baseStats.hp,
         mp: baseStats.mp,
+        maxHp: baseStats.hp,
+        maxMp: baseStats.mp,
         questProgress: {},
         hubsCompleted: 0,
       });
 
-      await logGameEvent('ACCOUNT', `${studentName} created a new ${selectedClass} avatar named '${characterName}'.`);
+      await logGameEvent(teacherUid, 'ACCOUNT', `${studentName} created a new ${selectedClass} avatar named '${characterName}'.`);
       
       toast({
         title: 'Account Created!',
