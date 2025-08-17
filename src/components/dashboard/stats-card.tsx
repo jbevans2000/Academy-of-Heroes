@@ -3,13 +3,10 @@
 
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Star, Coins, Trophy, Heart, Zap, Shield, Wand2, Flame, Map, Swords, User } from 'lucide-react';
+import { Star, Coins, Trophy, Heart, Zap, Shield, Wand2, Flame } from 'lucide-react';
 import type { ClassType, Student } from "@/lib/data";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { PowersSheet } from './powers-sheet';
-
 
 interface StatsCardProps {
   xp: number;
@@ -33,12 +30,7 @@ const classIconMap = {
 }
 
 export function StatsCard({ xp, gold, level, hp, mp, maxHp, maxMp, characterName, studentName, characterClass, student }: StatsCardProps) {
-  const router = useRouter();
   const [isPowersSheetOpen, setIsPowersSheetOpen] = useState(false);
-
-  const handleReadyForBattle = () => {
-    router.push('/battle/live');
-  };
 
   return (
     <>
@@ -97,24 +89,14 @@ export function StatsCard({ xp, gold, level, hp, mp, maxHp, maxMp, characterName
             </div>
           </div>
            <div className="flex flex-col items-center justify-center space-y-4 bg-secondary p-4 rounded-lg col-span-2 sm:col-span-3">
-             <div className="flex flex-wrap items-center justify-center gap-4">
-                <div className="flex flex-col items-center">
-                    <User className="h-8 w-8 text-blue-600" />
-                    <Link href="/dashboard/avatar-upload" passHref>
-                        <Button variant="outline" className="mt-2">Change Avatar</Button>
-                    </Link>
-                </div>
-                <div className="flex flex-col items-center">
-                    <Map className="h-8 w-8 text-green-600" />
-                    <Link href="/dashboard/map" passHref>
-                        <Button variant="outline" className="mt-2">Continue Quest</Button>
-                    </Link>
-                </div>
-                <div className="flex flex-col items-center">
-                    <Swords className="h-8 w-8 text-red-600" />
-                    <Button variant="outline" className="mt-2" onClick={handleReadyForBattle}>Ready for Battle</Button>
-                </div>
-             </div>
+              <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => setIsPowersSheetOpen(true)}
+              >
+                  <Flame className="mr-2 h-5 w-5" />
+                  View Powers
+              </Button>
           </div>
         </div>
       </CardContent>
