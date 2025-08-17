@@ -1,14 +1,15 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Loader2, Save, Sparkles } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Sparkles, Upload, X } from 'lucide-react';
 import { doc, getDoc, setDoc, collection, getDocs, serverTimestamp, query, orderBy, where, updateDoc } from 'firebase/firestore';
-import { db, auth } from '@/lib/firebase';
+import { db, auth, app } from '@/lib/firebase';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,6 +31,74 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { generateStory, generateSummary, type StoryGeneratorInput } from '@/ai/flows/story-generator';
+import { v4 as uuidv4 } from 'uuid';
+import { cn } from '@/lib/utils';
+
+// A reusable component for the image upload fields
+const ImageUploader = ({ label, imageUrl, onUploadSuccess, teacherUid, storagePath }: {
+  label: string;
+  imageUrl: string;
+  onUploadSuccess: (url: string) => void;
+  teacherUid: string;
+  storagePath: string;
+}) => {
+    const { toast } = useToast();
+    const [file, setFile] = useState<File | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+
+    const handleUpload = async () => {
+        if (!file || !teacherUid) {
+            toast({ variant: 'destructive', title: 'No File Selected' });
+            return;
+        }
+        setIsUploading(true);
+        try {
+            const storage = getStorage(app);
+            const imageId = uuidv4();
+            const fullStoragePath = `${storagePath}/${teacherUid}/${imageId}`;
+            const storageRef = ref(storage, fullStoragePath);
+            await uploadBytes(storageRef, file);
+            const downloadUrl = await getDownloadURL(storageRef);
+            onUploadSuccess(downloadUrl);
+            toast({ title: 'Upload Successful!', description: `${label} image has been updated.` });
+        } catch (error) {
+            console.error("Error uploading image:", error);
+            toast({ variant: 'destructive', title: 'Upload Failed' });
+        } finally {
+            setIsUploading(false);
+            setFile(null);
+        }
+    };
+
+    return (
+        <div className="space-y-2 p-3 border rounded-md">
+            <Label className="text-base font-medium">{label}</Label>
+            <div className="flex items-center gap-2">
+                <Label htmlFor={`upload-${label}`} className={cn(buttonVariants({ variant: 'outline' }), "cursor-pointer")}>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Choose File
+                </Label>
+                <Input id={`upload-${label}`} type="file" accept="image/*" onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)} className="hidden" disabled={isUploading}/>
+                {file && (
+                    <>
+                        <Button onClick={handleUpload} disabled={!file || isUploading}>
+                            {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                            Upload
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => setFile(null)}><X className="h-4 w-4" /></Button>
+                    </>
+                )}
+            </div>
+            {file && <p className="text-sm text-muted-foreground">Selected: {file.name}</p>}
+            {imageUrl && (
+                <div className="mt-2">
+                    <Image src={imageUrl} alt={`${label} preview`} width={200} height={100} className="rounded-md object-contain border bg-secondary" />
+                </div>
+            )}
+        </div>
+    );
+};
+
 
 export default function EditQuestPage() {
   const router = useRouter();
@@ -44,7 +113,6 @@ export default function EditQuestPage() {
   const [isOracleOpen, setIsOracleOpen] = useState(false);
   const [oracleMode, setOracleMode] = useState<'standalone' | 'saga' | null>(null);
   const [oracleGradeLevel, setOracleGradeLevel] = useState('');
-  const [oracleKeyElements, setOracleKeyElements] = useState('');
   const [oraclePredecessorHub, setOraclePredecessorHub] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isConfirmStandaloneOpen, setIsConfirmStandaloneOpen] = useState(false);
@@ -156,10 +224,7 @@ export default function EditQuestPage() {
         toast({ variant: 'destructive', title: "The Oracle's Query is Incomplete", description: 'Please provide all required elements for the Oracle.' });
         return;
     }
-    if (oracleMode === 'standalone' && !oracleKeyElements) {
-        toast({ variant: 'destructive', title: "The Oracle's Query is Incomplete", description: 'Please provide key elements for a standalone story.' });
-        return;
-    }
+    
     setIsGenerating(true);
 
     try {
@@ -197,7 +262,6 @@ export default function EditQuestPage() {
         
         const input: StoryGeneratorInput = {
             gradeLevel: oracleGradeLevel as any,
-            keyElements: oracleMode === 'standalone' ? oracleKeyElements : undefined,
             mode: oracleMode,
             previousHubSummary,
             currentHubSummary,
@@ -283,7 +347,7 @@ export default function EditQuestPage() {
             <AlertDialogHeader>
                 <AlertDialogTitle>A Standalone Tale</AlertDialogTitle>
                  <AlertDialogDescription>
-                    Provide the Oracle with the core elements for a self-contained story.
+                    Provide the Oracle with the grade level for a self-contained story. The Oracle will generate an appropriate title and story.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="space-y-4 py-4">
@@ -294,14 +358,10 @@ export default function EditQuestPage() {
                         <SelectContent>{['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'].map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
                     </Select>
                  </div>
-                 <div className="space-y-2">
-                    <Label>Key Story Elements</Label>
-                    <Input placeholder="e.g., A greedy dragon, a stolen pie..." value={oracleKeyElements} onChange={e => setOracleKeyElements(e.target.value)} />
-                 </div>
             </div>
             <AlertDialogFooter>
                 <Button variant="ghost" onClick={() => setOracleMode(null)}>Back</Button>
-                <AlertDialogAction onClick={() => { setIsOracleOpen(false); setIsConfirmStandaloneOpen(true); }} disabled={isGenerating || !oracleGradeLevel || !oracleKeyElements}>
+                <AlertDialogAction onClick={() => { setIsOracleOpen(false); setIsConfirmStandaloneOpen(true); }} disabled={isGenerating || !oracleGradeLevel}>
                     Write a Standalone Chapter
                 </AlertDialogAction>
             </AlertDialogFooter>
@@ -336,10 +396,6 @@ export default function EditQuestPage() {
                         </SelectContent>
                     </Select>
                  </div>
-                 <div className="space-y-2">
-                    <Label>Key Story Elements (Optional)</Label>
-                    <Input placeholder="e.g., The heroes enter the dark forest..." value={oracleKeyElements} onChange={e => setOracleKeyElements(e.target.value)} />
-                 </div>
             </div>
             <AlertDialogFooter>
                 <Button variant="ghost" onClick={() => setOracleMode(null)} disabled={isGenerating}>Back</Button>
@@ -353,7 +409,7 @@ export default function EditQuestPage() {
     }
   }
 
-  if (isLoading || !chapter) {
+  if (isLoading || !chapter || !teacher) {
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
           <TeacherHeader />
@@ -405,7 +461,7 @@ export default function EditQuestPage() {
               <div className="space-y-6 p-6 border rounded-lg">
                 <div className="flex justify-between items-center">
                     <h3 className="text-xl font-semibold">Chapter Content</h3>
-                    <Button variant="outline" onClick={() => setIsOracleOpen(true)}>
+                    <Button variant="outline" onClick={() => setIsOracleOpen(true)} disabled={isSaving}>
                         <Sparkles className="mr-2 h-4 w-4" />
                         Consult the Oracle
                     </Button>
@@ -431,26 +487,17 @@ export default function EditQuestPage() {
                             <RichTextEditor value={chapter.storyContent || ''} onChange={value => handleFieldChange('storyContent', value)} />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="main-image-url">Main Image URL</Label>
-                            <Input id="main-image-url" placeholder="https://example.com/main-image.png" value={chapter.mainImageUrl || ''} onChange={e => handleFieldChange('mainImageUrl', e.target.value)} disabled={isSaving} />
+                            <Label htmlFor="story-additional-content">Additional Story Content</Label>
+                             <RichTextEditor value={chapter.storyAdditionalContent || ''} onChange={value => handleFieldChange('storyAdditionalContent', value)} />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="video-url">YouTube Video URL</Label>
                             <Input id="video-url" placeholder="https://youtube.com/watch?v=..." value={chapter.videoUrl || ''} onChange={e => handleFieldChange('videoUrl', e.target.value)} disabled={isSaving} />
                         </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="story-additional-content">Additional Story Content</Label>
-                             <RichTextEditor value={chapter.storyAdditionalContent || ''} onChange={value => handleFieldChange('storyAdditionalContent', value)} />
-                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="deco-image-1">Decorative Image 1 URL</Label>
-                                <Input id="deco-image-1" placeholder="https://example.com/deco1.png" value={chapter.decorativeImageUrl1 || ''} onChange={e => handleFieldChange('decorativeImageUrl1', e.target.value)} disabled={isSaving} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="deco-image-2">Decorative Image 2 URL</Label>
-                                <Input id="deco-image-2" placeholder="https://example.com/deco2.png" value={chapter.decorativeImageUrl2 || ''} onChange={e => handleFieldChange('decorativeImageUrl2', e.target.value)} disabled={isSaving} />
-                            </div>
+                             <ImageUploader label="Main Story Image" imageUrl={chapter.mainImageUrl || ''} onUploadSuccess={(url) => handleFieldChange('mainImageUrl', url)} teacherUid={teacher.uid} storagePath="quest-images" />
+                             <ImageUploader label="Decorative Image 1" imageUrl={chapter.decorativeImageUrl1 || ''} onUploadSuccess={(url) => handleFieldChange('decorativeImageUrl1', url)} teacherUid={teacher.uid} storagePath="quest-images" />
+                             <ImageUploader label="Decorative Image 2" imageUrl={chapter.decorativeImageUrl2 || ''} onUploadSuccess={(url) => handleFieldChange('decorativeImageUrl2', url)} teacherUid={teacher.uid} storagePath="quest-images" />
                         </div>
                         {hubMapUrl && (
                             <div className="pt-4 space-y-2">
@@ -485,26 +532,17 @@ export default function EditQuestPage() {
                             <RichTextEditor value={chapter.lessonContent || ''} onChange={value => handleFieldChange('lessonContent', value)} />
                         </div>
                          <div className="space-y-2">
-                            <Label htmlFor="lesson-main-image-url">Main Lesson Image URL</Label>
-                            <Input id="lesson-main-image-url" placeholder="https://example.com/lesson-main.png" value={chapter.lessonMainImageUrl || ''} onChange={e => handleFieldChange('lessonMainImageUrl', e.target.value)} disabled={isSaving} />
+                            <Label htmlFor="lesson-additional-content">Additional Lesson Content</Label>
+                            <RichTextEditor value={chapter.lessonAdditionalContent || ''} onChange={value => handleFieldChange('lessonAdditionalContent', value)} />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="lesson-video-url">Lesson YouTube Video URL</Label>
                             <Input id="lesson-video-url" placeholder="https://youtube.com/watch?v=..." value={chapter.lessonVideoUrl || ''} onChange={e => handleFieldChange('lessonVideoUrl', e.target.value)} disabled={isSaving} />
                         </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="lesson-additional-content">Additional Lesson Content</Label>
-                            <RichTextEditor value={chapter.lessonAdditionalContent || ''} onChange={value => handleFieldChange('lessonAdditionalContent', value)} />
-                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="lesson-deco-1">Lesson Decorative Image 1 URL</Label>
-                                <Input id="lesson-deco-1" placeholder="https://example.com/lesson-deco1.png" value={chapter.lessonDecorativeImageUrl1 || ''} onChange={e => handleFieldChange('lessonDecorativeImageUrl1', e.target.value)} disabled={isSaving} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="lesson-deco-2">Lesson Decorative Image 2 URL</Label>
-                                <Input id="lesson-deco-2" placeholder="https://example.com/lesson-deco2.png" value={chapter.lessonDecorativeImageUrl2 || ''} onChange={e => handleFieldChange('lessonDecorativeImageUrl2', e.target.value)} disabled={isSaving} />
-                            </div>
+                            <ImageUploader label="Main Lesson Image" imageUrl={chapter.lessonMainImageUrl || ''} onUploadSuccess={(url) => handleFieldChange('lessonMainImageUrl', url)} teacherUid={teacher.uid} storagePath="quest-images" />
+                            <ImageUploader label="Lesson Decorative Image 1" imageUrl={chapter.lessonDecorativeImageUrl1 || ''} onUploadSuccess={(url) => handleFieldChange('lessonDecorativeImageUrl1', url)} teacherUid={teacher.uid} storagePath="quest-images" />
+                            <ImageUploader label="Lesson Decorative Image 2" imageUrl={chapter.lessonDecorativeImageUrl2 || ''} onUploadSuccess={(url) => handleFieldChange('lessonDecorativeImageUrl2', url)} teacherUid={teacher.uid} storagePath="quest-images" />
                         </div>
                     </TabsContent>
                 </Tabs>

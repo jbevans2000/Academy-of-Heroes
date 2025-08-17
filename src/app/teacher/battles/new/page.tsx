@@ -127,7 +127,7 @@ export default function NewBossBattlePage() {
     try {
         const storage = getStorage(app);
         const imageId = uuidv4();
-        const storageRef = ref(storage, `boss-images/${imageId}`);
+        const storageRef = ref(storage, `boss-images/${teacher.uid}/${imageId}`);
         
         await uploadBytes(storageRef, imageFile);
         const downloadUrl = await getDownloadURL(storageRef);
@@ -154,9 +154,8 @@ export default function NewBossBattlePage() {
         
         const storage = getStorage(app);
         const imageId = uuidv4();
-        const storageRef = ref(storage, `boss-images/${imageId}`);
+        const storageRef = ref(storage, `boss-images/${teacher.uid}/${imageId}`);
         
-        // The AI flow now returns a data URI, which we upload from the client.
         await uploadString(storageRef, dataUri, 'data_url');
         
         const downloadUrl = await getDownloadURL(storageRef);
@@ -312,8 +311,18 @@ export default function NewBossBattlePage() {
                     <Label htmlFor="battle-name" className="text-base">Boss Battle Title</Label>
                     <Input id="battle-name" placeholder="e.g., The Ancient Karkorah" value={battleTitle} onChange={(e) => setBattleTitle(e.target.value)} disabled={isSaving} />
                 </div>
+                <div className="space-y-2">
+                    <Label htmlFor="video-url" className="text-base">Intro Video URL (YouTube, etc.)</Label>
+                    <Input id="video-url" placeholder="https://www.youtube.com/watch?v=..." value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} disabled={isSaving} />
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4 p-6 border rounded-lg bg-background/30">
+                 <h3 className="text-xl font-semibold flex items-center gap-2"><ImageIcon className="text-primary" /> Boss Image</h3>
                  <div className="space-y-2 p-4 border rounded-md">
-                    <Label className="text-base font-medium">Upload Boss Image OR ask the Court Artist to Generate an Image for you Below!</Label>
+                    <Label className="text-base font-medium">Upload Boss Image</Label>
                     <div className="flex items-center gap-2">
                       <Label htmlFor="image-upload" className={cn(buttonVariants({ variant: 'default' }), "cursor-pointer")}>
                         <Upload className="mr-2 h-4 w-4" />
@@ -334,18 +343,8 @@ export default function NewBossBattlePage() {
                     </div>
                      {imageFile && <p className="text-sm text-muted-foreground">Selected: {imageFile.name}</p>}
                 </div>
-                <div className="space-y-2">
-                    <Label htmlFor="video-url" className="text-base">Intro Video URL (YouTube, etc.)</Label>
-                    <Input id="video-url" placeholder="https://www.youtube.com/watch?v=..." value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} disabled={isSaving} />
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-4 p-6 border rounded-lg bg-background/30">
-                 <h3 className="text-xl font-semibold flex items-center gap-2"><ImageIcon className="text-primary" /> Request an Image from the Court Artist</h3>
                  <div className="space-y-2">
-                    <Label htmlFor="ai-image-prompt">Image Description</Label>
+                    <Label htmlFor="ai-image-prompt">Or, request an image from the Court Artist</Label>
                     <Textarea id="ai-image-prompt" placeholder="e.g., A giant three-headed dragon made of crystal, fantasy art" value={aiImagePrompt} onChange={(e) => setAiImagePrompt(e.target.value)} disabled={isGeneratingImage} />
                  </div>
                  <Button onClick={handleGenerateImage} disabled={isGeneratingImage || !aiImagePrompt}>
@@ -354,7 +353,7 @@ export default function NewBossBattlePage() {
                  </Button>
                  {(isGeneratingImage || bossImageUrl) && (
                     <div className="pt-4">
-                        <Label>Image Preview</Label>
+                        <Label>Current Boss Image</Label>
                         <div className="mt-2 flex justify-center items-center p-4 border rounded-md bg-background/50 h-64">
                             {isGeneratingImage ? (
                                 <div className="text-center">
