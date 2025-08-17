@@ -290,15 +290,15 @@ export default function NewBossBattlePage() {
   }
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-muted/40">
+    <div className="flex min-h-screen w-full flex-col bg-cover bg-center" style={{ backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-5c865a8c-e16c-4e32-b822-164b15894c5b.jpg?alt=media&token=11c25a8d-193a-44cf-bdfd-a752d57ccade')` }}>
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="max-w-4xl mx-auto space-y-6">
-          <Button variant="outline" onClick={() => router.push('/teacher/battles')} className="mb-4">
+          <Button variant="outline" onClick={() => router.push('/teacher/battles')} className="mb-4 bg-background/80">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to All Battles
           </Button>
-          <Card className="shadow-lg">
+          <Card className="shadow-lg bg-card/90 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="text-3xl">Create New Boss Battle</CardTitle>
               <CardDescription>
@@ -306,7 +306,7 @@ export default function NewBossBattlePage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-8">
-              <div className="space-y-4 p-6 border rounded-lg">
+              <div className="space-y-4 p-6 border rounded-lg bg-background/50">
                  <h3 className="text-xl font-semibold">Battle Details</h3>
                 <div className="space-y-2">
                     <Label htmlFor="battle-name" className="text-base">Boss Battle Title</Label>
@@ -342,7 +342,7 @@ export default function NewBossBattlePage() {
 
               <Separator />
 
-              <div className="space-y-4 p-6 border rounded-lg bg-secondary/30">
+              <div className="space-y-4 p-6 border rounded-lg bg-background/30">
                  <h3 className="text-xl font-semibold flex items-center gap-2"><ImageIcon className="text-primary" /> Request an Image from the Court Artist</h3>
                  <div className="space-y-2">
                     <Label htmlFor="ai-image-prompt">Image Description</Label>
@@ -355,7 +355,7 @@ export default function NewBossBattlePage() {
                  {(isGeneratingImage || bossImageUrl) && (
                     <div className="pt-4">
                         <Label>Image Preview</Label>
-                        <div className="mt-2 flex justify-center items-center p-4 border rounded-md bg-background h-64">
+                        <div className="mt-2 flex justify-center items-center p-4 border rounded-md bg-background/50 h-64">
                             {isGeneratingImage ? (
                                 <div className="text-center">
                                     <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-2" />
@@ -369,7 +369,7 @@ export default function NewBossBattlePage() {
                  )}
                </div>
 
-              <div className="space-y-4 p-6 border rounded-lg bg-secondary/30">
+              <div className="space-y-4 p-6 border rounded-lg bg-background/30">
                 <h3 className="text-xl font-semibold flex items-center gap-2"><Sparkles className="text-primary" /> Generate Questions with the Oracle</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -397,7 +397,7 @@ export default function NewBossBattlePage() {
               {isClient && <div className="space-y-6">
                  <h3 className="text-xl font-semibold">Questions</h3>
                 {questions.map((q, qIndex) => (
-                  <Card key={q.id} className="p-6 relative bg-background shadow-md">
+                  <Card key={q.id} className="p-6 relative bg-background/80 shadow-md">
                      <Button
                         variant="ghost"
                         size="icon"
