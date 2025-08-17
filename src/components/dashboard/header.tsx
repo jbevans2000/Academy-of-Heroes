@@ -1,17 +1,10 @@
 
-import { Sword, LogOut } from "lucide-react";
+import { Sword, LogOut, LifeBuoy } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
-
 
 interface DashboardHeaderProps {
     characterName?: string;
@@ -31,7 +24,13 @@ export function DashboardHeader({ characterName = 'Account' }: DashboardHeaderPr
         <Sword className="h-6 w-6 text-primary" />
         <span className="text-xl">The Academy of Heroes</span>
       </Link>
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-4">
+          <Link href="/dashboard/help" passHref>
+            <Button variant="outline">
+                <LifeBuoy className="mr-2 h-5 w-5" />
+                Help
+            </Button>
+          </Link>
           <Button onClick={handleLogout} className="bg-amber-500 hover:bg-amber-600 text-white">
               <LogOut className="mr-2 h-5 w-5" />
               Logout
