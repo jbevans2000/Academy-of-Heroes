@@ -83,6 +83,7 @@ function EditableStat({ student, stat, icon, label, setStudents, teacherUid }: E
             const updates: Partial<Student> = {};
             
             if (stat === 'xp') {
+                const currentXp = studentData.xp || 0;
                 updates.xp = amount;
                 const currentLevel = studentData.level || 1;
                 const newLevel = calculateLevel(updates.xp);
@@ -247,28 +248,37 @@ interface StudentCardProps {
 export function StudentCard({ student, isSelected, onSelect, setStudents, teacherUid }: StudentCardProps) {
   const avatarUrl = student.avatarUrl || 'https://placehold.co/100x100.png';
 
+  const avatarBorderColor = {
+    Mage: 'border-blue-600',
+    Healer: 'border-green-500',
+    Guardian: 'border-amber-500',
+    '': 'border-transparent',
+  }[student.class];
+
   return (
     <Dialog>
       <Card className={cn("shadow-lg rounded-xl flex flex-col overflow-hidden transition-all duration-300", isSelected ? "ring-2 ring-primary scale-105" : "hover:scale-105")}>
         <CardHeader className="p-4 relative h-40 bg-secondary/30 flex items-center justify-center">
-            <div className="absolute top-2 right-2 z-10 bg-background/50 rounded-full p-1">
+            <div className="absolute top-2 right-2 z-10">
                 <Checkbox
                     checked={isSelected}
                     onCheckedChange={onSelect}
                     aria-label={`Select ${student.characterName}`}
-                    className="h-6 w-6"
+                    className="h-6 w-6 border-2 border-black"
                 />
             </div>
-            <div className="relative w-24 h-24">
-                <Image
-                    src={avatarUrl}
-                    alt={`${student.characterName}'s avatar`}
-                    fill
-                    sizes="100px"
-                    className="object-contain drop-shadow-lg"
-                    data-ai-hint="character"
-                    onError={(e) => (e.currentTarget.src = 'https://placehold.co/100x100.png')}
-                />
+            <div className={cn("relative w-24 h-24 rounded-full p-1", avatarBorderColor)}>
+                 <div className={cn("relative w-full h-full rounded-full border-4", avatarBorderColor)}>
+                    <Image
+                        src={avatarUrl}
+                        alt={`${student.characterName}'s avatar`}
+                        fill
+                        sizes="100px"
+                        className="object-contain drop-shadow-lg rounded-full"
+                        data-ai-hint="character"
+                        onError={(e) => (e.currentTarget.src = 'https://placehold.co/100x100.png')}
+                    />
+                </div>
             </div>
         </CardHeader>
         <CardContent className="p-4 flex-grow space-y-3">
