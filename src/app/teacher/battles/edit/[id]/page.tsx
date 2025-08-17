@@ -193,16 +193,12 @@ export default function EditBossBattlePage() {
     try {
         const dataUri = await generateBossImage({ prompt: aiImagePrompt });
         
-        // Convert data URI to blob for upload
-        const response = await fetch(dataUri);
-        const blob = await response.blob();
-        const file = new File([blob], "ai-generated-boss.png", { type: blob.type });
-
         const storage = getStorage(app);
         const imageId = uuidv4();
         const storageRef = ref(storage, `boss-images/${imageId}`);
         
-        await uploadBytes(storageRef, file);
+        // The AI flow now returns a data URI, which we upload from the client.
+        await uploadString(storageRef, dataUri, 'data_url');
         
         const downloadUrl = await getDownloadURL(storageRef);
         setBossImageUrl(downloadUrl);
@@ -392,7 +388,7 @@ export default function EditBossBattlePage() {
                <Separator />
                
                <div className="space-y-4 p-6 border rounded-lg bg-secondary/30">
-                 <h3 className="text-xl font-semibold flex items-center gap-2"><ImageIcon className="text-primary" /> Generate Boss Image with AI</h3>
+                 <h3 className="text-xl font-semibold flex items-center gap-2"><ImageIcon className="text-primary" /> Request an Image from the Court Artist</h3>
                  <div className="space-y-2">
                     <Label htmlFor="ai-image-prompt">Image Description</Label>
                     <Textarea id="ai-image-prompt" placeholder="e.g., A giant three-headed dragon made of crystal, fantasy art" value={aiImagePrompt} onChange={(e) => setAiImagePrompt(e.target.value)} disabled={isGeneratingImage} />
@@ -408,7 +404,7 @@ export default function EditBossBattlePage() {
                             {isGeneratingImage ? (
                                 <div className="text-center">
                                     <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-2" />
-                                    <p className="text-muted-foreground">The AI is painting your masterpiece...</p>
+                                    <p className="text-muted-foreground">The Court Artist is Working on your Commission</p>
                                 </div>
                             ) : bossImageUrl ? (
                                 <NextImage src={bossImageUrl} alt="Generated Boss" width={250} height={250} className="rounded-lg object-contain h-full" />
