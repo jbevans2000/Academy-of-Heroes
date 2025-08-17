@@ -268,7 +268,27 @@ export default function ChapterPage() {
                                     />
                                 </div>}
                                 {chapter.storyContent && <><Separator /><div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: chapter.storyContent }} /></>}
+                                {chapter.decorativeImageUrl1 && <><Separator /><div className="flex justify-center">
+                                     <Image
+                                        src={chapter.decorativeImageUrl1}
+                                        alt="Decorative image"
+                                        width={800}
+                                        height={400}
+                                        className="rounded-lg shadow-lg border"
+                                        data-ai-hint="scroll letter"
+                                    />
+                                </div></>}
                                 {chapter.storyAdditionalContent && <><Separator /><div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: chapter.storyAdditionalContent }} /></>}
+                                 {chapter.decorativeImageUrl2 && <><Separator /><div className="flex justify-center">
+                                     <Image
+                                        src={chapter.decorativeImageUrl2}
+                                        alt="Decorative twig"
+                                        width={800}
+                                        height={100}
+                                        className="rounded-lg object-contain"
+                                        data-ai-hint="twig decoration"
+                                    />
+                                </div></>}
                                 {storyVideoSrc && <><Separator /><div className="flex justify-center">
                                     <iframe 
                                         width="800" 
@@ -280,26 +300,6 @@ export default function ChapterPage() {
                                         allowFullScreen
                                         className="rounded-lg shadow-lg border">
                                     </iframe>
-                                </div></>}
-                                {chapter.decorativeImageUrl1 && <><Separator /><div className="flex justify-center">
-                                     <Image
-                                        src={chapter.decorativeImageUrl1}
-                                        alt="Decorative image"
-                                        width={800}
-                                        height={400}
-                                        className="rounded-lg shadow-lg border"
-                                        data-ai-hint="scroll letter"
-                                    />
-                                </div></>}
-                                 {chapter.decorativeImageUrl2 && <><Separator /><div className="flex justify-center">
-                                     <Image
-                                        src={chapter.decorativeImageUrl2}
-                                        alt="Decorative twig"
-                                        width={800}
-                                        height={100}
-                                        className="rounded-lg object-contain"
-                                        data-ai-hint="twig decoration"
-                                    />
                                 </div></>}
                             </TabsContent>
                             <TabsContent value="lesson" className="mt-6 space-y-6 text-lg leading-relaxed">
@@ -318,7 +318,27 @@ export default function ChapterPage() {
                                     />
                                 </div>}
                                 {chapter.lessonContent && <><Separator /><div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: chapter.lessonContent }} /></>}
+                                {chapter.lessonDecorativeImageUrl1 && <><Separator /><div className="flex justify-center">
+                                     <Image
+                                        src={chapter.lessonDecorativeImageUrl1}
+                                        alt="Lesson decorative image"
+                                        width={800}
+                                        height={400}
+                                        className="rounded-lg shadow-lg border"
+                                        data-ai-hint="old paper"
+                                    />
+                                </div></>}
                                 {chapter.lessonAdditionalContent && <><Separator /><div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: chapter.lessonAdditionalContent }} /></>}
+                                 {chapter.lessonDecorativeImageUrl2 && <><Separator /><div className="flex justify-center">
+                                     <Image
+                                        src={chapter.lessonDecorativeImageUrl2}
+                                        alt="Lesson decorative twig"
+                                        width={800}
+                                        height={100}
+                                        className="rounded-lg object-contain"
+                                        data-ai-hint="divider"
+                                    />
+                                </div></>}
                                 {lessonVideoSrc && <><Separator /><div className="flex justify-center">
                                     <iframe 
                                         width="800" 
@@ -330,26 +350,6 @@ export default function ChapterPage() {
                                         allowFullScreen
                                         className="rounded-lg shadow-lg border">
                                     </iframe>
-                                </div></>}
-                                {chapter.lessonDecorativeImageUrl1 && <><Separator /><div className="flex justify-center">
-                                     <Image
-                                        src={chapter.lessonDecorativeImageUrl1}
-                                        alt="Lesson decorative image"
-                                        width={800}
-                                        height={400}
-                                        className="rounded-lg shadow-lg border"
-                                        data-ai-hint="old paper"
-                                    />
-                                </div></>}
-                                 {chapter.lessonDecorativeImageUrl2 && <><Separator /><div className="flex justify-center">
-                                     <Image
-                                        src={chapter.lessonDecorativeImageUrl2}
-                                        alt="Lesson decorative twig"
-                                        width={800}
-                                        height={100}
-                                        className="rounded-lg object-contain"
-                                        data-ai-hint="divider"
-                                    />
                                 </div></>}
                             </TabsContent>
                         </Tabs>

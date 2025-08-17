@@ -538,7 +538,7 @@ export default function NewQuestPage() {
               {teacher && <div className="space-y-6 p-6 border rounded-lg">
                 <div className="flex justify-between items-center">
                     <h3 className="text-xl font-semibold">Phase 2: Chapter Content</h3>
-                    <Button variant="outline" onClick={() => setIsOracleOpen(true)} disabled={isSaving}>
+                    <Button variant="outline" onClick={() => setIsOracleOpen(true)} disabled={isSaving || !chapterTitle}>
                         <Sparkles className="mr-2 h-4 w-4" />
                         Consult the Oracle
                     </Button>
@@ -559,22 +559,20 @@ export default function NewQuestPage() {
                             <Input id="chapter-number" type="number" placeholder="e.g., 1" value={chapterNumber} onChange={e => setChapterNumber(e.target.value === '' ? '' : Number(e.target.value))} disabled={isSaving} />
                         </div>
                     </div>
+                    <ImageUploader label="Main Story Image" imageUrl={mainImageUrl} onUploadSuccess={setMainImageUrl} teacherUid={teacher.uid} storagePath="quest-images" />
                     <div className="space-y-2">
                         <Label htmlFor="story-content">Story Content</Label>
                         <RichTextEditor value={storyContent} onChange={setStoryContent} />
                     </div>
+                    <ImageUploader label="Decorative Image 1" imageUrl={decorativeImageUrl1} onUploadSuccess={setDecorativeImageUrl1} teacherUid={teacher.uid} storagePath="quest-images" />
                     <div className="space-y-2">
                         <Label htmlFor="story-additional-content">Additional Story Content</Label>
                         <RichTextEditor value={storyAdditionalContent} onChange={setStoryAdditionalContent} />
                     </div>
+                    <ImageUploader label="Decorative Image 2" imageUrl={decorativeImageUrl2} onUploadSuccess={setDecorativeImageUrl2} teacherUid={teacher.uid} storagePath="quest-images" />
                      <div className="space-y-2">
                         <Label htmlFor="video-url">YouTube Video URL</Label>
                         <Input id="video-url" placeholder="https://youtube.com/watch?v=..." value={videoUrl} onChange={e => setVideoUrl(e.target.value)} disabled={isSaving} />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <ImageUploader label="Main Story Image" imageUrl={mainImageUrl} onUploadSuccess={setMainImageUrl} teacherUid={teacher.uid} storagePath="quest-images" />
-                        <ImageUploader label="Decorative Image 1" imageUrl={decorativeImageUrl1} onUploadSuccess={setDecorativeImageUrl1} teacherUid={teacher.uid} storagePath="quest-images" />
-                        <ImageUploader label="Decorative Image 2" imageUrl={decorativeImageUrl2} onUploadSuccess={setDecorativeImageUrl2} teacherUid={teacher.uid} storagePath="quest-images" />
                     </div>
                      {hubMapUrl && (
                         <div className="pt-4 space-y-2">
@@ -604,22 +602,20 @@ export default function NewQuestPage() {
                     )}
                   </TabsContent>
                   <TabsContent value="lesson" className="mt-6 space-y-4">
+                     <ImageUploader label="Main Lesson Image" imageUrl={lessonMainImageUrl} onUploadSuccess={setLessonMainImageUrl} teacherUid={teacher.uid} storagePath="quest-images" />
                      <div className="space-y-2">
                         <Label htmlFor="lesson-content">Lesson Content</Label>
                         <RichTextEditor value={lessonContent} onChange={setLessonContent} />
                     </div>
+                    <ImageUploader label="Lesson Decorative Image 1" imageUrl={lessonDecorativeImageUrl1} onUploadSuccess={setLessonDecorativeImageUrl1} teacherUid={teacher.uid} storagePath="quest-images" />
                     <div className="space-y-2">
                         <Label htmlFor="lesson-additional-content">Additional Lesson Content</Label>
                         <RichTextEditor value={lessonAdditionalContent} onChange={setLessonAdditionalContent} />
                     </div>
+                    <ImageUploader label="Lesson Decorative Image 2" imageUrl={lessonDecorativeImageUrl2} onUploadSuccess={setLessonDecorativeImageUrl2} teacherUid={teacher.uid} storagePath="quest-images" />
                     <div className="space-y-2">
                         <Label htmlFor="lesson-video-url">Lesson YouTube Video URL</Label>
                         <Input id="lesson-video-url" placeholder="https://youtube.com/watch?v=..." value={lessonVideoUrl} onChange={e => setLessonVideoUrl(e.target.value)} disabled={isSaving} />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <ImageUploader label="Main Lesson Image" imageUrl={lessonMainImageUrl} onUploadSuccess={setLessonMainImageUrl} teacherUid={teacher.uid} storagePath="quest-images" />
-                        <ImageUploader label="Lesson Decorative Image 1" imageUrl={lessonDecorativeImageUrl1} onUploadSuccess={setLessonDecorativeImageUrl1} teacherUid={teacher.uid} storagePath="quest-images" />
-                        <ImageUploader label="Lesson Decorative Image 2" imageUrl={lessonDecorativeImageUrl2} onUploadSuccess={setLessonDecorativeImageUrl2} teacherUid={teacher.uid} storagePath="quest-images" />
                     </div>
                   </TabsContent>
                 </Tabs>

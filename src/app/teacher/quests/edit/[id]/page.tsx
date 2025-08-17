@@ -461,7 +461,7 @@ export default function EditQuestPage() {
               <div className="space-y-6 p-6 border rounded-lg">
                 <div className="flex justify-between items-center">
                     <h3 className="text-xl font-semibold">Chapter Content</h3>
-                    <Button variant="outline" onClick={() => setIsOracleOpen(true)} disabled={isSaving}>
+                    <Button variant="outline" onClick={() => setIsOracleOpen(true)} disabled={isSaving || !chapter.title}>
                         <Sparkles className="mr-2 h-4 w-4" />
                         Consult the Oracle
                     </Button>
@@ -482,22 +482,20 @@ export default function EditQuestPage() {
                                 <Input id="chapter-number" type="number" placeholder="e.g., 1" value={chapter.chapterNumber ?? ''} onChange={e => handleFieldChange('chapterNumber', e.target.value === '' ? '' : Number(e.target.value))} disabled={isSaving} />
                             </div>
                         </div>
+                        <ImageUploader label="Main Story Image" imageUrl={chapter.mainImageUrl || ''} onUploadSuccess={(url) => handleFieldChange('mainImageUrl', url)} teacherUid={teacher.uid} storagePath="quest-images" />
                         <div className="space-y-2">
                             <Label htmlFor="story-content">Story Content</Label>
                             <RichTextEditor value={chapter.storyContent || ''} onChange={value => handleFieldChange('storyContent', value)} />
                         </div>
+                        <ImageUploader label="Decorative Image 1" imageUrl={chapter.decorativeImageUrl1 || ''} onUploadSuccess={(url) => handleFieldChange('decorativeImageUrl1', url)} teacherUid={teacher.uid} storagePath="quest-images" />
                         <div className="space-y-2">
                             <Label htmlFor="story-additional-content">Additional Story Content</Label>
                              <RichTextEditor value={chapter.storyAdditionalContent || ''} onChange={value => handleFieldChange('storyAdditionalContent', value)} />
                         </div>
+                        <ImageUploader label="Decorative Image 2" imageUrl={chapter.decorativeImageUrl2 || ''} onUploadSuccess={(url) => handleFieldChange('decorativeImageUrl2', url)} teacherUid={teacher.uid} storagePath="quest-images" />
                         <div className="space-y-2">
                             <Label htmlFor="video-url">YouTube Video URL</Label>
                             <Input id="video-url" placeholder="https://youtube.com/watch?v=..." value={chapter.videoUrl || ''} onChange={e => handleFieldChange('videoUrl', e.target.value)} disabled={isSaving} />
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                             <ImageUploader label="Main Story Image" imageUrl={chapter.mainImageUrl || ''} onUploadSuccess={(url) => handleFieldChange('mainImageUrl', url)} teacherUid={teacher.uid} storagePath="quest-images" />
-                             <ImageUploader label="Decorative Image 1" imageUrl={chapter.decorativeImageUrl1 || ''} onUploadSuccess={(url) => handleFieldChange('decorativeImageUrl1', url)} teacherUid={teacher.uid} storagePath="quest-images" />
-                             <ImageUploader label="Decorative Image 2" imageUrl={chapter.decorativeImageUrl2 || ''} onUploadSuccess={(url) => handleFieldChange('decorativeImageUrl2', url)} teacherUid={teacher.uid} storagePath="quest-images" />
                         </div>
                         {hubMapUrl && (
                             <div className="pt-4 space-y-2">
@@ -527,22 +525,20 @@ export default function EditQuestPage() {
                         )}
                     </TabsContent>
                      <TabsContent value="lesson" className="mt-6 space-y-4">
+                        <ImageUploader label="Main Lesson Image" imageUrl={chapter.lessonMainImageUrl || ''} onUploadSuccess={(url) => handleFieldChange('lessonMainImageUrl', url)} teacherUid={teacher.uid} storagePath="quest-images" />
                         <div className="space-y-2">
                             <Label htmlFor="lesson-content">Lesson Content</Label>
                             <RichTextEditor value={chapter.lessonContent || ''} onChange={value => handleFieldChange('lessonContent', value)} />
                         </div>
+                        <ImageUploader label="Lesson Decorative Image 1" imageUrl={chapter.lessonDecorativeImageUrl1 || ''} onUploadSuccess={(url) => handleFieldChange('lessonDecorativeImageUrl1', url)} teacherUid={teacher.uid} storagePath="quest-images" />
                          <div className="space-y-2">
                             <Label htmlFor="lesson-additional-content">Additional Lesson Content</Label>
                             <RichTextEditor value={chapter.lessonAdditionalContent || ''} onChange={value => handleFieldChange('lessonAdditionalContent', value)} />
                         </div>
+                        <ImageUploader label="Lesson Decorative Image 2" imageUrl={chapter.lessonDecorativeImageUrl2 || ''} onUploadSuccess={(url) => handleFieldChange('lessonDecorativeImageUrl2', url)} teacherUid={teacher.uid} storagePath="quest-images" />
                         <div className="space-y-2">
                             <Label htmlFor="lesson-video-url">Lesson YouTube Video URL</Label>
                             <Input id="lesson-video-url" placeholder="https://youtube.com/watch?v=..." value={chapter.lessonVideoUrl || ''} onChange={e => handleFieldChange('lessonVideoUrl', e.target.value)} disabled={isSaving} />
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <ImageUploader label="Main Lesson Image" imageUrl={chapter.lessonMainImageUrl || ''} onUploadSuccess={(url) => handleFieldChange('lessonMainImageUrl', url)} teacherUid={teacher.uid} storagePath="quest-images" />
-                            <ImageUploader label="Lesson Decorative Image 1" imageUrl={chapter.lessonDecorativeImageUrl1 || ''} onUploadSuccess={(url) => handleFieldChange('lessonDecorativeImageUrl1', url)} teacherUid={teacher.uid} storagePath="quest-images" />
-                            <ImageUploader label="Lesson Decorative Image 2" imageUrl={chapter.lessonDecorativeImageUrl2 || ''} onUploadSuccess={(url) => handleFieldChange('lessonDecorativeImageUrl2', url)} teacherUid={teacher.uid} storagePath="quest-images" />
                         </div>
                     </TabsContent>
                 </Tabs>
