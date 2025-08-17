@@ -32,7 +32,8 @@ interface BattleSummary {
       xpGained: number;
       goldGained: number;
     }
-  }
+  };
+  fallenAtEnd?: string[]; // UIDs of players who were fallen at the end.
 }
 
 interface StudentRoundResponse {
@@ -163,6 +164,7 @@ export default function StudentBattleSummaryPage() {
   });
 
   const userRewards = user && summary.rewards ? summary.rewards[user.uid] : null;
+  const wasFallenAtEnd = summary.fallenAtEnd?.includes(user!.uid) ?? false;
 
 
   return (
@@ -201,7 +203,12 @@ export default function StudentBattleSummaryPage() {
                         </div>
                     </div>
                 )}
-                {userRewards && (
+                {wasFallenAtEnd && (
+                    <div className="p-4 rounded-md bg-gray-700 border border-gray-600 text-gray-300">
+                        <p className="text-xl font-bold">You were fallen at the end of the battle and did not receive any XP or Gold.</p>
+                    </div>
+                )}
+                {userRewards && !wasFallenAtEnd && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                         <div className="p-4 rounded-md bg-yellow-800/70 border border-yellow-600 text-yellow-200 flex items-center justify-center gap-4">
                             <Star className="h-10 w-10 text-yellow-400" />

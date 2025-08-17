@@ -15,6 +15,15 @@ import { cn } from '@/lib/utils';
 import { PowersSheet } from '@/components/dashboard/powers-sheet';
 import { BattleChatBox } from '@/components/battle/chat-box';
 import { findTeacherForStudent } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface LiveBattleState {
   battleId: string | null;
@@ -25,6 +34,7 @@ interface LiveBattleState {
   totalDamage?: number;
   removedAnswerIndices?: number[]; // For Nature's Guidance
   powerEventMessage?: string; // For displaying power usage feedback
+  fallenPlayerUids?: string[]; // New: List of fallen players
 }
 
 interface Question {
@@ -103,6 +113,33 @@ const getYouTubeEmbedUrl = (url: string) => {
     return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`;
 };
 
+function FallenPlayerDialog({ isOpen, onOpenChange }: { isOpen: boolean; onOpenChange: (open: boolean) => void }) {
+    const imageUrl = 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-b18c1ab2-8859-45c9-a9f8-d48645d2eadd.jpg?alt=media&token=f7b64b1f-597b-47a5-b15a-80d08fdd7d6d';
+
+    return (
+        <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
+            <AlertDialogContent>
+                <AlertDialogHeader className="items-center">
+                    <Image
+                        src={imageUrl}
+                        alt="A fallen hero"
+                        width={300}
+                        height={200}
+                        className="rounded-lg object-cover"
+                    />
+                    <AlertDialogTitle className="text-2xl font-headline text-center mt-4">You Have Fallen!</AlertDialogTitle>
+                    <AlertDialogDescription className="text-center">
+                       A healer must restore you in order to continue the battle!
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogAction>Dismiss</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+}
+
 
 export default function LiveBattlePage() {
   const [battleState, setBattleState] = useState<LiveBattleState>({ battleId: null, status: 'WAITING', currentQuestionIndex: 0 });
@@ -114,6 +151,8 @@ export default function LiveBattlePage() {
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPowersSheetOpen, setIsPowersSheetOpen] = useState(false);
+  const [isFallen, setIsFallen] = useState(false);
+  const [showFallenDialog, setShowFallenDialog] = useState(false);
   const router = useRouter();
 
   const battleStateRef = useRef(battleState);
@@ -158,11 +197,18 @@ export default function LiveBattlePage() {
           setLastAnswerCorrect(null);
         }
         
-        // Nature's Guidance Logic: check if student's submitted answer was removed
         if (newState.removedAnswerIndices?.includes(submittedAnswer!)) {
             setSubmittedAnswer(null);
         }
         
+        const wasFallen = isFallen;
+        const nowFallen = newState.fallenPlayerUids?.includes(user!.uid) ?? false;
+
+        setIsFallen(nowFallen);
+        if (nowFallen && !wasFallen) {
+            setShowFallenDialog(true);
+        }
+
         setBattleState(newState);
 
         if (newState.status === 'BATTLE_ENDED') {
@@ -177,7 +223,7 @@ export default function LiveBattlePage() {
       setIsLoading(false);
     });
     return () => unsubscribe();
-  }, [router, teacherUid, submittedAnswer]);
+  }, [router, teacherUid, submittedAnswer, isFallen, user]);
 
   useEffect(() => {
     if (battleState?.battleId && teacherUid) {
@@ -194,7 +240,7 @@ export default function LiveBattlePage() {
   }, [battleState?.battleId, teacherUid]);
 
   const handleSubmitAnswer = async (answerIndex: number) => {
-    if (!user || !student || !battleState?.battleId || !battle || (battleState.status !== 'IN_PROGRESS' && battleState.status !== 'ROUND_ENDING') || !teacherUid) return;
+    if (!user || !student || !battleState?.battleId || !battle || (battleState.status !== 'IN_PROGRESS' && battleState.status !== 'ROUND_ENDING') || !teacherUid || isFallen) return;
     
     setSubmittedAnswer(answerIndex);
     
@@ -287,6 +333,7 @@ export default function LiveBattlePage() {
 
     return (
       <>
+        <FallenPlayerDialog isOpen={showFallenDialog} onOpenChange={setShowFallenDialog} />
         <PowersSheet
           isOpen={isPowersSheetOpen}
           onOpenChange={setIsPowersSheetOpen}
@@ -311,6 +358,7 @@ export default function LiveBattlePage() {
                                         student.class === 'Healer' && "bg-green-600/80 border-green-500 hover:bg-green-500/90",
                                     )}
                                     onClick={() => setIsPowersSheetOpen(true)}
+                                    disabled={isFallen}
                                 >
                                     <Flame className="mr-2 h-5 w-5" />
                                     View Powers
@@ -357,7 +405,7 @@ export default function LiveBattlePage() {
                                                 isRemoved && "line-through bg-red-900/50 border-red-700 text-red-400 cursor-not-allowed hover:bg-red-900/50"
                                             )}
                                             onClick={() => handleSubmitAnswer(index)}
-                                            disabled={!isBattleActive || isRemoved}
+                                            disabled={!isBattleActive || isRemoved || isFallen}
                                             >
                                             <span className="font-bold mr-4">{String.fromCharCode(65 + index)}.</span>
                                             {answer}

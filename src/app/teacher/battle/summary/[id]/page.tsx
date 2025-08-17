@@ -53,6 +53,7 @@ interface BattleSummary {
   totalDamageDealt?: number;
   totalBaseDamage?: number;
   totalPowerDamage?: number;
+  fallenAtEnd?: string[];
 }
 
 export default function TeacherBattleSummaryPage() {

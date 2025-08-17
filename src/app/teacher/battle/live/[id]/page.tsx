@@ -3,13 +3,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs, writeBatch, serverTimestamp, setDoc, deleteDoc, increment, arrayUnion } from 'firebase/firestore';
+import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs, writeBatch, serverTimestamp, setDoc, deleteDoc, increment, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, Download, Timer, HeartCrack, Video, ShieldCheck, Sparkles } from 'lucide-react';
+import { Loader2, Download, Timer, HeartCrack, Video, ShieldCheck, Sparkles, Skull } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RoundResults, type Result } from '@/components/teacher/round-results';
 import { downloadCsv } from '@/lib/utils';
@@ -44,6 +44,7 @@ interface LiveBattleState {
   powerEventMessage?: string;
   powerUsersThisRound?: { [key: string]: string[] }; // { studentUid: [powerName, ...] }
   queuedPowers?: QueuedPower[];
+  fallenPlayerUids?: string[];
 }
 
 interface PowerActivation {
@@ -245,14 +246,14 @@ export default function TeacherLiveBattlePage() {
                 if (change.type === 'added') {
                     const activation = { id: change.doc.id, ...change.doc.data() } as PowerActivation;
                     
-                    // Route to the correct handler based on power name
                     if (activation.powerName === 'Nature’s Guidance') {
                         await handleNaturesGuidance(activation);
                     } else if (activation.powerName === 'Wildfire') {
                         await handleWildfire(activation);
+                    } else if (activation.powerName === 'Enduring Spirit') {
+                         await handleEnduringSpirit(activation);
                     }
                     
-                    // Delete the activation doc so it doesn't run again on a reload
                     await deleteDoc(doc(db, 'teachers', TEACHER_UID, `liveBattles/active-battle/powerActivations`, activation.id!));
                 }
             });
@@ -275,11 +276,9 @@ export default function TeacherLiveBattlePage() {
         const studentData = studentDoc.data() as Student;
         const currentQuestion = battle!.questions[battleData.currentQuestionIndex];
         
-        // --- Validation ---
         if (studentData.mp < activation.powerMpCost) return; 
         if ((battleData.powerUsersThisRound?.[activation.studentUid] || []).includes(activation.powerName)) return;
 
-        // --- Execution ---
         const incorrectAnswerIndices = currentQuestion.answers
             .map((_, i) => i)
             .filter(i => i !== currentQuestion.correctAnswerIndex);
@@ -290,7 +289,6 @@ export default function TeacherLiveBattlePage() {
 
         const indexToRemove = removableIndices[Math.floor(Math.random() * removableIndices.length)];
 
-        // --- Database Updates ---
         const batch = writeBatch(db);
         batch.update(studentRef, { mp: increment(-activation.powerMpCost) });
         batch.update(liveBattleRef, {
@@ -346,6 +344,35 @@ export default function TeacherLiveBattlePage() {
         }, 5000);
     };
 
+    const handleEnduringSpirit = async (activation: PowerActivation) => {
+        if (!activation.targets || activation.targets.length === 0) return;
+
+        const batch = writeBatch(db);
+        const liveBattleRef = doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle');
+        const casterRef = doc(db, 'teachers', TEACHER_UID, 'students', activation.studentUid);
+
+        // Deduct MP from caster
+        batch.update(casterRef, { mp: increment(-activation.powerMpCost) });
+
+        // Revive the target
+        const targetUid = activation.targets[0];
+        const targetRef = doc(db, 'teachers', TEACHER_UID, 'students', targetUid);
+        batch.update(targetRef, { hp: 1 }); // Revive with 1 HP
+
+        // Remove from fallen list and add power usage info
+        batch.update(liveBattleRef, {
+            fallenPlayerUids: arrayRemove(targetUid),
+            [`powerUsersThisRound.${activation.studentUid}`]: arrayUnion(activation.powerName),
+            powerEventMessage: `${activation.studentName} used Enduring Spirit to revive a fallen ally!`
+        });
+
+        await batch.commit();
+        await logGameEvent(TEACHER_UID, 'BOSS_BATTLE', `${activation.studentName} used Enduring Spirit.`);
+        setTimeout(async () => {
+            await updateDoc(liveBattleRef, { powerEventMessage: '' });
+        }, 5000);
+    };
+
 
   const calculateAndSetResults = useCallback(async () => {
     if (!battle || !liveState || liveState.status !== 'ROUND_ENDING' || isEndingRound) return;
@@ -371,12 +398,22 @@ export default function TeacherLiveBattlePage() {
         }));
         setRoundResults(results);
 
+        const newlyFallenUids: string[] = [];
+
         // Apply damage for incorrect answers in a batch
         if (damageOnIncorrect > 0) {
             for (const response of responsesData) {
                 if (!response.isCorrect) {
                     const studentRef = doc(db, 'teachers', TEACHER_UID, 'students', response.uid);
-                    batch.update(studentRef, { hp: increment(-damageOnIncorrect) });
+                    const studentDoc = await getDoc(studentRef);
+                    if (studentDoc.exists()) {
+                        const studentData = studentDoc.data() as Student;
+                        const newHp = Math.max(0, studentData.hp - damageOnIncorrect);
+                        batch.update(studentRef, { hp: newHp });
+                        if (newHp === 0) {
+                            newlyFallenUids.push(response.uid);
+                        }
+                    }
                 }
             }
         }
@@ -400,7 +437,6 @@ export default function TeacherLiveBattlePage() {
         const baseDamage = results.filter(r => r.isCorrect).length;
         const totalDamageThisRound = baseDamage + powerDamage;
 
-        // Store this round's data for the final summary
         const newAllRoundsData = {
             ...allRoundsData,
             [liveState.currentQuestionIndex]: {
@@ -416,8 +452,7 @@ export default function TeacherLiveBattlePage() {
         };
         setAllRoundsData(newAllRoundsData);
 
-        // Update the live battle state
-        batch.update(liveBattleRef, { 
+        const updatePayload: any = { 
             status: 'SHOWING_RESULTS', 
             timerEndsAt: null,
             lastRoundDamage: totalDamageThisRound,
@@ -427,9 +462,14 @@ export default function TeacherLiveBattlePage() {
             totalDamage: increment(totalDamageThisRound),
             totalBaseDamage: increment(baseDamage),
             totalPowerDamage: increment(powerDamage)
-        });
+        };
+        
+        if (newlyFallenUids.length > 0) {
+            updatePayload.fallenPlayerUids = arrayUnion(...newlyFallenUids);
+        }
 
-        // Commit all database changes at once
+        batch.update(liveBattleRef, updatePayload);
+
         await batch.commit();
 
     } catch (error) {
@@ -456,7 +496,7 @@ export default function TeacherLiveBattlePage() {
 
   const handleStartFirstQuestion = async () => {
     const liveBattleRef = doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle');
-    await updateDoc(liveBattleRef, { status: 'IN_PROGRESS' });
+    await updateDoc(liveBattleRef, { status: 'IN_PROGRESS', fallenPlayerUids: [] });
     if(battle) {
         await logGameEvent(TEACHER_UID, 'BOSS_BATTLE', `Round 1 of '${battle.battleName}' has started.`);
     }
@@ -524,21 +564,19 @@ export default function TeacherLiveBattlePage() {
       const batch = writeBatch(db);
       const liveBattleRef = doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle');
 
-      // 1. Get the final total damage from the live state
       const finalStateDoc = await getDoc(liveBattleRef);
       const finalStateData = finalStateDoc.data();
       const totalDamage = finalStateData?.totalDamage || 0;
       const totalBaseDamage = finalStateData?.totalBaseDamage || 0;
       const totalPowerDamage = finalStateData?.totalPowerDamage || 0;
+      const fallenAtEnd = finalStateData?.fallenPlayerUids || [];
       await logGameEvent(TEACHER_UID, 'BOSS_BATTLE', `The party dealt a total of ${totalDamage} damage during '${battle.battleName}'.`);
 
-      // 2. Fetch the battle log
       const battleLogRef = collection(db, 'teachers', TEACHER_UID, 'liveBattles/active-battle/battleLog');
       const battleLogSnapshot = await getDocs(battleLogRef);
       const battleLog = battleLogSnapshot.docs.map(doc => doc.data() as PowerLogEntry);
 
 
-      // 3. Calculate final rewards
       const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
       Object.values(allRoundsData).forEach((round: any) => {
           round.responses.forEach((res: any) => {
@@ -552,8 +590,9 @@ export default function TeacherLiveBattlePage() {
           });
       });
 
-      // 4. Batch update student documents with rewards and level ups
       for (const uid in rewardsByStudent) {
+          if (fallenAtEnd.includes(uid)) continue; // Skip rewards for fallen players
+
           const studentRef = doc(db, 'teachers', TEACHER_UID, 'students', uid);
           const studentSnap = await getDoc(studentRef);
           if (studentSnap.exists()) {
@@ -580,7 +619,6 @@ export default function TeacherLiveBattlePage() {
           }
       }
 
-      // 5. Save battle summary
       const summaryRef = doc(db, 'teachers', TEACHER_UID, `battleSummaries`, battleId);
       batch.set(summaryRef, {
           battleId: battleId,
@@ -592,20 +630,17 @@ export default function TeacherLiveBattlePage() {
           totalBaseDamage: totalBaseDamage,
           totalPowerDamage: totalPowerDamage,
           rewards: rewardsByStudent,
+          fallenAtEnd: fallenAtEnd,
           endedAt: serverTimestamp(),
       });
       await logGameEvent(TEACHER_UID, 'BOSS_BATTLE', `Battle summary for '${battle.battleName}' was saved.`);
 
-      // 6. Update live battle state to BATTLE_ENDED
       batch.update(liveBattleRef, { status: 'BATTLE_ENDED' });
 
-      // 7. Commit all batched writes
       await batch.commit();
       
-      // 8. Redirect teacher to the summary page.
       router.push(`/teacher/battle/summary/${battleId}`);
 
-      // 9. After a short delay, delete the live battle document
       setTimeout(async () => {
         await deleteDoc(doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle'));
       }, 5000); 
@@ -792,13 +827,28 @@ export default function TeacherLiveBattlePage() {
                     </Card>
                 )}
             </div>
-             <div className="lg:col-span-1">
+             <div className="lg:col-span-1 space-y-6">
                 <BattleChatBox 
                     isTeacher={true}
                     userName={"The Wise One"}
                     teacherUid={TEACHER_UID}
                     battleId={battleId}
                 />
+                {(liveState.fallenPlayerUids && liveState.fallenPlayerUids.length > 0) && (
+                     <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><Skull className="text-destructive"/> Fallen Heroes</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-muted-foreground">A healer must use 'Enduring Spirit' to revive them.</p>
+                            <ul className="mt-2 space-y-1">
+                                {liveState.fallenPlayerUids.map(uid => (
+                                    <li key={uid} className="font-semibold">{uid}</li> // Placeholder, need to resolve to name
+                                ))}
+                            </ul>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
         </div>
       </main>
