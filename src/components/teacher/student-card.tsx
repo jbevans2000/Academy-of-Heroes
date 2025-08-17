@@ -156,14 +156,14 @@ function EditableStat({ student, stat, icon, label, setStudents, teacherUid }: E
 
 function EditablePairedStat({ student, stat, maxStat, icon, label, setStudents, teacherUid }: EditablePairedStatProps) {
     const [isEditing, setIsEditing] = useState(false);
-    const [currentValue, setCurrentValue] = useState(student[stat]);
-    const [maxValue, setMaxValue] = useState(student[maxStat]);
+    const [currentValue, setCurrentValue] = useState(student[stat] ?? 0);
+    const [maxValue, setMaxValue] = useState(student[maxStat] ?? 0);
     const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
 
      useEffect(() => {
-        setCurrentValue(student[stat]);
-        setMaxValue(student[maxStat]);
+        setCurrentValue(student[stat] ?? 0);
+        setMaxValue(student[maxStat] ?? 0);
     }, [student, stat, maxStat]);
 
     const handleSave = async () => {
