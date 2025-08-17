@@ -18,7 +18,7 @@ interface PowersSheetProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   student: Student;
-  isBattleView?: boolean; // New prop
+  isBattleView?: boolean;
 }
 
 const powerTypeStyles: { [key in PowerType]: string } = {
@@ -54,6 +54,9 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
         <div className="py-4 space-y-4">
             {powers.length > 0 ? powers.map((power, index) => {
                 const isUnlocked = student.level >= power.level;
+                const hasEnoughMp = student.mp >= power.mpCost;
+                const canUsePower = isUnlocked && hasEnoughMp;
+                
                 return (
                     <div 
                         key={index}
@@ -62,23 +65,36 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
                             isUnlocked ? powerTypeStyles[power.type] : "border-muted/30 bg-muted/20 text-muted-foreground"
                         )}
                     >
-                        <div className="flex justify-between items-start">
-                            <div>
+                        <div className="flex justify-between items-start gap-4">
+                            <div className="flex-grow">
                                 <h3 className={cn("text-lg font-bold", isUnlocked ? "text-white" : "")}>{power.name}</h3>
                                 <p className={cn("text-sm", isUnlocked ? "text-white/80" : "")}>{power.description}</p>
                             </div>
                             {isBattleView && (
-                                <Button size="sm" disabled={!isUnlocked} variant={isUnlocked ? 'secondary' : 'ghost'}>
+                                <Button size="sm" disabled={!canUsePower} variant={isUnlocked ? 'secondary' : 'ghost'}>
                                     Use Power
                                 </Button>
                             )}
                         </div>
-                        <p className={cn(
-                            "font-semibold mt-2 text-right",
-                            isUnlocked ? "text-green-400 text-xs" : "text-black text-sm"
-                        )}>
-                            {isUnlocked ? "Unlocked" : `Unlocks at Level ${power.level}`}
-                        </p>
+                        <div className="flex justify-between items-end mt-2">
+                             <p className={cn(
+                                "font-semibold text-sm",
+                                isUnlocked && hasEnoughMp ? "text-blue-400" : "text-gray-400"
+                            )}>
+                                MP Cost: {power.mpCost}
+                            </p>
+                            <p className={cn(
+                                "font-semibold text-sm",
+                                isUnlocked ? "text-green-400" : "text-black"
+                            )}>
+                                {!isUnlocked 
+                                    ? `Unlocks at Level ${power.level}`
+                                    : !hasEnoughMp
+                                    ? `Not enough MP`
+                                    : "Unlocked"
+                                }
+                            </p>
+                        </div>
                     </div>
                 )
             }) : (
