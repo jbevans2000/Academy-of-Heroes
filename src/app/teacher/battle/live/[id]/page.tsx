@@ -4,7 +4,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs, writeBatch, serverTimestamp, setDoc, deleteDoc, increment } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
+import { onAuthStateChanged, type User } from 'firebase/auth';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -16,6 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 import type { Student } from '@/lib/data';
 import { logGameEvent } from '@/lib/gamelog';
+import { BattleChatBox } from '@/components/battle/chat-box';
 
 // HARDCODED TEACHER UID
 const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
@@ -49,6 +51,10 @@ interface StudentResponse {
     answer: string;
     answerIndex: number;
     isCorrect: boolean;
+}
+
+interface TeacherData {
+    name: string;
 }
 
 function CountdownTimer({ expiryTimestamp }: { expiryTimestamp: Date }) {
@@ -102,6 +108,24 @@ export default function TeacherLiveBattlePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isEndingRound, setIsEndingRound] = useState(false);
   const [isAdvancing, setIsAdvancing] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [teacherData, setTeacherData] = useState<TeacherData | null>(null);
+
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+        if (currentUser) {
+            setUser(currentUser);
+            const teacherDoc = await getDoc(doc(db, 'teachers', currentUser.uid));
+            if (teacherDoc.exists()) {
+                setTeacherData(teacherDoc.data() as TeacherData);
+            }
+        } else {
+            router.push('/teacher/login');
+        }
+    });
+    return () => unsubscribe();
+  }, [router]);
 
   // Fetch the static battle definition once
   useEffect(() => {
@@ -402,7 +426,7 @@ export default function TeacherLiveBattlePage() {
   };
 
 
-  if (isLoading || !battle || !liveState) {
+  if (isLoading || !battle || !liveState || !user || !teacherData) {
     return (
         <>
             <TeacherHeader />
@@ -430,129 +454,138 @@ export default function TeacherLiveBattlePage() {
     <div className="flex min-h-screen w-full flex-col">
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
-        <div className="max-w-4xl mx-auto space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-3xl">{battle.battleName}</CardTitle>
-                    <CardDescription>Live Battle Control Panel</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div>
-                        <p>Status: <span className="font-bold text-primary">{liveState.status.replace('_', ' ')}</span></p>
-                        <p>Current Question: <span className="font-bold">{liveState.currentQuestionIndex + 1} / {battle.questions.length}</span></p>
-                        <p>Total Damage Dealt So Far: <span className="font-bold text-red-500">{liveState.totalDamage || 0}</span></p>
-                    </div>
-
-                    {isWaitingToStart && videoSrc && (
-                        <div className="p-4 border rounded-lg space-y-2">
-                             <h3 className="font-semibold text-lg flex items-center gap-2"><Video className="w-5 h-5"/> Intro Video Preview</h3>
-                             <div className="w-full aspect-video">
-                                <iframe
-                                    className="w-full h-full rounded-lg shadow-lg border"
-                                    src={videoSrc}
-                                    title="YouTube video player"
-                                    frameBorder="0"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                    allowFullScreen
-                                ></iframe>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="p-4 border rounded-lg">
-                        <h3 className="font-semibold text-lg mb-2">Controls</h3>
-                        <div className="flex gap-4">
-                             {isWaitingToStart && (
-                                <Button onClick={handleStartFirstQuestion} size="lg">Start First Question</Button>
-                             )}
-                             <Button onClick={handleEndRound} disabled={!isRoundInProgress || isEndingRound}>
-                                {isEndingRound ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                End Round
-                             </Button>
-                             <Button onClick={handleNextQuestion} disabled={!areResultsShowing || isLastQuestion || isAdvancing}>
-                                {isAdvancing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                Next Question
-                             </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="destructive" disabled={isAdvancing || isEndingRound}>End Battle</Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      This action will end the battle for all participants, award final XP/Gold, and take you to the summary page. You cannot undo this.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleEndBattle}>Yes, End Battle</AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-            
-            {isWaitingToStart && (
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Waiting for Students</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-muted-foreground">Students are now in the pre-battle waiting room. They can see the intro video if one was provided. When you are ready, click "Start First Question" to begin the battle.</p>
-                    </CardContent>
-                </Card>
-            )}
-
-            {isRoundEnding && expiryTimestamp && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+            <div className="lg:col-span-2 space-y-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Ending Round...</CardTitle>
+                        <CardTitle className="text-3xl">{battle.battleName}</CardTitle>
+                        <CardDescription>Live Battle Control Panel</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <CountdownTimer expiryTimestamp={expiryTimestamp} />
-                    </CardContent>
-                </Card>
-            )}
-
-            {(isRoundInProgress || isRoundEnding) && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Live Student Responses ({studentResponses.length})</CardTitle>
-                        <CardDescription>See which students have submitted their answer for the current question.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                       <RoundResults results={studentResponses} />
-                    </CardContent>
-                </Card>
-            )}
-
-            {areResultsShowing && (
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between">
+                    <CardContent className="space-y-6">
                         <div>
-                            <CardTitle>Round Results</CardTitle>
-                            <CardDescription>Review of student answers for the last question.</CardDescription>
+                            <p>Status: <span className="font-bold text-primary">{liveState.status.replace('_', ' ')}</span></p>
+                            <p>Current Question: <span className="font-bold">{liveState.currentQuestionIndex + 1} / {battle.questions.length}</span></p>
+                            <p>Total Damage Dealt So Far: <span className="font-bold text-red-500">{liveState.totalDamage || 0}</span></p>
                         </div>
-                        <Button onClick={handleExport} variant="outline" size="sm" disabled={roundResults.length === 0}>
-                            <Download className="mr-2 h-4 w-4" />
-                            Export to CSV
-                        </Button>
-                    </CardHeader>
-                    <CardContent>
-                        <RoundResults results={roundResults} />
-                        {liveState.lastRoundDamage !== undefined && liveState.lastRoundDamage > 0 && (
-                             <div className="mt-4 p-4 rounded-md bg-sky-900/70 border border-sky-700 text-sky-200 flex items-center justify-center gap-4">
-                                <HeartCrack className="h-8 w-8 text-sky-400" />
-                                <p className="text-lg font-bold">Total Damage Dealt This Round: {liveState.lastRoundDamage}</p>
+
+                        {isWaitingToStart && videoSrc && (
+                            <div className="p-4 border rounded-lg space-y-2">
+                                <h3 className="font-semibold text-lg flex items-center gap-2"><Video className="w-5 h-5"/> Intro Video Preview</h3>
+                                <div className="w-full aspect-video">
+                                    <iframe
+                                        className="w-full h-full rounded-lg shadow-lg border"
+                                        src={videoSrc}
+                                        title="YouTube video player"
+                                        frameBorder="0"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                        allowFullScreen
+                                    ></iframe>
+                                </div>
                             </div>
                         )}
+
+                        <div className="p-4 border rounded-lg">
+                            <h3 className="font-semibold text-lg mb-2">Controls</h3>
+                            <div className="flex gap-4">
+                                {isWaitingToStart && (
+                                    <Button onClick={handleStartFirstQuestion} size="lg">Start First Question</Button>
+                                )}
+                                <Button onClick={handleEndRound} disabled={!isRoundInProgress || isEndingRound}>
+                                    {isEndingRound ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                    End Round
+                                </Button>
+                                <Button onClick={handleNextQuestion} disabled={!areResultsShowing || isLastQuestion || isAdvancing}>
+                                    {isAdvancing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                    Next Question
+                                </Button>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                    <Button variant="destructive" disabled={isAdvancing || isEndingRound}>End Battle</Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                        This action will end the battle for all participants, award final XP/Gold, and take you to the summary page. You cannot undo this.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleEndBattle}>Yes, End Battle</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
-            )}
+                
+                {isWaitingToStart && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Waiting for Students</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-muted-foreground">Students are now in the pre-battle waiting room. They can see the intro video if one was provided. When you are ready, click "Start First Question" to begin the battle.</p>
+                        </CardContent>
+                    </Card>
+                )}
 
+                {isRoundEnding && expiryTimestamp && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Ending Round...</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <CountdownTimer expiryTimestamp={expiryTimestamp} />
+                        </CardContent>
+                    </Card>
+                )}
+
+                {(isRoundInProgress || isRoundEnding) && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Live Student Responses ({studentResponses.length})</CardTitle>
+                            <CardDescription>See which students have submitted their answer for the current question.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                        <RoundResults results={studentResponses} />
+                        </CardContent>
+                    </Card>
+                )}
+
+                {areResultsShowing && (
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle>Round Results</CardTitle>
+                                <CardDescription>Review of student answers for the last question.</CardDescription>
+                            </div>
+                            <Button onClick={handleExport} variant="outline" size="sm" disabled={roundResults.length === 0}>
+                                <Download className="mr-2 h-4 w-4" />
+                                Export to CSV
+                            </Button>
+                        </CardHeader>
+                        <CardContent>
+                            <RoundResults results={roundResults} />
+                            {liveState.lastRoundDamage !== undefined && liveState.lastRoundDamage > 0 && (
+                                <div className="mt-4 p-4 rounded-md bg-sky-900/70 border border-sky-700 text-sky-200 flex items-center justify-center gap-4">
+                                    <HeartCrack className="h-8 w-8 text-sky-400" />
+                                    <p className="text-lg font-bold">Total Damage Dealt This Round: {liveState.lastRoundDamage}</p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
+            </div>
+             <div className="lg:col-span-1">
+                <BattleChatBox 
+                    isTeacher={true}
+                    userName={teacherData.name}
+                    teacherUid={TEACHER_UID}
+                    battleId={battleId}
+                />
+            </div>
         </div>
       </main>
     </div>

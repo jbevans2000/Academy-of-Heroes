@@ -19,6 +19,14 @@ export function RoundResults({ results }: RoundResultsProps) {
   const correctAnswers = results.filter(r => r.isCorrect).length;
   const incorrectAnswers = results.length - correctAnswers;
 
+  if (results.length === 0) {
+    return (
+       <div className="text-center py-8 text-muted-foreground">
+            No answers have been submitted for this round yet.
+        </div>
+    )
+  }
+
   return (
     <Table>
       <TableHeader>
@@ -42,13 +50,6 @@ export function RoundResults({ results }: RoundResultsProps) {
             </TableCell>
           </TableRow>
         ))}
-         {results.length === 0 && (
-            <TableRow>
-                <TableCell colSpan={3} className="text-center text-muted-foreground">
-                    No answers were submitted for this round.
-                </TableCell>
-            </TableRow>
-        )}
       </TableBody>
       <TableFooter>
         <TableRow>

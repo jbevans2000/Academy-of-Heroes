@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { PowersSheet } from '@/components/dashboard/powers-sheet';
+import { BattleChatBox } from '@/components/battle/chat-box';
 
 // HARDCODED TEACHER UID
 const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
@@ -274,74 +275,82 @@ export default function LiveBattlePage() {
           student={student}
         />
         <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 p-4">
-            <div className="w-full max-w-4xl mx-auto">
-            <Card className="bg-card text-card-foreground border-gray-700 shadow-2xl shadow-primary/20">
-                <CardContent className="p-6">
-                    <div className="flex justify-center mb-6">
-                        <Button 
-                            size="lg"
-                            variant="default" 
-                            className={cn(
-                                "text-white shadow-lg",
-                                student.class === 'Mage' && "bg-blue-600/80 border-blue-500 hover:bg-blue-500/90",
-                                student.class === 'Guardian' && "bg-amber-500/80 border-amber-400 hover:bg-amber-500/90",
-                                student.class === 'Healer' && "bg-green-600/80 border-green-500 hover:bg-green-500/90",
-                            )}
-                            onClick={() => setIsPowersSheetOpen(true)}
-                        >
-                            <Flame className="mr-2 h-5 w-5" />
-                            View Powers
-                        </Button>
-                    </div>
-
-                    <div className="flex flex-col md:flex-row gap-6 mb-6">
-                        <div className="flex-shrink-0 mx-auto">
-                             <Image 
-                                src={bossImage}
-                                alt={battle.battleName}
-                                width={250}
-                                height={250}
-                                className="rounded-lg shadow-lg border-4 border-primary/50 object-contain"
-                                data-ai-hint="fantasy monster"
-                            />
-                        </div>
-                        <div className="flex-grow flex flex-col justify-center items-center text-center">
-                            <h2 className="text-2xl md:text-3xl font-bold">{currentQuestion.questionText}</h2>
-                        </div>
-                    </div>
-                    
-
-                    {expiryTimestamp && battleState.status === 'ROUND_ENDING' && (
-                    <SmallCountdownTimer expiryTimestamp={expiryTimestamp} />
-                    )}
-
-                    {submittedAnswer !== null && battleState.status === 'IN_PROGRESS' && (
-                        <WaitingForRoundEnd />
-                    )}
-
-
-                    <div className="text-center">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {currentQuestion.answers.map((answer, index) => (
-                                <Button
-                                key={index}
-                                variant="outline"
-                                className={cn(
-                                    "text-lg h-auto py-4 whitespace-normal justify-start text-left hover:bg-primary/90 hover:text-primary-foreground",
-                                    submittedAnswer === index && "bg-primary text-primary-foreground ring-2 ring-offset-2 ring-offset-background ring-primary"
-                                )}
-                                onClick={() => handleSubmitAnswer(index)}
-                                disabled={!isBattleActive}
+            <div className="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                    <Card className="bg-card text-card-foreground border-gray-700 shadow-2xl shadow-primary/20">
+                        <CardContent className="p-6">
+                            <div className="flex justify-center mb-6">
+                                <Button 
+                                    size="lg"
+                                    variant="default" 
+                                    className={cn(
+                                        "text-white shadow-lg",
+                                        student.class === 'Mage' && "bg-blue-600/80 border-blue-500 hover:bg-blue-500/90",
+                                        student.class === 'Guardian' && "bg-amber-500/80 border-amber-400 hover:bg-amber-500/90",
+                                        student.class === 'Healer' && "bg-green-600/80 border-green-500 hover:bg-green-500/90",
+                                    )}
+                                    onClick={() => setIsPowersSheetOpen(true)}
                                 >
-                                <span className="font-bold mr-4">{String.fromCharCode(65 + index)}.</span>
-                                {answer}
+                                    <Flame className="mr-2 h-5 w-5" />
+                                    View Powers
                                 </Button>
-                            ))}
-                        </div>
-                    </div>
+                            </div>
 
-                </CardContent>
-            </Card>
+                            <div className="flex flex-col md:flex-row gap-6 mb-6">
+                                <div className="flex-shrink-0 mx-auto">
+                                    <Image 
+                                        src={bossImage}
+                                        alt={battle.battleName}
+                                        width={250}
+                                        height={250}
+                                        className="rounded-lg shadow-lg border-4 border-primary/50 object-contain"
+                                        data-ai-hint="fantasy monster"
+                                    />
+                                </div>
+                                <div className="flex-grow flex flex-col justify-center items-center text-center">
+                                    <h2 className="text-2xl md:text-3xl font-bold">{currentQuestion.questionText}</h2>
+                                </div>
+                            </div>
+                            
+                            {expiryTimestamp && battleState.status === 'ROUND_ENDING' && (
+                            <SmallCountdownTimer expiryTimestamp={expiryTimestamp} />
+                            )}
+
+                            {submittedAnswer !== null && battleState.status === 'IN_PROGRESS' && (
+                                <WaitingForRoundEnd />
+                            )}
+
+                            <div className="text-center">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {currentQuestion.answers.map((answer, index) => (
+                                        <Button
+                                        key={index}
+                                        variant="outline"
+                                        className={cn(
+                                            "text-lg h-auto py-4 whitespace-normal justify-start text-left hover:bg-primary/90 hover:text-primary-foreground",
+                                            submittedAnswer === index && "bg-primary text-primary-foreground ring-2 ring-offset-2 ring-offset-background ring-primary"
+                                        )}
+                                        onClick={() => handleSubmitAnswer(index)}
+                                        disabled={!isBattleActive}
+                                        >
+                                        <span className="font-bold mr-4">{String.fromCharCode(65 + index)}.</span>
+                                        {answer}
+                                        </Button>
+                                    ))}
+                                </div>
+                            </div>
+
+                        </CardContent>
+                    </Card>
+                </div>
+                <div className="lg:col-span-1">
+                    <BattleChatBox 
+                        isTeacher={false}
+                        userName={student.characterName}
+                        teacherUid={TEACHER_UID}
+                        battleId={battle.id}
+                    />
+                </div>
             </div>
         </div>
       </>
