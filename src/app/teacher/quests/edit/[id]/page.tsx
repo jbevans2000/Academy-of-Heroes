@@ -153,7 +153,7 @@ export default function EditQuestPage() {
   
   const handleOracleGenerate = async () => {
     if (!oracleGradeLevel || !oracleKeyElements || !oracleMode || !teacher || !chapter) {
-        toast({ variant: 'destructive', title: 'Missing Query', description: 'Please provide all required elements for the Oracle.' });
+        toast({ variant: 'destructive', title: "The Oracle's Query is Incomplete", description: 'Please provide all required elements for the Oracle.' });
         return;
     }
     setIsGenerating(true);
@@ -164,7 +164,7 @@ export default function EditQuestPage() {
         let previousChapterStory: string | undefined;
 
         if (oracleMode === 'saga') {
-            if (oraclePredecessorHub) {
+            if (oraclePredecessorHub && oraclePredecessorHub !== 'none') {
                 const hubRef = doc(db, 'teachers', teacher.uid, 'questHubs', oraclePredecessorHub);
                 const hubSnap = await getDoc(hubRef);
                 if (hubSnap.exists()) {
@@ -259,8 +259,8 @@ export default function EditQuestPage() {
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-                <Button variant="outline" onClick={() => setOracleMode('standalone')}>Tell a Standalone Tale</Button>
-                <Button onClick={() => setOracleMode('saga')}>Weave a Continuous Saga</Button>
+                <Button variant="outline" onClick={() => setOracleMode('standalone')}>Create a Standalone Story</Button>
+                <Button onClick={() => setOracleMode('saga')}>Continue the Saga</Button>
             </div>
              <AlertDialogFooter>
                 <AlertDialogCancel>Return to my own thoughts</AlertDialogCancel>
@@ -275,7 +275,7 @@ export default function EditQuestPage() {
             <AlertDialogHeader>
                 <AlertDialogTitle>A Standalone Tale</AlertDialogTitle>
                  <AlertDialogDescription>
-                    Provide the Oracle with the core elements for a self-contained story.
+                    Provide the Oracle with the core elements for a self-contained story. The Oracle will also generate an appropriate title.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="space-y-4 py-4">
@@ -294,7 +294,7 @@ export default function EditQuestPage() {
             <AlertDialogFooter>
                 <Button variant="ghost" onClick={() => setOracleMode(null)}>Back</Button>
                 <AlertDialogAction onClick={() => { setIsOracleOpen(false); setIsConfirmStandaloneOpen(true); }} disabled={isGenerating || !oracleGradeLevel || !oracleKeyElements}>
-                    Tell this Standalone Tale
+                    Write a Standalone Chapter
                 </AlertDialogAction>
             </AlertDialogFooter>
             </>
@@ -307,7 +307,7 @@ export default function EditQuestPage() {
             <AlertDialogHeader>
                 <AlertDialogTitle>Weave a Continuous Saga</AlertDialogTitle>
                  <AlertDialogDescription>
-                    Provide the Oracle with threads of fate to continue the grand narrative.
+                    Provide the Oracle with threads of fate to continue the grand narrative. The Oracle will also generate an appropriate title.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="space-y-4 py-4">
@@ -327,7 +327,7 @@ export default function EditQuestPage() {
                      <Select onValueChange={setOraclePredecessorHub} value={oraclePredecessorHub}>
                         <SelectTrigger><SelectValue placeholder="Select previous hub..." /></SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="none">None</SelectItem>
                             {hubs.map(hub => <SelectItem key={hub.id} value={hub.id}>{hub.name}</SelectItem>)}
                         </SelectContent>
                     </Select>
@@ -337,7 +337,7 @@ export default function EditQuestPage() {
                 <Button variant="ghost" onClick={() => setOracleMode(null)} disabled={isGenerating}>Back</Button>
                 <AlertDialogAction onClick={handleOracleGenerate} disabled={isGenerating || !oracleGradeLevel || !oracleKeyElements || !selectedHubId}>
                     {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Weave this Chapter's Tale
+                    Write the Next Chapter
                 </AlertDialogAction>
             </AlertDialogFooter>
             </>
