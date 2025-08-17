@@ -6,19 +6,31 @@ import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Loader2, Save } from 'lucide-react';
-import { doc, setDoc, addDoc, collection, getDocs, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { ArrowLeft, Loader2, Save, Sparkles } from 'lucide-react';
+import { doc, setDoc, addDoc, collection, getDocs, serverTimestamp, query, orderBy, where, getDoc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { QuestHub } from '@/lib/quests';
+import { QuestHub, Chapter } from '@/lib/quests';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RichTextEditor from '@/components/teacher/rich-text-editor';
 import { onAuthStateChanged, type User } from 'firebase/auth';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { generateStory, generateSummary } from '@/ai/flows/story-generator';
 
 export default function NewQuestPage() {
   const router = useRouter();
@@ -27,6 +39,16 @@ export default function NewQuestPage() {
   const [isLoading, setIsLoading] = useState(true);
   const worldMapImageUrl = "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FWorld%20Map.JPG?alt=media&token=2d88af7d-a54c-4f34-b4c7-1a7c04485b8b";
   const [teacher, setTeacher] = useState<User | null>(null);
+
+  // State for AI generator
+  const [isOracleOpen, setIsOracleOpen] = useState(false);
+  const [oracleMode, setOracleMode] = useState<'standalone' | 'saga' | null>(null);
+  const [oracleGradeLevel, setOracleGradeLevel] = useState('');
+  const [oracleKeyElements, setOracleKeyElements] = useState('');
+  const [oraclePredecessorHub, setOraclePredecessorHub] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isConfirmStandaloneOpen, setIsConfirmStandaloneOpen] = useState(false);
+
 
   // State for the new Hub creator
   const [hubs, setHubs] = useState<QuestHub[]>([]);
@@ -128,6 +150,80 @@ export default function NewQuestPage() {
     }
     return true;
   }
+  
+  const handleOracleGenerate = async () => {
+    if (!oracleGradeLevel || !oracleKeyElements || !oracleMode || !teacher) {
+        toast({ variant: 'destructive', title: 'Missing Query', description: 'Please provide all required elements for the Oracle.' });
+        return;
+    }
+    setIsGenerating(true);
+
+    try {
+        let previousHubSummary: string | undefined;
+        let currentHubSummary: string | undefined;
+        let previousChapterStory: string | undefined;
+
+        if (oracleMode === 'saga') {
+            // Fetch predecessor hub summary if selected
+            if (oraclePredecessorHub) {
+                const hubRef = doc(db, 'teachers', teacher.uid, 'questHubs', oraclePredecessorHub);
+                const hubSnap = await getDoc(hubRef);
+                if (hubSnap.exists()) {
+                    previousHubSummary = hubSnap.data().storySummary;
+                }
+            }
+            // Fetch current hub summary
+            if (selectedHubId && selectedHubId !== 'new') {
+                 const currentHubRef = doc(db, 'teachers', teacher.uid, 'questHubs', selectedHubId);
+                 const currentHubSnap = await getDoc(currentHubRef);
+                 if (currentHubSnap.exists()) {
+                    currentHubSummary = currentHubSnap.data().storySummary;
+                 }
+            }
+            // Fetch previous chapter story
+            if (selectedHubId && selectedHubId !== 'new' && typeof chapterNumber === 'number' && chapterNumber > 1) {
+                const prevChapterQuery = query(
+                    collection(db, 'teachers', teacher.uid, 'chapters'),
+                    where('hubId', '==', selectedHubId),
+                    where('chapterNumber', '==', chapterNumber - 1)
+                );
+                const prevChapterSnap = await getDocs(prevChapterQuery);
+                if (!prevChapterSnap.empty) {
+                    previousChapterStory = prevChapterSnap.docs[0].data().storyContent;
+                }
+            }
+        }
+        
+        const result = await generateStory({
+            gradeLevel: oracleGradeLevel as any,
+            keyElements: oracleKeyElements,
+            mode: oracleMode,
+            previousHubSummary,
+            currentHubSummary,
+            previousChapterStory,
+        });
+        
+        setChapterTitle(result.title);
+        setStoryContent(result.storyContent);
+
+        // If saga mode, update the hub's story summary
+        if (oracleMode === 'saga' && selectedHubId && selectedHubId !== 'new') {
+            const newSummary = await generateSummary(currentHubSummary, result.storyContent);
+            const hubRef = doc(db, 'teachers', teacher.uid, 'questHubs', selectedHubId);
+            await updateDoc(hubRef, { storySummary: newSummary });
+        }
+
+        toast({ title: 'The Oracle has Spoken!', description: 'The chapter title and story have been divined.' });
+        setIsOracleOpen(false); // Close the main dialog
+        setOracleMode(null); // Reset for next time
+
+    } catch (error) {
+        console.error("Error generating story from Oracle:", error);
+        toast({ variant: 'destructive', title: 'The Oracle is Silent', description: 'The AI failed to generate a story.' });
+    } finally {
+        setIsGenerating(false);
+    }
+  };
 
   const handleSaveQuest = async () => {
     if (!validateInputs() || !teacher) return;
@@ -182,6 +278,103 @@ export default function NewQuestPage() {
         toast({ variant: 'destructive', title: 'Save Failed', description: 'There was an error saving your quest. Please try again.' });
     } finally {
         setIsSaving(false);
+    }
+  }
+
+  const renderOracleDialog = () => {
+    if (!oracleMode) {
+        return (
+            <>
+            <AlertDialogHeader>
+                <AlertDialogTitle>The Oracle Awaits Your Query</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Choose how the Oracle should weave its tale.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+                <Button variant="outline" onClick={() => setOracleMode('standalone')}>Tell a Standalone Tale</Button>
+                <Button onClick={() => setOracleMode('saga')}>Weave a Continuous Saga</Button>
+            </div>
+             <AlertDialogFooter>
+                <AlertDialogCancel>Return to my own thoughts</AlertDialogCancel>
+            </AlertDialogFooter>
+            </>
+        )
+    }
+
+    if (oracleMode === 'standalone') {
+        return (
+             <>
+            <AlertDialogHeader>
+                <AlertDialogTitle>A Standalone Tale</AlertDialogTitle>
+                 <AlertDialogDescription>
+                    Provide the Oracle with the core elements for a self-contained story.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="space-y-4 py-4">
+                 <div className="space-y-2">
+                    <Label>Grade Level</Label>
+                    <Select onValueChange={setOracleGradeLevel} value={oracleGradeLevel}>
+                        <SelectTrigger><SelectValue placeholder="For which students?" /></SelectTrigger>
+                        <SelectContent>{['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'].map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+                    </Select>
+                 </div>
+                 <div className="space-y-2">
+                    <Label>Key Story Elements</Label>
+                    <Input placeholder="e.g., A greedy dragon, a stolen pie..." value={oracleKeyElements} onChange={e => setOracleKeyElements(e.target.value)} />
+                 </div>
+            </div>
+            <AlertDialogFooter>
+                <Button variant="ghost" onClick={() => setOracleMode(null)}>Back</Button>
+                <AlertDialogAction onClick={() => { setIsOracleOpen(false); setIsConfirmStandaloneOpen(true); }} disabled={isGenerating || !oracleGradeLevel || !oracleKeyElements}>
+                    Tell this Standalone Tale
+                </AlertDialogAction>
+            </AlertDialogFooter>
+            </>
+        )
+    }
+    
+     if (oracleMode === 'saga') {
+        return (
+             <>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Weave a Continuous Saga</AlertDialogTitle>
+                 <AlertDialogDescription>
+                    Provide the Oracle with threads of fate to continue the grand narrative.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                    <Label>Grade Level</Label>
+                     <Select onValueChange={setOracleGradeLevel} value={oracleGradeLevel}>
+                        <SelectTrigger><SelectValue placeholder="For which students?" /></SelectTrigger>
+                        <SelectContent>{['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'].map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+                    </Select>
+                 </div>
+                 <div className="space-y-2">
+                    <Label>Key Elements for this Chapter</Label>
+                    <Input placeholder="e.g., The dark forest, a hidden clue..." value={oracleKeyElements} onChange={e => setOracleKeyElements(e.target.value)} />
+                 </div>
+                  <div className="space-y-2">
+                    <Label>Is this the first chapter of a sequel to a previous Hub? (Optional)</Label>
+                     <Select onValueChange={setOraclePredecessorHub} value={oraclePredecessorHub}>
+                        <SelectTrigger><SelectValue placeholder="Select previous hub..." /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="">None</SelectItem>
+                            {hubs.map(hub => <SelectItem key={hub.id} value={hub.id}>{hub.name}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                 </div>
+            </div>
+            <AlertDialogFooter>
+                <Button variant="ghost" onClick={() => setOracleMode(null)} disabled={isGenerating}>Back</Button>
+                <AlertDialogAction onClick={handleOracleGenerate} disabled={isGenerating || !oracleGradeLevel || !oracleKeyElements || !selectedHubId || selectedHubId === 'new'}>
+                    {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Weave this Chapter's Tale
+                </AlertDialogAction>
+            </AlertDialogFooter>
+            </>
+        )
     }
   }
 
@@ -289,7 +482,13 @@ export default function NewQuestPage() {
               </div>
               
               <div className="space-y-6 p-6 border rounded-lg">
-                <h3 className="text-xl font-semibold">Phase 2: Chapter Content</h3>
+                <div className="flex justify-between items-center">
+                    <h3 className="text-xl font-semibold">Phase 2: Chapter Content</h3>
+                    <Button variant="outline" onClick={() => setIsOracleOpen(true)}>
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        Consult the Oracle
+                    </Button>
+                </div>
                 <Tabs defaultValue="story" className="w-full">
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="story">Story</TabsTrigger>
@@ -400,6 +599,29 @@ export default function NewQuestPage() {
             </CardContent>
           </Card>
         </div>
+        <AlertDialog open={isOracleOpen} onOpenChange={setIsOracleOpen}>
+            <AlertDialogContent>
+                {renderOracleDialog()}
+            </AlertDialogContent>
+        </AlertDialog>
+        <AlertDialog open={isConfirmStandaloneOpen} onOpenChange={setIsConfirmStandaloneOpen}>
+            <AlertDialogContent>
+                 <AlertDialogHeader>
+                    <AlertDialogTitle>Confirm Standalone Chapter</AlertDialogTitle>
+                    <AlertDialogDescription>
+                         The Oracle prepares to tell a self-contained story, unbound by the past or future. Such tales are best kept in a dedicated tome. You must place this chapter in a Quest Hub named 'Independent Chapters'.
+                         <br/><br/>
+                         <strong>Are you currently working within a Hub named 'Independent Chapters'?</strong>
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => {setIsOracleOpen(true)}}>No, I must prepare</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => {setIsConfirmStandaloneOpen(false); handleOracleGenerate()}}>
+                        Yes, the tome is open
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );
