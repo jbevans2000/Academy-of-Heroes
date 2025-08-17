@@ -358,7 +358,7 @@ export default function EditBossBattlePage() {
                     <Input id="battle-name" placeholder="e.g., The Ancient Karkorah" value={battleTitle} onChange={(e) => setBattleTitle(e.target.value)} disabled={isSaving} />
                 </div>
                  <div className="space-y-2 p-4 border rounded-md">
-                    <Label className="text-base font-medium">Upload Boss Image</Label>
+                    <Label className="text-base font-medium">Upload Boss Image OR ask the Court Artist to Generate an image for you below!</Label>
                     <div className="flex items-center gap-2">
                       <Label htmlFor="image-upload" className={cn(buttonVariants({ variant: 'default' }), "cursor-pointer")}>
                         <Upload className="mr-2 h-4 w-4" />
