@@ -19,9 +19,6 @@ import type { Student } from '@/lib/data';
 import { logGameEvent } from '@/lib/gamelog';
 import { BattleChatBox } from '@/components/battle/chat-box';
 
-// HARDCODED TEACHER UID
-const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
-
 interface QueuedPower {
     casterUid: string;
     powerName: 'Wildfire';
@@ -145,12 +142,14 @@ export default function TeacherLiveBattlePage() {
   const [isAdvancing, setIsAdvancing] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [teacherData, setTeacherData] = useState<TeacherData | null>(null);
+  const [teacherUid, setTeacherUid] = useState<string | null>(null);
 
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
         if (currentUser) {
             setUser(currentUser);
+            setTeacherUid(currentUser.uid); // Set teacher UID
             const teacherDoc = await getDoc(doc(db, 'teachers', currentUser.uid));
             if (teacherDoc.exists()) {
                 setTeacherData(teacherDoc.data() as TeacherData);
@@ -164,9 +163,9 @@ export default function TeacherLiveBattlePage() {
 
   // Fetch the static battle definition once
   useEffect(() => {
-    if (!battleId) return;
+    if (!battleId || !teacherUid) return;
     const fetchBattle = async () => {
-      const docRef = doc(db, 'teachers', TEACHER_UID, 'bossBattles', battleId);
+      const docRef = doc(db, 'teachers', teacherUid, 'bossBattles', battleId);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         setBattle({ id: docSnap.id, ...docSnap.data() } as Battle);
@@ -175,12 +174,13 @@ export default function TeacherLiveBattlePage() {
       }
     };
     fetchBattle();
-  }, [battleId]);
+  }, [battleId, teacherUid]);
 
   // Listen for real-time updates on the live battle state
   useEffect(() => {
+    if (!teacherUid) return;
     setIsLoading(true);
-    const liveBattleRef = doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle');
+    const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
     const unsubscribe = onSnapshot(liveBattleRef, (doc) => {
       if (doc.exists()) {
         const newState = doc.data() as LiveBattleState;
@@ -199,16 +199,16 @@ export default function TeacherLiveBattlePage() {
       setIsLoading(false);
     });
     return () => unsubscribe();
-  }, [battleId, router]);
+  }, [battleId, router, teacherUid]);
 
   // Listen for real-time student responses for the current question
   useEffect(() => {
-    if (!liveState || (liveState.status !== 'IN_PROGRESS' && liveState.status !== 'ROUND_ENDING')) {
+    if (!liveState || !teacherUid ||(liveState.status !== 'IN_PROGRESS' && liveState.status !== 'ROUND_ENDING')) {
         setStudentResponses([]);
         return;
     }
     
-    const responsesRef = collection(db, 'teachers', TEACHER_UID, `liveBattles/active-battle/responses`);
+    const responsesRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/responses`);
     const q = query(responsesRef);
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const responses: Result[] = [];
@@ -232,13 +232,13 @@ export default function TeacherLiveBattlePage() {
     });
 
     return () => unsubscribe();
-}, [liveState, liveState?.status, liveState?.currentQuestionIndex]);
+}, [liveState, liveState?.status, liveState?.currentQuestionIndex, teacherUid]);
   
     // Power Activation Listener
     useEffect(() => {
-        if (!liveState || !battle || liveState.status !== 'IN_PROGRESS') return;
+        if (!liveState || !battle || !teacherUid || liveState.status !== 'IN_PROGRESS') return;
 
-        const powerActivationsRef = collection(db, 'teachers', TEACHER_UID, `liveBattles/active-battle/powerActivations`);
+        const powerActivationsRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/powerActivations`);
         const q = query(powerActivationsRef);
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -254,18 +254,19 @@ export default function TeacherLiveBattlePage() {
                          await handleEnduringSpirit(activation);
                     }
                     
-                    await deleteDoc(doc(db, 'teachers', TEACHER_UID, `liveBattles/active-battle/powerActivations`, activation.id!));
+                    await deleteDoc(doc(db, 'teachers', teacherUid, `liveBattles/active-battle/powerActivations`, activation.id!));
                 }
             });
         });
 
         return () => unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [liveState?.status, liveState?.currentQuestionIndex, battle]);
+    }, [liveState?.status, liveState?.currentQuestionIndex, battle, teacherUid]);
     
     const handleNaturesGuidance = async (activation: PowerActivation) => {
-        const liveBattleRef = doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle');
-        const studentRef = doc(db, 'teachers', TEACHER_UID, 'students', activation.studentUid);
+        if(!teacherUid) return;
+        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
+        const studentRef = doc(db, 'teachers', teacherUid, 'students', activation.studentUid);
         
         const battleDoc = await getDoc(liveBattleRef);
         const studentDoc = await getDoc(studentRef);
@@ -298,15 +299,16 @@ export default function TeacherLiveBattlePage() {
         });
 
         await batch.commit();
-        await logGameEvent(TEACHER_UID, 'BOSS_BATTLE', `${activation.studentName} used Nature's Guidance.`);
+        await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} used Nature's Guidance.`);
         setTimeout(async () => {
             await updateDoc(liveBattleRef, { powerEventMessage: '' });
         }, 5000);
     };
 
     const handleWildfire = async (activation: PowerActivation) => {
-        const liveBattleRef = doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle');
-        const studentRef = doc(db, 'teachers', TEACHER_UID, 'students', activation.studentUid);
+        if(!teacherUid) return;
+        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
+        const studentRef = doc(db, 'teachers', teacherUid, 'students', activation.studentUid);
         
         const battleDoc = await getDoc(liveBattleRef);
         const studentDoc = await getDoc(studentRef);
@@ -338,25 +340,25 @@ export default function TeacherLiveBattlePage() {
         });
 
         await batch.commit();
-        await logGameEvent(TEACHER_UID, 'BOSS_BATTLE', `${activation.studentName} cast Wildfire, queueing ${damage} damage.`);
+        await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} cast Wildfire, queueing ${damage} damage.`);
         setTimeout(async () => {
             await updateDoc(liveBattleRef, { powerEventMessage: '' });
         }, 5000);
     };
 
     const handleEnduringSpirit = async (activation: PowerActivation) => {
-        if (!activation.targets || activation.targets.length === 0) return;
+        if (!activation.targets || activation.targets.length === 0 || !teacherUid) return;
 
         const batch = writeBatch(db);
-        const liveBattleRef = doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle');
-        const casterRef = doc(db, 'teachers', TEACHER_UID, 'students', activation.studentUid);
+        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
+        const casterRef = doc(db, 'teachers', teacherUid, 'students', activation.studentUid);
 
         // Deduct MP from caster
         batch.update(casterRef, { mp: increment(-activation.powerMpCost) });
 
         // Revive the target
         const targetUid = activation.targets[0];
-        const targetRef = doc(db, 'teachers', TEACHER_UID, 'students', targetUid);
+        const targetRef = doc(db, 'teachers', teacherUid, 'students', targetUid);
         batch.update(targetRef, { hp: 1 }); // Revive with 1 HP
 
         // Remove from fallen list and add power usage info
@@ -367,7 +369,7 @@ export default function TeacherLiveBattlePage() {
         });
 
         await batch.commit();
-        await logGameEvent(TEACHER_UID, 'BOSS_BATTLE', `${activation.studentName} used Enduring Spirit.`);
+        await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} used Enduring Spirit.`);
         setTimeout(async () => {
             await updateDoc(liveBattleRef, { powerEventMessage: '' });
         }, 5000);
@@ -375,15 +377,15 @@ export default function TeacherLiveBattlePage() {
 
 
   const calculateAndSetResults = useCallback(async () => {
-    if (!battle || !liveState || liveState.status !== 'ROUND_ENDING' || isEndingRound) return;
+    if (!battle || !liveState || !teacherUid || liveState.status !== 'ROUND_ENDING' || isEndingRound) return;
 
     setIsEndingRound(true);
     
     try {
         const batch = writeBatch(db);
-        const liveBattleRef = doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle');
+        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
         
-        const responsesRef = collection(db, 'teachers', TEACHER_UID, `liveBattles/active-battle/responses`);
+        const responsesRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/responses`);
         const responsesSnapshot = await getDocs(responsesRef);
         const responsesData = responsesSnapshot.docs.map(doc => ({ uid: doc.id, ...(doc.data() as StudentResponse) }));
         
@@ -404,7 +406,7 @@ export default function TeacherLiveBattlePage() {
         if (damageOnIncorrect > 0) {
             for (const response of responsesData) {
                 if (!response.isCorrect) {
-                    const studentRef = doc(db, 'teachers', TEACHER_UID, 'students', response.uid);
+                    const studentRef = doc(db, 'teachers', teacherUid, 'students', response.uid);
                     const studentDoc = await getDoc(studentRef);
                     if (studentDoc.exists()) {
                         const studentData = studentDoc.data() as Student;
@@ -427,9 +429,9 @@ export default function TeacherLiveBattlePage() {
             if (casterResponse?.isCorrect) {
                 powerDamage += power.damage;
                 powersUsedThisRound.push(`${power.powerName} (${power.damage} dmg)`);
-                logGameEvent(TEACHER_UID, 'BOSS_BATTLE', `${casterResponse.characterName}'s Wildfire struck true for ${power.damage} damage.`);
+                logGameEvent(teacherUid, 'BOSS_BATTLE', `${casterResponse.characterName}'s Wildfire struck true for ${power.damage} damage.`);
             } else {
-                 logGameEvent(TEACHER_UID, 'BOSS_BATTLE', `${casterResponse?.characterName || 'A mage'}'s Wildfire fizzled as they answered incorrectly.`);
+                 logGameEvent(teacherUid, 'BOSS_BATTLE', `${casterResponse?.characterName || 'A mage'}'s Wildfire fizzled as they answered incorrectly.`);
             }
         });
 
@@ -477,7 +479,7 @@ export default function TeacherLiveBattlePage() {
     } finally {
         setIsEndingRound(false);
     }
-  }, [battle, liveState, isEndingRound, allRoundsData]);
+  }, [battle, liveState, isEndingRound, allRoundsData, teacherUid]);
 
   // Effect to handle timer expiration
   useEffect(() => {
@@ -495,20 +497,21 @@ export default function TeacherLiveBattlePage() {
   }, [liveState?.status, liveState?.timerEndsAt, calculateAndSetResults]);
 
   const handleStartFirstQuestion = async () => {
-    const liveBattleRef = doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle');
+    if(!teacherUid) return;
+    const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
     await updateDoc(liveBattleRef, { status: 'IN_PROGRESS', fallenPlayerUids: [] });
     if(battle) {
-        await logGameEvent(TEACHER_UID, 'BOSS_BATTLE', `Round 1 of '${battle.battleName}' has started.`);
+        await logGameEvent(teacherUid, 'BOSS_BATTLE', `Round 1 of '${battle.battleName}' has started.`);
     }
   };
   
   const handleEndRound = async () => {
-    if (!battle || liveState === null || isEndingRound) return;
+    if (!battle || liveState === null || isEndingRound || !teacherUid) return;
     
     setIsEndingRound(true);
 
     try {
-        const liveBattleRef = doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle');
+        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
         const timerEndsAt = new Date(Date.now() + 10000);
         await updateDoc(liveBattleRef, { 
             status: 'ROUND_ENDING',
@@ -522,17 +525,17 @@ export default function TeacherLiveBattlePage() {
   };
 
   const handleNextQuestion = async () => {
-    if (!battle || liveState === null || liveState.currentQuestionIndex >= battle.questions.length - 1) return;
+    if (!battle || liveState === null || !teacherUid || liveState.currentQuestionIndex >= battle.questions.length - 1) return;
 
     setIsAdvancing(true);
     try {
         const batch = writeBatch(db);
 
-        const responsesRef = collection(db, 'teachers', TEACHER_UID, `liveBattles/active-battle/responses`);
+        const responsesRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/responses`);
         const responsesSnapshot = await getDocs(responsesRef);
         responsesSnapshot.forEach(doc => batch.delete(doc.ref));
         
-        const liveBattleRef = doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle');
+        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
         const nextQuestionIndex = liveState.currentQuestionIndex + 1;
         batch.update(liveBattleRef, {
             status: 'IN_PROGRESS',
@@ -550,7 +553,7 @@ export default function TeacherLiveBattlePage() {
 
         await batch.commit();
         setRoundResults([]);
-        await logGameEvent(TEACHER_UID, 'BOSS_BATTLE', `Round ${nextQuestionIndex + 1} of '${battle.battleName}' has started.`);
+        await logGameEvent(teacherUid, 'BOSS_BATTLE', `Round ${nextQuestionIndex + 1} of '${battle.battleName}' has started.`);
     } catch (error) {
         console.error("Error advancing to next question:", error);
     } finally {
@@ -559,10 +562,10 @@ export default function TeacherLiveBattlePage() {
   };
 
   const handleEndBattle = async () => {
-      if (!liveState || !battle) return;
+      if (!liveState || !battle || !teacherUid) return;
 
       const batch = writeBatch(db);
-      const liveBattleRef = doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle');
+      const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
 
       const finalStateDoc = await getDoc(liveBattleRef);
       const finalStateData = finalStateDoc.data();
@@ -570,9 +573,9 @@ export default function TeacherLiveBattlePage() {
       const totalBaseDamage = finalStateData?.totalBaseDamage || 0;
       const totalPowerDamage = finalStateData?.totalPowerDamage || 0;
       const fallenAtEnd = finalStateData?.fallenPlayerUids || [];
-      await logGameEvent(TEACHER_UID, 'BOSS_BATTLE', `The party dealt a total of ${totalDamage} damage during '${battle.battleName}'.`);
+      await logGameEvent(teacherUid, 'BOSS_BATTLE', `The party dealt a total of ${totalDamage} damage during '${battle.battleName}'.`);
 
-      const battleLogRef = collection(db, 'teachers', TEACHER_UID, 'liveBattles/active-battle/battleLog');
+      const battleLogRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
       const battleLogSnapshot = await getDocs(battleLogRef);
       const battleLog = battleLogSnapshot.docs.map(doc => doc.data() as PowerLogEntry);
 
@@ -593,7 +596,7 @@ export default function TeacherLiveBattlePage() {
       for (const uid in rewardsByStudent) {
           if (fallenAtEnd.includes(uid)) continue; // Skip rewards for fallen players
 
-          const studentRef = doc(db, 'teachers', TEACHER_UID, 'students', uid);
+          const studentRef = doc(db, 'teachers', teacherUid, 'students', uid);
           const studentSnap = await getDoc(studentRef);
           if (studentSnap.exists()) {
               const studentData = studentSnap.data() as Student;
@@ -619,7 +622,7 @@ export default function TeacherLiveBattlePage() {
           }
       }
 
-      const summaryRef = doc(db, 'teachers', TEACHER_UID, `battleSummaries`, battleId);
+      const summaryRef = doc(db, 'teachers', teacherUid, `battleSummaries`, battleId);
       batch.set(summaryRef, {
           battleId: battleId,
           battleName: battle?.battleName,
@@ -633,7 +636,7 @@ export default function TeacherLiveBattlePage() {
           fallenAtEnd: fallenAtEnd,
           endedAt: serverTimestamp(),
       });
-      await logGameEvent(TEACHER_UID, 'BOSS_BATTLE', `Battle summary for '${battle.battleName}' was saved.`);
+      await logGameEvent(teacherUid, 'BOSS_BATTLE', `Battle summary for '${battle.battleName}' was saved.`);
 
       batch.update(liveBattleRef, { status: 'BATTLE_ENDED' });
 
@@ -642,7 +645,7 @@ export default function TeacherLiveBattlePage() {
       router.push(`/teacher/battle/summary/${battleId}`);
 
       setTimeout(async () => {
-        await deleteDoc(doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle'));
+        await deleteDoc(doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle'));
       }, 5000); 
   };
   
@@ -831,7 +834,7 @@ export default function TeacherLiveBattlePage() {
                 <BattleChatBox 
                     isTeacher={true}
                     userName={"The Wise One"}
-                    teacherUid={TEACHER_UID}
+                    teacherUid={teacherUid}
                     battleId={battleId}
                 />
                 {(liveState.fallenPlayerUids && liveState.fallenPlayerUids.length > 0) && (
@@ -855,5 +858,3 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
-
-    
