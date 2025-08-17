@@ -56,7 +56,7 @@ const tools = [
         icon: <ScrollText className="h-10 w-10 text-primary" />,
         path: '/teacher/tools/the-royal-scribe',
         disabled: false,
-        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-4f51950d-83b5-4b55-8664-8178a9c277f0.jpg?alt=media&token=c2c101cb-e71e-42c2-b5e1-85b6727a8581',
+        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-061eec79-9062-4e42-a63e-0458bee737cd.jpg?alt=media&token=6077d818-0966-4653-b533-1d97e6c33d31',
     },
 ]
 
