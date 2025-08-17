@@ -12,7 +12,8 @@ import { z } from 'zod';
 
 const StoryGeneratorInputSchema = z.object({
   gradeLevel: z.enum(['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade']),
-  keyElements: z.string().describe('A comma-separated list of key characters, items, or plot points to include in the story.'),
+  keyElements: z.string().optional().describe('A comma-separated list of key characters, items, or plot points to include in the story. Only used for standalone stories.'),
+  chapterTitle: z.string().describe('The title of the chapter to be generated.'),
   mode: z.enum(['standalone', 'saga']),
   
   // Optional context for saga mode
@@ -23,7 +24,7 @@ const StoryGeneratorInputSchema = z.object({
 export type StoryGeneratorInput = z.infer<typeof StoryGeneratorInputSchema>;
 
 const StoryGeneratorOutputSchema = z.object({
-  title: z.string().describe("A short, exciting, fantasy-themed chapter title that fits the story."),
+  title: z.string().describe("A short, exciting, fantasy-themed chapter title that fits the story. This should be the same as the input chapter title unless the input was empty."),
   storyContent: z.string().describe("The generated story content, formatted as simple HTML with paragraph tags."),
 });
 export type StoryGeneratorOutput = z.infer<typeof StoryGeneratorOutputSchema>;
@@ -32,7 +33,7 @@ const storyPrompt = ai.definePrompt({
     name: 'storyPrompt',
     input: { schema: StoryGeneratorInputSchema },
     output: { schema: StoryGeneratorOutputSchema },
-    prompt: `You are The Oracle, a master storyteller crafting an epic saga for a classroom of {{gradeLevel}} students. Your task is to write the next chapter of their adventure.
+    prompt: `You are The Oracle, a master storyteller crafting an epic saga for a classroom of {{gradeLevel}} students. Your task is to write the next chapter of their adventure. The title for this chapter will be: **{{chapterTitle}}**.
 
 {{#if isSaga}}
     You are weaving a continuous tale. Use the following context to ensure the narrative flows logically.
@@ -52,13 +53,13 @@ const storyPrompt = ai.definePrompt({
     {{{previousChapterStory}}}
     {{/if}}
 
-    Write the next chapter in the saga. It must incorporate these key elements: **{{keyElements}}**.
+    Write the next chapter in the saga, titled "{{chapterTitle}}". It must logically follow all the provided context.
 {{else}}
-    You are telling a standalone, self-contained story for a single lesson. The story should be a complete short adventure in one chapter.
+    You are telling a standalone, self-contained story for a single lesson. The story should be a complete short adventure in one chapter, titled "{{chapterTitle}}".
     It must include these key elements: **{{keyElements}}**.
 {{/if}}
 
-First, generate a short, exciting, fantasy-themed chapter title.
+First, confirm the chapter title is "{{chapterTitle}}".
 Then, write the chapter's story content. The story must be engaging, age-appropriate for {{gradeLevel}}, and conclude in a way that is satisfying for a single chapter. Format the story content as simple HTML, with each paragraph wrapped in <p> tags.
 `,
 });
@@ -71,7 +72,8 @@ export async function generateStory(input: StoryGeneratorInput): Promise<StoryGe
   if (!output) {
     throw new Error('The Oracle is silent. The AI failed to generate a story.');
   }
-  return output;
+  // Ensure the output title matches the input title, as the AI can sometimes change it.
+  return { ...output, title: input.chapterTitle };
 }
 
 const summaryPrompt = ai.definePrompt({
