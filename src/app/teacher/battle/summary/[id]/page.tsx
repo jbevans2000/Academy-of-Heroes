@@ -9,7 +9,7 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Star, Coins, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Star, Coins, ShieldCheck, Sparkles, ScrollText } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 // HARDCODED TEACHER UID
@@ -19,6 +19,13 @@ interface Question {
   questionText: string;
   answers: string[];
   correctAnswerIndex: number;
+}
+
+interface PowerLogEntry {
+    round: number;
+    casterName: string;
+    powerName: string;
+    description: string;
 }
 
 interface BattleSummary {
@@ -36,6 +43,7 @@ interface BattleSummary {
       powersUsed?: string[];
     };
   };
+  battleLog?: PowerLogEntry[];
   rewards?: {
     [studentUid: string]: {
       xpGained: number;
@@ -237,13 +245,21 @@ export default function TeacherBattleSummaryPage() {
                 </CardContent>
             </Card>
 
-            {allPowersUsed.length > 0 && (
+            {(summary.battleLog && summary.battleLog.length > 0) && (
                  <Card>
                     <CardHeader>
-                        <CardTitle>Powers Used During Battle</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><ScrollText /> Power Usage Log</CardTitle>
+                        <CardDescription>A record of all powers used during the battle.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-muted-foreground">{allPowersUsed.join(', ')}</p>
+                        <ul className="space-y-2">
+                            {summary.battleLog.map((log, index) => (
+                                <li key={index} className="flex justify-between items-center p-2 rounded-md bg-secondary/50">
+                                    <p><span className="font-bold">{log.casterName}</span> used <span className="font-semibold text-primary">{log.powerName}</span>.</p>
+                                    <span className="text-xs text-muted-foreground">Round {log.round}</span>
+                                </li>
+                            ))}
+                        </ul>
                     </CardContent>
                 </Card>
             )}
@@ -253,3 +269,5 @@ export default function TeacherBattleSummaryPage() {
     </div>
   );
 }
+
+    

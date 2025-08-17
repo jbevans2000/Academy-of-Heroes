@@ -62,6 +62,13 @@ interface TeacherData {
     name: string;
 }
 
+interface PowerLogEntry {
+    round: number;
+    casterName: string;
+    powerName: string;
+    description: string;
+}
+
 function CountdownTimer({ expiryTimestamp }: { expiryTimestamp: Date }) {
     const [timeLeft, setTimeLeft] = useState(Math.max(0, Math.round((expiryTimestamp.getTime() - new Date().getTime()) / 1000)));
 
@@ -367,7 +374,13 @@ export default function TeacherLiveBattlePage() {
       const totalPowerDamage = finalStateData?.totalPowerDamage || 0;
       await logGameEvent('BOSS_BATTLE', `The party dealt a total of ${totalDamage} damage during '${battle.battleName}'.`);
 
-      // 2. Calculate final rewards
+      // 2. Fetch the battle log
+      const battleLogRef = collection(db, 'teachers', TEACHER_UID, 'liveBattles/active-battle/battleLog');
+      const battleLogSnapshot = await getDocs(battleLogRef);
+      const battleLog = battleLogSnapshot.docs.map(doc => doc.data() as PowerLogEntry);
+
+
+      // 3. Calculate final rewards
       const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
       Object.values(allRoundsData).forEach((round: any) => {
           round.responses.forEach((res: any) => {
@@ -381,7 +394,7 @@ export default function TeacherLiveBattlePage() {
           });
       });
 
-      // 3. Batch update student documents with rewards and level ups
+      // 4. Batch update student documents with rewards and level ups
       for (const uid in rewardsByStudent) {
           const studentRef = doc(db, 'teachers', TEACHER_UID, 'students', uid);
           const studentSnap = await getDoc(studentRef);
@@ -409,13 +422,14 @@ export default function TeacherLiveBattlePage() {
           }
       }
 
-      // 4. Save battle summary
+      // 5. Save battle summary
       const summaryRef = doc(db, 'teachers', TEACHER_UID, `battleSummaries`, battleId);
       batch.set(summaryRef, {
           battleId: battleId,
           battleName: battle?.battleName,
           questions: battle?.questions,
           resultsByRound: allRoundsData,
+          battleLog: battleLog,
           totalDamageDealt: totalDamage,
           totalBaseDamage: totalBaseDamage,
           totalPowerDamage: totalPowerDamage,
@@ -424,16 +438,16 @@ export default function TeacherLiveBattlePage() {
       });
       await logGameEvent('BOSS_BATTLE', `Battle summary for '${battle.battleName}' was saved.`);
 
-      // 5. Update live battle state to BATTLE_ENDED
+      // 6. Update live battle state to BATTLE_ENDED
       batch.update(liveBattleRef, { status: 'BATTLE_ENDED' });
 
-      // 6. Commit all batched writes
+      // 7. Commit all batched writes
       await batch.commit();
       
-      // 7. Redirect teacher to the summary page.
+      // 8. Redirect teacher to the summary page.
       router.push(`/teacher/battle/summary/${battleId}`);
 
-      // 8. After a short delay, delete the live battle document
+      // 9. After a short delay, delete the live battle document
       setTimeout(async () => {
         await deleteDoc(doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle'));
       }, 5000); 
@@ -633,3 +647,5 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
+
+    
