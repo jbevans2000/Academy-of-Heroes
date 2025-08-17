@@ -48,7 +48,7 @@ const tools = [
         icon: <Swords className="h-10 w-10 text-primary" />,
         path: '/teacher/tools/group-generator',
         disabled: false,
-        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2FGroup%20Guilder.jpg?alt=media&token=8e9b015e-8a29-4f7f-8591-62d98d898a33',
+        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-9fea0033-c484-4895-89c9-96ebfc378536.jpg?alt=media&token=c79f89e7-5a39-4816-8ad2-a0a22ec316d4',
     },
     {
         title: 'The Royal Scribe',
