@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { onSnapshot, doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
-import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Hourglass, VolumeX, Flame } from 'lucide-react';
+import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Hourglass, VolumeX, Flame, Lightbulb } from 'lucide-react';
 import { type Student } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
@@ -23,6 +23,8 @@ interface LiveBattleState {
   timerEndsAt?: { seconds: number; nanoseconds: number; };
   lastRoundDamage?: number;
   totalDamage?: number;
+  removedAnswerIndices?: number[]; // For Nature's Guidance
+  powerEventMessage?: string; // For displaying power usage feedback
 }
 
 interface Question {
@@ -38,6 +40,18 @@ interface Battle {
   bossImageUrl: string;
   videoUrl?: string;
   questions: Question[];
+}
+
+function PowerEvent({ message }: { message: string }) {
+    if (!message) return null;
+    return (
+        <div className="text-center p-2 rounded-lg bg-purple-900/80 border border-purple-700 mb-4 animate-in fade-in-50">
+            <div className="flex items-center justify-center gap-2">
+                <Lightbulb className="h-6 w-6 text-purple-300" />
+                <p className="text-lg font-bold text-white">{message}</p>
+            </div>
+        </div>
+    );
 }
 
 function SmallCountdownTimer({ expiryTimestamp }: { expiryTimestamp: Date }) {
@@ -102,13 +116,11 @@ export default function LiveBattlePage() {
   const [isPowersSheetOpen, setIsPowersSheetOpen] = useState(false);
   const router = useRouter();
 
-  // Use a ref to hold the current battle state to avoid it being a dependency in the snapshot listener
   const battleStateRef = useRef(battleState);
   useEffect(() => {
     battleStateRef.current = battleState;
   }, [battleState]);
 
-  // Effect to get current user and their student data
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -131,7 +143,6 @@ export default function LiveBattlePage() {
     return () => unsubscribe();
   }, [router]);
 
-  // Effect to listen for the live battle state
   useEffect(() => {
     if (!teacherUid) return;
 
@@ -142,10 +153,14 @@ export default function LiveBattlePage() {
         const newState = docSnapshot.data() as LiveBattleState;
         const currentBattleState = battleStateRef.current;
 
-        // If it's a new question, reset submitted answer state
         if (currentBattleState && newState.currentQuestionIndex !== currentBattleState.currentQuestionIndex) {
           setSubmittedAnswer(null);
           setLastAnswerCorrect(null);
+        }
+        
+        // Nature's Guidance Logic: check if student's submitted answer was removed
+        if (newState.removedAnswerIndices?.includes(submittedAnswer!)) {
+            setSubmittedAnswer(null);
         }
         
         setBattleState(newState);
@@ -154,7 +169,6 @@ export default function LiveBattlePage() {
             router.push('/battle/summary');
         }
       } else {
-        // Use functional update to avoid dependency on battleState
         setBattleState(prevState => ({ ...prevState, battleId: null, status: 'WAITING', currentQuestionIndex: 0 }));
       }
       setIsLoading(false);
@@ -163,9 +177,8 @@ export default function LiveBattlePage() {
       setIsLoading(false);
     });
     return () => unsubscribe();
-  }, [router, teacherUid]); // Added teacherUid as dependency
+  }, [router, teacherUid, submittedAnswer]);
 
-  // Effect to fetch the battle details when battleId changes
   useEffect(() => {
     if (battleState?.battleId && teacherUid) {
       const fetchBattle = async () => {
@@ -320,6 +333,8 @@ export default function LiveBattlePage() {
                                 </div>
                             </div>
                             
+                             {battleState.powerEventMessage && <PowerEvent message={battleState.powerEventMessage} />}
+
                             {expiryTimestamp && battleState.status === 'ROUND_ENDING' && (
                             <SmallCountdownTimer expiryTimestamp={expiryTimestamp} />
                             )}
@@ -330,21 +345,25 @@ export default function LiveBattlePage() {
 
                             <div className="text-center">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {currentQuestion.answers.map((answer, index) => (
-                                        <Button
-                                        key={index}
-                                        variant="outline"
-                                        className={cn(
-                                            "text-lg h-auto py-4 whitespace-normal justify-start text-left hover:bg-primary/90 hover:text-primary-foreground",
-                                            submittedAnswer === index && "bg-primary text-primary-foreground ring-2 ring-offset-2 ring-offset-background ring-primary"
-                                        )}
-                                        onClick={() => handleSubmitAnswer(index)}
-                                        disabled={!isBattleActive}
-                                        >
-                                        <span className="font-bold mr-4">{String.fromCharCode(65 + index)}.</span>
-                                        {answer}
-                                        </Button>
-                                    ))}
+                                    {currentQuestion.answers.map((answer, index) => {
+                                        const isRemoved = battleState.removedAnswerIndices?.includes(index);
+                                        return (
+                                            <Button
+                                            key={index}
+                                            variant={isRemoved ? "destructive" : "outline"}
+                                            className={cn(
+                                                "text-lg h-auto py-4 whitespace-normal justify-start text-left hover:bg-primary/90 hover:text-primary-foreground",
+                                                submittedAnswer === index && "bg-primary text-primary-foreground ring-2 ring-offset-2 ring-offset-background ring-primary",
+                                                isRemoved && "line-through bg-red-900/50 border-red-700 text-red-400 cursor-not-allowed hover:bg-red-900/50"
+                                            )}
+                                            onClick={() => handleSubmitAnswer(index)}
+                                            disabled={!isBattleActive || isRemoved}
+                                            >
+                                            <span className="font-bold mr-4">{String.fromCharCode(65 + index)}.</span>
+                                            {answer}
+                                            </Button>
+                                        )
+                                    })}
                                 </div>
                             </div>
 

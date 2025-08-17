@@ -34,6 +34,8 @@ interface LiveBattleState {
   totalDamage?: number;
   totalBaseDamage?: number;
   totalPowerDamage?: number;
+  removedAnswerIndices?: number[];
+  powerEventMessage?: string;
 }
 
 interface Question {
@@ -348,6 +350,9 @@ export default function TeacherLiveBattlePage() {
             lastRoundBaseDamage: 0,
             lastRoundPowerDamage: 0,
             lastRoundPowersUsed: [],
+            naturesGuidanceUses: 0,
+            removedAnswerIndices: [],
+            powerEventMessage: '',
         });
 
         await batch.commit();
@@ -647,5 +652,3 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
-
-    

@@ -133,9 +133,9 @@ export const classPowers: ClassPowers = {
   Healer: [
     {
       name: 'Nature’s Guidance',
-      description: 'One of the incorrect answers will be removed from the multiple choices in a boss battle.',
+      description: 'You call upon the spirits of nature to direct your path. One incorrect option on a multiple choice question will be revealed.',
       level: 1,
-      mpCost: 10,
+      mpCost: 3,
       type: 'utility',
     },
     {
