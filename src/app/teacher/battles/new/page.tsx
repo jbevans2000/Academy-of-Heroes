@@ -71,7 +71,7 @@ export default function NewBossBattlePage() {
   }, [router]);
 
   useEffect(() => {
-    setQuestions([{ id: Date.now(), questionText: '', answers: ['', '', '', ''], correctAnswerIndex: null, damage: 10 }]);
+    setQuestions([{ id: Date.now(), questionText: '', answers: ['', '', '', ''], correctAnswerIndex: null, damage: 1 }]);
     setIsClient(true);
   }, []);
 
@@ -97,7 +97,7 @@ export default function NewBossBattlePage() {
         questionText: q.questionText,
         answers: q.answers,
         correctAnswerIndex: q.correctAnswerIndex,
-        damage: 10,
+        damage: 1,
       }));
 
       setQuestions(newQuestions);
@@ -173,7 +173,7 @@ export default function NewBossBattlePage() {
   const handleAddQuestion = () => {
     setQuestions([
       ...questions,
-      { id: Date.now(), questionText: '', answers: ['', '', '', ''], correctAnswerIndex: null, damage: 10 },
+      { id: Date.now(), questionText: '', answers: ['', '', '', ''], correctAnswerIndex: null, damage: 1 },
     ]);
   };
 
@@ -424,7 +424,7 @@ export default function NewBossBattlePage() {
                         <Input
                             id={`q-damage-${q.id}`}
                             type="number"
-                            placeholder="e.g., 10"
+                            placeholder="e.g., 1"
                             value={q.damage}
                             onChange={(e) => handleDamageChange(q.id, e.target.value)}
                             className="mt-2"

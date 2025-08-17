@@ -91,7 +91,7 @@ export default function EditBossBattlePage() {
                 setQuestions(data.questions.map((q: any, index: number) => ({
                     ...q,
                     id: Date.now() + index,
-                    damage: q.damage !== undefined ? q.damage : 10,
+                    damage: q.damage !== undefined ? q.damage : 1,
                 })));
             } else {
                 toast({
@@ -163,7 +163,7 @@ export default function EditBossBattlePage() {
         questionText: q.questionText,
         answers: q.answers,
         correctAnswerIndex: q.correctAnswerIndex,
-        damage: 10,
+        damage: 1,
       }));
 
       setQuestions(newQuestions);
@@ -214,7 +214,7 @@ export default function EditBossBattlePage() {
   const handleAddQuestion = () => {
     setQuestions([
       ...questions,
-      { id: Date.now(), questionText: '', answers: ['', '', '', ''], correctAnswerIndex: null, damage: 10 },
+      { id: Date.now(), questionText: '', answers: ['', '', '', ''], correctAnswerIndex: null, damage: 1 },
     ]);
   };
 
@@ -469,7 +469,7 @@ export default function EditBossBattlePage() {
                         <Input
                             id={`q-damage-${q.id}`}
                             type="number"
-                            placeholder="e.g., 10"
+                            placeholder="e.g., 1"
                             value={q.damage}
                             onChange={(e) => handleDamageChange(q.id, e.target.value)}
                             className="mt-2"
