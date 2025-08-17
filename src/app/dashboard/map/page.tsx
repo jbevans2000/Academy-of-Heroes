@@ -14,30 +14,37 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import type { QuestHub } from '@/lib/quests';
 import type { Student } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
+import { findTeacherForStudent } from '@/lib/utils';
 
-// HARDCODED TEACHER UID
-const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
 
 export default function WorldMapPage() {
     const router = useRouter();
     const [hubs, setHubs] = useState<QuestHub[]>([]);
     const [student, setStudent] = useState<Student | null>(null);
+    const [teacherUid, setTeacherUid] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const worldMapImageUrl = "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FWorld%20Map.JPG?alt=media&token=2d88af7d-a54c-4f34-b4c7-1a7c04485b8b";
 
     useEffect(() => {
-        const authUnsubscribe = onAuthStateChanged(auth, (user) => {
+        const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const studentDocRef = doc(db, 'teachers', TEACHER_UID, 'students', user.uid);
-                const studentUnsubscribe = onSnapshot(studentDocRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        setStudent(docSnap.data() as Student);
-                    } else {
-                        router.push('/');
-                    }
-                    setIsLoading(false);
-                });
-                return () => studentUnsubscribe();
+                const foundTeacherUid = await findTeacherForStudent(user.uid);
+                if (foundTeacherUid) {
+                    setTeacherUid(foundTeacherUid);
+                    const studentDocRef = doc(db, 'teachers', foundTeacherUid, 'students', user.uid);
+                    const studentUnsubscribe = onSnapshot(studentDocRef, (docSnap) => {
+                        if (docSnap.exists()) {
+                            setStudent(docSnap.data() as Student);
+                        } else {
+                            router.push('/');
+                        }
+                        setIsLoading(false);
+                    });
+                    return () => studentUnsubscribe();
+                } else {
+                     router.push('/');
+                     setIsLoading(false);
+                }
             } else {
                 router.push('/');
                 setIsLoading(false);
@@ -47,9 +54,11 @@ export default function WorldMapPage() {
     }, [router]);
 
     useEffect(() => {
+        if (!teacherUid) return;
+
         const fetchHubs = async () => {
             try {
-                const hubsQuery = query(collection(db, 'teachers', TEACHER_UID, 'questHubs'), orderBy('hubOrder'));
+                const hubsQuery = query(collection(db, 'teachers', teacherUid, 'questHubs'), orderBy('hubOrder'));
                 const querySnapshot = await getDocs(hubsQuery);
                 const hubsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
                 setHubs(hubsData);
@@ -58,7 +67,7 @@ export default function WorldMapPage() {
             }
         };
         fetchHubs();
-    }, []);
+    }, [teacherUid]);
 
     const unlockedHubs = student ? hubs.filter(hub => hub.hubOrder <= (student.hubsCompleted || 0) + 1) : [];
 

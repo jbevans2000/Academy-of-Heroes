@@ -12,20 +12,7 @@ import { Eye, EyeOff, Loader2, KeyRound } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-
-const findStudentAndTeacher = async (uid: string): Promise<{ studentName: string | null, teacherUid: string | null }> => {
-    const teachersRef = collection(db, 'teachers');
-    const teacherSnapshot = await getDocs(teachersRef);
-
-    for (const teacherDoc of teacherSnapshot.docs) {
-      const studentDocRef = doc(db, 'teachers', teacherDoc.id, 'students', uid);
-      const studentSnap = await getDoc(studentDocRef);
-      if (studentSnap.exists()) {
-        return { studentName: studentSnap.data().studentName || null, teacherUid: teacherDoc.id };
-      }
-    }
-    return { studentName: null, teacherUid: null };
-  };
+import { findTeacherForStudent } from '@/lib/utils';
 
 export function LoginForm() {
   const [studentId, setStudentId] = useState('');
@@ -54,10 +41,11 @@ export function LoginForm() {
       const user = userCredential.user;
 
       // After successful login, find which teacher this student belongs to
-      const { studentName, teacherUid } = await findStudentAndTeacher(user.uid);
-      
-      if (studentName && teacherUid) {
-        await logGameEvent(teacherUid, 'ACCOUNT', `${studentName} logged in.`);
+      const teacherUid = await findTeacherForStudent(user.uid);
+      const studentSnap = teacherUid ? await getDoc(doc(db, 'teachers', teacherUid, 'students', user.uid)) : null;
+
+      if (teacherUid && studentSnap?.exists()) {
+        await logGameEvent(teacherUid, 'ACCOUNT', `${studentSnap.data().studentName} logged in.`);
       } else {
          // This case would be rare, meaning a user exists in Auth but has no student document
          console.warn(`A user with UID ${user.uid} logged in but has no student record.`);

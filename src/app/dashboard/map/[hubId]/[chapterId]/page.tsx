@@ -17,9 +17,8 @@ import type { Student } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
+import { findTeacherForStudent } from '@/lib/utils';
 
-// HARDCODED TEACHER UID
-const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
 
 export default function ChapterPage() {
     const router = useRouter();
@@ -31,6 +30,7 @@ export default function ChapterPage() {
     const [hub, setHub] = useState<QuestHub | null>(null);
     const [student, setStudent] = useState<Student | null>(null);
     const [user, setUser] = useState<User | null>(null);
+    const [teacherUid, setTeacherUid] = useState<string | null>(null);
     const [totalChaptersInHub, setTotalChaptersInHub] = useState(0);
 
     const [isLoading, setIsLoading] = useState(true);
@@ -38,14 +38,18 @@ export default function ChapterPage() {
     const [isUncompleting, setIsUncompleting] = useState(false);
 
      useEffect(() => {
-        const authUnsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        const authUnsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
                 setUser(currentUser);
-                getDoc(doc(db, 'teachers', TEACHER_UID, 'students', currentUser.uid)).then(docSnap => {
-                    if (docSnap.exists()) {
-                        setStudent(docSnap.data() as Student);
-                    }
-                });
+                const foundTeacherUid = await findTeacherForStudent(currentUser.uid);
+                if (foundTeacherUid) {
+                    setTeacherUid(foundTeacherUid);
+                    getDoc(doc(db, 'teachers', foundTeacherUid, 'students', currentUser.uid)).then(docSnap => {
+                        if (docSnap.exists()) {
+                            setStudent(docSnap.data() as Student);
+                        }
+                    });
+                }
             } else {
                 router.push('/');
             }
@@ -54,23 +58,23 @@ export default function ChapterPage() {
     }, [router]);
 
     useEffect(() => {
-        if (!chapterId || !hubId) return;
+        if (!chapterId || !hubId || !teacherUid) return;
 
         const fetchChapterData = async () => {
             setIsLoading(true);
             try {
-                const chapterDocRef = doc(db, 'teachers', TEACHER_UID, 'chapters', chapterId as string);
+                const chapterDocRef = doc(db, 'teachers', teacherUid, 'chapters', chapterId as string);
                 const chapterSnap = await getDoc(chapterDocRef);
                 if (chapterSnap.exists()) {
                     setChapter(chapterSnap.data() as Chapter);
 
-                    const hubDocRef = doc(db, 'teachers', TEACHER_UID, 'questHubs', hubId as string);
+                    const hubDocRef = doc(db, 'teachers', teacherUid, 'questHubs', hubId as string);
                     const hubSnap = await getDoc(hubDocRef);
                     if (hubSnap.exists()) {
                         setHub(hubSnap.data() as QuestHub);
                     }
                     
-                    const chaptersInHubQuery = query(collection(db, 'teachers', TEACHER_UID, 'chapters'), where('hubId', '==', hubId as string));
+                    const chaptersInHubQuery = query(collection(db, 'teachers', teacherUid, 'chapters'), where('hubId', '==', hubId as string));
                     const chaptersSnapshot = await getDocs(chaptersInHubQuery);
                     setTotalChaptersInHub(chaptersSnapshot.size);
 
@@ -86,14 +90,14 @@ export default function ChapterPage() {
         };
 
         fetchChapterData();
-    }, [chapterId, hubId, router, toast]);
+    }, [chapterId, hubId, router, toast, teacherUid]);
 
     const handleMarkComplete = async () => {
-        if (!user || !student || !chapter || !hub) return;
+        if (!user || !student || !chapter || !hub || !teacherUid) return;
         setIsCompleting(true);
 
         try {
-            const studentRef = doc(db, 'teachers', TEACHER_UID, 'students', user.uid);
+            const studentRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
             
             const currentProgress = student.questProgress?.[hubId as string] || 0;
             // Ensure we don't accidentally mark an old chapter complete and mess up progress
@@ -124,7 +128,7 @@ export default function ChapterPage() {
             // Update local student state to reflect immediate change
             setStudent(prev => prev ? ({ ...prev, ...updates }) : null);
 
-            await logGameEvent('CHAPTER', `${student.studentName} completed Chapter ${chapter.chapterNumber}: ${chapter.title}.`);
+            await logGameEvent(teacherUid, 'CHAPTER', `${student.studentName} completed Chapter ${chapter.chapterNumber}: ${chapter.title}.`);
 
             toast({ title: "Quest Complete!", description: `You have completed Chapter ${chapter.chapterNumber}: ${chapter.title}.` });
 
@@ -137,11 +141,11 @@ export default function ChapterPage() {
     };
     
     const handleUnmarkComplete = async () => {
-        if (!user || !student || !chapter) return;
+        if (!user || !student || !chapter || !teacherUid) return;
         setIsUncompleting(true);
 
         try {
-            const studentRef = doc(db, 'teachers', TEACHER_UID, 'students', user.uid);
+            const studentRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
             
             const currentProgress = student.questProgress?.[hubId as string] || 0;
             
@@ -167,7 +171,7 @@ export default function ChapterPage() {
             
             setStudent(prev => prev ? ({ ...prev, ...updates }) : null);
 
-            await logGameEvent('CHAPTER', `${student.studentName} rolled back progress on Chapter ${chapter.chapterNumber}: ${chapter.title}.`);
+            await logGameEvent(teacherUid, 'CHAPTER', `${student.studentName} rolled back progress on Chapter ${chapter.chapterNumber}: ${chapter.title}.`);
 
             toast({ title: "Quest Progress Rolled Back", description: `Progress has been reset to Chapter ${newProgressValue}.` });
             router.push(`/dashboard/map/${hubId}`);

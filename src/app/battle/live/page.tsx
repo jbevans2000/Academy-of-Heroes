@@ -14,9 +14,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { PowersSheet } from '@/components/dashboard/powers-sheet';
 import { BattleChatBox } from '@/components/battle/chat-box';
-
-// HARDCODED TEACHER UID
-const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+import { findTeacherForStudent } from '@/lib/utils';
 
 interface LiveBattleState {
   battleId: string | null;
@@ -97,6 +95,7 @@ export default function LiveBattlePage() {
   const [battle, setBattle] = useState<Battle | null>(null);
   const [student, setStudent] = useState<Student | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [teacherUid, setTeacherUid] = useState<string | null>(null);
   const [submittedAnswer, setSubmittedAnswer] = useState<number | null>(null);
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -114,9 +113,16 @@ export default function LiveBattlePage() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUser(user);
-        const studentDoc = await getDoc(doc(db, 'teachers', TEACHER_UID, 'students', user.uid));
-        if (studentDoc.exists()) {
-          setStudent(studentDoc.data() as Student);
+        const foundTeacherUid = await findTeacherForStudent(user.uid);
+        if (foundTeacherUid) {
+            setTeacherUid(foundTeacherUid);
+            const studentDoc = await getDoc(doc(db, 'teachers', foundTeacherUid, 'students', user.uid));
+            if (studentDoc.exists()) {
+                setStudent(studentDoc.data() as Student);
+            }
+        } else {
+            console.error("Could not find teacher for student. Redirecting.");
+            router.push('/');
         }
       } else {
         router.push('/');
@@ -127,8 +133,10 @@ export default function LiveBattlePage() {
 
   // Effect to listen for the live battle state
   useEffect(() => {
+    if (!teacherUid) return;
+
     setIsLoading(true);
-    const liveBattleRef = doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle');
+    const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
     const unsubscribe = onSnapshot(liveBattleRef, (docSnapshot) => {
       if (docSnapshot.exists()) {
         const newState = docSnapshot.data() as LiveBattleState;
@@ -155,13 +163,13 @@ export default function LiveBattlePage() {
       setIsLoading(false);
     });
     return () => unsubscribe();
-  }, [router]); // Removed battleState from dependencies
+  }, [router, teacherUid]); // Added teacherUid as dependency
 
   // Effect to fetch the battle details when battleId changes
   useEffect(() => {
-    if (battleState?.battleId) {
+    if (battleState?.battleId && teacherUid) {
       const fetchBattle = async () => {
-        const battleDoc = await getDoc(doc(db, 'teachers', TEACHER_UID, 'bossBattles', battleState.battleId!));
+        const battleDoc = await getDoc(doc(db, 'teachers', teacherUid, 'bossBattles', battleState.battleId!));
         if (battleDoc.exists()) {
           setBattle({ id: battleDoc.id, ...battleDoc.data() } as Battle);
         }
@@ -170,10 +178,10 @@ export default function LiveBattlePage() {
     } else {
       setBattle(null);
     }
-  }, [battleState?.battleId]);
+  }, [battleState?.battleId, teacherUid]);
 
   const handleSubmitAnswer = async (answerIndex: number) => {
-    if (!user || !student || !battleState?.battleId || !battle || (battleState.status !== 'IN_PROGRESS' && battleState.status !== 'ROUND_ENDING')) return;
+    if (!user || !student || !battleState?.battleId || !battle || (battleState.status !== 'IN_PROGRESS' && battleState.status !== 'ROUND_ENDING') || !teacherUid) return;
     
     setSubmittedAnswer(answerIndex);
     
@@ -181,10 +189,7 @@ export default function LiveBattlePage() {
     const isCorrect = answerIndex === currentQuestion.correctAnswerIndex;
     setLastAnswerCorrect(isCorrect);
 
-    // HP damage is now applied in a batch by the teacher at the end of the round.
-    // No damage deduction here.
-
-    const responseRef = doc(db, 'teachers', TEACHER_UID, `liveBattles/active-battle/responses`, user.uid);
+    const responseRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/responses`, user.uid);
     await setDoc(responseRef, {
       studentName: student.studentName,
       characterName: student.characterName,
@@ -194,13 +199,13 @@ export default function LiveBattlePage() {
       submittedAt: new Date(),
     });
 
-    const studentResponseRef = doc(db, 'teachers', TEACHER_UID, `liveBattles/active-battle/studentResponses/${user.uid}/rounds/${battleState.currentQuestionIndex}`);
+    const studentResponseRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/studentResponses/${user.uid}/rounds/${battleState.currentQuestionIndex}`);
     await setDoc(studentResponseRef, {
         answerIndex: answerIndex,
     });
   };
 
-  if (isLoading || !user || !student) {
+  if (isLoading || !user || !student || !teacherUid) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4 text-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
@@ -274,6 +279,8 @@ export default function LiveBattlePage() {
           onOpenChange={setIsPowersSheetOpen}
           student={student}
           isBattleView={true}
+          teacherUid={teacherUid}
+          battleId={battle.id}
         />
         <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 p-4">
             <div className="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -348,7 +355,7 @@ export default function LiveBattlePage() {
                     <BattleChatBox 
                         isTeacher={false}
                         userName={student.characterName}
-                        teacherUid={TEACHER_UID}
+                        teacherUid={teacherUid}
                         battleId={battle.id}
                     />
                 </div>

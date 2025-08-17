@@ -14,13 +14,11 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, ArrowLeft, UploadCloud } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-// This is a hardcoded placeholder from your project configuration.
-// In a multi-teacher setup, this would need to be dynamic.
-const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+import { findTeacherForStudent } from '@/lib/utils';
 
 export default function AvatarUploadPage() {
   const [user, setUser] = useState<User | null>(null);
+  const [teacherUid, setTeacherUid] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isPageLoading, setIsPageLoading] = useState(true);
@@ -28,9 +26,13 @@ export default function AvatarUploadPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
+        const foundTeacherUid = await findTeacherForStudent(currentUser.uid);
+        if (foundTeacherUid) {
+            setTeacherUid(foundTeacherUid);
+        }
       } else {
         router.push('/');
       }
@@ -46,7 +48,7 @@ export default function AvatarUploadPage() {
   };
 
   const handleUpload = async () => {
-    if (!file || !user) {
+    if (!file || !user || !teacherUid) {
       toast({
         variant: 'destructive',
         title: 'No file selected',
@@ -70,7 +72,7 @@ export default function AvatarUploadPage() {
       const downloadUrl = await getDownloadURL(uploadResult.ref);
 
       // Update the user's avatarUrl in their Firestore document
-      const studentDocRef = doc(db, 'teachers', TEACHER_UID, 'students', user.uid);
+      const studentDocRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
       await updateDoc(studentDocRef, {
         avatarUrl: downloadUrl,
       });

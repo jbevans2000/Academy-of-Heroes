@@ -91,10 +91,10 @@ export function BattleChatBox({ teacherUid, battleId, userName, isTeacher }: Bat
               key={msg.id}
               className={cn(
                 "flex flex-col items-start p-2 rounded-lg max-w-[85%]",
-                msg.isTeacher ? "bg-primary/20 self-end text-right" : "bg-secondary self-start text-left"
+                msg.isTeacher ? "bg-primary/20 self-end items-end" : "bg-secondary self-start"
               )}
             >
-              <div className="flex items-center gap-2 w-full">
+              <div className={cn("flex items-center gap-2 w-full", msg.isTeacher ? "flex-row-reverse" : "")}>
                 <p className={cn("font-bold text-sm", msg.isTeacher ? "text-primary" : "")}>{msg.senderName}</p>
                 {msg.timestamp && (
                     <p className="text-xs text-muted-foreground">

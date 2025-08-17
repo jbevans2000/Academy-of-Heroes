@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -12,13 +13,17 @@ import { Button } from "@/components/ui/button";
 import type { Student } from "@/lib/data";
 import { classPowers, type Power, type PowerType } from "@/lib/powers";
 import { cn } from "@/lib/utils";
-import { Wand2, Zap, Shield, Heart } from 'lucide-react';
+import { Wand2, Zap, Shield, Heart, Loader2 } from 'lucide-react';
+import { usePower } from '@/app/battle/powers/actions';
+import { useToast } from '@/hooks/use-toast';
 
 interface PowersSheetProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   student: Student;
   isBattleView?: boolean;
+  teacherUid?: string;
+  battleId?: string;
 }
 
 const powerTypeStyles: { [key in PowerType]: string } = {
@@ -34,8 +39,39 @@ const classIconMap: { [key: string]: React.ReactNode } = {
     Mage: <Wand2 className="h-8 w-8 text-primary" />,
 };
 
-export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = false }: PowersSheetProps) {
+export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = false, teacherUid, battleId }: PowersSheetProps) {
   const powers = classPowers[student.class] || [];
+  const { toast } = useToast();
+  const [isCasting, setIsCasting] = useState<string | null>(null);
+
+  const handleUsePower = async (power: Power) => {
+    if (!isBattleView || !teacherUid || !battleId) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Powers can only be used inside a live battle.' });
+        return;
+    }
+    
+    setIsCasting(power.name);
+    try {
+      const result = await usePower({
+        teacherUid,
+        studentUid: student.uid,
+        battleId,
+        power,
+      });
+
+      if (result.success) {
+        toast({ title: 'Power Cast!', description: result.message });
+      } else {
+        toast({ variant: 'destructive', title: 'Power Failed', description: result.message });
+      }
+
+    } catch (error) {
+        console.error("Failed to use power:", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'An unexpected error occurred while using the power.' });
+    } finally {
+        setIsCasting(null);
+    }
+  }
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
@@ -55,7 +91,7 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
             {powers.length > 0 ? powers.map((power, index) => {
                 const isUnlocked = student.level >= power.level;
                 const hasEnoughMp = student.mp >= power.mpCost;
-                const canUsePower = isUnlocked && hasEnoughMp;
+                const canUsePower = isUnlocked && hasEnoughMp && isBattleView && !isCasting;
                 
                 return (
                     <div 
@@ -71,8 +107,8 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
                                 <p className={cn("text-sm", isUnlocked ? "text-white/80" : "")}>{power.description}</p>
                             </div>
                             {isBattleView && (
-                                <Button size="sm" disabled={!canUsePower} variant={isUnlocked ? 'secondary' : 'ghost'}>
-                                    Use Power
+                                <Button size="sm" disabled={!canUsePower} variant={isUnlocked ? 'secondary' : 'ghost'} onClick={() => handleUsePower(power)}>
+                                    {isCasting === power.name ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Use Power'}
                                 </Button>
                             )}
                         </div>

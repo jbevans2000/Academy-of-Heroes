@@ -10,13 +10,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { collection, getDocs, doc, getDoc, query, where, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, type User } from 'firebase/auth';
 import type { QuestHub, Chapter } from '@/lib/quests';
 import type { Student } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
-
-// HARDCODED TEACHER UID
-const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
+import { findTeacherForStudent } from '@/lib/utils';
 
 export default function HubMapPage() {
     const router = useRouter();
@@ -26,20 +24,25 @@ export default function HubMapPage() {
     const [hub, setHub] = useState<QuestHub | null>(null);
     const [chapters, setChapters] = useState<Chapter[]>([]);
     const [student, setStudent] = useState<Student | null>(null);
+    const [teacherUid, setTeacherUid] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const authUnsubscribe = onAuthStateChanged(auth, (user) => {
+        const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const studentDocRef = doc(db, 'teachers', TEACHER_UID, 'students', user.uid);
-                const studentUnsubscribe = onSnapshot(studentDocRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        setStudent(docSnap.data() as Student);
-                    } else {
-                        router.push('/');
-                    }
-                });
-                return () => studentUnsubscribe();
+                 const foundTeacherUid = await findTeacherForStudent(user.uid);
+                 if (foundTeacherUid) {
+                    setTeacherUid(foundTeacherUid);
+                    const studentDocRef = doc(db, 'teachers', foundTeacherUid, 'students', user.uid);
+                    const studentUnsubscribe = onSnapshot(studentDocRef, (docSnap) => {
+                        if (docSnap.exists()) {
+                            setStudent(docSnap.data() as Student);
+                        } else {
+                            router.push('/');
+                        }
+                    });
+                    return () => studentUnsubscribe();
+                 }
             } else {
                 router.push('/');
             }
@@ -48,20 +51,20 @@ export default function HubMapPage() {
     }, [router]);
 
     useEffect(() => {
-        if (!hubId) return;
+        if (!hubId || !teacherUid) return;
 
         const fetchHubData = async () => {
             setIsLoading(true);
             try {
                 // Fetch hub details
-                const hubDocRef = doc(db, 'teachers', TEACHER_UID, 'questHubs', hubId);
+                const hubDocRef = doc(db, 'teachers', teacherUid, 'questHubs', hubId);
                 const hubDocSnap = await getDoc(hubDocRef);
                 if (hubDocSnap.exists()) {
                     setHub({ id: hubDocSnap.id, ...hubDocSnap.data() } as QuestHub);
                 }
 
                 // Fetch chapters for this hub, ordered by chapter number
-                const chaptersQuery = query(collection(db, 'teachers', TEACHER_UID, 'chapters'), where('hubId', '==', hubId));
+                const chaptersQuery = query(collection(db, 'teachers', teacherUid, 'chapters'), where('hubId', '==', hubId));
                 const chaptersSnapshot = await getDocs(chaptersQuery);
                 let chaptersData = chaptersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
                 chaptersData.sort((a, b) => a.chapterNumber - b.chapterNumber);
@@ -75,7 +78,7 @@ export default function HubMapPage() {
         };
 
         fetchHubData();
-    }, [hubId]);
+    }, [hubId, teacherUid]);
 
     const lastCompletedChapter = student?.questProgress?.[hubId] || 0;
     const unlockedChapters = chapters.filter(chapter => chapter.chapterNumber <= lastCompletedChapter + 1);
