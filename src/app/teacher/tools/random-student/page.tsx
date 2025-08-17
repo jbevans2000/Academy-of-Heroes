@@ -64,7 +64,9 @@ export default function RandomStudentPage() {
 
     const generateStudent = () => {
         if (students.length === 0) return;
-        setPickedStudent(null);
+        
+        // This is the key fix: reset the picked student *before* starting the shuffle animation
+        setPickedStudent(null); 
         setIsShuffling(true);
 
         const randomIndex = Math.floor(Math.random() * students.length);
@@ -107,14 +109,14 @@ export default function RandomStudentPage() {
                             <CardTitle className="text-3xl">The Runes of Destiny</CardTitle>
                             <CardDescription>Draw from the runes to select a student for a task.</CardDescription>
                         </CardHeader>
-                        <CardContent className="min-h-[450px] flex flex-col items-center justify-center overflow-hidden p-6 space-y-6">
+                        <CardContent className="min-h-[450px] flex flex-col items-center justify-center overflow-hidden p-6">
                              {isLoading ? (
                                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
                             ) : (
-                                <>
+                                <div className="relative w-full h-full flex flex-col items-center justify-center">
                                     <div className={cn(
-                                        "transition-opacity duration-500",
-                                        isShuffling ? "opacity-100" : "opacity-0 absolute",
+                                        "absolute inset-0 flex items-center justify-center transition-opacity duration-500",
+                                        isShuffling ? "opacity-100" : "opacity-0",
                                     )}>
                                         <div className="grid grid-cols-4 gap-4 animate-in fade-in-50">
                                             {Array.from({ length: numRunes }).map((_, i) => (
@@ -142,12 +144,13 @@ export default function RandomStudentPage() {
                                             `}</style>
                                         </div>
                                     </div>
-                                    <div className={cn(
-                                        "transition-opacity duration-500 delay-500",
-                                        pickedStudent && !isShuffling ? "opacity-100" : "opacity-0 absolute"
+
+                                     <div className={cn(
+                                        "absolute inset-0 flex items-center justify-center transition-opacity duration-500",
+                                        pickedStudent && !isShuffling ? "opacity-100" : "opacity-0"
                                     )}>
                                         {pickedStudent && (
-                                            <div className="space-y-4">
+                                            <div className="space-y-4 animate-in fade-in-50">
                                                 <h3 className="text-2xl font-bold font-headline text-black">{pickedCaption}</h3>
                                                 <div className="relative w-64 h-64 mx-auto">
                                                     <Image 
@@ -163,22 +166,27 @@ export default function RandomStudentPage() {
                                             </div>
                                         )}
                                     </div>
+                                    
                                     <div className={cn(
-                                        "transition-opacity duration-500",
-                                        !pickedStudent && !isShuffling ? "opacity-100" : "opacity-0 absolute"
+                                        "absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-500",
+                                        !pickedStudent && !isShuffling ? "opacity-100" : "opacity-0"
                                     )}>
-                                        <div className="flex flex-col items-center justify-center gap-4">
-                                            <p className="text-muted-foreground text-lg">Click the button to consult the runes!</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-auto pt-6">
+                                        <p className="text-muted-foreground text-lg mb-4">Click the button to consult the runes!</p>
                                          <Button size="lg" className="w-full max-w-xs text-xl py-8" onClick={generateStudent} disabled={isLoading || isShuffling || students.length === 0}>
                                             <RefreshCw className="mr-4 h-6 w-6" />
                                             {students.length === 0 ? 'No Students in Roster' : 'Consult the Runes!'}
                                         </Button>
                                     </div>
-                                </>
+
+                                    {pickedStudent && !isShuffling && (
+                                        <div className="absolute bottom-6">
+                                            <Button size="lg" className="text-xl py-8" onClick={generateStudent} disabled={isLoading || isShuffling || students.length === 0}>
+                                                <RefreshCw className="mr-4 h-6 w-6" />
+                                                Consult Again
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
                             )}
                         </CardContent>
                     </Card>
