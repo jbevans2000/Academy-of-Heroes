@@ -357,7 +357,7 @@ export default function LiveBattlePage() {
                                                 isRemoved && "line-through bg-red-900/50 border-red-700 text-red-400 cursor-not-allowed hover:bg-red-900/50"
                                             )}
                                             onClick={() => handleSubmitAnswer(index)}
-                                            disabled={!isBattleActive || isRemoved}
+                                            disabled={!isBattleActive || submittedAnswer !== null || isRemoved}
                                             >
                                             <span className="font-bold mr-4">{String.fromCharCode(65 + index)}.</span>
                                             {answer}

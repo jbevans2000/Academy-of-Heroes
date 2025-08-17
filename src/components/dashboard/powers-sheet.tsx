@@ -14,7 +14,7 @@ import type { Student } from "@/lib/data";
 import { classPowers, type Power, type PowerType } from "@/lib/powers";
 import { cn } from "@/lib/utils";
 import { Wand2, Zap, Shield, Heart, Loader2 } from 'lucide-react';
-import { usePower } from '@/app/battle/powers/actions';
+// import { usePower } from '@/app/battle/powers/actions';
 import { useToast } from '@/hooks/use-toast';
 
 interface PowersSheetProps {
@@ -50,27 +50,32 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
         return;
     }
     
-    setIsCasting(power.name);
-    try {
-      const result = await usePower({
-        teacherUid,
-        studentUid: student.uid,
-        battleId,
-        power,
-      });
+    toast({
+        variant: 'destructive',
+        title: 'Feature Disabled',
+        description: 'Power usage is temporarily disabled due to a technical issue.',
+    });
+    // setIsCasting(power.name);
+    // try {
+    //   const result = await usePower({
+    //     teacherUid,
+    //     studentUid: student.uid,
+    //     battleId,
+    //     power,
+    //   });
 
-      if (result.success) {
-        toast({ title: 'Power Cast!', description: result.message });
-      } else {
-        toast({ variant: 'destructive', title: 'Power Failed', description: result.message });
-      }
+    //   if (result.success) {
+    //     toast({ title: 'Power Cast!', description: result.message });
+    //   } else {
+    //     toast({ variant: 'destructive', title: 'Power Failed', description: result.message });
+    //   }
 
-    } catch (error) {
-        console.error("Failed to use power:", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'An unexpected error occurred while using the power.' });
-    } finally {
-        setIsCasting(null);
-    }
+    // } catch (error) {
+    //     console.error("Failed to use power:", error);
+    //     toast({ variant: 'destructive', title: 'Error', description: 'An unexpected error occurred while using the power.' });
+    // } finally {
+    //     setIsCasting(null);
+    // }
   }
 
   return (
@@ -107,7 +112,7 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
                                 <p className={cn("text-sm", isUnlocked ? "text-white/80" : "")}>{power.description}</p>
                             </div>
                             {isBattleView && (
-                                <Button size="sm" disabled={!canUsePower} variant={isUnlocked ? 'secondary' : 'ghost'} onClick={() => handleUsePower(power)}>
+                                <Button size="sm" disabled={true} variant={isUnlocked ? 'secondary' : 'ghost'} onClick={() => handleUsePower(power)}>
                                     {isCasting === power.name ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Use Power'}
                                 </Button>
                             )}
