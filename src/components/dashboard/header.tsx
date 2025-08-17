@@ -1,3 +1,4 @@
+'use client';
 
 import { Sword, LogOut, LifeBuoy } from "lucide-react";
 import Link from "next/link";
