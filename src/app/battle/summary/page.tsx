@@ -9,7 +9,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, Trophy, LayoutDashboard, HeartCrack, Star, Coins } from 'lucide-react';
+import { CheckCircle, XCircle, Trophy, LayoutDashboard, HeartCrack, Star, Coins, ShieldCheck, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 // HARDCODED TEACHER UID
@@ -26,6 +26,8 @@ interface BattleSummary {
   battleName: string;
   questions: Question[];
   totalDamageDealt?: number;
+  totalBaseDamage?: number;
+  totalPowerDamage?: number;
   rewards?: {
     [studentUid: string]: {
       xpGained: number;
@@ -175,13 +177,31 @@ export default function StudentBattleSummaryPage() {
              <CardContent className="space-y-4">
                 <p className="text-2xl font-bold">You answered <span className="text-primary">{totalCorrect}</span> out of <span className="text-primary">{summary.questions.length}</span> questions correctly.</p>
                 {summary.totalDamageDealt !== undefined && (
-                     <div className="p-4 rounded-md bg-sky-900/70 border border-sky-700 text-sky-200 flex items-center justify-center gap-4">
-                        <HeartCrack className="h-10 w-10 text-sky-400" />
-                        <p className="text-xl font-bold">Your party dealt a total of {summary.totalDamageDealt} damage to the boss!</p>
+                     <div className="p-4 rounded-md bg-sky-900/70 border border-sky-700 text-sky-200">
+                        <div className="flex items-center justify-center gap-4 text-center">
+                            <div className="flex-1">
+                                <p className="text-sm font-bold uppercase text-sky-300">Base Damage</p>
+                                <p className="text-2xl font-bold">{summary.totalBaseDamage ?? 0}</p>
+                            </div>
+                            <div className="text-2xl font-bold">+</div>
+                            <div className="flex-1">
+                                <p className="text-sm font-bold uppercase text-sky-300">Power Damage</p>
+                                <p className="text-2xl font-bold">{summary.totalPowerDamage ?? 0}</p>
+                            </div>
+                            <div className="text-2xl font-bold">=</div>
+                             <div className="flex-1">
+                                <p className="text-sm font-bold uppercase text-sky-300">Total Damage</p>
+                                <p className="text-3xl font-extrabold text-white">{summary.totalDamageDealt}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-center gap-2 mt-2">
+                             <HeartCrack className="h-6 w-6 text-sky-400" />
+                            <p className="text-lg font-bold">Your party dealt a total of {summary.totalDamageDealt} damage to the boss!</p>
+                        </div>
                     </div>
                 )}
                 {userRewards && (
-                    <div className="grid grid-cols-2 gap-4 mt-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                         <div className="p-4 rounded-md bg-yellow-800/70 border border-yellow-600 text-yellow-200 flex items-center justify-center gap-4">
                             <Star className="h-10 w-10 text-yellow-400" />
                             <p className="text-xl font-bold">You earned {userRewards.xpGained} XP!</p>

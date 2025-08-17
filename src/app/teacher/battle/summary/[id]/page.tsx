@@ -9,7 +9,7 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Star, Coins } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Star, Coins, ShieldCheck, Sparkles } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 // HARDCODED TEACHER UID
@@ -33,6 +33,7 @@ interface BattleSummary {
         answerIndex: number;
         isCorrect: boolean;
       }[];
+      powersUsed?: string[];
     };
   };
   rewards?: {
@@ -40,8 +41,10 @@ interface BattleSummary {
       xpGained: number;
       goldGained: number;
     }
-  }
+  };
   totalDamageDealt?: number;
+  totalBaseDamage?: number;
+  totalPowerDamage?: number;
 }
 
 export default function TeacherBattleSummaryPage() {
@@ -114,6 +117,8 @@ export default function TeacherBattleSummaryPage() {
 
   const totalXpAwarded = summary.rewards ? Object.values(summary.rewards).reduce((acc, reward) => acc + reward.xpGained, 0) : 0;
   const totalGoldAwarded = summary.rewards ? Object.values(summary.rewards).reduce((acc, reward) => acc + reward.goldGained, 0) : 0;
+  
+  const allPowersUsed = roundKeys.flatMap(key => summary.resultsByRound[key].powersUsed || []);
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -167,6 +172,12 @@ export default function TeacherBattleSummaryPage() {
                                             </li>
                                         ))}
                                     </ul>
+                                    {(roundData.powersUsed && roundData.powersUsed.length > 0) && (
+                                        <div className="mt-2 p-2 bg-blue-900/10 rounded-md">
+                                            <h4 className="font-semibold text-sm">Powers Used:</h4>
+                                            <p className="text-xs text-muted-foreground">{roundData.powersUsed.join(', ')}</p>
+                                        </div>
+                                    )}
                                 </AccordionContent>
                             </AccordionItem>
                         )
@@ -179,40 +190,63 @@ export default function TeacherBattleSummaryPage() {
                 <CardHeader>
                     <CardTitle>Overall Battle Totals</CardTitle>
                 </CardHeader>
-                <CardContent className="flex justify-around items-center text-center text-xl font-bold">
-                    <div className="flex flex-col items-center gap-2 text-green-600">
+                <CardContent className="flex flex-wrap justify-around items-center text-center gap-4">
+                    <div className="flex flex-col items-center gap-2 text-green-600 p-2">
                         <CheckCircle className="h-8 w-8" />
-                        <p>{totalCorrect}</p>
+                        <p className="text-xl font-bold">{totalCorrect}</p>
                         <p className="text-sm font-medium">Total Correct Answers</p>
                     </div>
-                     <div className="flex flex-col items-center gap-2 text-red-600">
+                     <div className="flex flex-col items-center gap-2 text-red-600 p-2">
                         <XCircle className="h-8 w-8" />
-                        <p>{totalIncorrect}</p>
+                        <p className="text-xl font-bold">{totalIncorrect}</p>
                         <p className="text-sm font-medium">Total Incorrect Answers</p>
                     </div>
                     {summary.totalDamageDealt !== undefined && (
-                        <div className="flex flex-col items-center gap-2 text-sky-600">
+                        <>
+                         <div className="flex flex-col items-center gap-2 text-sky-600 p-2">
+                            <ShieldCheck className="h-8 w-8" />
+                            <p className="text-xl font-bold">{summary.totalBaseDamage ?? 0}</p>
+                            <p className="text-sm font-medium">Total Base Damage</p>
+                        </div>
+                         <div className="flex flex-col items-center gap-2 text-purple-600 p-2">
+                            <Sparkles className="h-8 w-8" />
+                            <p className="text-xl font-bold">{summary.totalPowerDamage ?? 0}</p>
+                            <p className="text-sm font-medium">Total Power Damage</p>
+                        </div>
+                        <div className="flex flex-col items-center gap-2 text-red-800 p-2">
                             <HeartCrack className="h-8 w-8" />
-                            <p>{summary.totalDamageDealt}</p>
+                            <p className="text-xl font-bold">{summary.totalDamageDealt}</p>
                             <p className="text-sm font-medium">Total Damage Dealt</p>
                         </div>
+                        </>
                     )}
                     {summary.rewards && (
                        <>
-                         <div className="flex flex-col items-center gap-2 text-yellow-500">
+                         <div className="flex flex-col items-center gap-2 text-yellow-500 p-2">
                            <Star className="h-8 w-8" />
-                           <p>{totalXpAwarded}</p>
+                           <p className="text-xl font-bold">{totalXpAwarded}</p>
                            <p className="text-sm font-medium">Total XP Awarded</p>
                          </div>
-                         <div className="flex flex-col items-center gap-2 text-amber-600">
+                         <div className="flex flex-col items-center gap-2 text-amber-600 p-2">
                            <Coins className="h-8 w-8" />
-                           <p>{totalGoldAwarded}</p>
+                           <p className="text-xl font-bold">{totalGoldAwarded}</p>
                            <p className="text-sm font-medium">Total Gold Awarded</p>
                          </div>
                        </>
                     )}
                 </CardContent>
             </Card>
+
+            {allPowersUsed.length > 0 && (
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Powers Used During Battle</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground">{allPowersUsed.join(', ')}</p>
+                    </CardContent>
+                </Card>
+            )}
 
         </div>
       </main>

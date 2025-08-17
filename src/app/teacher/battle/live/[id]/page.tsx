@@ -9,7 +9,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, Download, Timer, HeartCrack, Video } from 'lucide-react';
+import { Loader2, Download, Timer, HeartCrack, Video, ShieldCheck, Sparkles } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RoundResults, type Result } from '@/components/teacher/round-results';
 import { downloadCsv } from '@/lib/utils';
@@ -27,8 +27,13 @@ interface LiveBattleState {
   status: 'WAITING' | 'IN_PROGRESS' | 'ROUND_ENDING' | 'SHOWING_RESULTS' | 'BATTLE_ENDED';
   currentQuestionIndex: number;
   timerEndsAt?: { seconds: number; nanoseconds: number; };
-  lastRoundDamage?: number;
+  lastRoundDamage?: number; // Kept for backwards compatibility / simple display
+  lastRoundBaseDamage?: number;
+  lastRoundPowerDamage?: number;
+  lastRoundPowersUsed?: string[]; // Simple array of power names for now
   totalDamage?: number;
+  totalBaseDamage?: number;
+  totalPowerDamage?: number;
 }
 
 interface Question {
@@ -229,7 +234,9 @@ export default function TeacherLiveBattlePage() {
             }
         }
 
-        const roundDamage = results.filter(r => r.isCorrect).length;
+        const baseDamage = results.filter(r => r.isCorrect).length;
+        const powerDamage = 0; // Placeholder for now
+        const powersUsed: string[] = []; // Placeholder
 
         // Store this round's data for the final summary
         const newAllRoundsData = {
@@ -241,17 +248,24 @@ export default function TeacherLiveBattlePage() {
                     studentName: r.studentName,
                     answerIndex: r.answerIndex,
                     isCorrect: r.isCorrect,
-                }))
+                })),
+                powersUsed,
             }
         };
         setAllRoundsData(newAllRoundsData);
 
         // Update the live battle state
+        const totalDamageThisRound = baseDamage + powerDamage;
         batch.update(liveBattleRef, { 
             status: 'SHOWING_RESULTS', 
             timerEndsAt: null,
-            lastRoundDamage: roundDamage,
-            totalDamage: increment(roundDamage)
+            lastRoundDamage: totalDamageThisRound,
+            lastRoundBaseDamage: baseDamage,
+            lastRoundPowerDamage: powerDamage,
+            lastRoundPowersUsed: powersUsed,
+            totalDamage: increment(totalDamageThisRound),
+            totalBaseDamage: increment(baseDamage),
+            totalPowerDamage: increment(powerDamage)
         });
 
         // Commit all database changes at once
@@ -323,7 +337,10 @@ export default function TeacherLiveBattlePage() {
             status: 'IN_PROGRESS',
             currentQuestionIndex: nextQuestionIndex,
             timerEndsAt: null,
-            lastRoundDamage: 0
+            lastRoundDamage: 0,
+            lastRoundBaseDamage: 0,
+            lastRoundPowerDamage: 0,
+            lastRoundPowersUsed: [],
         });
 
         await batch.commit();
@@ -344,7 +361,10 @@ export default function TeacherLiveBattlePage() {
 
       // 1. Get the final total damage from the live state
       const finalStateDoc = await getDoc(liveBattleRef);
-      const totalDamage = finalStateDoc.data()?.totalDamage || 0;
+      const finalStateData = finalStateDoc.data();
+      const totalDamage = finalStateData?.totalDamage || 0;
+      const totalBaseDamage = finalStateData?.totalBaseDamage || 0;
+      const totalPowerDamage = finalStateData?.totalPowerDamage || 0;
       await logGameEvent('BOSS_BATTLE', `The party dealt a total of ${totalDamage} damage during '${battle.battleName}'.`);
 
       // 2. Calculate final rewards
@@ -397,6 +417,8 @@ export default function TeacherLiveBattlePage() {
           questions: battle?.questions,
           resultsByRound: allRoundsData,
           totalDamageDealt: totalDamage,
+          totalBaseDamage: totalBaseDamage,
+          totalPowerDamage: totalPowerDamage,
           rewards: rewardsByStudent,
           endedAt: serverTimestamp(),
       });
@@ -568,12 +590,32 @@ export default function TeacherLiveBattlePage() {
                         </CardHeader>
                         <CardContent>
                             <RoundResults results={roundResults} />
-                            {liveState.lastRoundDamage !== undefined && liveState.lastRoundDamage > 0 && (
-                                <div className="mt-4 p-4 rounded-md bg-sky-900/70 border border-sky-700 text-sky-200 flex items-center justify-center gap-4">
-                                    <HeartCrack className="h-8 w-8 text-sky-400" />
-                                    <p className="text-lg font-bold">Total Damage Dealt This Round: {liveState.lastRoundDamage}</p>
+                             <div className="mt-4 p-4 rounded-md bg-sky-900/70 border border-sky-700 text-sky-200 flex flex-col gap-4">
+                                <div className="flex items-center justify-center gap-4 text-center">
+                                    <div className="flex-1">
+                                        <p className="text-sm font-bold uppercase text-sky-300">Base Damage</p>
+                                        <p className="text-2xl font-bold">{liveState.lastRoundBaseDamage || 0}</p>
+                                    </div>
+                                    <div className="text-2xl font-bold">+</div>
+                                    <div className="flex-1">
+                                        <p className="text-sm font-bold uppercase text-sky-300">Power Damage</p>
+                                        <p className="text-2xl font-bold">{liveState.lastRoundPowerDamage || 0}</p>
+                                    </div>
+                                    <div className="text-2xl font-bold">=</div>
+                                    <div className="flex-1">
+                                        <p className="text-sm font-bold uppercase text-sky-300">Total Damage</p>
+                                        <p className="text-3xl font-extrabold text-white">{liveState.lastRoundDamage || 0}</p>
+                                    </div>
                                 </div>
-                            )}
+                                {(liveState.lastRoundPowersUsed && liveState.lastRoundPowersUsed.length > 0) && (
+                                     <div className="border-t border-sky-600 pt-2 mt-2">
+                                        <h4 className="font-semibold text-center text-sky-200">Powers Used This Round:</h4>
+                                        <ul className="text-center text-sm text-sky-100">
+                                            {liveState.lastRoundPowersUsed.map((power, index) => <li key={index}>{power}</li>)}
+                                        </ul>
+                                     </div>
+                                )}
+                            </div>
                         </CardContent>
                     </Card>
                 )}
