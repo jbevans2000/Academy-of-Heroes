@@ -47,7 +47,7 @@ interface EditablePairedStatProps {
 
 function EditableStat({ student, stat, icon, label, setStudents, teacherUid }: EditableStatProps) {
     const [isEditing, setIsEditing] = useState(false);
-    const [value, setValue] = useState(student[stat]);
+    const [value, setValue] = useState(student[stat] ?? 0);
     const [isLoading, setIsLoading] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
@@ -60,7 +60,7 @@ function EditableStat({ student, stat, icon, label, setStudents, teacherUid }: E
     }, [isEditing]);
     
      useEffect(() => {
-        setValue(student[stat]);
+        setValue(student[stat] ?? 0);
     }, [student, stat]);
 
     const handleSave = async () => {
@@ -68,7 +68,7 @@ function EditableStat({ student, stat, icon, label, setStudents, teacherUid }: E
         const amount = Number(value);
         if (isNaN(amount) || amount < 0) {
             toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please enter a non-negative number.' });
-            setValue(student[stat]);
+            setValue(student[stat] ?? 0);
             setIsEditing(false);
             setIsLoading(false);
             return;
@@ -90,12 +90,13 @@ function EditableStat({ student, stat, icon, label, setStudents, teacherUid }: E
 
                 if (newLevel > currentLevel) {
                     const levelsGained = newLevel - currentLevel;
-                    const hpGained = calculateHpGain(studentData.class, levelsGained);
-                    const mpGained = calculateMpGain(studentData.class, levelsGained);
-                    
                     updates.level = newLevel;
+                    
+                    const hpGained = calculateHpGain(studentData.class, levelsGained);
                     updates.hp = (studentData.hp || 0) + hpGained;
                     updates.maxHp = (studentData.maxHp || 0) + hpGained;
+
+                    const mpGained = calculateMpGain(studentData.class, levelsGained);
                     updates.mp = (studentData.mp || 0) + mpGained;
                     updates.maxMp = (studentData.maxMp || 0) + mpGained;
                 }
@@ -110,7 +111,7 @@ function EditableStat({ student, stat, icon, label, setStudents, teacherUid }: E
         } catch (error) {
             console.error(`Error updating ${stat}:`, error);
             toast({ variant: 'destructive', title: 'Update Failed', description: `Could not update ${label}.` });
-            setValue(student[stat]);
+            setValue(student[stat] ?? 0);
         } finally {
             setIsEditing(false);
             setIsLoading(false);
@@ -120,7 +121,7 @@ function EditableStat({ student, stat, icon, label, setStudents, teacherUid }: E
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') handleSave();
         else if (e.key === 'Escape') {
-            setValue(student[stat]);
+            setValue(student[stat] ?? 0);
             setIsEditing(false);
         }
     }
@@ -264,21 +265,19 @@ export function StudentCard({ student, isSelected, onSelect, setStudents, teache
                     checked={isSelected}
                     onCheckedChange={onSelect}
                     aria-label={`Select ${student.characterName}`}
-                    className="h-6 w-6 border-2 border-black"
+                    className="h-6 w-6 border-2 border-black bg-white"
                 />
             </div>
-            <div className={cn("relative w-24 h-24 rounded-full p-1", avatarBorderColor)}>
-                 <div className={cn("relative w-full h-full rounded-full border-4", avatarBorderColor)}>
-                    <Image
-                        src={avatarUrl}
-                        alt={`${student.characterName}'s avatar`}
-                        fill
-                        sizes="100px"
-                        className="object-contain drop-shadow-lg rounded-full"
-                        data-ai-hint="character"
-                        onError={(e) => (e.currentTarget.src = 'https://placehold.co/100x100.png')}
-                    />
-                </div>
+             <div className={cn("relative w-28 h-28 border-4 bg-black/20 p-1 shadow-inner", avatarBorderColor)}>
+                <Image
+                    src={avatarUrl}
+                    alt={`${student.characterName}'s avatar`}
+                    fill
+                    sizes="112px"
+                    className="object-contain drop-shadow-lg"
+                    data-ai-hint="character"
+                    onError={(e) => (e.currentTarget.src = 'https://placehold.co/100x100.png')}
+                />
             </div>
         </CardHeader>
         <CardContent className="p-4 flex-grow space-y-3">
