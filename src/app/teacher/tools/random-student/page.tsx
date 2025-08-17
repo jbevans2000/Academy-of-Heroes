@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -82,13 +81,17 @@ export default function RandomStudentPage() {
 
     return (
         <div 
-            className="flex min-h-screen w-full flex-col"
-            style={{
-                backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-01eb6e6f-c49f-49a6-8296-3b97d092a4c2.jpg?alt=media&token=6fe54bce-fef4-4ad1-92a2-fdef04425008')`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-            }}
+            className="relative flex min-h-screen w-full flex-col"
         >
+             <div 
+                className="absolute inset-0 -z-10"
+                style={{
+                    backgroundImage: `url('${runeImageSrc}')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    opacity: 0.25,
+                }}
+            />
             <TeacherHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8 flex flex-col items-center justify-center">
                 <div className="w-full max-w-2xl space-y-6">
