@@ -99,10 +99,10 @@ export function StatsCard({ xp, gold, level, hp, mp, maxHp, maxMp, characterName
            <div className="flex flex-col items-center justify-center space-y-4 bg-secondary p-4 rounded-lg col-span-2 sm:col-span-3">
              <div className="flex flex-wrap items-center justify-center gap-4">
                 <div className="flex flex-col items-center">
-                    <Flame className="h-8 w-8 text-red-600" />
-                    <Button variant="outline" className="mt-2" onClick={() => setIsPowersSheetOpen(true)}>
-                        View Powers
-                    </Button>
+                    <User className="h-8 w-8 text-blue-600" />
+                    <Link href="/dashboard/avatar-upload" passHref>
+                        <Button variant="outline" className="mt-2">Change Avatar</Button>
+                    </Link>
                 </div>
                 <div className="flex flex-col items-center">
                     <Map className="h-8 w-8 text-green-600" />
