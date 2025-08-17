@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -106,7 +107,7 @@ export default function RandomStudentPage() {
                             <CardTitle className="text-3xl">The Runes of Destiny</CardTitle>
                             <CardDescription>Draw from the runes to select a student for a task.</CardDescription>
                         </CardHeader>
-                        <CardContent className="min-h-[450px] flex flex-col items-center justify-center overflow-hidden">
+                        <CardContent className="min-h-[450px] flex flex-col items-center justify-center overflow-hidden p-6 space-y-6">
                              {isLoading ? (
                                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
                             ) : isShuffling ? (
@@ -136,6 +137,7 @@ export default function RandomStudentPage() {
                                     `}</style>
                                 </div>
                             ) : pickedStudent ? (
+                                <>
                                 <div className="space-y-4 animate-in fade-in-50 zoom-in-75">
                                     <h3 className="text-2xl font-bold font-headline text-black">{pickedCaption}</h3>
                                     <div className="relative w-64 h-64 mx-auto">
@@ -150,15 +152,22 @@ export default function RandomStudentPage() {
                                     <h4 className="text-3xl font-bold">{pickedStudent.characterName}</h4>
                                     <p className="text-lg text-muted-foreground">{pickedStudent.studentName}</p>
                                 </div>
+                                <Button size="lg" className="w-full max-w-xs text-xl py-8 mt-4" onClick={generateStudent} disabled={isLoading || isShuffling || students.length === 0}>
+                                    <RefreshCw className="mr-4 h-6 w-6" />
+                                    Choose Again
+                                </Button>
+                                </>
                             ) : (
-                                <p className="text-muted-foreground text-lg">Click the button to consult the runes!</p>
+                                <div className="flex flex-col items-center justify-center gap-4">
+                                    <p className="text-muted-foreground text-lg">Click the button to consult the runes!</p>
+                                    <Button size="lg" className="w-full max-w-xs text-xl py-8" onClick={generateStudent} disabled={isLoading || isShuffling || students.length === 0}>
+                                        <RefreshCw className="mr-4 h-6 w-6" />
+                                        {students.length === 0 ? 'No Students in Roster' : 'Consult the Runes!'}
+                                    </Button>
+                                </div>
                             )}
                         </CardContent>
                     </Card>
-                     <Button size="lg" className="w-full text-xl py-8" onClick={generateStudent} disabled={isLoading || isShuffling || students.length === 0}>
-                        <RefreshCw className="mr-4 h-6 w-6" />
-                        {students.length === 0 ? 'No Students in Roster' : 'Consult the Runes!'}
-                    </Button>
                 </div>
             </main>
         </div>
