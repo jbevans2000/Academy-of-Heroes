@@ -1,16 +1,16 @@
 
 'use server';
 /**
- * @fileOverview A flow for generating a boss image.
+ * @fileOverview A flow for generating an image.
  * 
- * - generateBossImage - A function that calls the AI to generate an image and returns the data URI.
+ * - generateImage - A function that calls the AI to generate an image and returns the data URI.
  * - ImageGeneratorInput - The input type for the function.
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
 const ImageGeneratorInputSchema = z.object({
-  prompt: z.string().describe('A text description of the boss image to generate.'),
+  prompt: z.string().describe('A text description of the image to generate.'),
 });
 export type ImageGeneratorInput = z.infer<typeof ImageGeneratorInputSchema>;
 
@@ -20,7 +20,7 @@ export type ImageGeneratorInput = z.infer<typeof ImageGeneratorInputSchema>;
  * @param input The prompt for the image generation.
  * @returns A promise that resolves to the data URI (e.g., 'data:image/png;base64,...') of the generated image.
  */
-export async function generateBossImage(input: ImageGeneratorInput): Promise<string> {
+export async function generateImage(input: ImageGeneratorInput): Promise<string> {
     const { prompt } = input;
 
     // 1. Generate the image using the specified model
