@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Loader2, Save, Sparkles, Upload, X } from 'lucide-react';
 import { doc, setDoc, addDoc, collection, getDocs, serverTimestamp, query, orderBy, where, getDoc, updateDoc } from 'firebase/firestore';
@@ -538,7 +538,7 @@ export default function NewQuestPage() {
               {teacher && <div className="space-y-6 p-6 border rounded-lg">
                 <div className="flex justify-between items-center">
                     <h3 className="text-xl font-semibold">Phase 2: Chapter Content</h3>
-                    <Button variant="outline" onClick={() => setIsOracleOpen(true)} disabled={isSaving}>
+                    <Button variant="outline" onClick={() => setIsOracleOpen(true)} disabled={isSaving || !chapterTitle}>
                         <Sparkles className="mr-2 h-4 w-4" />
                         Consult the Oracle
                     </Button>
