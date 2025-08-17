@@ -84,7 +84,7 @@ async function useNaturesGuidance(input: UsePowerInput): Promise<{ success: bool
             transaction.update(liveBattleRef, {
                 naturesGuidanceUses: increment(1),
                 removedAnswerIndices: [...alreadyRemoved, indexToRemove],
-                powerEventMessage: `Glimmering light surrounds the question, revealing a false path!`
+                powerEventMessage: `${studentData.characterName} uses Nature's Guidance! Glimmering light reveals a false path!`
             });
 
             await logGameEvent(teacherUid, 'BOSS_BATTLE', `${studentData.characterName} used Nature's Guidance.`);
