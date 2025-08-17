@@ -167,18 +167,20 @@ export default function Dashboard() {
                   const currentLevel = studentData.level || 1;
                   const newLevel = calculateLevel(newXp);
                   
-                  let newHp = studentData.hp;
-                  let newMp = studentData.mp;
+                  const updates: Partial<Student> = { xp: newXp };
 
                   if (newLevel > currentLevel) {
                       const levelsGained = newLevel - currentLevel;
                       const hpGained = calculateHpGain(studentData.class, levelsGained);
-                      newHp += hpGained;
                       const mpGained = calculateMpGain(studentData.class, levelsGained);
-                      newMp += mpGained;
+
+                      updates.level = newLevel;
+                      updates.hp = (studentData.hp || 0) + hpGained;
+                      updates.maxHp = (studentData.maxHp || 0) + hpGained;
+                      updates.mp = (studentData.mp || 0) + mpGained;
+                      updates.maxMp = (studentData.maxMp || 0) + mpGained;
                   }
                   
-                  const updates: any = { xp: newXp, level: newLevel, hp: newHp, mp: newMp };
                   batch.update(studentDoc.ref, updates);
                   updatedStudentsData.push({ ...studentData, ...updates });
               }

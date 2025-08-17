@@ -80,7 +80,7 @@ function EditableStat({ student, stat, icon, label, setStudents, teacherUid }: E
             if (!studentDoc.exists()) throw new Error("Student not found");
 
             const studentData = studentDoc.data() as Student;
-            let updates: Partial<Student> = {};
+            const updates: Partial<Student> = {};
             
             if (stat === 'xp') {
                 updates.xp = amount;
@@ -88,12 +88,15 @@ function EditableStat({ student, stat, icon, label, setStudents, teacherUid }: E
                 const newLevel = calculateLevel(updates.xp);
 
                 if (newLevel > currentLevel) {
-                    updates.level = newLevel;
                     const levelsGained = newLevel - currentLevel;
-                    updates.hp = studentData.hp + calculateHpGain(studentData.class, levelsGained);
-                    updates.maxHp = studentData.maxHp + calculateHpGain(studentData.class, levelsGained);
-                    updates.mp = studentData.mp + calculateMpGain(studentData.class, levelsGained);
-                    updates.maxMp = studentData.maxMp + calculateMpGain(studentData.class, levelsGained);
+                    const hpGained = calculateHpGain(studentData.class, levelsGained);
+                    const mpGained = calculateMpGain(studentData.class, levelsGained);
+                    
+                    updates.level = newLevel;
+                    updates.hp = (studentData.hp || 0) + hpGained;
+                    updates.maxHp = (studentData.maxHp || 0) + hpGained;
+                    updates.mp = (studentData.mp || 0) + mpGained;
+                    updates.maxMp = (studentData.maxMp || 0) + mpGained;
                 }
             } else {
                 updates[stat] = amount;
