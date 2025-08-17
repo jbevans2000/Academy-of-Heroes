@@ -538,7 +538,7 @@ export default function NewQuestPage() {
               {teacher && <div className="space-y-6 p-6 border rounded-lg">
                 <div className="flex justify-between items-center">
                     <h3 className="text-xl font-semibold">Phase 2: Chapter Content</h3>
-                    <Button variant="outline" onClick={() => setIsOracleOpen(true)} disabled={isSaving || !chapterTitle}>
+                    <Button variant="outline" onClick={() => setIsOracleOpen(true)} disabled={isSaving}>
                         <Sparkles className="mr-2 h-4 w-4" />
                         Consult the Oracle
                     </Button>
