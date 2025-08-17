@@ -45,13 +45,16 @@ export default function TeacherLoginPage() {
         });
         router.push('/teacher/dashboard');
     } catch (error: any) {
-        console.error(error);
+        console.error("Authentication Error Code:", error.code);
         let description = 'An unexpected error occurred. Please try again.';
         if (error.code) {
             switch (error.code) {
-                case 'auth/invalid-credential':
+                case 'auth/invalid-email':
+                    description = 'The email address you entered is not valid. Please check the format.';
+                    break;
                 case 'auth/user-not-found':
                 case 'auth/wrong-password':
+                case 'auth/invalid-credential':
                     description = 'Invalid email or password. Please check your credentials and try again.';
                     break;
                 case 'auth/network-request-failed':
