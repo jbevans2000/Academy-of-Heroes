@@ -65,7 +65,6 @@ export default function RandomStudentPage() {
     const generateStudent = () => {
         if (students.length === 0) return;
         
-        // This is the key fix: reset the picked student *before* starting the shuffle animation
         setPickedStudent(null); 
         setIsShuffling(true);
 
@@ -116,7 +115,7 @@ export default function RandomStudentPage() {
                                 <div className="relative w-full h-full flex flex-col items-center justify-center">
                                     <div className={cn(
                                         "absolute inset-0 flex items-center justify-center transition-opacity duration-500",
-                                        isShuffling ? "opacity-100" : "opacity-0",
+                                        isShuffling ? "opacity-100" : "opacity-0 pointer-events-none",
                                     )}>
                                         <div className="grid grid-cols-4 gap-4 animate-in fade-in-50">
                                             {Array.from({ length: numRunes }).map((_, i) => (
@@ -124,22 +123,20 @@ export default function RandomStudentPage() {
                                                     <Image 
                                                         src={runeImageSrc}
                                                         alt="A glowing rune"
-                                                        width={80}
-                                                        height={80}
+                                                        width={120}
+                                                        height={120}
                                                         className="object-contain"
-                                                        style={{ animation: `spin ${Math.random() * 2 + 1}s linear infinite, float ${Math.random() * 3 + 2}s ease-in-out infinite` }}
+                                                        style={{ animation: `shuffle ${Math.random() * 2 + 2}s linear infinite` }}
                                                     />
                                                 </div>
                                             ))}
                                             <style jsx global>{`
-                                                @keyframes spin {
-                                                    from { transform: rotate(0deg); }
-                                                    to { transform: rotate(360deg); }
-                                                }
-                                                @keyframes float {
-                                                    0% { transform: translateY(0px); }
-                                                    50% { transform: translateY(-10px); }
-                                                    100% { transform: translateY(0px); }
+                                                @keyframes shuffle {
+                                                    0% { transform: translate(0, 0) rotate(0deg); }
+                                                    25% { transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(${Math.random() * 180}deg); }
+                                                    50% { transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(${Math.random() * 360}deg); }
+                                                    75% { transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(${Math.random() * 180}deg); }
+                                                    100% { transform: translate(0, 0) rotate(0deg); }
                                                 }
                                             `}</style>
                                         </div>
@@ -147,7 +144,7 @@ export default function RandomStudentPage() {
 
                                      <div className={cn(
                                         "absolute inset-0 flex items-center justify-center transition-opacity duration-500",
-                                        pickedStudent && !isShuffling ? "opacity-100" : "opacity-0"
+                                        pickedStudent && !isShuffling ? "opacity-100" : "opacity-0 pointer-events-none"
                                     )}>
                                         {pickedStudent && (
                                             <div className="space-y-4 animate-in fade-in-50">
@@ -168,8 +165,8 @@ export default function RandomStudentPage() {
                                     </div>
                                     
                                     <div className={cn(
-                                        "absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-500",
-                                        !pickedStudent && !isShuffling ? "opacity-100" : "opacity-0"
+                                        "flex flex-col items-center justify-center transition-opacity duration-500",
+                                        !pickedStudent && !isShuffling ? "opacity-100" : "opacity-0 pointer-events-none"
                                     )}>
                                         <p className="text-muted-foreground text-lg mb-4">Click the button to consult the runes!</p>
                                          <Button size="lg" className="w-full max-w-xs text-xl py-8" onClick={generateStudent} disabled={isLoading || isShuffling || students.length === 0}>
