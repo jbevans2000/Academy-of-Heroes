@@ -125,7 +125,7 @@ export default function RandomStudentPage() {
                                                         alt="A glowing rune"
                                                         width={120}
                                                         height={120}
-                                                        className="object-contain"
+                                                        className="object-contain rounded-lg"
                                                         style={{ animation: `shuffle ${Math.random() * 2 + 2}s linear infinite` }}
                                                     />
                                                 </div>
@@ -133,9 +133,9 @@ export default function RandomStudentPage() {
                                             <style jsx global>{`
                                                 @keyframes shuffle {
                                                     0% { transform: translate(0, 0) rotate(0deg); }
-                                                    25% { transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(${Math.random() * 180}deg); }
-                                                    50% { transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(${Math.random() * 360}deg); }
-                                                    75% { transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(${Math.random() * 180}deg); }
+                                                    25% { transform: translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px) rotate(${Math.random() * 180}deg); }
+                                                    50% { transform: translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px) rotate(${Math.random() * 360}deg); }
+                                                    75% { transform: translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px) rotate(${Math.random() * 180}deg); }
                                                     100% { transform: translate(0, 0) rotate(0deg); }
                                                 }
                                             `}</style>
@@ -144,10 +144,11 @@ export default function RandomStudentPage() {
 
                                      <div className={cn(
                                         "absolute inset-0 flex items-center justify-center transition-opacity duration-500",
-                                        pickedStudent && !isShuffling ? "opacity-100" : "opacity-0 pointer-events-none"
+                                        !isShuffling && pickedStudent ? "opacity-100" : "opacity-0 pointer-events-none",
+                                        "animate-in fade-in-50"
                                     )}>
                                         {pickedStudent && (
-                                            <div className="space-y-4 animate-in fade-in-50">
+                                            <div className="space-y-4">
                                                 <h3 className="text-2xl font-bold font-headline text-black">{pickedCaption}</h3>
                                                 <div className="relative w-64 h-64 mx-auto">
                                                     <Image 
@@ -166,7 +167,7 @@ export default function RandomStudentPage() {
                                     
                                     <div className={cn(
                                         "flex flex-col items-center justify-center transition-opacity duration-500",
-                                        !pickedStudent && !isShuffling ? "opacity-100" : "opacity-0 pointer-events-none"
+                                        isShuffling || pickedStudent ? "opacity-0 pointer-events-none" : "opacity-100"
                                     )}>
                                         <p className="text-muted-foreground text-lg mb-4">Click the button to consult the runes!</p>
                                          <Button size="lg" className="w-full max-w-xs text-xl py-8" onClick={generateStudent} disabled={isLoading || isShuffling || students.length === 0}>
