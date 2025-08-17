@@ -58,14 +58,6 @@ const tools = [
         disabled: false,
         bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-4f51950d-83b5-4b55-8664-8178a9c277f0.jpg?alt=media&token=c2c101cb-e71e-42c2-b5e1-85b6727a8581',
     },
-     {
-        title: 'Asset Generator (Dev Tool)',
-        description: 'A temporary tool to generate and upload images for other features.',
-        icon: <ImageIcon className="h-10 w-10 text-destructive" />,
-        path: '/teacher/tools/asset-generator',
-        disabled: false,
-        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-32456d61-e39a-4301-8c45-cd0f0ff33e52.jpg?alt=media&token=5ffefaa6-38e0-4661-8ae5-be3b004d855e',
-    },
 ]
 
 export default function ClassroomToolsPage() {
