@@ -89,7 +89,6 @@ export default function RandomStudentPage() {
                     backgroundImage: `url('${runeImageSrc}')`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
-                    opacity: 0.25,
                 }}
             />
             <TeacherHeader />
