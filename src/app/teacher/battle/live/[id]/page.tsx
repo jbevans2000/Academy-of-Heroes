@@ -581,7 +581,7 @@ export default function TeacherLiveBattlePage() {
              <div className="lg:col-span-1">
                 <BattleChatBox 
                     isTeacher={true}
-                    userName={teacherData.name}
+                    userName={"The Wise One"}
                     teacherUid={TEACHER_UID}
                     battleId={battleId}
                 />
@@ -591,3 +591,5 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
+
+    
