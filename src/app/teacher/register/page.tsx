@@ -12,7 +12,7 @@ import { Loader2, User, KeyRound, School, Briefcase, Phone, Check, Star, ArrowLe
 import Link from 'next/link';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, serverTimestamp, addDoc } from 'firebase/firestore';
 
 // Function to generate a random, easy-to-read class code
 const generateClassCode = () => {
@@ -82,8 +82,17 @@ export default function TeacherRegisterPage() {
         }
 
         // Save teacher info to a new document in the 'teachers' collection
-        // The document ID will be the new user's UID
         await setDoc(doc(db, "teachers", user.uid), teacherData);
+
+        // Automatically create the first "Independent Chapters" Hub for the new teacher
+        const questHubsRef = collection(db, 'teachers', user.uid, 'questHubs');
+        await addDoc(questHubsRef, {
+            name: "Independent Chapters",
+            hubOrder: 1,
+            worldMapUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FGeneric%20Map.jpg?alt=media&token=8d234199-3178-432e-9087-3e117498305c",
+            coordinates: { x: 50, y: 50 },
+            createdAt: serverTimestamp(),
+        });
 
         toast({
             title: 'Registration Successful!',
