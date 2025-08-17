@@ -112,12 +112,6 @@ export function StatsCard({ xp, gold, level, hp, mp, characterName, studentName,
                     <Swords className="h-8 w-8 text-red-600" />
                     <Button variant="outline" className="mt-2" onClick={handleReadyForBattle}>Ready for Battle</Button>
                 </div>
-                <div className="flex flex-col items-center">
-                    <User className="h-8 w-8 text-blue-600" />
-                    <Link href="/dashboard/avatar-upload" passHref>
-                        <Button variant="outline" className="mt-2">Change Avatar</Button>
-                    </Link>
-                </div>
              </div>
           </div>
         </div>
