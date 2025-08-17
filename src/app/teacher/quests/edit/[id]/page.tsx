@@ -29,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { generateStory, generateSummary } from '@/ai/flows/story-generator';
+import { generateStory, generateSummary, type StoryGeneratorInput } from '@/ai/flows/story-generator';
 
 export default function EditQuestPage() {
   const router = useRouter();
@@ -152,7 +152,7 @@ export default function EditQuestPage() {
   }
   
   const handleOracleGenerate = async () => {
-    if (!oracleGradeLevel || !oracleMode || !teacher || !chapter?.title) {
+    if (!oracleGradeLevel || !oracleMode || !teacher) {
         toast({ variant: 'destructive', title: "The Oracle's Query is Incomplete", description: 'Please provide all required elements for the Oracle.' });
         return;
     }
@@ -182,7 +182,7 @@ export default function EditQuestPage() {
                     currentHubSummary = currentHubSnap.data().storySummary;
                  }
             }
-            if (selectedHubId && typeof chapter.chapterNumber === 'number' && chapter.chapterNumber > 1) {
+            if (selectedHubId && typeof chapter?.chapterNumber === 'number' && chapter.chapterNumber > 1) {
                 const prevChapterQuery = query(
                     collection(db, 'teachers', teacher.uid, 'chapters'),
                     where('hubId', '==', selectedHubId),
@@ -195,15 +195,16 @@ export default function EditQuestPage() {
             }
         }
         
-        const result = await generateStory({
+        const input: StoryGeneratorInput = {
             gradeLevel: oracleGradeLevel as any,
-            keyElements: oracleKeyElements,
-            chapterTitle: chapter.title,
+            keyElements: oracleMode === 'standalone' ? oracleKeyElements : undefined,
             mode: oracleMode,
             previousHubSummary,
             currentHubSummary,
             previousChapterStory,
-        });
+        };
+        
+        const result = await generateStory(input);
         
         handleFieldChange('title', result.title);
         handleFieldChange('storyContent', result.storyContent);
@@ -282,7 +283,7 @@ export default function EditQuestPage() {
             <AlertDialogHeader>
                 <AlertDialogTitle>A Standalone Tale</AlertDialogTitle>
                  <AlertDialogDescription>
-                    Provide the Oracle with the core elements for a self-contained story. The Oracle will use the chapter title you've already written.
+                    Provide the Oracle with the core elements for a self-contained story.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="space-y-4 py-4">
@@ -314,7 +315,7 @@ export default function EditQuestPage() {
             <AlertDialogHeader>
                 <AlertDialogTitle>Weave a Continuous Saga</AlertDialogTitle>
                  <AlertDialogDescription>
-                    The Oracle will consult its records of the past to write the next chapter based on the title you've already provided.
+                    The Oracle will consult its records of the past to write the next chapter.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="space-y-4 py-4">
@@ -335,12 +336,16 @@ export default function EditQuestPage() {
                         </SelectContent>
                     </Select>
                  </div>
+                 <div className="space-y-2">
+                    <Label>Key Story Elements (Optional)</Label>
+                    <Input placeholder="e.g., The heroes enter the dark forest..." value={oracleKeyElements} onChange={e => setOracleKeyElements(e.target.value)} />
+                 </div>
             </div>
             <AlertDialogFooter>
                 <Button variant="ghost" onClick={() => setOracleMode(null)} disabled={isGenerating}>Back</Button>
                 <AlertDialogAction onClick={handleOracleGenerate} disabled={isGenerating || !oracleGradeLevel || !selectedHubId}>
                     {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Write the Next Chapter
+                    {chapter?.chapterNumber === 1 ? 'Begin the Saga' : 'Continue the Saga'}
                 </AlertDialogAction>
             </AlertDialogFooter>
             </>
@@ -400,7 +405,7 @@ export default function EditQuestPage() {
               <div className="space-y-6 p-6 border rounded-lg">
                 <div className="flex justify-between items-center">
                     <h3 className="text-xl font-semibold">Chapter Content</h3>
-                    <Button variant="outline" onClick={() => setIsOracleOpen(true)} disabled={!chapter.title}>
+                    <Button variant="outline" onClick={() => setIsOracleOpen(true)}>
                         <Sparkles className="mr-2 h-4 w-4" />
                         Consult the Oracle
                     </Button>
