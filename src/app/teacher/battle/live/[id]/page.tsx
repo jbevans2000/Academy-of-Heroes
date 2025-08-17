@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs, writeBatch, serverTimestamp, setDoc, deleteDoc, increment } from 'firebase/firestore';
+import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs, writeBatch, serverTimestamp, setDoc, deleteDoc, increment, arrayUnion } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
@@ -36,7 +36,18 @@ interface LiveBattleState {
   totalPowerDamage?: number;
   removedAnswerIndices?: number[];
   powerEventMessage?: string;
+  powerUsersThisRound?: { [key: string]: string[] }; // { studentUid: [powerName, ...] }
 }
+
+interface PowerActivation {
+    id?: string;
+    studentUid: string;
+    studentName: string;
+    powerName: string;
+    powerMpCost: number;
+    timestamp: any;
+}
+
 
 interface Question {
   questionText: string;
@@ -208,6 +219,87 @@ export default function TeacherLiveBattlePage() {
 
     return () => unsubscribe();
   }, [liveState?.status, liveState?.currentQuestionIndex]);
+  
+  // Power Activation Listener
+    useEffect(() => {
+        if (!liveState || !battle || liveState.status !== 'IN_PROGRESS') return;
+
+        const powerActivationsRef = collection(db, 'teachers', TEACHER_UID, `liveBattles/active-battle/powerActivations`);
+        const q = query(powerActivationsRef);
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            snapshot.docChanges().forEach(async (change) => {
+                if (change.type === 'added') {
+                    const activation = { id: change.doc.id, ...change.doc.data() } as PowerActivation;
+                    
+                    // Natures Guidance Logic
+                    if (activation.powerName === 'Nature’s Guidance') {
+                        await handleNaturesGuidance(activation);
+                    }
+                    // Future powers would have their own handlers here
+                    
+                    // Delete the activation doc so it doesn't run again on a reload
+                    await deleteDoc(doc(db, 'teachers', TEACHER_UID, `liveBattles/active-battle/powerActivations`, activation.id!));
+                }
+            });
+        });
+
+        return () => unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [liveState?.status, liveState?.currentQuestionIndex, battle]);
+    
+    const handleNaturesGuidance = async (activation: PowerActivation) => {
+        const liveBattleRef = doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle');
+        const studentRef = doc(db, 'teachers', TEACHER_UID, 'students', activation.studentUid);
+        
+        const battleDoc = await getDoc(liveBattleRef);
+        const studentDoc = await getDoc(studentRef);
+
+        if (!battleDoc.exists() || !studentDoc.exists()) return;
+
+        const battleData = battleDoc.data() as LiveBattleState;
+        const studentData = studentDoc.data() as Student;
+        const currentQuestion = battle!.questions[battleData.currentQuestionIndex];
+        
+        // --- Validation ---
+        if (studentData.mp < activation.powerMpCost) return; // Not enough MP
+        if ((battleData.powerUsersThisRound?.[activation.studentUid] || []).includes(activation.powerName)) return; // Already used this round
+
+        // --- Execution ---
+        const incorrectAnswerIndices = currentQuestion.answers
+            .map((_, i) => i)
+            .filter(i => i !== currentQuestion.correctAnswerIndex);
+            
+        const removableIndices = incorrectAnswerIndices.filter(i => !(battleData.removedAnswerIndices || []).includes(i));
+        
+        if (removableIndices.length === 0) return; // All incorrect answers already removed
+
+        const indexToRemove = removableIndices[Math.floor(Math.random() * removableIndices.length)];
+
+        // --- Database Updates ---
+        const batch = writeBatch(db);
+        
+        // 1. Update student's MP
+        batch.update(studentRef, { mp: increment(-activation.powerMpCost) });
+        
+        // 2. Update battle state
+        batch.update(liveBattleRef, {
+            removedAnswerIndices: arrayUnion(indexToRemove),
+            [`powerUsersThisRound.${activation.studentUid}`]: arrayUnion(activation.powerName),
+            powerEventMessage: `${activation.studentName} used Nature's Guidance!`
+        });
+
+        await batch.commit();
+
+        // 3. Log event
+        await logGameEvent(TEACHER_UID, 'BOSS_BATTLE', `${activation.studentName} used Nature's Guidance.`);
+
+        // Clear the event message after a few seconds
+        setTimeout(async () => {
+            await updateDoc(liveBattleRef, { powerEventMessage: '' });
+        }, 5000);
+    };
+
 
 
   const calculateAndSetResults = useCallback(async () => {
@@ -306,7 +398,7 @@ export default function TeacherLiveBattlePage() {
     const liveBattleRef = doc(db, 'teachers', TEACHER_UID, 'liveBattles', 'active-battle');
     await updateDoc(liveBattleRef, { status: 'IN_PROGRESS' });
     if(battle) {
-        await logGameEvent('BOSS_BATTLE', `Round 1 of '${battle.battleName}' has started.`);
+        await logGameEvent(TEACHER_UID, 'BOSS_BATTLE', `Round 1 of '${battle.battleName}' has started.`);
     }
   };
   
@@ -353,11 +445,12 @@ export default function TeacherLiveBattlePage() {
             naturesGuidanceUses: 0,
             removedAnswerIndices: [],
             powerEventMessage: '',
+            powerUsersThisRound: {},
         });
 
         await batch.commit();
         setRoundResults([]);
-        await logGameEvent('BOSS_BATTLE', `Round ${nextQuestionIndex + 1} of '${battle.battleName}' has started.`);
+        await logGameEvent(TEACHER_UID, 'BOSS_BATTLE', `Round ${nextQuestionIndex + 1} of '${battle.battleName}' has started.`);
     } catch (error) {
         console.error("Error advancing to next question:", error);
     } finally {
@@ -377,7 +470,7 @@ export default function TeacherLiveBattlePage() {
       const totalDamage = finalStateData?.totalDamage || 0;
       const totalBaseDamage = finalStateData?.totalBaseDamage || 0;
       const totalPowerDamage = finalStateData?.totalPowerDamage || 0;
-      await logGameEvent('BOSS_BATTLE', `The party dealt a total of ${totalDamage} damage during '${battle.battleName}'.`);
+      await logGameEvent(TEACHER_UID, 'BOSS_BATTLE', `The party dealt a total of ${totalDamage} damage during '${battle.battleName}'.`);
 
       // 2. Fetch the battle log
       const battleLogRef = collection(db, 'teachers', TEACHER_UID, 'liveBattles/active-battle/battleLog');
@@ -441,7 +534,7 @@ export default function TeacherLiveBattlePage() {
           rewards: rewardsByStudent,
           endedAt: serverTimestamp(),
       });
-      await logGameEvent('BOSS_BATTLE', `Battle summary for '${battle.battleName}' was saved.`);
+      await logGameEvent(TEACHER_UID, 'BOSS_BATTLE', `Battle summary for '${battle.battleName}' was saved.`);
 
       // 6. Update live battle state to BATTLE_ENDED
       batch.update(liveBattleRef, { status: 'BATTLE_ENDED' });
