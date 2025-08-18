@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,7 @@ export default function SupportPage() {
         <div className="max-w-3xl mx-auto space-y-8">
           <div className="text-center">
             <LifeBuoy className="h-16 w-16 mx-auto text-primary mb-4" />
-            <h1 className="text-4xl font-bold">Support Center</h1>
+            <h1 className="text-4xl font-bold font-headline">The Hero's Guild - Support Hall</h1>
             <p className="text-lg text-muted-foreground mt-2">
               We're here to help you on your quest.
             </p>
@@ -35,21 +36,21 @@ export default function SupportPage() {
             <CardContent>
               <Accordion type="single" collapsible className="w-full">
                 <AccordionItem value="item-1">
-                  <AccordionTrigger>How do I reset my password?</AccordionTrigger>
+                  <AccordionTrigger>My student forgot their password. What do I do?</AccordionTrigger>
                   <AccordionContent>
-                    [Placeholder: Explain the password reset process here. For example, "If you are a student, please ask your teacher to help you reset your password. Teachers can use the 'Forgot Password' link on the teacher login page."]
+                    As a teacher, you have the authority to reset a student's password. Navigate to their profile on your main dashboard, where you will find the option to set a new password for them. The student can then log in with their new credentials.
                   </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="item-2">
                   <AccordionTrigger>Why is my class code not working?</AccordionTrigger>
                   <AccordionContent>
-                    [Placeholder: Explain common issues with class codes. For example, "Please double-check the code with your teacher. Make sure you are entering it exactly as it was provided, including any hyphens."]
+                    Please double-check the code with your teacher. The runes must be entered exactly as they were provided, including any hyphens. Class codes are case-sensitive. If problems persist, your teacher can verify the code from their dashboard.
                   </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="item-3">
                   <AccordionTrigger>Can I change my character's class?</AccordionTrigger>
                   <AccordionContent>
-                    [Placeholder: Explain character class changes. For example, "Once a character has been created, its class cannot be changed. You will need to create a new character, which will start with fresh progress."]
+                    A hero's path, once chosen, is set in stone. The destiny you select upon creation (Guardian, Healer, or Mage) cannot be changed. To walk a new path, you must create a new hero, which will start with fresh progress.
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
@@ -58,18 +59,18 @@ export default function SupportPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Contact Us</CardTitle>
+              <CardTitle>Send a Raven</CardTitle>
               <CardDescription>
-                If you can't find the answer you're looking for, please reach out to us.
+                If the scrolls of knowledge here do not provide an answer, send a message to our scribes.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-4">
                 <Mail className="h-8 w-8 text-primary" />
                 <p className="text-muted-foreground">
-                    [Placeholder: Provide your support email address or contact instructions here.]
+                    For technical issues or other inquiries, contact our support guild at:
                 </p>
                  <Button asChild>
-                    <a href="mailto:support@example.com">Email Support</a>
+                    <a href="mailto:support@academy-heroes.com">support@academy-heroes.com</a>
                 </Button>
             </CardContent>
           </Card>

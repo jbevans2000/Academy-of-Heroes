@@ -96,8 +96,8 @@ export default function SplashPage() {
                 <p>&copy; {new Date().getFullYear()} Academy of Heroes. All rights reserved.</p>
                 <div className="flex gap-4 mt-2 sm:mt-0">
                     <Link href="/support" className="hover:text-white transition-colors">Support</Link>
-                    <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>
-                    <Link href="#" className="hover:text-white transition-colors">Terms of Service</Link>
+                    <Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
+                    <Link href="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</Link>
                 </div>
             </div>
         </div>
@@ -109,8 +109,8 @@ export default function SplashPage() {
             <p>&copy; {new Date().getFullYear()} Academy of Heroes. All rights reserved.</p>
             <div className="flex gap-4 mt-2 sm:mt-0">
                 <Link href="/support" className="hover:text-white transition-colors">Support</Link>
-                <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>
-                <Link href="#" className="hover:text-white transition-colors">Terms of Service</Link>
+                <Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
+                <Link href="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</Link>
             </div>
           </div>
       </footer>
