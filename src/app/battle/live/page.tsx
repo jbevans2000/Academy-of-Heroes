@@ -25,6 +25,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 
+interface TargetedEvent {
+    targetUid: string;
+    message: string;
+}
+
 interface LiveBattleState {
   battleId: string | null;
   status: 'WAITING' | 'IN_PROGRESS' | 'ROUND_ENDING' | 'SHOWING_RESULTS' | 'BATTLE_ENDED';
@@ -34,6 +39,7 @@ interface LiveBattleState {
   totalDamage?: number;
   removedAnswerIndices?: number[]; // For Nature's Guidance
   powerEventMessage?: string; // For displaying power usage feedback
+  targetedEvent?: TargetedEvent | null; // For targeted messages like revivals
   fallenPlayerUids?: string[]; // New: List of fallen players
 }
 
@@ -153,7 +159,7 @@ export default function LiveBattlePage() {
   const [isPowersSheetOpen, setIsPowersSheetOpen] = useState(false);
   const [isFallen, setIsFallen] = useState(false);
   const [showFallenDialog, setShowFallenDialog] = useState(false);
-  const router = useRouter();
+  const [targetedMessage, setTargetedMessage] = useState<string | null>(null);
 
   const battleStateRef = useRef(battleState);
   useEffect(() => {
@@ -183,7 +189,7 @@ export default function LiveBattlePage() {
   }, [router]);
 
   useEffect(() => {
-    if (!teacherUid) return;
+    if (!teacherUid || !user) return;
 
     setIsLoading(true);
     const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
@@ -202,11 +208,24 @@ export default function LiveBattlePage() {
         }
         
         const wasFallen = isFallen;
-        const nowFallen = newState.fallenPlayerUids?.includes(user!.uid) ?? false;
+        const nowFallen = newState.fallenPlayerUids?.includes(user.uid) ?? false;
 
         setIsFallen(nowFallen);
+        
         if (nowFallen && !wasFallen) {
             setShowFallenDialog(true);
+        } else if (!nowFallen && wasFallen) {
+            // Player was just revived, close the fallen dialog
+            setShowFallenDialog(false);
+        }
+
+        // Check for targeted events
+        if (newState.targetedEvent && newState.targetedEvent.targetUid === user.uid) {
+            setTargetedMessage(newState.targetedEvent.message);
+             setTimeout(() => {
+                setTargetedMessage(null);
+                 // Optionally clear it from Firestore after a delay, or let the teacher's client handle it
+            }, 5000);
         }
 
         setBattleState(newState);
@@ -343,6 +362,11 @@ export default function LiveBattlePage() {
           battleId={battle.id}
         />
         <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 p-4">
+            {targetedMessage && (
+                <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-md p-4 rounded-md bg-green-600 text-white font-bold text-center shadow-lg animate-in fade-in-20 slide-in-from-top-10">
+                    {targetedMessage}
+                </div>
+            )}
             <div className="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
                     <Card className="bg-card text-card-foreground border-gray-700 shadow-2xl shadow-primary/20">
@@ -512,5 +536,3 @@ export default function LiveBattlePage() {
     </div>
   );
 }
-
-    

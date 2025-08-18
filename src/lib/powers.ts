@@ -7,7 +7,7 @@ export interface Power {
     level: number;
     mpCost: number;
     type: PowerType;
-    target?: 'ally' | 'fallen'; // <-- Add 'fallen' as a possible target type
+    target?: 'ally' | 'fallen';
     targetCount?: number;
     // eligibilityCheck?: (caster: Student, target: Student) => boolean; // For more complex rules later
 }
@@ -168,9 +168,9 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Enduring Spirit',
-      description: 'If a player falls to 0 HP, you can resurrect them to continue the game.',
-      level: 9,
-      mpCost: 25,
+      description: 'You pierce the veil of reality and return an ally’s spirit to their body.',
+      level: 6,
+      mpCost: 10,
       type: 'healing',
       target: 'fallen',
       targetCount: 1,

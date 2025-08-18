@@ -25,6 +25,11 @@ interface QueuedPower {
     damage: number;
 }
 
+interface TargetedEvent {
+    targetUid: string;
+    message: string;
+}
+
 interface LiveBattleState {
   battleId: string | null;
   status: 'WAITING' | 'IN_PROGRESS' | 'ROUND_ENDING' | 'SHOWING_RESULTS' | 'BATTLE_ENDED';
@@ -39,6 +44,7 @@ interface LiveBattleState {
   totalPowerDamage?: number;
   removedAnswerIndices?: number[];
   powerEventMessage?: string;
+  targetedEvent?: TargetedEvent | null;
   powerUsersThisRound?: { [key: string]: string[] }; // { studentUid: [powerName, ...] }
   queuedPowers?: QueuedPower[];
   fallenPlayerUids?: string[];
@@ -307,7 +313,7 @@ export default function TeacherLiveBattlePage() {
         await batch.commit();
         await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} used Nature's Guidance.`);
         setTimeout(async () => {
-            await updateDoc(liveBattleRef, { powerEventMessage: '' });
+            await updateDoc(liveBattleRef, { powerEventMessage: '', targetedEvent: null });
         }, 5000);
     };
 
@@ -348,42 +354,72 @@ export default function TeacherLiveBattlePage() {
         await batch.commit();
         await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} cast Wildfire, queueing ${damage} damage.`);
         setTimeout(async () => {
-            await updateDoc(liveBattleRef, { powerEventMessage: '' });
+            await updateDoc(liveBattleRef, { powerEventMessage: '', targetedEvent: null });
         }, 5000);
     };
 
     const handleEnduringSpirit = async (activation: PowerActivation) => {
         if (!activation.targets || activation.targets.length === 0 || !teacherUid) return;
-
-        const batch = writeBatch(db);
+    
         const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
         const casterRef = doc(db, 'teachers', teacherUid, 'students', activation.studentUid);
-        const casterSnap = await getDoc(casterRef);
+    
         const battleSnap = await getDoc(liveBattleRef);
+        const casterSnap = await getDoc(casterRef);
+    
         if (!casterSnap.exists() || !battleSnap.exists()) return;
-
-        if (casterSnap.data().mp < activation.powerMpCost) return;
-        if ((battleSnap.data().powerUsersThisRound?.[activation.studentUid] || []).length > 0) return;
-
-        // Deduct MP from caster
-        batch.update(casterRef, { mp: increment(-activation.powerMpCost) });
-
-        // Revive the target
+    
+        const battleData = battleSnap.data() as LiveBattleState;
+        const casterData = casterSnap.data() as Student;
+    
+        if (casterData.mp < activation.powerMpCost) return;
+        if ((battleData.powerUsersThisRound?.[activation.studentUid] || []).length > 0) return;
+    
         const targetUid = activation.targets[0];
         const targetRef = doc(db, 'teachers', teacherUid, 'students', targetUid);
-        batch.update(targetRef, { hp: 1 }); // Revive with 1 HP
-
+        const targetSnap = await getDoc(targetRef);
+    
+        if (!targetSnap.exists()) return;
+        const targetData = targetSnap.data() as Student;
+    
+        // RACE CONDITION & ELIGIBILITY CHECK: Is the target still fallen?
+        if (targetData.hp > 0) {
+            const targetedEvent: TargetedEvent = {
+                targetUid: activation.studentUid, // The original caster gets the message
+                message: `${targetData.characterName} has already been restored! Choose another power.`
+            };
+            await updateDoc(liveBattleRef, { targetedEvent: targetedEvent });
+            setTimeout(() => updateDoc(liveBattleRef, { targetedEvent: null }), 5000);
+            return; // Stop execution, don't use power
+        }
+    
+        const batch = writeBatch(db);
+    
+        // Deduct MP from caster
+        batch.update(casterRef, { mp: increment(-activation.powerMpCost) });
+    
+        // Calculate heal amount (10% of max HP, rounded up)
+        const healAmount = Math.ceil(targetData.maxHp * 0.1);
+        batch.update(targetRef, { hp: healAmount });
+    
+        const targetedEvent: TargetedEvent = {
+            targetUid: targetUid,
+            message: `${casterData.characterName} has brought you back from the brink! Get back into the fight!`
+        };
+    
         // Remove from fallen list and add power usage info
         batch.update(liveBattleRef, {
             fallenPlayerUids: arrayRemove(targetUid),
             [`powerUsersThisRound.${activation.studentUid}`]: arrayUnion(activation.powerName),
-            powerEventMessage: `${activation.studentName} used Enduring Spirit to revive a fallen ally!`
+            powerEventMessage: `${activation.studentName} cast Enduring Spirit and restored ${targetData.characterName} to life!`,
+            targetedEvent: targetedEvent,
         });
-
+    
         await batch.commit();
-        await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} used Enduring Spirit.`);
+        await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} used Enduring Spirit on ${targetData.characterName}.`);
+        
         setTimeout(async () => {
-            await updateDoc(liveBattleRef, { powerEventMessage: '' });
+            await updateDoc(liveBattleRef, { powerEventMessage: '', targetedEvent: null });
         }, 5000);
     };
 
@@ -451,7 +487,7 @@ export default function TeacherLiveBattlePage() {
         await batch.commit();
         await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} cast Lesser Heal on ${target1Name} and ${target2Name}.`);
         setTimeout(async () => {
-            await updateDoc(liveBattleRef, { powerEventMessage: '' });
+            await updateDoc(liveBattleRef, { powerEventMessage: '', targetedEvent: null });
         }, 5000);
     };
 
@@ -516,7 +552,7 @@ export default function TeacherLiveBattlePage() {
         await batch.commit();
         await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} cast Solar Empowerment.`);
         setTimeout(async () => {
-            await updateDoc(liveBattleRef, { powerEventMessage: '' });
+            await updateDoc(liveBattleRef, { powerEventMessage: '', targetedEvent: null });
         }, 5000);
     };
 
@@ -715,6 +751,7 @@ export default function TeacherLiveBattlePage() {
             lastRoundPowersUsed: [],
             removedAnswerIndices: [],
             powerEventMessage: '',
+            targetedEvent: null,
             powerUsersThisRound: {},
             queuedPowers: [],
         });

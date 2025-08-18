@@ -67,12 +67,16 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
   const getEligibleTargets = () => {
     let potentialTargets = students;
 
-    // UNIVERSAL RULE: Can't target self unless specified
-    potentialTargets = students.filter(s => s.uid !== caster.uid);
+    // UNIVERSAL RULE: Can't target self unless specified (Healer powers can often target self)
+    if (power.target !== 'ally' && caster.class !== 'Healer') {
+         potentialTargets = students.filter(s => s.uid !== caster.uid);
+    }
     
     // UNIVERSAL RULE: Fallen players can only be targeted by specific powers
     if (power.target !== 'fallen') {
         potentialTargets = potentialTargets.filter(s => s.hp > 0);
+    } else {
+        potentialTargets = potentialTargets.filter(s => s.hp <= 0);
     }
     
     // POWER-SPECIFIC RULES
@@ -83,10 +87,6 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
             p.class === 'Mage' && 
             !(battleState.empoweredMageUids || []).includes(p.uid)
         );
-    }
-
-    if (power.target === 'fallen') {
-        return students.filter(s => s.hp <= 0);
     }
 
     return potentialTargets;
@@ -134,6 +134,9 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
                 </Label>
               </div>
             ))}
+             {eligibleTargets.length === 0 && (
+                <p className="text-center text-muted-foreground py-10">There are no eligible targets for this power right now.</p>
+            )}
           </div>
         </ScrollArea>
         <DialogFooter className="sm:justify-between">
