@@ -146,11 +146,11 @@ export default function BossBattlesPage() {
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">Boss Battles</h1>
+          <h1 className="text-3xl font-bold">The Monster Compendium</h1>
           <div className="flex gap-2">
             <Button onClick={navigateToDashboard} variant="outline">
               <LayoutDashboard className="mr-2 h-5 w-5" />
-              Return to Dashboard
+              Return to Dais
             </Button>
             <Button onClick={navigateToCreate}>
               <PlusCircle className="mr-2 h-5 w-5" />

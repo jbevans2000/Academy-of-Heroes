@@ -27,7 +27,7 @@ export function LoginForm() {
       toast({
         variant: 'destructive',
         title: 'Missing Fields',
-        description: 'Please enter your Username and Password.',
+        description: 'Please enter your Hero\'s Alias and Password.',
       });
       return;
     }
@@ -65,7 +65,7 @@ export function LoginForm() {
           case 'auth/invalid-credential':
           case 'auth/user-not-found':
           case 'auth/wrong-password':
-            description = 'Invalid username or password.';
+            description = 'Invalid hero alias or password.';
             break;
           case 'auth/network-request-failed':
             description = 'Network error. Please check your connection.';
@@ -87,11 +87,11 @@ export function LoginForm() {
   return (
     <div className="space-y-4 rounded-lg bg-background/50 p-4 border">
         <div className="space-y-2">
-            <Label htmlFor="student-id"><KeyRound className="inline-block mr-2 h-4 w-4" />Username</Label>
+            <Label htmlFor="student-id"><KeyRound className="inline-block mr-2 h-4 w-4" />Hero's Alias</Label>
             <Input
                 id="student-id"
                 type="text"
-                placeholder="Enter your username"
+                placeholder="Enter your hero's alias"
                 required
                 value={studentId}
                 onChange={(e) => setStudentId(e.target.value)}

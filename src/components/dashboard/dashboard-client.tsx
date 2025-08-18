@@ -32,7 +32,7 @@ export function DashboardClient({ student }: DashboardClientProps) {
              <Link href="/dashboard/map" passHref className="w-full">
                 <Button size="lg" className="w-full py-8 text-lg">
                     <Map className="mr-4 h-8 w-8" />
-                    Continue Quest
+                    Embark on Your Quest
                 </Button>
             </Link>
              <Button size="lg" className="w-full py-8 text-lg" onClick={handleReadyForBattle}>

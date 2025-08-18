@@ -81,7 +81,7 @@ export function BattleChatBox({ teacherUid, battleId, userName, isTeacher }: Bat
   return (
     <Card className="flex flex-col h-full bg-card/80 backdrop-blur-sm">
       <CardHeader>
-        <CardTitle>Battle Chat</CardTitle>
+        <CardTitle>The War Council</CardTitle>
         <CardDescription>Talk with your party members!</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow overflow-hidden flex flex-col">

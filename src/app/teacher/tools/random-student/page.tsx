@@ -106,7 +106,7 @@ export default function RandomStudentPage() {
                                 <Sparkles className="h-12 w-12 text-primary" />
                             </div>
                             <CardTitle className="text-3xl">The Runes of Destiny</CardTitle>
-                            <CardDescription>Draw from the runes to select a student for a task.</CardDescription>
+                            <CardDescription>Draw from the runes to summon a hero for a task.</CardDescription>
                         </CardHeader>
                         <CardContent className="min-h-[450px] flex flex-col items-center justify-center overflow-hidden p-6">
                              {isLoading ? (

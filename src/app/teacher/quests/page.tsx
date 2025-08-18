@@ -105,11 +105,11 @@ export default function QuestsPage() {
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">Quests</h1>
+          <h1 className="text-3xl font-bold">The Quest Archives</h1>
           <div className="flex gap-2">
             <Button onClick={() => router.push('/teacher/dashboard')} variant="outline">
               <LayoutDashboard className="mr-2 h-5 w-5" />
-              Return to Dashboard
+              Return to Dais
             </Button>
             <Button onClick={() => router.push('/teacher/quests/new')}>
               <PlusCircle className="mr-2 h-5 w-5" />

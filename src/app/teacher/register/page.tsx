@@ -47,7 +47,7 @@ export default function TeacherRegisterPage() {
         return;
     }
      if (step === 2 && (!schoolName || !className)) {
-        toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill in your school and class name.' });
+        toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill in your school and guild name.' });
         return;
     }
     setStep(s => s + 1);
@@ -140,7 +140,7 @@ export default function TeacherRegisterPage() {
         />
       <Card className="w-full max-w-lg shadow-2xl bg-card/90">
         <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-headline text-primary">Teacher Registration</CardTitle>
+            <CardTitle className="text-3xl font-headline text-primary">Grandmaster's Registration</CardTitle>
             <CardDescription>Join the Academy of Heroes and bring your classroom to life.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -183,13 +183,13 @@ export default function TeacherRegisterPage() {
             {/* Step 2: School Info */}
             {step === 2 && (
                 <div className="space-y-4 animate-in fade-in-50">
-                    <h3 className="text-xl font-semibold text-center">Step 2: Class Information</h3>
+                    <h3 className="text-xl font-semibold text-center">Step 2: Guild Information</h3>
                     <div className="space-y-2">
                         <Label htmlFor="school-name"><School className="inline-block mr-2" />School Name</Label>
                         <Input id="school-name" placeholder="e.g., Luminaria High" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="class-name"><Briefcase className="inline-block mr-2" />Class Name</Label>
+                        <Label htmlFor="class-name"><Briefcase className="inline-block mr-2" />Guild Name</Label>
                         <Input id="class-name" placeholder="e.g., Grade 5 History" value={className} onChange={(e) => setClassName(e.target.value)} />
                     </div>
                 </div>

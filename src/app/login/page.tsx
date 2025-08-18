@@ -34,14 +34,14 @@ export default function LoginPage() {
                 <Sword className="h-12 w-12 text-primary" />
              </div>
             <CardTitle className="text-3xl font-headline">Welcome!</CardTitle>
-            <CardDescription>Join a class or login to continue your adventure.</CardDescription>
+            <CardDescription>Join a classroom guild or log in to continue your adventure.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             
             <Link href="/register" passHref>
                 <Button size="lg" className="w-full text-lg py-8">
                     <UserPlus className="mr-3 h-6 w-6" />
-                    Create New Hero & Join a Class
+                    Forge Your Hero & Join a Guild
                 </Button>
             </Link>
             
@@ -74,7 +74,7 @@ export default function LoginPage() {
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-card px-2 text-muted-foreground font-headline">
-                  For Teachers
+                  For the Grandmasters
                 </span>
               </div>
             </div>
@@ -82,13 +82,13 @@ export default function LoginPage() {
                 <Link href="/teacher/login" passHref>
                     <Button size="lg" className="w-full text-lg py-6 bg-blue-600 hover:bg-blue-700">
                         <School className="mr-3 h-6 w-6" />
-                        Teacher Login
+                        Grandmaster's Login
                     </Button>
                 </Link>
                  <Link href="/teacher/register" passHref>
                     <Button size="lg" variant="secondary" className="w-full text-lg py-6">
                         <UserCheck className="mr-3 h-6 w-6" />
-                        Teacher Registration
+                        Grandmaster's Registration
                     </Button>
                 </Link>
             </div>

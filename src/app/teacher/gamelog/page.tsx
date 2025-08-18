@@ -107,7 +107,7 @@ export default function GameLogPage() {
         <div className="max-w-4xl mx-auto space-y-6">
           <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
+            Back to Dais
           </Button>
 
           <Card className="shadow-lg">
@@ -115,7 +115,7 @@ export default function GameLogPage() {
               <div className="flex items-center gap-4">
                 <BookOpen className="h-8 w-8 text-primary" />
                 <div>
-                    <CardTitle className="text-3xl">Game Log</CardTitle>
+                    <CardTitle className="text-3xl">The Chronicler's Scroll</CardTitle>
                     <CardDescription>A real-time record of all events happening in your game.</CardDescription>
                 </div>
               </div>

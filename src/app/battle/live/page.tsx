@@ -142,9 +142,9 @@ function FallenPlayerDialog({ isOpen, onOpenChange }: { isOpen: boolean; onOpenC
                         height={200}
                         className="rounded-lg object-cover"
                     />
-                    <AlertDialogTitle className="text-2xl font-headline text-center mt-4">You Have Fallen!</AlertDialogTitle>
+                    <AlertDialogTitle className="text-2xl font-headline text-center mt-4">Your Spirit Falters!</AlertDialogTitle>
                     <AlertDialogDescription className="text-center">
-                       A healer must restore you in order to continue the battle!
+                       Your spirit must be restored by a Healer in order to continue the battle!
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -575,7 +575,7 @@ export default function LiveBattlePage() {
                         {battleState.lastRoundDamage !== undefined && battleState.lastRoundDamage > 0 && (
                             <div className="p-4 rounded-md bg-sky-900/70 border border-sky-700 text-sky-200 flex items-center justify-center gap-4">
                                 <Swords className="h-10 w-10 text-sky-400" />
-                                <p className="text-xl font-bold">The Party dealt {battleState.lastRoundDamage} damage to the boss this round!</p>
+                                <p className="text-xl font-bold">Your fellowship dealt {battleState.lastRoundDamage} damage to the boss this round!</p>
                             </div>
                         )}
                         

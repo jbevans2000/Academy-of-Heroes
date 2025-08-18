@@ -28,7 +28,7 @@ const tools = [
     },
     {
         title: 'The Runes of Destiny',
-        description: 'Randomly select a student by drawing from a set of magical runes.',
+        description: 'Draw from the runes to summon a hero for a task.',
         icon: <Sparkles className="h-10 w-10 text-primary" />,
         path: '/teacher/tools/random-student',
         disabled: false,
@@ -79,13 +79,13 @@ export default function ClassroomToolsPage() {
                 <div className="max-w-5xl mx-auto space-y-6">
                     <Button variant="outline" onClick={() => router.push('/teacher/dashboard')} className="bg-background/80 hover:bg-background/90">
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Dashboard
+                        Back to Dais
                     </Button>
                     <div className="p-6 rounded-lg bg-background/80 backdrop-blur-sm">
                         <div className="flex items-center gap-4">
                             <Wrench className="h-8 w-8 text-primary" />
                             <div>
-                                <h1 className="text-3xl font-bold">Classroom Tools</h1>
+                                <h1 className="text-3xl font-bold">The Grandmaster's Toolkit</h1>
                                 <p className="text-black">A collection of useful utilities to help manage your classroom with a fantasy twist.</p>
                             </div>
                         </div>

@@ -196,11 +196,11 @@ export default function Dashboard() {
             })
           );
           
-          await logGameEvent(teacher!.uid, 'GAMEMASTER', `Awarded ${amount} XP to ${selectedStudents.length} student(s).`);
+          await logGameEvent(teacher!.uid, 'GAMEMASTER', `Bestowed ${amount} XP to ${selectedStudents.length} student(s).`);
 
           toast({
-              title: 'XP Awarded!',
-              description: `${amount} XP has been awarded to ${selectedStudents.length} student(s). Levels, HP, and MP have been updated where appropriate.`,
+              title: 'Experience Bestowed!',
+              description: `${amount} XP has been bestowed upon ${selectedStudents.length} student(s). Levels, HP, and MP have been updated where appropriate.`,
           });
           setSelectedStudents([]);
           setXpAmount('');
@@ -210,7 +210,7 @@ export default function Dashboard() {
           toast({
               variant: 'destructive',
               title: 'Update Failed',
-              description: 'Could not award XP. Please try again.',
+              description: 'Could not bestow Experience. Please try again.',
           });
       } finally {
           setIsAwarding(false);
@@ -261,11 +261,11 @@ export default function Dashboard() {
             )
           );
           
-          await logGameEvent(teacher!.uid, 'GAMEMASTER', `Awarded ${amount} Gold to ${selectedStudents.length} student(s).`);
+          await logGameEvent(teacher!.uid, 'GAMEMASTER', `Bestowed ${amount} Gold to ${selectedStudents.length} student(s).`);
 
           toast({
-              title: 'Gold Awarded!',
-              description: `${amount} Gold has been awarded to ${selectedStudents.length} student(s).`,
+              title: 'Gold Bestowed!',
+              description: `${amount} Gold has been bestowed upon ${selectedStudents.length} student(s).`,
           });
           setSelectedStudents([]);
           setGoldAmount('');
@@ -275,7 +275,7 @@ export default function Dashboard() {
           toast({
               variant: 'destructive',
               title: 'Update Failed',
-              description: 'Could not award Gold. Please try again.',
+              description: 'Could not bestow Gold. Please try again.',
           });
       } finally {
           setIsAwarding(false);
@@ -322,7 +322,7 @@ export default function Dashboard() {
   const copyClassCode = () => {
     if (teacherData?.classCode) {
         navigator.clipboard.writeText(teacherData.classCode);
-        toast({ title: "Class Code Copied!", description: "You can now share it with your students." });
+        toast({ title: "Guild Code Copied!", description: "You can now share it with your students." });
     }
   }
 
@@ -332,7 +332,7 @@ export default function Dashboard() {
        <div className="flex min-h-screen w-full flex-col">
         <TeacherHeader />
         <main className="flex-1 p-4 md:p-6 lg:p-8">
-            <h1 className="text-2xl font-bold mb-4">All Students</h1>
+            <h1 className="text-2xl font-bold mb-4">Your Guild Roster</h1>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {Array.from({ length: 8 }).map((_, i) => (
                     <div key={i} className="space-y-2">
@@ -358,11 +358,11 @@ export default function Dashboard() {
                     <AlertDialogTitle className="text-3xl">Welcome to The Academy of Heroes!</AlertDialogTitle>
                     <AlertDialogDescription asChild>
                       <div className="text-base text-foreground space-y-4">
-                        <p>Your classroom is ready! To get your students started, give them your unique Class Code and instruct them to follow these steps:</p>
+                        <p>Your classroom is ready! To get your students started, give them your unique Guild Code and instruct them to follow these steps:</p>
                         <ol className="list-decimal list-inside space-y-2 pt-2 text-foreground text-lg">
                             <li>Go to the main login page.</li>
-                            <li>Click "Create New Hero & Join a Class".</li>
-                            <li>Enter your Class Code: 
+                            <li>Click "Forge Your Hero & Join a Guild".</li>
+                            <li>Enter your Guild Code: 
                                 <strong className="font-mono text-xl bg-primary/10 px-2 py-1 rounded-md mx-1">{teacherData?.classCode}</strong>
                             </li>
                             <li>Fill out the rest of the form to create their character.</li>
@@ -381,10 +381,10 @@ export default function Dashboard() {
             </AlertDialogContent>
         </AlertDialog>
         <div className="mb-4">
-            <h1 className="text-3xl font-bold">{teacherData?.className || 'Dashboard'}</h1>
+            <h1 className="text-3xl font-bold">{teacherData?.className || 'Grandmaster\'s Dais'}</h1>
              {teacherData?.classCode && (
                 <div className="flex items-center gap-2 mt-2">
-                    <p className="text-muted-foreground">Your Class Code:</p>
+                    <p className="text-muted-foreground">Your Guild Code:</p>
                     <span className="font-mono text-lg font-bold bg-primary/10 px-2 py-1 rounded-md">{teacherData.classCode}</span>
                     <Button variant="ghost" size="icon" onClick={copyClassCode}>
                         <Copy className="h-5 w-5" />
@@ -411,20 +411,20 @@ export default function Dashboard() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                     <DropdownMenuItem onClick={() => router.push('/teacher/quests')}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        <span>Manage Quests</span>
+                        <BookOpen className="mr-2 h-4 w-4" />
+                        <span>The Quest Archives</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/teacher/battles')}>
                         <Swords className="mr-2 h-4 w-4" />
-                        <span>Manage Boss Battles</span>
+                        <span>The Monster Compendium</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/teacher/tools')}>
                         <Wrench className="mr-2 h-4 w-4" />
-                        <span>Classroom Tools</span>
+                        <span>The Grandmaster's Toolkit</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/teacher/gamelog')}>
                         <BookOpen className="mr-2 h-4 w-4" />
-                        <span>Game Log</span>
+                        <span>The Chronicler's Scroll</span>
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
@@ -432,12 +432,12 @@ export default function Dashboard() {
             <Dialog open={isXpDialogOpen} onOpenChange={setIsXpDialogOpen}>
             <DialogTrigger asChild>
                 <Button disabled={selectedStudents.length === 0}>
-                <Star className="mr-2 h-4 w-4" /> Award Experience
+                <Star className="mr-2 h-4 w-4" /> Bestow Experience
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                <DialogTitle>Award Experience to Selected Students</DialogTitle>
+                <DialogTitle>Bestow Experience to Selected Students</DialogTitle>
                 <DialogDescription>
                     Enter a positive value to add XP or a negative value to remove XP. This will apply to all selected students.
                 </DialogDescription>
@@ -469,12 +469,12 @@ export default function Dashboard() {
             <Dialog open={isGoldDialogOpen} onOpenChange={setIsGoldDialogOpen}>
             <DialogTrigger asChild>
                 <Button className="bg-green-600 hover:bg-green-700 text-white" disabled={selectedStudents.length === 0}>
-                <Coins className="mr-2 h-4 w-4" /> Award Gold
+                <Coins className="mr-2 h-4 w-4" /> Bestow Gold
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                <DialogTitle>Award Gold to Selected Students</DialogTitle>
+                <DialogTitle>Bestow Gold to Selected Students</DialogTitle>
                 <DialogDescription>
                     Enter a positive value to add Gold or a negative value to remove it. This will apply to all selected students.
                 </DialogDescription>

@@ -199,7 +199,7 @@ export default function StudentBattleSummaryPage() {
                         </div>
                         <div className="flex items-center justify-center gap-2 mt-2">
                              <HeartCrack className="h-6 w-6 text-sky-400" />
-                            <p className="text-lg font-bold">Your party dealt a total of {summary.totalDamageDealt} damage to the boss!</p>
+                            <p className="text-lg font-bold">Your fellowship dealt a total of {summary.totalDamageDealt} damage to the boss!</p>
                         </div>
                     </div>
                 )}

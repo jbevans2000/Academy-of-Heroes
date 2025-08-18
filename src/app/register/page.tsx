@@ -81,7 +81,7 @@ export default function RegisterPage() {
       toast({
         variant: 'destructive',
         title: 'Missing Information',
-        description: 'Please fill out all fields, including the Class Code, and select your class and avatar.',
+        description: 'Please fill out all fields, including the Guild Code, and select your class and avatar.',
       });
       return;
     }
@@ -91,8 +91,8 @@ export default function RegisterPage() {
     if (!teacherUid) {
         toast({
             variant: 'destructive',
-            title: 'Invalid Class Code',
-            description: 'The Class Code you entered does not exist. Please check with your teacher.',
+            title: 'Invalid Guild Code',
+            description: 'The Guild Code you entered does not exist. Please check with your Grandmaster.',
         });
         setIsLoading(false);
         return;
@@ -141,7 +141,7 @@ export default function RegisterPage() {
         title: 'Registration Failed',
         description:
           error.code === 'auth/email-already-in-use'
-            ? 'This Username is already registered for this class.'
+            ? 'This Hero\'s Alias is already registered for this guild.'
             : 'An unexpected error occurred. Please try again.',
       });
     } finally {
@@ -173,11 +173,11 @@ export default function RegisterPage() {
           </CardHeader>
           <CardContent className="space-y-6 p-6">
             <div className="space-y-2 text-center bg-primary/10 p-4 rounded-lg">
-                <Label htmlFor="class-code" className="flex items-center justify-center text-lg font-semibold"><BookUser className="w-5 h-5 mr-2" />Class Code</Label>
-                 <p className="text-lg text-black">This is the most important step! Get this code from your teacher.</p>
+                <Label htmlFor="class-code" className="flex items-center justify-center text-lg font-semibold"><BookUser className="w-5 h-5 mr-2" />Guild Code</Label>
+                 <p className="text-lg text-black">This is the most important step! Get this code from your Grandmaster.</p>
                 <Input 
                     id="class-code" 
-                    placeholder="ENTER TEACHER CODE" 
+                    placeholder="ENTER GUILD CODE" 
                     value={classCode} 
                     onChange={(e) => setClassCode(e.target.value)} 
                     disabled={isLoading} 
@@ -189,8 +189,8 @@ export default function RegisterPage() {
                 {/* Left Column: Form Inputs */}
                 <div className="space-y-4">
                 <div className="space-y-2">
-                    <Label htmlFor="student-id" className="flex items-center"><KeyRound className="w-4 h-4 mr-2" />Username</Label>
-                    <Input id="student-id" placeholder="Choose a username" value={studentId} onChange={(e) => setStudentId(e.target.value)} disabled={isLoading} />
+                    <Label htmlFor="student-id" className="flex items-center"><KeyRound className="w-4 h-4 mr-2" />Hero's Alias</Label>
+                    <Input id="student-id" placeholder="Choose a hero's alias (username)" value={studentId} onChange={(e) => setStudentId(e.target.value)} disabled={isLoading} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="password" className="flex items-center"><Eye className="w-4 h-4 mr-2" />Password</Label>
@@ -215,11 +215,11 @@ export default function RegisterPage() {
                     </div>
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="student-name" className="flex items-center"><User className="w-4 h-4 mr-2" />Student Name</Label>
+                    <Label htmlFor="student-name" className="flex items-center"><User className="w-4 h-4 mr-2" />Your Mortal Name</Label>
                     <Input id="student-name" placeholder="Your real name" value={studentName} onChange={(e) => setStudentName(e.target.value)} disabled={isLoading} />
                 </div>
                  <div className="space-y-2">
-                    <Label htmlFor="class" className="flex items-center"><Wand className="w-4 h-4 mr-2" />Select Your Class</Label>
+                    <Label htmlFor="class" className="flex items-center"><Wand className="w-4 h-4 mr-2" />Choose Your Calling</Label>
                     <Select onValueChange={handleClassChange} disabled={isLoading} value={selectedClass}>
                     <SelectTrigger>
                         <SelectValue placeholder="Choose your destiny" />
@@ -292,7 +292,7 @@ export default function RegisterPage() {
             </div>
            <div className="col-span-1 md:col-span-2 pt-6">
               <Button onClick={handleSubmit} disabled={isLoading} className="w-full text-lg py-6">
-                {isLoading ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : 'Create My Hero and Enter Luminaria'}
+                {isLoading ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : 'Forge My Hero and Enter Luminaria'}
               </Button>
               <p className="text-center text-sm mt-4 text-muted-foreground">
                 Already have a hero? <Link href="/login" className="underline text-primary">Login here</Link>.
