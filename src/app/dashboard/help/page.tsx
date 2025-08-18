@@ -41,7 +41,7 @@ export default function StudentHelpPage() {
                  <AccordionItem value="item-3">
                   <AccordionTrigger>How do I go on quests?</AccordionTrigger>
                   <AccordionContent>
-                    From your dashboard, click the "Continue Quest" button to open the World Map. From there, you can click on an unlocked area (a Hub) to see the chapters inside. Click on the next available chapter to read the story and see your teacher's lesson!
+                    From your dashboard, click the "Embark on Your Quest" button to open the World Map. From there, you can click on an unlocked area (a Hub) to see the chapters inside. Click on the next available chapter to read the story and see your teacher's lesson!
                   </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="item-4">
@@ -50,10 +50,10 @@ export default function StudentHelpPage() {
                     A Boss Battle is a live, real-time quiz for the whole class! When your teacher starts a battle, click the "Ready for Battle" button on your dashboard to join the waiting room. When the battle begins, a question will appear. Answer it as fast as you can! Correct answers damage the boss, while incorrect answers might hurt you.
                   </AccordionContent>
                 </AccordionItem>
-                <AccordionItem value="item-5">
+                 <AccordionItem value="item-5">
                   <AccordionTrigger>How do I change my character's avatar?</AccordionTrigger>
                   <AccordionContent>
-                    You can upload a custom avatar by going to your dashboard, clicking the "View Powers" button (this is a temporary location, it may move!), and then finding the link to upload a new avatar.
+                    At this time, your character's avatar is chosen upon creation and cannot be changed. Choose wisely, hero!
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>

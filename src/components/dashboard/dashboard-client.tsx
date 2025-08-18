@@ -39,18 +39,6 @@ export function DashboardClient({ student }: DashboardClientProps) {
                 <Swords className="mr-4 h-8 w-8" />
                 Ready for Battle
             </Button>
-            <Link href="/dashboard/avatar-generator" passHref className="w-full">
-              <Button size="lg" className="w-full py-8 text-lg" variant="secondary">
-                  <Sparkles className="mr-4 h-8 w-8" />
-                  AI Avatar Generator
-              </Button>
-            </Link>
-            <Link href="/dashboard/avatar-upload" passHref className="w-full">
-                <Button size="lg" className="w-full py-8 text-lg" variant="outline">
-                    <User className="mr-4 h-8 w-8" />
-                    Upload Custom Avatar
-                </Button>
-            </Link>
           </div>
         </div>
         <StatsCard 
