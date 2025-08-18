@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { collection, getDocs, writeBatch, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
-import type { Student } from '@/lib/data';
+import type { Student, PendingStudent } from '@/lib/data';
 import { TeacherHeader } from "@/components/teacher/teacher-header";
 import { StudentList } from "@/components/teacher/student-list";
 import { Skeleton } from '@/components/ui/skeleton';
@@ -35,11 +35,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
+} from "@/components/ui/alert-dialog"
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, UserX, Swords, PlusCircle, BookOpen, Wrench, ChevronDown, Copy } from 'lucide-react';
+import { Loader2, Star, Coins, UserX, Swords, PlusCircle, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -52,6 +52,7 @@ interface TeacherData {
 
 export default function Dashboard() {
   const [students, setStudents] = useState<Student[]>([]);
+  const [pendingStudents, setPendingStudents] = useState<PendingStudent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [xpAmount, setXpAmount] = useState<number | string>('');
@@ -60,12 +61,12 @@ export default function Dashboard() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isXpDialogOpen, setIsXpDialogOpen] = useState(false);
   const [isGoldDialogOpen, setIsGoldDialogOpen] = useState(false);
+  const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false);
   const [teacher, setTeacher] = useState<User | null>(null);
   const [teacherData, setTeacherData] = useState<TeacherData | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // State for controlling the delete dialogs
   const [isDeleteStep1Open, setIsDeleteStep1Open] = useState(false);
   const [isDeleteStep2Open, setIsDeleteStep2Open] = useState(false);
   const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
@@ -75,17 +76,17 @@ export default function Dashboard() {
   const fetchTeacherAndStudentData = async (user: User) => {
     setIsLoading(true);
     try {
-      // Fetch teacher data
       const teacherRef = doc(db, 'teachers', user.uid);
       const teacherSnap = await getDoc(teacherRef);
       if (teacherSnap.exists()) {
         setTeacherData(teacherSnap.data() as TeacherData);
       }
 
-      // Fetch students for that teacher
       const studentsQuerySnapshot = await getDocs(collection(db, "teachers", user.uid, "students"));
-      const studentsData = studentsQuerySnapshot.docs.map(doc => ({ ...doc.data() } as Student));
-      setStudents(studentsData);
+      setStudents(studentsQuerySnapshot.docs.map(doc => ({ ...doc.data() } as Student)));
+      
+      const pendingStudentsQuerySnapshot = await getDocs(collection(db, "teachers", user.uid, "pendingStudents"));
+      setPendingStudents(pendingStudentsQuerySnapshot.docs.map(doc => ({ ...doc.data() } as PendingStudent)));
 
     } catch (error) {
        console.error("Error fetching data: ", error);
@@ -188,7 +189,6 @@ export default function Dashboard() {
           
           await batch.commit();
 
-          // Update local state instead of re-fetching
           setStudents(currentStudents => 
             currentStudents.map(student => {
               const updatedStudent = updatedStudentsData.find(u => u.uid === student.uid);
@@ -252,7 +252,6 @@ export default function Dashboard() {
 
           await batch.commit();
 
-          // Update local state instead of re-fetching
           setStudents(currentStudents => 
             currentStudents.map(student => 
               selectedStudents.includes(student.uid)
@@ -294,7 +293,6 @@ export default function Dashboard() {
           }
           await batch.commit();
 
-          // Update local state
           setStudents(prev => prev.filter(s => !selectedStudents.includes(s.uid)));
           
           await logGameEvent(teacher.uid, 'GAMEMASTER', `Deleted ${selectedStudents.length} student(s) from the database.`);
@@ -315,7 +313,7 @@ export default function Dashboard() {
           });
       } finally {
           setIsDeleting(false);
-          setIsDeleteStep2Open(false); // Close the final dialog
+          setIsDeleteStep2Open(false);
       }
   };
   
@@ -325,6 +323,49 @@ export default function Dashboard() {
         toast({ title: "Guild Code Copied!", description: "You can now share it with your students." });
     }
   }
+
+  const handleApproval = async (pendingStudent: PendingStudent, isApproved: boolean) => {
+    if (!teacher) return;
+    const { uid } = pendingStudent;
+  
+    const pendingStudentRef = doc(db, 'teachers', teacher.uid, 'pendingStudents', uid);
+  
+    if (isApproved) {
+      const { status, requestedAt, ...newStudentData } = pendingStudent;
+      const newStudent: Student = {
+        ...newStudentData,
+        backgroundUrl: '',
+        xp: 0,
+        gold: 0,
+        level: 1,
+        questProgress: {},
+        hubsCompleted: 0,
+        isNewlyApproved: true,
+      };
+      
+      const newStudentRef = doc(db, 'teachers', teacher.uid, 'students', uid);
+      
+      const batch = writeBatch(db);
+      batch.set(newStudentRef, newStudent);
+      batch.delete(pendingStudentRef);
+      
+      await batch.commit();
+      
+      setStudents(prev => [...prev, newStudent]);
+      await logGameEvent(teacher.uid, 'ACCOUNT', `${newStudent.studentName} (${newStudent.characterName}) was approved and joined the guild.`);
+      toast({ title: "Hero Approved!", description: `${newStudent.characterName} has joined your guild.` });
+    } else {
+      // If rejected, delete the pending doc. Deleting from Auth is a manual step.
+      await deleteDoc(pendingStudentRef);
+      await logGameEvent(teacher.uid, 'ACCOUNT', `The application for ${pendingStudent.studentName} (${pendingStudent.characterName}) was rejected.`);
+      toast({ title: "Request Rejected", description: `The request for ${pendingStudent.characterName} has been deleted.` });
+    }
+  
+    setPendingStudents(prev => prev.filter(p => p.uid !== uid));
+    if (pendingStudents.length === 1) {
+      setIsApprovalDialogOpen(false); // Close dialog if it was the last one
+    }
+  };
 
 
   if (isLoading || !teacher) {
@@ -355,10 +396,10 @@ export default function Dashboard() {
         <AlertDialog open={showWelcomeDialog} onOpenChange={setShowWelcomeDialog}>
             <AlertDialogContent className="max-w-2xl">
                 <AlertDialogHeader>
-                    <AlertDialogTitle className="text-3xl">Welcome to The Academy of Heroes!</AlertDialogTitle>
+                    <AlertDialogTitle className="text-3xl">Welcome, Guild Leader!</AlertDialogTitle>
                     <AlertDialogDescription asChild>
                       <div className="text-base text-foreground space-y-4">
-                        <p>Your classroom is ready! To get your students started, give them your unique Guild Code and instruct them to follow these steps:</p>
+                        <p>Your guild is ready! To get your students started, give them your unique Guild Code and instruct them to follow these steps:</p>
                         <ol className="list-decimal list-inside space-y-2 pt-2 text-foreground text-lg">
                             <li>Go to the main login page.</li>
                             <li>Click "Forge Your Hero & Join a Guild".</li>
@@ -367,6 +408,7 @@ export default function Dashboard() {
                             </li>
                             <li>Fill out the rest of the form to create their character.</li>
                         </ol>
+                         <p>Once they register, you will see their application appear in the "Pending Approvals" dialog on this dashboard.</p>
                       </div>
                     </AlertDialogDescription>
                 </AlertDialogHeader>
@@ -380,6 +422,36 @@ export default function Dashboard() {
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
+
+        <Dialog open={isApprovalDialogOpen} onOpenChange={setIsApprovalDialogOpen}>
+            <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Pending Guild Applications</DialogTitle>
+                    <DialogDescription>
+                        The following heroes have requested to join your guild. Approve or reject their applications.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto">
+                    {pendingStudents.map(ps => (
+                        <div key={ps.uid} className="flex items-center justify-between p-3 border rounded-lg">
+                            <div>
+                                <p className="font-bold">{ps.characterName}</p>
+                                <p className="text-sm text-muted-foreground">{ps.studentName}</p>
+                            </div>
+                            <div className="flex gap-2">
+                                <Button size="sm" variant="destructive" onClick={() => handleApproval(ps, false)}>
+                                    <X className="mr-2 h-4 w-4"/> Reject
+                                </Button>
+                                <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleApproval(ps, true)}>
+                                    <Check className="mr-2 h-4 w-4"/> Approve
+                                </Button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </DialogContent>
+        </Dialog>
+
         <div className="mb-4">
             <h1 className="text-3xl font-bold">{teacherData?.className || 'The Guild Leader\'s Dais'}</h1>
              {teacherData?.classCode && (
@@ -428,6 +500,13 @@ export default function Dashboard() {
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
+
+            {pendingStudents.length > 0 && (
+                <Button variant="secondary" onClick={() => setIsApprovalDialogOpen(true)}>
+                    <Bell className="mr-2 h-4 w-4 animate-pulse" />
+                    Pending Approvals ({pendingStudents.length})
+                </Button>
+            )}
 
             <Dialog open={isXpDialogOpen} onOpenChange={setIsXpDialogOpen}>
             <DialogTrigger asChild>
@@ -504,7 +583,6 @@ export default function Dashboard() {
             </DialogContent>
             </Dialog>
             
-            {/* Delete Button and Dialogs */}
             <AlertDialog open={isDeleteStep1Open} onOpenChange={setIsDeleteStep1Open}>
                 <AlertDialogTrigger asChild>
                     <Button variant="destructive" disabled={selectedStudents.length === 0}>
@@ -561,3 +639,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
+    

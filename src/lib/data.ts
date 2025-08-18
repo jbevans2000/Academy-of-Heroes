@@ -19,6 +19,23 @@ export type Student = {
     maxMp: number;
     questProgress: { [hubId: string]: number }; // e.g., { hubId1: 2, hubId2: 0 } means chapter 2 is last completed in hub1
     hubsCompleted: number; // The order number of the last hub completed
+    isNewlyApproved?: boolean;
+}
+
+export type PendingStudent = {
+  uid: string;
+  studentId: string;
+  email: string;
+  studentName: string;
+  characterName: string;
+  class: ClassType;
+  avatarUrl: string;
+  hp: number;
+  mp: number;
+  maxHp: number;
+  maxMp: number;
+  status: 'pending';
+  requestedAt: any; // Firestore ServerTimestamp
 }
 
 export const classData = {
@@ -65,3 +82,5 @@ export const classData = {
     baseStats: { hp: 6, mp: 15 },
   },
 };
+
+    

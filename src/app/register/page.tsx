@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, setDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { doc, setDoc, collection, query, where, getDocs, limit, serverTimestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -92,7 +92,7 @@ export default function RegisterPage() {
         toast({
             variant: 'destructive',
             title: 'Invalid Guild Code',
-            description: 'The Guild Code you entered does not exist. Please check with your Head Scholar.',
+            description: 'The Guild Code you entered does not exist. Please check with your Guild Leader.',
         });
         setIsLoading(false);
         return;
@@ -107,7 +107,7 @@ export default function RegisterPage() {
       const classInfo = classData[selectedClass];
       const baseStats = classInfo.baseStats;
 
-      await setDoc(doc(db, 'teachers', teacherUid, 'students', user.uid), {
+      await setDoc(doc(db, 'teachers', teacherUid, 'pendingStudents', user.uid), {
         uid: user.uid,
         studentId: studentId,
         email: email,
@@ -115,25 +115,19 @@ export default function RegisterPage() {
         characterName: characterName,
         class: selectedClass,
         avatarUrl: selectedAvatar,
-        backgroundUrl: '', // Backgrounds are no longer used
-        xp: 0,
-        gold: 0,
-        level: 1,
         hp: baseStats.hp,
         mp: baseStats.mp,
         maxHp: baseStats.hp,
         maxMp: baseStats.mp,
-        questProgress: {},
-        hubsCompleted: 0,
+        status: 'pending',
+        requestedAt: serverTimestamp(),
       });
-
-      await logGameEvent(teacherUid, 'ACCOUNT', `${studentName} created a new ${selectedClass} avatar named '${characterName}'.`);
       
       toast({
-        title: 'Account Created!',
-        description: "Welcome to Luminaria! Your adventure begins now.",
+        title: 'Your Hero Awaits Approval!',
+        description: "Your request to join the guild has been sent.",
       });
-      router.push('/dashboard');
+      router.push('/awaiting-approval');
     } catch (error: any) {
       console.error(error);
       toast({
@@ -168,13 +162,13 @@ export default function RegisterPage() {
       >
         <Card className="w-full max-w-4xl shadow-2xl bg-card/80 backdrop-blur-sm">
           <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-headline text-primary">Create Your Hero</CardTitle>
+            <CardTitle className="text-3xl font-headline text-primary">Forge Your Hero</CardTitle>
             <CardDescription>Fill in your details and choose your path to begin your adventure in Luminaria.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 p-6">
             <div className="space-y-2 text-center bg-primary/10 p-4 rounded-lg">
                 <Label htmlFor="class-code" className="flex items-center justify-center text-lg font-semibold"><BookUser className="w-5 h-5 mr-2" />Guild Code</Label>
-                 <p className="text-lg text-black">This is the most important step! Get this code from your Head Scholar.</p>
+                 <p className="text-sm text-black">This is the most important step! Get this code from your Guild Leader.</p>
                 <Input 
                     id="class-code" 
                     placeholder="ENTER GUILD CODE" 
@@ -292,7 +286,7 @@ export default function RegisterPage() {
             </div>
            <div className="col-span-1 md:col-span-2 pt-6">
               <Button onClick={handleSubmit} disabled={isLoading} className="w-full text-lg py-6">
-                {isLoading ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : 'Forge My Hero and Enter Luminaria'}
+                {isLoading ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : 'Request to Join Guild'}
               </Button>
               <p className="text-center text-sm mt-4 text-muted-foreground">
                 Already have a hero? <Link href="/login" className="underline text-primary">Login here</Link>.
@@ -304,3 +298,5 @@ export default function RegisterPage() {
     </TooltipProvider>
   );
 }
+
+    

@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,6 @@ import { Eye, EyeOff, Loader2, KeyRound } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { findTeacherForStudent } from '@/lib/utils';
 
 export function LoginForm() {
   const [studentId, setStudentId] = useState('');
@@ -36,26 +35,54 @@ export function LoginForm() {
 
     try {
       const email = `${studentId}@academy-heroes-mziuf.firebaseapp.com`;
-
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // After successful login, find which teacher this student belongs to
-      const teacherUid = await findTeacherForStudent(user.uid);
-      const studentSnap = teacherUid ? await getDoc(doc(db, 'teachers', teacherUid, 'students', user.uid)) : null;
+      // Find which teacher this student belongs to
+      const teachersRef = collection(db, 'teachers');
+      const teacherSnapshot = await getDocs(teachersRef);
+      let teacherUid: string | null = null;
+      let studentDocPath: 'students' | 'pendingStudents' | null = null;
 
-      if (teacherUid && studentSnap?.exists()) {
-        await logGameEvent(teacherUid, 'ACCOUNT', `${studentSnap.data().studentName} logged in.`);
-      } else {
-         // This case would be rare, meaning a user exists in Auth but has no student document
-         console.warn(`A user with UID ${user.uid} logged in but has no student record.`);
+      for (const teacherDoc of teacherSnapshot.docs) {
+          const mainDocRef = doc(db, 'teachers', teacherDoc.id, 'students', user.uid);
+          const pendingDocRef = doc(db, 'teachers', teacherDoc.id, 'pendingStudents', user.uid);
+
+          const mainDocSnap = await getDoc(mainDocRef);
+          if (mainDocSnap.exists()) {
+              teacherUid = teacherDoc.id;
+              studentDocPath = 'students';
+              break;
+          }
+
+          const pendingDocSnap = await getDoc(pendingDocRef);
+          if (pendingDocSnap.exists()) {
+              teacherUid = teacherDoc.id;
+              studentDocPath = 'pendingStudents';
+              break;
+          }
       }
 
-      toast({
-        title: 'Login Successful!',
-        description: 'Welcome back to your adventure.',
-      });
-      router.push('/dashboard');
+      if (!teacherUid || !studentDocPath) {
+          throw new Error("Your hero's record could not be found in any guild.");
+      }
+      
+      if (studentDocPath === 'pendingStudents') {
+          router.push('/awaiting-approval');
+          return;
+      }
+      
+      const studentSnap = await getDoc(doc(db, 'teachers', teacherUid, 'students', user.uid));
+      if (studentSnap.exists()) {
+          await logGameEvent(teacherUid, 'ACCOUNT', `${studentSnap.data().studentName} logged in.`);
+          const justApproved = studentSnap.data().isNewlyApproved ?? false;
+          const teacherData = await getDoc(doc(db, 'teachers', teacherUid));
+          const className = teacherData.exists() ? teacherData.data().className : 'the guild';
+
+          router.push(`/dashboard${justApproved ? `?approved=true&className=${encodeURIComponent(className)}` : ''}`);
+      } else {
+         throw new Error("Student data not found.");
+      }
 
     } catch (error: any) {
       console.error(error);
@@ -73,6 +100,8 @@ export function LoginForm() {
           default:
             description = `An error occurred: ${error.message}`;
         }
+      } else {
+        description = error.message;
       }
       toast({
         variant: 'destructive',
@@ -135,3 +164,5 @@ export function LoginForm() {
     </div>
   );
 }
+
+    
