@@ -253,377 +253,6 @@ export default function TeacherLiveBattlePage() {
     return () => unsubscribe();
 }, [liveState, liveState?.status, liveState?.currentQuestionIndex, teacherUid]);
   
-    // Power Activation Listener
-    useEffect(() => {
-        if (!liveState || !battle || !teacherUid || liveState.status !== 'IN_PROGRESS') return;
-
-        const powerActivationsRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/powerActivations`);
-        const q = query(powerActivationsRef);
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            snapshot.docChanges().forEach(async (change) => {
-                if (change.type === 'added') {
-                    const activation = { id: change.doc.id, ...change.doc.data() } as PowerActivation;
-                    
-                    if (activation.powerName === 'Nature’s Guidance') {
-                        await handleNaturesGuidance(activation);
-                    } else if (activation.powerName === 'Wildfire') {
-                        await handleWildfire(activation);
-                    } else if (activation.powerName === 'Enduring Spirit') {
-                         await handleEnduringSpirit(activation);
-                    } else if (activation.powerName === 'Lesser Heal') {
-                        await handleLesserHeal(activation);
-                    } else if (activation.powerName === 'Solar Empowerment') {
-                        await handleSolarEmpowerment(activation);
-                    } else if (activation.powerName === 'Cosmic Divination') {
-                        await handleCosmicDivination(activation);
-                    }
-                    
-                    await deleteDoc(doc(db, 'teachers', teacherUid, `liveBattles/active-battle/powerActivations`, activation.id!));
-                }
-            });
-        });
-
-        return () => unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [liveState?.status, liveState?.currentQuestionIndex, battle, teacherUid]);
-    
-    const handleNaturesGuidance = async (activation: PowerActivation) => {
-        if(!teacherUid) return;
-        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
-        const studentRef = doc(db, 'teachers', teacherUid, 'students', activation.studentUid);
-        
-        const battleDoc = await getDoc(liveBattleRef);
-        const studentDoc = await getDoc(studentRef);
-
-        if (!battleDoc.exists() || !studentDoc.exists()) return;
-
-        const battleData = battleDoc.data() as LiveBattleState;
-        const studentData = studentDoc.data() as Student;
-        const currentQuestion = battle!.questions[battleData.currentQuestionIndex];
-        
-        if (studentData.mp < activation.powerMpCost) return; 
-        if ((battleData.powerUsersThisRound?.[activation.studentUid] || []).length > 0) return;
-
-        const incorrectAnswerIndices = currentQuestion.answers
-            .map((_, i) => i)
-            .filter(i => i !== currentQuestion.correctAnswerIndex);
-            
-        const removableIndices = incorrectAnswerIndices.filter(i => !(battleData.removedAnswerIndices || []).includes(i));
-        
-        if (removableIndices.length === 0) return;
-
-        const indexToRemove = removableIndices[Math.floor(Math.random() * removableIndices.length)];
-
-        const batch = writeBatch(db);
-        batch.update(studentRef, { mp: increment(-activation.powerMpCost) });
-        batch.update(liveBattleRef, {
-            removedAnswerIndices: arrayUnion(indexToRemove),
-            [`powerUsersThisRound.${activation.studentUid}`]: arrayUnion(activation.powerName),
-            powerEventMessage: `${activation.studentName} used Nature's Guidance!`
-        });
-
-        await batch.commit();
-        await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} used Nature's Guidance.`);
-        setTimeout(async () => {
-            await updateDoc(liveBattleRef, { powerEventMessage: '', targetedEvent: null });
-        }, 5000);
-    };
-
-    const handleWildfire = async (activation: PowerActivation) => {
-        if(!teacherUid) return;
-        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
-        const studentRef = doc(db, 'teachers', teacherUid, 'students', activation.studentUid);
-        
-        const battleDoc = await getDoc(liveBattleRef);
-        const studentDoc = await getDoc(studentRef);
-
-        if (!battleDoc.exists() || !studentDoc.exists()) return;
-
-        const battleData = battleDoc.data() as LiveBattleState;
-        const studentData = studentDoc.data() as Student;
-
-        if (studentData.mp < activation.powerMpCost) return;
-        if ((battleData.powerUsersThisRound?.[activation.studentUid] || []).length > 0) return;
-
-        const roll1 = Math.floor(Math.random() * 6) + 1;
-        const roll2 = Math.floor(Math.random() * 6) + 1;
-        const damage = roll1 + roll2 + (studentData.level || 1);
-
-        const newQueuedPower: QueuedPower = {
-            casterUid: activation.studentUid,
-            powerName: 'Wildfire',
-            damage: damage,
-        };
-
-        const batch = writeBatch(db);
-        batch.update(studentRef, { mp: increment(-activation.powerMpCost) });
-        batch.update(liveBattleRef, {
-            queuedPowers: arrayUnion(newQueuedPower),
-            [`powerUsersThisRound.${activation.studentUid}`]: arrayUnion(activation.powerName),
-            powerEventMessage: `${activation.studentName} has cast Wildfire! Their foe will receive ${damage} points of damage if their spell strikes true!`
-        });
-
-        await batch.commit();
-        await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} cast Wildfire, queueing ${damage} damage.`);
-        setTimeout(async () => {
-            await updateDoc(liveBattleRef, { powerEventMessage: '', targetedEvent: null });
-        }, 5000);
-    };
-
-    const handleEnduringSpirit = async (activation: PowerActivation) => {
-        if (!activation.targets || activation.targets.length === 0 || !teacherUid) return;
-    
-        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
-        const casterRef = doc(db, 'teachers', teacherUid, 'students', activation.studentUid);
-    
-        const battleSnap = await getDoc(liveBattleRef);
-        const casterSnap = await getDoc(casterRef);
-    
-        if (!casterSnap.exists() || !battleSnap.exists()) return;
-    
-        const battleData = battleSnap.data() as LiveBattleState;
-        const casterData = casterSnap.data() as Student;
-    
-        if (casterData.mp < activation.powerMpCost) return;
-        if ((battleData.powerUsersThisRound?.[activation.studentUid] || []).length > 0) return;
-    
-        const targetUid = activation.targets[0];
-        const targetRef = doc(db, 'teachers', teacherUid, 'students', targetUid);
-        const targetSnap = await getDoc(targetRef);
-    
-        if (!targetSnap.exists()) return;
-        const targetData = targetSnap.data() as Student;
-    
-        // RACE CONDITION & ELIGIBILITY CHECK: Is the target still fallen?
-        if (targetData.hp > 0) {
-            const targetedEvent: TargetedEvent = {
-                targetUid: activation.studentUid, // The original caster gets the message
-                message: `${targetData.characterName} has already been restored! Choose another power.`
-            };
-            await updateDoc(liveBattleRef, { targetedEvent: targetedEvent });
-            setTimeout(() => updateDoc(liveBattleRef, { targetedEvent: null }), 5000);
-            return; // Stop execution, don't use power
-        }
-    
-        const batch = writeBatch(db);
-    
-        // Deduct MP from caster
-        batch.update(casterRef, { mp: increment(-activation.powerMpCost) });
-    
-        // Calculate heal amount (10% of max HP, rounded up)
-        const healAmount = Math.ceil(targetData.maxHp * 0.1);
-        batch.update(targetRef, { hp: healAmount });
-    
-        const targetedEvent: TargetedEvent = {
-            targetUid: targetUid,
-            message: `${casterData.characterName} has brought you back from the brink! Get back into the fight!`
-        };
-    
-        // Remove from fallen list and add power usage info
-        batch.update(liveBattleRef, {
-            fallenPlayerUids: arrayRemove(targetUid),
-            [`powerUsersThisRound.${activation.studentUid}`]: arrayUnion(activation.powerName),
-            powerEventMessage: `${activation.studentName} cast Enduring Spirit and restored ${targetData.characterName} to life!`,
-            targetedEvent: targetedEvent,
-        });
-    
-        await batch.commit();
-        await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} used Enduring Spirit on ${targetData.characterName}.`);
-        
-        setTimeout(async () => {
-            await updateDoc(liveBattleRef, { powerEventMessage: '', targetedEvent: null });
-        }, 5000);
-    };
-
-    const handleLesserHeal = async (activation: PowerActivation) => {
-        if (!activation.targets || activation.targets.length !== 2 || !teacherUid) return;
-
-        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
-        const casterRef = doc(db, 'teachers', teacherUid, 'students', activation.studentUid);
-        
-        const battleDoc = await getDoc(liveBattleRef);
-        const casterDoc = await getDoc(casterRef);
-
-        if (!battleDoc.exists() || !casterDoc.exists()) return;
-
-        const battleData = battleDoc.data() as LiveBattleState;
-        const casterData = casterDoc.data() as Student;
-        if (casterData.mp < activation.powerMpCost) return;
-        if ((battleData.powerUsersThisRound?.[activation.studentUid] || []).length > 0) return;
-
-        const batch = writeBatch(db);
-
-        // 1. Deduct MP from caster
-        batch.update(casterRef, { mp: increment(-activation.powerMpCost) });
-
-        // 2. Calculate healing (1d6 + level)
-        const healRoll = Math.floor(Math.random() * 6) + 1;
-        const totalHeal = healRoll + (casterData.level || 1);
-
-        // 3. Distribute healing
-        let heal1 = Math.floor(totalHeal / 2);
-        let heal2 = Math.ceil(totalHeal / 2);
-        if (Math.random() < 0.5) { // Randomly decide who gets the smaller half if total is odd
-            [heal1, heal2] = [heal2, heal1];
-        }
-
-        const [target1Uid, target2Uid] = activation.targets;
-        const target1Ref = doc(db, 'teachers', teacherUid, 'students', target1Uid);
-        const target2Ref = doc(db, 'teachers', teacherUid, 'students', target2Uid);
-        const target1Doc = await getDoc(target1Ref);
-        const target2Doc = await getDoc(target2Ref);
-
-        let target1Name = 'An ally';
-        let target2Name = 'Another ally';
-
-        // 4. Apply healing to targets, ensuring not to exceed max HP
-        if (target1Doc.exists()) {
-            const targetData = target1Doc.data() as Student;
-            target1Name = targetData.characterName;
-            const newHp = Math.min(targetData.maxHp, targetData.hp + heal1);
-            batch.update(target1Ref, { hp: newHp });
-        }
-        if (target2Doc.exists()) {
-            const targetData = target2Doc.data() as Student;
-            target2Name = targetData.characterName;
-            const newHp = Math.min(targetData.maxHp, targetData.hp + heal2);
-            batch.update(target2Ref, { hp: newHp });
-        }
-        
-        // 5. Update battle state with power usage and public message
-        batch.update(liveBattleRef, {
-            [`powerUsersThisRound.${activation.studentUid}`]: arrayUnion(activation.powerName),
-            powerEventMessage: `${activation.studentName} has cast Lesser Heal! ${target1Name} and ${target2Name} have had health restored!`
-        });
-
-        await batch.commit();
-        await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} cast Lesser Heal on ${target1Name} and ${target2Name}.`);
-        setTimeout(async () => {
-            await updateDoc(liveBattleRef, { powerEventMessage: '', targetedEvent: null });
-        }, 5000);
-    };
-
-    const handleSolarEmpowerment = async (activation: PowerActivation) => {
-        if (!activation.targets || activation.targets.length !== 3 || !teacherUid) return;
-
-        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
-        const casterRef = doc(db, 'teachers', teacherUid, 'students', activation.studentUid);
-        
-        const battleDoc = await getDoc(liveBattleRef);
-        const casterDoc = await getDoc(casterRef);
-
-        if (!battleDoc.exists() || !casterDoc.exists()) return;
-
-        const battleData = battleDoc.data() as LiveBattleState;
-        const casterData = casterDoc.data() as Student;
-        if (casterData.mp < activation.powerMpCost) return;
-        if ((battleData.powerUsersThisRound?.[activation.studentUid] || []).length > 0) return;
-        
-        const batch = writeBatch(db);
-
-        // 1. Deduct MP from caster
-        batch.update(casterRef, { mp: increment(-activation.powerMpCost) });
-
-        // 2. Calculate total HP boost (2d6 + level)
-        const roll1 = Math.floor(Math.random() * 6) + 1;
-        const roll2 = Math.floor(Math.random() * 6) + 1;
-        const totalBoost = roll1 + roll2 + (casterData.level || 1);
-
-        // 3. Distribute boost
-        const baseBoost = Math.floor(totalBoost / 3);
-        let remainder = totalBoost % 3;
-        const boosts = [baseBoost, baseBoost, baseBoost];
-        
-        // Randomly distribute remainder
-        let indices = [0, 1, 2];
-        while (remainder > 0) {
-            const randomIndex = Math.floor(Math.random() * indices.length);
-            boosts[indices[randomIndex]]++;
-            indices.splice(randomIndex, 1);
-            remainder--;
-        }
-
-        // 4. Apply boost to targets
-        for (let i = 0; i < 3; i++) {
-            const targetUid = activation.targets[i];
-            const boostAmount = boosts[i];
-            const targetRef = doc(db, 'teachers', teacherUid, 'students', targetUid);
-            batch.update(targetRef, { 
-                hp: increment(boostAmount),
-                maxHp: increment(boostAmount)
-            });
-        }
-        
-        // 5. Update battle state
-        batch.update(liveBattleRef, {
-            [`powerUsersThisRound.${activation.studentUid}`]: arrayUnion(activation.powerName),
-            empoweredMageUids: arrayUnion(...activation.targets),
-            powerEventMessage: `${activation.studentName} has cast Solar Empowerment! Three mages begin to shine with the light of the sun!`
-        });
-
-        await batch.commit();
-        await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} cast Solar Empowerment.`);
-        setTimeout(async () => {
-            await updateDoc(liveBattleRef, { powerEventMessage: '', targetedEvent: null });
-        }, 5000);
-    };
-
-    const handleCosmicDivination = async (activation: PowerActivation) => {
-        if (!teacherUid) return;
-
-        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
-        const casterRef = doc(db, 'teachers', teacherUid, 'students', activation.studentUid);
-
-        const battleSnap = await getDoc(liveBattleRef);
-        const casterSnap = await getDoc(casterRef);
-
-        if (!battleSnap.exists() || !casterSnap.exists()) return;
-
-        const battleData = battleSnap.data() as LiveBattleState;
-        const casterData = casterSnap.data() as Student;
-
-        // Pre-cast checks
-        if (battleData.status === 'ROUND_ENDING') return;
-        if ((battleData.cosmicDivinationUses || 0) >= 2) {
-            const targetedEvent: TargetedEvent = { targetUid: activation.studentUid, message: "Due to time sickness, you may not use this power again!" };
-            await updateDoc(liveBattleRef, { targetedEvent: targetedEvent });
-            setTimeout(() => updateDoc(liveBattleRef, { targetedEvent: null }), 5000);
-            return;
-        }
-        if ((battleData.powerUsersThisRound?.[activation.studentUid] || []).length > 0) return;
-        if (casterData.mp < activation.powerMpCost) return;
-
-        // Execute cast
-        const batch = writeBatch(db);
-        batch.update(casterRef, { mp: increment(-activation.powerMpCost) });
-
-        const studentsRef = collection(db, 'teachers', teacherUid, 'students');
-        const studentsSnapshot = await getDocs(studentsRef);
-        const activePlayersCount = studentsSnapshot.docs.filter(doc => (doc.data() as Student).hp > 0).length;
-
-        const voteEndsAt = new Date(Date.now() + 10000);
-
-        batch.update(liveBattleRef, {
-            cosmicDivinationUses: increment(1),
-            [`powerUsersThisRound.${activation.studentUid}`]: arrayUnion(activation.powerName),
-            totalPowerDamage: increment(casterData.level),
-            lastRoundPowerDamage: increment(casterData.level),
-            lastRoundPowersUsed: arrayUnion(`Cosmic Divination (${casterData.level} dmg)`),
-            voteState: {
-                isActive: true,
-                casterName: activation.studentName,
-                votesFor: [activation.studentUid], // Caster auto-votes yes
-                votesAgainst: [],
-                endsAt: voteEndsAt,
-                totalVoters: activePlayersCount,
-            }
-        });
-        
-        await batch.commit();
-        await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} cast Cosmic Divination, dealing ${casterData.level} damage.`);
-    };
-
     // Effect for Cosmic Divination vote resolution
     useEffect(() => {
         if (!liveState?.voteState?.isActive || !liveState?.voteState?.endsAt) return;
@@ -657,6 +286,287 @@ export default function TeacherLiveBattlePage() {
         return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [liveState?.voteState, teacherUid]);
+
+
+    // POWER HANDLER LOGIC
+    const handleNaturesGuidance = async (activation: PowerActivation, liveBattleRef: any, batch: any) => {
+        const currentQuestion = battle!.questions[liveState!.currentQuestionIndex];
+        
+        const incorrectAnswerIndices = currentQuestion.answers
+            .map((_, i) => i)
+            .filter(i => i !== currentQuestion.correctAnswerIndex);
+            
+        const removableIndices = incorrectAnswerIndices.filter(i => !(liveState!.removedAnswerIndices || []).includes(i));
+        
+        if (removableIndices.length === 0) return { success: false, message: "No incorrect answers left to remove." };
+
+        const indexToRemove = removableIndices[Math.floor(Math.random() * removableIndices.length)];
+
+        batch.update(liveBattleRef, {
+            removedAnswerIndices: arrayUnion(indexToRemove),
+        });
+
+        return { success: true, publicMessage: `${activation.studentName} used Nature's Guidance!` };
+    };
+
+    const handleWildfire = async (activation: PowerActivation, liveBattleRef: any, batch: any, studentData: Student) => {
+        const roll1 = Math.floor(Math.random() * 6) + 1;
+        const roll2 = Math.floor(Math.random() * 6) + 1;
+        const damage = roll1 + roll2 + (studentData.level || 1);
+
+        const newQueuedPower: QueuedPower = {
+            casterUid: activation.studentUid,
+            powerName: 'Wildfire',
+            damage: damage,
+        };
+
+        batch.update(liveBattleRef, {
+            queuedPowers: arrayUnion(newQueuedPower),
+        });
+
+        return { success: true, publicMessage: `${activation.studentName} has cast Wildfire! Their foe will receive ${damage} points of damage if their spell strikes true!` };
+    };
+    
+    const handleEnduringSpirit = async (activation: PowerActivation, liveBattleRef: any, batch: any, studentData: Student) => {
+        if (!activation.targets || activation.targets.length === 0) return { success: false, message: "No target selected."};
+        if (!teacherUid) return { success: false };
+    
+        const targetUid = activation.targets[0];
+        const targetRef = doc(db, 'teachers', teacherUid, 'students', targetUid);
+        const targetSnap = await getDoc(targetRef);
+    
+        if (!targetSnap.exists()) return { success: false, message: "Target not found."};
+        const targetData = targetSnap.data() as Student;
+    
+        // RACE CONDITION & ELIGIBILITY CHECK: Is the target still fallen?
+        if (targetData.hp > 0) {
+            return {
+                success: false,
+                targetedMessage: {
+                    targetUid: activation.studentUid, // The original caster gets the message
+                    message: `${targetData.characterName} has already been restored! Choose another power.`
+                }
+            };
+        }
+    
+        const healAmount = Math.ceil(targetData.maxHp * 0.1);
+        batch.update(targetRef, { hp: healAmount });
+    
+        batch.update(liveBattleRef, {
+            fallenPlayerUids: arrayRemove(targetUid),
+        });
+        
+        await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} used Enduring Spirit on ${targetData.characterName}.`);
+        return {
+            success: true,
+            publicMessage: `${activation.studentName} cast Enduring Spirit and restored ${targetData.characterName} to life!`,
+            targetedMessage: {
+                targetUid: targetUid,
+                message: `${studentData.characterName} has brought you back from the brink! Get back into the fight!`
+            }
+        };
+    };
+
+    const handleLesserHeal = async (activation: PowerActivation, liveBattleRef: any, batch: any, studentData: Student) => {
+        if (!activation.targets || activation.targets.length !== 2) return { success: false };
+        if (!teacherUid) return { success: false };
+
+        const healRoll = Math.floor(Math.random() * 6) + 1;
+        const totalHeal = healRoll + (studentData.level || 1);
+
+        let heal1 = Math.floor(totalHeal / 2);
+        let heal2 = Math.ceil(totalHeal / 2);
+        if (Math.random() < 0.5) { [heal1, heal2] = [heal2, heal1]; }
+
+        const [target1Uid, target2Uid] = activation.targets;
+        const target1Ref = doc(db, 'teachers', teacherUid, 'students', target1Uid);
+        const target2Ref = doc(db, 'teachers', teacherUid, 'students', target2Uid);
+        const target1Doc = await getDoc(target1Ref);
+        const target2Doc = await getDoc(target2Ref);
+
+        let target1Name = 'An ally';
+        let target2Name = 'Another ally';
+
+        if (target1Doc.exists()) {
+            const targetData = target1Doc.data() as Student;
+            target1Name = targetData.characterName;
+            const newHp = Math.min(targetData.maxHp, targetData.hp + heal1);
+            batch.update(target1Ref, { hp: newHp });
+        }
+        if (target2Doc.exists()) {
+            const targetData = target2Doc.data() as Student;
+            target2Name = targetData.characterName;
+            const newHp = Math.min(targetData.maxHp, targetData.hp + heal2);
+            batch.update(target2Ref, { hp: newHp });
+        }
+        
+        await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} cast Lesser Heal on ${target1Name} and ${target2Name}.`);
+        return { success: true, publicMessage: `${activation.studentName} has cast Lesser Heal! ${target1Name} and ${target2Name} have had health restored!` };
+    };
+
+    const handleSolarEmpowerment = async (activation: PowerActivation, liveBattleRef: any, batch: any, studentData: Student) => {
+        if (!activation.targets || activation.targets.length !== 3) return { success: false };
+        if (!teacherUid) return { success: false };
+
+        const roll1 = Math.floor(Math.random() * 6) + 1;
+        const roll2 = Math.floor(Math.random() * 6) + 1;
+        const totalBoost = roll1 + roll2 + (studentData.level || 1);
+
+        const baseBoost = Math.floor(totalBoost / 3);
+        let remainder = totalBoost % 3;
+        const boosts = [baseBoost, baseBoost, baseBoost];
+        
+        let indices = [0, 1, 2];
+        while (remainder > 0) {
+            const randomIndex = Math.floor(Math.random() * indices.length);
+            boosts[indices[randomIndex]]++;
+            indices.splice(randomIndex, 1);
+            remainder--;
+        }
+
+        for (let i = 0; i < 3; i++) {
+            const targetUid = activation.targets[i];
+            const boostAmount = boosts[i];
+            const targetRef = doc(db, 'teachers', teacherUid, 'students', targetUid);
+            batch.update(targetRef, { 
+                hp: increment(boostAmount),
+                maxHp: increment(boostAmount)
+            });
+        }
+        
+        batch.update(liveBattleRef, {
+            empoweredMageUids: arrayUnion(...activation.targets),
+        });
+
+        await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} cast Solar Empowerment.`);
+        return { success: true, publicMessage: `${activation.studentName} has cast Solar Empowerment! Three mages begin to shine with the light of the sun!` };
+    };
+    
+    const handleCosmicDivination = async (activation: PowerActivation, liveBattleRef: any, batch: any, studentData: Student) => {
+        if (!teacherUid) return { success: false };
+        
+        const studentsRef = collection(db, 'teachers', teacherUid, 'students');
+        const studentsSnapshot = await getDocs(studentsRef);
+        const activePlayersCount = studentsSnapshot.docs.filter(doc => (doc.data() as Student).hp > 0).length;
+
+        const voteEndsAt = new Date(Date.now() + 10000);
+
+        batch.update(liveBattleRef, {
+            cosmicDivinationUses: increment(1),
+            totalPowerDamage: increment(studentData.level),
+            lastRoundPowerDamage: increment(studentData.level),
+            lastRoundPowersUsed: arrayUnion(`Cosmic Divination (${studentData.level} dmg)`),
+            voteState: {
+                isActive: true,
+                casterName: activation.studentName,
+                votesFor: [activation.studentUid], // Caster auto-votes yes
+                votesAgainst: [],
+                endsAt: voteEndsAt,
+                totalVoters: activePlayersCount,
+            }
+        });
+        
+        await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} cast Cosmic Divination, dealing ${studentData.level} damage.`);
+        return { success: true, publicMessage: "" }; // Public message is handled by the vote dialog
+    };
+    
+    const powerHandlers: { [key: string]: Function } = {
+        'Nature’s Guidance': handleNaturesGuidance,
+        'Wildfire': handleWildfire,
+        'Enduring Spirit': handleEnduringSpirit,
+        'Lesser Heal': handleLesserHeal,
+        'Solar Empowerment': handleSolarEmpowerment,
+        'Cosmic Divination': handleCosmicDivination,
+    };
+
+    const handlePowerActivation = async (activation: PowerActivation) => {
+        if (!teacherUid || !liveState) return;
+        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
+        const studentRef = doc(db, 'teachers', teacherUid, 'students', activation.studentUid);
+        
+        const battleDoc = await getDoc(liveBattleRef); // Get fresh data
+        const studentDoc = await getDoc(studentRef);
+
+        if (!battleDoc.exists() || !studentDoc.exists()) return;
+        const battleData = battleDoc.data() as LiveBattleState;
+        const studentData = studentDoc.data() as Student;
+        
+        // Centralized Pre-Checks
+        if (studentData.mp < activation.powerMpCost) return;
+        if ((battleData.powerUsersThisRound?.[activation.studentUid] || []).length > 0) return;
+        if (activation.powerName === 'Cosmic Divination') {
+            if (battleData.status === 'ROUND_ENDING') return;
+            if ((battleData.cosmicDivinationUses || 0) >= 2) {
+                const targetedEvent: TargetedEvent = { targetUid: activation.studentUid, message: "Due to time sickness, you may not use this power again!" };
+                await updateDoc(liveBattleRef, { targetedEvent: targetedEvent });
+                setTimeout(() => updateDoc(liveBattleRef, { targetedEvent: null }), 5000);
+                return; // IMPORTANT: This is a pre-check failure, action is NOT consumed
+            }
+        }
+
+        // Dispatch to the correct handler
+        const handler = powerHandlers[activation.powerName];
+        if (!handler) return;
+        
+        const batch = writeBatch(db);
+        const result = await handler(activation, liveBattleRef, batch, studentData);
+
+        if (result && result.success) {
+            // Common success operations
+            batch.update(studentRef, { mp: increment(-activation.powerMpCost) });
+            batch.update(liveBattleRef, {
+                [`powerUsersThisRound.${activation.studentUid}`]: arrayUnion(activation.powerName),
+            });
+            
+            const updatePayload: any = {};
+            if (result.publicMessage) updatePayload.powerEventMessage = result.publicMessage;
+            if (result.targetedMessage) updatePayload.targetedEvent = result.targetedMessage;
+            if (Object.keys(updatePayload).length > 0) {
+                 batch.update(liveBattleRef, updatePayload);
+            }
+            
+            await batch.commit();
+
+            // Hide public message after delay
+            if (result.publicMessage) {
+                setTimeout(async () => {
+                    await updateDoc(liveBattleRef, { powerEventMessage: '' });
+                }, 5000);
+            }
+             // Hide targeted message after delay
+            if (result.targetedMessage) {
+                setTimeout(async () => {
+                    await updateDoc(liveBattleRef, { targetedEvent: null });
+                }, 5000);
+            }
+
+        } else if (result && !result.success && result.targetedMessage) {
+            // Handle pre-check failures that need to notify the user but not consume resources
+             await updateDoc(liveBattleRef, { targetedEvent: result.targetedMessage });
+             setTimeout(() => updateDoc(liveBattleRef, { targetedEvent: null }), 5000);
+        }
+    }
+    
+    // Power Activation Listener
+    useEffect(() => {
+        if (!liveState || !battle || !teacherUid || (liveState.status !== 'IN_PROGRESS' && liveState.status !== 'ROUND_ENDING')) return;
+
+        const powerActivationsRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/powerActivations`);
+        const q = query(powerActivationsRef);
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            snapshot.docChanges().forEach(async (change) => {
+                if (change.type === 'added') {
+                    const activation = { id: change.doc.id, ...change.doc.data() } as PowerActivation;
+                    await handlePowerActivation(activation);
+                    await deleteDoc(doc(db, 'teachers', teacherUid, `liveBattles/active-battle/powerActivations`, activation.id!));
+                }
+            });
+        });
+
+        return () => unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [liveState?.status, liveState?.currentQuestionIndex, battle, teacherUid]);
 
 
   const calculateAndSetResults = useCallback(async (isDivinationSkip = false) => {
@@ -969,7 +879,9 @@ export default function TeacherLiveBattlePage() {
       router.push(`/teacher/battle/summary/${battleId}`);
 
       setTimeout(async () => {
-        await deleteDoc(doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle'));
+        if (teacherUid) {
+            await deleteDoc(doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle'));
+        }
       }, 5000); 
   };
   
@@ -1158,7 +1070,7 @@ export default function TeacherLiveBattlePage() {
                 <BattleChatBox 
                     isTeacher={true}
                     userName={"The Wise One"}
-                    teacherUid={teacherUid}
+                    teacherUid={teacherUid || ''}
                     battleId={battleId}
                 />
                 {(liveState.fallenPlayerUids && liveState.fallenPlayerUids.length > 0) && (
