@@ -85,7 +85,7 @@ export default function ClassroomToolsPage() {
                         <div className="flex items-center gap-4">
                             <Wrench className="h-8 w-8 text-primary" />
                             <div>
-                                <h1 className="text-3xl font-bold">The Grandmaster's Toolkit</h1>
+                                <h1 className="text-3xl font-bold">The Head Scholar's Toolkit</h1>
                                 <p className="text-black">A collection of useful utilities to help manage your classroom with a fantasy twist.</p>
                             </div>
                         </div>

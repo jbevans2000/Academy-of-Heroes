@@ -381,7 +381,7 @@ export default function Dashboard() {
             </AlertDialogContent>
         </AlertDialog>
         <div className="mb-4">
-            <h1 className="text-3xl font-bold">{teacherData?.className || 'Grandmaster\'s Dais'}</h1>
+            <h1 className="text-3xl font-bold">{teacherData?.className || 'The Head Scholar\'s Dais'}</h1>
              {teacherData?.classCode && (
                 <div className="flex items-center gap-2 mt-2">
                     <p className="text-muted-foreground">Your Guild Code:</p>
@@ -420,7 +420,7 @@ export default function Dashboard() {
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/teacher/tools')}>
                         <Wrench className="mr-2 h-4 w-4" />
-                        <span>The Grandmaster's Toolkit</span>
+                        <span>The Head Scholar's Toolkit</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/teacher/gamelog')}>
                         <BookOpen className="mr-2 h-4 w-4" />

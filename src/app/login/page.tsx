@@ -74,7 +74,7 @@ export default function LoginPage() {
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-card px-2 text-muted-foreground font-headline">
-                  For the Grandmasters
+                  For the Head Scholars
                 </span>
               </div>
             </div>
@@ -82,13 +82,13 @@ export default function LoginPage() {
                 <Link href="/teacher/login" passHref>
                     <Button size="lg" className="w-full text-lg py-6 bg-blue-600 hover:bg-blue-700">
                         <School className="mr-3 h-6 w-6" />
-                        Grandmaster's Login
+                        Head Scholar's Login
                     </Button>
                 </Link>
                  <Link href="/teacher/register" passHref>
                     <Button size="lg" variant="secondary" className="w-full text-lg py-6">
                         <UserCheck className="mr-3 h-6 w-6" />
-                        Grandmaster's Registration
+                        Head Scholar's Registration
                     </Button>
                 </Link>
             </div>

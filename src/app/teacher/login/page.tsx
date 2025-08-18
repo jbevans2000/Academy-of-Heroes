@@ -91,7 +91,7 @@ export default function TeacherLoginPage() {
                 <School className="h-10 w-10 text-primary" />
             </div>
             <CardTitle className="text-3xl font-headline text-primary">
-              Grandmaster's Login
+              Head Scholar's Login
             </CardTitle>
             <CardDescription>
               Please sign in to manage your classroom.

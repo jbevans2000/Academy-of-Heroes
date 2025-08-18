@@ -140,7 +140,7 @@ export default function TeacherRegisterPage() {
         />
       <Card className="w-full max-w-lg shadow-2xl bg-card/90">
         <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-headline text-primary">Grandmaster's Registration</CardTitle>
+            <CardTitle className="text-3xl font-headline text-primary">Head Scholar's Registration</CardTitle>
             <CardDescription>Join the Academy of Heroes and bring your classroom to life.</CardDescription>
         </CardHeader>
         <CardContent>

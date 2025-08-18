@@ -69,7 +69,7 @@ export default function RegisterPage() {
         toast({
             variant: 'destructive',
             title: 'Name Generation Failed',
-            description: 'The AI could not generate a name. Please try again or enter one manually.',
+            description: 'The Oracle could not divine a name. Please try again or scribe one yourself.',
         });
     } finally {
         setIsGeneratingName(false);
@@ -92,7 +92,7 @@ export default function RegisterPage() {
         toast({
             variant: 'destructive',
             title: 'Invalid Guild Code',
-            description: 'The Guild Code you entered does not exist. Please check with your Grandmaster.',
+            description: 'The Guild Code you entered does not exist. Please check with your Head Scholar.',
         });
         setIsLoading(false);
         return;
@@ -174,7 +174,7 @@ export default function RegisterPage() {
           <CardContent className="space-y-6 p-6">
             <div className="space-y-2 text-center bg-primary/10 p-4 rounded-lg">
                 <Label htmlFor="class-code" className="flex items-center justify-center text-lg font-semibold"><BookUser className="w-5 h-5 mr-2" />Guild Code</Label>
-                 <p className="text-lg text-black">This is the most important step! Get this code from your Grandmaster.</p>
+                 <p className="text-lg text-black">This is the most important step! Get this code from your Head Scholar.</p>
                 <Input 
                     id="class-code" 
                     placeholder="ENTER GUILD CODE" 
