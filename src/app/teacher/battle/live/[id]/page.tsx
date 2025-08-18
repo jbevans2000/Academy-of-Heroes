@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { RoundResults, type Result } from '@/components/teacher/round-results';
 import { downloadCsv } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
+import { calculateLevel, calculateHpGain, calculateMpGain, calculateBaseMaxHp } from '@/lib/game-mechanics';
 import type { Student } from '@/lib/data';
 import { logGameEvent } from '@/lib/gamelog';
 import { BattleChatBox } from '@/components/battle/chat-box';
@@ -42,6 +42,7 @@ interface LiveBattleState {
   powerUsersThisRound?: { [key: string]: string[] }; // { studentUid: [powerName, ...] }
   queuedPowers?: QueuedPower[];
   fallenPlayerUids?: string[];
+  empoweredMageUids?: string[]; // For Solar Empowerment
 }
 
 interface PowerActivation {
@@ -255,6 +256,8 @@ export default function TeacherLiveBattlePage() {
                          await handleEnduringSpirit(activation);
                     } else if (activation.powerName === 'Lesser Heal') {
                         await handleLesserHeal(activation);
+                    } else if (activation.powerName === 'Solar Empowerment') {
+                        await handleSolarEmpowerment(activation);
                     }
                     
                     await deleteDoc(doc(db, 'teachers', teacherUid, `liveBattles/active-battle/powerActivations`, activation.id!));
@@ -395,16 +398,17 @@ export default function TeacherLiveBattlePage() {
 
         if (!battleDoc.exists() || !casterDoc.exists()) return;
 
+        const battleData = battleDoc.data() as LiveBattleState;
         const casterData = casterDoc.data() as Student;
         if (casterData.mp < activation.powerMpCost) return;
-        if ((battleDoc.data().powerUsersThisRound?.[activation.studentUid] || []).length > 0) return;
+        if ((battleData.powerUsersThisRound?.[activation.studentUid] || []).length > 0) return;
 
         const batch = writeBatch(db);
 
         // 1. Deduct MP from caster
         batch.update(casterRef, { mp: increment(-activation.powerMpCost) });
 
-        // 2. Calculate healing
+        // 2. Calculate healing (1d6 + level)
         const healRoll = Math.floor(Math.random() * 6) + 1;
         const totalHeal = healRoll + (casterData.level || 1);
 
@@ -441,11 +445,76 @@ export default function TeacherLiveBattlePage() {
         // 5. Update battle state with power usage and public message
         batch.update(liveBattleRef, {
             [`powerUsersThisRound.${activation.studentUid}`]: arrayUnion(activation.powerName),
-            powerEventMessage: `${activation.studentName} has cast Lesser Heal!  ${target1Name} and ${target2Name} have had health restored!`
+            powerEventMessage: `${activation.studentName} has cast Lesser Heal! ${target1Name} and ${target2Name} have had health restored!`
         });
 
         await batch.commit();
         await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} cast Lesser Heal on ${target1Name} and ${target2Name}.`);
+        setTimeout(async () => {
+            await updateDoc(liveBattleRef, { powerEventMessage: '' });
+        }, 5000);
+    };
+
+    const handleSolarEmpowerment = async (activation: PowerActivation) => {
+        if (!activation.targets || activation.targets.length !== 3 || !teacherUid) return;
+
+        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
+        const casterRef = doc(db, 'teachers', teacherUid, 'students', activation.studentUid);
+        
+        const battleDoc = await getDoc(liveBattleRef);
+        const casterDoc = await getDoc(casterRef);
+
+        if (!battleDoc.exists() || !casterDoc.exists()) return;
+
+        const battleData = battleDoc.data() as LiveBattleState;
+        const casterData = casterDoc.data() as Student;
+        if (casterData.mp < activation.powerMpCost) return;
+        if ((battleData.powerUsersThisRound?.[activation.studentUid] || []).length > 0) return;
+        
+        const batch = writeBatch(db);
+
+        // 1. Deduct MP from caster
+        batch.update(casterRef, { mp: increment(-activation.powerMpCost) });
+
+        // 2. Calculate total HP boost (2d6 + level)
+        const roll1 = Math.floor(Math.random() * 6) + 1;
+        const roll2 = Math.floor(Math.random() * 6) + 1;
+        const totalBoost = roll1 + roll2 + (casterData.level || 1);
+
+        // 3. Distribute boost
+        const baseBoost = Math.floor(totalBoost / 3);
+        let remainder = totalBoost % 3;
+        const boosts = [baseBoost, baseBoost, baseBoost];
+        
+        // Randomly distribute remainder
+        let indices = [0, 1, 2];
+        while (remainder > 0) {
+            const randomIndex = Math.floor(Math.random() * indices.length);
+            boosts[indices[randomIndex]]++;
+            indices.splice(randomIndex, 1);
+            remainder--;
+        }
+
+        // 4. Apply boost to targets
+        for (let i = 0; i < 3; i++) {
+            const targetUid = activation.targets[i];
+            const boostAmount = boosts[i];
+            const targetRef = doc(db, 'teachers', teacherUid, 'students', targetUid);
+            batch.update(targetRef, { 
+                hp: increment(boostAmount),
+                maxHp: increment(boostAmount)
+            });
+        }
+        
+        // 5. Update battle state
+        batch.update(liveBattleRef, {
+            [`powerUsersThisRound.${activation.studentUid}`]: arrayUnion(activation.powerName),
+            empoweredMageUids: arrayUnion(...activation.targets),
+            powerEventMessage: `${activation.studentName} has cast Solar Empowerment! Three mages begin to shine with the light of the sun!`
+        });
+
+        await batch.commit();
+        await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} cast Solar Empowerment.`);
         setTimeout(async () => {
             await updateDoc(liveBattleRef, { powerEventMessage: '' });
         }, 5000);
@@ -594,7 +663,11 @@ export default function TeacherLiveBattlePage() {
   const handleStartFirstQuestion = async () => {
     if(!teacherUid) return;
     const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
-    await updateDoc(liveBattleRef, { status: 'IN_PROGRESS', fallenPlayerUids: [] });
+    await updateDoc(liveBattleRef, { 
+        status: 'IN_PROGRESS', 
+        fallenPlayerUids: [],
+        empoweredMageUids: [] 
+    });
     if(battle) {
         await logGameEvent(teacherUid, 'BOSS_BATTLE', `Round 1 of '${battle.battleName}' has started.`);
     }
@@ -668,6 +741,7 @@ export default function TeacherLiveBattlePage() {
       const totalBaseDamage = finalStateData?.totalBaseDamage || 0;
       const totalPowerDamage = finalStateData?.totalPowerDamage || 0;
       const fallenAtEnd = finalStateData?.fallenPlayerUids || [];
+      const empoweredAtEnd = finalStateData?.empoweredMageUids || [];
       await logGameEvent(teacherUid, 'BOSS_BATTLE', `The party dealt a total of ${totalDamage} damage during '${battle.battleName}'.`);
 
       const battleLogRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
@@ -714,6 +788,18 @@ export default function TeacherLiveBattlePage() {
                   updates.mp = studentData.mp + calculateMpGain(studentData.class, levelsGained);
               }
               batch.update(studentRef, updates);
+          }
+      }
+
+      // Reset Max HP for empowered mages
+      for (const mageUid of empoweredAtEnd) {
+          const studentRef = doc(db, 'teachers', teacherUid, 'students', mageUid);
+          const studentSnap = await getDoc(studentRef);
+          if (studentSnap.exists()) {
+              const studentData = studentSnap.data() as Student;
+              const baseMaxHp = calculateBaseMaxHp(studentData.class, studentData.level);
+              const newHp = Math.min(studentData.hp, baseMaxHp); // Can't have more HP than new max
+              batch.update(studentRef, { hp: newHp, maxHp: baseMaxHp });
           }
       }
 

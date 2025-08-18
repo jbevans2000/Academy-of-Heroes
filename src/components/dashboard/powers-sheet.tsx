@@ -15,7 +15,7 @@ import { classPowers, type Power, type PowerType } from "@/lib/powers";
 import { cn } from "@/lib/utils";
 import { Wand2, Zap, Shield, Heart, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { addDoc, collection, serverTimestamp, getDocs } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, getDocs, doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { TargetingDialog } from '@/components/battle/targeting-dialog';
 
@@ -41,6 +41,10 @@ const classIconMap: { [key: string]: React.ReactNode } = {
     Mage: <Wand2 className="h-8 w-8 text-primary" />,
 };
 
+interface LiveBattleState {
+    empoweredMageUids?: string[];
+}
+
 export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = false, teacherUid, battleId }: PowersSheetProps) {
   const powers = classPowers[student.class] || [];
   const { toast } = useToast();
@@ -50,11 +54,20 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
   const [isTargeting, setIsTargeting] = useState(false);
   const [selectedPower, setSelectedPower] = useState<Power | null>(null);
   const [partyMembers, setPartyMembers] = useState<Student[]>([]);
+  const [battleState, setBattleState] = useState<LiveBattleState>({});
 
-  // Fetch all students in the battle when in battle view
+
   useEffect(() => {
-    if (isBattleView && teacherUid) {
-      const fetchPartyMembers = async () => {
+    if (!isBattleView || !teacherUid || !battleId) return;
+
+    const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
+    const unsubscribe = onSnapshot(liveBattleRef, (docSnap) => {
+        if (docSnap.exists()) {
+            setBattleState(docSnap.data() as LiveBattleState);
+        }
+    });
+
+    const fetchPartyMembers = async () => {
         try {
           const studentsRef = collection(db, 'teachers', teacherUid, 'students');
           const snapshot = await getDocs(studentsRef);
@@ -65,8 +78,9 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
         }
       };
       fetchPartyMembers();
-    }
-  }, [isBattleView, teacherUid]);
+
+    return () => unsubscribe();
+  }, [isBattleView, teacherUid, battleId]);
 
 
   const handleUsePower = async (power: Power, targets?: string[]) => {
@@ -75,7 +89,24 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
         return;
     }
     
-    // If a power requires a target and none are provided, open the targeting dialog
+    // Client-side pre-check for Solar Empowerment
+    if (power.name === 'Solar Empowerment') {
+        const eligibleMages = partyMembers.filter(p => 
+            p.class === 'Mage' && 
+            p.hp > 0 && 
+            !(battleState.empoweredMageUids || []).includes(p.uid)
+        );
+
+        if (eligibleMages.length < 3) {
+            toast({
+                title: "Allies are already empowered!",
+                description: "All available mages are already shining with the light of the sun.",
+                duration: 5000,
+            });
+            return;
+        }
+    }
+
     if (power.target && !targets) {
         setSelectedPower(power);
         setIsTargeting(true);
@@ -90,12 +121,12 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
             studentName: student.characterName,
             powerName: power.name,
             powerMpCost: power.mpCost,
-            targets: targets || [], // Include targets in the activation
+            targets: targets || [],
             timestamp: serverTimestamp(),
         });
 
         toast({ title: 'Power Cast!', description: `You have called upon ${power.name}!` });
-        onOpenChange(false); // Close the sheet after using a power
+        onOpenChange(false);
 
     } catch (error) {
         console.error("Failed to use power:", error);
@@ -182,6 +213,7 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
               students={partyMembers}
               caster={student}
               onConfirm={(targets) => handleUsePower(selectedPower, targets)}
+              battleState={battleState}
           />
       )}
     </>

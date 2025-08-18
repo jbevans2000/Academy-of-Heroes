@@ -56,3 +56,18 @@ export function calculateMpGain(
     
     return totalMpGained;
 }
+
+
+// New function to calculate base max HP without randomness, for resetting after battles
+export function calculateBaseMaxHp(characterClass: ClassType, level: number): number {
+    const baseStats: { [key in ClassType]?: { base: number, perLevel: number } } = {
+        'Mage': { base: 6, perLevel: 3 }, // Average of 1d4 is 2.5, let's say 3
+        'Healer': { base: 8, perLevel: 4 }, // Average of 1d6 is 3.5, let's say 4
+        'Guardian': { base: 12, perLevel: 5 } // Average of 1d8 is 4.5, let's say 5
+    };
+
+    const stats = baseStats[characterClass];
+    if (!stats) return 0;
+    
+    return stats.base + (stats.perLevel * (level - 1));
+}

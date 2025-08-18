@@ -26,6 +26,7 @@ interface TargetingDialogProps {
   students: Student[];
   caster: Student;
   onConfirm: (targets: string[]) => void;
+  battleState: any; // Pass the live battle state for checks
 }
 
 // Fisher-Yates shuffle algorithm
@@ -38,7 +39,7 @@ const shuffleArray = <T,>(array: T[]): T[] => {
     return newArray;
 };
 
-export function TargetingDialog({ isOpen, onOpenChange, power, students, caster, onConfirm }: TargetingDialogProps) {
+export function TargetingDialog({ isOpen, onOpenChange, power, students, caster, onConfirm, battleState }: TargetingDialogProps) {
   const [selectedUids, setSelectedUids] = useState<string[]>([]);
   const { toast } = useToast();
 
@@ -65,13 +66,23 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
 
   const getEligibleTargets = () => {
     let potentialTargets = students;
+
+    // UNIVERSAL RULE: Can't target self unless specified
+    potentialTargets = students.filter(s => s.uid !== caster.uid);
     
-    // For Lesser Heal, filter out players at max HP or 0 HP
+    // UNIVERSAL RULE: Fallen players can only be targeted by specific powers
+    if (power.target !== 'fallen') {
+        potentialTargets = potentialTargets.filter(s => s.hp > 0);
+    }
+    
+    // POWER-SPECIFIC RULES
     if (power.name === 'Lesser Heal') {
-      potentialTargets = students.filter(s => s.hp > 0 && s.hp < s.maxHp);
-    } else {
-        // Default eligibility for other powers: cannot target self
-        potentialTargets = students.filter(s => s.uid !== caster.uid);
+      potentialTargets = potentialTargets.filter(s => s.hp < s.maxHp);
+    } else if (power.name === 'Solar Empowerment') {
+        potentialTargets = potentialTargets.filter(p => 
+            p.class === 'Mage' && 
+            !(battleState.empoweredMageUids || []).includes(p.uid)
+        );
     }
 
     if (power.target === 'fallen') {
@@ -118,7 +129,7 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
                 <Label htmlFor={`target-${student.uid}`} className="flex-1 cursor-pointer">
                   <div className="font-bold">{student.characterName}</div>
                   <div className="text-xs text-muted-foreground">
-                      {student.studentName} {power.name === 'Lesser Heal' ? `(${student.hp}/${student.maxHp} HP)` : ''}
+                      {student.studentName} ({student.hp}/{student.maxHp} HP)
                   </div>
                 </Label>
               </div>

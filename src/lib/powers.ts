@@ -152,10 +152,12 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Solar Empowerment',
-      description: 'Redirects the sun\'s energy to 3 random Mages, increasing their max HP by 5 for the battle.',
-      level: 5,
-      mpCost: 15,
+      description: 'You intertwine the light of the sun into the energies of 3 allied mages. Their maximum hit points temporarily increase for the duration of the battle.',
+      level: 4,
+      mpCost: 8,
       type: 'support',
+      target: 'ally',
+      targetCount: 3,
     },
     {
       name: 'Heal 2',
