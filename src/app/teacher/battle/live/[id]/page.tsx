@@ -143,6 +143,7 @@ export default function TeacherLiveBattlePage() {
   const [user, setUser] = useState<User | null>(null);
   const [teacherData, setTeacherData] = useState<TeacherData | null>(null);
   const [teacherUid, setTeacherUid] = useState<string | null>(null);
+  const [fallenStudentNames, setFallenStudentNames] = useState<string[]>([]);
 
 
   useEffect(() => {
@@ -496,6 +497,25 @@ export default function TeacherLiveBattlePage() {
       return () => clearTimeout(timer);
   }, [liveState?.status, liveState?.timerEndsAt, calculateAndSetResults]);
 
+  // Effect to resolve fallen UIDs to names
+  useEffect(() => {
+    if (!teacherUid || !liveState?.fallenPlayerUids || liveState.fallenPlayerUids.length === 0) {
+        setFallenStudentNames([]);
+        return;
+    }
+    const fetchNames = async () => {
+        const names = await Promise.all(
+            liveState.fallenPlayerUids!.map(async (uid) => {
+                const studentRef = doc(db, 'teachers', teacherUid, 'students', uid);
+                const studentSnap = await getDoc(studentRef);
+                return studentSnap.exists() ? studentSnap.data().characterName : 'Unknown Hero';
+            })
+        );
+        setFallenStudentNames(names);
+    }
+    fetchNames();
+  }, [liveState?.fallenPlayerUids, teacherUid]);
+
   const handleStartFirstQuestion = async () => {
     if(!teacherUid) return;
     const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
@@ -845,8 +865,8 @@ export default function TeacherLiveBattlePage() {
                         <CardContent>
                             <p className="text-muted-foreground">A healer must use 'Enduring Spirit' to revive them.</p>
                             <ul className="mt-2 space-y-1">
-                                {liveState.fallenPlayerUids.map(uid => (
-                                    <li key={uid} className="font-semibold">{uid}</li> // Placeholder, need to resolve to name
+                                {fallenStudentNames.map((name, index) => (
+                                    <li key={index} className="font-semibold">{name}</li>
                                 ))}
                             </ul>
                         </CardContent>
@@ -858,3 +878,5 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
+
+    

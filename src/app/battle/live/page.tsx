@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { onSnapshot, doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
-import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Hourglass, VolumeX, Flame, Lightbulb } from 'lucide-react';
+import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Hourglass, VolumeX, Flame, Lightbulb, Skull } from 'lucide-react';
 import { type Student } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
@@ -405,7 +405,7 @@ export default function LiveBattlePage() {
                                                 isRemoved && "line-through bg-red-900/50 border-red-700 text-red-400 cursor-not-allowed hover:bg-red-900/50"
                                             )}
                                             onClick={() => handleSubmitAnswer(index)}
-                                            disabled={!isBattleActive || isRemoved || isFallen}
+                                            disabled={!isBattleActive || submittedAnswer !== null || isRemoved || isFallen}
                                             >
                                             <span className="font-bold mr-4">{String.fromCharCode(65 + index)}.</span>
                                             {answer}
@@ -418,7 +418,21 @@ export default function LiveBattlePage() {
                         </CardContent>
                     </Card>
                 </div>
-                <div className="lg:col-span-1">
+                <div className="lg:col-span-1 flex flex-col gap-6">
+                    {(battleState.fallenPlayerUids && battleState.fallenPlayerUids.length > 0) && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2"><Skull className="text-destructive"/> Fallen Heroes</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <ul className="mt-2 space-y-1">
+                                    {battleState.fallenPlayerUids.map(uid => (
+                                        <li key={uid} className="font-semibold">{uid}</li> // Placeholder, need to resolve to name
+                                    ))}
+                                </ul>
+                            </CardContent>
+                        </Card>
+                    )}
                     <BattleChatBox 
                         isTeacher={false}
                         userName={student.characterName}
@@ -498,3 +512,5 @@ export default function LiveBattlePage() {
     </div>
   );
 }
+
+    

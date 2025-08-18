@@ -9,7 +9,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, Trophy, LayoutDashboard, HeartCrack, Star, Coins, ShieldCheck, Sparkles } from 'lucide-react';
+import { CheckCircle, XCircle, Trophy, LayoutDashboard, HeartCrack, Star, Coins, ShieldCheck, Sparkles, Skull } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { findTeacherForStudent } from '@/lib/utils';
 
@@ -204,7 +204,8 @@ export default function StudentBattleSummaryPage() {
                     </div>
                 )}
                 {wasFallenAtEnd && (
-                    <div className="p-4 rounded-md bg-gray-700 border border-gray-600 text-gray-300">
+                    <div className="p-4 rounded-md bg-gray-700 border border-gray-600 text-gray-300 flex items-center justify-center gap-2">
+                         <Skull className="h-8 w-8 text-gray-400" />
                         <p className="text-xl font-bold">You were fallen at the end of the battle and did not receive any XP or Gold.</p>
                     </div>
                 )}
@@ -268,3 +269,5 @@ export default function StudentBattleSummaryPage() {
     </div>
   );
 }
+
+    

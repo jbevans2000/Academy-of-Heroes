@@ -7,7 +7,7 @@ export interface Power {
     level: number;
     mpCost: number;
     type: PowerType;
-    target?: 'ally';
+    target?: 'ally' | 'fallen'; // <-- Add 'fallen' as a possible target type
     targetCount?: number;
     // eligibilityCheck?: (caster: Student, target: Student) => boolean; // For more complex rules later
 }
@@ -170,6 +170,8 @@ export const classPowers: ClassPowers = {
       level: 9,
       mpCost: 25,
       type: 'healing',
+      target: 'fallen',
+      targetCount: 1,
     },
     {
       name: 'Cosmic Divination',
@@ -194,3 +196,5 @@ export const classPowers: ClassPowers = {
     },
   ],
 };
+
+    
