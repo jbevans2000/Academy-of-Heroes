@@ -127,7 +127,7 @@ export default function GameLogPage() {
                         <TabsTrigger value="BOSS_BATTLE">Boss Battles</TabsTrigger>
                         <TabsTrigger value="CHAPTER">Chapters</TabsTrigger>
                         <TabsTrigger value="ACCOUNT">Account</TabsTrigger>
-                        <TabsTrigger value="HEADSCHOLAR">Head Scholar</TabsTrigger>
+                        <TabsTrigger value="GAMEMASTER">Gamemaster</TabsTrigger>
                     </TabsList>
                     <TabsContent value={activeTab} className="mt-4 max-h-[60vh] overflow-y-auto p-2">
                        {renderLogList(filteredLogs)}
