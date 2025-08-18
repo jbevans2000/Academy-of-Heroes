@@ -143,12 +143,12 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Lesser Heal',
-      description: 'Restores 1d6 + your level in hit points to 3 random party members.',
-      level: 3,
-      mpCost: 12,
+      description: 'You call upon the powers of life to soothe your party’s wounds!',
+      level: 2,
+      mpCost: 3,
       type: 'healing',
       target: 'ally',
-      targetCount: 3,
+      targetCount: 2,
     },
     {
       name: 'Solar Empowerment',
@@ -196,5 +196,3 @@ export const classPowers: ClassPowers = {
     },
   ],
 };
-
-    

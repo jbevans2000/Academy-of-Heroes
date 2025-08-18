@@ -253,6 +253,8 @@ export default function TeacherLiveBattlePage() {
                         await handleWildfire(activation);
                     } else if (activation.powerName === 'Enduring Spirit') {
                          await handleEnduringSpirit(activation);
+                    } else if (activation.powerName === 'Lesser Heal') {
+                        await handleLesserHeal(activation);
                     }
                     
                     await deleteDoc(doc(db, 'teachers', teacherUid, `liveBattles/active-battle/powerActivations`, activation.id!));
@@ -371,6 +373,72 @@ export default function TeacherLiveBattlePage() {
 
         await batch.commit();
         await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} used Enduring Spirit.`);
+        setTimeout(async () => {
+            await updateDoc(liveBattleRef, { powerEventMessage: '' });
+        }, 5000);
+    };
+
+    const handleLesserHeal = async (activation: PowerActivation) => {
+        if (!activation.targets || activation.targets.length !== 2 || !teacherUid) return;
+
+        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
+        const casterRef = doc(db, 'teachers', teacherUid, 'students', activation.studentUid);
+        
+        const battleDoc = await getDoc(liveBattleRef);
+        const casterDoc = await getDoc(casterRef);
+
+        if (!battleDoc.exists() || !casterDoc.exists()) return;
+
+        const casterData = casterDoc.data() as Student;
+        if (casterData.mp < activation.powerMpCost) return; 
+
+        const batch = writeBatch(db);
+
+        // 1. Deduct MP from caster
+        batch.update(casterRef, { mp: increment(-activation.powerMpCost) });
+
+        // 2. Calculate healing
+        const healRoll = Math.floor(Math.random() * 6) + 1;
+        const totalHeal = healRoll + (casterData.level || 1);
+
+        // 3. Distribute healing
+        let heal1 = Math.floor(totalHeal / 2);
+        let heal2 = Math.ceil(totalHeal / 2);
+        if (Math.random() < 0.5) { // Randomly decide who gets the smaller half if total is odd
+            [heal1, heal2] = [heal2, heal1];
+        }
+
+        const [target1Uid, target2Uid] = activation.targets;
+        const target1Ref = doc(db, 'teachers', teacherUid, 'students', target1Uid);
+        const target2Ref = doc(db, 'teachers', teacherUid, 'students', target2Uid);
+        const target1Doc = await getDoc(target1Ref);
+        const target2Doc = await getDoc(target2Ref);
+
+        let target1Name = 'An ally';
+        let target2Name = 'Another ally';
+
+        // 4. Apply healing to targets, ensuring not to exceed max HP
+        if (target1Doc.exists()) {
+            const targetData = target1Doc.data() as Student;
+            target1Name = targetData.characterName;
+            const newHp = Math.min(targetData.maxHp, targetData.hp + heal1);
+            batch.update(target1Ref, { hp: newHp });
+        }
+        if (target2Doc.exists()) {
+            const targetData = target2Doc.data() as Student;
+            target2Name = targetData.characterName;
+            const newHp = Math.min(targetData.maxHp, targetData.hp + heal2);
+            batch.update(target2Ref, { hp: newHp });
+        }
+        
+        // 5. Update battle state with power usage and public message
+        batch.update(liveBattleRef, {
+            [`powerUsersThisRound.${activation.studentUid}`]: arrayUnion(activation.powerName),
+            powerEventMessage: `${activation.studentName} cast Lesser Heal! ${target1Name} and ${target2Name} have had health restored!`
+        });
+
+        await batch.commit();
+        await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} cast Lesser Heal on ${target1Name} and ${target2Name}.`);
         setTimeout(async () => {
             await updateDoc(liveBattleRef, { powerEventMessage: '' });
         }, 5000);
@@ -878,5 +946,3 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
-
-    

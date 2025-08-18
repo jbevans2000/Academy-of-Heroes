@@ -58,14 +58,30 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
       if (prev.length < targetCount) {
         return [...prev, uid];
       }
-      // If already at max targets, replace the first one
       toast({ title: `You can only select ${targetCount} target(s).`, description: 'Deselect a player to choose another.' });
       return prev;
     });
   };
 
-  // For now, assume any ally is eligible. This can be expanded later.
-  const eligibleTargets = students.filter(s => s.uid !== caster.uid);
+  const getEligibleTargets = () => {
+    let potentialTargets = students;
+    
+    // For Lesser Heal, filter out players at max HP or 0 HP
+    if (power.name === 'Lesser Heal') {
+      potentialTargets = students.filter(s => s.hp > 0 && s.hp < s.maxHp);
+    } else {
+        // Default eligibility for other powers: cannot target self
+        potentialTargets = students.filter(s => s.uid !== caster.uid);
+    }
+
+    if (power.target === 'fallen') {
+        return students.filter(s => s.hp <= 0);
+    }
+
+    return potentialTargets;
+  }
+
+  const eligibleTargets = getEligibleTargets();
 
   const handleLetFateDecide = () => {
     const targetCount = power.targetCount || 1;
@@ -101,7 +117,9 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
                 />
                 <Label htmlFor={`target-${student.uid}`} className="flex-1 cursor-pointer">
                   <div className="font-bold">{student.characterName}</div>
-                  <div className="text-xs text-muted-foreground">{student.studentName}</div>
+                  <div className="text-xs text-muted-foreground">
+                      {student.studentName} {power.name === 'Lesser Heal' ? `(${student.hp}/${student.maxHp} HP)` : ''}
+                  </div>
                 </Label>
               </div>
             ))}
