@@ -30,6 +30,15 @@ interface TargetedEvent {
     message: string;
 }
 
+interface VoteState {
+    isActive: boolean;
+    casterName: string;
+    votesFor: string[];
+    votesAgainst: string[];
+    endsAt: { seconds: number; nanoseconds: number; };
+    totalVoters: number;
+}
+
 interface LiveBattleState {
   battleId: string | null;
   status: 'WAITING' | 'IN_PROGRESS' | 'ROUND_ENDING' | 'SHOWING_RESULTS' | 'BATTLE_ENDED';
@@ -49,6 +58,8 @@ interface LiveBattleState {
   queuedPowers?: QueuedPower[];
   fallenPlayerUids?: string[];
   empoweredMageUids?: string[]; // For Solar Empowerment
+  cosmicDivinationUses?: number; // For Cosmic Divination
+  voteState?: VoteState | null; // For Cosmic Divination
 }
 
 interface PowerActivation {
@@ -264,6 +275,8 @@ export default function TeacherLiveBattlePage() {
                         await handleLesserHeal(activation);
                     } else if (activation.powerName === 'Solar Empowerment') {
                         await handleSolarEmpowerment(activation);
+                    } else if (activation.powerName === 'Cosmic Divination') {
+                        await handleCosmicDivination(activation);
                     }
                     
                     await deleteDoc(doc(db, 'teachers', teacherUid, `liveBattles/active-battle/powerActivations`, activation.id!));
@@ -556,8 +569,97 @@ export default function TeacherLiveBattlePage() {
         }, 5000);
     };
 
+    const handleCosmicDivination = async (activation: PowerActivation) => {
+        if (!teacherUid) return;
 
-  const calculateAndSetResults = useCallback(async () => {
+        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
+        const casterRef = doc(db, 'teachers', teacherUid, 'students', activation.studentUid);
+
+        const battleSnap = await getDoc(liveBattleRef);
+        const casterSnap = await getDoc(casterRef);
+
+        if (!battleSnap.exists() || !casterSnap.exists()) return;
+
+        const battleData = battleSnap.data() as LiveBattleState;
+        const casterData = casterSnap.data() as Student;
+
+        // Pre-cast checks
+        if (battleData.status === 'ROUND_ENDING') return;
+        if ((battleData.cosmicDivinationUses || 0) >= 2) {
+            const targetedEvent: TargetedEvent = { targetUid: activation.studentUid, message: "Due to time sickness, you may not use this power again!" };
+            await updateDoc(liveBattleRef, { targetedEvent: targetedEvent });
+            setTimeout(() => updateDoc(liveBattleRef, { targetedEvent: null }), 5000);
+            return;
+        }
+        if ((battleData.powerUsersThisRound?.[activation.studentUid] || []).length > 0) return;
+        if (casterData.mp < activation.powerMpCost) return;
+
+        // Execute cast
+        const batch = writeBatch(db);
+        batch.update(casterRef, { mp: increment(-activation.powerMpCost) });
+
+        const studentsRef = collection(db, 'teachers', teacherUid, 'students');
+        const studentsSnapshot = await getDocs(studentsRef);
+        const activePlayersCount = studentsSnapshot.docs.filter(doc => (doc.data() as Student).hp > 0).length;
+
+        const voteEndsAt = new Date(Date.now() + 10000);
+
+        batch.update(liveBattleRef, {
+            cosmicDivinationUses: increment(1),
+            [`powerUsersThisRound.${activation.studentUid}`]: arrayUnion(activation.powerName),
+            totalPowerDamage: increment(casterData.level),
+            lastRoundPowerDamage: increment(casterData.level),
+            lastRoundPowersUsed: arrayUnion(`Cosmic Divination (${casterData.level} dmg)`),
+            voteState: {
+                isActive: true,
+                casterName: activation.studentName,
+                votesFor: [activation.studentUid], // Caster auto-votes yes
+                votesAgainst: [],
+                endsAt: voteEndsAt,
+                totalVoters: activePlayersCount,
+            }
+        });
+        
+        await batch.commit();
+        await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} cast Cosmic Divination, dealing ${casterData.level} damage.`);
+    };
+
+    // Effect for Cosmic Divination vote resolution
+    useEffect(() => {
+        if (!liveState?.voteState?.isActive || !liveState?.voteState?.endsAt) return;
+
+        const expiryDate = new Date(liveState.voteState.endsAt.seconds * 1000);
+        const now = new Date();
+        const timeUntilExpiry = expiryDate.getTime() - now.getTime();
+
+        const timer = setTimeout(async () => {
+            const liveBattleRef = doc(db, 'teachers', teacherUid!, 'liveBattles', 'active-battle');
+            const battleSnap = await getDoc(liveBattleRef);
+            if (!battleSnap.exists()) return;
+            const currentVoteState = battleSnap.data().voteState as VoteState;
+
+            const votePassed = currentVoteState.votesFor.length > (currentVoteState.totalVoters / 2);
+
+            if (votePassed) {
+                // End the round immediately, keeping the power damage
+                await calculateAndSetResults(true); // Pass flag to skip regular damage
+            } else {
+                // Vote failed, clear the vote state and show message
+                await updateDoc(liveBattleRef, { 
+                    voteState: null,
+                    powerEventMessage: "The party is divided! The attempt to skip time fails." 
+                });
+                setTimeout(() => updateDoc(liveBattleRef, { powerEventMessage: '' }), 5000);
+            }
+
+        }, timeUntilExpiry > 0 ? timeUntilExpiry : 0);
+
+        return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [liveState?.voteState, teacherUid]);
+
+
+  const calculateAndSetResults = useCallback(async (isDivinationSkip = false) => {
     if (!battle || !liveState || !teacherUid || liveState.status !== 'ROUND_ENDING' || isEndingRound) return;
 
     setIsEndingRound(true);
@@ -583,8 +685,8 @@ export default function TeacherLiveBattlePage() {
 
         const newlyFallenUids: string[] = [];
 
-        // Apply damage for incorrect answers in a batch
-        if (damageOnIncorrect > 0) {
+        // Apply damage for incorrect answers in a batch, unless skipped by divination
+        if (damageOnIncorrect > 0 && !isDivinationSkip) {
             for (const response of responsesData) {
                 if (!response.isCorrect) {
                     const studentRef = doc(db, 'teachers', teacherUid, 'students', response.uid);
@@ -602,22 +704,23 @@ export default function TeacherLiveBattlePage() {
         }
         
         // --- POWER DAMAGE CALCULATION ---
-        let powerDamage = 0;
-        const powersUsedThisRound: string[] = [];
+        let powerDamage = isDivinationSkip ? (liveState.lastRoundPowerDamage || 0) : 0;
+        const powersUsedThisRound: string[] = isDivinationSkip ? (liveState.lastRoundPowersUsed || []) : [];
 
-        liveState.queuedPowers?.forEach(power => {
-            const casterResponse = responsesData.find(res => res.uid === power.casterUid);
-            if (casterResponse?.isCorrect) {
-                powerDamage += power.damage;
-                powersUsedThisRound.push(`${power.powerName} (${power.damage} dmg)`);
-                logGameEvent(teacherUid, 'BOSS_BATTLE', `${casterResponse.characterName}'s Wildfire struck true for ${power.damage} damage.`);
-            } else {
-                 logGameEvent(teacherUid, 'BOSS_BATTLE', `${casterResponse?.characterName || 'A mage'}'s Wildfire fizzled as they answered incorrectly.`);
-            }
-        });
+        if (!isDivinationSkip) {
+            liveState.queuedPowers?.forEach(power => {
+                const casterResponse = responsesData.find(res => res.uid === power.casterUid);
+                if (casterResponse?.isCorrect) {
+                    powerDamage += power.damage;
+                    powersUsedThisRound.push(`${power.powerName} (${power.damage} dmg)`);
+                    logGameEvent(teacherUid, 'BOSS_BATTLE', `${casterResponse.characterName}'s Wildfire struck true for ${power.damage} damage.`);
+                } else {
+                    logGameEvent(teacherUid, 'BOSS_BATTLE', `${casterResponse?.characterName || 'A mage'}'s Wildfire fizzled as they answered incorrectly.`);
+                }
+            });
+        }
 
-
-        const baseDamage = results.filter(r => r.isCorrect).length;
+        const baseDamage = isDivinationSkip ? 0 : results.filter(r => r.isCorrect).length;
         const totalDamageThisRound = baseDamage + powerDamage;
 
         const newAllRoundsData = {
@@ -644,7 +747,8 @@ export default function TeacherLiveBattlePage() {
             lastRoundPowersUsed: powersUsedThisRound,
             totalDamage: increment(totalDamageThisRound),
             totalBaseDamage: increment(baseDamage),
-            totalPowerDamage: increment(powerDamage)
+            totalPowerDamage: increment(powerDamage),
+            voteState: null, // Always clear vote state when showing results
         };
         
         if (newlyFallenUids.length > 0) {
@@ -702,7 +806,9 @@ export default function TeacherLiveBattlePage() {
     await updateDoc(liveBattleRef, { 
         status: 'IN_PROGRESS', 
         fallenPlayerUids: [],
-        empoweredMageUids: [] 
+        empoweredMageUids: [],
+        cosmicDivinationUses: 0,
+        voteState: null,
     });
     if(battle) {
         await logGameEvent(teacherUid, 'BOSS_BATTLE', `Round 1 of '${battle.battleName}' has started.`);
@@ -1076,3 +1182,5 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
+
+    

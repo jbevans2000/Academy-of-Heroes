@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { onSnapshot, doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
+import { onSnapshot, doc, getDoc, setDoc, updateDoc, increment, arrayUnion } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
 import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Hourglass, VolumeX, Flame, Lightbulb, Skull } from 'lucide-react';
@@ -30,6 +30,14 @@ interface TargetedEvent {
     message: string;
 }
 
+interface VoteState {
+    isActive: boolean;
+    casterName: string;
+    votesFor: string[];
+    votesAgainst: string[];
+    endsAt: { seconds: number; nanoseconds: number; };
+}
+
 interface LiveBattleState {
   battleId: string | null;
   status: 'WAITING' | 'IN_PROGRESS' | 'ROUND_ENDING' | 'SHOWING_RESULTS' | 'BATTLE_ENDED';
@@ -41,6 +49,7 @@ interface LiveBattleState {
   powerEventMessage?: string; // For displaying power usage feedback
   targetedEvent?: TargetedEvent | null; // For targeted messages like revivals
   fallenPlayerUids?: string[]; // New: List of fallen players
+  voteState?: VoteState | null; // For Cosmic Divination
 }
 
 interface Question {
@@ -146,6 +155,54 @@ function FallenPlayerDialog({ isOpen, onOpenChange }: { isOpen: boolean; onOpenC
     );
 }
 
+function VoteDialog({ voteState, userUid, teacherUid }: { voteState: VoteState | null, userUid: string, teacherUid: string }) {
+    if (!voteState?.isActive) return null;
+
+    const [hasVoted, setHasVoted] = useState(voteState.votesFor.includes(userUid) || voteState.votesAgainst.includes(userUid));
+    const [timeLeft, setTimeLeft] = useState(0);
+
+    useEffect(() => {
+        if (!voteState.endsAt) return;
+        const interval = setInterval(() => {
+            const newTimeLeft = Math.max(0, Math.round((new Date(voteState.endsAt!.seconds * 1000).getTime() - new Date().getTime()) / 1000));
+            setTimeLeft(newTimeLeft);
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [voteState.endsAt]);
+
+    const handleVote = async (vote: 'yes' | 'no') => {
+        setHasVoted(true);
+        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
+        const fieldToUpdate = vote === 'yes' ? 'voteState.votesFor' : 'voteState.votesAgainst';
+        await updateDoc(liveBattleRef, {
+            [fieldToUpdate]: arrayUnion(userUid)
+        });
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center animate-in fade-in-50">
+            <Card className="w-full max-w-lg text-center p-8 bg-black/90 text-white border-purple-500 shadow-2xl shadow-purple-500/50">
+                <CardHeader>
+                    <CardTitle className="text-3xl font-headline text-purple-300">A Cosmic Choice!</CardTitle>
+                    <CardDescription className="text-lg text-white/90">
+                        {voteState.casterName} wants to whisk you forward in time to the next question! Do you agree?
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="text-6xl font-mono font-bold text-yellow-400">{timeLeft}</div>
+                    {hasVoted ? (
+                        <p className="text-xl font-semibold text-green-400">Your vote has been cast!</p>
+                    ) : (
+                        <div className="grid grid-cols-2 gap-4">
+                            <Button size="lg" className="bg-green-600 hover:bg-green-700" onClick={() => handleVote('yes')}>Yes, let's go!</Button>
+                            <Button size="lg" variant="destructive" onClick={() => handleVote('no')}>No, let's fight!</Button>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
+    );
+}
 
 export default function LiveBattlePage() {
   const [battleState, setBattleState] = useState<LiveBattleState>({ battleId: null, status: 'WAITING', currentQuestionIndex: 0 });
@@ -162,6 +219,8 @@ export default function LiveBattlePage() {
   const [targetedMessage, setTargetedMessage] = useState<string | null>(null);
 
   const battleStateRef = useRef(battleState);
+  const router = useRouter();
+
   useEffect(() => {
     battleStateRef.current = battleState;
   }, [battleState]);
@@ -353,6 +412,7 @@ export default function LiveBattlePage() {
     return (
       <>
         <FallenPlayerDialog isOpen={showFallenDialog} onOpenChange={setShowFallenDialog} />
+         <VoteDialog voteState={battleState.voteState || null} userUid={user.uid} teacherUid={teacherUid} />
         <PowersSheet
           isOpen={isPowersSheetOpen}
           onOpenChange={setIsPowersSheetOpen}
@@ -536,3 +596,5 @@ export default function LiveBattlePage() {
     </div>
   );
 }
+
+    

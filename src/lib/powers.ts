@@ -160,13 +160,6 @@ export const classPowers: ClassPowers = {
       targetCount: 3,
     },
     {
-      name: 'Heal 2',
-      description: 'Restores 2d6 + your level in hit points to 5 random party members.',
-      level: 7,
-      mpCost: 20,
-      type: 'healing',
-    },
-    {
       name: 'Enduring Spirit',
       description: 'You pierce the veil of reality and return an ally’s spirit to their body.',
       level: 6,
@@ -176,10 +169,17 @@ export const classPowers: ClassPowers = {
       targetCount: 1,
     },
     {
+      name: 'Heal 2',
+      description: 'Restores 2d6 + your level in hit points to 5 random party members.',
+      level: 7,
+      mpCost: 20,
+      type: 'healing',
+    },
+    {
       name: 'Cosmic Divination',
-      description: 'Allows the team to skip the current question and damages the boss equal to your level.',
-      level: 11,
-      mpCost: 30,
+      description: 'Peer into the future, allowing the team to vote on skipping the current question. Deals damage equal to your level regardless of the vote. (Max 2 uses per battle)',
+      level: 10,
+      mpCost: 15,
       type: 'utility',
     },
     {
@@ -198,3 +198,5 @@ export const classPowers: ClassPowers = {
     },
   ],
 };
+
+    
