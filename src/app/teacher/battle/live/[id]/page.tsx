@@ -281,7 +281,7 @@ export default function TeacherLiveBattlePage() {
         const currentQuestion = battle!.questions[battleData.currentQuestionIndex];
         
         if (studentData.mp < activation.powerMpCost) return; 
-        if ((battleData.powerUsersThisRound?.[activation.studentUid] || []).includes(activation.powerName)) return;
+        if ((battleData.powerUsersThisRound?.[activation.studentUid] || []).length > 0) return;
 
         const incorrectAnswerIndices = currentQuestion.answers
             .map((_, i) => i)
@@ -322,7 +322,7 @@ export default function TeacherLiveBattlePage() {
         const studentData = studentDoc.data() as Student;
 
         if (studentData.mp < activation.powerMpCost) return;
-        if ((battleData.powerUsersThisRound?.[activation.studentUid] || []).includes(activation.powerName)) return;
+        if ((battleData.powerUsersThisRound?.[activation.studentUid] || []).length > 0) return;
 
         const roll1 = Math.floor(Math.random() * 6) + 1;
         const roll2 = Math.floor(Math.random() * 6) + 1;
@@ -355,6 +355,12 @@ export default function TeacherLiveBattlePage() {
         const batch = writeBatch(db);
         const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
         const casterRef = doc(db, 'teachers', teacherUid, 'students', activation.studentUid);
+        const casterSnap = await getDoc(casterRef);
+        const battleSnap = await getDoc(liveBattleRef);
+        if (!casterSnap.exists() || !battleSnap.exists()) return;
+
+        if (casterSnap.data().mp < activation.powerMpCost) return;
+        if ((battleSnap.data().powerUsersThisRound?.[activation.studentUid] || []).length > 0) return;
 
         // Deduct MP from caster
         batch.update(casterRef, { mp: increment(-activation.powerMpCost) });
@@ -390,7 +396,8 @@ export default function TeacherLiveBattlePage() {
         if (!battleDoc.exists() || !casterDoc.exists()) return;
 
         const casterData = casterDoc.data() as Student;
-        if (casterData.mp < activation.powerMpCost) return; 
+        if (casterData.mp < activation.powerMpCost) return;
+        if ((battleDoc.data().powerUsersThisRound?.[activation.studentUid] || []).length > 0) return;
 
         const batch = writeBatch(db);
 
@@ -434,7 +441,7 @@ export default function TeacherLiveBattlePage() {
         // 5. Update battle state with power usage and public message
         batch.update(liveBattleRef, {
             [`powerUsersThisRound.${activation.studentUid}`]: arrayUnion(activation.powerName),
-            powerEventMessage: `${activation.studentName} cast Lesser Heal! ${target1Name} and ${target2Name} have had health restored!`
+            powerEventMessage: `${activation.studentName} has cast Lesser Heal!  ${target1Name} and ${target2Name} have had health restored!`
         });
 
         await batch.commit();
