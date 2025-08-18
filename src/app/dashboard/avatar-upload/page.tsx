@@ -120,8 +120,8 @@ export default function AvatarUploadPage() {
                 <Card className="shadow-lg">
                     <CardHeader className="text-center">
                         <UploadCloud className="h-12 w-12 mx-auto text-primary" />
-                        <CardTitle className="text-2xl">Upload a New Avatar</CardTitle>
-                        <CardDescription>Choose a new image for your hero from your device.</CardDescription>
+                        <CardTitle className="text-2xl">Upload Custom Avatar</CardTitle>
+                        <CardDescription>Choose an image for your hero from your device.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
                         <div className="grid w-full max-w-sm items-center gap-1.5">

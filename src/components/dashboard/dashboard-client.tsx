@@ -7,7 +7,7 @@ import { AvatarDisplay } from "./avatar-display";
 import { Button } from "../ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, Map, Swords } from "lucide-react";
+import { User, Map, Swords, Sparkles } from "lucide-react";
 
 interface DashboardClientProps {
   student: Student;
@@ -39,10 +39,16 @@ export function DashboardClient({ student }: DashboardClientProps) {
                 <Swords className="mr-4 h-8 w-8" />
                 Ready for Battle
             </Button>
+            <Link href="/dashboard/avatar-generator" passHref className="w-full">
+              <Button size="lg" className="w-full py-8 text-lg" variant="secondary">
+                  <Sparkles className="mr-4 h-8 w-8" />
+                  AI Avatar Generator
+              </Button>
+            </Link>
             <Link href="/dashboard/avatar-upload" passHref className="w-full">
-                <Button size="lg" className="w-full py-8 text-lg" variant="secondary">
+                <Button size="lg" className="w-full py-8 text-lg" variant="outline">
                     <User className="mr-4 h-8 w-8" />
-                    Change Avatar
+                    Upload Custom Avatar
                 </Button>
             </Link>
           </div>
