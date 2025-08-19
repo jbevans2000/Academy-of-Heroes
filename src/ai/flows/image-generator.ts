@@ -3,7 +3,7 @@
 /**
  * @fileOverview A flow for generating an image.
  * 
- * - generateImage - A function that calls the AI to generate an image and returns the data URI.
+ * - generateBossImage - A function that calls the AI to generate an image and returns the data URI.
  * - ImageGeneratorInput - The input type for the function.
  */
 import { ai } from '@/ai/genkit';
@@ -20,7 +20,7 @@ export type ImageGeneratorInput = z.infer<typeof ImageGeneratorInputSchema>;
  * @param input The prompt for the image generation.
  * @returns A promise that resolves to the data URI (e.g., 'data:image/png;base64,...') of the generated image.
  */
-export async function generateImage(input: ImageGeneratorInput): Promise<string> {
+export async function generateBossImage(input: ImageGeneratorInput): Promise<string> {
     const { prompt } = input;
 
     // 1. Generate the image using the specified model
