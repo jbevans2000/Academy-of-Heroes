@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { onSnapshot, doc, getDoc, setDoc, updateDoc, increment, arrayUnion, collection, query } from 'firebase/firestore';
+import { onSnapshot, doc, getDoc, setDoc, updateDoc, increment, arrayUnion, collection, query, getDocs } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
 import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Hourglass, VolumeX, Flame, Lightbulb, Skull, ScrollText } from 'lucide-react';
@@ -222,18 +222,27 @@ function PowerLog({ teacherUid }: { teacherUid: string }) {
 
     useEffect(() => {
         if (!teacherUid) return;
-        const logRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
-        const q = query(logRef);
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const entries: PowerLogEntry[] = [];
-            snapshot.docChanges().forEach((change) => {
-                if (change.type === 'added') {
-                    entries.push({ id: change.doc.id, ...change.doc.data() } as PowerLogEntry);
-                }
+        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
+        const unsubscribeLive = onSnapshot(liveBattleRef, (docSnap) => {
+            if (!docSnap.exists() || docSnap.data().status === 'WAITING') {
+                setLogEntries([]);
+                return;
+            }
+            const logRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
+            const q = query(logRef);
+            const unsubscribeLog = onSnapshot(q, (snapshot) => {
+                const entries: PowerLogEntry[] = [];
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'added') {
+                        entries.push({ id: change.doc.id, ...change.doc.data() } as PowerLogEntry);
+                    }
+                });
+                setLogEntries(prev => [...prev, ...entries].sort((a,b) => a.timestamp.seconds - b.timestamp.seconds));
             });
-            setLogEntries(prev => [...prev, ...entries].sort((a,b) => a.timestamp.seconds - b.timestamp.seconds));
+             return () => unsubscribeLog();
         });
-        return () => unsubscribe();
+
+        return () => unsubscribeLive();
     }, [teacherUid]);
 
     useEffect(() => {
