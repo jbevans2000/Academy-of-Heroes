@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -305,4 +306,3 @@ export function ManageStudentDialog({ isOpen, onOpenChange, student, setStudents
     </>
   );
 }
-
