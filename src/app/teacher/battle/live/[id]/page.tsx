@@ -560,7 +560,7 @@ export default function TeacherLiveBattlePage() {
                     batch.update(target2Ref, { hp: newHp });
                 }
                 batch.update(liveBattleRef, {
-                    powerEventMessage: `${activation.studentName} has cast Lesser Heal! ${target1Name} and ${target2Name} have had health restored!`
+                    powerEventMessage: `${activation.studentName} has cast Lesser Heal! ${target1Name} and ${target2Name} have had their health restored!`
                 });
                 batch.set(doc(battleLogRef), {
                     round: liveState.currentQuestionIndex + 1,
@@ -961,10 +961,10 @@ export default function TeacherLiveBattlePage() {
     const summaryRef = doc(db, 'teachers', teacherUid, `battleSummaries`, battleId);
     batch.set(summaryRef, {
         battleId: battleId,
-        battleName: battle?.battleName,
-        questions: battle?.questions,
+        battleName: battle?.battleName || '',
+        questions: battle?.questions || [],
         resultsByRound: allRoundsData,
-        battleLog: powerLog,
+        battleLog: powerLog || [],
         rewards: rewardsByStudent,
         totalDamageDealt: totalDamage,
         totalBaseDamage: totalBaseDamage,
