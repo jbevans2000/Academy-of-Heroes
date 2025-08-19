@@ -56,6 +56,8 @@ export default function StudentBattleSummaryPage() {
             const foundTeacherUid = await findTeacherForStudent(currentUser.uid);
             if (foundTeacherUid) {
                 setTeacherUid(foundTeacherUid);
+            } else {
+                router.push('/');
             }
         } else {
             router.push('/');
@@ -72,64 +74,61 @@ export default function StudentBattleSummaryPage() {
         try {
             const liveDoc = await getDoc(liveBattleRef);
 
-            if (liveDoc.exists() && liveDoc.data().battleId) {
-                const battleId = liveDoc.data().battleId;
-                const summaryRef = doc(db, 'teachers', teacherUid, 'battleSummaries', battleId);
-                const summarySnap = await getDoc(summaryRef);
+            // This is the key change: if the active-battle doc is gone,
+            // it means the teacher has cleaned up. We should clear any stale summary
+            // and assume we're not in a summary state.
+            if (!liveDoc.exists() || !liveDoc.data().battleId) {
+                setSummary(null);
+                setIsLoading(false);
+                 // If a student lands here without an active battle, they should probably be on their dashboard.
+                const timeoutId = setTimeout(() => {
+                    if (!summary) { // Re-check in case summary loads in the meantime
+                        router.push('/dashboard');
+                    }
+                }, 1500); // Wait a moment before redirecting
+                return () => clearTimeout(timeoutId);
+            }
 
-                if (summarySnap.exists()) {
-                    setSummary(summarySnap.data() as BattleSummary);
+            const battleId = liveDoc.data().battleId;
+            const summaryRef = doc(db, 'teachers', teacherUid, 'battleSummaries', battleId);
+            const summarySnap = await getDoc(summaryRef);
 
-                    const responsesRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/studentResponses/${user.uid}/rounds`);
-                    const responsesSnap = await getDocs(responsesRef);
-                    const responsesData: { [key: string]: StudentRoundResponse } = {};
-                    responsesSnap.forEach(doc => {
-                        responsesData[doc.id] = doc.data() as StudentRoundResponse;
-                    });
-                    setStudentResponses(responsesData);
-                } else {
-                    setSummary(null);
-                }
+            if (summarySnap.exists()) {
+                setSummary(summarySnap.data() as BattleSummary);
+
+                const responsesRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/studentResponses/${user.uid}/rounds`);
+                const responsesSnap = await getDocs(responsesRef);
+                const responsesData: { [key: string]: StudentRoundResponse } = {};
+                responsesSnap.forEach(doc => {
+                    responsesData[doc.id] = doc.data() as StudentRoundResponse;
+                });
+                setStudentResponses(responsesData);
             } else {
+                // No summary doc yet, keep loading.
                 setSummary(null);
             }
         } catch (error) {
             console.error("Error fetching battle summary:", error);
             setSummary(null);
         } finally {
-            setIsLoading(false);
+            // Only stop loading if we actually found a summary.
+            // If summary is still null, we might be waiting for the teacher to generate it.
+            if(summary) setIsLoading(false);
         }
     };
 
     fetchSummaryData();
-}, [user, teacherUid, toast]);
+}, [user, teacherUid, router, summary]);
 
 
-  if (isLoading) {
+  if (isLoading || !summary) {
     return (
       <div className="flex min-h-screen w-full flex-col items-center justify-center bg-muted/40 p-4">
-        <div className="max-w-4xl w-full space-y-4">
-          <Skeleton className="h-12 w-1/3" />
-          <Skeleton className="h-64 w-full" />
+        <div className="max-w-4xl w-full space-y-4 text-center">
+          <Loader2 className="h-12 w-12 mx-auto animate-spin text-primary" />
+          <h1 className="text-2xl font-bold">Awaiting Battle Report...</h1>
+          <p className="text-muted-foreground">The Chronicler is tallying the results.</p>
         </div>
-      </div>
-    );
-  }
-
-  if (!summary) {
-    return (
-      <div className="flex min-h-screen w-full flex-col items-center justify-center bg-muted/40 p-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Summary Not Available</CardTitle>
-            <CardDescription>The summary for the battle has not been generated yet or could not be found.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => router.push('/dashboard')}>
-                <LayoutDashboard className="mr-2 h-4 w-4" /> Back to Dashboard
-            </Button>
-          </CardContent>
-        </Card>
       </div>
     );
   }
@@ -232,3 +231,5 @@ export default function StudentBattleSummaryPage() {
     </div>
   );
 }
+
+    
