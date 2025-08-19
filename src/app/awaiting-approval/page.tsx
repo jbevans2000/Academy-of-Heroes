@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -43,7 +42,7 @@ export default function AwaitingApprovalPage() {
                     <p className="text-lg text-black text-outline">
                         Please check back later. You will be able to log in and begin your adventure once you are approved.
                     </p>
-                     <Button variant="outline" onClick={handleLogout} className="mt-4 bg-black/20 hover:bg-black/40 text-white border-white/50">
+                     <Button variant="secondary" onClick={handleLogout} className="mt-4 bg-accent hover:bg-accent/80 text-accent-foreground">
                         <LogOut className="mr-2 h-4 w-4" />
                         Logout
                     </Button>
