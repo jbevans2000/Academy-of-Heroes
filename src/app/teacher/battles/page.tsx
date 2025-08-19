@@ -76,13 +76,27 @@ export default function BossBattlesPage() {
     try {
         const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
 
-        // Explicitly delete the document to ensure a clean state, just in case it exists.
+        // --- Start of Aggressive Cleanup ---
+        // Check for and delete nested collections first
+        const collectionsToDelete = ['responses', 'studentResponses', 'powerActivations', 'battleLog', 'messages'];
+        for (const coll of collectionsToDelete) {
+            const nestedCollRef = collection(liveBattleRef, coll);
+            const nestedDocsSnap = await getDocs(nestedCollRef);
+            if (!nestedDocsSnap.empty) {
+                const deleteBatch = writeBatch(db);
+                nestedDocsSnap.docs.forEach(doc => deleteBatch.delete(doc.ref));
+                await deleteBatch.commit();
+            }
+        }
+
+        // Explicitly delete the document itself to ensure a clean state
         await deleteDoc(liveBattleRef).catch((error) => {
-            // It's okay if the document doesn't exist, so we can ignore "not-found" errors.
             if (error.code !== 'not-found') {
                 console.error("Could not delete previous battle doc, but proceeding:", error);
             }
         });
+        // --- End of Aggressive Cleanup ---
+
 
         // Now, set the new battle data. This creates the document.
         await setDoc(liveBattleRef, {
