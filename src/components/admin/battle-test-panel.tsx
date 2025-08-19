@@ -9,10 +9,15 @@ import { Label } from '@/components/ui/label';
 import { TestCharacterManager } from './test-character-manager';
 import type { Student } from '@/lib/data';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, setDoc, deleteDoc, onSnapshot, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, deleteDoc, onSnapshot, writeBatch, arrayUnion, arrayRemove, increment } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { Swords, Play, Square, FastForward, StopCircle, Bot } from 'lucide-react';
+import { Swords, Play, Square, FastForward, StopCircle, Bot, Loader2, Skull, Timer, Lightbulb, HeartCrack, CheckCircle, Video } from 'lucide-react';
 import { RoundResults, type Result } from '@/components/teacher/round-results';
+import { BattleChatBox } from '@/components/battle/chat-box';
+import Image from 'next/image';
+import { PowersSheet } from '@/components/dashboard/powers-sheet';
+import { logGameEvent } from '@/lib/gamelog';
+import { calculateLevel, calculateBaseMaxHp, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 
 
 interface Question {
@@ -26,19 +31,28 @@ interface BossBattle {
     id: string;
     battleName: string;
     questions: Question[];
+    bossImageUrl?: string;
+    videoUrl?: string;
 }
 
 interface LiveBattleState {
   battleId: string | null;
   status: 'WAITING' | 'IN_PROGRESS' | 'ROUND_ENDING' | 'SHOWING_RESULTS' | 'BATTLE_ENDED';
   currentQuestionIndex: number;
-  [key: string]: any; // Allow other properties
+  timerEndsAt?: { seconds: number; nanoseconds: number; };
+  lastRoundDamage?: number;
+  totalDamage?: number;
+  powerEventMessage?: string;
+  targetedEvent?: { targetUid: string, message: string } | null;
+  fallenPlayerUids?: string[];
+  [key: string]: any; 
 }
 
-// Static, hardcoded Test Battle for reliability
 const testBattleData: BossBattle = {
     id: 'static-test-battle',
     battleName: 'The Unflappable Test Golem',
+    bossImageUrl: 'https://placehold.co/600x400.png',
+    videoUrl: '',
     questions: [
         { questionText: 'Is the sky blue?', answers: ['Yes', 'No', 'Sometimes', 'Maybe'], correctAnswerIndex: 0, damage: 1 },
         { questionText: 'What is 2 + 2?', answers: ['3', '4', '5', '6'], correctAnswerIndex: 1, damage: 1 },
@@ -54,21 +68,30 @@ export function BattleTestPanel({ adminUid }: { adminUid: string }) {
     const [liveState, setLiveState] = useState<LiveBattleState | null>(null);
     const [studentResponses, setStudentResponses] = useState<Result[]>([]);
     const [testStudents, setTestStudents] = useState<Student[]>([]);
+    const [fallenStudentNames, setFallenStudentNames] = useState<string[]>([]);
+    const [selectedStudentForPowers, setSelectedStudentForPowers] = useState<Student | null>(null);
+    const [isPowersSheetOpen, setIsPowersSheetOpen] = useState(false);
+    const [lastAnswerCorrect, setLastAnswerCorrect] = useState<{[key: string]: boolean | null}>({});
+
+    const liveBattleRef = doc(db, 'admins', adminUid, 'testBattle', 'active-battle');
     
     // Listen to live test battle state
     useEffect(() => {
-        const liveBattleRef = doc(db, 'admins', adminUid, 'testBattle', 'active-battle');
         const unsubscribe = onSnapshot(liveBattleRef, (doc) => {
             if (doc.exists()) {
-                setLiveState(doc.data() as LiveBattleState);
+                const newState = doc.data() as LiveBattleState;
+                // If question changes, reset answer correctness
+                if (liveState && newState.currentQuestionIndex !== liveState.currentQuestionIndex) {
+                    setLastAnswerCorrect({});
+                }
+                setLiveState(newState);
             } else {
                 setLiveState(null);
             }
         });
         return () => unsubscribe();
-    }, [adminUid]);
-    
-     // Listen to live student responses
+    }, [adminUid, liveState]);
+
     useEffect(() => {
         if (!liveState || (liveState.status !== 'IN_PROGRESS' && liveState.status !== 'ROUND_ENDING')) {
             setStudentResponses([]);
@@ -90,12 +113,71 @@ export function BattleTestPanel({ adminUid }: { adminUid: string }) {
         return () => unsubscribe();
     }, [liveState, adminUid]);
 
+    useEffect(() => {
+        if (!liveState?.fallenPlayerUids) {
+            setFallenStudentNames([]);
+            return;
+        }
+        const names = testStudents
+            .filter(s => liveState.fallenPlayerUids!.includes(s.uid))
+            .map(s => s.characterName);
+        setFallenStudentNames(names);
+    }, [liveState?.fallenPlayerUids, testStudents]);
+
+    // This effect handles the power logic by listening to a temporary collection.
+    // It's a simplified version of the real one for testing purposes.
+    useEffect(() => {
+        if (!liveState || !adminUid) return;
+
+        const powerActivationsRef = collection(db, 'admins', adminUid, 'testBattle/active-battle/powerActivations');
+        const unsubscribe = onSnapshot(powerActivationsRef, (snapshot) => {
+            snapshot.docChanges().forEach(async (change) => {
+                if (change.type === 'added') {
+                    const activation = change.doc.data();
+                    const caster = testStudents.find(s => s.uid === activation.studentUid);
+                    
+                    if (!caster || caster.mp < activation.powerMpCost) return;
+
+                    const batch = writeBatch(db);
+                    const casterRef = doc(db, 'admins', adminUid, 'testStudents', caster.uid);
+                    
+                    // Deduct MP
+                    batch.update(casterRef, { mp: increment(-activation.powerMpCost) });
+
+                    // Mock power effects for simulation
+                    let publicMessage = `${caster.characterName} used ${activation.powerName}!`;
+                    if (activation.powerName === 'Nature’s Guidance') {
+                        const indices = testBattleData.questions[liveState.currentQuestionIndex].answers
+                            .map((_, i) => i)
+                            .filter(i => i !== testBattleData.questions[liveState.currentQuestionIndex].correctAnswerIndex);
+                        batch.update(liveBattleRef, { removedAnswerIndices: arrayUnion(indices[0]) });
+                    }
+                    if (activation.powerName === 'Enduring Spirit' && activation.targets?.length > 0) {
+                        const targetUid = activation.targets[0];
+                        const targetRef = doc(db, 'admins', adminUid, 'testStudents', targetUid);
+                         batch.update(targetRef, { hp: 5 }); // Revive with 5 HP
+                         batch.update(liveBattleRef, { fallenPlayerUids: arrayRemove(targetUid) });
+                    }
+
+                    batch.update(liveBattleRef, { powerEventMessage: publicMessage });
+                    await batch.commit();
+
+                    // Delete the activation doc so it doesn't run again
+                    await deleteDoc(change.doc.ref);
+                    
+                    // Hide message after a delay
+                    setTimeout(() => updateDoc(liveBattleRef, { powerEventMessage: '' }), 5000);
+                }
+            });
+        });
+
+        return () => unsubscribe();
+    }, [liveState, adminUid, testStudents]);
+
+
     const handleActivateTest = async () => {
-        const liveBattleRef = doc(db, 'admins', adminUid, 'testBattle', 'active-battle');
         await setDoc(liveBattleRef, {
-            battleId: testBattleData.id,
-            battleName: testBattleData.battleName,
-            questions: testBattleData.questions,
+            ...testBattleData,
             status: 'WAITING',
             currentQuestionIndex: 0,
             totalDamage: 0,
@@ -105,22 +187,37 @@ export function BattleTestPanel({ adminUid }: { adminUid: string }) {
 
     const handleStartRound = async () => {
         if (!liveState) return;
-        const liveBattleRef = doc(db, 'admins', adminUid, 'testBattle', 'active-battle');
-        await setDoc(liveBattleRef, { status: 'IN_PROGRESS' }, { merge: true });
+        await setDoc(liveBattleRef, { status: 'IN_PROGRESS', fallenPlayerUids: [] }, { merge: true });
     };
 
     const handleEndRoundAndShowResults = async () => {
         if (!liveState) return;
-        const liveBattleRef = doc(db, 'admins', adminUid, 'testBattle', 'active-battle');
-        
         const responsesRef = collection(db, 'admins', adminUid, `testBattle/active-battle/responses`);
         const responsesSnapshot = await getDocs(responsesRef);
         const correctAnswers = responsesSnapshot.docs.filter(doc => doc.data().isCorrect).length;
         
+        // Apply damage to incorrect answerers
+        const batch = writeBatch(db);
+        const fallenUids: string[] = liveState.fallenPlayerUids || [];
+        responsesSnapshot.docs.forEach(docSnap => {
+            if (!docSnap.data().isCorrect) {
+                const studentRef = doc(db, 'admins', adminUid, 'testStudents', docSnap.id);
+                batch.update(studentRef, { hp: increment(-testBattleData.questions[liveState.currentQuestionIndex].damage) });
+                
+                const studentData = testStudents.find(s => s.uid === docSnap.id);
+                if (studentData && studentData.hp - testBattleData.questions[liveState.currentQuestionIndex].damage <= 0) {
+                    fallenUids.push(studentData.uid);
+                }
+            }
+        });
+
+        await batch.commit();
+
         await setDoc(liveBattleRef, { 
             status: 'SHOWING_RESULTS',
             lastRoundDamage: correctAnswers, 
             totalDamage: (liveState.totalDamage || 0) + correctAnswers,
+            fallenPlayerUids: fallenUids,
         }, { merge: true });
     };
 
@@ -132,8 +229,6 @@ export function BattleTestPanel({ adminUid }: { adminUid: string }) {
         }
         
         const batch = writeBatch(db);
-        const liveBattleRef = doc(db, 'admins', adminUid, 'testBattle', 'active-battle');
-
         const responsesRef = collection(db, 'admins', adminUid, `testBattle/active-battle/responses`);
         const snapshot = await getDocs(responsesRef);
         snapshot.forEach(doc => batch.delete(doc.ref));
@@ -141,13 +236,14 @@ export function BattleTestPanel({ adminUid }: { adminUid: string }) {
         batch.update(liveBattleRef, {
             status: 'IN_PROGRESS',
             currentQuestionIndex: liveState.currentQuestionIndex + 1,
+            removedAnswerIndices: [],
+            powerEventMessage: '',
         });
 
         await batch.commit();
     };
 
     const handleEndTest = async () => {
-        const liveBattleRef = doc(db, 'admins', adminUid, 'testBattle', 'active-battle');
         await deleteDoc(liveBattleRef);
         toast({ title: 'Test Battle Ended', description: 'The test session has been cleared.' });
     };
@@ -159,6 +255,8 @@ export function BattleTestPanel({ adminUid }: { adminUid: string }) {
         const currentQuestion = testBattleData.questions[liveState.currentQuestionIndex];
         const isCorrect = answerIndex === currentQuestion.correctAnswerIndex;
 
+        setLastAnswerCorrect(prev => ({...prev, [student.uid]: isCorrect}));
+
         await setDoc(responseRef, {
             studentName: student.studentName,
             characterName: student.characterName,
@@ -169,97 +267,150 @@ export function BattleTestPanel({ adminUid }: { adminUid: string }) {
         });
     };
 
-    const renderStudentView = () => {
-        if (!liveState) {
-            return (
-                <div className="flex items-center justify-center h-full">
-                     <p className="text-muted-foreground text-center">Test not active. Click "Activate Test" to begin.</p>
-                </div>
-            );
-        }
-
-        const currentQuestion = testBattleData.questions[liveState.currentQuestionIndex];
-
-        if (liveState.status === 'WAITING') {
-            return <div className="flex items-center justify-center h-full"><p>Waiting for battle to start...</p></div>
-        }
-        if (liveState.status === 'SHOWING_RESULTS') {
-            return <div className="flex items-center justify-center h-full"><p>Round over! Waiting for next question...</p></div>
-        }
-        
-        if (liveState.status === 'IN_PROGRESS') {
-             return (
-                <div className="space-y-6">
-                    <h4 className="font-bold text-center text-lg">{currentQuestion.questionText}</h4>
-                    {testStudents.map(student => (
-                         <div key={student.uid} className="p-2 border rounded-md">
-                             <p className="font-bold text-center">{student.characterName}</p>
-                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-2">
-                                {currentQuestion.answers.map((answer, index) => (
-                                    <Button key={index} size="sm" variant="outline" onClick={() => handleStudentAnswer(student, index)}>
-                                        {String.fromCharCode(65 + index)}
-                                    </Button>
-                                ))}
-                             </div>
-                         </div>
-                    ))}
-                </div>
-            )
-        }
-
-        return null;
-    }
-
+    const currentQuestion = liveState ? testBattleData.questions[liveState.currentQuestionIndex] : null;
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Bot /> Admin Testing Environment</CardTitle>
-                 <CardDescription>Manage test characters and run isolated boss battle simulations.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Accordion type="single" collapsible className="w-full" defaultValue="item-1">
-                    <AccordionItem value="item-1">
-                        <AccordionTrigger>Step 1: Manage Test Characters</AccordionTrigger>
-                        <AccordionContent>
-                           <TestCharacterManager adminUid={adminUid} testStudents={testStudents} setTestStudents={setTestStudents} />
-                        </AccordionContent>
-                    </AccordionItem>
-                    <AccordionItem value="item-2">
-                        <AccordionTrigger>Step 2: Run Boss Battle Simulation</AccordionTrigger>
-                        <AccordionContent className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                           {/* Teacher Control View */}
-                           <div className="space-y-4">
-                                <h3 className="font-semibold text-lg">Teacher Control Panel</h3>
-                                <div>
-                                    <Label>Battle</Label>
-                                    <p className="font-bold text-primary">{testBattleData.battleName}</p>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    <Button onClick={handleActivateTest} disabled={!!liveState}><Play className="mr-2 h-4 w-4" />Activate Test</Button>
-                                    <Button onClick={handleStartRound} disabled={!liveState || liveState.status !== 'WAITING'}><Square className="mr-2 h-4 w-4" />Start Round</Button>
-                                    <Button onClick={handleEndRoundAndShowResults} disabled={!liveState || liveState.status !== 'IN_PROGRESS'}>End Round</Button>
-                                    <Button onClick={handleNextQuestion} disabled={!liveState || liveState.status !== 'SHOWING_RESULTS'}><FastForward className="mr-2 h-4 w-4" />Next Question</Button>
-                                    <Button onClick={handleEndTest} disabled={!liveState} variant="destructive"><StopCircle className="mr-2 h-4 w-4" />End Test</Button>
-                                </div>
-                                <div>
-                                    <h4 className="font-semibold">Live Responses:</h4>
-                                    <RoundResults results={studentResponses} />
-                                </div>
-                           </div>
+        <>
+            {selectedStudentForPowers && (
+                <PowersSheet
+                    isOpen={isPowersSheetOpen}
+                    onOpenChange={setIsPowersSheetOpen}
+                    student={selectedStudentForPowers}
+                    isBattleView={true}
+                    teacherUid={adminUid} // Use adminUid for test context
+                    battleId="active-battle" // Hardcoded for test context
+                />
+            )}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Bot /> Admin Testing Environment</CardTitle>
+                    <CardDescription>Manage test characters and run isolated boss battle simulations.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Accordion type="single" collapsible className="w-full" defaultValue="item-1">
+                        <AccordionItem value="item-1">
+                            <AccordionTrigger>Step 1: Manage Test Characters</AccordionTrigger>
+                            <AccordionContent>
+                                <TestCharacterManager adminUid={adminUid} testStudents={testStudents} setTestStudents={setTestStudents} />
+                            </AccordionContent>
+                        </AccordionItem>
+                        <AccordionItem value="item-2">
+                            <AccordionTrigger>Step 2: Run Boss Battle Simulation</AccordionTrigger>
+                            <AccordionContent className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
+                            {/* Left Column: Teacher Controls & Student Actions */}
+                            <div className="space-y-6">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Teacher Controls</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="flex flex-wrap gap-2">
+                                        <Button onClick={handleActivateTest} disabled={!!liveState}><Play className="mr-2 h-4 w-4" />Activate</Button>
+                                        <Button onClick={handleStartRound} disabled={!liveState || liveState.status !== 'WAITING'}><Square className="mr-2 h-4 w-4" />Start Round</Button>
+                                        <Button onClick={handleEndRoundAndShowResults} disabled={!liveState || liveState.status !== 'IN_PROGRESS'}>End Round</Button>
+                                        <Button onClick={handleNextQuestion} disabled={!liveState || liveState.status !== 'SHOWING_RESULTS'}><FastForward className="mr-2 h-4 w-4" />Next</Button>
+                                        <Button onClick={handleEndTest} disabled={!liveState} variant="destructive"><StopCircle className="mr-2 h-4 w-4" />End Test</Button>
+                                    </CardContent>
+                                </Card>
+
+                                {liveState && liveState.status === 'IN_PROGRESS' && testStudents.map(student => (
+                                    <Card key={student.uid} className={student.hp <= 0 ? 'opacity-50' : ''}>
+                                        <CardHeader>
+                                            <CardTitle className="text-lg">{student.characterName} (HP: {student.hp}/{student.maxHp}, MP: {student.mp}/{student.maxMp})</CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="flex flex-wrap gap-2">
+                                            {currentQuestion?.answers.map((answer, index) => (
+                                                <Button 
+                                                    key={index}
+                                                    size="sm" 
+                                                    variant="outline" 
+                                                    onClick={() => handleStudentAnswer(student, index)}
+                                                    disabled={student.hp <= 0}
+                                                >
+                                                    {String.fromCharCode(65 + index)}
+                                                </Button>
+                                            ))}
+                                             <Button 
+                                                size="sm" 
+                                                variant="secondary"
+                                                onClick={() => {
+                                                    setSelectedStudentForPowers(student);
+                                                    setIsPowersSheetOpen(true);
+                                                }}
+                                                disabled={student.hp <= 0}
+                                            >
+                                                Use Power
+                                            </Button>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+
+                            {/* Right Column: Simulated Live View */}
+                            <div className="space-y-4">
+                                <h3 className="font-semibold text-lg text-center">Simulated Student Live View</h3>
+                                {!liveState && <div className="p-4 border rounded-md min-h-[300px] bg-muted/30 flex items-center justify-center"><p className="text-muted-foreground">Test not active.</p></div>}
+                                
+                                {liveState && liveState.status === 'WAITING' && (
+                                     <div className="p-4 border rounded-md min-h-[300px] bg-muted/30 flex items-center justify-center"><p>Waiting for battle to start...</p></div>
+                                )}
+                                
+                                {liveState && (liveState.status === 'IN_PROGRESS' || liveState.status === 'ROUND_ENDING') && currentQuestion && (
+                                    <Card className="bg-gray-900 text-card-foreground border-gray-700">
+                                        <CardContent className="p-6 relative">
+                                             {liveState.powerEventMessage && 
+                                                <div className="text-center p-2 rounded-lg bg-purple-900/80 border border-purple-700 mb-4 animate-in fade-in-50 flex items-center justify-center gap-2">
+                                                    <Lightbulb className="h-6 w-6 text-purple-300" />
+                                                    <p className="text-lg font-bold text-white">{liveState.powerEventMessage}</p>
+                                                </div>
+                                            }
+                                            <div className="flex flex-col md:flex-row gap-6 mb-6">
+                                                <div className="flex-shrink-0 mx-auto">
+                                                     <Image src={testBattleData.bossImageUrl!} alt="Boss" width={150} height={150} className="rounded-lg" />
+                                                </div>
+                                                <div className="flex-grow flex flex-col justify-center text-center">
+                                                    <h2 className="text-xl font-bold">{currentQuestion.questionText}</h2>
+                                                </div>
+                                            </div>
+                                             <RoundResults results={studentResponses} />
+                                             {fallenStudentNames.length > 0 && (
+                                                <div className="mt-4">
+                                                    <h4 className="font-bold flex items-center gap-2"><Skull className="text-destructive"/> Fallen Heroes</h4>
+                                                    <p>{fallenStudentNames.join(', ')}</p>
+                                                </div>
+                                             )}
+                                        </CardContent>
+                                    </Card>
+                                )}
+                                
+                                {liveState && liveState.status === 'SHOWING_RESULTS' && (
+                                    <div className="p-4 border rounded-md bg-muted/30 space-y-4">
+                                        <h3 className="text-xl font-bold text-center">Round Over!</h3>
+                                        <div className="p-4 rounded-md bg-sky-900/70 border border-sky-700 text-sky-200 flex items-center justify-center gap-4">
+                                            <Swords className="h-10 w-10 text-sky-400" />
+                                            <p className="text-xl font-bold">Party dealt {liveState.lastRoundDamage} damage!</p>
+                                        </div>
+                                         <div className="space-y-2">
+                                            {Object.entries(lastAnswerCorrect).map(([uid, isCorrect]) => (
+                                                isCorrect === false && (
+                                                    <div key={uid} className="p-2 rounded-md bg-red-900/70 border border-red-700 text-red-200 flex items-center justify-center gap-2">
+                                                        <HeartCrack className="h-5 w-5 text-red-400" />
+                                                        <p className="font-bold">{testStudents.find(s=>s.uid===uid)?.characterName} took {currentQuestion?.damage} damage!</p>
+                                                    </div>
+                                                )
+                                            ))}
+                                        </div>
+                                        <p className="text-muted-foreground text-center">Waiting for next question...</p>
+                                    </div>
+                                )}
+                                 <BattleChatBox isTeacher={true} userName="Admin" teacherUid={adminUid} battleId="active-battle" />
+                            </div>
                            
-                           {/* Student Simulator View */}
-                           <div className="space-y-4">
-                                <h3 className="font-semibold text-lg">Student Simulator</h3>
-                                <div className="p-4 border rounded-md min-h-[300px] bg-muted/30">
-                                    {renderStudentView()}
-                                </div>
-                           </div>
-                        </AccordionContent>
-                    </AccordionItem>
-                </Accordion>
-            </CardContent>
-        </Card>
+                            </AccordionContent>
+                        </AccordionItem>
+                    </Accordion>
+                </CardContent>
+            </Card>
+        </>
     )
 }
 
