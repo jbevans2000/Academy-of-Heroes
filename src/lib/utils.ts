@@ -47,4 +47,3 @@ export const findTeacherForStudent = async (studentUid: string): Promise<string 
     }
     return null;
 }
-    
