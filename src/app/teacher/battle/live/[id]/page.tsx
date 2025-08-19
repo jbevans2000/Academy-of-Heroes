@@ -900,12 +900,12 @@ export default function TeacherLiveBattlePage() {
                 backgroundPosition: 'center',
             }}
         />
-         <div className="absolute inset-0 -z-10 bg-black/50" />
+         <div className="absolute inset-0 -z-10 bg-black/60" />
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
             <div className="lg:col-span-2 space-y-6">
-                <Card className="bg-card/80 backdrop-blur-sm">
+                <Card className="bg-card/60 backdrop-blur-sm">
                     <CardHeader>
                         <CardTitle className="text-3xl">{battle.battleName}</CardTitle>
                         <CardDescription>Live Battle Control Panel</CardDescription>
@@ -989,7 +989,7 @@ export default function TeacherLiveBattlePage() {
                 </Card>
                 
                 {isWaitingToStart && (
-                    <Card className="bg-card/80 backdrop-blur-sm">
+                    <Card className="bg-card/60 backdrop-blur-sm">
                         <CardHeader>
                             <CardTitle>Waiting for Students</CardTitle>
                         </CardHeader>
@@ -1000,7 +1000,7 @@ export default function TeacherLiveBattlePage() {
                 )}
 
                 {isRoundEnding && expiryTimestamp && (
-                    <Card className="bg-card/80 backdrop-blur-sm">
+                    <Card className="bg-card/60 backdrop-blur-sm">
                         <CardHeader>
                             <CardTitle>Ending Round...</CardTitle>
                         </CardHeader>
@@ -1011,7 +1011,7 @@ export default function TeacherLiveBattlePage() {
                 )}
 
                 {(isRoundInProgress || isRoundEnding) && (
-                    <Card className="bg-card/80 backdrop-blur-sm">
+                    <Card className="bg-card/60 backdrop-blur-sm">
                         <CardHeader>
                             <CardTitle>Live Student Responses ({studentResponses.length})</CardTitle>
                             <CardDescription>See which students have submitted their answer for the current question.</CardDescription>
@@ -1023,7 +1023,7 @@ export default function TeacherLiveBattlePage() {
                 )}
 
                 {areResultsShowing && (
-                    <Card className="bg-card/80 backdrop-blur-sm">
+                    <Card className="bg-card/60 backdrop-blur-sm">
                         <CardHeader className="flex flex-row items-center justify-between">
                             <div>
                                 <CardTitle>Round Results</CardTitle>
@@ -1074,7 +1074,7 @@ export default function TeacherLiveBattlePage() {
                     battleId={battleId}
                 />
                 {(liveState.fallenPlayerUids && liveState.fallenPlayerUids.length > 0) && (
-                     <Card className="bg-card/80 backdrop-blur-sm">
+                     <Card className="bg-card/60 backdrop-blur-sm">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><Skull className="text-destructive"/> Fallen Heroes</CardTitle>
                         </CardHeader>
