@@ -20,7 +20,7 @@ export default function AwaitingApprovalPage() {
         <div 
             className="flex items-center justify-center min-h-screen bg-background p-4 sm:p-6 lg:p-8"
             style={{
-                backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-b18c1ab2-8859-45c9-a9f8-d48645d2eadd.jpg?alt=media&token=f7b64b1f-597b-47a5-b15a-80d08fdd7d6d')`,
+                backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-76d263d1-64d5-4a17-bda2-a3dc4f20d94f.jpg?alt=media&token=c42c3ef2-243c-4458-9cd5-10bc3bf7fadd')`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat',
