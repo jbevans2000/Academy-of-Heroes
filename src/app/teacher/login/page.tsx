@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -156,7 +157,7 @@ export default function TeacherLoginPage() {
              <div className="space-y-2">
                 <div className="flex items-center justify-between">
                     <Label htmlFor="password"><KeyRound className="inline-block mr-2 h-4 w-4" />Password</Label>
-                     <button onClick={handlePasswordReset} disabled={isResetting || isLoading} className="text-xs text-primary hover:underline focus:outline-none">
+                     <button onClick={handlePasswordReset} disabled={isResetting || isLoading} className="text-xs text-black hover:underline focus:outline-none">
                         Forgot your password?
                     </button>
                 </div>
