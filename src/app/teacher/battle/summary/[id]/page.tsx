@@ -4,16 +4,14 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
+import { onAuthStateChanged, type User } from 'firebase/auth';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Star, Coins, ShieldCheck, Sparkles, ScrollText } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-
-// HARDCODED TEACHER UID
-const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
 
 interface Question {
   questionText: string;
@@ -63,13 +61,25 @@ export default function TeacherBattleSummaryPage() {
 
   const [summary, setSummary] = useState<BattleSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [teacher, setTeacher] = useState<User | null>(null);
 
   useEffect(() => {
-    if (!battleId) return;
+    const unsubscribe = onAuthStateChanged(auth, user => {
+        if (user) {
+            setTeacher(user);
+        } else {
+            router.push('/teacher/login');
+        }
+    });
+    return () => unsubscribe();
+  }, [router]);
+
+  useEffect(() => {
+    if (!battleId || !teacher) return;
 
     const fetchSummary = async () => {
       setIsLoading(true);
-      const summaryRef = doc(db, 'teachers', TEACHER_UID, 'battleSummaries', battleId);
+      const summaryRef = doc(db, 'teachers', teacher.uid, 'battleSummaries', battleId);
       const docSnap = await getDoc(summaryRef);
 
       if (docSnap.exists()) {
@@ -82,7 +92,7 @@ export default function TeacherBattleSummaryPage() {
     };
 
     fetchSummary();
-  }, [battleId]);
+  }, [battleId, teacher]);
 
   if (isLoading) {
     return (
@@ -258,5 +268,3 @@ export default function TeacherBattleSummaryPage() {
     </div>
   );
 }
-
-    

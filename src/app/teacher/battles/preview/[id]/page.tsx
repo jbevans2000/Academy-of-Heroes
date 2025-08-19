@@ -4,15 +4,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
+import { onAuthStateChanged, type User } from 'firebase/auth';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
-
-// HARDCODED TEACHER UID
-const TEACHER_UID = 'ICKWJ5MQl0SHFzzaSXqPuGS3NHr2';
 
 interface Question {
   questionText: string;
@@ -36,14 +34,26 @@ export default function PreviewBattlePage() {
   const [battle, setBattle] = useState<Battle | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [teacher, setTeacher] = useState<User | null>(null);
 
   useEffect(() => {
-    if (!battleId) return;
+    const unsubscribe = onAuthStateChanged(auth, user => {
+        if (user) {
+            setTeacher(user);
+        } else {
+            router.push('/teacher/login');
+        }
+    });
+    return () => unsubscribe();
+  }, [router]);
+
+  useEffect(() => {
+    if (!battleId || !teacher) return;
 
     const fetchBattle = async () => {
       setIsLoading(true);
       try {
-        const docRef = doc(db, 'teachers', TEACHER_UID, 'bossBattles', battleId);
+        const docRef = doc(db, 'teachers', teacher.uid, 'bossBattles', battleId);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
@@ -60,7 +70,7 @@ export default function PreviewBattlePage() {
     };
 
     fetchBattle();
-  }, [battleId]);
+  }, [battleId, teacher]);
   
   const getYouTubeEmbedUrl = (url: string) => {
     if (!url) return '';
