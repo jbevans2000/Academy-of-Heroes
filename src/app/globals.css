@@ -73,4 +73,7 @@
       box-shadow: 0 0 0 10px rgba(251, 191, 36, 0);
     }
   }
+  .text-outline {
+    text-shadow: -1px -1px 0 #FFF, 1px -1px 0 #FFF, -1px 1px 0 #FFF, 1px 1px 0 #FFF;
+  }
 }
