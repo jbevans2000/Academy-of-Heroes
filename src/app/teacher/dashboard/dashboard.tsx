@@ -390,7 +390,16 @@ export default function Dashboard() {
 
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
+    <div className="relative flex min-h-screen w-full flex-col">
+      <div 
+          className="absolute inset-0 -z-10"
+          style={{
+              backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-ce8d0a97-c3e6-4724-a068-0252574124c1.jpg?alt=media&token=04749b08-26a8-49b9-83f5-ff45780a6547')`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              opacity: 0.5,
+          }}
+      />
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <AlertDialog open={showWelcomeDialog} onOpenChange={setShowWelcomeDialog}>
@@ -639,5 +648,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
-    
