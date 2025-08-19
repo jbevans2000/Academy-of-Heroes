@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -26,20 +27,20 @@ export default function AwaitingApprovalPage() {
             }}
         >
             <Card className="w-full max-w-md bg-transparent border-none shadow-none text-center">
-                <CardHeader className="text-shadow-lg">
+                <CardHeader>
                     <div className="flex justify-center mb-4">
                         <Hourglass className="h-16 w-16 text-primary animate-spin" />
                     </div>
-                    <CardTitle className="text-3xl font-headline text-black" style={{textShadow: '0 0 10px rgba(255, 255, 255, 0.7), 0 0 20px rgba(255, 255, 255, 0.5)'}}>Awaiting Approval</CardTitle>
-                    <CardDescription className="text-lg text-black" style={{textShadow: '0 0 10px rgba(255, 255, 255, 0.7), 0 0 20px rgba(255, 255, 255, 0.5)'}}>
+                    <CardTitle className="text-3xl font-headline text-black">Awaiting Approval</CardTitle>
+                    <CardDescription className="text-lg text-black">
                         Your request to join the guild has been sent!
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4 text-shadow-lg">
-                    <p className="text-black" style={{textShadow: '0 0 10px rgba(255, 255, 255, 0.7), 00 20px rgba(255, 255, 255, 0.5)'}}>
+                <CardContent className="space-y-4">
+                    <p className="text-black">
                         Your Guild Leader must first approve your hero's application before you can enter the realm. They have been notified of your request.
                     </p>
-                    <p className="text-black" style={{textShadow: '0 0 10px rgba(255, 255, 255, 0.7), 0 0 20px rgba(255, 255, 255, 0.5)'}}>
+                    <p className="text-black">
                         Please check back later. You will be able to log in and begin your adventure once you are approved.
                     </p>
                      <Button variant="outline" onClick={handleLogout} className="mt-4 bg-black/20 hover:bg-black/40 text-white border-white/50">
