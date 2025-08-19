@@ -31,16 +31,16 @@ export default function AwaitingApprovalPage() {
                     <div className="flex justify-center mb-4">
                         <Hourglass className="h-16 w-16 text-primary animate-spin" />
                     </div>
-                    <CardTitle className="text-3xl font-headline text-black text-outline">Awaiting Approval</CardTitle>
-                    <CardDescription className="text-lg text-black text-outline">
+                    <CardTitle className="text-4xl font-headline text-black text-outline">Awaiting Approval</CardTitle>
+                    <CardDescription className="text-xl text-black text-outline">
                         Your request to join the guild has been sent!
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <p className="text-black text-outline">
+                    <p className="text-lg text-black text-outline">
                         Your Guild Leader must first approve your hero's application before you can enter the realm. They have been notified of your request.
                     </p>
-                    <p className="text-black text-outline">
+                    <p className="text-lg text-black text-outline">
                         Please check back later. You will be able to log in and begin your adventure once you are approved.
                     </p>
                      <Button variant="outline" onClick={handleLogout} className="mt-4 bg-black/20 hover:bg-black/40 text-white border-white/50">
