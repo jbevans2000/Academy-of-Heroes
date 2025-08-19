@@ -1,7 +1,5 @@
 
-
 import { initializeApp, getApp, getApps, type App } from 'firebase-admin/app';
-import { credential } from 'firebase-admin';
 
 // This function ensures that we initialize the Firebase Admin SDK only once.
 // It's safe to call this multiple times; it will return the existing app instance
@@ -11,18 +9,10 @@ export function getFirebaseAdminApp(): App {
     return getApp();
   }
 
-  // When running in a Google Cloud environment (like Cloud Run, App Engine, or
-  // Firebase App Hosting), the GOOGLE_APPLICATION_CREDENTIALS environment variable
-  // is automatically set. `credential.applicationDefault()` uses these credentials.
-  const app = initializeApp({
-    // By explicitly using the service account key here, we ensure that the
-    // Admin SDK can authenticate correctly in all environments.
-    credential: credential.applicationDefault(),
-    // The databaseURL is required for the Realtime Database, but it's good practice
-    // to include the storageBucket for Storage operations as well.
-    // The project ID is usually inferred from the environment.
-    storageBucket: "academy-heroes-mziuf.appspot.com",
-  });
+  // When running in a Google Cloud environment (like App Hosting), initializing
+  // without arguments will automatically use the service account credentials
+  // associated with the runtime environment. This is the most reliable method.
+  const app = initializeApp();
 
   return app;
 }
