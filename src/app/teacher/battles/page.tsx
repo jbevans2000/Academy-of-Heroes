@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, doc, writeBatch, deleteDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, doc, writeBatch, deleteDoc, setDoc, onSnapshot, query, getDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
@@ -74,36 +74,18 @@ export default function BossBattlesPage() {
     if (!teacher) return;
     setStartingBattleId(battle.id);
     try {
-        const batch = writeBatch(db);
         const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
 
-        // Clean up subcollections from any previous battle
-        const responsesRef = collection(liveBattleRef, 'responses');
-        const powerActivationsRef = collection(liveBattleRef, 'powerActivations');
-        const chatRef = collection(liveBattleRef, 'messages');
-        const studentResponsesRef = collection(liveBattleRef, 'studentResponses');
+        // Explicitly delete the document to ensure a clean state, just in case it exists.
+        await deleteDoc(liveBattleRef).catch((error) => {
+            // It's okay if the document doesn't exist, so we can ignore "not-found" errors.
+            if (error.code !== 'not-found') {
+                console.error("Could not delete previous battle doc, but proceeding:", error);
+            }
+        });
 
-        const [responsesSnap, powersSnap, chatSnap, studentResponsesSnap] = await Promise.all([
-            getDocs(responsesRef),
-            getDocs(powerActivationsRef),
-            getDocs(chatRef),
-            getDocs(studentResponsesRef)
-        ]);
-
-        responsesSnap.forEach(doc => batch.delete(doc.ref));
-        powersSnap.forEach(doc => batch.delete(doc.ref));
-        chatSnap.forEach(doc => batch.delete(doc.ref));
-        
-        // This requires another nested read/delete for each student's rounds, might be slow but necessary
-        for (const studentResponseDoc of studentResponsesSnap.docs) {
-            const roundsRef = collection(studentResponseDoc.ref, 'rounds');
-            const roundsSnap = await getDocs(roundsRef);
-            roundsSnap.forEach(roundDoc => batch.delete(roundDoc.ref));
-            batch.delete(studentResponseDoc.ref);
-        }
-        
-        // Overwrite the main document with new battle data
-        batch.set(liveBattleRef, {
+        // Now, set the new battle data. This creates the document.
+        await setDoc(liveBattleRef, {
             battleId: battle.id,
             status: 'WAITING', 
             currentQuestionIndex: 0,
@@ -112,8 +94,6 @@ export default function BossBattlesPage() {
             totalBaseDamage: 0,
             totalPowerDamage: 0,
         });
-
-        await batch.commit();
 
         await logGameEvent(teacher.uid, 'BOSS_BATTLE', `Boss Battle '${battle.battleName}' has been activated.`);
 
