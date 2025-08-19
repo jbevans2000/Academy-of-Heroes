@@ -82,6 +82,8 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
     // POWER-SPECIFIC RULES
     if (power.name === 'Lesser Heal') {
       potentialTargets = potentialTargets.filter(s => s.hp < s.maxHp);
+    } else if (power.name === 'Focused Restoration') {
+        potentialTargets = potentialTargets.filter(s => s.hp <= s.maxHp * 0.5);
     } else if (power.name === 'Solar Empowerment') {
         potentialTargets = potentialTargets.filter(p => 
             p.class === 'Mage' && 

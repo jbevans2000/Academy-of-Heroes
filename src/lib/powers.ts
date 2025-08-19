@@ -169,11 +169,13 @@ export const classPowers: ClassPowers = {
       targetCount: 1,
     },
     {
-      name: 'Heal 2',
-      description: 'Restores 2d6 + your level in hit points to 5 random party members.',
-      level: 7,
-      mpCost: 20,
+      name: 'Focused Restoration',
+      description: 'You point your healing energy towards a single ally, restoring a large amount of their health. Ally must have less than 50% health.',
+      level: 8,
+      mpCost: 12,
       type: 'healing',
+      target: 'ally',
+      targetCount: 1,
     },
     {
       name: 'Cosmic Divination',

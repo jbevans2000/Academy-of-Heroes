@@ -517,6 +517,30 @@ export default function TeacherLiveBattlePage() {
                     powerEventMessage: `${activation.studentName} has cast Lesser Heal! ${target1Name} and ${target2Name} have had health restored!`
                 });
                 await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} cast Lesser Heal on ${target1Name} and ${target2Name}.`);
+            } else if (activation.powerName === 'Focused Restoration') {
+                if (!activation.targets || activation.targets.length !== 1) return;
+                const targetUid = activation.targets[0];
+                const targetRef = doc(db, 'teachers', teacherUid!, 'students', targetUid);
+                const targetSnap = await getDoc(targetRef);
+
+                if (targetSnap.exists()) {
+                    const targetData = targetSnap.data() as Student;
+                    const roll1 = Math.floor(Math.random() * 8) + 1;
+                    const roll2 = Math.floor(Math.random() * 8) + 1;
+                    const roll3 = Math.floor(Math.random() * 8) + 1;
+                    const healAmount = roll1 + roll2 + roll3 + (studentData.level || 1);
+                    const newHp = Math.min(targetData.maxHp, targetData.hp + healAmount);
+                    batch.update(targetRef, { hp: newHp });
+
+                    batch.update(liveBattleRef, {
+                        powerEventMessage: `${activation.studentName} has cast Focused Restoration! ${targetData.characterName} has been greatly healed!`,
+                        targetedEvent: {
+                            targetUid: targetUid,
+                            message: `You have been healed by ${studentData.characterName}. Your body and spirit have been renewed!`
+                        }
+                    });
+                     await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} used Focused Restoration on ${targetData.characterName}.`);
+                }
             } else if (activation.powerName === 'Solar Empowerment') {
                 if (!activation.targets || activation.targets.length !== 3) return;
                 
