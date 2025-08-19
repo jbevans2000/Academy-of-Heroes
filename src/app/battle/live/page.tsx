@@ -412,7 +412,7 @@ export default function LiveBattlePage() {
     return (
       <>
         <FallenPlayerDialog isOpen={showFallenDialog} onOpenChange={setShowFallenDialog} />
-         <VoteDialog voteState={battleState.voteState || null} userUid={user.uid} teacherUid={teacherUid} />
+        <VoteDialog voteState={battleState.voteState || null} userUid={user.uid} teacherUid={teacherUid} />
         <PowersSheet
           isOpen={isPowersSheetOpen}
           onOpenChange={setIsPowersSheetOpen}
@@ -596,5 +596,3 @@ export default function LiveBattlePage() {
     </div>
   );
 }
-
-    
