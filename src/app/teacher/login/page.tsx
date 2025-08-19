@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -15,7 +14,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { School, Loader2, KeyRound, Mail, ArrowLeft } from 'lucide-react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -23,6 +22,7 @@ import { doc, getDoc } from 'firebase/firestore';
 
 export default function TeacherLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const router = useRouter();
@@ -89,6 +89,34 @@ export default function TeacherLoginPage() {
         setIsLoading(false);
     }
   };
+  
+  const handlePasswordReset = async () => {
+    if (!email) {
+        toast({
+            variant: 'destructive',
+            title: 'Email Required',
+            description: 'Please enter your email address in the field above to receive a password reset link.',
+        });
+        return;
+    }
+    setIsResetting(true);
+    try {
+        await sendPasswordResetEmail(auth, email);
+        toast({
+            title: 'Password Reset Email Sent',
+            description: `If an account exists for ${email}, a password reset link has been sent to it. Please check your inbox.`,
+        });
+    } catch (error: any) {
+         console.error("Password reset error:", error);
+         toast({
+            variant: 'destructive',
+            title: 'Reset Failed',
+            description: 'Could not send password reset email. Please ensure the email address is correct.',
+        });
+    } finally {
+        setIsResetting(false);
+    }
+  }
 
 
   return (
@@ -122,23 +150,26 @@ export default function TeacherLoginPage() {
                     placeholder="teacher@example.com" 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    disabled={isLoading}
+                    disabled={isLoading || isResetting}
                 />
             </div>
              <div className="space-y-2">
-                <Label htmlFor="password"><KeyRound className="inline-block mr-2 h-4 w-4" />Password</Label>
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="password"><KeyRound className="inline-block mr-2 h-4 w-4" />Password</Label>
+                     <button onClick={handlePasswordReset} disabled={isResetting || isLoading} className="text-xs text-primary hover:underline focus:outline-none">
+                        Forgot your password?
+                    </button>
+                </div>
                 <Input 
                     id="password" 
                     type="password" 
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    disabled={isLoading}
+                    disabled={isLoading || isResetting}
                 />
             </div>
-            <Button type="button" className="w-full" onClick={handleLogin} disabled={isLoading}>
-                {isLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : null}
+            <Button type="button" className="w-full" onClick={handleLogin} disabled={isLoading || isResetting}>
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 Login
             </Button>
              <div className="mt-4 text-center text-sm">
