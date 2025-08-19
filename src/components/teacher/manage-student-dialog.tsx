@@ -219,7 +219,7 @@ export function ManageStudentDialog({ isOpen, onOpenChange, student, setStudents
                         <Input 
                             id="new-password"
                             type="text"
-                            placeholder="Enter a new temporary password"
+                            placeholder="Enter a new password"
                             value={newPassword}
                             onChange={e => setNewPassword(e.target.value)}
                             disabled={isResettingPassword}
