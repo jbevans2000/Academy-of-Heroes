@@ -74,21 +74,36 @@ export default function BossBattlesPage() {
     if (!teacher) return;
     setStartingBattleId(battle.id);
     try {
+        const batch = writeBatch(db);
         const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
 
-        await deleteDoc(liveBattleRef).catch(err => {
-            if (err.code !== 'not-found') {
-                console.warn("Could not delete old live battle doc, it might not exist.", err);
-            }
-        });
+        // Clean up subcollections from any previous battle
+        const responsesRef = collection(liveBattleRef, 'responses');
+        const powerActivationsRef = collection(liveBattleRef, 'powerActivations');
+        const chatRef = collection(liveBattleRef, 'messages');
+        
+        const [responsesSnap, powersSnap, chatSnap] = await Promise.all([
+            getDocs(responsesRef),
+            getDocs(powerActivationsRef),
+            getDocs(chatRef)
+        ]);
 
-        await setDoc(liveBattleRef, {
+        responsesSnap.forEach(doc => batch.delete(doc.ref));
+        powersSnap.forEach(doc => batch.delete(doc.ref));
+        chatSnap.forEach(doc => batch.delete(doc.ref));
+        
+        // Overwrite the main document with new battle data
+        batch.set(liveBattleRef, {
             battleId: battle.id,
             status: 'WAITING', 
             currentQuestionIndex: 0,
             lastRoundDamage: 0,
             totalDamage: 0,
+            totalBaseDamage: 0,
+            totalPowerDamage: 0,
         });
+
+        await batch.commit();
 
         await logGameEvent(teacher.uid, 'BOSS_BATTLE', `Boss Battle '${battle.battleName}' has been activated.`);
 
