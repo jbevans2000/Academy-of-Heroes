@@ -1,4 +1,5 @@
 
+
 import { initializeApp, getApp, getApps, type App } from 'firebase-admin/app';
 import { credential } from 'firebase-admin';
 
@@ -14,6 +15,8 @@ export function getFirebaseAdminApp(): App {
   // Firebase App Hosting), the GOOGLE_APPLICATION_CREDENTIALS environment variable
   // is automatically set. `credential.applicationDefault()` uses these credentials.
   const app = initializeApp({
+    // By explicitly using the service account key here, we ensure that the
+    // Admin SDK can authenticate correctly in all environments.
     credential: credential.applicationDefault(),
     // The databaseURL is required for the Realtime Database, but it's good practice
     // to include the storageBucket for Storage operations as well.
