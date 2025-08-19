@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { onSnapshot, doc, getDoc, setDoc, updateDoc, increment, arrayUnion, collection } from 'firebase/firestore';
+import { onSnapshot, doc, getDoc, setDoc, updateDoc, increment, arrayUnion, collection, query } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
 import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Hourglass, VolumeX, Flame, Lightbulb, Skull, ScrollText } from 'lucide-react';
@@ -221,6 +221,7 @@ function PowerLog({ teacherUid }: { teacherUid: string }) {
     const logEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        if (!teacherUid) return;
         const logRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
         const q = query(logRef);
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -295,9 +296,6 @@ export default function LiveBattlePage() {
             if (studentDoc.exists()) {
                 setStudent(studentDoc.data() as Student);
             }
-             const allStudentsSnap = await getDocs(collection(db, 'teachers', foundTeacherUid, 'students'));
-             setAllStudents(allStudentsSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student)));
-
         } else {
             console.error("Could not find teacher for student. Redirecting.");
             router.push('/');
@@ -308,6 +306,17 @@ export default function LiveBattlePage() {
     });
     return () => unsubscribe();
   }, [router]);
+
+  useEffect(() => {
+    if (!teacherUid) return;
+
+    // Fetch all students only once when the teacher UID is known
+    const fetchAllStudents = async () => {
+        const allStudentsSnap = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
+        setAllStudents(allStudentsSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student)));
+    };
+    fetchAllStudents();
+  }, [teacherUid]);
 
   useEffect(() => {
     if (!teacherUid || !user) return;
@@ -572,7 +581,7 @@ export default function LiveBattlePage() {
                                 </div>
                             </div>
                             
-                            {battleState.powerEventMessage && <PublicPowerEvent message={battleState.powerEventMessage} />}
+                            <PublicPowerEvent message={battleState.powerEventMessage || ''} />
 
                             {expiryTimestamp && battleState.status === 'ROUND_ENDING' && (
                             <SmallCountdownTimer expiryTimestamp={expiryTimestamp} />
@@ -634,7 +643,7 @@ export default function LiveBattlePage() {
                             </CardContent>
                         </Card>
                     )}
-                     <PowerLog teacherUid={teacherUid} />
+                    {battleState.battleId && <PowerLog teacherUid={teacherUid} />}
                     <BattleChatBox 
                         isTeacher={false}
                         userName={student.characterName}
