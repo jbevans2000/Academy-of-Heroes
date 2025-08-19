@@ -709,6 +709,42 @@ export default function TeacherLiveBattlePage() {
                     description: `Healed all allies for up to ${healAmount} HP.`,
                     timestamp: serverTimestamp()
                 });
+            } else if (activation.powerName === 'Psionic Aura') {
+                if (!activation.targets || activation.targets.length !== 2) return;
+
+                const roll = Math.floor(Math.random() * 6) + 1;
+                const totalRestore = roll + (studentData.level || 1);
+                const restoreAmount = Math.ceil(totalRestore / 2); // Split and round up
+                
+                const targetNames = [];
+                for (const targetUid of activation.targets) {
+                    const targetRef = doc(db, 'teachers', teacherUid!, 'students', targetUid);
+                    const targetDoc = await getDoc(targetRef);
+                    if (targetDoc.exists()) {
+                        const targetData = targetDoc.data() as Student;
+                        targetNames.push(targetData.characterName);
+                        const newMp = Math.min(targetData.maxMp, targetData.mp + restoreAmount);
+                        batch.update(targetRef, { mp: newMp });
+                        // Send targeted message
+                        batch.update(liveBattleRef, { 
+                            targetedEvent: {
+                                targetUid: targetUid,
+                                message: `${studentData.characterName} has renewed your arcane energies!`
+                            }
+                        });
+                    }
+                }
+
+                batch.update(liveBattleRef, {
+                    powerEventMessage: `${activation.studentName} has cast Psionic Aura! ${targetNames.join(' and ')} have had their arcane energies partially restored!`
+                });
+                batch.set(doc(battleLogRef), {
+                    round: liveState.currentQuestionIndex + 1,
+                    casterName: activation.studentName,
+                    powerName: activation.powerName,
+                    description: `Restored MP to ${targetNames.join(', ')}.`,
+                    timestamp: serverTimestamp()
+                });
             }
 
             batch.update(studentRef, { mp: increment(-activation.powerMpCost) });

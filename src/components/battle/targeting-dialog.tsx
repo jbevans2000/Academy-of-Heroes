@@ -89,7 +89,10 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
             p.class === 'Mage' && 
             !(battleState.empoweredMageUids || []).includes(p.uid)
         );
+    } else if (power.name === 'Psionic Aura') {
+        potentialTargets = potentialTargets.filter(s => s.mp <= s.maxMp * 0.75);
     }
+
 
     return potentialTargets;
   }
@@ -131,7 +134,7 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
                 <Label htmlFor={`target-${student.uid}`} className="flex-1 cursor-pointer">
                   <div className="font-bold">{student.characterName}</div>
                   <div className="text-xs text-muted-foreground">
-                      {student.studentName} ({student.hp}/{student.maxHp} HP)
+                      {student.studentName} ({student.hp}/{student.maxHp} HP) ({student.mp}/{student.maxMp} MP)
                   </div>
                 </Label>
               </div>

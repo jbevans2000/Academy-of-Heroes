@@ -27,10 +27,12 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Psionic Aura',
-      description: 'Two random players recharge 1d4 + your Level in Magic Points.',
-      level: 3,
-      mpCost: 12,
+      description: 'You call upon the leylines to recharge the arcane potential of TWO Allies. Targets must be at or below 75% of their max MP.',
+      level: 2,
+      mpCost: 4,
       type: 'support',
+      target: 'ally',
+      targetCount: 2,
     },
     {
       name: 'Sorcerer’s Intuition',
