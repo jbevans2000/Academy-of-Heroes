@@ -124,8 +124,7 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
             targets: targets || [],
             timestamp: serverTimestamp(),
         });
-
-        toast({ title: 'Power Cast!', description: `You have called upon ${power.name}!` });
+        
         onOpenChange(false);
 
     } catch (error) {

@@ -2,10 +2,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { onSnapshot, doc, getDoc, setDoc, updateDoc, increment, arrayUnion } from 'firebase/firestore';
+import { onSnapshot, doc, getDoc, setDoc, updateDoc, increment, arrayUnion, collection } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
-import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Hourglass, VolumeX, Flame, Lightbulb, Skull } from 'lucide-react';
+import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Hourglass, VolumeX, Flame, Lightbulb, Skull, ScrollText } from 'lucide-react';
 import { type Student } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
@@ -38,6 +38,18 @@ interface VoteState {
     endsAt: { seconds: number; nanoseconds: number; };
 }
 
+interface PowerLogEntry {
+  id: string;
+  round: number;
+  casterName: string;
+  powerName: string;
+  description: string;
+  timestamp: {
+    seconds: number;
+    nanoseconds: number;
+  }
+}
+
 interface LiveBattleState {
   battleId: string | null;
   status: 'WAITING' | 'IN_PROGRESS' | 'ROUND_ENDING' | 'SHOWING_RESULTS' | 'BATTLE_ENDED';
@@ -67,7 +79,7 @@ interface Battle {
   questions: Question[];
 }
 
-function PowerEvent({ message }: { message: string }) {
+function PublicPowerEvent({ message }: { message: string }) {
     if (!message) return null;
     return (
         <div className="text-center p-2 rounded-lg bg-purple-900/80 border border-purple-700 mb-4 animate-in fade-in-50">
@@ -204,6 +216,52 @@ function VoteDialog({ voteState, userUid, teacherUid }: { voteState: VoteState |
     );
 }
 
+function PowerLog({ teacherUid }: { teacherUid: string }) {
+    const [logEntries, setLogEntries] = useState<PowerLogEntry[]>([]);
+    const logEndRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const logRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
+        const q = query(logRef);
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const entries: PowerLogEntry[] = [];
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === 'added') {
+                    entries.push({ id: change.doc.id, ...change.doc.data() } as PowerLogEntry);
+                }
+            });
+            setLogEntries(prev => [...prev, ...entries].sort((a,b) => a.timestamp.seconds - b.timestamp.seconds));
+        });
+        return () => unsubscribe();
+    }, [teacherUid]);
+
+    useEffect(() => {
+        logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [logEntries])
+    
+    return (
+        <Card className="flex flex-col h-full bg-card/60 backdrop-blur-sm">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><ScrollText/> Battle Log</CardTitle>
+            </CardHeader>
+            <CardContent className="flex-grow overflow-hidden flex flex-col">
+                <div className="flex-grow overflow-y-auto pr-4 space-y-3">
+                    {logEntries.map(log => (
+                        <div key={log.id} className="text-sm">
+                            <span className="font-bold text-primary">{log.casterName}</span>
+                            <span> used </span>
+                            <span className="font-semibold text-purple-400">{log.powerName}</span>
+                            <span>. </span>
+                            <span className="text-muted-foreground">{log.description}</span>
+                        </div>
+                    ))}
+                    <div ref={logEndRef} />
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
+
 export default function LiveBattlePage() {
   const [battleState, setBattleState] = useState<LiveBattleState | null>(null);
   const [battle, setBattle] = useState<Battle | null>(null);
@@ -217,6 +275,7 @@ export default function LiveBattlePage() {
   const [isFallen, setIsFallen] = useState(false);
   const [showFallenDialog, setShowFallenDialog] = useState(false);
   const [targetedMessage, setTargetedMessage] = useState<string | null>(null);
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
 
   const battleStateRef = useRef(battleState);
   const router = useRouter();
@@ -236,6 +295,9 @@ export default function LiveBattlePage() {
             if (studentDoc.exists()) {
                 setStudent(studentDoc.data() as Student);
             }
+             const allStudentsSnap = await getDocs(collection(db, 'teachers', foundTeacherUid, 'students'));
+             setAllStudents(allStudentsSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student)));
+
         } else {
             console.error("Could not find teacher for student. Redirecting.");
             router.push('/');
@@ -321,7 +383,6 @@ export default function LiveBattlePage() {
     
     const currentQuestion = battle.questions[battleState.currentQuestionIndex];
     const isCorrect = answerIndex === currentQuestion.correctAnswerIndex;
-    setLastAnswerCorrect(isCorrect);
 
     const responseRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/responses`, user.uid);
     await setDoc(responseRef, {
@@ -333,11 +394,32 @@ export default function LiveBattlePage() {
       submittedAt: new Date(),
     }, { merge: true });
 
+    // Separate from response collection, just track the latest choice for summary
     const studentResponseRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/studentResponses/${user.uid}/rounds/${battleState.currentQuestionIndex}`);
     await setDoc(studentResponseRef, {
         answerIndex: answerIndex,
     });
   };
+  
+   useEffect(() => {
+        // When the question changes, update the lastAnswerCorrect based on the previous round's stored answer
+        if (battleState?.status === 'SHOWING_RESULTS' && user && teacherUid) {
+            const checkLastAnswer = async () => {
+                const prevRoundIndex = battleState.currentQuestionIndex;
+                const prevRoundResponseRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/studentResponses/${user.uid}/rounds/${prevRoundIndex}`);
+                const responseSnap = await getDoc(prevRoundResponseRef);
+                const question = battle?.questions[prevRoundIndex];
+                if (responseSnap.exists() && question) {
+                    const responseData = responseSnap.data();
+                    setLastAnswerCorrect(responseData.answerIndex === question.correctAnswerIndex);
+                } else {
+                    setLastAnswerCorrect(null); // No answer submitted for that round
+                }
+            };
+            checkLastAnswer();
+        }
+    }, [battleState?.status, battleState?.currentQuestionIndex, user, teacherUid, battle?.questions]);
+
 
   if (isLoading || !user || !student || !teacherUid) {
     return (
@@ -432,7 +514,7 @@ export default function LiveBattlePage() {
     const currentQuestion = battle.questions[battleState.currentQuestionIndex];
     const bossImage = battle.bossImageUrl || 'https://placehold.co/600x400.png';
     const expiryTimestamp = battleState.timerEndsAt ? new Date(battleState.timerEndsAt.seconds * 1000) : null;
-    const isBattleActive = battleState.status === 'IN_PROGRESS' || battleState.status === 'ROUND_ENDING';
+    const isRoundActive = battleState.status === 'IN_PROGRESS' || battleState.status === 'ROUND_ENDING';
 
     return (
       <>
@@ -490,7 +572,7 @@ export default function LiveBattlePage() {
                                 </div>
                             </div>
                             
-                             {battleState.powerEventMessage && <PowerEvent message={battleState.powerEventMessage} />}
+                            {battleState.powerEventMessage && <PublicPowerEvent message={battleState.powerEventMessage} />}
 
                             {expiryTimestamp && battleState.status === 'ROUND_ENDING' && (
                             <SmallCountdownTimer expiryTimestamp={expiryTimestamp} />
@@ -498,6 +580,15 @@ export default function LiveBattlePage() {
 
                             {submittedAnswer === null && battleState.status === 'IN_PROGRESS' && (
                                 <WaitingForRoundEnd />
+                            )}
+                            
+                            {submittedAnswer !== null && battleState.status === 'IN_PROGRESS' && (
+                                <div className="text-center p-2 rounded-lg bg-green-900/80 border border-green-700 mb-4">
+                                    <div className="flex items-center justify-center gap-2">
+                                        <CheckCircle className="h-6 w-6 text-green-300" />
+                                        <p className="text-lg font-bold text-white">Your answer is locked in. You can change it until the round ends.</p>
+                                    </div>
+                                </div>
                             )}
 
                             <div className="text-center">
@@ -514,7 +605,7 @@ export default function LiveBattlePage() {
                                                 isRemoved && "line-through bg-red-900/50 border-red-700 text-red-400 cursor-not-allowed hover:bg-red-900/50"
                                             )}
                                             onClick={() => handleSubmitAnswer(index)}
-                                            disabled={!isBattleActive || isRemoved || isFallen}
+                                            disabled={!isRoundActive || isRemoved || isFallen}
                                             >
                                             <span className="font-bold mr-4">{String.fromCharCode(65 + index)}.</span>
                                             {answer}
@@ -535,13 +626,15 @@ export default function LiveBattlePage() {
                             </CardHeader>
                             <CardContent>
                                 <ul className="mt-2 space-y-1">
-                                    {battleState.fallenPlayerUids.map(uid => (
-                                        <li key={uid} className="font-semibold">{uid}</li> // Placeholder, need to resolve to name
-                                    ))}
+                                    {allStudents
+                                        .filter(s => battleState.fallenPlayerUids?.includes(s.uid))
+                                        .map(s => <li key={s.uid} className="font-semibold">{s.characterName}</li>)
+                                    }
                                 </ul>
                             </CardContent>
                         </Card>
                     )}
+                     <PowerLog teacherUid={teacherUid} />
                     <BattleChatBox 
                         isTeacher={false}
                         userName={student.characterName}
@@ -589,6 +682,12 @@ export default function LiveBattlePage() {
                             <div className="p-4 rounded-md bg-red-900/70 border border-red-700 text-red-200 flex items-center justify-center gap-4">
                                 <HeartCrack className="h-10 w-10 text-red-400" />
                                 <p className="text-xl font-bold">You took {lastQuestion.damage} damage!</p>
+                            </div>
+                        )}
+                        
+                         {lastAnswerCorrect === null && (
+                            <div className="p-4 rounded-md bg-gray-700 border border-gray-600 text-gray-200 flex items-center justify-center gap-4">
+                                <p className="text-xl font-bold">You did not submit an answer this round.</p>
                             </div>
                         )}
 
