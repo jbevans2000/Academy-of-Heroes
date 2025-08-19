@@ -79,40 +79,31 @@ export default function StudentBattleSummaryPage() {
             if (liveBattleSnap.exists() && liveBattleSnap.data().battleId) {
                 battleId = liveBattleSnap.data().battleId;
             } else {
-                // 2. If it doesn't exist (because it was cleaned up), fetch the most recent summary.
-                console.log("Live battle doc not found, fetching most recent summary as a fallback.");
-                const summariesQuery = query(
-                    collection(db, 'teachers', teacherUid, 'battleSummaries'), 
-                    orderBy('endedAt', 'desc'), 
-                    limit(1)
-                );
-                const recentSummarySnap = await getDocs(summariesQuery);
-                if (!recentSummarySnap.empty) {
-                    battleId = recentSummarySnap.docs[0].id;
-                }
+                // 2. If it doesn't exist, there is no active battle, so no summary is available.
+                // This prevents loading old summaries.
+                console.log("No active battle found. Cannot load summary.");
+                setIsLoading(false);
+                setSummary(null);
+                return;
             }
             
-            if (!battleId) {
-                 console.log("No active or summarized battle found.");
+            // 3. Fetch the battle summary using the determined battleId
+            const summaryRef = doc(db, 'teachers', teacherUid, 'battleSummaries', battleId);
+            const summarySnap = await getDoc(summaryRef);
+            if (summarySnap.exists()) {
+                setSummary(summarySnap.data() as BattleSummary);
             } else {
-              // 3. Fetch the battle summary using the determined battleId
-              const summaryRef = doc(db, 'teachers', teacherUid, 'battleSummaries', battleId);
-              const summarySnap = await getDoc(summaryRef);
-              if (summarySnap.exists()) {
-                  setSummary(summarySnap.data() as BattleSummary);
-              } else {
-                   console.log("Summary not found for the given battleId.");
-              }
-              
-              // 4. Fetch the specific student's responses for all rounds for that battle
-              const responsesRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/studentResponses/${user.uid}/rounds`);
-              const responsesSnap = await getDocs(responsesRef);
-              const responsesData: { [key: string]: StudentRoundResponse } = {};
-              responsesSnap.forEach(doc => {
-                  responsesData[doc.id] = doc.data() as StudentRoundResponse;
-              });
-              setStudentResponses(responsesData);
+                 console.log("Summary not found for the given battleId.");
             }
+            
+            // 4. Fetch the specific student's responses for all rounds for that battle
+            const responsesRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/studentResponses/${user.uid}/rounds`);
+            const responsesSnap = await getDocs(responsesRef);
+            const responsesData: { [key: string]: StudentRoundResponse } = {};
+            responsesSnap.forEach(doc => {
+                responsesData[doc.id] = doc.data() as StudentRoundResponse;
+            });
+            setStudentResponses(responsesData);
 
         } catch (error) {
             console.error("Error fetching summary data:", error);
@@ -253,5 +244,3 @@ export default function StudentBattleSummaryPage() {
     </div>
   );
 }
-
-    
