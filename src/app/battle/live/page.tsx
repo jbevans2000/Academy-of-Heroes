@@ -231,7 +231,10 @@ function PowerLog({ teacherUid }: { teacherUid: string }) {
             const logRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
             const q = query(logRef);
             const unsubscribeLog = onSnapshot(q, (snapshot) => {
-                const entries: PowerLogEntry[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PowerLogEntry));
+                const entries: PowerLogEntry[] = [];
+                snapshot.forEach(doc => {
+                    entries.push({ id: doc.id, ...doc.data() } as PowerLogEntry);
+                });
                 entries.sort((a, b) => a.timestamp.seconds - b.timestamp.seconds);
                 setLogEntries(entries);
             });
@@ -253,12 +256,12 @@ function PowerLog({ teacherUid }: { teacherUid: string }) {
             <CardContent className="flex-grow overflow-hidden flex flex-col">
                 <div className="flex-grow overflow-y-auto pr-4 space-y-3">
                     {logEntries.map(log => (
-                        <div key={log.id} className="text-sm">
+                        <div key={log.id} className="text-sm text-white">
                             <span className="font-bold text-primary">{log.casterName}</span>
-                            <span> used </span>
+                            <span className="text-gray-300"> used </span>
                             <span className="font-semibold text-purple-400">{log.powerName}</span>
-                            <span>. </span>
-                            <span className="text-muted-foreground">{log.description}</span>
+                            <span className="text-gray-300">. </span> 
+                            <span className="text-gray-400 italic">{log.description}</span>
                         </div>
                     ))}
                     <div ref={logEndRef} />
@@ -318,7 +321,7 @@ export default function LiveBattlePage() {
     // Fetch all students only once when the teacher UID is known
     const fetchAllStudents = async () => {
         const liveBattleDoc = await getDoc(doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle'));
-        if (!liveBattleDoc.exists()) return; // Don't fetch if no active battle
+        if (!liveBattleDoc.exists() || liveBattleDoc.data().status === 'WAITING') return;
 
         const allStudentsSnap = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
         setAllStudents(allStudentsSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student)));
@@ -737,3 +740,5 @@ export default function LiveBattlePage() {
     </div>
   );
 }
+
+    
