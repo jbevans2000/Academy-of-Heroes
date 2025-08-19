@@ -122,7 +122,7 @@ function CountdownTimer({ expiryTimestamp }: { expiryTimestamp: Date }) {
     }, [expiryTimestamp]);
 
     return (
-        <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-yellow-100 dark:bg-yellow-900 border border-yellow-300 dark:border-yellow-700">
+        <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-yellow-100 dark:bg-yellow-900/80 border border-yellow-300 dark:border-yellow-700">
             <Timer className="h-12 w-12 text-yellow-500 mb-2" />
             <p className="text-4xl font-bold text-yellow-700 dark:text-yellow-300">{timeLeft}</p>
             <p className="text-sm font-medium text-yellow-600 dark:text-yellow-400">Round ending...</p>
@@ -188,7 +188,7 @@ export default function TeacherLiveBattlePage() {
     if (!teacherUid) return;
     const fetchStudents = async () => {
         const studentsSnapshot = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
-        setAllStudents(studentsSnapshot.docs.map(doc => doc.data() as Student));
+        setAllStudents(studentsSnapshot.docs.map(doc => ({uid: doc.id, ...doc.data()} as Student)));
     }
     fetchStudents();
   }, [teacherUid]);
@@ -696,6 +696,7 @@ export default function TeacherLiveBattlePage() {
     if (!battle || liveState === null || !teacherUid || liveState.currentQuestionIndex >= battle.questions.length - 1) return;
 
     setIsAdvancing(true);
+    setRoundResults([]);
     try {
         const batch = writeBatch(db);
 
@@ -721,7 +722,7 @@ export default function TeacherLiveBattlePage() {
         });
 
         await batch.commit();
-        setRoundResults([]);
+        
         await logGameEvent(teacherUid, 'BOSS_BATTLE', `Round ${nextQuestionIndex + 1} of '${battle.battleName}' has started.`);
     } catch (error) {
         console.error("Error advancing to next question:", error);
@@ -888,12 +889,23 @@ export default function TeacherLiveBattlePage() {
 
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
+    <div 
+        className="relative flex min-h-screen w-full flex-col"
+    >
+        <div 
+            className="absolute inset-0 -z-10 bg-black/50"
+            style={{
+                backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-0228de24-54d4-47df-9ff6-6184afb3ad3d.jpg?alt=media&token=a005d161-a938-4096-8b7f-fec4388c36a8')`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+            }}
+        />
+         <div className="absolute inset-0 -z-10 bg-black/50" />
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
             <div className="lg:col-span-2 space-y-6">
-                <Card>
+                <Card className="bg-card/80 backdrop-blur-sm">
                     <CardHeader>
                         <CardTitle className="text-3xl">{battle.battleName}</CardTitle>
                         <CardDescription>Live Battle Control Panel</CardDescription>
@@ -977,7 +989,7 @@ export default function TeacherLiveBattlePage() {
                 </Card>
                 
                 {isWaitingToStart && (
-                    <Card>
+                    <Card className="bg-card/80 backdrop-blur-sm">
                         <CardHeader>
                             <CardTitle>Waiting for Students</CardTitle>
                         </CardHeader>
@@ -988,7 +1000,7 @@ export default function TeacherLiveBattlePage() {
                 )}
 
                 {isRoundEnding && expiryTimestamp && (
-                    <Card>
+                    <Card className="bg-card/80 backdrop-blur-sm">
                         <CardHeader>
                             <CardTitle>Ending Round...</CardTitle>
                         </CardHeader>
@@ -999,7 +1011,7 @@ export default function TeacherLiveBattlePage() {
                 )}
 
                 {(isRoundInProgress || isRoundEnding) && (
-                    <Card>
+                    <Card className="bg-card/80 backdrop-blur-sm">
                         <CardHeader>
                             <CardTitle>Live Student Responses ({studentResponses.length})</CardTitle>
                             <CardDescription>See which students have submitted their answer for the current question.</CardDescription>
@@ -1011,7 +1023,7 @@ export default function TeacherLiveBattlePage() {
                 )}
 
                 {areResultsShowing && (
-                    <Card>
+                    <Card className="bg-card/80 backdrop-blur-sm">
                         <CardHeader className="flex flex-row items-center justify-between">
                             <div>
                                 <CardTitle>Round Results</CardTitle>
@@ -1062,7 +1074,7 @@ export default function TeacherLiveBattlePage() {
                     battleId={battleId}
                 />
                 {(liveState.fallenPlayerUids && liveState.fallenPlayerUids.length > 0) && (
-                     <Card>
+                     <Card className="bg-card/80 backdrop-blur-sm">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><Skull className="text-destructive"/> Fallen Heroes</CardTitle>
                         </CardHeader>
