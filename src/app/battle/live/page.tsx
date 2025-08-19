@@ -331,7 +331,7 @@ export default function LiveBattlePage() {
       answerIndex: answerIndex,
       isCorrect: isCorrect,
       submittedAt: new Date(),
-    });
+    }, { merge: true });
 
     const studentResponseRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/studentResponses/${user.uid}/rounds/${battleState.currentQuestionIndex}`);
     await setDoc(studentResponseRef, {
@@ -444,7 +444,7 @@ export default function LiveBattlePage() {
           student={student}
           isBattleView={true}
           teacherUid={teacherUid}
-          battleId={battle.id}
+          battleId={'active-battle'}
         />
         <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 p-4">
             {targetedMessage && (
@@ -546,7 +546,7 @@ export default function LiveBattlePage() {
                         isTeacher={false}
                         userName={student.characterName}
                         teacherUid={teacherUid}
-                        battleId={battle.id}
+                        battleId={'active-battle'}
                     />
                 </div>
             </div>
