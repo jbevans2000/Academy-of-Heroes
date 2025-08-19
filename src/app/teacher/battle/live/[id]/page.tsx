@@ -9,7 +9,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, Download, Timer, HeartCrack, Video, ShieldCheck, Sparkles, Skull } from 'lucide-react';
+import { Loader2, Download, Timer, HeartCrack, Video, ShieldCheck, Sparkles, Skull, Trash2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RoundResults, type Result } from '@/components/teacher/round-results';
 import { downloadCsv } from '@/lib/utils';
@@ -18,6 +18,7 @@ import { calculateLevel, calculateHpGain, calculateMpGain, calculateBaseMaxHp } 
 import type { Student } from '@/lib/data';
 import { logGameEvent } from '@/lib/gamelog';
 import { BattleChatBox } from '@/components/battle/chat-box';
+import { useToast } from '@/hooks/use-toast';
 
 
 interface QueuedPower {
@@ -150,6 +151,7 @@ export default function TeacherLiveBattlePage() {
   const params = useParams();
   const router = useRouter();
   const battleId = params.id as string;
+  const { toast } = useToast();
 
   const [battle, setBattle] = useState<Battle | null>(null);
   const [liveState, setLiveState] = useState<LiveBattleState | null>(null);
@@ -838,7 +840,28 @@ export default function TeacherLiveBattlePage() {
     const data = roundResults.map(r => [r.studentName, r.answer, r.isCorrect ? 'Yes' : 'No']);
     downloadCsv(data, headers, `battle_results_q${liveState.currentQuestionIndex + 1}.csv`);
   };
+  
+  const handleClearChat = async () => {
+    if (!teacherUid || !battleId) return;
 
+    const messagesRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/messages`);
+    try {
+        const querySnapshot = await getDocs(messagesRef);
+        if (querySnapshot.empty) {
+            toast({ title: "Chat is already empty." });
+            return;
+        }
+        const batch = writeBatch(db);
+        querySnapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+        toast({ title: "Chat Cleared", description: "All messages have been removed from the war council." });
+    } catch (error) {
+        console.error("Error clearing chat:", error);
+        toast({ variant: "destructive", title: "Error", description: "Could not clear the chat." });
+    }
+  };
 
   if (isLoading || !battle || !liveState || !user || !teacherData) {
     return (
@@ -900,7 +923,7 @@ export default function TeacherLiveBattlePage() {
 
                         <div className="p-4 border rounded-lg">
                             <h3 className="font-semibold text-lg mb-2">Controls</h3>
-                            <div className="flex gap-4">
+                            <div className="flex flex-wrap gap-4">
                                 {isWaitingToStart && (
                                     <Button onClick={handleStartFirstQuestion} size="lg">Start First Question</Button>
                                 )}
@@ -912,6 +935,25 @@ export default function TeacherLiveBattlePage() {
                                     {isAdvancing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                     Next Question
                                 </Button>
+                                 <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="outline" className="text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive">
+                                            <Trash2 className="mr-2 h-4 w-4" /> Clear Chat
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Clear the Chat Log?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                        This will permanently delete all messages from the chat for this battle session. This cannot be undone.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleClearChat}>Yes, Clear Chat</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                     <Button variant="destructive" disabled={isAdvancing || isEndingRound}>End Battle</Button>
