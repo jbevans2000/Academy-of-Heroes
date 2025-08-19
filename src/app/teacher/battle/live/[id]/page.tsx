@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs, writeBatch, serverTimestamp, setDoc, deleteDoc, increment, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs, writeBatch, serverTimestamp, setDoc, deleteDoc, increment, arrayUnion, arrayRemove, addDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
@@ -108,6 +108,7 @@ interface PowerLogEntry {
     casterName: string;
     powerName: string;
     description: string;
+    timestamp: any;
 }
 
 function CountdownTimer({ expiryTimestamp }: { expiryTimestamp: Date }) {
@@ -232,7 +233,23 @@ export default function TeacherLiveBattlePage() {
       console.error("Error listening for live battle state:", error);
       setIsLoading(false);
     });
-    return () => unsubscribe();
+    
+    // Also listen to the power log for the summary page
+    const logRef = collection(liveBattleRef, 'battleLog');
+    const q = query(logRef);
+    const unsubLog = onSnapshot(q, (snapshot) => {
+      const entries: PowerLogEntry[] = [];
+      snapshot.forEach(doc => {
+        entries.push(doc.data() as PowerLogEntry)
+      });
+      setPowerLog(entries);
+    });
+
+
+    return () => {
+      unsubscribe();
+      unsubLog();
+    };
   }, [battleId, router, teacherUid]);
 
   // Listen for real-time student responses for the current question
@@ -309,35 +326,32 @@ export default function TeacherLiveBattlePage() {
         
         let powerDamage = isDivinationSkip ? (liveState.lastRoundPowerDamage || 0) : 0;
         const powersUsedThisRound: string[] = isDivinationSkip ? (liveState.lastRoundPowersUsed || []) : [];
-        const newPowerLogEntries: PowerLogEntry[] = [];
+        const battleLogRef = collection(db, 'teachers', teacherUid!, 'liveBattles/active-battle/battleLog');
 
         if (!isDivinationSkip) {
-            liveState.queuedPowers?.forEach(power => {
+            for (const power of liveState.queuedPowers || []) {
                 const casterResponse = responsesData.find(res => res.uid === power.casterUid);
-                const powerDef = classPowers.Mage.find(p => p.name === power.powerName);
 
                 if (casterResponse?.isCorrect) {
                     powerDamage += power.damage;
                     powersUsedThisRound.push(`${power.powerName} (${power.damage} dmg)`);
-                    newPowerLogEntries.push({
+                    batch.set(doc(battleLogRef), {
                         round: liveState.currentQuestionIndex + 1,
                         casterName: casterResponse.characterName,
                         powerName: power.powerName,
-                        description: `Dealt ${power.damage} damage.`
+                        description: `Dealt ${power.damage} damage.`,
+                        timestamp: serverTimestamp()
                     });
                 } else {
-                    newPowerLogEntries.push({
+                    batch.set(doc(battleLogRef), {
                         round: liveState.currentQuestionIndex + 1,
                         casterName: casterResponse?.characterName || 'Unknown Mage',
                         powerName: power.powerName,
-                        description: 'Fizzled due to incorrect answer.'
+                        description: 'Fizzled due to incorrect answer.',
+                        timestamp: serverTimestamp()
                     });
                 }
-            });
-        }
-        
-        if (newPowerLogEntries.length > 0) {
-            setPowerLog(prev => [...prev, ...newPowerLogEntries]);
+            }
         }
 
         const baseDamage = isDivinationSkip ? 0 : results.filter(r => r.isCorrect).length;
@@ -425,6 +439,7 @@ export default function TeacherLiveBattlePage() {
 
         const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
         const powerActivationsRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/powerActivations`);
+        const battleLogRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
         const q = query(powerActivationsRef);
 
         const handlePowerActivation = async (activation: PowerActivation) => {
@@ -440,7 +455,6 @@ export default function TeacherLiveBattlePage() {
              if ((battleData.powerUsersThisRound?.[activation.studentUid] || []).length > 0) return; // Prevent multiple powers per round
 
             const batch = writeBatch(db);
-            let result;
 
             if (activation.powerName === 'Nature’s Guidance') {
                 const currentQuestion = battle!.questions[battleData!.currentQuestionIndex];
@@ -458,12 +472,13 @@ export default function TeacherLiveBattlePage() {
                         removedAnswerIndices: arrayUnion(indexToRemove),
                         powerEventMessage: `${activation.studentName} used Nature's Guidance!`
                     });
-                     setPowerLog(prev => [...prev, {
+                     batch.set(doc(battleLogRef), {
                         round: liveState.currentQuestionIndex + 1,
                         casterName: activation.studentName,
                         powerName: activation.powerName,
-                        description: 'Removed one incorrect answer.'
-                    }]);
+                        description: 'Removed one incorrect answer.',
+                        timestamp: serverTimestamp()
+                    });
                 }
             } else if (activation.powerName === 'Wildfire') {
                 const roll1 = Math.floor(Math.random() * 6) + 1;
@@ -499,12 +514,13 @@ export default function TeacherLiveBattlePage() {
                             message: `${studentData.characterName} has brought you back from the brink! Get back into the fight!`
                         }
                     });
-                     setPowerLog(prev => [...prev, {
+                     batch.set(doc(battleLogRef), {
                         round: liveState.currentQuestionIndex + 1,
                         casterName: activation.studentName,
                         powerName: activation.powerName,
-                        description: `Revived ${targetData.characterName}.`
-                    }]);
+                        description: `Revived ${targetData.characterName}.`,
+                        timestamp: serverTimestamp()
+                    });
                 } else if (targetSnap.exists() && targetSnap.data().hp > 0) {
                      // Target is not fallen, send feedback to caster
                     const targetedEvent: TargetedEvent = { targetUid: activation.studentUid, message: `${targetSnap.data().characterName} has already been restored! Choose another power.` };
@@ -546,12 +562,13 @@ export default function TeacherLiveBattlePage() {
                 batch.update(liveBattleRef, {
                     powerEventMessage: `${activation.studentName} has cast Lesser Heal! ${target1Name} and ${target2Name} have had health restored!`
                 });
-                setPowerLog(prev => [...prev, {
+                batch.set(doc(battleLogRef), {
                     round: liveState.currentQuestionIndex + 1,
                     casterName: activation.studentName,
                     powerName: activation.powerName,
-                    description: `Healed ${target1Name} and ${target2Name}.`
-                }]);
+                    description: `Healed ${target1Name} and ${target2Name}.`,
+                    timestamp: serverTimestamp()
+                });
             } else if (activation.powerName === 'Focused Restoration') {
                 if (!activation.targets || activation.targets.length !== 1) return;
                 const targetUid = activation.targets[0];
@@ -574,12 +591,13 @@ export default function TeacherLiveBattlePage() {
                             message: `You have been healed by ${studentData.characterName}. Your body and spirit have been renewed!`
                         }
                     });
-                     setPowerLog(prev => [...prev, {
+                     batch.set(doc(battleLogRef), {
                         round: liveState.currentQuestionIndex + 1,
                         casterName: activation.studentName,
                         powerName: activation.powerName,
-                        description: `Healed ${targetData.characterName} for ${healAmount} HP.`
-                    }]);
+                        description: `Healed ${targetData.characterName} for ${healAmount} HP.`,
+                        timestamp: serverTimestamp()
+                    });
                 }
             } else if (activation.powerName === 'Solar Empowerment') {
                 if (!activation.targets || activation.targets.length !== 3) return;
@@ -630,12 +648,13 @@ export default function TeacherLiveBattlePage() {
                     empoweredMageUids: arrayUnion(...activation.targets),
                     powerEventMessage: `${activation.studentName} has cast Solar Empowerment! Three mages begin to shine with the light of the sun!`
                 });
-                setPowerLog(prev => [...prev, {
+                batch.set(doc(battleLogRef), {
                     round: liveState.currentQuestionIndex + 1,
                     casterName: activation.studentName,
                     powerName: activation.powerName,
-                    description: `Empowered ${targetNames.join(', ')}.`
-                }]);
+                    description: `Empowered ${targetNames.join(', ')}.`,
+                    timestamp: serverTimestamp()
+                });
             } else if (activation.powerName === 'Cosmic Divination') {
                  if (battleData.status === 'ROUND_ENDING') return;
                  if ((battleData.cosmicDivinationUses || 0) >= 2) {
@@ -663,12 +682,13 @@ export default function TeacherLiveBattlePage() {
                         totalVoters: activePlayersCount,
                     }
                 });
-                setPowerLog(prev => [...prev, {
+                batch.set(doc(battleLogRef), {
                     round: liveState.currentQuestionIndex + 1,
                     casterName: activation.studentName,
                     powerName: activation.powerName,
-                    description: `Dealt ${studentData.level} damage and initiated a vote.`
-                }]);
+                    description: `Dealt ${studentData.level} damage and initiated a vote.`,
+                    timestamp: serverTimestamp()
+                });
             }
 
             batch.update(studentRef, { mp: increment(-activation.powerMpCost) });
@@ -1174,5 +1194,7 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
+
+    
 
     
