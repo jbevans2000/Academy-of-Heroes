@@ -1,29 +1,22 @@
 
-import { initializeApp, getApp, getApps, type App, cert, type ServiceAccount } from 'firebase-admin/app';
 
-// This function ensures that we initialize the Firebase Admin SDK only once.
+import { initializeApp, getApp, getApps, type App } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+
+// It's safe to call this multiple times; it will return the existing app instance
+// on subsequent calls.
 export function getFirebaseAdminApp(): App {
   if (getApps().length > 0) {
     return getApp();
   }
 
-  const serviceAccountKey = process.env.SERVICE_ACCOUNT_KEY;
+  // When running in a Google Cloud environment (like Cloud Run, App Engine, or
+  // Firebase App Hosting), the GOOGLE_APPLICATION_CREDENTIALS environment variable
+  // is automatically set. `credential.applicationDefault()` uses these credentials.
+  const app = initializeApp();
 
-  if (!serviceAccountKey) {
-    // This will be logged in the App Hosting logs if the secret is not set.
-    console.error("FATAL: The 'SERVICE_ACCOUNT_KEY' secret is not set in your App Hosting environment. Go to the Firebase console, create a service account key, and add it as a secret.");
-    throw new Error("Application is misconfigured. The SERVICE_ACCOUNT_KEY is missing.");
-  }
-
-  try {
-    const serviceAccount: ServiceAccount = JSON.parse(serviceAccountKey);
-    const app = initializeApp({
-      credential: cert(serviceAccount),
-    });
-    return app;
-  } catch (e: any) {
-    console.error("FATAL: Failed to parse the 'SERVICE_ACCOUNT_KEY' secret. Ensure the secret's value is the full, valid JSON content of a service account key.", e);
-    // This provides a more specific error in the logs if the JSON is malformed.
-    throw new Error("The provided SERVICE_ACCOUNT_KEY is not valid JSON.");
-  }
+  return app;
 }
+
+// Initialize the app. This will be a singleton.
+getFirebaseAdminApp();
