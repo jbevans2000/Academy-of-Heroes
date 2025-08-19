@@ -81,16 +81,26 @@ export default function BossBattlesPage() {
         const responsesRef = collection(liveBattleRef, 'responses');
         const powerActivationsRef = collection(liveBattleRef, 'powerActivations');
         const chatRef = collection(liveBattleRef, 'messages');
-        
-        const [responsesSnap, powersSnap, chatSnap] = await Promise.all([
+        const studentResponsesRef = collection(liveBattleRef, 'studentResponses');
+
+        const [responsesSnap, powersSnap, chatSnap, studentResponsesSnap] = await Promise.all([
             getDocs(responsesRef),
             getDocs(powerActivationsRef),
-            getDocs(chatRef)
+            getDocs(chatRef),
+            getDocs(studentResponsesRef)
         ]);
 
         responsesSnap.forEach(doc => batch.delete(doc.ref));
         powersSnap.forEach(doc => batch.delete(doc.ref));
         chatSnap.forEach(doc => batch.delete(doc.ref));
+        
+        // This requires another nested read/delete for each student's rounds, might be slow but necessary
+        for (const studentResponseDoc of studentResponsesSnap.docs) {
+            const roundsRef = collection(studentResponseDoc.ref, 'rounds');
+            const roundsSnap = await getDocs(roundsRef);
+            roundsSnap.forEach(roundDoc => batch.delete(roundDoc.ref));
+            batch.delete(studentResponseDoc.ref);
+        }
         
         // Overwrite the main document with new battle data
         batch.set(liveBattleRef, {
@@ -157,7 +167,16 @@ export default function BossBattlesPage() {
   };
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
+    <div className="relative flex min-h-screen w-full flex-col">
+        <div 
+            className="absolute inset-0 -z-10"
+            style={{
+                backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-21eb570e-7d33-47da-8e3a-4a9f4c5ea0de.jpg?alt=media&token=a6ea0696-903a-4056-9fad-2d053078fcb9')`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                opacity: 0.25,
+            }}
+        />
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="flex items-center justify-between mb-6">
@@ -181,7 +200,7 @@ export default function BossBattlesPage() {
             <Skeleton className="h-40 w-full" />
           </div>
         ) : battles.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 py-20 text-center">
+          <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 py-20 text-center bg-card/50">
             <h2 className="text-xl font-semibold text-muted-foreground">No Boss Battles Have Been Created</h2>
             <p className="mt-2 text-sm text-muted-foreground">Get started by creating your first boss battle.</p>
             <Button onClick={navigateToCreate} className="mt-4">
@@ -192,7 +211,7 @@ export default function BossBattlesPage() {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {battles.map((battle) => (
-              <Card key={battle.id}>
+              <Card key={battle.id} className="bg-card/90">
                 <CardHeader>
                   <CardTitle>{battle.battleName}</CardTitle>
                 </CardHeader>
