@@ -26,7 +26,7 @@ export default function AwaitingApprovalPage() {
                 backgroundRepeat: 'no-repeat',
             }}
         >
-            <Card className="w-full max-w-md shadow-2xl bg-card/80 backdrop-blur-sm text-center">
+            <Card className="w-full max-w-md shadow-2xl bg-card/60 backdrop-blur-sm text-center">
                 <CardHeader>
                     <div className="flex justify-center mb-4">
                         <Hourglass className="h-16 w-16 text-primary animate-spin" />
