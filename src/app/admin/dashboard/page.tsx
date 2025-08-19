@@ -9,6 +9,7 @@ import { db, auth } from '@/lib/firebase';
 import { AdminHeader } from '@/components/admin/admin-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { BattleTestPanel } from '@/components/admin/battle-test-panel';
 
 interface Teacher {
     id: string;
@@ -65,7 +66,7 @@ export default function AdminDashboardPage() {
                 };
             }));
             setTeachers(teachersData);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error fetching teachers:", error);
         } finally {
             setIsLoading(false);
@@ -92,27 +93,36 @@ export default function AdminDashboardPage() {
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
             <AdminHeader />
-            <main className="flex-1 p-4 md:p-6 lg:p-8">
-                <h1 className="text-3xl font-bold mb-6">All Guilds</h1>
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {teachers.map((teacher) => (
-                        <Card key={teacher.id}>
-                            <CardHeader>
-                                <CardTitle>{teacher.className}</CardTitle>
-                                <CardDescription>{teacher.name} - {teacher.schoolName}</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="font-semibold">{teacher.studentCount} student(s)</p>
-                                <p className="text-sm text-muted-foreground">{teacher.email}</p>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-                 {teachers.length === 0 && !isLoading && (
-                    <div className="text-center py-10">
-                        <p className="text-muted-foreground">No teachers have registered yet.</p>
-                    </div>
-                )}
+            <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-6">
+                 <BattleTestPanel adminUid={user.uid} />
+                 
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>All Guilds</CardTitle>
+                        <CardDescription>A list of all registered teachers and their guilds.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                            {teachers.map((teacher) => (
+                                <Card key={teacher.id}>
+                                    <CardHeader>
+                                        <CardTitle>{teacher.className}</CardTitle>
+                                        <CardDescription>{teacher.name} - {teacher.schoolName}</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="font-semibold">{teacher.studentCount} student(s)</p>
+                                        <p className="text-sm text-muted-foreground">{teacher.email}</p>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                        {teachers.length === 0 && !isLoading && (
+                            <div className="text-center py-10">
+                                <p className="text-muted-foreground">No teachers have registered yet.</p>
+                            </div>
+                        )}
+                   </CardContent>
+                </Card>
             </main>
         </div>
     );

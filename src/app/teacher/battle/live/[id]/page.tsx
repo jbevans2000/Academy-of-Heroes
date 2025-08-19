@@ -239,7 +239,7 @@ export default function TeacherLiveBattlePage() {
             const powerUsed = powerUsers[doc.id]?.join(', ') || undefined;
 
             responses.push({
-                studentName: data.studentName,
+                studentName: data.characterName,
                 answer: data.answer,
                 isCorrect: data.isCorrect,
                 powerUsed: powerUsed,
@@ -586,7 +586,7 @@ export default function TeacherLiveBattlePage() {
         const damageOnIncorrect = currentQuestion.damage || 0;
 
         const results: Result[] = responsesData.map(response => ({
-            studentName: response.studentName,
+            studentName: response.characterName,
             answer: response.answer,
             isCorrect: response.isCorrect,
             powerUsed: liveState.powerUsersThisRound?.[response.uid]?.join(', ') || undefined,
@@ -1095,4 +1095,3 @@ export default function TeacherLiveBattlePage() {
   );
 }
 
-    

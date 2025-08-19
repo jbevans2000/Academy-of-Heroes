@@ -32,7 +32,7 @@ export function RoundResults({ results }: RoundResultsProps) {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-[200px]">Student</TableHead>
+          <TableHead className="w-[200px]">Character</TableHead>
           <TableHead>Answer</TableHead>
           <TableHead>Power Used</TableHead>
           <TableHead className="text-right w-[100px]">Result</TableHead>
