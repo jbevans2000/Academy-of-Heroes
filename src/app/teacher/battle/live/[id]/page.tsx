@@ -381,7 +381,7 @@ export default function TeacherLiveBattlePage() {
             [liveState.currentQuestionIndex]: {
                 questionText: currentQuestion.questionText,
                 responses: results.map(r => ({
-                    studentName: r.studentName,
+                    studentName: r.characterName,
                     isCorrect: r.isCorrect,
                 })),
                 powersUsed: powersUsedThisRound,
@@ -687,6 +687,26 @@ export default function TeacherLiveBattlePage() {
                     casterName: activation.studentName,
                     powerName: activation.powerName,
                     description: `Dealt ${studentData.level} damage and initiated a vote.`,
+                    timestamp: serverTimestamp()
+                });
+            } else if (activation.powerName === 'Regeneration Field') {
+                const healAmount = Math.ceil((studentData.level || 1) * 0.25);
+                const targetsToHeal = allStudents.filter(s => s.hp > 0 && s.hp < s.maxHp);
+                
+                for (const target of targetsToHeal) {
+                    const targetRef = doc(db, 'teachers', teacherUid!, 'students', target.uid);
+                    const newHp = Math.min(target.maxHp, target.hp + healAmount);
+                    batch.update(targetRef, { hp: newHp });
+                }
+
+                batch.update(liveBattleRef, {
+                    powerEventMessage: `${activation.studentName} casts Regeneration Field, bathing the party in healing light!`
+                });
+                 batch.set(doc(battleLogRef), {
+                    round: liveState.currentQuestionIndex + 1,
+                    casterName: activation.studentName,
+                    powerName: activation.powerName,
+                    description: `Healed all allies for up to ${healAmount} HP.`,
                     timestamp: serverTimestamp()
                 });
             }
@@ -995,7 +1015,7 @@ export default function TeacherLiveBattlePage() {
         <div 
             className="absolute inset-0 -z-10 bg-black/50"
             style={{
-                backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-0228de24-54d4-47df-9ff6-6184afb3ad3d.jpg?alt=media&token=a005d161-a938-4096-8b7f-fec4388c36a8')`,
+                backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.googleapis.com/o/Web%20Backgrounds%2Fenvato-labs-ai-0228de24-54d4-47df-9ff6-6184afb3ad3d.jpg?alt=media&token=a005d161-a938-4096-8b7f-fec4388c36a8')`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
             }}
@@ -1194,7 +1214,3 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
-
-    
-
-    

@@ -186,7 +186,7 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Regeneration Field',
-      description: 'Restores 20% of their level value as HP to every player.',
+      description: 'Heals all allies below max HP for 25% of your Level (rounded up). Excess healing is discarded.',
       level: 13,
       mpCost: 35,
       type: 'healing',
@@ -200,5 +200,3 @@ export const classPowers: ClassPowers = {
     },
   ],
 };
-
-    
