@@ -81,8 +81,8 @@ export function BattleChatBox({ teacherUid, battleId, userName, isTeacher }: Bat
   return (
     <Card className="flex flex-col h-full bg-card/60 backdrop-blur-sm">
       <CardHeader>
-        <CardTitle>The War Council</CardTitle>
-        <CardDescription>Talk with your party members!</CardDescription>
+        <CardTitle className="text-black">The War Council</CardTitle>
+        <CardDescription className="text-black">Talk with your party members!</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow overflow-hidden flex flex-col">
         <div className="flex-grow overflow-y-auto pr-4 space-y-4">
@@ -95,14 +95,14 @@ export function BattleChatBox({ teacherUid, battleId, userName, isTeacher }: Bat
               )}
             >
               <div className={cn("flex items-center gap-2 w-full", msg.isTeacher ? "flex-row-reverse" : "")}>
-                <p className={cn("font-bold text-sm", msg.isTeacher ? "text-primary" : "")}>{msg.senderName}</p>
+                <p className="font-bold text-sm text-black">{msg.senderName}</p>
                 {msg.timestamp && (
                     <p className="text-xs text-muted-foreground">
                         {formatDistanceToNow(new Date(msg.timestamp.seconds * 1000), { addSuffix: true })}
                     </p>
                 )}
               </div>
-              <p className="text-foreground whitespace-pre-wrap">{msg.text}</p>
+              <p className="text-black whitespace-pre-wrap">{msg.text}</p>
             </div>
           ))}
           <div ref={messagesEndRef} />
@@ -122,3 +122,5 @@ export function BattleChatBox({ teacherUid, battleId, userName, isTeacher }: Bat
     </Card>
   );
 }
+
+    

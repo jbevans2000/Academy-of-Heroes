@@ -251,17 +251,17 @@ function PowerLog({ teacherUid }: { teacherUid: string }) {
     return (
         <Card className="flex flex-col h-full bg-card/60 backdrop-blur-sm">
             <CardHeader>
-                <CardTitle className="flex items-center gap-2"><ScrollText/> Battle Log</CardTitle>
+                <CardTitle className="flex items-center gap-2 text-black"><ScrollText/> Battle Log</CardTitle>
             </CardHeader>
             <CardContent className="flex-grow overflow-hidden flex flex-col">
                 <div className="flex-grow overflow-y-auto pr-4 space-y-3">
                     {logEntries.map(log => (
-                        <div key={log.id} className="text-sm text-white">
-                            <span className="font-bold text-primary">{log.casterName}</span>
-                            <span className="text-gray-300"> used </span>
-                            <span className="font-semibold text-purple-400">{log.powerName}</span>
-                            <span className="text-gray-300">. </span> 
-                            <span className="text-gray-400 italic">{log.description}</span>
+                        <div key={log.id} className="text-sm text-black">
+                            <span className="font-bold">{log.casterName}</span>
+                            <span> used </span>
+                            <span className="font-semibold">{log.powerName}</span>
+                            <span>. </span> 
+                            <span className="italic">{log.description}</span>
                         </div>
                     ))}
                     <div ref={logEndRef} />
@@ -642,13 +642,13 @@ export default function LiveBattlePage() {
                     {(battleState.fallenPlayerUids && battleState.fallenPlayerUids.length > 0) && (
                         <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2"><Skull className="text-destructive"/> Fallen Heroes</CardTitle>
+                                <CardTitle className="flex items-center gap-2 text-black"><Skull className="text-destructive"/> Fallen Heroes</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <ul className="mt-2 space-y-1">
                                     {allStudents
                                         .filter(s => battleState.fallenPlayerUids?.includes(s.uid))
-                                        .map(s => <li key={s.uid} className="font-semibold">{s.characterName}</li>)
+                                        .map(s => <li key={s.uid} className="font-semibold text-black">{s.characterName}</li>)
                                     }
                                 </ul>
                             </CardContent>
@@ -740,5 +740,7 @@ export default function LiveBattlePage() {
     </div>
   );
 }
+
+    
 
     
