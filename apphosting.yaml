@@ -8,3 +8,4 @@ runConfig:
 runtime: nodejs20
 secrets:
   - GEMINI_API_KEY
+  - SERVICE_ACCOUNT_KEY
