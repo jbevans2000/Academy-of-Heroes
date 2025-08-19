@@ -8,7 +8,6 @@ import { db, auth } from '@/lib/firebase';
 import { AdminHeader } from '@/components/admin/admin-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { BattleTestPanel } from '@/components/admin/battle-test-panel';
 
 interface Teacher {
     id: string;
@@ -65,7 +64,7 @@ export default function AdminDashboardPage() {
                 };
             }));
             setTeachers(teachersData);
-        } catch (error: any) {
+        } catch (error) {
             console.error("Error fetching teachers:", error);
         } finally {
             setIsLoading(false);
@@ -93,7 +92,6 @@ export default function AdminDashboardPage() {
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
             <AdminHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-6">
-                 <BattleTestPanel adminUid={user.uid} />
                  
                  <Card>
                     <CardHeader>
