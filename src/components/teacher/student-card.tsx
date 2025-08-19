@@ -22,7 +22,7 @@ import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
+import { calculateLevel, calculateHpGain, calculateMpGain, calculateBaseMaxHp } from '@/lib/game-mechanics';
 import { Label } from '../ui/label';
 import { ManageStudentDialog } from './manage-student-dialog';
 
@@ -84,22 +84,28 @@ function EditableStat({ student, stat, icon, label, setStudents, teacherUid }: E
             const updates: Partial<Student> = {};
             
             if (stat === 'xp') {
-                const currentXp = studentData.xp || 0;
-                updates.xp = amount;
                 const currentLevel = studentData.level || 1;
+                updates.xp = amount;
                 const newLevel = calculateLevel(updates.xp);
 
-                if (newLevel > currentLevel) {
-                    const levelsGained = newLevel - currentLevel;
+                if (newLevel !== currentLevel) {
+                    const levelChange = newLevel - currentLevel;
                     updates.level = newLevel;
                     
-                    const hpGained = calculateHpGain(studentData.class, levelsGained);
-                    updates.hp = (studentData.hp || 0) + hpGained;
-                    updates.maxHp = (studentData.maxHp || 0) + hpGained;
+                    const newMaxHp = calculateBaseMaxHp(studentData.class, newLevel);
+                    const newMaxMp = calculateBaseMaxMp(studentData.class, newLevel, 'mp');
 
-                    const mpGained = calculateMpGain(studentData.class, levelsGained);
-                    updates.mp = (studentData.mp || 0) + mpGained;
-                    updates.maxMp = (studentData.maxMp || 0) + mpGained;
+                    updates.maxHp = newMaxHp;
+                    // On level down, clamp HP to new max. On level up, add gain.
+                    updates.hp = levelChange > 0 
+                        ? (studentData.hp || 0) + calculateHpGain(studentData.class, levelChange)
+                        : Math.min(studentData.hp, newMaxHp);
+
+                    updates.maxMp = newMaxMp;
+                    // On level down, clamp MP to new max. On level up, add gain.
+                    updates.mp = levelChange > 0
+                        ? (studentData.mp || 0) + calculateMpGain(studentData.class, levelChange)
+                        : Math.min(studentData.mp, newMaxMp);
                 }
             } else {
                 updates[stat] = amount;
