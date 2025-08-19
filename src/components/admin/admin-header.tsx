@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Shield, LogOut } from "lucide-react";
+import { Shield, LogOut, User } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -38,6 +38,10 @@ export function AdminHeader() {
         <span className="text-xl">Master Admin Dashboard</span>
       </Link>
       <div className="ml-auto flex items-center gap-4">
+        <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
+            <User className="mr-2 h-5 w-5" />
+            View as Teacher
+        </Button>
         <Button onClick={handleLogout} variant="destructive">
           <LogOut className="mr-2 h-5 w-5" />
           Logout
