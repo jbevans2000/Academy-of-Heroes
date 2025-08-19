@@ -461,7 +461,7 @@ export default function Dashboard() {
             </DialogContent>
         </Dialog>
         
-        <div className="mb-4 bg-card/90 p-4 rounded-lg shadow-md">
+        <div className="mb-4 bg-white/90 p-4 rounded-lg shadow-md">
             <h1 className="text-3xl font-bold">{teacherData?.className || 'The Guild Leader\'s Dais'}</h1>
              {teacherData?.classCode && (
                 <div className="flex items-center gap-2 mt-2">
@@ -479,14 +479,14 @@ export default function Dashboard() {
             onClick={handleSelectAllToggle}
             disabled={students.length === 0}
             variant="outline"
-            className="text-black"
+            className="text-black border-black"
             >
             {selectedStudents.length === students.length ? 'Deselect All' : 'Select All'}
             </Button>
             
              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="text-black">
+                    <Button variant="outline" className="text-black border-black">
                     <Wrench className="mr-2 h-4 w-4" />
                     Manage
                     <ChevronDown className="ml-2 h-4 w-4" />
@@ -513,7 +513,7 @@ export default function Dashboard() {
             </DropdownMenu>
 
             {pendingStudents.length > 0 && (
-                <Button variant="secondary" onClick={() => setIsApprovalDialogOpen(true)}>
+                <Button variant="secondary" onClick={() => setIsApprovalDialogOpen(true)} className="border-black border">
                     <Bell className="mr-2 h-4 w-4 animate-pulse" />
                     Pending Approvals ({pendingStudents.length})
                 </Button>
@@ -521,7 +521,7 @@ export default function Dashboard() {
 
             <Dialog open={isXpDialogOpen} onOpenChange={setIsXpDialogOpen}>
             <DialogTrigger asChild>
-                <Button disabled={selectedStudents.length === 0} className="text-black">
+                <Button disabled={selectedStudents.length === 0} className="text-black border-black border">
                 <Star className="mr-2 h-4 w-4" /> Bestow Experience
                 </Button>
             </DialogTrigger>
@@ -558,7 +558,7 @@ export default function Dashboard() {
             </Dialog>
             <Dialog open={isGoldDialogOpen} onOpenChange={setIsGoldDialogOpen}>
             <DialogTrigger asChild>
-                <Button className="bg-green-600 hover:bg-green-700 text-white" disabled={selectedStudents.length === 0}>
+                <Button className="bg-green-600 hover:bg-green-700 text-white border-black border" disabled={selectedStudents.length === 0}>
                 <Coins className="mr-2 h-4 w-4" /> Bestow Gold
                 </Button>
             </DialogTrigger>
@@ -596,7 +596,7 @@ export default function Dashboard() {
             
             <AlertDialog open={isDeleteStep1Open} onOpenChange={setIsDeleteStep1Open}>
                 <AlertDialogTrigger asChild>
-                    <Button variant="destructive" disabled={selectedStudents.length === 0}>
+                    <Button variant="destructive" disabled={selectedStudents.length === 0} className="border-black border">
                         <UserX className="mr-2 h-4 w-4" /> Delete Selected
                     </Button>
                 </AlertDialogTrigger>
