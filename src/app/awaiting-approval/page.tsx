@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -26,24 +25,24 @@ export default function AwaitingApprovalPage() {
                 backgroundRepeat: 'no-repeat',
             }}
         >
-            <Card className="w-full max-w-md shadow-2xl bg-card/60 backdrop-blur-sm text-center">
-                <CardHeader>
+            <Card className="w-full max-w-md bg-transparent border-none shadow-none text-center">
+                <CardHeader className="text-shadow-lg">
                     <div className="flex justify-center mb-4">
                         <Hourglass className="h-16 w-16 text-primary animate-spin" />
                     </div>
-                    <CardTitle className="text-3xl font-headline">Awaiting Approval</CardTitle>
-                    <CardDescription className="text-lg">
+                    <CardTitle className="text-3xl font-headline text-white">Awaiting Approval</CardTitle>
+                    <CardDescription className="text-lg text-white">
                         Your request to join the guild has been sent!
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    <p className="text-muted-foreground">
+                <CardContent className="space-y-4 text-shadow-lg">
+                    <p className="text-white/90">
                         Your Guild Leader must first approve your hero's application before you can enter the realm. They have been notified of your request.
                     </p>
-                    <p className="text-muted-foreground">
+                    <p className="text-white/90">
                         Please check back later. You will be able to log in and begin your adventure once you are approved.
                     </p>
-                     <Button variant="outline" onClick={handleLogout} className="mt-4">
+                     <Button variant="outline" onClick={handleLogout} className="mt-4 bg-black/20 hover:bg-black/40 text-white border-white/50">
                         <LogOut className="mr-2 h-4 w-4" />
                         Logout
                     </Button>
@@ -52,5 +51,3 @@ export default function AwaitingApprovalPage() {
         </div>
     );
 }
-
-    
