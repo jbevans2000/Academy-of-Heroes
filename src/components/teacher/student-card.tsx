@@ -92,8 +92,8 @@ function EditableStat({ student, stat, icon, label, setStudents, teacherUid }: E
                     const levelChange = newLevel - currentLevel;
                     updates.level = newLevel;
                     
-                    const newMaxHp = calculateBaseMaxHp(studentData.class, newLevel);
-                    const newMaxMp = calculateBaseMaxMp(studentData.class, newLevel, 'mp');
+                    const newMaxHp = calculateBaseMaxHp(studentData.class, newLevel, 'hp');
+                    const newMaxMp = calculateBaseMaxHp(studentData.class, newLevel, 'mp');
 
                     updates.maxHp = newMaxHp;
                     // On level down, clamp HP to new max. On level up, add gain.
