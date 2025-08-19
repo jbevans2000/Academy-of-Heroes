@@ -292,7 +292,7 @@ export async function handlePowerActivation(activation: PowerActivation, teacher
     if (!handler) return;
     
     const batch = writeBatch(db);
-    const result = await handler(activation, liveBattleRef, batch, studentData, isAdminTest ? allStudents : teacherUid, battle, battleData);
+    const result = await handler(activation, liveBattleRef, batch, studentData, allStudents, teacherUid, isAdminTest, battle, battleData);
 
     if (result && result.success) {
         batch.update(studentRef, { mp: increment(-activation.powerMpCost) });

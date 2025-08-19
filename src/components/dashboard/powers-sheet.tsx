@@ -115,7 +115,7 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
     
     setIsCasting(power.name);
     try {
-        const powerActivationsRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/powerActivations`);
+        const powerActivationsRef = collection(db, 'teachers', teacherUid, `liveBattles/${battleId}/powerActivations`);
         await addDoc(powerActivationsRef, {
             studentUid: student.uid,
             studentName: student.characterName,
