@@ -50,11 +50,11 @@ const testBattleData: BossBattle = {
     bossImageUrl: 'https://placehold.co/600x400.png',
     videoUrl: '',
     questions: [
-        { questionText: 'Is the sky blue?', answers: ['Yes', 'No', 'Sometimes', 'Maybe'], correctAnswerIndex: 0, damage: 1 },
-        { questionText: 'What is 2 + 2?', answers: ['3', '4', '5', '6'], correctAnswerIndex: 1, damage: 1 },
-        { questionText: 'Which class heals?', answers: ['Mage', 'Guardian', 'Healer', 'Warrior'], correctAnswerIndex: 2, damage: 1 },
-        { questionText: 'Which class uses a sword and shield?', answers: ['Mage', 'Guardian', 'Healer', 'Rogue'], correctAnswerIndex: 1, damage: 1 },
-        { questionText: 'Which class uses arcane magic?', answers: ['Mage', 'Guardian', 'Healer', 'Bard'], correctAnswerIndex: 0, damage: 1 },
+        { questionText: 'Question 1', answers: ['Correct Answer', 'Incorrect Answer', 'Incorrect Answer', 'Incorrect Answer'], correctAnswerIndex: 0, damage: 1 },
+        { questionText: 'Question 2', answers: ['Correct Answer', 'Incorrect Answer', 'Incorrect Answer', 'Incorrect Answer'], correctAnswerIndex: 0, damage: 1 },
+        { questionText: 'Question 3', answers: ['Correct Answer', 'Incorrect Answer', 'Incorrect Answer', 'Incorrect Answer'], correctAnswerIndex: 0, damage: 1 },
+        { questionText: 'Question 4', answers: ['Correct Answer', 'Incorrect Answer', 'Incorrect Answer', 'Incorrect Answer'], correctAnswerIndex: 0, damage: 1 },
+        { questionText: 'Question 5', answers: ['Correct Answer', 'Incorrect Answer', 'Incorrect Answer', 'Incorrect Answer'], correctAnswerIndex: 0, damage: 1 },
     ]
 };
 
@@ -122,7 +122,6 @@ export function BattleTestPanel({ adminUid }: { adminUid: string }) {
     }, [liveState?.fallenPlayerUids, testStudents]);
 
     // This effect handles the power logic by listening to a temporary collection.
-    // It's a simplified version of the real one for testing purposes.
     useEffect(() => {
         if (!liveState || !adminUid) return;
 
@@ -138,11 +137,11 @@ export function BattleTestPanel({ adminUid }: { adminUid: string }) {
                     const batch = writeBatch(db);
                     const casterRef = doc(db, 'admins', adminUid, 'testStudents', caster.uid);
                     
-                    // Deduct MP
                     batch.update(casterRef, { mp: increment(-activation.powerMpCost) });
 
-                    // Mock power effects for simulation
                     let publicMessage = `${caster.characterName} used ${activation.powerName}!`;
+                    let targetedEvent = null;
+
                     if (activation.powerName === 'Nature’s Guidance') {
                         const indices = testBattleData.questions[liveState.currentQuestionIndex].answers
                             .map((_, i) => i)
@@ -154,16 +153,17 @@ export function BattleTestPanel({ adminUid }: { adminUid: string }) {
                         const targetRef = doc(db, 'admins', adminUid, 'testStudents', targetUid);
                          batch.update(targetRef, { hp: 5 }); // Revive with 5 HP
                          batch.update(liveBattleRef, { fallenPlayerUids: arrayRemove(targetUid) });
+                         const targetStudent = testStudents.find(s => s.uid === targetUid);
+                         publicMessage = `${caster.characterName} revived ${targetStudent?.characterName || 'an ally'}!`;
+                         targetedEvent = { targetUid: targetUid, message: `${caster.characterName} revived you!` };
                     }
 
-                    batch.update(liveBattleRef, { powerEventMessage: publicMessage });
+                    batch.update(liveBattleRef, { powerEventMessage: publicMessage, targetedEvent: targetedEvent });
                     await batch.commit();
 
-                    // Delete the activation doc so it doesn't run again
                     await deleteDoc(change.doc.ref);
                     
-                    // Hide message after a delay
-                    setTimeout(() => updateDoc(liveBattleRef, { powerEventMessage: '' }), 5000);
+                    setTimeout(() => updateDoc(liveBattleRef, { powerEventMessage: '', targetedEvent: null }), 5000);
                 }
             });
         });
@@ -173,8 +173,9 @@ export function BattleTestPanel({ adminUid }: { adminUid: string }) {
 
 
     const handleActivateTest = async () => {
-        await setDoc(liveBattleRef, {
-            ...testBattleData,
+        const battleDocRef = doc(db, 'admins', adminUid, 'testBattle', 'active-battle');
+        await setDoc(battleDocRef, {
+            battleId: testBattleData.id,
             status: 'WAITING',
             currentQuestionIndex: 0,
             totalDamage: 0,
@@ -193,7 +194,6 @@ export function BattleTestPanel({ adminUid }: { adminUid: string }) {
         const responsesSnapshot = await getDocs(responsesRef);
         const correctAnswers = responsesSnapshot.docs.filter(doc => doc.data().isCorrect).length;
         
-        // Apply damage to incorrect answerers
         const batch = writeBatch(db);
         const fallenUids: string[] = liveState.fallenPlayerUids || [];
         responsesSnapshot.docs.forEach(docSnap => {
@@ -245,12 +245,12 @@ export function BattleTestPanel({ adminUid }: { adminUid: string }) {
         toast({ title: 'Test Battle Ended', description: 'The test session has been cleared.' });
     };
     
-    const handleStudentAnswer = async (student: Student, answerIndex: number) => {
+    const handleStudentAnswer = async (student: Student, isCorrect: boolean) => {
         if (!liveState || liveState.status !== 'IN_PROGRESS') return;
         
         const responseRef = doc(db, 'admins', adminUid, `testBattle/active-battle/responses`, student.uid);
         const currentQuestion = testBattleData.questions[liveState.currentQuestionIndex];
-        const isCorrect = answerIndex === currentQuestion.correctAnswerIndex;
+        const answerIndex = isCorrect ? 0 : 1;
 
         setLastAnswerCorrect(prev => ({...prev, [student.uid]: isCorrect}));
 
@@ -274,8 +274,8 @@ export function BattleTestPanel({ adminUid }: { adminUid: string }) {
                     onOpenChange={setIsPowersSheetOpen}
                     student={selectedStudentForPowers}
                     isBattleView={true}
-                    teacherUid={adminUid} // Use adminUid for test context
-                    battleId="active-battle" // Hardcoded for test context
+                    teacherUid={adminUid}
+                    battleId="active-battle"
                 />
             )}
             <Card>
@@ -315,17 +315,8 @@ export function BattleTestPanel({ adminUid }: { adminUid: string }) {
                                             <CardTitle className="text-lg">{student.characterName} (HP: {student.hp}/{student.maxHp}, MP: {student.mp}/{student.maxMp})</CardTitle>
                                         </CardHeader>
                                         <CardContent className="flex flex-wrap gap-2">
-                                            {currentQuestion?.answers.map((answer, index) => (
-                                                <Button 
-                                                    key={index}
-                                                    size="sm" 
-                                                    variant="outline" 
-                                                    onClick={() => handleStudentAnswer(student, index)}
-                                                    disabled={student.hp <= 0}
-                                                >
-                                                    {String.fromCharCode(65 + index)}
-                                                </Button>
-                                            ))}
+                                            <Button size="sm" variant="outline" onClick={() => handleStudentAnswer(student, true)} disabled={student.hp <= 0}>Answer Correctly (A)</Button>
+                                            <Button size="sm" variant="destructive" onClick={() => handleStudentAnswer(student, false)} disabled={student.hp <= 0}>Answer Incorrectly (B)</Button>
                                              <Button 
                                                 size="sm" 
                                                 variant="secondary"
@@ -340,6 +331,14 @@ export function BattleTestPanel({ adminUid }: { adminUid: string }) {
                                         </CardContent>
                                     </Card>
                                 ))}
+                                {liveState && (liveState.status !== 'IN_PROGRESS') && (
+                                     <Card>
+                                        <CardHeader><CardTitle>Responses</CardTitle></CardHeader>
+                                        <CardContent>
+                                            <RoundResults results={studentResponses} />
+                                        </CardContent>
+                                     </Card>
+                                )}
                             </div>
 
                             {/* Right Column: Simulated Live View */}
@@ -354,21 +353,19 @@ export function BattleTestPanel({ adminUid }: { adminUid: string }) {
                                 {liveState && (liveState.status === 'IN_PROGRESS' || liveState.status === 'ROUND_ENDING') && currentQuestion && (
                                     <Card className="bg-gray-900 text-card-foreground border-gray-700">
                                         <CardContent className="p-6 relative">
-                                             {liveState.powerEventMessage && 
+                                            {liveState.powerEventMessage && 
                                                 <div className="text-center p-2 rounded-lg bg-purple-900/80 border border-purple-700 mb-4 animate-in fade-in-50 flex items-center justify-center gap-2">
                                                     <Lightbulb className="h-6 w-6 text-purple-300" />
                                                     <p className="text-lg font-bold text-white">{liveState.powerEventMessage}</p>
                                                 </div>
                                             }
-                                            <div className="flex flex-col md:flex-row gap-6 mb-6">
-                                                <div className="flex-shrink-0 mx-auto">
-                                                     <Image src={testBattleData.bossImageUrl!} alt="Boss" width={150} height={150} className="rounded-lg" />
+                                            {liveState.targetedEvent && (
+                                                 <div className="text-center p-2 rounded-lg bg-green-900/80 border border-green-700 mb-4 animate-in fade-in-50 flex items-center justify-center gap-2">
+                                                    <p className="text-lg font-bold text-white">Targeted message for {testStudents.find(s => s.uid === liveState.targetedEvent?.targetUid)?.characterName}: {liveState.targetedEvent.message}</p>
                                                 </div>
-                                                <div className="flex-grow flex flex-col justify-center text-center">
-                                                    <h2 className="text-xl font-bold">{currentQuestion.questionText}</h2>
-                                                </div>
-                                            </div>
-                                             <RoundResults results={studentResponses} />
+                                            )}
+                                            <h2 className="text-xl font-bold text-center">Question {liveState.currentQuestionIndex + 1} is active.</h2>
+                                             
                                              {fallenStudentNames.length > 0 && (
                                                 <div className="mt-4">
                                                     <h4 className="font-bold flex items-center gap-2"><Skull className="text-destructive"/> Fallen Heroes</h4>
