@@ -231,13 +231,9 @@ function PowerLog({ teacherUid }: { teacherUid: string }) {
             const logRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
             const q = query(logRef);
             const unsubscribeLog = onSnapshot(q, (snapshot) => {
-                const entries: PowerLogEntry[] = [];
-                snapshot.docChanges().forEach((change) => {
-                    if (change.type === 'added') {
-                        entries.push({ id: change.doc.id, ...change.doc.data() } as PowerLogEntry);
-                    }
-                });
-                setLogEntries(prev => [...prev, ...entries].sort((a,b) => a.timestamp.seconds - b.timestamp.seconds));
+                const entries: PowerLogEntry[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PowerLogEntry));
+                entries.sort((a, b) => a.timestamp.seconds - b.timestamp.seconds);
+                setLogEntries(entries);
             });
              return () => unsubscribeLog();
         });
@@ -321,6 +317,9 @@ export default function LiveBattlePage() {
 
     // Fetch all students only once when the teacher UID is known
     const fetchAllStudents = async () => {
+        const liveBattleDoc = await getDoc(doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle'));
+        if (!liveBattleDoc.exists()) return; // Don't fetch if no active battle
+
         const allStudentsSnap = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
         setAllStudents(allStudentsSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student)));
     };
