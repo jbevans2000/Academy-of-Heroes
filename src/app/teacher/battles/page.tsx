@@ -77,19 +77,22 @@ export default function BossBattlesPage() {
         const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
 
         // --- Start of Aggressive Cleanup ---
-        // Check for and delete nested collections first
+        // This ensures any previous "stuck" battle is completely wiped before a new one begins.
         const collectionsToDelete = ['responses', 'studentResponses', 'powerActivations', 'battleLog', 'messages'];
         for (const coll of collectionsToDelete) {
-            const nestedCollRef = collection(liveBattleRef, coll);
-            const nestedDocsSnap = await getDocs(nestedCollRef);
-            if (!nestedDocsSnap.empty) {
-                const deleteBatch = writeBatch(db);
-                nestedDocsSnap.docs.forEach(doc => deleteBatch.delete(doc.ref));
-                await deleteBatch.commit();
+            try {
+                const nestedCollRef = collection(liveBattleRef, coll);
+                const nestedDocsSnap = await getDocs(nestedCollRef);
+                if (!nestedDocsSnap.empty) {
+                    const deleteBatch = writeBatch(db);
+                    nestedDocsSnap.docs.forEach(doc => deleteBatch.delete(doc.ref));
+                    await deleteBatch.commit();
+                }
+            } catch (error) {
+                 console.warn(`Could not clean subcollection ${coll}, proceeding. Error:`, error);
             }
         }
-
-        // Explicitly delete the document itself to ensure a clean state
+        // Explicitly delete the main document itself to ensure a clean state.
         await deleteDoc(liveBattleRef).catch((error) => {
             if (error.code !== 'not-found') {
                 console.error("Could not delete previous battle doc, but proceeding:", error);
@@ -98,7 +101,7 @@ export default function BossBattlesPage() {
         // --- End of Aggressive Cleanup ---
 
 
-        // Now, set the new battle data. This creates the document.
+        // Now, set the new battle data. This creates the document with the 'WAITING' status.
         await setDoc(liveBattleRef, {
             battleId: battle.id,
             status: 'WAITING', 
@@ -113,7 +116,7 @@ export default function BossBattlesPage() {
 
         toast({
             title: 'Battle Started!',
-            description: 'Students can now join the battle.',
+            description: 'Students can now join the battle waiting room.',
         });
 
         router.push(`/teacher/battle/live/${battle.id}`);
