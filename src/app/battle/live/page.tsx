@@ -293,7 +293,14 @@ export default function LiveBattlePage() {
             router.push('/battle/summary');
         }
       } else {
-        setBattleState(prevState => ({ ...prevState, battleId: null, status: 'WAITING', currentQuestionIndex: 0 }));
+        // If the live battle doc is deleted, it *might* mean the battle is over.
+        // Check if there is a summary available for the battle that was just active.
+        if (battleStateRef.current?.battleId && battleStateRef.current?.status !== 'BATTLE_ENDED') {
+             router.push('/battle/summary');
+        } else {
+            // Otherwise, it's just a waiting state.
+            setBattleState(prevState => ({ ...prevState, battleId: null, status: 'WAITING', currentQuestionIndex: 0 }));
+        }
       }
       setIsLoading(false);
     }, (error) => {
@@ -596,3 +603,5 @@ export default function LiveBattlePage() {
     </div>
   );
 }
+
+    
