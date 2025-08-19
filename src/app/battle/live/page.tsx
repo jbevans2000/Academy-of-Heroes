@@ -217,6 +217,7 @@ export default function LiveBattlePage() {
   const [isFallen, setIsFallen] = useState(false);
   const [showFallenDialog, setShowFallenDialog] = useState(false);
   const [targetedMessage, setTargetedMessage] = useState<string | null>(null);
+  const [hasCheckedForSummary, setHasCheckedForSummary] = useState(false);
 
   const battleStateRef = useRef(battleState);
   const router = useRouter();
@@ -274,16 +275,13 @@ export default function LiveBattlePage() {
         if (nowFallen && !wasFallen) {
             setShowFallenDialog(true);
         } else if (!nowFallen && wasFallen) {
-            // Player was just revived, close the fallen dialog
             setShowFallenDialog(false);
         }
 
-        // Check for targeted events
         if (newState.targetedEvent && newState.targetedEvent.targetUid === user.uid) {
             setTargetedMessage(newState.targetedEvent.message);
              setTimeout(() => {
                 setTargetedMessage(null);
-                 // Optionally clear it from Firestore after a delay, or let the teacher's client handle it
             }, 5000);
         }
 
@@ -293,13 +291,11 @@ export default function LiveBattlePage() {
             router.push('/battle/summary');
         }
       } else {
-        // If the live battle doc is deleted, it *might* mean the battle is over.
-        // Check if there is a summary available for the battle that was just active.
-        if (battleStateRef.current?.battleId && battleStateRef.current?.status !== 'BATTLE_ENDED') {
-             router.push('/battle/summary');
+        if (battleStateRef.current && !hasCheckedForSummary) {
+          router.push('/battle/summary');
+          setHasCheckedForSummary(true); 
         } else {
-            // Otherwise, it's just a waiting state.
-            setBattleState(null);
+          setBattleState(null);
         }
       }
       setIsLoading(false);
@@ -308,7 +304,7 @@ export default function LiveBattlePage() {
       setIsLoading(false);
     });
     return () => unsubscribe();
-  }, [router, teacherUid, submittedAnswer, isFallen, user]);
+  }, [router, teacherUid, submittedAnswer, isFallen, user, hasCheckedForSummary]);
 
   useEffect(() => {
     if (battleState?.battleId && teacherUid && !battle) {
@@ -358,7 +354,7 @@ export default function LiveBattlePage() {
     );
   }
 
-  if (!battleState || !battleState.battleId) {
+  if (!battleState) {
     const waitingRoomImageUrl = "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FChatGPT%20Image%20Aug%2015%2C%202025%2C%2008_12_09%20AM.png?alt=media&token=45178e85-0ba2-42ef-b2fa-d76a8732b2c2";
     return (
         <div className="relative flex min-h-screen flex-col items-center justify-center p-4">
@@ -631,3 +627,5 @@ export default function LiveBattlePage() {
     </div>
   );
 }
+
+    
