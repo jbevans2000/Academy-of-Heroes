@@ -756,104 +756,114 @@ export default function TeacherLiveBattlePage() {
   };
 
   const handleEndBattle = async () => {
-      if (!liveState || !battle || !teacherUid) return;
+    if (!liveState || !battle || !teacherUid) return;
 
-      const batch = writeBatch(db);
-      const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
+    const batch = writeBatch(db);
+    const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
 
-      const finalStateDoc = await getDoc(liveBattleRef);
-      const finalStateData = finalStateDoc.data();
-      const totalDamage = finalStateData?.totalDamage || 0;
-      const totalBaseDamage = finalStateData?.totalBaseDamage || 0;
-      const totalPowerDamage = finalStateData?.totalPowerDamage || 0;
-      const fallenAtEnd = finalStateData?.fallenPlayerUids || [];
-      const empoweredAtEnd = finalStateData?.empoweredMageUids || [];
-      await logGameEvent(teacherUid, 'BOSS_BATTLE', `The party dealt a total of ${totalDamage} damage during '${battle.battleName}'.`);
+    const finalStateDoc = await getDoc(liveBattleRef);
+    const finalStateData = finalStateDoc.data();
+    const totalDamage = finalStateData?.totalDamage || 0;
+    const totalBaseDamage = finalStateData?.totalBaseDamage || 0;
+    const totalPowerDamage = finalStateData?.totalPowerDamage || 0;
+    const fallenAtEnd = finalStateData?.fallenPlayerUids || [];
+    const empoweredAtEnd = finalStateData?.empoweredMageUids || [];
+    await logGameEvent(teacherUid, 'BOSS_BATTLE', `The party dealt a total of ${totalDamage} damage during '${battle.battleName}'.`);
 
-      const battleLogRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
-      const battleLogSnapshot = await getDocs(battleLogRef);
-      const battleLog = battleLogSnapshot.docs.map(doc => doc.data() as PowerLogEntry);
+    const battleLogRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
+    const battleLogSnapshot = await getDocs(battleLogRef);
+    const battleLog = battleLogSnapshot.docs.map(doc => doc.data() as PowerLogEntry);
 
+    const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
 
-      const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
-      Object.values(allRoundsData).forEach((round: any) => {
-          round.responses.forEach((res: any) => {
-              if (res.isCorrect) {
-                  if (!rewardsByStudent[res.studentUid]) {
-                      rewardsByStudent[res.studentUid] = { xpGained: 0, goldGained: 0 };
-                  }
-                  rewardsByStudent[res.studentUid].xpGained += 5;
-                  rewardsByStudent[res.studentUid].goldGained += 10;
-              }
-          });
-      });
+    // Use allRoundsData which has been accumulating results
+    Object.keys(allRoundsData).forEach(roundIndex => {
+        const roundData = allRoundsData[roundIndex];
+        roundData.responses.forEach((res: any) => {
+             if (!rewardsByStudent[res.studentUid]) {
+                rewardsByStudent[res.studentUid] = { xpGained: 0, goldGained: 0 };
+            }
+            if (res.isCorrect) {
+                rewardsByStudent[res.studentUid].xpGained += 5;
+                rewardsByStudent[res.studentUid].goldGained += 10;
+            }
+        });
+    });
 
-      for (const uid in rewardsByStudent) {
-          if (fallenAtEnd.includes(uid)) continue; // Skip rewards for fallen players
+    for (const uid in rewardsByStudent) {
+        if (fallenAtEnd.includes(uid)) continue; // Skip rewards for fallen players
 
-          const studentRef = doc(db, 'teachers', teacherUid, 'students', uid);
-          const studentSnap = await getDoc(studentRef);
-          if (studentSnap.exists()) {
-              const studentData = studentSnap.data() as Student;
-              const { xpGained, goldGained } = rewardsByStudent[uid];
+        const studentRef = doc(db, 'teachers', teacherUid, 'students', uid);
+        const studentSnap = await getDoc(studentRef);
+        if (studentSnap.exists()) {
+            const studentData = studentSnap.data() as Student;
+            const { xpGained, goldGained } = rewardsByStudent[uid];
 
-              const currentXp = studentData.xp || 0;
-              const newXp = currentXp + xpGained;
-              const currentLevel = studentData.level || 1;
-              const newLevel = calculateLevel(newXp);
-              
-              const updates: Partial<Student> = {
-                  xp: newXp,
-                  gold: (studentData.gold || 0) + goldGained,
-              };
+            const currentXp = studentData.xp || 0;
+            const newXp = currentXp + xpGained;
+            const currentLevel = studentData.level || 1;
+            const newLevel = calculateLevel(newXp);
+            
+            const updates: any = {
+                xp: newXp,
+                gold: (studentData.gold || 0) + goldGained,
+            };
 
-              if (newLevel > currentLevel) {
-                  updates.level = newLevel;
-                  const levelsGained = newLevel - currentLevel;
-                  updates.hp = studentData.hp + calculateHpGain(studentData.class, levelsGained);
-                  updates.mp = studentData.mp + calculateMpGain(studentData.class, levelsGained);
-              }
-              batch.update(studentRef, updates);
-          }
-      }
+            if (newLevel > currentLevel) {
+                const levelsGained = newLevel - currentLevel;
+                updates.level = newLevel;
+                updates.hp = studentData.hp + calculateHpGain(studentData.class, levelsGained);
+                updates.mp = studentData.mp + calculateMpGain(studentData.class, levelsGained);
+                updates.maxHp = calculateBaseMaxHp(studentData.class, newLevel, 'hp');
+                updates.maxMp = calculateBaseMaxHp(studentData.class, newLevel, 'mp');
+            }
+            batch.update(studentRef, updates);
+        }
+    }
 
-      // Reset Max HP for empowered mages
-      for (const mageUid of empoweredAtEnd) {
-          const studentRef = doc(db, 'teachers', teacherUid, 'students', mageUid);
-          const studentSnap = await getDoc(studentRef);
-          if (studentSnap.exists()) {
-              const studentData = studentSnap.data() as Student;
-              const baseMaxHp = calculateBaseMaxHp(studentData.class, studentData.level);
-              const newHp = Math.min(studentData.hp, baseMaxHp); // Can't have more HP than new max
-              batch.update(studentRef, { hp: newHp, maxHp: baseMaxHp });
-          }
-      }
+    // Reset Max HP for empowered mages
+    for (const mageUid of empoweredAtEnd) {
+        const studentRef = doc(db, 'teachers', teacherUid, 'students', mageUid);
+        const studentSnap = await getDoc(studentRef);
+        if (studentSnap.exists()) {
+            const studentData = studentSnap.data() as Student;
+            const baseMaxHp = calculateBaseMaxHp(studentData.class, studentData.level);
+            const newHp = Math.min(studentData.hp, baseMaxHp); // Can't have more HP than new max
+            batch.update(studentRef, { hp: newHp, maxHp: baseMaxHp });
+        }
+    }
 
-      const summaryRef = doc(db, 'teachers', teacherUid, `battleSummaries`, battleId);
-      batch.set(summaryRef, {
-          battleId: battleId,
-          battleName: battle?.battleName,
-          questions: battle?.questions,
-          resultsByRound: allRoundsData,
-          battleLog: battleLog,
-          totalDamageDealt: totalDamage,
-          totalBaseDamage: totalBaseDamage,
-          totalPowerDamage: totalPowerDamage,
-          rewards: rewardsByStudent,
-          fallenAtEnd: fallenAtEnd,
-          endedAt: serverTimestamp(),
-      });
-      await logGameEvent(teacherUid, 'BOSS_BATTLE', `Battle summary for '${battle.battleName}' was saved.`);
+    const summaryRef = doc(db, 'teachers', teacherUid, `battleSummaries`, battleId);
+    batch.set(summaryRef, {
+        battleId: battleId,
+        battleName: battle?.battleName,
+        questions: battle?.questions,
+        resultsByRound: allRoundsData,
+        battleLog: battleLog,
+        totalDamageDealt: totalDamage,
+        totalBaseDamage: totalBaseDamage,
+        totalPowerDamage: totalPowerDamage,
+        rewards: rewardsByStudent,
+        fallenAtEnd: fallenAtEnd,
+        endedAt: serverTimestamp(),
+    });
+    await logGameEvent(teacherUid, 'BOSS_BATTLE', `Battle summary for '${battle.battleName}' was saved.`);
 
-      batch.update(liveBattleRef, { status: 'BATTLE_ENDED' });
-      
-      // Immediately delete the live battle document now that the summary is saved.
-      batch.delete(liveBattleRef);
+    batch.update(liveBattleRef, { status: 'BATTLE_ENDED' });
+    
+    await batch.commit();
 
-      await batch.commit();
-      
-      router.push(`/teacher/battle/summary/${battleId}`);
-  };
+    // After successfully committing, wait a moment then clean up the live doc
+    setTimeout(async () => {
+        try {
+            await deleteDoc(liveBattleRef);
+        } catch (error) {
+            console.error("Cleanup of live battle doc failed, but battle has ended:", error);
+        }
+    }, 5000); // Wait 5 seconds
+    
+    router.push(`/teacher/battle/summary/${battleId}`);
+};
   
   const handleExport = () => {
     if (!battle || roundResults.length === 0 || !liveState) return;

@@ -67,55 +67,44 @@ export default function StudentBattleSummaryPage() {
   useEffect(() => {
     if (!user || !teacherUid) return;
 
-    const fetchSummaryAndResponses = async () => {
-        setIsLoading(true);
-        try {
-            let battleId: string | null = null;
-
-            // 1. Try to get the battleId from the (now temporary) live battle doc
-            const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
-            const liveBattleSnap = await getDoc(liveBattleRef);
-
-            if (liveBattleSnap.exists() && liveBattleSnap.data().battleId) {
-                battleId = liveBattleSnap.data().battleId;
-            } else {
-                // 2. If it doesn't exist, there is no active battle, so no summary is available.
-                // This prevents loading old summaries.
-                console.log("No active battle found. Cannot load summary.");
-                setIsLoading(false);
-                setSummary(null);
-                return;
-            }
-            
-            // 3. Fetch the battle summary using the determined battleId
+    // This listener is crucial. It waits for the battle summary to be generated.
+    // It's keyed by the battleId which we get from the temporary live battle doc.
+    const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
+    const unsubscribe = onSnapshot(liveBattleRef, async (liveDoc) => {
+        if (liveDoc.exists() && liveDoc.data().battleId) {
+            const battleId = liveDoc.data().battleId;
             const summaryRef = doc(db, 'teachers', teacherUid, 'battleSummaries', battleId);
-            const summarySnap = await getDoc(summaryRef);
-            if (summarySnap.exists()) {
-                setSummary(summarySnap.data() as BattleSummary);
-            } else {
-                 console.log("Summary not found for the given battleId.");
-            }
-            
-            // 4. Fetch the specific student's responses for all rounds for that battle
-            const responsesRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/studentResponses/${user.uid}/rounds`);
-            const responsesSnap = await getDocs(responsesRef);
-            const responsesData: { [key: string]: StudentRoundResponse } = {};
-            responsesSnap.forEach(doc => {
-                responsesData[doc.id] = doc.data() as StudentRoundResponse;
+
+            const summaryUnsubscribe = onSnapshot(summaryRef, async (summarySnap) => {
+                if (summarySnap.exists()) {
+                    setSummary(summarySnap.data() as BattleSummary);
+                    
+                    // Fetch the student's specific responses for this battle
+                    const responsesRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/studentResponses/${user.uid}/rounds`);
+                    const responsesSnap = await getDocs(responsesRef);
+                    const responsesData: { [key: string]: StudentRoundResponse } = {};
+                    responsesSnap.forEach(doc => {
+                        responsesData[doc.id] = doc.data() as StudentRoundResponse;
+                    });
+                    setStudentResponses(responsesData);
+                    setIsLoading(false);
+                }
             });
-            setStudentResponses(responsesData);
-
-        } catch (error) {
-            console.error("Error fetching summary data:", error);
-            toast({ title: "Error", description: "Could not load the battle summary." });
-        } finally {
-            setIsLoading(false);
+            // Important: return the nested unsubscribe function
+            return () => summaryUnsubscribe();
+        } else {
+             // If active-battle is deleted before summary is read, it might mean no battle
+             // or the summary is not ready. The UI handles the null summary state.
+             setIsLoading(false);
+             setSummary(null);
         }
-    };
+    }, (error) => {
+        console.error("Error listening to live battle document:", error);
+        setIsLoading(false);
+    });
 
-    fetchSummaryAndResponses();
-
-  }, [user, teacherUid, router, toast]);
+    return () => unsubscribe();
+}, [user, teacherUid, toast]);
 
   if (isLoading) {
     return (
