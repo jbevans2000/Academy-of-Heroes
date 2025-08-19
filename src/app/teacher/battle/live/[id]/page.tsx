@@ -300,6 +300,7 @@ export default function TeacherLiveBattlePage() {
 
         const results: Result[] = responsesData.map(response => ({
             studentName: response.characterName,
+            studentUid: response.uid,
             answer: response.answer,
             isCorrect: response.isCorrect,
             powerUsed: liveState.powerUsersThisRound?.[response.uid]?.join(', ') || undefined,
@@ -376,22 +377,23 @@ export default function TeacherLiveBattlePage() {
 
         batch.update(liveBattleRef, updatePayload);
         
-        const newAllRoundsData = {
-            ...allRoundsData,
+        setAllRoundsData(prev => ({
+            ...prev,
             [liveState.currentQuestionIndex]: {
                 questionText: currentQuestion.questionText,
                 responses: results.map(r => ({
-                    studentName: r.characterName,
+                    studentUid: r.studentUid,
+                    studentName: r.studentName,
+                    answerIndex: responsesData.find(d => d.uid === r.studentUid)?.answerIndex,
                     isCorrect: r.isCorrect,
                 })),
                 powersUsed: powersUsedThisRound,
             }
-        };
-        setAllRoundsData(newAllRoundsData);
+        }));
 
         await batch.commit();
 
-    }, [battle, liveState, teacherUid, allRoundsData, allStudents]);
+    }, [battle, liveState, teacherUid, allStudents]);
 
     const performRoundEnd = useCallback(async () => {
         if (!battle || !liveState || !teacherUid || isEndingRound) return;
@@ -887,10 +889,23 @@ export default function TeacherLiveBattlePage() {
   const handleEndBattle = async () => {
     if (!liveState || !battle || !teacherUid) return;
 
-    const batch = writeBatch(db);
+    // This is the key change: ensure the final round results are processed first.
+    if (liveState.status !== 'SHOWING_RESULTS') {
+        await calculateAndSetResults();
+        // Give a brief moment for state to propagate, although direct passing is better.
+        await new Promise(resolve => setTimeout(resolve, 250)); 
+    }
+    
+    // It's safer to re-fetch the final state directly from Firestore.
     const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
-
     const finalStateDoc = await getDoc(liveBattleRef);
+
+    if (!finalStateDoc.exists()) {
+        toast({ title: "Error ending battle", description: "Live battle document disappeared.", variant: 'destructive' });
+        return;
+    }
+
+    const batch = writeBatch(db);
     const finalStateData = finalStateDoc.data();
     const totalDamage = finalStateData?.totalDamage || 0;
     const totalBaseDamage = finalStateData?.totalBaseDamage || 0;
@@ -901,18 +916,20 @@ export default function TeacherLiveBattlePage() {
 
     const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
 
-    // Use allRoundsData which has been accumulating results
+    // Use the now-reliable allRoundsData state
     Object.keys(allRoundsData).forEach(roundIndex => {
         const roundData = allRoundsData[roundIndex];
-        roundData.responses.forEach((res: any) => {
-             if (!rewardsByStudent[res.studentUid]) {
-                rewardsByStudent[res.studentUid] = { xpGained: 0, goldGained: 0 };
-            }
-            if (res.isCorrect) {
-                rewardsByStudent[res.studentUid].xpGained += 5;
-                rewardsByStudent[res.studentUid].goldGained += 10;
-            }
-        });
+        if (roundData && roundData.responses) {
+            roundData.responses.forEach((res: any) => {
+                if (!rewardsByStudent[res.studentUid]) {
+                    rewardsByStudent[res.studentUid] = { xpGained: 0, goldGained: 0 };
+                }
+                if (res.isCorrect) {
+                    rewardsByStudent[res.studentUid].xpGained += 5;
+                    rewardsByStudent[res.studentUid].goldGained += 10;
+                }
+            });
+        }
     });
 
     for (const uid in rewardsByStudent) {
@@ -964,7 +981,7 @@ export default function TeacherLiveBattlePage() {
         battleName: battle?.battleName || '',
         questions: battle?.questions || [],
         resultsByRound: allRoundsData,
-        battleLog: powerLog || [],
+        battleLog: powerLog,
         rewards: rewardsByStudent,
         totalDamageDealt: totalDamage,
         totalBaseDamage: totalBaseDamage,
@@ -978,15 +995,6 @@ export default function TeacherLiveBattlePage() {
     
     await batch.commit();
 
-    // After successfully committing, wait a moment then clean up the live doc
-    setTimeout(async () => {
-        try {
-            await deleteDoc(liveBattleRef);
-        } catch (error) {
-            console.error("Cleanup of live battle doc failed, but battle has ended:", error);
-        }
-    }, 5000); // Wait 5 seconds
-    
     router.push(`/teacher/battle/summary/${battleId}`);
 };
   

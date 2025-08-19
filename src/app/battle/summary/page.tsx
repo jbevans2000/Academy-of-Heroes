@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { onSnapshot, doc, getDoc, collection, query, getDocs, where, limit, orderBy } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -48,6 +48,7 @@ export default function StudentBattleSummaryPage() {
   const [summary, setSummary] = useState<BattleSummary | null>(null);
   const [studentResponses, setStudentResponses] = useState<{ [roundIndex: string]: StudentRoundResponse }>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [battleId, setBattleId] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -67,67 +68,81 @@ export default function StudentBattleSummaryPage() {
   }, [router]);
 
   useEffect(() => {
-    if (!user || !teacherUid) return;
+    if (!teacherUid) return;
 
-    const fetchSummaryData = async () => {
-        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
-        try {
-            const liveDoc = await getDoc(liveBattleRef);
-
-            // This is the key change: if the active-battle doc is gone,
-            // it means the teacher has cleaned up. We should clear any stale summary
-            // and assume we're not in a summary state.
-            if (!liveDoc.exists() || !liveDoc.data().battleId) {
-                setSummary(null);
-                setIsLoading(false);
-                 // If a student lands here without an active battle, they should probably be on their dashboard.
-                const timeoutId = setTimeout(() => {
-                    if (!summary) { // Re-check in case summary loads in the meantime
-                        router.push('/dashboard');
-                    }
-                }, 1500); // Wait a moment before redirecting
-                return () => clearTimeout(timeoutId);
-            }
-
-            const battleId = liveDoc.data().battleId;
-            const summaryRef = doc(db, 'teachers', teacherUid, 'battleSummaries', battleId);
-            const summarySnap = await getDoc(summaryRef);
-
-            if (summarySnap.exists()) {
-                setSummary(summarySnap.data() as BattleSummary);
-
-                const responsesRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/studentResponses/${user.uid}/rounds`);
-                const responsesSnap = await getDocs(responsesRef);
-                const responsesData: { [key: string]: StudentRoundResponse } = {};
-                responsesSnap.forEach(doc => {
-                    responsesData[doc.id] = doc.data() as StudentRoundResponse;
-                });
-                setStudentResponses(responsesData);
-            } else {
-                // No summary doc yet, keep loading.
-                setSummary(null);
-            }
-        } catch (error) {
-            console.error("Error fetching battle summary:", error);
-            setSummary(null);
-        } finally {
-            // Only stop loading if we actually found a summary.
-            // If summary is still null, we might be waiting for the teacher to generate it.
-            if(summary) setIsLoading(false);
+    // This listener just gets the battleId from the live doc.
+    const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
+    const unsubLive = onSnapshot(liveBattleRef, (doc) => {
+        if (doc.exists() && doc.data().battleId) {
+            setBattleId(doc.data().battleId);
+        } else {
+            // If live battle doc is gone, we might already have a battleId from a previous snapshot.
+            // Don't set it to null immediately, as the summary listener might still need it.
         }
-    };
+    });
+    
+    return () => unsubLive();
+  }, [teacherUid]);
 
-    fetchSummaryData();
-}, [user, teacherUid, router, summary]);
+  useEffect(() => {
+    if (!user || !teacherUid || !battleId) {
+      // If we don't have a battleId after a short delay, it's safe to assume we're not in a summary state.
+      const timer = setTimeout(() => {
+        if (!battleId) setIsLoading(false);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+
+    const summaryRef = doc(db, 'teachers', teacherUid, 'battleSummaries', battleId);
+    const unsubSummary = onSnapshot(summaryRef, async (summarySnap) => {
+        if (summarySnap.exists()) {
+            setSummary(summarySnap.data() as BattleSummary);
+
+            // Fetch student's specific responses for this battle
+             const responsesRef = collection(db, 'teachers', teacherUid, `battleSummaries/${battleId}/studentResponses/${user.uid}/rounds`);
+             const responsesSnap = await getDocs(responsesRef);
+             const responsesData: { [key: string]: StudentRoundResponse } = {};
+             responsesSnap.forEach(doc => {
+                 responsesData[doc.id] = doc.data() as StudentRoundResponse;
+             });
+             setStudentResponses(responsesData);
+             setIsLoading(false);
+        } else {
+            // Summary doc doesn't exist yet, keep loading.
+            setIsLoading(true);
+        }
+    }, (error) => {
+        console.error("Error fetching battle summary:", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not load battle summary.' });
+        setIsLoading(false);
+    });
+
+    return () => unsubSummary();
+  }, [user, teacherUid, battleId, toast]);
 
 
-  if (isLoading || !summary) {
+  if (isLoading) {
     return (
       <div className="flex min-h-screen w-full flex-col items-center justify-center bg-muted/40 p-4">
         <div className="max-w-4xl w-full space-y-4 text-center">
           <Loader2 className="h-12 w-12 mx-auto animate-spin text-primary" />
           <h1 className="text-2xl font-bold">Awaiting Battle Report...</h1>
           <p className="text-muted-foreground">The Chronicler is tallying the results.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!summary) {
+    // This case now handles when there is truly no summary to show.
+    // It should lead back to the dashboard if a student lands here by mistake.
+    const timeoutId = setTimeout(() => router.push('/dashboard'), 2000);
+    return (
+      <div className="flex min-h-screen w-full flex-col items-center justify-center bg-muted/40 p-4">
+        <div className="max-w-4xl w-full space-y-4 text-center">
+          <Trophy className="h-12 w-12 mx-auto text-muted-foreground" />
+          <h1 className="text-2xl font-bold">No Summary Available</h1>
+          <p className="text-muted-foreground">Returning to your dashboard...</p>
         </div>
       </div>
     );
@@ -231,5 +246,3 @@ export default function StudentBattleSummaryPage() {
     </div>
   );
 }
-
-    
