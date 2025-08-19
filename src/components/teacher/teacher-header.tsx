@@ -1,16 +1,34 @@
 'use client';
 
-import { School, LogOut, LifeBuoy } from "lucide-react";
+import { School, LogOut, LifeBuoy, Shield } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { auth } from "@/lib/firebase";
-import { signOut } from "firebase/auth";
+import { auth, db } from "@/lib/firebase";
+import { signOut, onAuthStateChanged, type User } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from "react";
 
 export function TeacherHeader() {
   const router = useRouter();
   const { toast } = useToast();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+        if(currentUser) {
+            setUser(currentUser);
+            const adminRef = doc(db, 'admins', currentUser.uid);
+            const adminSnap = await getDoc(adminRef);
+            if (adminSnap.exists()) {
+                setIsAdmin(true);
+            }
+        }
+    });
+    return () => unsubscribe();
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -34,9 +52,15 @@ export function TeacherHeader() {
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
       <Link href="/teacher/dashboard" className="flex items-center gap-2 font-semibold">
         <School className="h-6 w-6 text-primary" />
-        <span className="text-xl">Teacher Dashboard</span>
+        <span className="text-xl">The Guild Leader's Dais</span>
       </Link>
       <div className="ml-auto flex items-center gap-4">
+        {isAdmin && (
+             <Button variant="secondary" onClick={() => router.push('/admin/dashboard')}>
+                <Shield className="mr-2 h-5 w-5" />
+                Return to Admin Dashboard
+            </Button>
+        )}
         <Button variant="outline" onClick={() => router.push('/teacher/help')}>
             <LifeBuoy className="mr-2 h-5 w-5" />
             Help
