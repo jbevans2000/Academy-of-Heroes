@@ -67,19 +67,19 @@ export default function StudentBattleSummaryPage() {
   useEffect(() => {
     if (!user || !teacherUid) return;
 
-    // This listener is crucial. It waits for the battle summary to be generated.
-    // It's keyed by the battleId which we get from the temporary live battle doc.
-    const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
-    const unsubscribe = onSnapshot(liveBattleRef, async (liveDoc) => {
-        if (liveDoc.exists() && liveDoc.data().battleId) {
-            const battleId = liveDoc.data().battleId;
-            const summaryRef = doc(db, 'teachers', teacherUid, 'battleSummaries', battleId);
+    const fetchSummaryData = async () => {
+        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
+        try {
+            const liveDoc = await getDoc(liveBattleRef);
 
-            const summaryUnsubscribe = onSnapshot(summaryRef, async (summarySnap) => {
+            if (liveDoc.exists() && liveDoc.data().battleId) {
+                const battleId = liveDoc.data().battleId;
+                const summaryRef = doc(db, 'teachers', teacherUid, 'battleSummaries', battleId);
+                const summarySnap = await getDoc(summaryRef);
+
                 if (summarySnap.exists()) {
                     setSummary(summarySnap.data() as BattleSummary);
-                    
-                    // Fetch the student's specific responses for this battle
+
                     const responsesRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/studentResponses/${user.uid}/rounds`);
                     const responsesSnap = await getDocs(responsesRef);
                     const responsesData: { [key: string]: StudentRoundResponse } = {};
@@ -87,24 +87,23 @@ export default function StudentBattleSummaryPage() {
                         responsesData[doc.id] = doc.data() as StudentRoundResponse;
                     });
                     setStudentResponses(responsesData);
-                    setIsLoading(false);
+                } else {
+                    setSummary(null);
                 }
-            });
-            // Important: return the nested unsubscribe function
-            return () => summaryUnsubscribe();
-        } else {
-             // If active-battle is deleted before summary is read, it might mean no battle
-             // or the summary is not ready. The UI handles the null summary state.
-             setIsLoading(false);
-             setSummary(null);
+            } else {
+                setSummary(null);
+            }
+        } catch (error) {
+            console.error("Error fetching battle summary:", error);
+            setSummary(null);
+        } finally {
+            setIsLoading(false);
         }
-    }, (error) => {
-        console.error("Error listening to live battle document:", error);
-        setIsLoading(false);
-    });
+    };
 
-    return () => unsubscribe();
+    fetchSummaryData();
 }, [user, teacherUid, toast]);
+
 
   if (isLoading) {
     return (
