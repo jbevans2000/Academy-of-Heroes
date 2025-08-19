@@ -16,9 +16,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { School, Loader2, KeyRound, Mail, ArrowLeft } from 'lucide-react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function TeacherLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -38,12 +39,27 @@ export default function TeacherLoginPage() {
     }
     setIsLoading(true);
     try {
-        await signInWithEmailAndPassword(auth, email, password);
-        toast({
-            title: 'Login Successful!',
-            description: 'Welcome back to the Academy of Heroes, Wise One!',
-        });
-        router.push('/teacher/dashboard');
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // Check if the user is a master admin
+        const adminRef = doc(db, 'admins', user.uid);
+        const adminSnap = await getDoc(adminRef);
+
+        if (adminSnap.exists()) {
+            toast({
+                title: 'Admin Login Successful!',
+                description: 'Welcome, Master Administrator!',
+            });
+            router.push('/admin/dashboard');
+        } else {
+             toast({
+                title: 'Login Successful!',
+                description: 'Welcome back to the Academy of Heroes, Wise One!',
+            });
+            router.push('/teacher/dashboard');
+        }
+
     } catch (error: any) {
         console.error("Authentication Error Code:", error.code);
         let description = 'An unexpected error occurred. Please try again.';
