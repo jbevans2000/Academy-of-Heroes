@@ -13,12 +13,8 @@ import { collection, getDocs, doc, setDoc, deleteDoc, onSnapshot, writeBatch, ar
 import { useToast } from '@/hooks/use-toast';
 import { Swords, Play, Square, FastForward, StopCircle, Bot, Loader2, Skull, Timer, Lightbulb, HeartCrack, CheckCircle, Video } from 'lucide-react';
 import { RoundResults, type Result } from '@/components/teacher/round-results';
-import { BattleChatBox } from '@/components/battle/chat-box';
 import Image from 'next/image';
 import { PowersSheet } from '@/components/dashboard/powers-sheet';
-import { logGameEvent } from '@/lib/gamelog';
-import { calculateLevel, calculateBaseMaxHp, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
-
 
 interface Question {
   questionText: string;
@@ -90,7 +86,8 @@ export function BattleTestPanel({ adminUid }: { adminUid: string }) {
             }
         });
         return () => unsubscribe();
-    }, [adminUid, liveState]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [adminUid]);
 
     useEffect(() => {
         if (!liveState || (liveState.status !== 'IN_PROGRESS' && liveState.status !== 'ROUND_ENDING')) {
@@ -402,7 +399,6 @@ export function BattleTestPanel({ adminUid }: { adminUid: string }) {
                                         <p className="text-muted-foreground text-center">Waiting for next question...</p>
                                     </div>
                                 )}
-                                 <BattleChatBox isTeacher={true} userName="Admin" teacherUid={adminUid} battleId="active-battle" />
                             </div>
                            
                             </AccordionContent>
@@ -413,5 +409,3 @@ export function BattleTestPanel({ adminUid }: { adminUid: string }) {
         </>
     )
 }
-
-    
