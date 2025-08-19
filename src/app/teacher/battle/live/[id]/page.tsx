@@ -846,16 +846,13 @@ export default function TeacherLiveBattlePage() {
       await logGameEvent(teacherUid, 'BOSS_BATTLE', `Battle summary for '${battle.battleName}' was saved.`);
 
       batch.update(liveBattleRef, { status: 'BATTLE_ENDED' });
+      
+      // Immediately delete the live battle document now that the summary is saved.
+      batch.delete(liveBattleRef);
 
       await batch.commit();
       
       router.push(`/teacher/battle/summary/${battleId}`);
-
-      setTimeout(async () => {
-        if (teacherUid) {
-            await deleteDoc(doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle'));
-        }
-      }, 5000); 
   };
   
   const handleExport = () => {
