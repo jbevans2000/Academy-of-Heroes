@@ -9,12 +9,12 @@ import { Label } from '@/components/ui/label';
 import { TestCharacterManager } from './test-character-manager';
 import type { Student } from '@/lib/data';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, setDoc, deleteDoc, onSnapshot, writeBatch, arrayUnion, arrayRemove, increment } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, deleteDoc, onSnapshot, writeBatch, arrayUnion, arrayRemove, increment, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Swords, Play, Square, FastForward, StopCircle, Bot, Loader2, Skull, Timer, Lightbulb, HeartCrack, CheckCircle, Video } from 'lucide-react';
 import Image from 'next/image';
 import { PowersSheet } from '@/components/dashboard/powers-sheet';
-import { handlePowerActivation } from '@/lib/battle-logic';
+import { handlePowerActivation, calculateAndSetResults } from '@/lib/battle-logic';
 
 interface Question {
   questionText: string;
@@ -105,7 +105,6 @@ export function BattleTestPanel({ adminUid }: { adminUid: string }) {
             snapshot.docChanges().forEach(async (change) => {
                 if (change.type === 'added') {
                     const activation = { id: change.doc.id, ...change.doc.data() };
-                    // Use the centralized power handler
                     await handlePowerActivation(activation as any, adminUid, liveBattleRef, testStudents, testBattleData, true);
                 }
             });
@@ -140,7 +139,7 @@ export function BattleTestPanel({ adminUid }: { adminUid: string }) {
 
     const handleStartRound = async () => {
         if (!liveState) return;
-        await setDoc(liveBattleRef, { status: 'IN_PROGRESS' }, { merge: true });
+        await updateDoc(liveBattleRef, { status: 'IN_PROGRESS' });
     };
 
     const handleEndRoundAndShowResults = async () => {
