@@ -460,8 +460,8 @@ export default function Dashboard() {
                 </div>
             </DialogContent>
         </Dialog>
-
-        <div className="mb-4">
+        
+        <div className="mb-4 bg-card/90 p-4 rounded-lg shadow-md">
             <h1 className="text-3xl font-bold">{teacherData?.className || 'The Guild Leader\'s Dais'}</h1>
              {teacherData?.classCode && (
                 <div className="flex items-center gap-2 mt-2">
@@ -473,18 +473,20 @@ export default function Dashboard() {
                 </div>
             )}
         </div>
+
         <div className="flex flex-wrap items-center gap-2 mb-6">
             <Button 
             onClick={handleSelectAllToggle}
             disabled={students.length === 0}
             variant="outline"
+            className="text-black"
             >
             {selectedStudents.length === students.length ? 'Deselect All' : 'Select All'}
             </Button>
             
              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="outline">
+                    <Button variant="outline" className="text-black">
                     <Wrench className="mr-2 h-4 w-4" />
                     Manage
                     <ChevronDown className="ml-2 h-4 w-4" />
@@ -519,7 +521,7 @@ export default function Dashboard() {
 
             <Dialog open={isXpDialogOpen} onOpenChange={setIsXpDialogOpen}>
             <DialogTrigger asChild>
-                <Button disabled={selectedStudents.length === 0}>
+                <Button disabled={selectedStudents.length === 0} className="text-black">
                 <Star className="mr-2 h-4 w-4" /> Bestow Experience
                 </Button>
             </DialogTrigger>
