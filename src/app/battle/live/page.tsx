@@ -217,7 +217,6 @@ export default function LiveBattlePage() {
   const [isFallen, setIsFallen] = useState(false);
   const [showFallenDialog, setShowFallenDialog] = useState(false);
   const [targetedMessage, setTargetedMessage] = useState<string | null>(null);
-  const [hasCheckedForSummary, setHasCheckedForSummary] = useState(false);
 
   const battleStateRef = useRef(battleState);
   const router = useRouter();
@@ -291,12 +290,7 @@ export default function LiveBattlePage() {
             router.push('/battle/summary');
         }
       } else {
-        if (battleStateRef.current && !hasCheckedForSummary) {
-          router.push('/battle/summary');
-          setHasCheckedForSummary(true); 
-        } else {
           setBattleState(null);
-        }
       }
       setIsLoading(false);
     }, (error) => {
@@ -304,10 +298,10 @@ export default function LiveBattlePage() {
       setIsLoading(false);
     });
     return () => unsubscribe();
-  }, [router, teacherUid, submittedAnswer, isFallen, user, hasCheckedForSummary]);
+  }, [router, teacherUid, submittedAnswer, isFallen, user]);
 
   useEffect(() => {
-    if (battleState?.battleId && teacherUid && !battle) {
+    if (battleState?.battleId && teacherUid && (!battle || battle.id !== battleState.battleId)) {
       const fetchBattle = async () => {
         const battleDoc = await getDoc(doc(db, 'teachers', teacherUid, 'bossBattles', battleState.battleId!));
         if (battleDoc.exists()) {
@@ -354,7 +348,7 @@ export default function LiveBattlePage() {
     );
   }
 
-  if (!battleState) {
+  if (!battleState || !battleState.battleId) {
     const waitingRoomImageUrl = "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FChatGPT%20Image%20Aug%2015%2C%202025%2C%2008_12_09%20AM.png?alt=media&token=45178e85-0ba2-42ef-b2fa-d76a8732b2c2";
     return (
         <div className="relative flex min-h-screen flex-col items-center justify-center p-4">
@@ -627,5 +621,3 @@ export default function LiveBattlePage() {
     </div>
   );
 }
-
-    
