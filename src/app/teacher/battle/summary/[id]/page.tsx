@@ -211,23 +211,11 @@ export default function TeacherBattleSummaryPage() {
                         <p className="text-sm font-medium">Total Incorrect Answers</p>
                     </div>
                     {summary.totalDamageDealt !== undefined && (
-                        <>
-                         <div className="flex flex-col items-center gap-2 text-sky-600 p-2">
-                            <ShieldCheck className="h-8 w-8" />
-                            <p className="text-xl font-bold">{summary.totalBaseDamage ?? 0}</p>
-                            <p className="text-sm font-medium">Total Base Damage</p>
-                        </div>
-                         <div className="flex flex-col items-center gap-2 text-purple-600 p-2">
-                            <Sparkles className="h-8 w-8" />
-                            <p className="text-xl font-bold">{summary.totalPowerDamage ?? 0}</p>
-                            <p className="text-sm font-medium">Total Power Damage</p>
-                        </div>
                         <div className="flex flex-col items-center gap-2 text-red-800 p-2">
                             <HeartCrack className="h-8 w-8" />
                             <p className="text-xl font-bold">{summary.totalDamageDealt}</p>
                             <p className="text-sm font-medium">Total Damage Dealt</p>
                         </div>
-                        </>
                     )}
                     {summary.rewards && (
                        <>

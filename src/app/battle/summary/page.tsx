@@ -181,23 +181,7 @@ export default function StudentBattleSummaryPage() {
                 <p className="text-2xl font-bold">You answered <span className="text-primary">{totalCorrect}</span> out of <span className="text-primary">{summary.questions.length}</span> questions correctly.</p>
                 {summary.totalDamageDealt !== undefined && (
                      <div className="p-4 rounded-md bg-sky-900/70 border border-sky-700 text-sky-200">
-                        <div className="flex items-center justify-center gap-4 text-center">
-                            <div className="flex-1">
-                                <p className="text-sm font-bold uppercase text-sky-300">Base Damage</p>
-                                <p className="text-2xl font-bold">{summary.totalBaseDamage ?? 0}</p>
-                            </div>
-                            <div className="text-2xl font-bold">+</div>
-                            <div className="flex-1">
-                                <p className="text-sm font-bold uppercase text-sky-300">Power Damage</p>
-                                <p className="text-2xl font-bold">{summary.totalPowerDamage ?? 0}</p>
-                            </div>
-                            <div className="text-2xl font-bold">=</div>
-                             <div className="flex-1">
-                                <p className="text-sm font-bold uppercase text-sky-300">Total Damage</p>
-                                <p className="text-3xl font-extrabold text-white">{summary.totalDamageDealt}</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center justify-center gap-2 mt-2">
+                        <div className="flex items-center justify-center gap-2">
                              <HeartCrack className="h-6 w-6 text-sky-400" />
                             <p className="text-lg font-bold">Your fellowship dealt a total of {summary.totalDamageDealt} damage to the boss!</p>
                         </div>
