@@ -205,7 +205,7 @@ function VoteDialog({ voteState, userUid, teacherUid }: { voteState: VoteState |
 }
 
 export default function LiveBattlePage() {
-  const [battleState, setBattleState] = useState<LiveBattleState>({ battleId: null, status: 'WAITING', currentQuestionIndex: 0 });
+  const [battleState, setBattleState] = useState<LiveBattleState | null>(null);
   const [battle, setBattle] = useState<Battle | null>(null);
   const [student, setStudent] = useState<Student | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -299,7 +299,7 @@ export default function LiveBattlePage() {
              router.push('/battle/summary');
         } else {
             // Otherwise, it's just a waiting state.
-            setBattleState(prevState => ({ ...prevState, battleId: null, status: 'WAITING', currentQuestionIndex: 0 }));
+            setBattleState(null);
         }
       }
       setIsLoading(false);
@@ -311,7 +311,7 @@ export default function LiveBattlePage() {
   }, [router, teacherUid, submittedAnswer, isFallen, user]);
 
   useEffect(() => {
-    if (battleState?.battleId && teacherUid) {
+    if (battleState?.battleId && teacherUid && !battle) {
       const fetchBattle = async () => {
         const battleDoc = await getDoc(doc(db, 'teachers', teacherUid, 'bossBattles', battleState.battleId!));
         if (battleDoc.exists()) {
@@ -319,10 +319,10 @@ export default function LiveBattlePage() {
         }
       };
       fetchBattle();
-    } else {
+    } else if (!battleState?.battleId) {
       setBattle(null);
     }
-  }, [battleState?.battleId, teacherUid]);
+  }, [battleState?.battleId, teacherUid, battle]);
 
   const handleSubmitAnswer = async (answerIndex: number) => {
     if (!user || !student || !battleState?.battleId || !battle || (battleState.status !== 'IN_PROGRESS' && battleState.status !== 'ROUND_ENDING') || !teacherUid || isFallen) return;
@@ -358,7 +358,7 @@ export default function LiveBattlePage() {
     );
   }
 
-  if (battleState.status === 'WAITING' || !battleState.battleId) {
+  if (!battleState || !battleState.battleId || battleState.status === 'WAITING') {
     const videoSrc = battle?.videoUrl ? getYouTubeEmbedUrl(battle.videoUrl) : '';
     const waitingRoomImageUrl = battle?.bossImageUrl || "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FChatGPT%20Image%20Aug%2015%2C%202025%2C%2008_12_09%20AM.png?alt=media&token=45178e85-0ba2-42ef-b2fa-d76a8732b2c2";
     
@@ -603,5 +603,7 @@ export default function LiveBattlePage() {
     </div>
   );
 }
+
+    
 
     
