@@ -496,7 +496,7 @@ export default function LiveBattlePage() {
                             <SmallCountdownTimer expiryTimestamp={expiryTimestamp} />
                             )}
 
-                            {submittedAnswer !== null && battleState.status === 'IN_PROGRESS' && (
+                            {submittedAnswer === null && battleState.status === 'IN_PROGRESS' && (
                                 <WaitingForRoundEnd />
                             )}
 
@@ -514,7 +514,7 @@ export default function LiveBattlePage() {
                                                 isRemoved && "line-through bg-red-900/50 border-red-700 text-red-400 cursor-not-allowed hover:bg-red-900/50"
                                             )}
                                             onClick={() => handleSubmitAnswer(index)}
-                                            disabled={!isBattleActive || submittedAnswer !== null || isRemoved || isFallen}
+                                            disabled={!isBattleActive || isRemoved || isFallen}
                                             >
                                             <span className="font-bold mr-4">{String.fromCharCode(65 + index)}.</span>
                                             {answer}
