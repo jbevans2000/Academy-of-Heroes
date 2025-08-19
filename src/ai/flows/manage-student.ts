@@ -7,6 +7,7 @@
  * - updateStudentDetails: Updates a student's name in Firestore.
  * - resetStudentPassword: Resets a student's password in Firebase Auth.
  * - moderateStudent: Bans, unbans, or deletes a student's account.
+ * - getStudentStatus: Fetches the enabled/disabled status of a student's account.
  */
 import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -94,4 +95,25 @@ export async function moderateStudent(input: ModerateStudentInput): Promise<Acti
     console.error("Error in moderateStudent:", e);
     return { success: false, error: e.message || 'Failed to perform moderation action.' };
   }
+}
+
+interface StudentStatusInput {
+    studentUid: string;
+}
+
+interface StudentStatusResponse {
+    isBanned: boolean;
+}
+
+export async function getStudentStatus(input: StudentStatusInput): Promise<StudentStatusResponse> {
+    try {
+        const auth = getAuth();
+        const userRecord = await auth.getUser(input.studentUid);
+        return { isBanned: userRecord.disabled };
+    } catch (e: any) {
+        console.error("Error fetching student status:", e);
+        // If we can't fetch the user, assume they are not banned for UI purposes.
+        // This could happen if the user was deleted but the Firestore record remains.
+        return { isBanned: false };
+    }
 }

@@ -27,10 +27,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, KeyRound, User, ShieldCheck, ShieldOff, Trash2, UserCheck } from 'lucide-react';
-import { updateStudentDetails, resetStudentPassword, moderateStudent } from '@/ai/flows/manage-student';
-import { getAuth, type User as AuthUser } from 'firebase/auth';
-import { getFirebaseAdminApp } from '@/lib/firebase-admin';
-import { getAuth as getAdminAuth } from 'firebase-admin/auth'
+import { updateStudentDetails, resetStudentPassword, moderateStudent, getStudentStatus } from '@/ai/flows/manage-student';
 
 interface ManageStudentDialogProps {
   isOpen: boolean;
@@ -70,12 +67,18 @@ export function ManageStudentDialog({ isOpen, onOpenChange, student, setStudents
         setActiveTab('details');
 
         const checkBanStatus = async () => {
-            // This is a simplified check. A true implementation would need a secure
-            // way to get the user's disabled status from the backend.
-            // For now, we'll assume a local state or a field on the student object.
-            // Since we can't easily get this from the client, we'll just show both options.
-            // In a real app, this would be a backend call.
+            setIsLoadingBanStatus(true);
+            try {
+                const status = await getStudentStatus({ studentUid: student.uid });
+                setIsBanned(status.isBanned);
+            } catch (error) {
+                console.error("Could not fetch ban status:", error);
+                setIsBanned(false); // Default to not banned on error
+            } finally {
+                setIsLoadingBanStatus(false);
+            }
         };
+
         checkBanStatus();
     }
   }, [isOpen, student]);
@@ -99,7 +102,7 @@ export function ManageStudentDialog({ isOpen, onOpenChange, student, setStudents
         setStudents(prev => prev.map(s => s.uid === student.uid ? { ...s, studentName, characterName } : s));
         toast({ title: 'Details Updated', description: "The student's names have been changed." });
       } else {
-        throw new Error(result.error);
+        throw new Error(result.error || 'An unknown error occurred.');
       }
     } catch (error: any) {
       console.error(error);
@@ -121,7 +124,7 @@ export function ManageStudentDialog({ isOpen, onOpenChange, student, setStudents
         toast({ title: 'Password Reset!', description: `${student.characterName}'s password has been updated.` });
         setNewPassword('');
       } else {
-        throw new Error(result.error);
+        throw new Error(result.error || 'An unknown error occurred.');
       }
     } catch (error: any) {
         console.error(error);
@@ -141,9 +144,12 @@ export function ManageStudentDialog({ isOpen, onOpenChange, student, setStudents
         if (action === 'delete') {
             setStudents(prev => prev.filter(s => s.uid !== student.uid));
             onOpenChange(false); // Close dialog on delete
+        } else {
+            // Update the banned state locally to reflect the change
+            setIsBanned(action === 'ban');
         }
       } else {
-        throw new Error(result.error);
+        throw new Error(result.error || 'An unknown error occurred.');
       }
     } catch (error: any) {
         console.error(error);
@@ -233,16 +239,22 @@ export function ManageStudentDialog({ isOpen, onOpenChange, student, setStudents
                     <h4 className="font-bold text-lg">Moderation Actions</h4>
                     <p className="text-sm text-muted-foreground">These actions have significant consequences. Please be certain.</p>
                     <div className="flex gap-4">
-                        <Button variant="outline" onClick={() => setIsBanConfirmOpen(true)}>
+                        <Button variant="outline" onClick={() => setIsBanConfirmOpen(true)} disabled={isLoadingBanStatus || isBanned}>
                             <ShieldOff className="mr-2 h-4 w-4" /> Ban Student
                         </Button>
-                        <Button variant="outline" className="text-green-600 border-green-600 hover:bg-green-100 hover:text-green-700" onClick={() => setIsUnbanConfirmOpen(true)}>
+                        <Button variant="outline" className="text-green-600 border-green-600 hover:bg-green-100 hover:text-green-700" onClick={() => setIsUnbanConfirmOpen(true)} disabled={isLoadingBanStatus || !isBanned}>
                             <UserCheck className="mr-2 h-4 w-4" /> Unban Student
                         </Button>
                          <Button variant="destructive" onClick={() => setIsRemoveConfirmOpen(true)}>
                             <Trash2 className="mr-2 h-4 w-4" /> Remove from Guild
                         </Button>
                     </div>
+                    {isLoadingBanStatus && (
+                        <div className="flex items-center text-sm text-muted-foreground">
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Checking ban status...
+                        </div>
+                    )}
                </div>
             </TabsContent>
           </Tabs>
