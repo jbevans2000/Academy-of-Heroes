@@ -19,6 +19,11 @@ import { addDoc, collection, serverTimestamp, getDocs, doc, onSnapshot } from 'f
 import { db } from '@/lib/firebase';
 import { TargetingDialog } from '@/components/battle/targeting-dialog';
 
+interface LiveBattleState {
+    empoweredMageUids?: string[];
+    powerUsersThisRound?: { [key: string]: string[] };
+}
+
 interface PowersSheetProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
@@ -26,6 +31,7 @@ interface PowersSheetProps {
   isBattleView?: boolean;
   teacherUid?: string;
   battleId?: string;
+  battleState: LiveBattleState | null;
 }
 
 const powerTypeStyles: { [key in PowerType]: string } = {
@@ -41,11 +47,7 @@ const classIconMap: { [key: string]: React.ReactNode } = {
     Mage: <Wand2 className="h-8 w-8 text-primary" />,
 };
 
-interface LiveBattleState {
-    empoweredMageUids?: string[];
-}
-
-export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = false, teacherUid, battleId }: PowersSheetProps) {
+export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = false, teacherUid, battleId, battleState }: PowersSheetProps) {
   const powers = classPowers[student.class] || [];
   const { toast } = useToast();
   const [isCasting, setIsCasting] = useState<string | null>(null);
@@ -54,18 +56,10 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
   const [isTargeting, setIsTargeting] = useState(false);
   const [selectedPower, setSelectedPower] = useState<Power | null>(null);
   const [partyMembers, setPartyMembers] = useState<Student[]>([]);
-  const [battleState, setBattleState] = useState<LiveBattleState>({});
 
 
   useEffect(() => {
     if (!isBattleView || !teacherUid || !battleId) return;
-
-    const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
-    const unsubscribe = onSnapshot(liveBattleRef, (docSnap) => {
-        if (docSnap.exists()) {
-            setBattleState(docSnap.data() as LiveBattleState);
-        }
-    });
 
     const fetchPartyMembers = async () => {
         try {
@@ -79,7 +73,6 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
       };
       fetchPartyMembers();
 
-    return () => unsubscribe();
   }, [isBattleView, teacherUid, battleId]);
 
 
@@ -90,7 +83,7 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
     }
     
     // Client-side pre-check for Solar Empowerment
-    if (power.name === 'Solar Empowerment') {
+    if (power.name === 'Solar Empowerment' && battleState) {
         const eligibleMages = partyMembers.filter(p => 
             p.class === 'Mage' && 
             p.hp > 0 && 
@@ -137,6 +130,8 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
     }
   }
 
+  const hasUsedPowerThisRound = battleState?.powerUsersThisRound?.[student.uid]?.length > 0;
+
   return (
     <>
       <Sheet open={isOpen} onOpenChange={onOpenChange}>
@@ -156,7 +151,7 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
               {powers.length > 0 ? powers.map((power, index) => {
                   const isUnlocked = student.level >= power.level;
                   const hasEnoughMp = student.mp >= power.mpCost;
-                  const canUsePower = isUnlocked && hasEnoughMp && isBattleView && !isCasting;
+                  const canUsePower = isUnlocked && hasEnoughMp && isBattleView && !isCasting && !hasUsedPowerThisRound;
                   
                   return (
                       <div 
@@ -173,7 +168,7 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
                               </div>
                               {isBattleView && (
                                   <Button size="sm" disabled={!canUsePower} variant={isUnlocked ? 'secondary' : 'ghost'} onClick={() => handleUsePower(power)}>
-                                      {isCasting === power.name ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Use Power'}
+                                      {isCasting === power.name ? <Loader2 className="h-4 w-4 animate-spin" /> : hasUsedPowerThisRound ? 'Used' : 'Use Power'}
                                   </Button>
                               )}
                           </div>
@@ -192,6 +187,8 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
                                       ? `Unlocks at Level ${power.level}`
                                       : !hasEnoughMp
                                       ? `Not enough MP`
+                                      : hasUsedPowerThisRound
+                                      ? `Power Used`
                                       : "Unlocked"
                                   }
                               </p>

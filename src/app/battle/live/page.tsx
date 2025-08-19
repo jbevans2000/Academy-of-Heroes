@@ -61,6 +61,7 @@ interface LiveBattleState {
   powerEventMessage?: string; // For displaying power usage feedback
   targetedEvent?: TargetedEvent | null; // For targeted messages like revivals
   fallenPlayerUids?: string[]; // New: List of fallen players
+  powerUsersThisRound?: { [key: string]: string[] }; // For one power per round rule
   voteState?: VoteState | null; // For Cosmic Divination
 }
 
@@ -547,6 +548,7 @@ export default function LiveBattlePage() {
           isBattleView={true}
           teacherUid={teacherUid}
           battleId={'active-battle'}
+          battleState={battleState}
         />
         <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 p-4">
             {targetedMessage && (
