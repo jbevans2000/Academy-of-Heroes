@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Student } from '@/lib/data';
-import { Star, Coins, User, Sword, Trophy, Heart, Zap, Loader2, Edit } from 'lucide-react';
+import { Star, Coins, User, Sword, Trophy, Heart, Zap, Loader2, Edit, Settings } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -18,12 +18,13 @@ import {
 import { DashboardClient } from '@/components/dashboard/dashboard-client';
 import { Input } from '@/components/ui/input';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { db, auth } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 import { Label } from '../ui/label';
+import { ManageStudentDialog } from './manage-student-dialog';
 
 interface EditableStatProps {
     student: Student;
@@ -248,6 +249,7 @@ interface StudentCardProps {
 
 export function StudentCard({ student, isSelected, onSelect, setStudents, teacherUid }: StudentCardProps) {
   const avatarUrl = student.avatarUrl || 'https://placehold.co/100x100.png';
+  const [isManageOpen, setIsManageOpen] = useState(false);
 
   const avatarBorderColor = {
     Mage: 'border-blue-600',
@@ -257,102 +259,115 @@ export function StudentCard({ student, isSelected, onSelect, setStudents, teache
   }[student.class];
 
   return (
-    <Dialog>
-      <Card className={cn("shadow-lg rounded-xl flex flex-col overflow-hidden transition-all duration-300", isSelected ? "ring-2 ring-primary scale-105" : "hover:scale-105")}>
-        <CardHeader className="p-4 relative h-40 bg-secondary/30 flex items-center justify-center">
-            <div className="absolute top-2 right-2 z-10">
-                <Checkbox
-                    checked={isSelected}
-                    onCheckedChange={onSelect}
-                    aria-label={`Select ${student.characterName}`}
-                    className="h-6 w-6 border-2 border-black bg-white"
-                />
-            </div>
-             <div className={cn("relative w-28 h-28 border-4 bg-black/20 p-1 shadow-inner", avatarBorderColor)}>
-                <Image
-                    src={avatarUrl}
-                    alt={`${student.characterName}'s avatar`}
-                    fill
-                    sizes="112px"
-                    className="object-contain drop-shadow-lg"
-                    data-ai-hint="character"
-                    onError={(e) => (e.currentTarget.src = 'https://placehold.co/100x100.png')}
-                />
-            </div>
-        </CardHeader>
-        <CardContent className="p-4 flex-grow space-y-3">
-          <CardTitle className="text-xl font-bold truncate">{student.characterName}</CardTitle>
-          <div className="text-sm text-muted-foreground flex items-center gap-2">
-              <User className="w-4 h-4" />
-              <span>{student.studentName}</span>
-          </div>
-          <div className="text-sm text-muted-foreground flex items-center gap-2">
-              <Sword className="w-4 h-4" />
-              <span>{student.class}</span>
-          </div>
-          <div className="grid grid-cols-2 gap-4 text-sm pt-2">
-            <div className="flex items-center space-x-1">
-                  <Trophy className="h-5 w-5 text-orange-400" />
-                  <div>
-                    <p className="font-semibold">{student.level ?? 1}</p>
-                    <p className="text-xs text-muted-foreground">Level</p>
-                  </div>
+    <>
+      <ManageStudentDialog 
+        isOpen={isManageOpen} 
+        onOpenChange={setIsManageOpen} 
+        student={student}
+        setStudents={setStudents}
+        teacherUid={teacherUid}
+      />
+      <Dialog>
+        <Card className={cn("shadow-lg rounded-xl flex flex-col overflow-hidden transition-all duration-300", isSelected ? "ring-2 ring-primary scale-105" : "hover:scale-105")}>
+          <CardHeader className="p-4 relative h-40 bg-secondary/30 flex items-center justify-center">
+              <div className="absolute top-2 right-2 z-10">
+                  <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={onSelect}
+                      aria-label={`Select ${student.characterName}`}
+                      className="h-6 w-6 border-2 border-black bg-white"
+                  />
               </div>
-            <EditableStat 
-                student={student}
-                stat="xp"
-                label="Experience"
-                icon={<Star className="h-5 w-5 text-yellow-400" />}
-                setStudents={setStudents}
-                teacherUid={teacherUid}
-            />
-            <EditablePairedStat
-                student={student}
-                stat="hp"
-                maxStat="maxHp"
-                label="HP"
-                icon={<Heart className="h-5 w-5 text-red-500" />}
-                setStudents={setStudents}
-                teacherUid={teacherUid}
-            />
-             <EditablePairedStat
-                student={student}
-                stat="mp"
-                maxStat="maxMp"
-                label="MP"
-                icon={<Zap className="h-5 w-5 text-blue-500" />}
-                setStudents={setStudents}
-                teacherUid={teacherUid}
-            />
-             <EditableStat 
-                student={student}
-                stat="gold"
-                label="Gold"
-                icon={<Coins className="h-5 w-5 text-amber-500" />}
-                setStudents={setStudents}
-                teacherUid={teacherUid}
-            />
-          </div>
-        </CardContent>
-        <CardFooter className="p-2 bg-secondary/30 mt-auto">
-          <DialogTrigger asChild>
-            <Button className="w-full" variant="secondary">
-                View Details
+              <div className={cn("relative w-28 h-28 border-4 bg-black/20 p-1 shadow-inner", avatarBorderColor)}>
+                  <Image
+                      src={avatarUrl}
+                      alt={`${student.characterName}'s avatar`}
+                      fill
+                      sizes="112px"
+                      className="object-contain drop-shadow-lg"
+                      data-ai-hint="character"
+                      onError={(e) => (e.currentTarget.src = 'https://placehold.co/100x100.png')}
+                  />
+              </div>
+          </CardHeader>
+          <CardContent className="p-4 flex-grow space-y-3">
+            <CardTitle className="text-xl font-bold truncate">{student.characterName}</CardTitle>
+            <div className="text-sm text-muted-foreground flex items-center gap-2">
+                <User className="w-4 h-4" />
+                <span>{student.studentName}</span>
+            </div>
+            <div className="text-sm text-muted-foreground flex items-center gap-2">
+                <Sword className="w-4 h-4" />
+                <span>{student.class}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-sm pt-2">
+              <div className="flex items-center space-x-1">
+                    <Trophy className="h-5 w-5 text-orange-400" />
+                    <div>
+                      <p className="font-semibold">{student.level ?? 1}</p>
+                      <p className="text-xs text-muted-foreground">Level</p>
+                    </div>
+                </div>
+              <EditableStat 
+                  student={student}
+                  stat="xp"
+                  label="Experience"
+                  icon={<Star className="h-5 w-5 text-yellow-400" />}
+                  setStudents={setStudents}
+                  teacherUid={teacherUid}
+              />
+              <EditablePairedStat
+                  student={student}
+                  stat="hp"
+                  maxStat="maxHp"
+                  label="HP"
+                  icon={<Heart className="h-5 w-5 text-red-500" />}
+                  setStudents={setStudents}
+                  teacherUid={teacherUid}
+              />
+              <EditablePairedStat
+                  student={student}
+                  stat="mp"
+                  maxStat="maxMp"
+                  label="MP"
+                  icon={<Zap className="h-5 w-5 text-blue-500" />}
+                  setStudents={setStudents}
+                  teacherUid={teacherUid}
+              />
+              <EditableStat 
+                  student={student}
+                  stat="gold"
+                  label="Gold"
+                  icon={<Coins className="h-5 w-5 text-amber-500" />}
+                  setStudents={setStudents}
+                  teacherUid={teacherUid}
+              />
+            </div>
+          </CardContent>
+          <CardFooter className="p-2 bg-secondary/30 mt-auto grid grid-cols-2 gap-2">
+            <DialogTrigger asChild>
+              <Button className="w-full" variant="secondary">
+                  View Details
+              </Button>
+            </DialogTrigger>
+            <Button className="w-full" variant="outline" onClick={() => setIsManageOpen(true)}>
+                <Settings className="mr-2 h-4 w-4"/>
+                Manage
             </Button>
-          </DialogTrigger>
-        </CardFooter>
-      </Card>
-      <DialogContent className="max-w-4xl">
-        <DialogHeader>
-          <DialogTitle>{student.characterName}'s Dashboard</DialogTitle>
-          <DialogDescription>
-            This is a live view of {student.studentName}'s character sheet.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="max-h-[70vh] overflow-y-auto">
-            <DashboardClient student={student} />
-        </div>
-      </DialogContent>
-    </Dialog>
+          </CardFooter>
+        </Card>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>{student.characterName}'s Dashboard</DialogTitle>
+            <DialogDescription>
+              This is a live view of {student.studentName}'s character sheet.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[70vh] overflow-y-auto">
+              <DashboardClient student={student} />
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
