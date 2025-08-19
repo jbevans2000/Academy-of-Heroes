@@ -139,6 +139,16 @@ export default function TeacherBattleSummaryPage() {
   
   const allPowersUsed = roundKeys.flatMap(key => summary.resultsByRound[key].powersUsed || []);
 
+  const battleLogByRound: { [round: number]: PowerLogEntry[] } = {};
+    if (summary.battleLog) {
+        summary.battleLog.forEach(log => {
+            if (!battleLogByRound[log.round]) {
+                battleLogByRound[log.round] = [];
+            }
+            battleLogByRound[log.round].push(log);
+        });
+    }
+
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <TeacherHeader />
@@ -191,10 +201,16 @@ export default function TeacherBattleSummaryPage() {
                                             </li>
                                         ))}
                                     </ul>
-                                    {(roundData.powersUsed && roundData.powersUsed.length > 0) && (
+                                    {(battleLogByRound[parseInt(roundIndex) + 1]) && (
                                         <div className="mt-2 p-2 bg-blue-900/10 rounded-md">
                                             <h4 className="font-semibold text-sm">Powers Used:</h4>
-                                            <p className="text-xs text-muted-foreground">{roundData.powersUsed.join(', ')}</p>
+                                            <ul className="text-xs text-muted-foreground list-disc list-inside">
+                                                 {battleLogByRound[parseInt(roundIndex) + 1].map((log, index) => (
+                                                    <li key={index}>
+                                                        <span className="font-bold">{log.casterName}</span> used <span className="font-semibold text-primary">{log.powerName}</span>. Effect: {log.description}
+                                                    </li>
+                                                 ))}
+                                            </ul>
                                         </div>
                                     )}
                                 </AccordionContent>
@@ -248,17 +264,28 @@ export default function TeacherBattleSummaryPage() {
                  <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><ScrollText /> Power Usage Log</CardTitle>
-                        <CardDescription>A record of all powers used during the battle.</CardDescription>
+                        <CardDescription>A record of all powers used during the battle, grouped by round.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <ul className="space-y-2">
-                            {summary.battleLog.map((log, index) => (
-                                <li key={index} className="flex justify-between items-center p-2 rounded-md bg-secondary/50">
-                                    <p><span className="font-bold">{log.casterName}</span> used <span className="font-semibold text-primary">{log.powerName}</span>.</p>
-                                    <span className="text-xs text-muted-foreground">Round {log.round}</span>
-                                </li>
+                        <Accordion type="multiple" className="w-full">
+                            {Object.keys(battleLogByRound).map(roundNumber => (
+                                <AccordionItem key={roundNumber} value={`round-${roundNumber}`}>
+                                    <AccordionTrigger>Round {roundNumber}</AccordionTrigger>
+                                    <AccordionContent>
+                                        <ul className="space-y-2 pl-4">
+                                            {battleLogByRound[parseInt(roundNumber)].map((log, index) => (
+                                                <li key={index} className="flex justify-between items-center p-2 rounded-md bg-secondary/50">
+                                                    <div>
+                                                        <span className="font-bold">{log.casterName}</span> used <span className="font-semibold text-primary">{log.powerName}</span>.
+                                                        <p className="text-sm text-muted-foreground">Effect: {log.description}</p>
+                                                    </div>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </AccordionContent>
+                                </AccordionItem>
                             ))}
-                        </ul>
+                        </Accordion>
                     </CardContent>
                 </Card>
             )}
@@ -268,3 +295,5 @@ export default function TeacherBattleSummaryPage() {
     </div>
   );
 }
+
+    

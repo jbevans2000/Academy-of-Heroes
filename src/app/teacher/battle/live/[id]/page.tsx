@@ -19,6 +19,7 @@ import type { Student } from '@/lib/data';
 import { logGameEvent } from '@/lib/gamelog';
 import { BattleChatBox } from '@/components/battle/chat-box';
 import { useToast } from '@/hooks/use-toast';
+import { classPowers } from '@/lib/powers';
 
 
 interface QueuedPower {
@@ -166,6 +167,7 @@ export default function TeacherLiveBattlePage() {
   const [teacherUid, setTeacherUid] = useState<string | null>(null);
   const [fallenStudentNames, setFallenStudentNames] = useState<string[]>([]);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
+  const [powerLog, setPowerLog] = useState<PowerLogEntry[]>([]);
 
 
   useEffect(() => {
@@ -307,18 +309,35 @@ export default function TeacherLiveBattlePage() {
         
         let powerDamage = isDivinationSkip ? (liveState.lastRoundPowerDamage || 0) : 0;
         const powersUsedThisRound: string[] = isDivinationSkip ? (liveState.lastRoundPowersUsed || []) : [];
+        const newPowerLogEntries: PowerLogEntry[] = [];
 
         if (!isDivinationSkip) {
             liveState.queuedPowers?.forEach(power => {
                 const casterResponse = responsesData.find(res => res.uid === power.casterUid);
+                const powerDef = classPowers.Mage.find(p => p.name === power.powerName);
+
                 if (casterResponse?.isCorrect) {
                     powerDamage += power.damage;
                     powersUsedThisRound.push(`${power.powerName} (${power.damage} dmg)`);
-                    logGameEvent(teacherUid, 'BOSS_BATTLE', `${casterResponse.characterName}'s Wildfire struck true for ${power.damage} damage.`);
+                    newPowerLogEntries.push({
+                        round: liveState.currentQuestionIndex + 1,
+                        casterName: casterResponse.characterName,
+                        powerName: power.powerName,
+                        description: `Dealt ${power.damage} damage.`
+                    });
                 } else {
-                    logGameEvent(teacherUid, 'BOSS_BATTLE', `${casterResponse?.characterName || 'A mage'}'s Wildfire fizzled as they answered incorrectly.`);
+                    newPowerLogEntries.push({
+                        round: liveState.currentQuestionIndex + 1,
+                        casterName: casterResponse?.characterName || 'Unknown Mage',
+                        powerName: power.powerName,
+                        description: 'Fizzled due to incorrect answer.'
+                    });
                 }
             });
+        }
+        
+        if (newPowerLogEntries.length > 0) {
+            setPowerLog(prev => [...prev, ...newPowerLogEntries]);
         }
 
         const baseDamage = isDivinationSkip ? 0 : results.filter(r => r.isCorrect).length;
@@ -439,6 +458,12 @@ export default function TeacherLiveBattlePage() {
                         removedAnswerIndices: arrayUnion(indexToRemove),
                         powerEventMessage: `${activation.studentName} used Nature's Guidance!`
                     });
+                     setPowerLog(prev => [...prev, {
+                        round: liveState.currentQuestionIndex + 1,
+                        casterName: activation.studentName,
+                        powerName: activation.powerName,
+                        description: 'Removed one incorrect answer.'
+                    }]);
                 }
             } else if (activation.powerName === 'Wildfire') {
                 const roll1 = Math.floor(Math.random() * 6) + 1;
@@ -474,7 +499,12 @@ export default function TeacherLiveBattlePage() {
                             message: `${studentData.characterName} has brought you back from the brink! Get back into the fight!`
                         }
                     });
-                    await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} used Enduring Spirit on ${targetData.characterName}.`);
+                     setPowerLog(prev => [...prev, {
+                        round: liveState.currentQuestionIndex + 1,
+                        casterName: activation.studentName,
+                        powerName: activation.powerName,
+                        description: `Revived ${targetData.characterName}.`
+                    }]);
                 } else if (targetSnap.exists() && targetSnap.data().hp > 0) {
                      // Target is not fallen, send feedback to caster
                     const targetedEvent: TargetedEvent = { targetUid: activation.studentUid, message: `${targetSnap.data().characterName} has already been restored! Choose another power.` };
@@ -516,7 +546,12 @@ export default function TeacherLiveBattlePage() {
                 batch.update(liveBattleRef, {
                     powerEventMessage: `${activation.studentName} has cast Lesser Heal! ${target1Name} and ${target2Name} have had health restored!`
                 });
-                await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} cast Lesser Heal on ${target1Name} and ${target2Name}.`);
+                setPowerLog(prev => [...prev, {
+                    round: liveState.currentQuestionIndex + 1,
+                    casterName: activation.studentName,
+                    powerName: activation.powerName,
+                    description: `Healed ${target1Name} and ${target2Name}.`
+                }]);
             } else if (activation.powerName === 'Focused Restoration') {
                 if (!activation.targets || activation.targets.length !== 1) return;
                 const targetUid = activation.targets[0];
@@ -539,7 +574,12 @@ export default function TeacherLiveBattlePage() {
                             message: `You have been healed by ${studentData.characterName}. Your body and spirit have been renewed!`
                         }
                     });
-                     await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} used Focused Restoration on ${targetData.characterName}.`);
+                     setPowerLog(prev => [...prev, {
+                        round: liveState.currentQuestionIndex + 1,
+                        casterName: activation.studentName,
+                        powerName: activation.powerName,
+                        description: `Healed ${targetData.characterName} for ${healAmount} HP.`
+                    }]);
                 }
             } else if (activation.powerName === 'Solar Empowerment') {
                 if (!activation.targets || activation.targets.length !== 3) return;
@@ -572,7 +612,8 @@ export default function TeacherLiveBattlePage() {
                     indices.splice(randomIndex, 1);
                     remainder--;
                 }
-
+                
+                const targetNames = [];
                 for (let i = 0; i < 3; i++) {
                     const targetUid = activation.targets[i];
                     const boostAmount = boosts[i];
@@ -581,13 +622,20 @@ export default function TeacherLiveBattlePage() {
                         hp: increment(boostAmount),
                         maxHp: increment(boostAmount)
                     });
+                    const targetDoc = await getDoc(targetRef);
+                    if(targetDoc.exists()) targetNames.push(targetDoc.data().characterName);
                 }
                 
                 batch.update(liveBattleRef, {
                     empoweredMageUids: arrayUnion(...activation.targets),
                     powerEventMessage: `${activation.studentName} has cast Solar Empowerment! Three mages begin to shine with the light of the sun!`
                 });
-                await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} cast Solar Empowerment.`);
+                setPowerLog(prev => [...prev, {
+                    round: liveState.currentQuestionIndex + 1,
+                    casterName: activation.studentName,
+                    powerName: activation.powerName,
+                    description: `Empowered ${targetNames.join(', ')}.`
+                }]);
             } else if (activation.powerName === 'Cosmic Divination') {
                  if (battleData.status === 'ROUND_ENDING') return;
                  if ((battleData.cosmicDivinationUses || 0) >= 2) {
@@ -615,7 +663,12 @@ export default function TeacherLiveBattlePage() {
                         totalVoters: activePlayersCount,
                     }
                 });
-                await logGameEvent(teacherUid, 'BOSS_BATTLE', `${activation.studentName} cast Cosmic Divination, dealing ${studentData.level} damage.`);
+                setPowerLog(prev => [...prev, {
+                    round: liveState.currentQuestionIndex + 1,
+                    casterName: activation.studentName,
+                    powerName: activation.powerName,
+                    description: `Dealt ${studentData.level} damage and initiated a vote.`
+                }]);
             }
 
             batch.update(studentRef, { mp: increment(-activation.powerMpCost) });
@@ -770,10 +823,6 @@ export default function TeacherLiveBattlePage() {
     const empoweredAtEnd = finalStateData?.empoweredMageUids || [];
     await logGameEvent(teacherUid, 'BOSS_BATTLE', `The party dealt a total of ${totalDamage} damage during '${battle.battleName}'.`);
 
-    const battleLogRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
-    const battleLogSnapshot = await getDocs(battleLogRef);
-    const battleLog = battleLogSnapshot.docs.map(doc => doc.data() as PowerLogEntry);
-
     const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
 
     // Use allRoundsData which has been accumulating results
@@ -839,11 +888,11 @@ export default function TeacherLiveBattlePage() {
         battleName: battle?.battleName,
         questions: battle?.questions,
         resultsByRound: allRoundsData,
-        battleLog: battleLog,
+        battleLog: powerLog,
+        rewards: rewardsByStudent,
         totalDamageDealt: totalDamage,
         totalBaseDamage: totalBaseDamage,
         totalPowerDamage: totalPowerDamage,
-        rewards: rewardsByStudent,
         fallenAtEnd: fallenAtEnd,
         endedAt: serverTimestamp(),
     });
@@ -1102,7 +1151,7 @@ export default function TeacherLiveBattlePage() {
                     isTeacher={true}
                     userName={"The Wise One"}
                     teacherUid={teacherUid || ''}
-                    battleId={battleId}
+                    battleId={'active-battle'}
                 />
                 {(liveState.fallenPlayerUids && liveState.fallenPlayerUids.length > 0) && (
                      <Card className="bg-card/60 backdrop-blur-sm">
@@ -1125,3 +1174,5 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
+
+    
