@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Student } from '@/lib/data';
 import {
   Dialog,
@@ -9,8 +9,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
-  DialogClose,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -27,8 +25,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, KeyRound, User, ShieldCheck, ShieldOff, Trash2 } from 'lucide-react';
+import { Loader2, KeyRound, User, ShieldCheck, ShieldOff, Trash2, UserCheck } from 'lucide-react';
 import { updateStudentDetails, resetStudentPassword, moderateStudent } from '@/ai/flows/manage-student';
+import { getAuth, type User as AuthUser } from 'firebase/auth';
+import { getFirebaseAdminApp } from '@/lib/firebase-admin';
+import { getAuth as getAdminAuth } from 'firebase-admin/auth'
 
 interface ManageStudentDialogProps {
   isOpen: boolean;
@@ -52,9 +53,32 @@ export function ManageStudentDialog({ isOpen, onOpenChange, student, setStudents
   const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   // Moderation State
+  const [isBanned, setIsBanned] = useState(false);
+  const [isLoadingBanStatus, setIsLoadingBanStatus] = useState(true);
   const [isModerating, setIsModerating] = useState(false);
   const [isBanConfirmOpen, setIsBanConfirmOpen] = useState(false);
+  const [isUnbanConfirmOpen, setIsUnbanConfirmOpen] = useState(false);
   const [isRemoveConfirmOpen, setIsRemoveConfirmOpen] = useState(false);
+
+  useEffect(() => {
+    // Reset state when a new student is selected
+    if (isOpen) {
+        setStudentName(student.studentName);
+        setCharacterName(student.characterName);
+        setNewPassword('');
+        setActiveTab('details');
+
+        const checkBanStatus = async () => {
+            // This is a simplified check. A true implementation would need a secure
+            // way to get the user's disabled status from the backend.
+            // For now, we'll assume a local state or a field on the student object.
+            // Since we can't easily get this from the client, we'll just show both options.
+            // In a real app, this would be a backend call.
+        };
+        checkBanStatus();
+    }
+  }, [isOpen, student]);
+
 
   const handleUpdateDetails = async () => {
     if (!studentName || !characterName) {
@@ -126,6 +150,7 @@ export function ManageStudentDialog({ isOpen, onOpenChange, student, setStudents
     } finally {
         setIsModerating(false);
         setIsBanConfirmOpen(false);
+        setIsUnbanConfirmOpen(false);
         setIsRemoveConfirmOpen(false);
     }
   }
@@ -208,7 +233,10 @@ export function ManageStudentDialog({ isOpen, onOpenChange, student, setStudents
                     <p className="text-sm text-muted-foreground">These actions have significant consequences. Please be certain.</p>
                     <div className="flex gap-4">
                         <Button variant="outline" onClick={() => setIsBanConfirmOpen(true)}>
-                            <ShieldOff className="mr-2 h-4 w-4" /> Temporarily Ban
+                            <ShieldOff className="mr-2 h-4 w-4" /> Ban Student
+                        </Button>
+                        <Button variant="outline" className="text-green-600 border-green-600 hover:bg-green-100 hover:text-green-700" onClick={() => setIsUnbanConfirmOpen(true)}>
+                            <UserCheck className="mr-2 h-4 w-4" /> Unban Student
                         </Button>
                          <Button variant="destructive" onClick={() => setIsRemoveConfirmOpen(true)}>
                             <Trash2 className="mr-2 h-4 w-4" /> Remove from Guild
@@ -238,6 +266,25 @@ export function ManageStudentDialog({ isOpen, onOpenChange, student, setStudents
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={isUnbanConfirmOpen} onOpenChange={setIsUnbanConfirmOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure you want to unban {student.characterName}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This will re-enable the student's account, allowing them to log in again immediately.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => handleModerationAction('unban')} disabled={isModerating} className="bg-green-600 hover:bg-green-700">
+                    {isModerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Yes, Unban Student
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={isRemoveConfirmOpen} onOpenChange={setIsRemoveConfirmOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>
@@ -258,3 +305,4 @@ export function ManageStudentDialog({ isOpen, onOpenChange, student, setStudents
     </>
   );
 }
+
