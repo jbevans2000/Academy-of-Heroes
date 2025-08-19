@@ -358,11 +358,39 @@ export default function LiveBattlePage() {
     );
   }
 
-  if (!battleState || !battleState.battleId || battleState.status === 'WAITING') {
-    const videoSrc = battle?.videoUrl ? getYouTubeEmbedUrl(battle.videoUrl) : '';
-    const waitingRoomImageUrl = battle?.bossImageUrl || "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FChatGPT%20Image%20Aug%2015%2C%202025%2C%2008_12_09%20AM.png?alt=media&token=45178e85-0ba2-42ef-b2fa-d76a8732b2c2";
-    
+  if (!battleState || !battleState.battleId) {
+    const waitingRoomImageUrl = "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FChatGPT%20Image%20Aug%2015%2C%202025%2C%2008_12_09%20AM.png?alt=media&token=45178e85-0ba2-42ef-b2fa-d76a8732b2c2";
     return (
+        <div className="relative flex min-h-screen flex-col items-center justify-center p-4">
+             <Image
+                src={waitingRoomImageUrl}
+                alt="A shadowy figure awaits"
+                fill
+                className="object-cover opacity-50"
+                priority
+            />
+             <div className="z-10 text-center w-full max-w-4xl">
+                <Card className="bg-black/60 backdrop-blur-sm p-8 border-gray-600">
+                    <CardContent className="flex flex-col items-center justify-center space-y-4">
+                        <Shield className="h-24 w-24 text-primary mb-2 animate-pulse" />
+                        <h1 className="text-4xl font-bold tracking-tight text-white">Waiting Room</h1>
+                        <p className="text-xl text-primary-foreground/80">Waiting for the Boss to appear!</p>
+                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mt-4" />
+                         <Button variant="outline" className="mt-6 bg-black/50 border-gray-400 hover:bg-gray-700 text-white" onClick={() => router.push('/dashboard')}>
+                            <LayoutDashboard className="mr-2 h-4 w-4" />
+                            Return to Dashboard
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+    );
+  }
+  
+  if (battleState.status === 'WAITING' && battle) {
+     const videoSrc = battle.videoUrl ? getYouTubeEmbedUrl(battle.videoUrl) : '';
+     const waitingRoomImageUrl = battle.bossImageUrl || "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FChatGPT%20Image%20Aug%2015%2C%202025%2C%2008_12_09%20AM.png?alt=media&token=45178e85-0ba2-42ef-b2fa-d76a8732b2c2";
+     return (
         <div className="relative flex min-h-screen flex-col items-center justify-center p-4">
             <Image
                 src={waitingRoomImageUrl}
@@ -603,7 +631,3 @@ export default function LiveBattlePage() {
     </div>
   );
 }
-
-    
-
-    
