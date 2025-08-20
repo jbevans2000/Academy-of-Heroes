@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { doc, onSnapshot, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import { DashboardHeader } from '@/components/dashboard/header';
@@ -22,6 +22,7 @@ import {
 
 export default function Dashboard() {
   const [student, setStudent] = useState<Student | null>(null);
+  const [teacherUid, setTeacherUid] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showApprovedDialog, setShowApprovedDialog] = useState(false);
   const router = useRouter();
@@ -42,10 +43,11 @@ export default function Dashboard() {
         const studentMetaSnap = await getDoc(studentMetaRef);
 
         if (studentMetaSnap.exists()) {
-          const teacherUid = studentMetaSnap.data().teacherUid;
+          const foundTeacherUid = studentMetaSnap.data().teacherUid;
+          setTeacherUid(foundTeacherUid);
           
           // Now, check if the student is in pending or main list
-          const pendingStudentRef = doc(db, 'teachers', teacherUid, 'pendingStudents', user.uid);
+          const pendingStudentRef = doc(db, 'teachers', foundTeacherUid, 'pendingStudents', user.uid);
           const pendingStudentSnap = await getDoc(pendingStudentRef);
 
           if (pendingStudentSnap.exists()) {
@@ -53,10 +55,10 @@ export default function Dashboard() {
              return;
           }
 
-          const studentRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
+          const studentRef = doc(db, 'teachers', foundTeacherUid, 'students', user.uid);
           const unsub = onSnapshot(studentRef, (docSnap) => {
             if (docSnap.exists()) {
-              setStudent(docSnap.data() as Student);
+              setStudent({ uid: docSnap.id, ...docSnap.data() } as Student);
               setIsLoading(false);
             } else {
               // This could happen if the teacher deletes the student
@@ -81,11 +83,39 @@ export default function Dashboard() {
     // Return the unsubscribe function for the auth listener
     return () => authUnsubscribe();
   }, [router]);
+
+  // Effect to manage online presence
+  useEffect(() => {
+    if (!student || !teacherUid) return;
+
+    const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
+
+    // Set status to online when component mounts
+    updateDoc(studentRef, {
+      onlineStatus: { status: 'online', lastSeen: serverTimestamp() }
+    });
+
+    // Function to set status to offline
+    const setOffline = () => {
+        updateDoc(studentRef, {
+            onlineStatus: { status: 'offline', lastSeen: serverTimestamp() }
+        });
+    };
+    
+    // Set status to offline when the user navigates away or closes the tab
+    window.addEventListener('beforeunload', setOffline);
+
+    // Set status to offline when the component unmounts (e.g., logout)
+    return () => {
+        window.removeEventListener('beforeunload', setOffline);
+        setOffline();
+    };
+  }, [student, teacherUid]);
   
   const handleCloseApprovedDialog = async () => {
     setShowApprovedDialog(false);
-    if (student) {
-      const studentRef = doc(db, 'teachers', student.teacherUid, 'students', student.uid);
+    if (student && teacherUid) {
+      const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
       await updateDoc(studentRef, { isNewlyApproved: false });
     }
     router.replace('/dashboard', { scroll: false });

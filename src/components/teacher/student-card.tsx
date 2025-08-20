@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { calculateLevel, calculateHpGain, calculateMpGain, calculateBaseMaxHp } from '@/lib/game-mechanics';
 import { Label } from '../ui/label';
 import { ManageStudentDialog } from './manage-student-dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 interface EditableStatProps {
     student: Student;
@@ -112,7 +113,7 @@ function EditableStat({ student, stat, icon, label, setStudents, teacherUid }: E
             }
 
             await updateDoc(studentRef, updates);
-            setStudents(prev => prev.map(s => s.uid === student.uid ? { ...s, ...updates } : s));
+            // Real-time listener will update the state, no need for setStudents
             toast({ title: 'Stat Updated!', description: `${student.characterName}'s ${label} has been set to ${amount}.` });
 
         } catch (error) {
@@ -197,7 +198,7 @@ function EditablePairedStat({ student, stat, maxStat, icon, label, setStudents, 
             };
 
             await updateDoc(studentRef, updates);
-            setStudents(prev => prev.map(s => s.uid === student.uid ? { ...s, ...updates } : s));
+            // Real-time listener will update the state
             toast({ title: 'Stat Updated!', description: `${student.characterName}'s ${label} has been updated.` });
 
         } catch (error) {
@@ -256,6 +257,8 @@ interface StudentCardProps {
 export function StudentCard({ student, isSelected, onSelect, setStudents, teacherUid }: StudentCardProps) {
   const avatarUrl = student.avatarUrl || 'https://placehold.co/100x100.png';
   const [isManageOpen, setIsManageOpen] = useState(false);
+  
+  const isOnline = student.onlineStatus?.status === 'online';
 
   const avatarBorderColor = {
     Mage: 'border-blue-600',
@@ -274,6 +277,7 @@ export function StudentCard({ student, isSelected, onSelect, setStudents, teache
         teacherUid={teacherUid}
       />
       <Dialog>
+      <TooltipProvider>
         <Card className={cn("shadow-lg rounded-xl flex flex-col overflow-hidden transition-all duration-300", isSelected ? "ring-2 ring-primary scale-105" : "hover:scale-105")}>
           <CardHeader className="p-4 relative h-40 bg-secondary/30 flex items-center justify-center">
               <div className="absolute top-2 right-2 z-10">
@@ -284,6 +288,16 @@ export function StudentCard({ student, isSelected, onSelect, setStudents, teache
                       className="h-6 w-6 border-2 border-black bg-white"
                   />
               </div>
+               {isOnline && (
+                  <Tooltip>
+                    <TooltipTrigger className="absolute top-2 left-2 z-10">
+                       <div className="w-3 h-3 rounded-full bg-green-500 ring-2 ring-white animate-pulse" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Online</p>
+                    </TooltipContent>
+                  </Tooltip>
+              )}
               <div className={cn("relative w-28 h-28 border-4 bg-black/20 p-1 shadow-inner", avatarBorderColor)}>
                   <Image
                       src={avatarUrl}
@@ -362,6 +376,7 @@ export function StudentCard({ student, isSelected, onSelect, setStudents, teache
             </Button>
           </CardFooter>
         </Card>
+      </TooltipProvider>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>{student.characterName}'s Dashboard</DialogTitle>

@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { collection, getDocs, writeBatch, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, onSnapshot, writeBatch, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student, PendingStudent, ClassType } from '@/lib/data';
 import { TeacherHeader } from "@/components/teacher/teacher-header";
@@ -46,7 +46,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, UserX, Swords, PlusCircle, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc } from 'lucide-react';
+import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -84,41 +84,41 @@ export default function Dashboard() {
 
   const { toast } = useToast();
   
-  const fetchTeacherAndStudentData = async (user: User) => {
-    setIsLoading(true);
-    try {
-      const teacherRef = doc(db, 'teachers', user.uid);
-      const teacherSnap = await getDoc(teacherRef);
-      if (teacherSnap.exists()) {
-        setTeacherData(teacherSnap.data() as TeacherData);
-      }
-
-      const studentsQuerySnapshot = await getDocs(collection(db, "teachers", user.uid, "students"));
-      setStudents(studentsQuerySnapshot.docs.map(doc => ({ ...doc.data() } as Student)));
-      
-      const pendingStudentsQuerySnapshot = await getDocs(collection(db, "teachers", user.uid, "pendingStudents"));
-      setPendingStudents(pendingStudentsQuerySnapshot.docs.map(doc => ({ ...doc.data() } as PendingStudent)));
-
-    } catch (error) {
-       console.error("Error fetching data: ", error);
-       toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Could not fetch your class data.',
-      });
-    } finally {
-        setIsLoading(false);
-    }
-  }
-  
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, user => {
-        if (user) {
-            setTeacher(user);
-            fetchTeacherAndStudentData(user);
-        } else {
-            router.push('/teacher/login');
+    const unsubscribe = onAuthStateChanged(auth, async user => {
+      if (user) {
+        setTeacher(user);
+        
+        // Fetch static teacher data once
+        const teacherRef = doc(db, 'teachers', user.uid);
+        const teacherSnap = await getDoc(teacherRef);
+        if (teacherSnap.exists()) {
+            setTeacherData(teacherSnap.data() as TeacherData);
         }
+
+        // Set up real-time listener for students
+        const studentsQuery = collection(db, "teachers", user.uid, "students");
+        const studentsUnsubscribe = onSnapshot(studentsQuery, (snapshot) => {
+            const studentData = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
+            setStudents(studentData);
+            setIsLoading(false);
+        });
+      
+        // Set up real-time listener for pending students
+        const pendingStudentsQuery = collection(db, "teachers", user.uid, "pendingStudents");
+        const pendingUnsubscribe = onSnapshot(pendingStudentsQuery, (snapshot) => {
+            setPendingStudents(snapshot.docs.map(doc => ({ ...doc.data() } as PendingStudent)));
+        });
+
+        // Cleanup listeners on unmount
+        return () => {
+            studentsUnsubscribe();
+            pendingUnsubscribe();
+        };
+
+      } else {
+        router.push('/teacher/login');
+      }
     });
 
     if (searchParams.get('new') === 'true') {
@@ -127,7 +127,7 @@ export default function Dashboard() {
 
     return () => unsubscribe();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router]);
+  }, []); // Changed to run only once
 
   const sortedStudents = useMemo(() => {
     const sorted = [...students];
@@ -188,46 +188,36 @@ export default function Dashboard() {
       
       try {
           const batch = writeBatch(db);
-          const studentDocs = await Promise.all(selectedStudents.map(uid => getDoc(doc(db, 'teachers', teacher!.uid, 'students', uid))));
+          // Use the local state which is already up-to-date
+          const studentsToUpdate = students.filter(s => selectedStudents.includes(s.uid));
 
-          const updatedStudentsData: Student[] = [];
+          for (const studentData of studentsToUpdate) {
+              const studentRef = doc(db, 'teachers', teacher!.uid, 'students', studentData.uid);
+              const currentXp = studentData.xp || 0;
+              const newXp = Math.max(0, currentXp + amount);
+              
+              const currentLevel = studentData.level || 1;
+              const newLevel = calculateLevel(newXp);
+              
+              const updates: Partial<Student> = { xp: newXp };
 
-          for (const studentDoc of studentDocs) {
-              if (studentDoc.exists()) {
-                  const studentData = studentDoc.data() as Student;
-                  const currentXp = studentData.xp || 0;
-                  const newXp = Math.max(0, currentXp + amount);
-                  
-                  const currentLevel = studentData.level || 1;
-                  const newLevel = calculateLevel(newXp);
-                  
-                  const updates: Partial<Student> = { xp: newXp };
+              if (newLevel > currentLevel) {
+                  const levelsGained = newLevel - currentLevel;
+                  const hpGained = calculateHpGain(studentData.class, levelsGained);
+                  const mpGained = calculateMpGain(studentData.class, levelsGained);
 
-                  if (newLevel > currentLevel) {
-                      const levelsGained = newLevel - currentLevel;
-                      const hpGained = calculateHpGain(studentData.class, levelsGained);
-                      const mpGained = calculateMpGain(studentData.class, levelsGained);
-
-                      updates.level = newLevel;
-                      updates.hp = (studentData.hp || 0) + hpGained;
-                      updates.maxHp = (studentData.maxHp || 0) + hpGained;
-                      updates.mp = (studentData.mp || 0) + mpGained;
-                      updates.maxMp = (studentData.maxMp || 0) + mpGained;
-                  }
-                  
-                  batch.update(studentDoc.ref, updates);
-                  updatedStudentsData.push({ ...studentData, ...updates });
+                  updates.level = newLevel;
+                  updates.hp = (studentData.hp || 0) + hpGained;
+                  updates.maxHp = (studentData.maxHp || 0) + hpGained;
+                  updates.mp = (studentData.mp || 0) + mpGained;
+                  updates.maxMp = (studentData.maxMp || 0) + mpGained;
               }
+              
+              batch.update(studentRef, updates);
           }
           
           await batch.commit();
-
-          setStudents(currentStudents => 
-            currentStudents.map(student => {
-              const updatedStudent = updatedStudentsData.find(u => u.uid === student.uid);
-              return updatedStudent || student;
-            })
-          );
+          // Real-time listener will update the UI automatically
           
           await logGameEvent(teacher!.uid, 'GAMEMASTER', `Bestowed ${amount} XP to ${selectedStudents.length} student(s).`);
 
@@ -273,25 +263,17 @@ export default function Dashboard() {
 
       try {
           const batch = writeBatch(db);
-          const studentDocs = await Promise.all(selectedStudents.map(uid => getDoc(doc(db, 'teachers', teacher!.uid, 'students', uid))));
+          const studentsToUpdate = students.filter(s => selectedStudents.includes(s.uid));
 
-          for (const studentDoc of studentDocs) {
-              if (studentDoc.exists()) {
-                  const currentGold = studentDoc.data().gold || 0;
-                  const newGold = Math.max(0, currentGold + amount);
-                  batch.update(studentDoc.ref, { gold: newGold });
-              }
+          for (const studentData of studentsToUpdate) {
+              const studentRef = doc(db, 'teachers', teacher!.uid, 'students', studentData.uid);
+              const currentGold = studentData.gold || 0;
+              const newGold = Math.max(0, currentGold + amount);
+              batch.update(studentRef, { gold: newGold });
           }
 
           await batch.commit();
-
-          setStudents(currentStudents => 
-            currentStudents.map(student => 
-              selectedStudents.includes(student.uid)
-                ? { ...student, gold: Math.max(0, (student.gold || 0) + amount) }
-                : student
-            )
-          );
+          // Real-time listener will update UI
           
           await logGameEvent(teacher!.uid, 'GAMEMASTER', `Bestowed ${amount} Gold to ${selectedStudents.length} student(s).`);
 
@@ -325,8 +307,7 @@ export default function Dashboard() {
               batch.delete(studentRef);
           }
           await batch.commit();
-
-          setStudents(prev => prev.filter(s => !selectedStudents.includes(s.uid)));
+          // Real-time listener will update UI
           
           await logGameEvent(teacher.uid, 'GAMEMASTER', `Deleted ${selectedStudents.length} student(s) from the database.`);
           setSelectedStudents([]);
@@ -383,8 +364,8 @@ export default function Dashboard() {
       batch.delete(pendingStudentRef);
       
       await batch.commit();
+      // Real-time listeners will handle UI updates.
       
-      setStudents(prev => [...prev, newStudent]);
       await logGameEvent(teacher.uid, 'ACCOUNT', `${newStudent.studentName} (${newStudent.characterName}) was approved and joined the guild.`);
       toast({ title: "Hero Approved!", description: `${newStudent.characterName} has joined your guild.` });
     } else {
@@ -394,7 +375,7 @@ export default function Dashboard() {
       toast({ title: "Request Rejected", description: `The request for ${pendingStudent.characterName} has been deleted.` });
     }
   
-    setPendingStudents(prev => prev.filter(p => p.uid !== uid));
+    // UI will update from the listener
     if (pendingStudents.length === 1) {
       setIsApprovalDialogOpen(false); // Close dialog if it was the last one
     }
@@ -474,7 +455,7 @@ export default function Dashboard() {
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto">
-                    {pendingStudents.map(ps => (
+                    {pendingStudents.length > 0 ? pendingStudents.map(ps => (
                         <div key={ps.uid} className="flex items-center justify-between p-3 border rounded-lg">
                             <div>
                                 <p className="font-bold">{ps.characterName}</p>
@@ -489,7 +470,7 @@ export default function Dashboard() {
                                 </Button>
                             </div>
                         </div>
-                    ))}
+                    )) : <p className='text-muted-foreground text-center'>No pending approvals.</p>}
                 </div>
             </DialogContent>
         </Dialog>
@@ -700,5 +681,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
-    
