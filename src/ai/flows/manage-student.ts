@@ -8,8 +8,9 @@
  * - resetStudentPassword: Resets a student's password in Firebase Auth.
  * - moderateStudent: Bans, unbans, or deletes a student's account.
  * - getStudentStatus: Fetches the enabled/disabled status of a student's account.
+ * - clearGameLog: Deletes all entries from the game log.
  */
-import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirebaseAdminApp } from '@/lib/firebase-admin';
@@ -116,4 +117,31 @@ export async function getStudentStatus(input: StudentStatusInput): Promise<Stude
         // This could happen if the user was deleted but the Firestore record remains.
         return { isBanned: false };
     }
+}
+
+interface ClearLogInput {
+  teacherUid: string;
+}
+
+export async function clearGameLog(input: ClearLogInput): Promise<ActionResponse> {
+  try {
+    const logCollectionRef = collection(db, 'teachers', input.teacherUid, 'gameLog');
+    const logSnapshot = await getDocs(logCollectionRef);
+    
+    if (logSnapshot.empty) {
+        return { success: true, message: 'Game log is already empty.' };
+    }
+
+    const batch = writeBatch(db);
+    logSnapshot.docs.forEach(doc => {
+        batch.delete(doc.ref);
+    });
+
+    await batch.commit();
+
+    return { success: true, message: 'Game log cleared successfully.' };
+  } catch (e: any) {
+    console.error("Error in clearGameLog:", e);
+    return { success: false, error: e.message || 'Failed to clear the game log.' };
+  }
 }

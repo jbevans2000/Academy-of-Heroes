@@ -9,10 +9,23 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, BookOpen } from 'lucide-react';
+import { ArrowLeft, BookOpen, Trash2, Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatDistanceToNow } from 'date-fns';
 import { onAuthStateChanged, type User } from 'firebase/auth';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { useToast } from '@/hooks/use-toast';
+import { clearGameLog } from '@/ai/flows/manage-student';
 
 interface GameLogEntry {
   id: string;
@@ -26,9 +39,11 @@ interface GameLogEntry {
 
 export default function GameLogPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [logs, setLogs] = useState<GameLogEntry[]>([]);
   const [filteredLogs, setFilteredLogs] = useState<GameLogEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const [teacher, setTeacher] = useState<User | null>(null);
 
@@ -73,6 +88,25 @@ export default function GameLogPage() {
       }
   }, [activeTab, logs]);
 
+  const handleClearLog = async () => {
+    if (!teacher) return;
+    setIsDeleting(true);
+    try {
+        const result = await clearGameLog({ teacherUid: teacher.uid });
+        if (result.success) {
+            toast({ title: "Game Log Cleared", description: "All log entries have been permanently deleted." });
+            // The onSnapshot listener will automatically update the UI to show an empty list.
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (error: any) {
+        toast({ variant: "destructive", title: "Error", description: "Could not clear the game log. Please try again." });
+        console.error("Error clearing game log:", error);
+    } finally {
+        setIsDeleting(false);
+    }
+  }
+
   const renderLogList = (logList: GameLogEntry[]) => {
       if (isLoading) {
           return (
@@ -105,10 +139,35 @@ export default function GameLogPage() {
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="max-w-4xl mx-auto space-y-6">
-          <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dais
-          </Button>
+          <div className="flex justify-between items-center">
+            <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Dais
+            </Button>
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="destructive" disabled={isDeleting || logs.length === 0}>
+                        {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                        Clear Log
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure you want to clear the entire game log?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. All recorded game events will be permanently deleted.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleClearLog} disabled={isDeleting}>
+                            {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Yes, Clear Log
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+          </div>
 
           <Card className="shadow-lg">
             <CardHeader>
