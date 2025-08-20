@@ -107,6 +107,7 @@ export default function RegisterPage() {
       const classInfo = classData[selectedClass];
       const baseStats = classInfo.baseStats;
 
+      // Create the main pending student document
       await setDoc(doc(db, 'teachers', teacherUid, 'pendingStudents', user.uid), {
         uid: user.uid,
         teacherUid: teacherUid,
@@ -122,6 +123,11 @@ export default function RegisterPage() {
         maxMp: baseStats.mp,
         status: 'pending',
         requestedAt: serverTimestamp(),
+      });
+
+      // Create the global student metadata document
+      await setDoc(doc(db, 'students', user.uid), {
+        teacherUid: teacherUid,
       });
       
       toast({
@@ -299,7 +305,3 @@ export default function RegisterPage() {
     </TooltipProvider>
   );
 }
-
-    
-
-    

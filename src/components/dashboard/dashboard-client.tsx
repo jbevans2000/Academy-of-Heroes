@@ -7,7 +7,7 @@ import { AvatarDisplay } from "./avatar-display";
 import { Button } from "../ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, Map, Swords, Sparkles } from "lucide-react";
+import { User, Map, Swords, Sparkles, BookHeart } from "lucide-react";
 
 interface DashboardClientProps {
   student: Student;
@@ -39,6 +39,12 @@ export function DashboardClient({ student }: DashboardClientProps) {
                 <Swords className="mr-4 h-8 w-8" />
                 Ready for Battle
             </Button>
+             <Link href="/dashboard/songs-and-stories" passHref className="w-full">
+                <Button size="lg" variant="secondary" className="w-full py-8 text-lg">
+                    <BookHeart className="mr-4 h-8 w-8" />
+                    Songs and Stories
+                </Button>
+            </Link>
           </div>
         </div>
         <StatsCard 

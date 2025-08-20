@@ -297,29 +297,24 @@ export default function LiveBattlePage() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUser(user);
-        // Find which teacher this student belongs to
-        const studentRef = doc(db, 'students', user.uid);
-        const studentSnap = await getDoc(studentRef);
+        const studentMetaRef = doc(db, 'students', user.uid);
+        const studentMetaSnap = await getDoc(studentMetaRef);
 
-        if(studentSnap.exists()){
-            const studentData = studentSnap.data() as Student;
-            setTeacherUid(studentData.teacherUid);
-            setStudent(studentData);
-        } else {
-            // This case should ideally not be hit if registration is correct.
-            // Fallback to searching all teachers if needed.
-            console.warn("Student doc not found at root, falling back to teacher search.");
-            const teachersSnapshot = await getDocs(collection(db, 'teachers'));
-            for (const teacherDoc of teachersSnapshot.docs) {
-              const studentDocRef = doc(db, 'teachers', teacherDoc.id, 'students', user.uid);
-              const deepStudentSnap = await getDoc(studentDocRef);
-              if (deepStudentSnap.exists()) {
-                const studentDataWithUid = { ...deepStudentSnap.data(), teacherUid: teacherDoc.id } as Student;
-                setTeacherUid(teacherDoc.id);
-                setStudent(studentDataWithUid);
-                break;
-              }
+        if (studentMetaSnap.exists()) {
+            const meta = studentMetaSnap.data();
+            setTeacherUid(meta.teacherUid);
+            
+            const studentRef = doc(db, 'teachers', meta.teacherUid, 'students', user.uid);
+            const studentSnap = await getDoc(studentRef);
+
+            if (studentSnap.exists()) {
+                setStudent(studentSnap.data() as Student);
+            } else {
+                router.push('/');
             }
+        } else {
+            console.error("Student document not found at root.");
+            router.push('/');
         }
       } else {
         router.push('/');
@@ -382,13 +377,6 @@ export default function LiveBattlePage() {
         }
 
         setBattleState(newState);
-
-        // REMOVED: The automatic redirect to the summary page.
-        // The student will now stay on this page until the teacher starts a new battle.
-        // if (newState.status === 'BATTLE_ENDED') {
-        //     router.push(`/battle/summary?id=${newState.battleId}`);
-        // }
-
       } else {
           setBattleState(null);
       }
@@ -764,10 +752,9 @@ export default function LiveBattlePage() {
                         <CardDescription className="text-lg text-muted-foreground">The teacher has concluded the battle. Awaiting the next session.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                        <Button size="lg" onClick={() => router.push(`/battle/summary?id=${battleState.battleId}`)}>
-                            View Your Battle Report
+                        <Button size="lg" onClick={() => router.push('/dashboard')}>
+                            Return to Dashboard
                         </Button>
-                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mt-8" />
                     </CardContent>
                 </Card>
             </div>
