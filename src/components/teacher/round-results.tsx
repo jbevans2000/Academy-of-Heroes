@@ -4,8 +4,10 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { CheckCircle, XCircle } from "lucide-react";
+import type { Student } from "@/lib/data";
 
 export interface Result {
+  studentUid: string;
   studentName: string;
   answer: string;
   isCorrect: boolean;
@@ -14,16 +16,24 @@ export interface Result {
 
 interface RoundResultsProps {
   results: Result[];
+  allStudents: Student[];
 }
 
-export function RoundResults({ results }: RoundResultsProps) {
-  const correctAnswers = results.filter(r => r.isCorrect).length;
-  const incorrectAnswers = results.length - correctAnswers;
+export function RoundResults({ results, allStudents }: RoundResultsProps) {
+  
+  // Create a map for quick lookup of online status
+  const onlineStatusMap = new Map(allStudents.map(s => [s.uid, s.onlineStatus?.status === 'online']));
+  
+  // Filter the results to only include online students
+  const filteredResults = results.filter(r => onlineStatusMap.get(r.studentUid));
 
-  if (results.length === 0) {
+  const correctAnswers = filteredResults.filter(r => r.isCorrect).length;
+  const incorrectAnswers = filteredResults.length - correctAnswers;
+
+  if (filteredResults.length === 0) {
     return (
        <div className="text-center py-8 text-muted-foreground">
-            No answers have been submitted for this round yet.
+            No online students have submitted an answer for this round yet.
         </div>
     )
   }
@@ -39,7 +49,7 @@ export function RoundResults({ results }: RoundResultsProps) {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {results.map((result, index) => (
+        {filteredResults.map((result, index) => (
           <TableRow key={index}>
             <TableCell className="font-medium">{result.studentName}</TableCell>
             <TableCell>{result.answer}</TableCell>
@@ -68,5 +78,3 @@ export function RoundResults({ results }: RoundResultsProps) {
     </Table>
   );
 }
-
-    

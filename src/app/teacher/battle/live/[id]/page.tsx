@@ -190,8 +190,12 @@ export default function TeacherLiveBattlePage() {
   useEffect(() => {
     if (!teacherUid) return;
     const fetchStudents = async () => {
-        const studentsSnapshot = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
-        setAllStudents(studentsSnapshot.docs.map(doc => ({uid: doc.id, ...doc.data()} as Student)));
+        const studentsRef = collection(db, 'teachers', teacherUid, 'students');
+        // Use onSnapshot to listen for real-time updates
+        const unsubscribe = onSnapshot(studentsRef, (studentsSnapshot) => {
+            setAllStudents(studentsSnapshot.docs.map(doc => ({uid: doc.id, ...doc.data()} as Student)));
+        });
+        return () => unsubscribe(); // Cleanup listener
     }
     fetchStudents();
   }, [teacherUid]);
@@ -271,6 +275,7 @@ export default function TeacherLiveBattlePage() {
             const powerUsed = powerUsers[doc.id]?.join(', ') || undefined;
 
             responses.push({
+                studentUid: data.uid,
                 studentName: data.characterName,
                 answer: data.answer,
                 isCorrect: data.isCorrect,
@@ -1178,7 +1183,7 @@ export default function TeacherLiveBattlePage() {
                             <CardDescription>See which students have submitted their answer for the current question.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                        <RoundResults results={studentResponses} />
+                        <RoundResults results={studentResponses} allStudents={allStudents} />
                         </CardContent>
                     </Card>
                 )}
@@ -1196,7 +1201,7 @@ export default function TeacherLiveBattlePage() {
                             </Button>
                         </CardHeader>
                         <CardContent>
-                            <RoundResults results={roundResults} />
+                            <RoundResults results={roundResults} allStudents={allStudents} />
                              <div className="mt-4 p-4 rounded-md bg-sky-900/70 border border-sky-700 text-sky-200 flex flex-col gap-4">
                                 <div className="flex items-center justify-center gap-4 text-center">
                                     <div className="flex-1">
