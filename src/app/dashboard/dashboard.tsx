@@ -86,7 +86,7 @@ export default function Dashboard() {
 
   // Effect to manage online presence
   useEffect(() => {
-    if (!student || !teacherUid) return;
+    if (!student?.uid || !teacherUid) return;
 
     const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
 
@@ -110,7 +110,7 @@ export default function Dashboard() {
         window.removeEventListener('beforeunload', setOffline);
         setOffline();
     };
-  }, [student, teacherUid]);
+  }, [student?.uid, teacherUid]);
   
   const handleCloseApprovedDialog = async () => {
     setShowApprovedDialog(false);
