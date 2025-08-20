@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { collection, doc, getDoc, onSnapshot, writeBatch, deleteDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, onSnapshot, writeBatch, deleteDoc, getDocs } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student, PendingStudent, ClassType } from '@/lib/data';
 import { TeacherHeader } from "@/components/teacher/teacher-header";
@@ -386,9 +386,23 @@ export default function Dashboard() {
       if (!teacher) return;
       setIsClearingBattlefield(true);
       try {
+          const batch = writeBatch(db);
           const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
-          await deleteDoc(liveBattleRef);
-          toast({ title: 'Battlefield Cleared', description: 'The live battle has been reset.' });
+
+          // Delete subcollections explicitly
+          const subcollections = ['responses', 'powerActivations', 'battleLog', 'messages'];
+          for (const sub of subcollections) {
+              const subRef = collection(liveBattleRef, sub);
+              const snapshot = await getDocs(subRef);
+              snapshot.forEach(doc => batch.delete(doc.ref));
+          }
+
+          // Delete the main document
+          batch.delete(liveBattleRef);
+
+          await batch.commit();
+          toast({ title: 'Battlefield Cleared', description: 'The live battle state and all old responses have been reset.' });
+
       } catch (error: any) {
           if (error.code === 'not-found') {
               toast({ title: 'Battlefield Already Clear', description: 'No active battle to clear.' });
