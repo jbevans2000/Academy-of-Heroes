@@ -438,7 +438,7 @@ export default function LiveBattlePage() {
       answer: currentQuestion.answers[selectedAnswer],
       answerIndex: selectedAnswer,
       isCorrect: isCorrect,
-      submittedAt: serverTimestamp(),
+      submittedAt: new Date(),
     };
 
     // Use setDoc with merge to create the document if it doesn't exist,
