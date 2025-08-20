@@ -749,7 +749,7 @@ export default function TeacherLiveBattlePage() {
         });
 
         return () => unsubscribe();
-    // eslint-disable-next-line react-hooks-exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [liveState?.status, liveState?.currentQuestionIndex, battle, teacherUid, allStudents]);
 
 
@@ -934,6 +934,16 @@ export default function TeacherLiveBattlePage() {
                 updates.maxMp = calculateBaseMaxHp(studentData.class, newLevel, 'mp');
             }
             batch.update(studentRef, updates);
+
+            // Create individual student summary
+            const studentSummaryRef = doc(db, 'teachers', teacherUid, 'students', uid, 'battleSummaries', battleId);
+            batch.set(studentSummaryRef, {
+                battleId: battleId,
+                battleName: battle?.battleName || '',
+                endedAt: serverTimestamp(),
+                xpGained: xpGained,
+                goldGained: goldGained,
+            });
         }
     }
 
