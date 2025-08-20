@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { doc, onSnapshot, collection, getDocs, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import { DashboardHeader } from '@/components/dashboard/header';
@@ -37,47 +37,40 @@ export default function Dashboard() {
   useEffect(() => {
     const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // Since we don't know the teacher UID on the client, we have to find it.
-        // This is inefficient but necessary with the current data structure.
-        const teachersSnapshot = await getDocs(collection(db, 'teachers'));
-        let foundStudent = false;
+        // Find the teacher UID from the global student document
+        const studentMetaRef = doc(db, 'students', user.uid);
+        const studentMetaSnap = await getDoc(studentMetaRef);
 
-        for (const teacherDoc of teachersSnapshot.docs) {
-          const studentRef = doc(db, 'teachers', teacherDoc.id, 'students', user.uid);
-          const studentSnap = await getDoc(studentRef);
+        if (studentMetaSnap.exists()) {
+          const teacherUid = studentMetaSnap.data().teacherUid;
+          
+          // Now, check if the student is in pending or main list
+          const pendingStudentRef = doc(db, 'teachers', teacherUid, 'pendingStudents', user.uid);
+          const pendingStudentSnap = await getDoc(pendingStudentRef);
 
-          if (studentSnap.exists()) {
-            const studentData = studentSnap.data() as Student;
-            
-            // Start listening to this student's document for real-time updates
-            const unsub = onSnapshot(studentRef, (docSnap) => {
-              if (docSnap.exists()) {
-                setStudent(docSnap.data() as Student);
-              } else {
-                router.push('/');
-              }
-            });
-            
-            setIsLoading(false);
-            foundStudent = true;
-            // It's important to return a cleanup function for the listener
-            return () => unsub();
+          if (pendingStudentSnap.exists()) {
+             router.push('/awaiting-approval');
+             return;
           }
 
-          const pendingStudentRef = doc(db, 'teachers', teacherDoc.id, 'pendingStudents', user.uid);
-          const pendingStudentSnap = await getDoc(pendingStudentRef);
-           if (pendingStudentSnap.exists()) {
-              router.push('/awaiting-approval');
-              foundStudent = true;
-              break;
-           }
+          const studentRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
+          const unsub = onSnapshot(studentRef, (docSnap) => {
+            if (docSnap.exists()) {
+              setStudent(docSnap.data() as Student);
+              setIsLoading(false);
+            } else {
+              // This could happen if the teacher deletes the student
+              router.push('/');
+            }
+          });
+          
+          // Return the listener cleanup function
+          return () => unsub();
+        } else {
+          // If the metadata doc doesn't exist, something is wrong
+          console.error(`No teacher metadata found for student with UID: ${user.uid}`);
+          router.push('/');
         }
-
-        if (!foundStudent) {
-            console.error(`No teacher found for student with UID: ${user.uid}`);
-            router.push('/');
-        }
-
       } else {
         // No user is signed in.
         setIsLoading(false);
@@ -138,5 +131,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
-    
