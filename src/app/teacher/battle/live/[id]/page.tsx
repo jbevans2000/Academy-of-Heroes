@@ -270,14 +270,14 @@ export default function TeacherLiveBattlePage() {
         const results: Result[] = [];
         const newlyFallenUids: string[] = [];
         
-        const onlineStudents = allStudents.filter(s => s.onlineStatus?.status === 'online' && s.hp > 0);
+        const onlineStudents = allStudents.filter(s => s.onlineStatus?.status === 'online');
 
         for (const student of onlineStudents) {
             const response = submittedResponses.find(r => r.studentUid === student.uid);
             const isCorrect = response?.isCorrect ?? false;
             
-            // Only add to results if they responded, or if they are online and didn't respond
-            if(response || (!response && student.onlineStatus?.status === 'online')) {
+            // Push result if they responded or were online and active during the question
+            if (response || (!response && student.hp > 0)) {
                 results.push({
                     studentUid: student.uid,
                     studentName: student.characterName,
@@ -287,7 +287,7 @@ export default function TeacherLiveBattlePage() {
                 });
             }
 
-            if (!isCorrect && !isDivinationSkip) {
+            if (!isCorrect && student.hp > 0 && !isDivinationSkip) {
                 const currentQuestion = battle.questions[liveState.currentQuestionIndex];
                 const damageOnIncorrect = currentQuestion.damage || 0;
 
@@ -1225,5 +1225,3 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
-
-    
