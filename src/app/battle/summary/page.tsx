@@ -11,8 +11,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Trophy, LayoutDashboard, HeartCrack, Star, Coins, ShieldCheck, Sparkles, Skull, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { findTeacherForStudent } from '@/lib/utils';
 import { useState, useEffect } from 'react';
+import type { Student } from '@/lib/data';
 
 
 interface Question {
@@ -62,11 +62,14 @@ function StudentBattleSummary() {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
         if (currentUser) {
             setUser(currentUser);
-            const foundTeacherUid = await findTeacherForStudent(currentUser.uid);
-            if (foundTeacherUid) {
-                setTeacherUid(foundTeacherUid);
-            } else {
-                router.push('/');
+            // Since we don't know teacherUid on client, we find it
+            const teachersSnapshot = await getDocs(collection(db, 'teachers'));
+            for (const teacherDoc of teachersSnapshot.docs) {
+                const studentDoc = await getDoc(doc(db, 'teachers', teacherDoc.id, 'students', currentUser.uid));
+                if (studentDoc.exists()) {
+                    setTeacherUid(teacherDoc.id);
+                    break;
+                }
             }
         } else {
             router.push('/');
@@ -262,3 +265,5 @@ export default function StudentBattleSummaryPage() {
         </Suspense>
     )
 }
+
+    

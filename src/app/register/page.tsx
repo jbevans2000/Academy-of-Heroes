@@ -109,6 +109,7 @@ export default function RegisterPage() {
 
       await setDoc(doc(db, 'teachers', teacherUid, 'pendingStudents', user.uid), {
         uid: user.uid,
+        teacherUid: teacherUid,
         studentId: studentId,
         email: email,
         studentName: studentName,
@@ -298,5 +299,7 @@ export default function RegisterPage() {
     </TooltipProvider>
   );
 }
+
+    
 
     

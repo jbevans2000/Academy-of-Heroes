@@ -3,6 +3,7 @@ export type ClassType = 'Guardian' | 'Healer' | 'Mage' | '';
 
 export type Student = {
     uid: string;
+    teacherUid: string;
     studentId: string;
     email: string;
     studentName: string;
@@ -24,6 +25,7 @@ export type Student = {
 
 export type PendingStudent = {
   uid: string;
+  teacherUid: string;
   studentId: string;
   email: string;
   studentName: string;
@@ -82,3 +84,5 @@ export const classData = {
     baseStats: { hp: 6, mp: 15 },
   },
 };
+
+    

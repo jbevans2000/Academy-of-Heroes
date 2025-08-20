@@ -17,7 +17,6 @@ import type { Student } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
-import { findTeacherForStudent } from '@/lib/utils';
 
 
 export default function ChapterPage() {
@@ -41,14 +40,15 @@ export default function ChapterPage() {
         const authUnsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
                 setUser(currentUser);
-                const foundTeacherUid = await findTeacherForStudent(currentUser.uid);
-                if (foundTeacherUid) {
-                    setTeacherUid(foundTeacherUid);
-                    getDoc(doc(db, 'teachers', foundTeacherUid, 'students', currentUser.uid)).then(docSnap => {
-                        if (docSnap.exists()) {
-                            setStudent(docSnap.data() as Student);
-                        }
-                    });
+                const teachersSnapshot = await getDocs(collection(db, 'teachers'));
+                for (const teacherDoc of teachersSnapshot.docs) {
+                  const studentDocRef = doc(db, 'teachers', teacherDoc.id, 'students', currentUser.uid);
+                  const studentSnap = await getDoc(studentDocRef);
+                  if (studentSnap.exists()) {
+                    setTeacherUid(teacherDoc.id);
+                    setStudent(studentSnap.data() as Student);
+                    break;
+                  }
                 }
             } else {
                 router.push('/');
@@ -404,3 +404,5 @@ export default function ChapterPage() {
         </div>
     );
 }
+
+    

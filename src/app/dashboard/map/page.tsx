@@ -8,13 +8,12 @@ import { useRouter } from 'next/navigation';
 import { LayoutDashboard } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
-import { collection, getDocs, doc, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, doc, onSnapshot, query, orderBy, getDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import type { QuestHub } from '@/lib/quests';
 import type { Student } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
-import { findTeacherForStudent } from '@/lib/utils';
 
 
 export default function WorldMapPage() {
@@ -28,10 +27,12 @@ export default function WorldMapPage() {
     useEffect(() => {
         const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const foundTeacherUid = await findTeacherForStudent(user.uid);
-                if (foundTeacherUid) {
-                    setTeacherUid(foundTeacherUid);
-                    const studentDocRef = doc(db, 'teachers', foundTeacherUid, 'students', user.uid);
+                const teachersSnapshot = await getDocs(collection(db, 'teachers'));
+                for (const teacherDoc of teachersSnapshot.docs) {
+                  const studentDocRef = doc(db, 'teachers', teacherDoc.id, 'students', user.uid);
+                  const studentSnap = await getDoc(studentDocRef);
+                  if (studentSnap.exists()) {
+                    setTeacherUid(teacherDoc.id);
                     const studentUnsubscribe = onSnapshot(studentDocRef, (docSnap) => {
                         if (docSnap.exists()) {
                             setStudent(docSnap.data() as Student);
@@ -41,9 +42,7 @@ export default function WorldMapPage() {
                         setIsLoading(false);
                     });
                     return () => studentUnsubscribe();
-                } else {
-                     router.push('/');
-                     setIsLoading(false);
+                  }
                 }
             } else {
                 router.push('/');
@@ -123,3 +122,5 @@ export default function WorldMapPage() {
         </div>
     );
 }
+
+    

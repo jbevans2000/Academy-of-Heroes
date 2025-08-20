@@ -35,6 +35,11 @@ a.setAttribute('download', filename);
  * @returns The UID of the teacher if found, otherwise null.
  */
 export const findTeacherForStudent = async (studentUid: string): Promise<string | null> => {
+    // First, check the new, faster way by looking for a student document directly.
+    // Note: This requires knowing the teacher's UID in advance, which is the problem
+    // this function is trying to solve. The new logic will store teacherUid on the student doc.
+    // This function remains as a fallback during transition but should be deprecated.
+
     const teachersRef = collection(db, 'teachers');
     const teacherSnapshot = await getDocs(teachersRef);
 
@@ -47,3 +52,5 @@ export const findTeacherForStudent = async (studentUid: string): Promise<string 
     }
     return null;
 }
+
+    

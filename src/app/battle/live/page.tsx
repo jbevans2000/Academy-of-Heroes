@@ -14,7 +14,6 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { PowersSheet } from '@/components/dashboard/powers-sheet';
 import { BattleChatBox } from '@/components/battle/chat-box';
-import { findTeacherForStudent } from '@/lib/utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -298,16 +297,16 @@ export default function LiveBattlePage() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUser(user);
-        const foundTeacherUid = await findTeacherForStudent(user.uid);
-        if (foundTeacherUid) {
-            setTeacherUid(foundTeacherUid);
-            const studentDoc = await getDoc(doc(db, 'teachers', foundTeacherUid, 'students', user.uid));
-            if (studentDoc.exists()) {
-                setStudent(studentDoc.data() as Student);
-            }
-        } else {
-            console.error("Could not find teacher for student. Redirecting.");
-            router.push('/');
+        // Find which teacher this student belongs to
+        const teachersSnapshot = await getDocs(collection(db, 'teachers'));
+        for (const teacherDoc of teachersSnapshot.docs) {
+          const studentDocRef = doc(db, 'teachers', teacherDoc.id, 'students', user.uid);
+          const studentSnap = await getDoc(studentDocRef);
+          if (studentSnap.exists()) {
+            setTeacherUid(teacherDoc.id);
+            setStudent(studentSnap.data() as Student);
+            break;
+          }
         }
       } else {
         router.push('/');
@@ -331,9 +330,11 @@ export default function LiveBattlePage() {
   }, [teacherUid]);
 
   useEffect(() => {
-    if (!teacherUid || !user) return;
+    if (!teacherUid || !user) {
+      if (!isLoading) setIsLoading(true);
+      return;
+    };
 
-    setIsLoading(true);
     const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
     const unsubscribe = onSnapshot(liveBattleRef, (docSnapshot) => {
       if (docSnapshot.exists()) {
@@ -381,7 +382,7 @@ export default function LiveBattlePage() {
       setIsLoading(false);
     });
     return () => unsubscribe();
-  }, [router, teacherUid, submittedAnswer, isFallen, user]);
+  }, [router, teacherUid, submittedAnswer, isFallen, user, isLoading]);
 
   useEffect(() => {
     if (battleState?.battleId && teacherUid && (!battle || battle.id !== battleState.battleId)) {
@@ -736,3 +737,5 @@ export default function LiveBattlePage() {
     </div>
   );
 }
+
+    

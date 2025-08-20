@@ -14,7 +14,6 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import type { QuestHub, Chapter } from '@/lib/quests';
 import type { Student } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
-import { findTeacherForStudent } from '@/lib/utils';
 
 export default function HubMapPage() {
     const router = useRouter();
@@ -30,10 +29,12 @@ export default function HubMapPage() {
     useEffect(() => {
         const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
-                 const foundTeacherUid = await findTeacherForStudent(user.uid);
-                 if (foundTeacherUid) {
-                    setTeacherUid(foundTeacherUid);
-                    const studentDocRef = doc(db, 'teachers', foundTeacherUid, 'students', user.uid);
+                const teachersSnapshot = await getDocs(collection(db, 'teachers'));
+                for (const teacherDoc of teachersSnapshot.docs) {
+                  const studentDocRef = doc(db, 'teachers', teacherDoc.id, 'students', user.uid);
+                  const studentSnap = await getDoc(studentDocRef);
+                  if (studentSnap.exists()) {
+                    setTeacherUid(teacherDoc.id);
                     const studentUnsubscribe = onSnapshot(studentDocRef, (docSnap) => {
                         if (docSnap.exists()) {
                             setStudent(docSnap.data() as Student);
@@ -42,7 +43,8 @@ export default function HubMapPage() {
                         }
                     });
                     return () => studentUnsubscribe();
-                 }
+                  }
+                }
             } else {
                 router.push('/');
             }
@@ -157,3 +159,5 @@ export default function HubMapPage() {
         </div>
     );
 }
+
+    
