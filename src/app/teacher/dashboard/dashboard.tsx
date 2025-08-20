@@ -383,36 +383,40 @@ export default function Dashboard() {
   };
 
   const handleClearBattlefield = async () => {
-      if (!teacher) return;
-      setIsClearingBattlefield(true);
-      try {
-          const batch = writeBatch(db);
-          const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
+    if (!teacher) return;
+    setIsClearingBattlefield(true);
+    try {
+        const batch = writeBatch(db);
+        const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
 
-          // Delete subcollections explicitly
-          const subcollections = ['responses', 'powerActivations', 'battleLog', 'messages'];
-          for (const sub of subcollections) {
-              const subRef = collection(liveBattleRef, sub);
-              const snapshot = await getDocs(subRef);
-              snapshot.forEach(doc => batch.delete(doc.ref));
-          }
+        // Delete subcollections explicitly by listing them and fetching their documents
+        const subcollections = ['responses', 'powerActivations', 'battleLog', 'messages'];
+        for (const sub of subcollections) {
+            const subRef = collection(liveBattleRef, sub);
+            const snapshot = await getDocs(subRef);
+            if (!snapshot.empty) {
+                // If the subcollection exists, delete its documents
+                snapshot.forEach(doc => batch.delete(doc.ref));
+            }
+        }
 
-          // Delete the main document
-          batch.delete(liveBattleRef);
+        // Delete the main document itself
+        batch.delete(liveBattleRef);
 
-          await batch.commit();
-          toast({ title: 'Battlefield Cleared', description: 'The live battle state and all old responses have been reset.' });
+        await batch.commit();
+        toast({ title: 'Battlefield Cleared', description: 'The live battle state and all old responses have been reset.' });
 
-      } catch (error: any) {
-          if (error.code === 'not-found') {
-              toast({ title: 'Battlefield Already Clear', description: 'No active battle to clear.' });
-          } else {
-              console.error("Error clearing battlefield:", error);
-              toast({ variant: 'destructive', title: 'Error', description: 'Could not clear the battlefield.' });
-          }
-      } finally {
-          setIsClearingBattlefield(false);
-      }
+    } catch (error: any) {
+        // It's not an error if the document or subcollections don't exist
+        if (error.code === 'not-found') {
+             toast({ title: 'Battlefield Already Clear', description: 'No active battle to clear.' });
+        } else {
+            console.error("Error clearing battlefield:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not clear the battlefield.' });
+        }
+    } finally {
+        setIsClearingBattlefield(false);
+    }
   };
 
 

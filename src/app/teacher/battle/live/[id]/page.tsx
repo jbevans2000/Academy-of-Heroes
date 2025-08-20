@@ -274,6 +274,7 @@ export default function TeacherLiveBattlePage() {
             const data = doc.data() as StudentResponse;
             const studentData = studentMap.get(doc.id);
             
+            // This is the key fix: only show students who are actually online
             if (studentData && studentData.onlineStatus?.status === 'online') {
                 responses.push({
                     studentUid: doc.id,
@@ -298,63 +299,41 @@ export default function TeacherLiveBattlePage() {
         const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
         const batch = writeBatch(db);
 
-        // 1. Get all responses submitted for this round. This is the only source of truth for participation.
+        // 1. Get all responses submitted for this round.
         const responsesRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${liveState.currentQuestionIndex}/students`);
         const responsesSnapshot = await getDocs(responsesRef);
         const responsesMap = new Map(responsesSnapshot.docs.map(doc => [doc.id, doc.data() as StudentResponse]));
         
-        // 2. Get all students to check their HP for damage calculation.
-        const studentDocs = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
-        const studentMap = new Map(studentDocs.docs.map(doc => [doc.id, doc.data() as Student]));
+        // 2. Get all *online* students to check who should have answered.
+        const onlineStudents = allStudents.filter(s => s.onlineStatus?.status === 'online');
+        const studentMap = new Map(allStudents.map(doc => [doc.uid, doc]));
         
         const results: Result[] = [];
         const newlyFallenUids: string[] = [];
 
-        // 3. Process results ONLY for students who submitted a response.
-        for (const [studentUid, response] of responsesMap.entries()) {
+        // 3. Process results ONLY for online students.
+        for (const student of onlineStudents) {
+            const response = responsesMap.get(student.uid);
+            const isCorrect = response?.isCorrect ?? false; // Default to incorrect if no response
+            
             results.push({
-                studentUid: studentUid,
-                studentName: response.characterName,
-                answer: response.answer,
-                isCorrect: response.isCorrect,
-                powerUsed: liveState.powerUsersThisRound?.[studentUid]?.join(', ') || undefined,
+                studentUid: student.uid,
+                studentName: student.characterName,
+                answer: response?.answer ?? "No Answer",
+                isCorrect: isCorrect,
+                powerUsed: liveState.powerUsersThisRound?.[student.uid]?.join(', ') || undefined,
             });
 
-            // 4. Calculate damage for incorrect answers.
-            if (!response.isCorrect && !isDivinationSkip) {
-                const studentData = studentMap.get(studentUid);
+            // 4. Calculate damage for incorrect answers or no answer.
+            if (!isCorrect && !isDivinationSkip) {
                 const currentQuestion = battle.questions[liveState.currentQuestionIndex];
                 const damageOnIncorrect = currentQuestion.damage || 0;
 
-                if (studentData && damageOnIncorrect > 0) {
-                    const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
-                    const newHp = Math.max(0, studentData.hp - damageOnIncorrect);
-                    batch.update(studentRef, { hp: newHp });
-                    if (newHp === 0) {
-                        newlyFallenUids.push(studentUid);
-                    }
-                }
-            }
-        }
-
-        // Add online students who DID NOT answer to the results as incorrect.
-        const onlineStudents = allStudents.filter(s => s.onlineStatus?.status === 'online');
-        for (const student of onlineStudents) {
-            if (!responsesMap.has(student.uid)) {
-                results.push({
-                    studentUid: student.uid,
-                    studentName: student.characterName,
-                    answer: "No Answer",
-                    isCorrect: false,
-                });
-                // Also apply damage to them
-                const currentQuestion = battle.questions[liveState.currentQuestionIndex];
-                const damageOnIncorrect = currentQuestion.damage || 0;
-                 if (damageOnIncorrect > 0 && !isDivinationSkip) {
+                if (damageOnIncorrect > 0) {
                     const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
                     const newHp = Math.max(0, student.hp - damageOnIncorrect);
                     batch.update(studentRef, { hp: newHp });
-                    if (newHp === 0) {
+                    if (newHp === 0 && !liveState.fallenPlayerUids?.includes(student.uid)) {
                         newlyFallenUids.push(student.uid);
                     }
                 }
@@ -480,7 +459,7 @@ export default function TeacherLiveBattlePage() {
 
         const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
         const powerActivationsRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/powerActivations`);
-        const battleLogRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
+        const battleLogRef = collection(db, 'teachers', teacherUid!, 'liveBattles/active-battle/battleLog');
         const q = query(powerActivationsRef);
 
         const handlePowerActivation = async (activation: PowerActivation) => {
@@ -901,15 +880,15 @@ export default function TeacherLiveBattlePage() {
 
   const handleEndBattle = async () => {
     if (!liveState || !battle || !teacherUid) return;
+    
+    // Ensure `allRoundsData` is cleared at the start of ending a battle
+    const freshAllRoundsData = { ...allRoundsData };
 
-    // This is the key change: ensure the final round results are processed first.
     if (liveState.status !== 'SHOWING_RESULTS') {
         await calculateAndSetResults();
-        // Give a brief moment for state to propagate, although direct passing is better.
         await new Promise(resolve => setTimeout(resolve, 250)); 
     }
     
-    // It's safer to re-fetch the final state directly from Firestore.
     const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
     const finalStateDoc = await getDoc(liveBattleRef);
 
@@ -929,10 +908,10 @@ export default function TeacherLiveBattlePage() {
 
     const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
     const individualResultsByStudent: { [uid: string]: any } = {};
-
-    // Use the now-reliable allRoundsData state
-    Object.keys(allRoundsData).forEach(roundIndex => {
-        const roundData = allRoundsData[roundIndex];
+    
+    // Use the fresh copy of allRoundsData
+    Object.keys(freshAllRoundsData).forEach(roundIndex => {
+        const roundData = freshAllRoundsData[roundIndex];
         if (roundData && roundData.responses) {
             roundData.responses.forEach((res: any) => {
                 if (!rewardsByStudent[res.studentUid]) {
@@ -955,7 +934,7 @@ export default function TeacherLiveBattlePage() {
     });
 
     for (const uid in rewardsByStudent) {
-        if (fallenAtEnd.includes(uid)) continue; // Skip rewards for fallen players
+        if (fallenAtEnd.includes(uid)) continue; 
 
         const studentRef = doc(db, 'teachers', teacherUid, 'students', uid);
         const studentSnap = await getDoc(studentRef);
@@ -983,7 +962,6 @@ export default function TeacherLiveBattlePage() {
             }
             batch.update(studentRef, updates);
 
-            // Create individual student summary
             const studentSummaryRef = doc(db, 'teachers', teacherUid, 'students', uid, 'battleSummaries', battleId);
             batch.set(studentSummaryRef, {
                 battleId: battleId,
@@ -998,14 +976,13 @@ export default function TeacherLiveBattlePage() {
         }
     }
 
-    // Reset Max HP for empowered mages
     for (const mageUid of empoweredAtEnd) {
         const studentRef = doc(db, 'teachers', teacherUid, 'students', mageUid);
         const studentSnap = await getDoc(studentRef);
         if (studentSnap.exists()) {
             const studentData = studentSnap.data() as Student;
             const baseMaxHp = calculateBaseMaxHp(studentData.class, studentData.level);
-            const newHp = Math.min(studentData.hp, baseMaxHp); // Can't have more HP than new max
+            const newHp = Math.min(studentData.hp, baseMaxHp); 
             batch.update(studentRef, { hp: newHp, maxHp: baseMaxHp });
         }
     }
@@ -1015,7 +992,7 @@ export default function TeacherLiveBattlePage() {
         battleId: battleId,
         battleName: battle?.battleName || '',
         questions: battle?.questions || [],
-        resultsByRound: allRoundsData,
+        resultsByRound: freshAllRoundsData,
         battleLog: powerLog,
         rewards: rewardsByStudent,
         totalDamageDealt: totalDamage,
@@ -1026,13 +1003,12 @@ export default function TeacherLiveBattlePage() {
     });
     await logGameEvent(teacherUid, 'BOSS_BATTLE', `Battle summary for '${battle.battleName}' was saved.`);
 
-    // Use setDoc with merge to prevent "No document to update" error
     await setDoc(liveBattleRef, { status: 'BATTLE_ENDED' }, { merge: true });
     
     await batch.commit();
 
     router.push(`/teacher/battle/summary/${battleId}`);
-};
+  };
   
   const handleExport = () => {
     if (!battle || roundResults.length === 0 || !liveState) return;
