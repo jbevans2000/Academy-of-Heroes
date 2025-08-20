@@ -844,14 +844,16 @@ export default function TeacherLiveBattlePage() {
 
   const handleEndBattle = async () => {
     if (!liveState || !battle || !teacherUid) return;
-    
-    const freshAllRoundsData = { ...allRoundsData };
 
+    // Use a fresh copy of allRoundsData to prevent race conditions
+    const freshAllRoundsData = { ...allRoundsData };
+    
+    // Ensure the final round's results are calculated if not already
     if (liveState.status !== 'SHOWING_RESULTS') {
         await calculateAndSetResults();
-        await new Promise(resolve => setTimeout(resolve, 250)); 
+        await new Promise(resolve => setTimeout(resolve, 250)); // Give Firestore a moment to sync
     }
-    
+
     const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
     const finalStateDoc = await getDoc(liveBattleRef);
 
@@ -963,12 +965,20 @@ export default function TeacherLiveBattlePage() {
         fallenAtEnd: fallenAtEnd,
         endedAt: serverTimestamp(),
     });
-    await logGameEvent(teacherUid, 'BOSS_BATTLE', `Battle summary for '${battle.battleName}' was saved.`);
-
-    await setDoc(liveBattleRef, { status: 'BATTLE_ENDED' }, { merge: true });
     
+    // Automatic Cleanup
+    const subcollections = ['responses', 'powerActivations', 'battleLog', 'messages'];
+    for (const sub of subcollections) {
+        const subRef = collection(liveBattleRef, sub);
+        const snapshot = await getDocs(subRef);
+        snapshot.forEach(doc => batch.delete(doc.ref));
+    }
+    batch.delete(liveBattleRef);
+
     await batch.commit();
 
+    await logGameEvent(teacherUid, 'BOSS_BATTLE', `Battle summary for '${battle.battleName}' was saved and live battle was cleaned up.`);
+    
     router.push(`/teacher/battle/summary/${battleId}`);
   };
   
