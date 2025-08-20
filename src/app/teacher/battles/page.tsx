@@ -84,15 +84,27 @@ export default function BossBattlesPage() {
              if (err.code !== 'not-found') console.warn("Pre-start cleanup failed, proceeding.", err);
         });
         
-        // Set the new battle data. This creates the document with the 'WAITING' status.
+        // Create a fresh, clean battle state document
         await setDoc(liveBattleRef, {
             battleId: battle.id,
-            status: 'WAITING', 
+            status: 'WAITING',
             currentQuestionIndex: 0,
             lastRoundDamage: 0,
+            lastRoundBaseDamage: 0,
+            lastRoundPowerDamage: 0,
+            lastRoundPowersUsed: [],
             totalDamage: 0,
             totalBaseDamage: 0,
             totalPowerDamage: 0,
+            removedAnswerIndices: [],
+            powerEventMessage: '',
+            targetedEvent: null,
+            powerUsersThisRound: {},
+            queuedPowers: [],
+            fallenPlayerUids: [],
+            empoweredMageUids: [],
+            cosmicDivinationUses: 0,
+            voteState: null,
         });
 
         await logGameEvent(teacher.uid, 'BOSS_BATTLE', `Boss Battle '${battle.battleName}' has been activated.`);
