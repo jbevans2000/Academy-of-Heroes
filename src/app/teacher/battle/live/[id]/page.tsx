@@ -991,7 +991,8 @@ export default function TeacherLiveBattlePage() {
     });
     await logGameEvent(teacherUid, 'BOSS_BATTLE', `Battle summary for '${battle.battleName}' was saved.`);
 
-    batch.update(liveBattleRef, { status: 'BATTLE_ENDED' });
+    // Use setDoc with merge to prevent "No document to update" error
+    await setDoc(liveBattleRef, { status: 'BATTLE_ENDED' }, { merge: true });
     
     await batch.commit();
 
