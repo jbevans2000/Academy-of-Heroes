@@ -157,7 +157,6 @@ export default function TeacherLiveBattlePage() {
 
   const [battle, setBattle] = useState<Battle | null>(null);
   const [liveState, setLiveState] = useState<LiveBattleState | null>(null);
-  const [studentResponses, setStudentResponses] = useState<Result[]>([]);
   const [roundResults, setRoundResults] = useState<Result[]>([]);
   const [allRoundsData, setAllRoundsData] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -255,43 +254,6 @@ export default function TeacherLiveBattlePage() {
       unsubLog();
     };
   }, [battleId, router, teacherUid]);
-
-  // Listen for real-time student responses for the current question
-  useEffect(() => {
-    if (!liveState || !teacherUid || (liveState.status !== 'IN_PROGRESS' && liveState.status !== 'ROUND_ENDING')) {
-        setStudentResponses([]);
-        return;
-    }
-
-    const responsesRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${liveState.currentQuestionIndex}/students`);
-    const q = query(responsesRef);
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const studentMap = new Map(allStudents.map(s => [s.uid, s]));
-        const responses: Result[] = [];
-        const powerUsers = liveState.powerUsersThisRound || {};
-
-        querySnapshot.forEach((doc) => {
-            const data = doc.data() as StudentResponse;
-            const studentData = studentMap.get(doc.id);
-            
-            // This is the key fix: only show students who are actually online
-            if (studentData && studentData.onlineStatus?.status === 'online') {
-                responses.push({
-                    studentUid: doc.id,
-                    studentName: data.characterName,
-                    answer: data.answer,
-                    isCorrect: data.isCorrect,
-                    powerUsed: powerUsers[doc.id]?.join(', ') || undefined,
-                });
-            }
-        });
-        setStudentResponses(responses);
-    }, (error) => {
-        console.error("Error listening for student responses:", error);
-    });
-
-    return () => unsubscribe();
-  }, [liveState, teacherUid, allStudents]);
 
     const calculateAndSetResults = useCallback(async (isDivinationSkip: boolean = false) => {
         if (!liveState || !battle || !teacherUid) return;
@@ -881,7 +843,6 @@ export default function TeacherLiveBattlePage() {
   const handleEndBattle = async () => {
     if (!liveState || !battle || !teacherUid) return;
     
-    // Ensure `allRoundsData` is cleared at the start of ending a battle
     const freshAllRoundsData = { ...allRoundsData };
 
     if (liveState.status !== 'SHOWING_RESULTS') {
@@ -909,7 +870,6 @@ export default function TeacherLiveBattlePage() {
     const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
     const individualResultsByStudent: { [uid: string]: any } = {};
     
-    // Use the fresh copy of allRoundsData
     Object.keys(freshAllRoundsData).forEach(roundIndex => {
         const roundData = freshAllRoundsData[roundIndex];
         if (roundData && roundData.responses) {
@@ -1182,18 +1142,6 @@ export default function TeacherLiveBattlePage() {
                         </CardHeader>
                         <CardContent>
                             <CountdownTimer expiryTimestamp={expiryTimestamp} />
-                        </CardContent>
-                    </Card>
-                )}
-
-                {(isRoundInProgress || isRoundEnding) && (
-                    <Card className="bg-card/60 backdrop-blur-sm">
-                        <CardHeader>
-                            <CardTitle>Live Student Responses</CardTitle>
-                            <CardDescription>See which students have submitted their answer for the current question.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                        <RoundResults results={studentResponses} />
                         </CardContent>
                     </Card>
                 )}
