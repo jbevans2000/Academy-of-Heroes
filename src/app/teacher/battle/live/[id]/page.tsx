@@ -256,7 +256,7 @@ export default function TeacherLiveBattlePage() {
   }, [battleId, router, teacherUid]);
 
     const calculateAndSetResults = useCallback(async (isDivinationSkip: boolean = false) => {
-        if (!liveState || !battle || !teacherUid) return;
+        if (!liveState || !battle || !teacherUid || !allStudents.length) return;
 
         const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
         const batch = writeBatch(db);
@@ -269,25 +269,28 @@ export default function TeacherLiveBattlePage() {
         
         const results: Result[] = [];
         const newlyFallenUids: string[] = [];
-        
-        const onlineStudents = allStudents.filter(s => s.onlineStatus?.status === 'online');
 
-        for (const student of onlineStudents) {
+        // Determine which students were online and not fallen *at the start of the question* to check for damage
+        const activeStudentsUids = allStudents
+            .filter(s => s.onlineStatus?.status === 'online' && !liveState.fallenPlayerUids?.includes(s.uid))
+            .map(s => s.uid);
+
+        for (const uid of activeStudentsUids) {
+            const student = studentMap.get(uid);
+            if (!student) continue;
+
             const response = submittedResponses.find(r => r.studentUid === student.uid);
             const isCorrect = response?.isCorrect ?? false;
             
-            // Push result if they responded or were online and active during the question
-            if (response || (!response && student.hp > 0)) {
-                results.push({
-                    studentUid: student.uid,
-                    studentName: student.characterName,
-                    answer: response?.answer ?? "No Answer",
-                    isCorrect: isCorrect,
-                    powerUsed: liveState.powerUsersThisRound?.[student.uid]?.join(', ') || undefined,
-                });
-            }
+            results.push({
+                studentUid: student.uid,
+                studentName: student.characterName,
+                answer: response?.answer ?? "No Answer",
+                isCorrect: isCorrect,
+                powerUsed: liveState.powerUsersThisRound?.[student.uid]?.join(', ') || undefined,
+            });
 
-            if (!isCorrect && student.hp > 0 && !isDivinationSkip) {
+            if (!isCorrect && !isDivinationSkip) {
                 const currentQuestion = battle.questions[liveState.currentQuestionIndex];
                 const damageOnIncorrect = currentQuestion.damage || 0;
 
@@ -295,7 +298,7 @@ export default function TeacherLiveBattlePage() {
                     const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
                     const newHp = Math.max(0, student.hp - damageOnIncorrect);
                     batch.update(studentRef, { hp: newHp });
-                    if (newHp === 0 && !liveState.fallenPlayerUids?.includes(student.uid)) {
+                    if (newHp === 0) {
                         newlyFallenUids.push(student.uid);
                     }
                 }
