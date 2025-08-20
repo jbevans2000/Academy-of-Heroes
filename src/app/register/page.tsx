@@ -125,7 +125,7 @@ export default function RegisterPage() {
         requestedAt: serverTimestamp(),
       });
 
-      // Create the global student metadata document
+      // Create the global student metadata document for quick lookup
       await setDoc(doc(db, 'students', user.uid), {
         teacherUid: teacherUid,
       });

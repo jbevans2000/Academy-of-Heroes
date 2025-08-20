@@ -313,8 +313,25 @@ export default function LiveBattlePage() {
                 router.push('/');
             }
         } else {
-            console.error("Student document not found at root.");
-            router.push('/');
+            console.error("Student metadata document not found at root. This may be an existing student. Attempting fallback.");
+            const teachersSnapshot = await getDocs(collection(db, 'teachers'));
+            let found = false;
+            for (const teacherDoc of teachersSnapshot.docs) {
+                const studentRef = doc(db, 'teachers', teacherDoc.id, 'students', user.uid);
+                const studentSnap = await getDoc(studentRef);
+                if (studentSnap.exists()) {
+                    setTeacherUid(teacherDoc.id);
+                    setStudent(studentSnap.data() as Student);
+                    // Create the metadata doc for next time
+                    await setDoc(doc(db, 'students', user.uid), { teacherUid: teacherDoc.id });
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                 console.error("Student document not found in any teacher's subcollection.");
+                 router.push('/');
+            }
         }
       } else {
         router.push('/');

@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Loader2, KeyRound } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, setDoc } from 'firebase/firestore';
 
 export function LoginForm() {
   const [studentId, setStudentId] = useState('');
@@ -38,38 +38,49 @@ export function LoginForm() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Find which teacher this student belongs to
-      const teachersRef = collection(db, 'teachers');
-      const teacherSnapshot = await getDocs(teachersRef);
+      // New: Check for the fast-lookup document first.
+      const studentMetaRef = doc(db, 'students', user.uid);
+      let studentMetaSnap = await getDoc(studentMetaRef);
       let teacherUid: string | null = null;
-      let studentDocPath: 'students' | 'pendingStudents' | null = null;
-
-      for (const teacherDoc of teacherSnapshot.docs) {
-          const mainDocRef = doc(db, 'teachers', teacherDoc.id, 'students', user.uid);
-          const pendingDocRef = doc(db, 'teachers', teacherDoc.id, 'pendingStudents', user.uid);
-
-          const mainDocSnap = await getDoc(mainDocRef);
-          if (mainDocSnap.exists()) {
-              teacherUid = teacherDoc.id;
-              studentDocPath = 'students';
-              break;
+      
+      if (studentMetaSnap.exists()) {
+          teacherUid = studentMetaSnap.data().teacherUid;
+      } else {
+          // Fallback for existing students: Find the teacher UID the old way.
+          const teachersRef = collection(db, 'teachers');
+          const teacherSnapshot = await getDocs(teachersRef);
+          
+          for (const teacherDoc of teacherSnapshot.docs) {
+              const mainDocRef = doc(db, 'teachers', teacherDoc.id, 'students', user.uid);
+              const pendingDocRef = doc(db, 'teachers', teacherDoc.id, 'pendingStudents', user.uid);
+              const mainDocSnap = await getDoc(mainDocRef);
+              if (mainDocSnap.exists()) {
+                  teacherUid = teacherDoc.id;
+                  break;
+              }
+              const pendingDocSnap = await getDoc(pendingDocRef);
+               if (pendingDocSnap.exists()) {
+                  teacherUid = teacherDoc.id;
+                  break;
+              }
           }
 
-          const pendingDocSnap = await getDoc(pendingDocRef);
-          if (pendingDocSnap.exists()) {
-              teacherUid = teacherDoc.id;
-              studentDocPath = 'pendingStudents';
-              break;
+          // If found, create the fast-lookup document for next time.
+          if (teacherUid) {
+              await setDoc(studentMetaRef, { teacherUid });
           }
       }
 
-      if (!teacherUid || !studentDocPath) {
+      if (!teacherUid) {
           throw new Error("Your hero's record could not be found in any guild.");
       }
-      
-      if (studentDocPath === 'pendingStudents') {
-          router.push('/awaiting-approval');
-          return;
+
+      // Check if student is pending or approved
+      const pendingStudentRef = doc(db, 'teachers', teacherUid, 'pendingStudents', user.uid);
+      const pendingStudentSnap = await getDoc(pendingStudentRef);
+      if (pendingStudentSnap.exists()) {
+        router.push('/awaiting-approval');
+        return;
       }
       
       const studentSnap = await getDoc(doc(db, 'teachers', teacherUid, 'students', user.uid));
@@ -81,7 +92,7 @@ export function LoginForm() {
 
           router.push(`/dashboard${justApproved ? `?approved=true&className=${encodeURIComponent(className)}` : ''}`);
       } else {
-         throw new Error("Student data not found.");
+         throw new Error("Student data not found in their designated guild.");
       }
 
     } catch (error: any) {
@@ -164,5 +175,3 @@ export function LoginForm() {
     </div>
   );
 }
-
-    
