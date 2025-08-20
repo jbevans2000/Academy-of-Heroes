@@ -366,17 +366,18 @@ export default function LiveBattlePage() {
       if (docSnapshot.exists()) {
         const newState = docSnapshot.data() as LiveBattleState;
         const currentBattleState = battleStateRef.current;
-
-        if (currentBattleState && newState.currentQuestionIndex !== currentBattleState.currentQuestionIndex) {
-          setSubmittedAnswer(false);
-          setSelectedAnswer(null);
-          setLastAnswerCorrect(null);
-        }
         
-        // This logic is now redundant as they can't change their answer post-submit
-        // if (newState.removedAnswerIndices?.includes(selectedAnswer!)) {
-        //     setSelectedAnswer(null);
-        // }
+        // Reset state on new question or on battle start
+        if (
+            currentBattleState && (
+            (newState.status === 'IN_PROGRESS' && currentBattleState.status !== 'IN_PROGRESS') ||
+            (newState.currentQuestionIndex !== currentBattleState.currentQuestionIndex)
+            )
+        ) {
+            setSubmittedAnswer(false);
+            setSelectedAnswer(null);
+            setLastAnswerCorrect(null);
+        }
         
         const wasFallen = isFallen;
         const nowFallen = newState.fallenPlayerUids?.includes(user.uid) ?? false;
@@ -813,3 +814,5 @@ export default function LiveBattlePage() {
     </div>
   );
 }
+
+    
