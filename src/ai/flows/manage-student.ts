@@ -145,3 +145,35 @@ export async function clearGameLog(input: ClearLogInput): Promise<ActionResponse
     return { success: false, error: e.message || 'Failed to clear the game log.' };
   }
 }
+
+export async function purgeOldBattleResponses(input: ClearLogInput): Promise<ActionResponse> {
+    try {
+        const responsesRef = collection(db, 'teachers', input.teacherUid, 'liveBattles', 'active-battle', 'responses');
+        const responsesSnapshot = await getDocs(responsesRef);
+        if (responsesSnapshot.empty) {
+            return { success: true, message: "No old responses found to purge." };
+        }
+
+        const batch = writeBatch(db);
+        let deletedCount = 0;
+        responsesSnapshot.forEach(doc => {
+            // The old system used UIDs as document IDs. The new system uses numbers.
+            // We can check if the ID is NOT a number to identify old documents.
+            if (isNaN(Number(doc.id))) {
+                batch.delete(doc.ref);
+                deletedCount++;
+            }
+        });
+
+        if (deletedCount === 0) {
+            return { success: true, message: "No old responses found to purge." };
+        }
+
+        await batch.commit();
+        return { success: true, message: `Successfully purged ${deletedCount} old response document(s).` };
+
+    } catch (e: any) {
+        console.error("Error in purgeOldBattleResponses:", e);
+        return { success: false, error: e.message || 'Failed to purge old battle responses.' };
+    }
+}

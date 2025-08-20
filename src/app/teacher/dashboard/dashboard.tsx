@@ -46,10 +46,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2 } from 'lucide-react';
+import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
+import { purgeOldBattleResponses } from '@/ai/flows/manage-student';
 
 interface TeacherData {
     name: string;
@@ -82,6 +83,7 @@ export default function Dashboard() {
   const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
   
   const [sortOrder, setSortOrder] = useState<SortOrder>('studentName');
+  const [isPurging, setIsPurging] = useState(false);
 
   const { toast } = useToast();
   
@@ -419,6 +421,23 @@ export default function Dashboard() {
     }
   };
 
+  const handlePurge = async () => {
+    if (!teacher) return;
+    setIsPurging(true);
+    try {
+        const result = await purgeOldBattleResponses({ teacherUid: teacher.uid });
+        if (result.success) {
+            toast({ title: "Cleanup Complete", description: result.message });
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (error: any) {
+        toast({ variant: "destructive", title: "Cleanup Failed", description: error.message });
+    } finally {
+        setIsPurging(false);
+    }
+  };
+
 
   if (isLoading || !teacher) {
     return (
@@ -579,6 +598,29 @@ export default function Dashboard() {
                       </DropdownMenuSubContent>
                     </DropdownMenuSub>
                     <DropdownMenuSeparator />
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                <DatabaseZap className="mr-2 h-4 w-4" />
+                                Purge Old Battle Data
+                            </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Purge Old Battle Response Data?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                This is a one-time utility to clean up leftover data from the old battle system. It will delete any response documents that are not formatted for the new system. This action cannot be undone.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handlePurge} disabled={isPurging}>
+                                {isPurging && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Yes, Purge Old Data
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                      <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
