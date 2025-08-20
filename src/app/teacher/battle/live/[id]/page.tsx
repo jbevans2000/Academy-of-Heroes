@@ -160,7 +160,7 @@ export default function TeacherLiveBattlePage() {
   const [roundResults, setRoundResults] = useState<Result[]>([]);
   const [allRoundsData, setAllRoundsData] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
-  const [isEndingRound, setIsEndingRound] = useState(isEndingRound);
+  const [isEndingRound, setIsEndingRound] = useState(false);
   const [isAdvancing, setIsAdvancing] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [teacherData, setTeacherData] = useState<TeacherData | null>(null);
@@ -276,13 +276,16 @@ export default function TeacherLiveBattlePage() {
             const response = submittedResponses.find(r => r.studentUid === student.uid);
             const isCorrect = response?.isCorrect ?? false;
             
-            results.push({
-                studentUid: student.uid,
-                studentName: student.characterName,
-                answer: response?.answer ?? "No Answer",
-                isCorrect: isCorrect,
-                powerUsed: liveState.powerUsersThisRound?.[student.uid]?.join(', ') || undefined,
-            });
+            // Only add to results if they responded, or if they are online and didn't respond
+            if(response || (!response && student.onlineStatus?.status === 'online')) {
+                results.push({
+                    studentUid: student.uid,
+                    studentName: student.characterName,
+                    answer: response?.answer ?? "No Answer",
+                    isCorrect: isCorrect,
+                    powerUsed: liveState.powerUsersThisRound?.[student.uid]?.join(', ') || undefined,
+                });
+            }
 
             if (!isCorrect && !isDivinationSkip) {
                 const currentQuestion = battle.questions[liveState.currentQuestionIndex];
@@ -912,8 +915,8 @@ export default function TeacherLiveBattlePage() {
                 const levelsGained = newLevel - currentLevel;
                 updates.level = newLevel;
                 updates.hp = studentData.hp + calculateHpGain(studentData.class, levelsGained);
-                updates.mp = studentData.mp + calculateMpGain(studentData.class, levelsGained);
                 updates.maxHp = calculateBaseMaxHp(studentData.class, newLevel, 'hp');
+                updates.mp = studentData.mp + calculateMpGain(studentData.class, levelsGained);
                 updates.maxMp = calculateBaseMaxHp(studentData.class, newLevel, 'mp');
             }
             batch.update(studentRef, updates);
