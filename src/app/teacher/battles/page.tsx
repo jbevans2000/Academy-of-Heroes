@@ -53,6 +53,21 @@ export default function BossBattlesPage() {
   useEffect(() => {
     if (!teacher) return;
     setIsLoading(true);
+
+    // This is the cleanup logic. When the teacher lands on this page,
+    // we assume any previous battle summaries are no longer needed.
+    const cleanupSummaries = async () => {
+        const summariesRef = collection(db, 'teachers', teacher.uid, 'battleSummaries');
+        const summarySnap = await getDocs(summariesRef);
+        if (!summarySnap.empty) {
+            const deleteBatch = writeBatch(db);
+            summarySnap.docs.forEach(doc => deleteBatch.delete(doc.ref));
+            await deleteBatch.commit();
+            console.log("Cleaned up old battle summaries.");
+        }
+    };
+    cleanupSummaries();
+
     const battlesRef = collection(db, 'teachers', teacher.uid, 'bossBattles');
     const unsubscribe = onSnapshot(battlesRef, (querySnapshot) => {
         const battlesData = querySnapshot.docs.map(doc => ({
