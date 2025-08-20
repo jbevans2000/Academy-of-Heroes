@@ -108,7 +108,7 @@ function SmallCountdownTimer({ expiryTimestamp }: { expiryTimestamp: Date }) {
             <div className="flex items-center justify-center gap-2">
                 <Timer className="h-6 w-6 text-yellow-400" />
                 <p className="text-xl font-bold text-white">{timeLeft}</p>
-                <p className="text-sm text-yellow-200">The round is ending! Lock in your answer!</p>
+                <p className="text-sm text-yellow-200">The round is ending! Submit your answer!</p>
             </div>
         </div>
     );
@@ -277,7 +277,8 @@ export default function LiveBattlePage() {
   const [student, setStudent] = useState<Student | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [teacherUid, setTeacherUid] = useState<string | null>(null);
-  const [submittedAnswer, setSubmittedAnswer] = useState<number | null>(null);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [submittedAnswer, setSubmittedAnswer] = useState<boolean>(false);
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPowersSheetOpen, setIsPowersSheetOpen] = useState(false);
@@ -367,13 +368,15 @@ export default function LiveBattlePage() {
         const currentBattleState = battleStateRef.current;
 
         if (currentBattleState && newState.currentQuestionIndex !== currentBattleState.currentQuestionIndex) {
-          setSubmittedAnswer(null);
+          setSubmittedAnswer(false);
+          setSelectedAnswer(null);
           setLastAnswerCorrect(null);
         }
         
-        if (newState.removedAnswerIndices?.includes(submittedAnswer!)) {
-            setSubmittedAnswer(null);
-        }
+        // This logic is now redundant as they can't change their answer post-submit
+        // if (newState.removedAnswerIndices?.includes(selectedAnswer!)) {
+        //     setSelectedAnswer(null);
+        // }
         
         const wasFallen = isFallen;
         const nowFallen = newState.fallenPlayerUids?.includes(user.uid) ?? false;
@@ -403,7 +406,8 @@ export default function LiveBattlePage() {
       setIsLoading(false);
     });
     return () => unsubscribe();
-  }, [router, teacherUid, submittedAnswer, isFallen, user, isLoading]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router, teacherUid, isFallen, user, isLoading]);
 
   useEffect(() => {
     if (battleState?.battleId && teacherUid && (!battle || battle.id !== battleState.battleId)) {
@@ -417,21 +421,21 @@ export default function LiveBattlePage() {
     }
   }, [battleState?.battleId, teacherUid, battle]);
 
-  const handleSubmitAnswer = async (answerIndex: number) => {
-    if (!user || !student || !battleState?.battleId || !battle || (battleState.status !== 'IN_PROGRESS' && battleState.status !== 'ROUND_ENDING') || !teacherUid || isFallen) return;
+  const handleSubmitAnswer = async () => {
+    if (!user || !student || !battleState?.battleId || !battle || (battleState.status !== 'IN_PROGRESS' && battleState.status !== 'ROUND_ENDING') || !teacherUid || isFallen || submittedAnswer || selectedAnswer === null) return;
     
-    setSubmittedAnswer(answerIndex);
+    setSubmittedAnswer(true);
     
     const currentQuestion = battle.questions[battleState.currentQuestionIndex];
-    const isCorrect = answerIndex === currentQuestion.correctAnswerIndex;
+    const isCorrect = selectedAnswer === currentQuestion.correctAnswerIndex;
 
     const responseRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${battleState.currentQuestionIndex}/students`, user.uid);
     
     await setDoc(responseRef, {
       studentName: student.studentName,
       characterName: student.characterName,
-      answer: currentQuestion.answers[answerIndex],
-      answerIndex: answerIndex,
+      answer: currentQuestion.answers[selectedAnswer],
+      answerIndex: selectedAnswer,
       isCorrect: isCorrect,
       submittedAt: new Date(),
     }, { merge: true });
@@ -613,46 +617,52 @@ export default function LiveBattlePage() {
                             <PublicPowerEvent message={battleState.powerEventMessage || ''} />
 
                             {expiryTimestamp && battleState.status === 'ROUND_ENDING' && (
-                            <SmallCountdownTimer expiryTimestamp={expiryTimestamp} />
-                            )}
-
-                            {submittedAnswer === null && battleState.status === 'IN_PROGRESS' && (
-                                <WaitingForRoundEnd />
+                                <SmallCountdownTimer expiryTimestamp={expiryTimestamp} />
                             )}
                             
-                            {submittedAnswer !== null && battleState.status === 'IN_PROGRESS' && (
+                            {!submittedAnswer && (
+                                <WaitingForRoundEnd />
+                            )}
+
+                            {submittedAnswer && (
                                 <div className="text-center p-2 rounded-lg bg-green-900/80 border border-green-700 mb-4">
                                     <div className="flex items-center justify-center gap-2">
                                         <CheckCircle className="h-6 w-6 text-green-300" />
-                                        <p className="text-lg font-bold text-white">Your answer is locked in. You can change it until the round ends.</p>
+                                        <p className="text-lg font-bold text-white">Your answer is locked in. Wait for the round to end.</p>
                                     </div>
                                 </div>
                             )}
 
-                            <div className="text-center">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {currentQuestion.answers.map((answer, index) => {
-                                        const isRemoved = battleState.removedAnswerIndices?.includes(index);
-                                        return (
-                                            <Button
-                                            key={index}
-                                            variant={isRemoved ? "destructive" : "outline"}
-                                            className={cn(
-                                                "text-lg h-auto py-4 whitespace-normal justify-start text-left hover:bg-primary/90 hover:text-primary-foreground",
-                                                submittedAnswer === index && "bg-primary text-primary-foreground ring-2 ring-offset-2 ring-offset-background ring-primary",
-                                                isRemoved && "line-through bg-red-900/50 border-red-700 text-red-400 cursor-not-allowed hover:bg-red-900/50"
-                                            )}
-                                            onClick={() => handleSubmitAnswer(index)}
-                                            disabled={!isRoundActive || isRemoved || isFallen}
-                                            >
-                                            <span className="font-bold mr-4">{String.fromCharCode(65 + index)}.</span>
-                                            {answer}
-                                            </Button>
-                                        )
-                                    })}
-                                </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {currentQuestion.answers.map((answer, index) => {
+                                    const isRemoved = battleState.removedAnswerIndices?.includes(index);
+                                    return (
+                                        <Button
+                                        key={index}
+                                        variant={isRemoved ? "destructive" : "outline"}
+                                        className={cn(
+                                            "text-lg h-auto py-4 whitespace-normal justify-start text-left hover:bg-primary/90 hover:text-primary-foreground",
+                                            selectedAnswer === index && "bg-primary text-primary-foreground ring-2 ring-offset-2 ring-offset-background ring-primary",
+                                            isRemoved && "line-through bg-red-900/50 border-red-700 text-red-400 cursor-not-allowed hover:bg-red-900/50"
+                                        )}
+                                        onClick={() => setSelectedAnswer(index)}
+                                        disabled={!isRoundActive || isRemoved || isFallen || submittedAnswer}
+                                        >
+                                        <span className="font-bold mr-4">{String.fromCharCode(65 + index)}.</span>
+                                        {answer}
+                                        </Button>
+                                    )
+                                })}
                             </div>
-
+                             <div className="mt-6 flex justify-center">
+                                <Button
+                                    size="lg"
+                                    onClick={handleSubmitAnswer}
+                                    disabled={selectedAnswer === null || submittedAnswer || !isRoundActive || isFallen}
+                                >
+                                    Submit Answer
+                                </Button>
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
