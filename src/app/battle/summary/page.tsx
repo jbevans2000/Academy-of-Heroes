@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { onSnapshot, doc, getDoc, collection, query, getDocs, where, limit, orderBy } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Trophy, LayoutDashboard, HeartCrack, Star, Coins, ShieldCheck, Sparkles, Skull, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { findTeacherForStudent } from '@/lib/utils';
+import { useState, useEffect } from 'react';
 
 
 interface Question {
@@ -40,7 +41,7 @@ interface StudentRoundResponse {
     answerIndex: number;
 }
 
-export default function StudentBattleSummaryPage() {
+function StudentBattleSummary() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -93,7 +94,6 @@ export default function StudentBattleSummaryPage() {
 
                 // Fetch student's specific responses for this battle
                 const responsesByRound: { [key: string]: StudentRoundResponse } = {};
-                const questionsCount = summarySnap.data().questions.length;
                 const allRoundsData = summarySnap.data().resultsByRound || {};
                 
                 Object.keys(allRoundsData).forEach(roundIndex => {
@@ -126,15 +126,7 @@ export default function StudentBattleSummaryPage() {
 
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-screen w-full flex-col items-center justify-center bg-muted/40 p-4">
-        <div className="max-w-4xl w-full space-y-4 text-center">
-          <Loader2 className="h-12 w-12 mx-auto animate-spin text-primary" />
-          <h1 className="text-2xl font-bold">Awaiting Battle Report...</h1>
-          <p className="text-muted-foreground">The Chronicler is tallying the results.</p>
-        </div>
-      </div>
-    );
+    return <SummaryLoadingSkeleton />;
   }
 
   if (!summary) {
@@ -249,4 +241,24 @@ export default function StudentBattleSummaryPage() {
       </main>
     </div>
   );
+}
+
+function SummaryLoadingSkeleton() {
+    return (
+      <div className="flex min-h-screen w-full flex-col items-center justify-center bg-muted/40 p-4">
+        <div className="max-w-4xl w-full space-y-4 text-center">
+          <Loader2 className="h-12 w-12 mx-auto animate-spin text-primary" />
+          <h1 className="text-2xl font-bold">Awaiting Battle Report...</h1>
+          <p className="text-muted-foreground">The Chronicler is tallying the results.</p>
+        </div>
+      </div>
+    );
+}
+
+export default function StudentBattleSummaryPage() {
+    return (
+        <Suspense fallback={<SummaryLoadingSkeleton />}>
+            <StudentBattleSummary />
+        </Suspense>
+    )
 }

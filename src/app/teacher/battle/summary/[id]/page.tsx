@@ -12,7 +12,17 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Star, Coins, ShieldCheck, Sparkles, ScrollText, Trash2, Loader2 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useToast } from '@/hooks/use-toast';
-
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface Question {
   questionText: string;
@@ -89,13 +99,14 @@ export default function TeacherBattleSummaryPage() {
         setSummary(docSnap.data() as BattleSummary);
       } else {
         console.error("No summary found for this battle.");
-        // Handle not found
+        toast({ title: "Summary Not Found", description: "This battle summary may have already been cleaned up. Redirecting to battles list."})
+        router.push('/teacher/battles');
       }
       setIsLoading(false);
     };
 
     fetchSummary();
-  }, [battleId, teacher]);
+  }, [battleId, teacher, router, toast]);
   
   const handleCleanupBattle = async () => {
     if (!teacher) return;
@@ -211,10 +222,26 @@ export default function TeacherBattleSummaryPage() {
                   Return to Dashboard
                 </Button>
             </div>
-            <Button variant="destructive" onClick={handleCleanupBattle} disabled={isCleaning}>
-                {isCleaning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                Finalize &amp; Clean Up Battle
-            </Button>
+             <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="destructive" disabled={isCleaning}>
+                        {isCleaning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                        Finalize &amp; Clean Up Battle
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Finalize This Battle?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete this battle summary and all temporary live battle data, making the system ready for a new battle. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleCleanupBattle}>Confirm & Clean Up</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
           </div>
          
           <Card className="shadow-lg">
