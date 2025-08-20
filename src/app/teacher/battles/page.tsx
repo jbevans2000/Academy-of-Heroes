@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
+import { cleanupOldSummaries } from '@/ai/flows/manage-student';
 
 interface BossBattle {
   id: string;
@@ -34,6 +35,7 @@ export default function BossBattlesPage() {
   const [battles, setBattles] = useState<BossBattle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [startingBattleId, setStartingBattleId] = useState<string | null>(null);
+  const [isCleaning, setIsCleaning] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
   const [teacher, setTeacher] = useState<User | null>(null);
@@ -150,6 +152,25 @@ export default function BossBattlesPage() {
     }
   };
 
+  const handleCleanupSummaries = async () => {
+    if (!teacher) return;
+    setIsCleaning(true);
+    try {
+        const result = await cleanupOldSummaries({ teacherUid: teacher.uid });
+        if (result.success) {
+            toast({ title: "Cleanup Successful", description: result.message });
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (error: any) {
+        console.error("Error during summary cleanup:", error);
+        toast({ variant: 'destructive', title: "Cleanup Failed", description: error.message });
+    } finally {
+        setIsCleaning(false);
+    }
+  };
+
+
   const navigateToCreate = () => {
     router.push('/teacher/battles/new');
   };
@@ -184,6 +205,33 @@ export default function BossBattlesPage() {
             </Button>
           </div>
         </div>
+
+        <div className="mb-6">
+             <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="destructive">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Clean Up Old Battle Summaries
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                        This will permanently delete all saved battle summary reports for both you and all of your students. This is useful for cleaning up data from old systems or test runs. This action CANNOT be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleCleanupSummaries} disabled={isCleaning}>
+                            {isCleaning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Yes, Delete All Summaries
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div>
+
 
         {isLoading ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

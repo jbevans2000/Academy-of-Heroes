@@ -146,34 +146,41 @@ export async function clearGameLog(input: ClearLogInput): Promise<ActionResponse
   }
 }
 
-export async function purgeOldBattleResponses(input: ClearLogInput): Promise<ActionResponse> {
+export async function cleanupOldSummaries(input: ClearLogInput): Promise<ActionResponse> {
     try {
-        const responsesRef = collection(db, 'teachers', input.teacherUid, 'liveBattles', 'active-battle', 'responses');
-        const responsesSnapshot = await getDocs(responsesRef);
-        if (responsesSnapshot.empty) {
-            return { success: true, message: "No old responses found to purge." };
-        }
-
         const batch = writeBatch(db);
         let deletedCount = 0;
-        responsesSnapshot.forEach(doc => {
-            // The old system used UIDs as document IDs. The new system uses numbers.
-            // We can check if the ID is NOT a number to identify old documents.
-            if (isNaN(Number(doc.id))) {
-                batch.delete(doc.ref);
-                deletedCount++;
-            }
+
+        // 1. Delete all documents in the top-level battleSummaries collection
+        const teacherSummariesRef = collection(db, 'teachers', input.teacherUid, 'battleSummaries');
+        const teacherSummariesSnap = await getDocs(teacherSummariesRef);
+        teacherSummariesSnap.forEach(doc => {
+            batch.delete(doc.ref);
+            deletedCount++;
         });
 
+        // 2. Go through each student and delete their battleSummaries subcollection
+        const studentsRef = collection(db, 'teachers', input.teacherUid, 'students');
+        const studentsSnap = await getDocs(studentsRef);
+
+        for (const studentDoc of studentsSnap.docs) {
+            const studentSummariesRef = collection(db, 'teachers', input.teacherUid, 'students', studentDoc.id, 'battleSummaries');
+            const studentSummariesSnap = await getDocs(studentSummariesRef);
+            studentSummariesSnap.forEach(doc => {
+                batch.delete(doc.ref);
+                deletedCount++;
+            });
+        }
+        
         if (deletedCount === 0) {
-            return { success: true, message: "No old responses found to purge." };
+            return { success: true, message: 'No old battle summaries found to clean up.' };
         }
 
         await batch.commit();
-        return { success: true, message: `Successfully purged ${deletedCount} old response document(s).` };
+        return { success: true, message: `Successfully cleaned up ${deletedCount} old summary document(s).` };
 
     } catch (e: any) {
-        console.error("Error in purgeOldBattleResponses:", e);
-        return { success: false, error: e.message || 'Failed to purge old battle responses.' };
+        console.error("Error in cleanupOldSummaries:", e);
+        return { success: false, error: e.message || 'Failed to clean up old summaries.' };
     }
 }
