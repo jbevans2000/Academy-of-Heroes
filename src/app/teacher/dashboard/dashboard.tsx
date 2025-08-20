@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { collection, getDocs, writeBatch, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
-import type { Student, PendingStudent } from '@/lib/data';
+import type { Student, PendingStudent, ClassType } from '@/lib/data';
 import { TeacherHeader } from "@/components/teacher/teacher-header";
 import { StudentList } from "@/components/teacher/student-list";
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,6 +15,13 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu"
 import {
   Dialog,
@@ -34,12 +41,11 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, UserX, Swords, PlusCircle, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell } from 'lucide-react';
+import { Loader2, Star, Coins, UserX, Swords, PlusCircle, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -49,6 +55,8 @@ interface TeacherData {
     className: string;
     classCode: string;
 }
+
+type SortOrder = 'studentName' | 'characterName' | 'xp' | 'class';
 
 export default function Dashboard() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -70,6 +78,8 @@ export default function Dashboard() {
   const [isDeleteStep1Open, setIsDeleteStep1Open] = useState(false);
   const [isDeleteStep2Open, setIsDeleteStep2Open] = useState(false);
   const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
+  
+  const [sortOrder, setSortOrder] = useState<SortOrder>('studentName');
 
   const { toast } = useToast();
   
@@ -117,6 +127,28 @@ export default function Dashboard() {
     return () => unsubscribe();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
+
+  const sortedStudents = useMemo(() => {
+    const sorted = [...students];
+    switch(sortOrder) {
+      case 'studentName':
+        sorted.sort((a, b) => a.studentName.localeCompare(b.studentName));
+        break;
+      case 'characterName':
+        sorted.sort((a, b) => a.characterName.localeCompare(b.characterName));
+        break;
+      case 'xp':
+        sorted.sort((a, b) => (b.xp || 0) - (a.xp || 0));
+        break;
+      case 'class':
+        const classOrder: ClassType[] = ['Guardian', 'Healer', 'Mage'];
+        sorted.sort((a, b) => classOrder.indexOf(a.class) - classOrder.indexOf(b.class));
+        break;
+      default:
+        break;
+    }
+    return sorted;
+  }, [students, sortOrder]);
 
   const handleToggleStudentSelection = (uid: string) => {
     setSelectedStudents(prev =>
@@ -492,7 +524,7 @@ export default function Dashboard() {
                     <ChevronDown className="ml-2 h-4 w-4" />
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent>
+                <DropdownMenuContent align="start">
                     <DropdownMenuItem onClick={() => router.push('/teacher/quests')}>
                         <BookOpen className="mr-2 h-4 w-4" />
                         <span>The Quest Archives</span>
@@ -509,6 +541,23 @@ export default function Dashboard() {
                         <BookOpen className="mr-2 h-4 w-4" />
                         <span>The Chronicler's Scroll</span>
                     </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>
+                        <SortAsc className="mr-2 h-4 w-4" />
+                        <span>Sort Students</span>
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent>
+                         <DropdownMenuRadioGroup value={sortOrder} onValueChange={(value) => setSortOrder(value as SortOrder)}>
+                            <DropdownMenuLabel>Sort By</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuRadioItem value="studentName">Student Name</DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="characterName">Character Name</DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="xp">Experience</DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="class">Class</DropdownMenuRadioItem>
+                        </DropdownMenuRadioGroup>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
                 </DropdownMenuContent>
             </DropdownMenu>
 
@@ -640,7 +689,7 @@ export default function Dashboard() {
             </AlertDialog>
         </div>
         <StudentList 
-            students={students} 
+            students={sortedStudents} 
             selectedStudents={selectedStudents}
             onSelectStudent={handleToggleStudentSelection}
             setStudents={setStudents}
