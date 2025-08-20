@@ -259,7 +259,7 @@ export default function TeacherLiveBattlePage() {
         return;
     }
     
-    const responsesRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/responses`);
+    const responsesRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${liveState.currentQuestionIndex}/students`);
     const q = query(responsesRef);
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const responses: Result[] = [];
@@ -291,7 +291,7 @@ export default function TeacherLiveBattlePage() {
         const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
         const batch = writeBatch(db);
         
-        const responsesRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/responses`);
+        const responsesRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${liveState.currentQuestionIndex}/students`);
         const responsesSnapshot = await getDocs(responsesRef);
         const responsesData = responsesSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() as any }));
         

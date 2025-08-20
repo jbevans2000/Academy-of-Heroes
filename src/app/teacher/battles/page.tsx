@@ -54,19 +54,29 @@ export default function BossBattlesPage() {
     if (!teacher) return;
     setIsLoading(true);
 
-    // This is the cleanup logic. When the teacher lands on this page,
-    // we assume any previous battle summaries are no longer needed.
-    const cleanupSummaries = async () => {
-        const summariesRef = collection(db, 'teachers', teacher.uid, 'battleSummaries');
-        const summarySnap = await getDocs(summariesRef);
-        if (!summarySnap.empty) {
-            const deleteBatch = writeBatch(db);
-            summarySnap.docs.forEach(doc => deleteBatch.delete(doc.ref));
-            await deleteBatch.commit();
-            console.log("Cleaned up old battle summaries.");
+    const cleanupOldBattleData = async () => {
+        const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
+        const summaryRef = doc(db, 'teachers', teacher.uid, 'battleSummaries', 'active-battle-summary');
+
+        const batch = writeBatch(db);
+        batch.delete(liveBattleRef); // Delete main doc
+        batch.delete(summaryRef); // Delete summary doc
+        
+        // It's not strictly necessary to delete subcollections if the parent is deleted,
+        // but this ensures a clean slate if the parent deletion fails.
+        const collectionsToDelete = ['responses', 'powerActivations', 'battleLog', 'messages'];
+        for (const coll of collectionsToDelete) {
+             const nestedCollRef = collection(liveBattleRef, coll);
+             const nestedDocsSnap = await getDocs(nestedCollRef);
+             nestedDocsSnap.docs.forEach(doc => batch.delete(doc.ref));
         }
+
+        await batch.commit().catch(err => console.warn("Cleanup failed, proceeding anyway:", err));
+        console.log("Cleaned up old battle data.");
     };
-    cleanupSummaries();
+
+    cleanupOldBattleData();
+
 
     const battlesRef = collection(db, 'teachers', teacher.uid, 'bossBattles');
     const unsubscribe = onSnapshot(battlesRef, (querySnapshot) => {
@@ -93,16 +103,17 @@ export default function BossBattlesPage() {
 
         // --- Start of Aggressive Cleanup ---
         // This ensures any previous "stuck" battle is completely wiped before a new one begins.
-        const collectionsToDelete = ['responses', 'studentResponses', 'powerActivations', 'battleLog', 'messages'];
+        const collectionsToDelete = ['responses', 'powerActivations', 'battleLog', 'messages'];
         for (const coll of collectionsToDelete) {
             try {
-                const nestedCollRef = collection(liveBattleRef, coll);
+                const collPath = `teachers/${teacher.uid}/liveBattles/active-battle/${coll}`;
+                const nestedCollRef = collection(db, collPath);
                 const nestedDocsSnap = await getDocs(nestedCollRef);
-                if (!nestedDocsSnap.empty) {
-                    const deleteBatch = writeBatch(db);
-                    nestedDocsSnap.docs.forEach(doc => deleteBatch.delete(doc.ref));
-                    await deleteBatch.commit();
-                }
+                
+                // Firestore doesn't support deleting a subcollection directly, you must delete all docs within it
+                const deletePromises = nestedDocsSnap.docs.map(docSnapshot => deleteDoc(docSnapshot.ref));
+                await Promise.all(deletePromises);
+
             } catch (error) {
                  console.warn(`Could not clean subcollection ${coll}, proceeding. Error:`, error);
             }

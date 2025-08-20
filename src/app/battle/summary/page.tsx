@@ -99,14 +99,18 @@ export default function StudentBattleSummaryPage() {
             setSummary(summarySnap.data() as BattleSummary);
 
             // Fetch student's specific responses for this battle
-             const responsesRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/studentResponses/${user.uid}/rounds`);
-             const responsesSnap = await getDocs(responsesRef);
-             const responsesData: { [key: string]: StudentRoundResponse } = {};
-             responsesSnap.forEach(doc => {
-                 responsesData[doc.id] = doc.data() as StudentRoundResponse;
-             });
-             setStudentResponses(responsesData);
-             setIsLoading(false);
+            const responsesByRound: { [key: string]: StudentRoundResponse } = {};
+            const questionsCount = summarySnap.data().questions.length;
+
+            for (let i = 0; i < questionsCount; i++) {
+                const responseDocRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${i}/students`, user.uid);
+                const responseSnap = await getDoc(responseDocRef);
+                if (responseSnap.exists()) {
+                    responsesByRound[i] = responseSnap.data() as StudentRoundResponse;
+                }
+            }
+            setStudentResponses(responsesByRound);
+            setIsLoading(false);
         } else {
             // Summary doc doesn't exist yet, keep loading.
             setIsLoading(true);

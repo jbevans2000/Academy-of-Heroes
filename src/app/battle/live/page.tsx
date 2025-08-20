@@ -405,7 +405,8 @@ export default function LiveBattlePage() {
     const currentQuestion = battle.questions[battleState.currentQuestionIndex];
     const isCorrect = answerIndex === currentQuestion.correctAnswerIndex;
 
-    const responseRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/responses`, user.uid);
+    const responseRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${battleState.currentQuestionIndex}/students`, user.uid);
+    
     await setDoc(responseRef, {
       studentName: student.studentName,
       characterName: student.characterName,
@@ -415,11 +416,6 @@ export default function LiveBattlePage() {
       submittedAt: new Date(),
     }, { merge: true });
 
-    // Separate from response collection, just track the latest choice for summary
-    const studentResponseRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/studentResponses/${user.uid}/rounds/${battleState.currentQuestionIndex}`);
-    await setDoc(studentResponseRef, {
-        answerIndex: answerIndex,
-    });
   };
   
    useEffect(() => {
@@ -427,7 +423,7 @@ export default function LiveBattlePage() {
         if (battleState?.status === 'SHOWING_RESULTS' && user && teacherUid) {
             const checkLastAnswer = async () => {
                 const prevRoundIndex = battleState.currentQuestionIndex;
-                const prevRoundResponseRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/studentResponses/${user.uid}/rounds/${prevRoundIndex}`);
+                const prevRoundResponseRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${prevRoundIndex}/students`, user.uid);
                 const responseSnap = await getDoc(prevRoundResponseRef);
                 const question = battle?.questions[prevRoundIndex];
                 if (responseSnap.exists() && question) {
