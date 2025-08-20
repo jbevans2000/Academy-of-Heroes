@@ -126,12 +126,8 @@ export default function TeacherBattleSummaryPage() {
         // Delete the teacher's summary document.
         batch.delete(summaryRef);
 
-        // Schedule deletion of student summaries
-        const studentsSnapshot = await getDocs(collection(db, 'teachers', teacher.uid, 'students'));
-        studentsSnapshot.forEach(studentDoc => {
-            const studentSummaryRef = doc(db, 'teachers', teacher.uid, 'students', studentDoc.id, 'battleSummaries', battleId);
-            batch.delete(studentSummaryRef);
-        });
+        // IMPORTANT: We are NO LONGER deleting the student summaries.
+        // That data should be preserved in "Songs and Stories".
 
         await batch.commit();
 
@@ -235,7 +231,7 @@ export default function TeacherBattleSummaryPage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Finalize This Battle?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will permanently delete this battle summary and all temporary live battle data, making the system ready for a new battle. This action cannot be undone.
+                            This will permanently delete this battle summary and all temporary live battle data, making the system ready for a new battle. This action cannot be undone. Student reports will be preserved.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
