@@ -91,7 +91,7 @@ interface Battle {
 }
 
 interface StudentResponse {
-    uid: string;
+    studentUid: string;
     studentName: string;
     characterName: string;
     answer: string;
@@ -261,21 +261,23 @@ export default function TeacherLiveBattlePage() {
         const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
         const batch = writeBatch(db);
 
-        // 1. Get all responses submitted for this round.
-        const responsesRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${liveState.currentQuestionIndex}/students`);
-        const responsesSnapshot = await getDocs(responsesRef);
-        const responsesMap = new Map(responsesSnapshot.docs.map(doc => [doc.id, doc.data() as StudentResponse]));
+        // 1. Get the single master response document for this round.
+        const roundDocRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${liveState.currentQuestionIndex}`);
+        const roundDocSnap = await getDoc(roundDocRef);
         
-        // 2. Get all *online* students to check who should have answered.
+        const submittedResponses: StudentResponse[] = roundDocSnap.exists() ? roundDocSnap.data().responses || [] : [];
+        const submittedStudentUids = new Set(submittedResponses.map(r => r.studentUid));
+
+        // 2. Get all *online* students to check who should have answered but didn't.
         const onlineStudents = allStudents.filter(s => s.onlineStatus?.status === 'online');
         const studentMap = new Map(allStudents.map(doc => [doc.uid, doc]));
         
         const results: Result[] = [];
         const newlyFallenUids: string[] = [];
 
-        // 3. Process results ONLY for online students.
+        // 3. Process results for all online students.
         for (const student of onlineStudents) {
-            const response = responsesMap.get(student.uid);
+            const response = submittedResponses.find(r => r.studentUid === student.uid);
             const isCorrect = response?.isCorrect ?? false; // Default to incorrect if no response
             
             results.push({
@@ -361,10 +363,10 @@ export default function TeacherLiveBattlePage() {
             ...prev,
             [liveState.currentQuestionIndex]: {
                 questionText: currentQuestion.questionText,
-                responses: results.map(r => ({
+                responses: submittedResponses.map(r => ({
                     studentUid: r.studentUid,
-                    studentName: r.studentName,
-                    answerIndex: responsesMap.get(r.studentUid)?.answerIndex,
+                    studentName: r.characterName,
+                    answerIndex: r.answerIndex,
                     isCorrect: r.isCorrect,
                 })),
                 powersUsed: powersUsedThisRound,
@@ -809,9 +811,9 @@ export default function TeacherLiveBattlePage() {
     try {
         const batch = writeBatch(db);
 
-        const responsesRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/responses`);
-        const responsesSnapshot = await getDocs(responsesRef);
-        responsesSnapshot.forEach(doc => batch.delete(doc.ref));
+        // Delete the master response document for the previous round
+        const prevRoundDocRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${liveState.currentQuestionIndex}`);
+        batch.delete(prevRoundDocRef);
         
         const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
         const nextQuestionIndex = liveState.currentQuestionIndex + 1;

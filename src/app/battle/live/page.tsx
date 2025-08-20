@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { onSnapshot, doc, getDoc, setDoc, updateDoc, increment, arrayUnion, collection, query, getDocs } from 'firebase/firestore';
+import { onSnapshot, doc, getDoc, setDoc, updateDoc, increment, arrayUnion, collection, query, getDocs, serverTimestamp } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
 import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Hourglass, VolumeX, Flame, Lightbulb, Skull, ScrollText } from 'lucide-react';
@@ -429,15 +429,22 @@ export default function LiveBattlePage() {
     const currentQuestion = battle.questions[battleState.currentQuestionIndex];
     const isCorrect = selectedAnswer === currentQuestion.correctAnswerIndex;
 
-    const responseRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${battleState.currentQuestionIndex}/students`, user.uid);
+    const roundResponseDocRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/responses`, `${battleState.currentQuestionIndex}`);
     
-    await setDoc(responseRef, {
+    const responsePayload = {
+      studentUid: user.uid,
       studentName: student.studentName,
       characterName: student.characterName,
       answer: currentQuestion.answers[selectedAnswer],
       answerIndex: selectedAnswer,
       isCorrect: isCorrect,
-      submittedAt: new Date(),
+      submittedAt: serverTimestamp(),
+    };
+
+    // Use setDoc with merge to create the document if it doesn't exist,
+    // and then use arrayUnion to add the response.
+    await setDoc(roundResponseDocRef, {
+        responses: arrayUnion(responsePayload)
     }, { merge: true });
 
   };
@@ -447,14 +454,21 @@ export default function LiveBattlePage() {
         if (battleState?.status === 'SHOWING_RESULTS' && user && teacherUid) {
             const checkLastAnswer = async () => {
                 const prevRoundIndex = battleState.currentQuestionIndex;
-                const prevRoundResponseRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${prevRoundIndex}/students`, user.uid);
-                const responseSnap = await getDoc(prevRoundResponseRef);
+                // Fetch the master round document
+                const roundDocRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${prevRoundIndex}`);
+                const roundDocSnap = await getDoc(roundDocRef);
                 const question = battle?.questions[prevRoundIndex];
-                if (responseSnap.exists() && question) {
-                    const responseData = responseSnap.data();
-                    setLastAnswerCorrect(responseData.answerIndex === question.correctAnswerIndex);
+
+                if (roundDocSnap.exists() && question) {
+                    const roundData = roundDocSnap.data();
+                    const studentResponse = roundData.responses?.find((r: any) => r.studentUid === user.uid);
+                    if (studentResponse) {
+                        setLastAnswerCorrect(studentResponse.isCorrect);
+                    } else {
+                        setLastAnswerCorrect(null); // No answer submitted for that round
+                    }
                 } else {
-                    setLastAnswerCorrect(null); // No answer submitted for that round
+                    setLastAnswerCorrect(null);
                 }
             };
             checkLastAnswer();

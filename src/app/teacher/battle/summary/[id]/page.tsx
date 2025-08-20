@@ -120,7 +120,15 @@ export default function TeacherBattleSummaryPage() {
         const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
         const summaryRef = doc(db, 'teachers', teacher.uid, 'battleSummaries', battleId);
 
-        // Delete the main live battle document. Subcollections are not auto-deleted.
+        // Clean up subcollections of live battle
+        const subcollections = ['responses', 'powerActivations', 'battleLog', 'messages'];
+        for (const sub of subcollections) {
+            const subRef = collection(liveBattleRef, sub);
+            const snapshot = await getDocs(subRef);
+            snapshot.forEach(doc => batch.delete(doc.ref));
+        }
+
+        // Delete the main live battle document.
         batch.delete(liveBattleRef);
 
         // Delete the teacher's summary document.
