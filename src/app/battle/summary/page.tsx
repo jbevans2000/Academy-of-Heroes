@@ -62,14 +62,10 @@ function StudentBattleSummary() {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
         if (currentUser) {
             setUser(currentUser);
-            // Since we don't know teacherUid on client, we find it
-            const teachersSnapshot = await getDocs(collection(db, 'teachers'));
-            for (const teacherDoc of teachersSnapshot.docs) {
-                const studentDoc = await getDoc(doc(db, 'teachers', teacherDoc.id, 'students', currentUser.uid));
-                if (studentDoc.exists()) {
-                    setTeacherUid(teacherDoc.id);
-                    break;
-                }
+            const studentRef = doc(db, 'students', currentUser.uid);
+            const studentSnap = await getDoc(studentRef);
+            if(studentSnap.exists()){
+                setTeacherUid(studentSnap.data().teacherUid);
             }
         } else {
             router.push('/');
@@ -140,7 +136,7 @@ function StudentBattleSummary() {
         <div className="max-w-4xl w-full space-y-4 text-center">
           <Trophy className="h-12 w-12 mx-auto text-muted-foreground" />
           <h1 className="text-2xl font-bold">No Summary Available</h1>
-          <p className="text-muted-foreground">Returning to your dashboard...</p>
+          <p className="text-muted-foreground">This battle report has been archived by your teacher.</p>
           <Button onClick={() => router.push('/dashboard')}>Go to Dashboard</Button>
         </div>
       </div>
@@ -265,5 +261,3 @@ export default function StudentBattleSummaryPage() {
         </Suspense>
     )
 }
-
-    

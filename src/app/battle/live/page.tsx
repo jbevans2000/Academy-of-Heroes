@@ -298,15 +298,28 @@ export default function LiveBattlePage() {
       if (user) {
         setUser(user);
         // Find which teacher this student belongs to
-        const teachersSnapshot = await getDocs(collection(db, 'teachers'));
-        for (const teacherDoc of teachersSnapshot.docs) {
-          const studentDocRef = doc(db, 'teachers', teacherDoc.id, 'students', user.uid);
-          const studentSnap = await getDoc(studentDocRef);
-          if (studentSnap.exists()) {
-            setTeacherUid(teacherDoc.id);
-            setStudent(studentSnap.data() as Student);
-            break;
-          }
+        const studentRef = doc(db, 'students', user.uid);
+        const studentSnap = await getDoc(studentRef);
+
+        if(studentSnap.exists()){
+            const studentData = studentSnap.data() as Student;
+            setTeacherUid(studentData.teacherUid);
+            setStudent(studentData);
+        } else {
+            // This case should ideally not be hit if registration is correct.
+            // Fallback to searching all teachers if needed.
+            console.warn("Student doc not found at root, falling back to teacher search.");
+            const teachersSnapshot = await getDocs(collection(db, 'teachers'));
+            for (const teacherDoc of teachersSnapshot.docs) {
+              const studentDocRef = doc(db, 'teachers', teacherDoc.id, 'students', user.uid);
+              const deepStudentSnap = await getDoc(studentDocRef);
+              if (deepStudentSnap.exists()) {
+                const studentDataWithUid = { ...deepStudentSnap.data(), teacherUid: teacherDoc.id } as Student;
+                setTeacherUid(teacherDoc.id);
+                setStudent(studentDataWithUid);
+                break;
+              }
+            }
         }
       } else {
         router.push('/');
@@ -370,9 +383,12 @@ export default function LiveBattlePage() {
 
         setBattleState(newState);
 
-        if (newState.status === 'BATTLE_ENDED') {
-            router.push(`/battle/summary?id=${newState.battleId}`);
-        }
+        // REMOVED: The automatic redirect to the summary page.
+        // The student will now stay on this page until the teacher starts a new battle.
+        // if (newState.status === 'BATTLE_ENDED') {
+        //     router.push(`/battle/summary?id=${newState.battleId}`);
+        // }
+
       } else {
           setBattleState(null);
       }
@@ -728,6 +744,38 @@ export default function LiveBattlePage() {
       );
   }
 
+  // New state for when the battle is over but before a new one has started
+  if (battleState.status === 'BATTLE_ENDED' && battle) {
+      return (
+        <div className="relative flex min-h-screen flex-col items-center justify-center p-4 bg-gray-900">
+            {battle.bossImageUrl && (
+                <Image
+                    src={battle.bossImageUrl}
+                    alt="Boss Background"
+                    fill
+                    className="object-cover opacity-20"
+                    data-ai-hint="fantasy monster"
+                />
+            )}
+            <div className="w-full max-w-2xl mx-auto z-10">
+                <Card className="text-center shadow-lg bg-card/80 backdrop-blur-sm text-card-foreground">
+                    <CardHeader>
+                        <CardTitle className="text-4xl font-bold tracking-tight">The Battle is Over!</CardTitle>
+                        <CardDescription className="text-lg text-muted-foreground">The teacher has concluded the battle. Awaiting the next session.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <Button size="lg" onClick={() => router.push(`/battle/summary?id=${battleState.battleId}`)}>
+                            View Your Battle Report
+                        </Button>
+                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mt-8" />
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+      );
+  }
+
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4 text-center">
         <Swords className="h-24 w-24 text-primary mb-6" />
@@ -737,5 +785,3 @@ export default function LiveBattlePage() {
     </div>
   );
 }
-
-    
