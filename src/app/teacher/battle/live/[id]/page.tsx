@@ -773,18 +773,21 @@ export default function TeacherLiveBattlePage() {
   }, [liveState?.fallenPlayerUids, teacherUid]);
 
   const handleStartFirstQuestion = async () => {
-    if(!teacherUid) return;
+    if(!teacherUid || !battle) return;
     const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
-    await updateDoc(liveBattleRef, { 
+    await setDoc(liveBattleRef, { 
+        battleId: battle.id,
         status: 'IN_PROGRESS', 
+        currentQuestionIndex: 0,
+        totalDamage: 0,
+        totalBaseDamage: 0,
+        totalPowerDamage: 0,
         fallenPlayerUids: [],
         empoweredMageUids: [],
         cosmicDivinationUses: 0,
         voteState: null,
     });
-    if(battle) {
-        await logGameEvent(teacherUid, 'BOSS_BATTLE', `Round 1 of '${battle.battleName}' has started.`);
-    }
+    await logGameEvent(teacherUid, 'BOSS_BATTLE', `Round 1 of '${battle.battleName}' has started.`);
   };
   
   const handleEndRound = async () => {
