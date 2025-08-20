@@ -275,7 +275,7 @@ export default function TeacherLiveBattlePage() {
             const powerUsed = powerUsers[doc.id]?.join(', ') || undefined;
 
             responses.push({
-                studentUid: data.uid,
+                studentUid: doc.id,
                 studentName: data.characterName,
                 answer: data.answer,
                 isCorrect: data.isCorrect,
@@ -1052,6 +1052,7 @@ export default function TeacherLiveBattlePage() {
   const isLastQuestion = liveState.currentQuestionIndex >= battle.questions.length - 1;
   const expiryTimestamp = liveState.timerEndsAt ? new Date(liveState.timerEndsAt.seconds * 1000) : null;
   const videoSrc = battle.videoUrl ? getYouTubeEmbedUrl(battle.videoUrl) : '';
+  const onlineStudentUids = allStudents.filter(s => s.onlineStatus?.status === 'online').map(s => s.uid);
 
 
   return (
@@ -1183,7 +1184,7 @@ export default function TeacherLiveBattlePage() {
                             <CardDescription>See which students have submitted their answer for the current question.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                        <RoundResults results={studentResponses} allStudents={allStudents} />
+                        <RoundResults results={studentResponses} onlineStudentUids={onlineStudentUids} />
                         </CardContent>
                     </Card>
                 )}
@@ -1201,7 +1202,7 @@ export default function TeacherLiveBattlePage() {
                             </Button>
                         </CardHeader>
                         <CardContent>
-                            <RoundResults results={roundResults} allStudents={allStudents} />
+                            <RoundResults results={roundResults} onlineStudentUids={onlineStudentUids} />
                              <div className="mt-4 p-4 rounded-md bg-sky-900/70 border border-sky-700 text-sky-200 flex flex-col gap-4">
                                 <div className="flex items-center justify-center gap-4 text-center">
                                     <div className="flex-1">
@@ -1260,3 +1261,5 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
+
+    

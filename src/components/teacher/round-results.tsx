@@ -16,16 +16,16 @@ export interface Result {
 
 interface RoundResultsProps {
   results: Result[];
-  allStudents: Student[];
+  onlineStudentUids: string[];
 }
 
-export function RoundResults({ results, allStudents }: RoundResultsProps) {
+export function RoundResults({ results, onlineStudentUids }: RoundResultsProps) {
   
-  // Create a map for quick lookup of online status
-  const onlineStatusMap = new Map(allStudents.map(s => [s.uid, s.onlineStatus?.status === 'online']));
+  // Create a Set for quick lookup of online status
+  const onlineStudentSet = new Set(onlineStudentUids);
   
   // Filter the results to only include online students
-  const filteredResults = results.filter(r => onlineStatusMap.get(r.studentUid));
+  const filteredResults = results.filter(r => onlineStudentSet.has(r.studentUid));
 
   const correctAnswers = filteredResults.filter(r => r.isCorrect).length;
   const incorrectAnswers = filteredResults.length - correctAnswers;
@@ -78,3 +78,5 @@ export function RoundResults({ results, allStudents }: RoundResultsProps) {
     </Table>
   );
 }
+
+    
