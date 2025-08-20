@@ -283,13 +283,14 @@ export default function TeacherLiveBattlePage() {
                 isOnline: studentData?.onlineStatus?.status === 'online',
             });
         });
-        setStudentResponses(responses);
+        const onlineResponses = responses.filter(r => r.isOnline);
+        setStudentResponses(onlineResponses);
     }, (error) => {
         console.error("Error listening for student responses:", error);
     });
 
     return () => unsubscribe();
-}, [liveState, liveState?.status, liveState?.currentQuestionIndex, teacherUid, allStudents]);
+}, [liveState, teacherUid, allStudents]);
 
     const calculateAndSetResults = useCallback(async (isDivinationSkip: boolean = false) => {
         if (!liveState || !battle || !teacherUid) return;
@@ -1180,7 +1181,7 @@ export default function TeacherLiveBattlePage() {
                 {(isRoundInProgress || isRoundEnding) && (
                     <Card className="bg-card/60 backdrop-blur-sm">
                         <CardHeader>
-                            <CardTitle>Live Student Responses ({studentResponses.filter(r => r.isOnline).length})</CardTitle>
+                            <CardTitle>Live Student Responses</CardTitle>
                             <CardDescription>See which students have submitted their answer for the current question.</CardDescription>
                         </CardHeader>
                         <CardContent>

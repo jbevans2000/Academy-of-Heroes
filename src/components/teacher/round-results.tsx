@@ -21,13 +21,10 @@ interface RoundResultsProps {
 
 export function RoundResults({ results }: RoundResultsProps) {
   
-  // Filter the results to only include online students
-  const filteredResults = results.filter(r => r.isOnline);
+  const correctAnswers = results.filter(r => r.isCorrect).length;
+  const incorrectAnswers = results.length - correctAnswers;
 
-  const correctAnswers = filteredResults.filter(r => r.isCorrect).length;
-  const incorrectAnswers = filteredResults.length - correctAnswers;
-
-  if (filteredResults.length === 0) {
+  if (results.length === 0) {
     return (
        <div className="text-center py-8 text-muted-foreground">
             No online students have submitted an answer for this round yet.
@@ -46,7 +43,7 @@ export function RoundResults({ results }: RoundResultsProps) {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {filteredResults.map((result, index) => (
+        {results.map((result, index) => (
           <TableRow key={index}>
             <TableCell className="font-medium">{result.studentName}</TableCell>
             <TableCell>{result.answer}</TableCell>
