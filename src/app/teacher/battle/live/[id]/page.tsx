@@ -294,39 +294,62 @@ export default function TeacherLiveBattlePage() {
 }, [liveState, teacherUid, allStudents]);
 
     const calculateAndSetResults = useCallback(async (isDivinationSkip: boolean = false) => {
-        if (!liveState || !battle || !teacherUid) return;
+        if (!liveState || !battle || !teacherUid || allStudents.length === 0) return;
         
         const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
         const batch = writeBatch(db);
         
+        // 1. Get all online students at the moment the round ends.
+        const onlineStudents = allStudents.filter(s => s.onlineStatus?.status === 'online');
+        const onlineStudentMap = new Map(onlineStudents.map(s => [s.uid, s]));
+        
+        // 2. Get all responses submitted for this round.
         const responsesRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${liveState.currentQuestionIndex}/students`);
         const responsesSnapshot = await getDocs(responsesRef);
-        const responsesData = responsesSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() as any }));
-        
-        const currentQuestion = battle.questions[liveState.currentQuestionIndex];
-        const damageOnIncorrect = currentQuestion.damage || 0;
+        const responsesMap = new Map(responsesSnapshot.docs.map(doc => [doc.id, doc.data() as StudentResponse]));
 
-        const results: Result[] = responsesData.map(response => ({
-            studentName: response.characterName,
-            studentUid: response.uid,
-            answer: response.answer,
-            isCorrect: response.isCorrect,
-            powerUsed: liveState.powerUsersThisRound?.[response.uid]?.join(', ') || undefined,
-        }));
+        const results: Result[] = [];
+        
+        // 3. Process results only for online students.
+        for (const student of onlineStudents) {
+            const response = responsesMap.get(student.uid);
+            if (response) {
+                // Student answered
+                results.push({
+                    studentUid: student.uid,
+                    studentName: response.characterName,
+                    answer: response.answer,
+                    isCorrect: response.isCorrect,
+                    powerUsed: liveState.powerUsersThisRound?.[student.uid]?.join(', ') || undefined,
+                });
+            } else {
+                // Online student did NOT answer
+                results.push({
+                    studentUid: student.uid,
+                    studentName: student.characterName,
+                    answer: "No Answer",
+                    isCorrect: false,
+                    powerUsed: liveState.powerUsersThisRound?.[student.uid]?.join(', ') || undefined,
+                });
+            }
+        }
+        
         setRoundResults(results);
 
+        const currentQuestion = battle.questions[liveState.currentQuestionIndex];
+        const damageOnIncorrect = currentQuestion.damage || 0;
         const newlyFallenUids: string[] = [];
 
         if (damageOnIncorrect > 0 && !isDivinationSkip) {
-            for (const response of responsesData) {
-                if (!response.isCorrect) {
-                    const studentRef = doc(db, 'teachers', teacherUid, 'students', response.uid);
-                    const studentData = allStudents.find(s => s.uid === response.uid);
+            for (const result of results) {
+                 if (!result.isCorrect) {
+                    const studentData = onlineStudentMap.get(result.studentUid);
                     if (studentData) {
+                        const studentRef = doc(db, 'teachers', teacherUid, 'students', studentData.uid);
                         const newHp = Math.max(0, studentData.hp - damageOnIncorrect);
                         batch.update(studentRef, { hp: newHp });
                         if (newHp === 0) {
-                            newlyFallenUids.push(response.uid);
+                            newlyFallenUids.push(studentData.uid);
                         }
                     }
                 }
@@ -339,14 +362,14 @@ export default function TeacherLiveBattlePage() {
 
         if (!isDivinationSkip) {
             for (const power of liveState.queuedPowers || []) {
-                const casterResponse = responsesData.find(res => res.uid === power.casterUid);
+                const casterResponse = results.find(res => res.studentUid === power.casterUid);
 
                 if (casterResponse?.isCorrect) {
                     powerDamage += power.damage;
                     powersUsedThisRound.push(`${power.powerName} (${power.damage} dmg)`);
                     batch.set(doc(battleLogRef), {
                         round: liveState.currentQuestionIndex + 1,
-                        casterName: casterResponse.characterName,
+                        casterName: casterResponse.studentName,
                         powerName: power.powerName,
                         description: `Dealt ${power.damage} damage.`,
                         timestamp: serverTimestamp()
@@ -354,7 +377,7 @@ export default function TeacherLiveBattlePage() {
                 } else {
                     batch.set(doc(battleLogRef), {
                         round: liveState.currentQuestionIndex + 1,
-                        casterName: casterResponse?.characterName || 'Unknown Mage',
+                        casterName: casterResponse?.studentName || 'Unknown Mage',
                         powerName: power.powerName,
                         description: 'Fizzled due to incorrect answer.',
                         timestamp: serverTimestamp()
@@ -392,7 +415,7 @@ export default function TeacherLiveBattlePage() {
                 responses: results.map(r => ({
                     studentUid: r.studentUid,
                     studentName: r.studentName,
-                    answerIndex: responsesData.find(d => d.uid === r.studentUid)?.answerIndex,
+                    answerIndex: responsesMap.get(r.studentUid)?.answerIndex,
                     isCorrect: r.isCorrect,
                 })),
                 powersUsed: powersUsedThisRound,
