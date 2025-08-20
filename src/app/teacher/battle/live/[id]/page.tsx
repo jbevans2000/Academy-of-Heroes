@@ -160,7 +160,7 @@ export default function TeacherLiveBattlePage() {
   const [roundResults, setRoundResults] = useState<Result[]>([]);
   const [allRoundsData, setAllRoundsData] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
-  const [isEndingRound, setIsEndingRound] = useState(false);
+  const [isEndingRound, setIsEndingRound] = useState(isEndingRound);
   const [isAdvancing, setIsAdvancing] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [teacherData, setTeacherData] = useState<TeacherData | null>(null);
@@ -261,24 +261,20 @@ export default function TeacherLiveBattlePage() {
         const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
         const batch = writeBatch(db);
 
-        // 1. Get the single master response document for this round.
         const roundDocRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${liveState.currentQuestionIndex}`);
         const roundDocSnap = await getDoc(roundDocRef);
         
         const submittedResponses: StudentResponse[] = roundDocSnap.exists() ? roundDocSnap.data().responses || [] : [];
-        const submittedStudentUids = new Set(submittedResponses.map(r => r.studentUid));
-
-        // 2. Get all *online* students to check who should have answered but didn't.
-        const onlineStudents = allStudents.filter(s => s.onlineStatus?.status === 'online');
         const studentMap = new Map(allStudents.map(doc => [doc.uid, doc]));
         
         const results: Result[] = [];
         const newlyFallenUids: string[] = [];
+        
+        const onlineStudents = allStudents.filter(s => s.onlineStatus?.status === 'online' && s.hp > 0);
 
-        // 3. Process results for all online students.
         for (const student of onlineStudents) {
             const response = submittedResponses.find(r => r.studentUid === student.uid);
-            const isCorrect = response?.isCorrect ?? false; // Default to incorrect if no response
+            const isCorrect = response?.isCorrect ?? false;
             
             results.push({
                 studentUid: student.uid,
@@ -288,7 +284,6 @@ export default function TeacherLiveBattlePage() {
                 powerUsed: liveState.powerUsersThisRound?.[student.uid]?.join(', ') || undefined,
             });
 
-            // 4. Calculate damage for incorrect answers or no answer.
             if (!isCorrect && !isDivinationSkip) {
                 const currentQuestion = battle.questions[liveState.currentQuestionIndex];
                 const damageOnIncorrect = currentQuestion.damage || 0;
@@ -304,7 +299,7 @@ export default function TeacherLiveBattlePage() {
             }
         }
         
-        setRoundResults(results);
+        setRoundResults(results); // This updates the live view
 
         let powerDamage = isDivinationSkip ? (liveState.lastRoundPowerDamage || 0) : 0;
         const powersUsedThisRound: string[] = isDivinationSkip ? (liveState.lastRoundPowersUsed || []) : [];
@@ -844,16 +839,13 @@ export default function TeacherLiveBattlePage() {
 
   const handleEndBattle = async () => {
     if (!liveState || !battle || !teacherUid) return;
-
-    // Use a fresh copy of allRoundsData to prevent race conditions
-    const freshAllRoundsData = { ...allRoundsData };
     
     // Ensure the final round's results are calculated if not already
     if (liveState.status !== 'SHOWING_RESULTS') {
         await calculateAndSetResults();
-        await new Promise(resolve => setTimeout(resolve, 250)); // Give Firestore a moment to sync
+        await new Promise(resolve => setTimeout(resolve, 500)); // Give Firestore time to sync before reading final state
     }
-
+    
     const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
     const finalStateDoc = await getDoc(liveBattleRef);
 
@@ -874,8 +866,8 @@ export default function TeacherLiveBattlePage() {
     const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
     const individualResultsByStudent: { [uid: string]: any } = {};
     
-    Object.keys(freshAllRoundsData).forEach(roundIndex => {
-        const roundData = freshAllRoundsData[roundIndex];
+    Object.keys(allRoundsData).forEach(roundIndex => {
+        const roundData = allRoundsData[roundIndex];
         if (roundData && roundData.responses) {
             roundData.responses.forEach((res: any) => {
                 if (!rewardsByStudent[res.studentUid]) {
@@ -956,7 +948,7 @@ export default function TeacherLiveBattlePage() {
         battleId: battleId,
         battleName: battle?.battleName || '',
         questions: battle?.questions || [],
-        resultsByRound: freshAllRoundsData,
+        resultsByRound: allRoundsData,
         battleLog: powerLog,
         rewards: rewardsByStudent,
         totalDamageDealt: totalDamage,
@@ -1230,3 +1222,5 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
+
+    
