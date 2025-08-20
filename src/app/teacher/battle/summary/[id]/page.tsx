@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -119,17 +120,18 @@ export default function TeacherBattleSummaryPage() {
         const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
         const summaryRef = doc(db, 'teachers', teacher.uid, 'battleSummaries', battleId);
 
-        // Delete subcollections of live battle
-        const subcollections = ['responses', 'powerActivations', 'battleLog', 'messages'];
-        for (const subcollectionName of subcollections) {
-            const subcollectionRef = collection(liveBattleRef, subcollectionName);
-            const snapshot = await getDocs(subcollectionRef);
-            snapshot.docs.forEach(doc => batch.delete(doc.ref));
-        }
-
-        // Delete main documents
+        // Delete the main live battle document. Subcollections are not auto-deleted.
         batch.delete(liveBattleRef);
+
+        // Delete the teacher's summary document.
         batch.delete(summaryRef);
+
+        // Schedule deletion of student summaries
+        const studentsSnapshot = await getDocs(collection(db, 'teachers', teacher.uid, 'students'));
+        studentsSnapshot.forEach(studentDoc => {
+            const studentSummaryRef = doc(db, 'teachers', teacher.uid, 'students', studentDoc.id, 'battleSummaries', battleId);
+            batch.delete(studentSummaryRef);
+        });
 
         await batch.commit();
 

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -53,71 +54,22 @@ export default function BossBattlesPage() {
     if (!teacher) return;
     setIsLoading(true);
 
-    const cleanupPreviousBattleData = async () => {
-        console.log("Starting cleanup of previous battle data...");
-        const batch = writeBatch(db);
-        const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
-
-        // Delete the main live battle document
-        batch.delete(liveBattleRef);
-        console.log("Scheduled deletion for live battle doc.");
-
-        // Schedule deletion of all documents in subcollections
-        const subcollections = ['responses', 'powerActivations', 'battleLog', 'messages'];
-        for (const subcollectionName of subcollections) {
-            try {
-                const subcollectionRef = collection(liveBattleRef, subcollectionName);
-                const snapshot = await getDocs(subcollectionRef);
-                snapshot.docs.forEach(doc => {
-                    batch.delete(doc.ref);
-                });
-                console.log(`Scheduled ${snapshot.size} deletions from ${subcollectionName}.`);
-            } catch (error) {
-                console.warn(`Could not query subcollection ${subcollectionName} for deletion. It might not exist.`, error);
-            }
-        }
-        
-        // Also clean up any persisted summary documents
-        const summariesRef = collection(db, 'teachers', teacher.uid, 'battleSummaries');
-        try {
-            const summariesSnapshot = await getDocs(summariesRef);
-            summariesSnapshot.docs.forEach(doc => {
-                 batch.delete(doc.ref);
-            });
-             console.log(`Scheduled ${summariesSnapshot.size} deletions from battleSummaries.`);
-        } catch(error) {
-            console.warn("Could not query battleSummaries for deletion.", error);
-        }
-        
-
-        try {
-            await batch.commit();
-            console.log("Cleanup batch committed successfully.");
-        } catch (error) {
-            console.error("Error committing cleanup batch:", error);
-            // Don't toast here as it might be an expected error (e.g., docs not found)
-        }
-    };
-    
-    // Perform cleanup first, then set up the listener for battles.
-    cleanupPreviousBattleData().then(() => {
-        const battlesRef = collection(db, 'teachers', teacher.uid, 'bossBattles');
-        const unsubscribe = onSnapshot(battlesRef, (querySnapshot) => {
-            const battlesData = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            } as BossBattle));
-            setBattles(battlesData);
-            setIsLoading(false);
-        }, (error) => {
-            console.error("Error fetching boss battles: ", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch battle data.' });
-            setIsLoading(false);
-        });
-        
-        // Return the unsubscribe function for cleanup
-        return unsubscribe;
+    const battlesRef = collection(db, 'teachers', teacher.uid, 'bossBattles');
+    const unsubscribe = onSnapshot(battlesRef, (querySnapshot) => {
+        const battlesData = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        } as BossBattle));
+        setBattles(battlesData);
+        setIsLoading(false);
+    }, (error) => {
+        console.error("Error fetching boss battles: ", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch battle data.' });
+        setIsLoading(false);
     });
+    
+    // Return the unsubscribe function for cleanup
+    return () => unsubscribe;
 
   }, [teacher, toast]);
 
