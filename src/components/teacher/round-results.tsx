@@ -12,20 +12,17 @@ export interface Result {
   answer: string;
   isCorrect: boolean;
   powerUsed?: string;
+  isOnline?: boolean;
 }
 
 interface RoundResultsProps {
   results: Result[];
-  onlineStudentUids: string[];
 }
 
-export function RoundResults({ results, onlineStudentUids }: RoundResultsProps) {
-  
-  // Create a Set for quick lookup of online status
-  const onlineStudentSet = new Set(onlineStudentUids);
+export function RoundResults({ results }: RoundResultsProps) {
   
   // Filter the results to only include online students
-  const filteredResults = results.filter(r => onlineStudentSet.has(r.studentUid));
+  const filteredResults = results.filter(r => r.isOnline);
 
   const correctAnswers = filteredResults.filter(r => r.isCorrect).length;
   const incorrectAnswers = filteredResults.length - correctAnswers;
@@ -78,5 +75,3 @@ export function RoundResults({ results, onlineStudentUids }: RoundResultsProps) 
     </Table>
   );
 }
-
-    

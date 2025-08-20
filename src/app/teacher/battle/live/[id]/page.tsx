@@ -258,7 +258,7 @@ export default function TeacherLiveBattlePage() {
 
   // Listen for real-time student responses for the current question
   useEffect(() => {
-    if (!liveState || !teacherUid ||(liveState.status !== 'IN_PROGRESS' && liveState.status !== 'ROUND_ENDING')) {
+    if (!liveState || !teacherUid || (liveState.status !== 'IN_PROGRESS' && liveState.status !== 'ROUND_ENDING')) {
         setStudentResponses([]);
         return;
     }
@@ -266,20 +266,21 @@ export default function TeacherLiveBattlePage() {
     const responsesRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${liveState.currentQuestionIndex}/students`);
     const q = query(responsesRef);
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const studentMap = new Map(allStudents.map(s => [s.uid, s]));
         const responses: Result[] = [];
         const powerUsers = liveState.powerUsersThisRound || {};
 
         querySnapshot.forEach((doc) => {
             const data = doc.data() as StudentResponse;
-            // Join the array of power names for the specific user
-            const powerUsed = powerUsers[doc.id]?.join(', ') || undefined;
-
+            const studentData = studentMap.get(doc.id);
+            
             responses.push({
                 studentUid: doc.id,
                 studentName: data.characterName,
                 answer: data.answer,
                 isCorrect: data.isCorrect,
-                powerUsed: powerUsed,
+                powerUsed: powerUsers[doc.id]?.join(', ') || undefined,
+                isOnline: studentData?.onlineStatus?.status === 'online',
             });
         });
         setStudentResponses(responses);
@@ -288,7 +289,7 @@ export default function TeacherLiveBattlePage() {
     });
 
     return () => unsubscribe();
-}, [liveState, liveState?.status, liveState?.currentQuestionIndex, teacherUid]);
+}, [liveState, liveState?.status, liveState?.currentQuestionIndex, teacherUid, allStudents]);
 
     const calculateAndSetResults = useCallback(async (isDivinationSkip: boolean = false) => {
         if (!liveState || !battle || !teacherUid) return;
@@ -1052,7 +1053,6 @@ export default function TeacherLiveBattlePage() {
   const isLastQuestion = liveState.currentQuestionIndex >= battle.questions.length - 1;
   const expiryTimestamp = liveState.timerEndsAt ? new Date(liveState.timerEndsAt.seconds * 1000) : null;
   const videoSrc = battle.videoUrl ? getYouTubeEmbedUrl(battle.videoUrl) : '';
-  const onlineStudentUids = allStudents.filter(s => s.onlineStatus?.status === 'online').map(s => s.uid);
 
 
   return (
@@ -1180,11 +1180,11 @@ export default function TeacherLiveBattlePage() {
                 {(isRoundInProgress || isRoundEnding) && (
                     <Card className="bg-card/60 backdrop-blur-sm">
                         <CardHeader>
-                            <CardTitle>Live Student Responses ({studentResponses.length})</CardTitle>
+                            <CardTitle>Live Student Responses ({studentResponses.filter(r => r.isOnline).length})</CardTitle>
                             <CardDescription>See which students have submitted their answer for the current question.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                        <RoundResults results={studentResponses} onlineStudentUids={onlineStudentUids} />
+                        <RoundResults results={studentResponses} />
                         </CardContent>
                     </Card>
                 )}
@@ -1202,7 +1202,7 @@ export default function TeacherLiveBattlePage() {
                             </Button>
                         </CardHeader>
                         <CardContent>
-                            <RoundResults results={roundResults} onlineStudentUids={onlineStudentUids} />
+                            <RoundResults results={roundResults} />
                              <div className="mt-4 p-4 rounded-md bg-sky-900/70 border border-sky-700 text-sky-200 flex flex-col gap-4">
                                 <div className="flex items-center justify-center gap-4 text-center">
                                     <div className="flex-1">
@@ -1261,5 +1261,3 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
-
-    
