@@ -302,7 +302,8 @@ export default function TeacherLiveBattlePage() {
             }
         }
         
-        setRoundResults(results); // This updates the live view
+        // This is the key change: Set state for the live view immediately
+        setRoundResults(results);
 
         let powerDamage = isDivinationSkip ? (liveState.lastRoundPowerDamage || 0) : 0;
         const powersUsedThisRound: string[] = isDivinationSkip ? (liveState.lastRoundPowersUsed || []) : [];
@@ -357,6 +358,7 @@ export default function TeacherLiveBattlePage() {
         batch.update(liveBattleRef, updatePayload);
         
         const currentQuestion = battle.questions[liveState.currentQuestionIndex];
+        // Set state for the final summary data
         setAllRoundsData(prev => ({
             ...prev,
             [liveState.currentQuestionIndex]: {
