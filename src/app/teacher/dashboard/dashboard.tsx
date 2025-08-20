@@ -46,7 +46,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc } from 'lucide-react';
+import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2 } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -68,6 +68,7 @@ export default function Dashboard() {
   const [goldAmount, setGoldAmount] = useState<number | string>('');
   const [isAwarding, setIsAwarding] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isClearingBattlefield, setIsClearingBattlefield] = useState(false);
   const [isXpDialogOpen, setIsXpDialogOpen] = useState(false);
   const [isGoldDialogOpen, setIsGoldDialogOpen] = useState(false);
   const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false);
@@ -381,6 +382,25 @@ export default function Dashboard() {
     }
   };
 
+  const handleClearBattlefield = async () => {
+      if (!teacher) return;
+      setIsClearingBattlefield(true);
+      try {
+          const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
+          await deleteDoc(liveBattleRef);
+          toast({ title: 'Battlefield Cleared', description: 'The live battle has been reset.' });
+      } catch (error: any) {
+          if (error.code === 'not-found') {
+              toast({ title: 'Battlefield Already Clear', description: 'No active battle to clear.' });
+          } else {
+              console.error("Error clearing battlefield:", error);
+              toast({ variant: 'destructive', title: 'Error', description: 'Could not clear the battlefield.' });
+          }
+      } finally {
+          setIsClearingBattlefield(false);
+      }
+  };
+
 
   if (isLoading || !teacher) {
     return (
@@ -540,6 +560,30 @@ export default function Dashboard() {
                         </DropdownMenuRadioGroup>
                       </DropdownMenuSubContent>
                     </DropdownMenuSub>
+                    <DropdownMenuSeparator />
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Clear the Battlefield
+                            </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure you want to clear the battlefield?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                This will delete any active battle data, allowing you to start a new one. This is useful if a battle was ended improperly. This action cannot be undone.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleClearBattlefield} disabled={isClearingBattlefield}>
+                                {isClearingBattlefield && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Yes, Clear Battlefield
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </DropdownMenuContent>
             </DropdownMenu>
 

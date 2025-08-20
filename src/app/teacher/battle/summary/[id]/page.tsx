@@ -126,13 +126,10 @@ export default function TeacherBattleSummaryPage() {
         // Delete the teacher's summary document.
         batch.delete(summaryRef);
 
-        // IMPORTANT: We are NO LONGER deleting the student summaries.
-        // That data should be preserved in "Songs and Stories".
-
         await batch.commit();
 
         toast({
-            title: 'Battle Cleaned Up!',
+            title: 'Battlefield Cleared!',
             description: 'All temporary battle data has been reset.',
         });
 
@@ -224,19 +221,19 @@ export default function TeacherBattleSummaryPage() {
                 <AlertDialogTrigger asChild>
                     <Button variant="destructive" disabled={isCleaning}>
                         {isCleaning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                        Finalize &amp; Clean Up Battle
+                        Clear the Battlefield
                     </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Finalize This Battle?</AlertDialogTitle>
+                        <AlertDialogTitle>Clear the Battlefield?</AlertDialogTitle>
                         <AlertDialogDescription>
                             This will permanently delete this battle summary and all temporary live battle data, making the system ready for a new battle. This action cannot be undone. Student reports will be preserved.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleCleanupBattle}>Confirm & Clean Up</AlertDialogAction>
+                        <AlertDialogAction onClick={handleCleanupBattle}>Confirm & Clear Battlefield</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
