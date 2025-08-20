@@ -258,11 +258,11 @@ export default function TeacherLiveBattlePage() {
 
   // Listen for real-time student responses for the current question
   useEffect(() => {
-    if (!liveState || !teacherUid || (liveState.status !== 'IN_PROGRESS' && liveState.status !== 'ROUND_ENDING') || allStudents.length === 0) {
+    if (!liveState || !teacherUid || (liveState.status !== 'IN_PROGRESS' && liveState.status !== 'ROUND_ENDING')) {
         setStudentResponses([]);
         return;
     }
-    
+
     const responsesRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${liveState.currentQuestionIndex}/students`);
     const q = query(responsesRef);
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -274,7 +274,6 @@ export default function TeacherLiveBattlePage() {
             const data = doc.data() as StudentResponse;
             const studentData = studentMap.get(doc.id);
             
-            // Only add the response if the student is currently online
             if (studentData && studentData.onlineStatus?.status === 'online') {
                 responses.push({
                     studentUid: doc.id,
@@ -291,71 +290,79 @@ export default function TeacherLiveBattlePage() {
     });
 
     return () => unsubscribe();
-}, [liveState, teacherUid, allStudents]);
+  }, [liveState, teacherUid, allStudents]);
 
     const calculateAndSetResults = useCallback(async (isDivinationSkip: boolean = false) => {
-        if (!liveState || !battle || !teacherUid || allStudents.length === 0) return;
-        
+        if (!liveState || !battle || !teacherUid) return;
+
         const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
         const batch = writeBatch(db);
-        
-        // 1. Get all online students at the moment the round ends.
-        const onlineStudents = allStudents.filter(s => s.onlineStatus?.status === 'online');
-        const onlineStudentMap = new Map(onlineStudents.map(s => [s.uid, s]));
-        
-        // 2. Get all responses submitted for this round.
+
+        // 1. Get all responses submitted for this round. This is the only source of truth for participation.
         const responsesRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${liveState.currentQuestionIndex}/students`);
         const responsesSnapshot = await getDocs(responsesRef);
         const responsesMap = new Map(responsesSnapshot.docs.map(doc => [doc.id, doc.data() as StudentResponse]));
-
-        const results: Result[] = [];
         
-        // 3. Process results only for online students.
+        // 2. Get all students to check their HP for damage calculation.
+        const studentDocs = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
+        const studentMap = new Map(studentDocs.docs.map(doc => [doc.id, doc.data() as Student]));
+        
+        const results: Result[] = [];
+        const newlyFallenUids: string[] = [];
+
+        // 3. Process results ONLY for students who submitted a response.
+        for (const [studentUid, response] of responsesMap.entries()) {
+            results.push({
+                studentUid: studentUid,
+                studentName: response.characterName,
+                answer: response.answer,
+                isCorrect: response.isCorrect,
+                powerUsed: liveState.powerUsersThisRound?.[studentUid]?.join(', ') || undefined,
+            });
+
+            // 4. Calculate damage for incorrect answers.
+            if (!response.isCorrect && !isDivinationSkip) {
+                const studentData = studentMap.get(studentUid);
+                const currentQuestion = battle.questions[liveState.currentQuestionIndex];
+                const damageOnIncorrect = currentQuestion.damage || 0;
+
+                if (studentData && damageOnIncorrect > 0) {
+                    const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
+                    const newHp = Math.max(0, studentData.hp - damageOnIncorrect);
+                    batch.update(studentRef, { hp: newHp });
+                    if (newHp === 0) {
+                        newlyFallenUids.push(studentUid);
+                    }
+                }
+            }
+        }
+
+        // Add online students who DID NOT answer to the results as incorrect.
+        const onlineStudents = allStudents.filter(s => s.onlineStatus?.status === 'online');
         for (const student of onlineStudents) {
-            const response = responsesMap.get(student.uid);
-            if (response) {
-                // Student answered
-                results.push({
-                    studentUid: student.uid,
-                    studentName: response.characterName,
-                    answer: response.answer,
-                    isCorrect: response.isCorrect,
-                    powerUsed: liveState.powerUsersThisRound?.[student.uid]?.join(', ') || undefined,
-                });
-            } else {
-                // Online student did NOT answer
+            if (!responsesMap.has(student.uid)) {
                 results.push({
                     studentUid: student.uid,
                     studentName: student.characterName,
                     answer: "No Answer",
                     isCorrect: false,
-                    powerUsed: liveState.powerUsersThisRound?.[student.uid]?.join(', ') || undefined,
                 });
-            }
-        }
-        
-        setRoundResults(results);
-
-        const currentQuestion = battle.questions[liveState.currentQuestionIndex];
-        const damageOnIncorrect = currentQuestion.damage || 0;
-        const newlyFallenUids: string[] = [];
-
-        if (damageOnIncorrect > 0 && !isDivinationSkip) {
-            for (const result of results) {
-                 if (!result.isCorrect) {
-                    const studentData = onlineStudentMap.get(result.studentUid);
-                    if (studentData) {
-                        const studentRef = doc(db, 'teachers', teacherUid, 'students', studentData.uid);
-                        const newHp = Math.max(0, studentData.hp - damageOnIncorrect);
-                        batch.update(studentRef, { hp: newHp });
-                        if (newHp === 0) {
-                            newlyFallenUids.push(studentData.uid);
-                        }
+                // Also apply damage to them
+                const currentQuestion = battle.questions[liveState.currentQuestionIndex];
+                const damageOnIncorrect = currentQuestion.damage || 0;
+                 if (damageOnIncorrect > 0 && !isDivinationSkip) {
+                    const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
+                    const newHp = Math.max(0, student.hp - damageOnIncorrect);
+                    batch.update(studentRef, { hp: newHp });
+                    if (newHp === 0) {
+                        newlyFallenUids.push(student.uid);
                     }
                 }
             }
         }
         
+        setRoundResults(results);
+
         let powerDamage = isDivinationSkip ? (liveState.lastRoundPowerDamage || 0) : 0;
         const powersUsedThisRound: string[] = isDivinationSkip ? (liveState.lastRoundPowersUsed || []) : [];
         const battleLogRef = collection(db, 'teachers', teacherUid!, 'liveBattles/active-battle/battleLog');
@@ -375,9 +382,9 @@ export default function TeacherLiveBattlePage() {
                         timestamp: serverTimestamp()
                     });
                 } else {
-                    batch.set(doc(battleLogRef), {
+                     batch.set(doc(battleLogRef), {
                         round: liveState.currentQuestionIndex + 1,
-                        casterName: casterResponse?.studentName || 'Unknown Mage',
+                        casterName: casterResponse?.studentName || studentMap.get(power.casterUid)?.characterName || 'Unknown Mage',
                         powerName: power.powerName,
                         description: 'Fizzled due to incorrect answer.',
                         timestamp: serverTimestamp()
@@ -408,6 +415,7 @@ export default function TeacherLiveBattlePage() {
 
         batch.update(liveBattleRef, updatePayload);
         
+        const currentQuestion = battle.questions[liveState.currentQuestionIndex];
         setAllRoundsData(prev => ({
             ...prev,
             [liveState.currentQuestionIndex]: {
