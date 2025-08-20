@@ -370,7 +370,7 @@ export default function LiveBattlePage() {
         setBattleState(newState);
 
         if (newState.status === 'BATTLE_ENDED') {
-            router.push('/battle/summary');
+            router.push(`/battle/summary`);
         }
       } else {
           setBattleState(null);
@@ -742,7 +742,3 @@ export default function LiveBattlePage() {
     </div>
   );
 }
-
-    
-
-    

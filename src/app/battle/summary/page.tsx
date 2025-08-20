@@ -42,6 +42,7 @@ interface StudentRoundResponse {
 
 export default function StudentBattleSummaryPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [teacherUid, setTeacherUid] = useState<string | null>(null);
@@ -73,11 +74,12 @@ export default function StudentBattleSummaryPage() {
     // This listener just gets the battleId from the live doc.
     const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
     const unsubLive = onSnapshot(liveBattleRef, (doc) => {
-        if (doc.exists() && doc.data().battleId) {
+        if (doc.exists() && doc.data().status === 'BATTLE_ENDED' && doc.data().battleId) {
             setBattleId(doc.data().battleId);
         } else {
-            // If live battle doc is gone, we might already have a battleId from a previous snapshot.
-            // Don't set it to null immediately, as the summary listener might still need it.
+            // If live battle doc is gone, it means a new battle hasn't started or the old one was cleaned up.
+            setBattleId(null);
+            setSummary(null);
         }
     });
     
@@ -86,20 +88,18 @@ export default function StudentBattleSummaryPage() {
 
   useEffect(() => {
     if (!user || !teacherUid || !battleId) {
-      // If we don't have a battleId after a short delay, it's safe to assume we're not in a summary state.
-      const timer = setTimeout(() => {
-        if (!battleId) setIsLoading(false);
-      }, 2000);
-      return () => clearTimeout(timer);
+      setIsLoading(false); // No battle ID means we aren't in a summary state
+      return;
     }
-
+    
+    setIsLoading(true);
     const summaryRef = doc(db, 'teachers', teacherUid, 'battleSummaries', battleId);
     const unsubSummary = onSnapshot(summaryRef, async (summarySnap) => {
         if (summarySnap.exists()) {
             setSummary(summarySnap.data() as BattleSummary);
 
             // Fetch student's specific responses for this battle
-             const responsesRef = collection(db, 'teachers', teacherUid, `battleSummaries/${battleId}/studentResponses/${user.uid}/rounds`);
+             const responsesRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/studentResponses/${user.uid}/rounds`);
              const responsesSnap = await getDocs(responsesRef);
              const responsesData: { [key: string]: StudentRoundResponse } = {};
              responsesSnap.forEach(doc => {
@@ -134,8 +134,6 @@ export default function StudentBattleSummaryPage() {
   }
 
   if (!summary) {
-    // This case now handles when there is truly no summary to show.
-    // It should lead back to the dashboard if a student lands here by mistake.
     const timeoutId = setTimeout(() => router.push('/dashboard'), 2000);
     return (
       <div className="flex min-h-screen w-full flex-col items-center justify-center bg-muted/40 p-4">
