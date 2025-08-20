@@ -4,7 +4,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { CheckCircle, XCircle } from "lucide-react";
-import type { Student } from "@/lib/data";
 
 export interface Result {
   studentUid: string;
@@ -12,7 +11,6 @@ export interface Result {
   answer: string;
   isCorrect: boolean;
   powerUsed?: string;
-  isOnline?: boolean;
 }
 
 interface RoundResultsProps {

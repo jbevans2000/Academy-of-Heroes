@@ -258,7 +258,7 @@ export default function TeacherLiveBattlePage() {
 
   // Listen for real-time student responses for the current question
   useEffect(() => {
-    if (!liveState || !teacherUid || (liveState.status !== 'IN_PROGRESS' && liveState.status !== 'ROUND_ENDING')) {
+    if (!liveState || !teacherUid || (liveState.status !== 'IN_PROGRESS' && liveState.status !== 'ROUND_ENDING') || allStudents.length === 0) {
         setStudentResponses([]);
         return;
     }
@@ -274,17 +274,18 @@ export default function TeacherLiveBattlePage() {
             const data = doc.data() as StudentResponse;
             const studentData = studentMap.get(doc.id);
             
-            responses.push({
-                studentUid: doc.id,
-                studentName: data.characterName,
-                answer: data.answer,
-                isCorrect: data.isCorrect,
-                powerUsed: powerUsers[doc.id]?.join(', ') || undefined,
-                isOnline: studentData?.onlineStatus?.status === 'online',
-            });
+            // Only add the response if the student is currently online
+            if (studentData && studentData.onlineStatus?.status === 'online') {
+                responses.push({
+                    studentUid: doc.id,
+                    studentName: data.characterName,
+                    answer: data.answer,
+                    isCorrect: data.isCorrect,
+                    powerUsed: powerUsers[doc.id]?.join(', ') || undefined,
+                });
+            }
         });
-        const onlineResponses = responses.filter(r => r.isOnline);
-        setStudentResponses(onlineResponses);
+        setStudentResponses(responses);
     }, (error) => {
         console.error("Error listening for student responses:", error);
     });
