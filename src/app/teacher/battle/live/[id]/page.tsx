@@ -889,6 +889,7 @@ export default function TeacherLiveBattlePage() {
     await logGameEvent(teacherUid, 'BOSS_BATTLE', `The party dealt a total of ${totalDamage} damage during '${battle.battleName}'.`);
 
     const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
+    const individualResultsByStudent: { [uid: string]: any } = {};
 
     // Use the now-reliable allRoundsData state
     Object.keys(allRoundsData).forEach(roundIndex => {
@@ -902,6 +903,14 @@ export default function TeacherLiveBattlePage() {
                     rewardsByStudent[res.studentUid].xpGained += 5;
                     rewardsByStudent[res.studentUid].goldGained += 10;
                 }
+
+                 if (!individualResultsByStudent[res.studentUid]) {
+                    individualResultsByStudent[res.studentUid] = {};
+                }
+                individualResultsByStudent[res.studentUid][roundIndex] = {
+                    questionText: roundData.questionText,
+                    responses: [res] // Array with only this student's response
+                };
             });
         }
     });
@@ -943,6 +952,9 @@ export default function TeacherLiveBattlePage() {
                 endedAt: serverTimestamp(),
                 xpGained: xpGained,
                 goldGained: goldGained,
+                questions: battle?.questions || [],
+                resultsByRound: individualResultsByStudent[uid] || {},
+                battleLog: powerLog,
             });
         }
     }

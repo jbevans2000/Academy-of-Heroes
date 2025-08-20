@@ -9,9 +9,23 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Star, Coins } from 'lucide-react';
+import { ArrowLeft, Star, Coins, CheckCircle, XCircle, ScrollText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+
+interface Question {
+  questionText: string;
+  answers: string[];
+  correctAnswerIndex: number;
+}
+
+interface PowerLogEntry {
+    round: number;
+    casterName: string;
+    powerName: string;
+    description: string;
+}
 
 interface BattleSummary {
     id: string;
@@ -19,9 +33,21 @@ interface BattleSummary {
     endedAt: {
         seconds: number;
         nanoseconds: number;
-    }
+    };
     xpGained: number;
     goldGained: number;
+    questions: Question[];
+    resultsByRound: {
+        [roundIndex: string]: {
+            responses: {
+                studentUid: string;
+                studentName: string;
+                answerIndex: number;
+                isCorrect: boolean;
+            }[];
+        };
+    };
+    battleLog?: PowerLogEntry[];
 }
 
 export default function BattleSummaryDetailPage() {
@@ -86,12 +112,25 @@ export default function BattleSummaryDetailPage() {
                     <Skeleton className="h-10 w-48" />
                 </header>
                 <main className="flex-1 p-4 md:p-6 lg:p-8">
-                    <div className="max-w-2xl mx-auto space-y-6">
+                    <div className="max-w-4xl mx-auto space-y-6">
+                        <Skeleton className="h-24 w-full" />
                         <Skeleton className="h-64 w-full" />
                     </div>
                 </main>
             </div>
         )
+    }
+
+    const roundKeys = Object.keys(summary.resultsByRound);
+    
+    const battleLogByRound: { [round: number]: PowerLogEntry[] } = {};
+    if (summary.battleLog) {
+        summary.battleLog.forEach(log => {
+            if (!battleLogByRound[log.round]) {
+                battleLogByRound[log.round] = [];
+            }
+            battleLogByRound[log.round].push(log);
+        });
     }
 
     return (
@@ -106,18 +145,21 @@ export default function BattleSummaryDetailPage() {
                 </Button>
             </header>
              <main className="flex-1 p-4 md:p-6 lg:p-8 flex items-center justify-center">
-                <Card className="shadow-2xl bg-card/80 backdrop-blur-sm w-full max-w-2xl">
-                    <CardHeader className="text-center">
-                        <CardTitle className="text-4xl font-headline">{summary.battleName}</CardTitle>
-                        <CardDescription>
-                            Battle concluded on {summary.endedAt ? format(new Date(summary.endedAt.seconds * 1000), 'PPPp') : 'Date unknown'}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="text-center">
-                            <h3 className="text-2xl font-semibold">Your Spoils of War</h3>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="w-full max-w-4xl space-y-6">
+                    <Card className="shadow-2xl bg-card/80 backdrop-blur-sm">
+                        <CardHeader className="text-center">
+                            <CardTitle className="text-4xl font-headline">{summary.battleName}</CardTitle>
+                            <CardDescription>
+                                Battle concluded on {summary.endedAt ? format(new Date(summary.endedAt.seconds * 1000), 'PPPp') : 'Date unknown'}
+                            </CardDescription>
+                        </CardHeader>
+                    </Card>
+
+                    <Card className="shadow-2xl bg-card/80 backdrop-blur-sm">
+                        <CardHeader>
+                            <CardTitle className="text-2xl text-center">Spoils of War</CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="flex flex-col items-center justify-center p-6 bg-secondary/50 rounded-lg">
                                 <Star className="h-12 w-12 text-yellow-400 mb-2" />
                                 <p className="text-3xl font-bold">{summary.xpGained}</p>
@@ -128,9 +170,53 @@ export default function BattleSummaryDetailPage() {
                                 <p className="text-3xl font-bold">{summary.goldGained}</p>
                                 <p className="text-muted-foreground">Gold Gained</p>
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                    
+                     <Card className="shadow-2xl bg-card/80 backdrop-blur-sm">
+                        <CardHeader>
+                            <CardTitle className="text-2xl text-center">Battle Performance</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <Accordion type="single" collapsible className="w-full">
+                                {roundKeys.map((roundIndex) => {
+                                    const roundData = summary.resultsByRound[roundIndex];
+                                    const studentResponse = roundData.responses[0];
+                                    const question = summary.questions[parseInt(roundIndex)];
+
+                                    return (
+                                        <AccordionItem key={roundIndex} value={`item-${roundIndex}`}>
+                                            <AccordionTrigger className="text-lg hover:no-underline">
+                                                <div className="flex justify-between w-full pr-4 items-center">
+                                                    <span>Question {parseInt(roundIndex) + 1}: {question.questionText}</span>
+                                                    {studentResponse.isCorrect ? <CheckCircle className="h-6 w-6 text-green-500" /> : <XCircle className="h-6 w-6 text-red-500" />}
+                                                </div>
+                                            </AccordionTrigger>
+                                            <AccordionContent>
+                                                <div className="p-4 bg-secondary/50 rounded-md">
+                                                    <p className="font-semibold">You answered: <span className="font-normal">{question.answers[studentResponse.answerIndex]}</span></p>
+                                                    <p className="font-semibold">Correct answer: <span className="font-normal">{question.answers[question.correctAnswerIndex]}</span></p>
+                                                </div>
+                                                {(battleLogByRound[parseInt(roundIndex) + 1]) && (
+                                                    <div className="mt-2 p-2 bg-blue-900/10 rounded-md">
+                                                        <h4 className="font-semibold text-sm flex items-center gap-2"><ScrollText className="w-4 h-4"/> Powers Used This Round:</h4>
+                                                        <ul className="text-xs text-muted-foreground list-disc list-inside mt-1">
+                                                            {battleLogByRound[parseInt(roundIndex) + 1].map((log, index) => (
+                                                                <li key={index}>
+                                                                    <span className="font-bold">{log.casterName}</span> used <span className="font-semibold text-primary">{log.powerName}</span>.
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                    )
+                                })}
+                            </Accordion>
+                        </CardContent>
+                     </Card>
+                </div>
              </main>
         </div>
     );
