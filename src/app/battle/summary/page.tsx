@@ -51,6 +51,12 @@ export default function StudentBattleSummaryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [battleId, setBattleId] = useState<string | null>(null);
 
+  // Get battleId from URL search parameter
+  useEffect(() => {
+    const idFromParams = searchParams.get('id');
+    setBattleId(idFromParams);
+  }, [searchParams]);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
         if (currentUser) {
@@ -67,32 +73,13 @@ export default function StudentBattleSummaryPage() {
     });
     return () => unsubscribe();
   }, [router]);
-
-  useEffect(() => {
-    if (!teacherUid) return;
-
-    // This listener just gets the battleId from the live doc.
-    const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
-    const unsubLive = onSnapshot(liveBattleRef, (doc) => {
-        if (doc.exists() && doc.data().status === 'BATTLE_ENDED' && doc.data().battleId) {
-            setBattleId(doc.data().battleId);
-        } else {
-            // If live battle doc is gone, it means a new battle hasn't started or the old one was cleaned up.
-            // If we are on the summary page and this happens, we don't want to clear the summary.
-            // setBattleId(null);
-            // setSummary(null);
-        }
-    });
-    
-    return () => unsubLive();
-  }, [teacherUid]);
-
-  // This effect now ONLY fetches the summary once based on the battleId from the live state.
-  // It does NOT listen for real-time updates to the summary document itself.
+  
+  // This effect now ONLY fetches the summary once based on the battleId from the search params.
   useEffect(() => {
     if (!user || !teacherUid || !battleId) {
-      // If we don't have a battleId yet, we are not in a summary state.
-      setIsLoading(false);
+      if(!battleId) {
+          setIsLoading(false); // If there's no ID, stop loading.
+      }
       return;
     }
     
@@ -107,18 +94,23 @@ export default function StudentBattleSummaryPage() {
                 // Fetch student's specific responses for this battle
                 const responsesByRound: { [key: string]: StudentRoundResponse } = {};
                 const questionsCount = summarySnap.data().questions.length;
-
-                for (let i = 0; i < questionsCount; i++) {
-                    const responseDocRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${i}/students`, user.uid);
-                    const responseSnap = await getDoc(responseDocRef);
-                    if (responseSnap.exists()) {
-                        responsesByRound[i] = responseSnap.data() as StudentRoundResponse;
+                const allRoundsData = summarySnap.data().resultsByRound || {};
+                
+                Object.keys(allRoundsData).forEach(roundIndex => {
+                    const roundData = allRoundsData[roundIndex];
+                    const studentResponse = roundData.responses?.find((res: any) => res.studentUid === user.uid);
+                    if (studentResponse) {
+                        responsesByRound[roundIndex] = { answerIndex: studentResponse.answerIndex };
                     }
-                }
+                });
+                
                 setStudentResponses(responsesByRound);
+
             } else {
-                // Summary doc doesn't exist yet, which can happen briefly. Keep loading.
-                console.log("Summary document not found yet for battleId:", battleId);
+                // Summary doc doesn't exist, which can happen after cleanup.
+                console.log("Summary document not found for battleId:", battleId);
+                toast({ title: 'Battle Complete', description: 'The results for this battle have been archived.' });
+                router.push('/dashboard');
             }
         } catch (error) {
             console.error("Error fetching battle summary:", error);
@@ -130,7 +122,7 @@ export default function StudentBattleSummaryPage() {
     
     fetchSummary();
 
-  }, [user, teacherUid, battleId, toast]);
+  }, [user, teacherUid, battleId, toast, router]);
 
 
   if (isLoading) {
@@ -146,13 +138,15 @@ export default function StudentBattleSummaryPage() {
   }
 
   if (!summary) {
-    const timeoutId = setTimeout(() => router.push('/dashboard'), 2000);
+    // This handles the case where there is no battleId in the URL
+    // or the summary was cleaned up before the page could load.
     return (
       <div className="flex min-h-screen w-full flex-col items-center justify-center bg-muted/40 p-4">
         <div className="max-w-4xl w-full space-y-4 text-center">
           <Trophy className="h-12 w-12 mx-auto text-muted-foreground" />
           <h1 className="text-2xl font-bold">No Summary Available</h1>
           <p className="text-muted-foreground">Returning to your dashboard...</p>
+          <Button onClick={() => router.push('/dashboard')}>Go to Dashboard</Button>
         </div>
       </div>
     );

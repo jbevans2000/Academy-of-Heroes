@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -369,7 +370,7 @@ export default function LiveBattlePage() {
         setBattleState(newState);
 
         if (newState.status === 'BATTLE_ENDED') {
-            router.push(`/battle/summary`);
+            router.push(`/battle/summary?id=${newState.battleId}`);
         }
       } else {
           setBattleState(null);
