@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -392,8 +391,6 @@ export default function LiveBattlePage() {
         }
       };
       fetchBattle();
-    } else if (!battleState?.battleId) {
-      setBattle(null);
     }
   }, [battleState?.battleId, teacherUid, battle]);
 
@@ -447,7 +444,7 @@ export default function LiveBattlePage() {
     );
   }
 
-  if (!battleState || !battleState.battleId) {
+  if (!battleState) {
     const waitingRoomImageUrl = "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FChatGPT%20Image%20Aug%2015%2C%202025%2C%2008_12_09%20AM.png?alt=media&token=45178e85-0ba2-42ef-b2fa-d76a8732b2c2";
     return (
         <div className="relative flex min-h-screen flex-col items-center justify-center p-4">

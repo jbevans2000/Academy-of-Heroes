@@ -1,17 +1,18 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, getDocs, writeBatch, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Star, Coins, ShieldCheck, Sparkles, ScrollText } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Star, Coins, ShieldCheck, Sparkles, ScrollText, Trash2, Loader2 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { useToast } from '@/hooks/use-toast';
+
 
 interface Question {
   questionText: string;
@@ -61,7 +62,9 @@ export default function TeacherBattleSummaryPage() {
 
   const [summary, setSummary] = useState<BattleSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCleaning, setIsCleaning] = useState(false);
   const [teacher, setTeacher] = useState<User | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -93,6 +96,51 @@ export default function TeacherBattleSummaryPage() {
 
     fetchSummary();
   }, [battleId, teacher]);
+  
+  const handleCleanupBattle = async () => {
+    if (!teacher) return;
+    setIsCleaning(true);
+
+    try {
+        const batch = writeBatch(db);
+
+        // Define paths
+        const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
+        const summaryRef = doc(db, 'teachers', teacher.uid, 'battleSummaries', battleId);
+
+        // Delete subcollections of live battle
+        const subcollections = ['responses', 'powerActivations', 'battleLog', 'messages'];
+        for (const subcollectionName of subcollections) {
+            const subcollectionRef = collection(liveBattleRef, subcollectionName);
+            const snapshot = await getDocs(subcollectionRef);
+            snapshot.docs.forEach(doc => batch.delete(doc.ref));
+        }
+
+        // Delete main documents
+        batch.delete(liveBattleRef);
+        batch.delete(summaryRef);
+
+        await batch.commit();
+
+        toast({
+            title: 'Battle Cleaned Up!',
+            description: 'All temporary battle data has been reset.',
+        });
+
+        router.push('/teacher/battles');
+
+    } catch (error) {
+        console.error("Error cleaning up battle data:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Cleanup Failed',
+            description: 'There was an error resetting the battle data. Please try again.',
+        });
+    } finally {
+        setIsCleaning(false);
+    }
+  };
+
 
   if (isLoading) {
     return (
@@ -117,7 +165,7 @@ export default function TeacherBattleSummaryPage() {
           <Card>
             <CardHeader>
               <CardTitle>Summary Not Found</CardTitle>
-              <CardDescription>The summary for this battle could not be loaded.</CardDescription>
+              <CardDescription>The summary for this battle could not be loaded. It may have already been cleaned up.</CardDescription>
             </CardHeader>
             <CardContent>
               <Button onClick={() => router.push('/teacher/battles')}>
@@ -137,8 +185,6 @@ export default function TeacherBattleSummaryPage() {
   const totalXpAwarded = summary.rewards ? Object.values(summary.rewards).reduce((acc, reward) => acc + reward.xpGained, 0) : 0;
   const totalGoldAwarded = summary.rewards ? Object.values(summary.rewards).reduce((acc, reward) => acc + reward.goldGained, 0) : 0;
   
-  const allPowersUsed = roundKeys.flatMap(key => summary.resultsByRound[key].powersUsed || []);
-
   const battleLogByRound: { [round: number]: PowerLogEntry[] } = {};
     if (summary.battleLog) {
         summary.battleLog.forEach(log => {
@@ -154,21 +200,27 @@ export default function TeacherBattleSummaryPage() {
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="max-w-6xl mx-auto space-y-6">
-          <div className="flex items-center gap-4">
-             <Button variant="outline" onClick={() => router.push('/teacher/battles')}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to All Battles
-              </Button>
-              <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
-                <LayoutDashboard className="mr-2 h-4 w-4" />
-                Return to Dashboard
-              </Button>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Button variant="outline" onClick={() => router.push('/teacher/battles')}>
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to All Battles
+                </Button>
+                <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  Return to Dashboard
+                </Button>
+            </div>
+            <Button variant="destructive" onClick={handleCleanupBattle} disabled={isCleaning}>
+                {isCleaning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                Finalize &amp; Clean Up Battle
+            </Button>
           </div>
          
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="text-3xl">Battle Summary: {summary.battleName}</CardTitle>
-              <CardDescription>A complete report of the battle.</CardDescription>
+              <CardDescription>A complete report of the battle. Clean up when you're done to prepare for the next battle.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Accordion type="single" collapsible className="w-full">
@@ -295,5 +347,3 @@ export default function TeacherBattleSummaryPage() {
     </div>
   );
 }
-
-    
