@@ -90,7 +90,8 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
             !(battleState.empoweredMageUids || []).includes(p.uid)
         );
     } else if (power.name === 'Psionic Aura') {
-        potentialTargets = potentialTargets.filter(s => s.mp <= s.maxMp * 0.75);
+        // Caster is not an eligible target.
+        potentialTargets = potentialTargets.filter(s => s.uid !== caster.uid && s.mp <= s.maxMp * 0.75);
     }
 
 
