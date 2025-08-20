@@ -78,50 +78,58 @@ export default function StudentBattleSummaryPage() {
             setBattleId(doc.data().battleId);
         } else {
             // If live battle doc is gone, it means a new battle hasn't started or the old one was cleaned up.
-            setBattleId(null);
-            setSummary(null);
+            // If we are on the summary page and this happens, we don't want to clear the summary.
+            // setBattleId(null);
+            // setSummary(null);
         }
     });
     
     return () => unsubLive();
   }, [teacherUid]);
 
+  // This effect now ONLY fetches the summary once based on the battleId from the live state.
+  // It does NOT listen for real-time updates to the summary document itself.
   useEffect(() => {
     if (!user || !teacherUid || !battleId) {
-      setIsLoading(false); // No battle ID means we aren't in a summary state
+      // If we don't have a battleId yet, we are not in a summary state.
+      setIsLoading(false);
       return;
     }
     
-    setIsLoading(true);
-    const summaryRef = doc(db, 'teachers', teacherUid, 'battleSummaries', battleId);
-    const unsubSummary = onSnapshot(summaryRef, async (summarySnap) => {
-        if (summarySnap.exists()) {
-            setSummary(summarySnap.data() as BattleSummary);
+    const fetchSummary = async () => {
+        setIsLoading(true);
+        const summaryRef = doc(db, 'teachers', teacherUid, 'battleSummaries', battleId);
+        try {
+            const summarySnap = await getDoc(summaryRef);
+            if (summarySnap.exists()) {
+                setSummary(summarySnap.data() as BattleSummary);
 
-            // Fetch student's specific responses for this battle
-            const responsesByRound: { [key: string]: StudentRoundResponse } = {};
-            const questionsCount = summarySnap.data().questions.length;
+                // Fetch student's specific responses for this battle
+                const responsesByRound: { [key: string]: StudentRoundResponse } = {};
+                const questionsCount = summarySnap.data().questions.length;
 
-            for (let i = 0; i < questionsCount; i++) {
-                const responseDocRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${i}/students`, user.uid);
-                const responseSnap = await getDoc(responseDocRef);
-                if (responseSnap.exists()) {
-                    responsesByRound[i] = responseSnap.data() as StudentRoundResponse;
+                for (let i = 0; i < questionsCount; i++) {
+                    const responseDocRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${i}/students`, user.uid);
+                    const responseSnap = await getDoc(responseDocRef);
+                    if (responseSnap.exists()) {
+                        responsesByRound[i] = responseSnap.data() as StudentRoundResponse;
+                    }
                 }
+                setStudentResponses(responsesByRound);
+            } else {
+                // Summary doc doesn't exist yet, which can happen briefly. Keep loading.
+                console.log("Summary document not found yet for battleId:", battleId);
             }
-            setStudentResponses(responsesByRound);
+        } catch (error) {
+            console.error("Error fetching battle summary:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not load battle summary.' });
+        } finally {
             setIsLoading(false);
-        } else {
-            // Summary doc doesn't exist yet, keep loading.
-            setIsLoading(true);
         }
-    }, (error) => {
-        console.error("Error fetching battle summary:", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not load battle summary.' });
-        setIsLoading(false);
-    });
+    };
+    
+    fetchSummary();
 
-    return () => unsubSummary();
   }, [user, teacherUid, battleId, toast]);
 
 
