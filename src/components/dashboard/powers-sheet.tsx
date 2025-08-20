@@ -56,25 +56,53 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
   const [isTargeting, setIsTargeting] = useState(false);
   const [selectedPower, setSelectedPower] = useState<Power | null>(null);
   const [partyMembers, setPartyMembers] = useState<Student[]>([]);
+  const [eligibleTargets, setEligibleTargets] = useState<Student[]>([]);
 
 
   useEffect(() => {
     if (!isBattleView || !teacherUid || !battleId) return;
 
-    const fetchPartyMembers = async () => {
-        try {
-          const studentsRef = collection(db, 'teachers', teacherUid, 'students');
-          const snapshot = await getDocs(studentsRef);
-          const allStudents = snapshot.docs.map(doc => doc.data() as Student);
-          setPartyMembers(allStudents);
-        } catch (error) {
-          console.error("Failed to fetch party members:", error);
-        }
-      };
-      fetchPartyMembers();
+    // This listener will keep party members' stats (HP, MP) up to date in real-time
+    const studentsRef = collection(db, 'teachers', teacherUid, 'students');
+    const unsubscribe = onSnapshot(studentsRef, (snapshot) => {
+        const allStudents = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
+        setPartyMembers(allStudents);
+    }, (error) => {
+        console.error("Failed to fetch party members:", error);
+    });
 
+    return () => unsubscribe();
   }, [isBattleView, teacherUid, battleId]);
 
+
+  const getEligibleTargets = (power: Power): Student[] => {
+    let potentialTargets = partyMembers;
+
+    if (power.target !== 'ally' && student.class !== 'Healer') {
+        potentialTargets = potentialTargets.filter(s => s.uid !== student.uid);
+    }
+    
+    if (power.target === 'fallen') {
+        potentialTargets = potentialTargets.filter(s => s.hp <= 0);
+    } else {
+        potentialTargets = potentialTargets.filter(s => s.hp > 0);
+    }
+    
+    if (power.name === 'Lesser Heal') {
+      potentialTargets = potentialTargets.filter(s => s.hp < s.maxHp);
+    } else if (power.name === 'Focused Restoration') {
+        potentialTargets = potentialTargets.filter(s => s.hp <= s.maxHp * 0.5);
+    } else if (power.name === 'Solar Empowerment') {
+        potentialTargets = potentialTargets.filter(p => 
+            p.class === 'Mage' && 
+            !(battleState?.empoweredMageUids || []).includes(p.uid)
+        );
+    } else if (power.name === 'Psionic Aura') {
+        potentialTargets = potentialTargets.filter(s => s.uid !== student.uid && s.mp <= s.maxMp * 0.75);
+    }
+
+    return potentialTargets;
+  }
 
   const handleUsePower = async (power: Power, targets?: string[]) => {
     if (!isBattleView || !teacherUid || !battleId) {
@@ -82,25 +110,17 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
         return;
     }
     
-    // Client-side pre-check for Solar Empowerment
-    if (power.name === 'Solar Empowerment' && battleState) {
-        const eligibleMages = partyMembers.filter(p => 
-            p.class === 'Mage' && 
-            p.hp > 0 && 
-            !(battleState.empoweredMageUids || []).includes(p.uid)
-        );
-
-        if (eligibleMages.length < 3) {
+    if (power.target && !targets) {
+        const currentEligibleTargets = getEligibleTargets(power);
+        if (currentEligibleTargets.length === 0) {
             toast({
-                title: "Allies are already empowered!",
-                description: "All available mages are already shining with the light of the sun.",
+                title: 'No Eligible Targets',
+                description: `There are no available targets for ${power.name} right now.`,
                 duration: 5000,
             });
             return;
         }
-    }
-
-    if (power.target && !targets) {
+        setEligibleTargets(currentEligibleTargets);
         setSelectedPower(power);
         setIsTargeting(true);
         return;
@@ -210,6 +230,7 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
               caster={student}
               onConfirm={(targets) => handleUsePower(selectedPower, targets)}
               battleState={battleState}
+              eligibleTargets={eligibleTargets}
           />
       )}
     </>

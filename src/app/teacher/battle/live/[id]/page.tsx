@@ -531,46 +531,38 @@ export default function TeacherLiveBattlePage() {
                     return; // Stop processing this power
                 }
             } else if (activation.powerName === 'Lesser Heal') {
-                if (!activation.targets || activation.targets.length !== 2) return;
+                if (!activation.targets || activation.targets.length === 0) return;
+
+                const powerDef = classPowers.Healer.find(p => p.name === 'Lesser Heal');
+                const maxTargets = powerDef?.targetCount || 1;
 
                 const roll = Math.floor(Math.random() * 6) + 1;
                 const totalHeal = roll + (studentData.level || 1);
+                const healPerTarget = Math.ceil(totalHeal / maxTargets); // Strict power division
                 
-                let heal1 = Math.floor(totalHeal / 2);
-                let heal2 = Math.ceil(totalHeal / 2);
-                if (Math.random() < 0.5) { [heal1, heal2] = [heal2, heal1]; }
-
-                const [target1Uid, target2Uid] = activation.targets;
-                const target1Ref = doc(db, 'teachers', teacherUid!, 'students', target1Uid);
-                const target2Ref = doc(db, 'teachers', teacherUid!, 'students', target2Uid);
-                const target1Doc = await getDoc(target1Ref);
-                const target2Doc = await getDoc(target2Ref);
-
-                let target1Name = 'An ally';
-                let target2Name = 'Another ally';
-
-                if (target1Doc.exists()) {
-                    const targetData = target1Doc.data() as Student;
-                    target1Name = targetData.characterName;
-                    const newHp = Math.min(targetData.maxHp, targetData.hp + heal1);
-                    batch.update(target1Ref, { hp: newHp });
+                const targetNames: string[] = [];
+                for (const targetUid of activation.targets) {
+                    const targetRef = doc(db, 'teachers', teacherUid!, 'students', targetUid);
+                    const targetDoc = await getDoc(targetRef);
+                    if (targetDoc.exists()) {
+                        const targetData = targetDoc.data() as Student;
+                        targetNames.push(targetData.characterName);
+                        const newHp = Math.min(targetData.maxHp, targetData.hp + healPerTarget);
+                        batch.update(targetRef, { hp: newHp });
+                    }
                 }
-                if (target2Doc.exists()) {
-                    const targetData = target2Doc.data() as Student;
-                    target2Name = targetData.characterName;
-                    const newHp = Math.min(targetData.maxHp, targetData.hp + heal2);
-                    batch.update(target2Ref, { hp: newHp });
-                }
+                const logDescription = `Healed ${targetNames.join(', ')} for up to ${healPerTarget} HP each.`;
                 batch.update(liveBattleRef, {
-                    powerEventMessage: `${activation.studentName} has cast Lesser Heal! ${target1Name} and ${target2Name} have had their health restored!`
+                    powerEventMessage: `${activation.studentName} cast Lesser Heal! ${targetNames.length > 1 ? 'Allies' : 'An ally'} received healing!`
                 });
                 batch.set(doc(battleLogRef), {
                     round: liveState.currentQuestionIndex + 1,
                     casterName: activation.studentName,
                     powerName: activation.powerName,
-                    description: `Healed ${target1Name} and ${target2Name}.`,
+                    description: logDescription,
                     timestamp: serverTimestamp()
                 });
+
             } else if (activation.powerName === 'Focused Restoration') {
                 if (!activation.targets || activation.targets.length !== 1) return;
                 const targetUid = activation.targets[0];
@@ -602,45 +594,23 @@ export default function TeacherLiveBattlePage() {
                     });
                 }
             } else if (activation.powerName === 'Solar Empowerment') {
-                if (!activation.targets || activation.targets.length !== 3) return;
+                if (!activation.targets || activation.targets.length === 0) return;
                 
-                const eligibleMages = allStudents.filter(p => 
-                    p.class === 'Mage' && 
-                    p.hp > 0 && 
-                    !(battleData.empoweredMageUids || []).includes(p.uid)
-                );
-
-                if(eligibleMages.length < 3) {
-                     const targetedEvent: TargetedEvent = { targetUid: activation.studentUid, message: "All available mages are already shining with the light of the sun." };
-                     await updateDoc(liveBattleRef, { targetedEvent: targetedEvent });
-                     setTimeout(() => updateDoc(liveBattleRef, { targetedEvent: null }), 5000);
-                     return;
-                }
-
+                const powerDef = classPowers.Healer.find(p => p.name === 'Solar Empowerment');
+                const maxTargets = powerDef?.targetCount || 1;
+                
                 const roll1 = Math.floor(Math.random() * 6) + 1;
                 const roll2 = Math.floor(Math.random() * 6) + 1;
                 const totalBoost = roll1 + roll2 + (studentData.level || 1);
+                
+                const boostPerTarget = Math.ceil(totalBoost / maxTargets); // Strict power division
 
-                const baseBoost = Math.floor(totalBoost / 3);
-                let remainder = totalBoost % 3;
-                const boosts = [baseBoost, baseBoost, baseBoost];
-                
-                let indices = [0, 1, 2];
-                while (remainder > 0) {
-                    const randomIndex = Math.floor(Math.random() * indices.length);
-                    boosts[indices[randomIndex]]++;
-                    indices.splice(randomIndex, 1);
-                    remainder--;
-                }
-                
-                const targetNames = [];
-                for (let i = 0; i < 3; i++) {
-                    const targetUid = activation.targets[i];
-                    const boostAmount = boosts[i];
+                const targetNames: string[] = [];
+                for (const targetUid of activation.targets) {
                     const targetRef = doc(db, 'teachers', teacherUid!, 'students', targetUid);
                     batch.update(targetRef, { 
-                        hp: increment(boostAmount),
-                        maxHp: increment(boostAmount)
+                        hp: increment(boostPerTarget),
+                        maxHp: increment(boostPerTarget)
                     });
                     const targetDoc = await getDoc(targetRef);
                     if(targetDoc.exists()) targetNames.push(targetDoc.data().characterName);
@@ -648,7 +618,7 @@ export default function TeacherLiveBattlePage() {
                 
                 batch.update(liveBattleRef, {
                     empoweredMageUids: arrayUnion(...activation.targets),
-                    powerEventMessage: `${activation.studentName} has cast Solar Empowerment! Three mages begin to shine with the light of the sun!`
+                    powerEventMessage: `${activation.studentName} has cast Solar Empowerment! ${targetNames.length} Mages begin to shine with the light of the sun!`
                 });
                 batch.set(doc(battleLogRef), {
                     round: liveState.currentQuestionIndex + 1,
@@ -712,11 +682,14 @@ export default function TeacherLiveBattlePage() {
                     timestamp: serverTimestamp()
                 });
             } else if (activation.powerName === 'Psionic Aura') {
-                if (!activation.targets || activation.targets.length !== 2) return;
+                 if (!activation.targets || activation.targets.length === 0) return;
+
+                const powerDef = classPowers.Mage.find(p => p.name === 'Psionic Aura');
+                const maxTargets = powerDef?.targetCount || 1;
 
                 const roll = Math.floor(Math.random() * 6) + 1;
                 const totalRestore = roll + (studentData.level || 1);
-                const restoreAmount = Math.ceil(totalRestore / 2); // Split and round up
+                const restorePerTarget = Math.ceil(totalRestore / maxTargets); // Strict power division
                 
                 const targetNames = [];
                 for (const targetUid of activation.targets) {
@@ -725,7 +698,7 @@ export default function TeacherLiveBattlePage() {
                     if (targetDoc.exists()) {
                         const targetData = targetDoc.data() as Student;
                         targetNames.push(targetData.characterName);
-                        const newMp = Math.min(targetData.maxMp, targetData.mp + restoreAmount);
+                        const newMp = Math.min(targetData.maxMp, targetData.mp + restorePerTarget);
                         batch.update(targetRef, { mp: newMp });
                         // Send targeted message
                         batch.update(liveBattleRef, { 
@@ -737,14 +710,15 @@ export default function TeacherLiveBattlePage() {
                     }
                 }
 
+                const logDescription = `Restored MP to ${targetNames.join(', ')}.`;
                 batch.update(liveBattleRef, {
-                    powerEventMessage: `${activation.studentName} has cast Psionic Aura! ${targetNames.join(' and ')} have had their arcane energies partially restored!`
+                    powerEventMessage: `${activation.studentName} casts Psionic Aura!`
                 });
                 batch.set(doc(battleLogRef), {
                     round: liveState.currentQuestionIndex + 1,
                     casterName: activation.studentName,
                     powerName: activation.powerName,
-                    description: `Restored MP to ${targetNames.join(', ')}.`,
+                    description: logDescription,
                     timestamp: serverTimestamp()
                 });
             }
@@ -775,7 +749,7 @@ export default function TeacherLiveBattlePage() {
         });
 
         return () => unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks-exhaustive-deps
     }, [liveState?.status, liveState?.currentQuestionIndex, battle, teacherUid, allStudents]);
 
 
@@ -1060,7 +1034,7 @@ export default function TeacherLiveBattlePage() {
         <div 
             className="absolute inset-0 -z-10 bg-black/50"
             style={{
-                backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.googleapis.com/o/Web%20Backgrounds%2Fenvato-labs-ai-0228de24-54d4-47df-9ff6-6184afb3ad3d.jpg?alt=media&token=a005d161-a938-4096-8b7f-fec4388c36a8')`,
+                backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-0228de24-54d4-47df-9ff6-6184afb3ad3d.jpg?alt=media&token=a005d161-a938-4096-8b7f-fec4388c36a8')`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
             }}
