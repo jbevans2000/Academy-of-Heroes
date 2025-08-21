@@ -885,17 +885,17 @@ export default function TeacherLiveBattlePage() {
         await calculateAndSetResults();
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
+    
+    const liveBattleSnap = await getDoc(doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle'));
+    const finalLiveState = liveBattleSnap.data() as LiveBattleState;
 
     const batch = writeBatch(db);
-
-    const totalBaseDamage = Object.values(allRoundsData).reduce((acc, round: any) => acc + round.responses.filter((r: any) => r.isCorrect).length, 0);
-    const totalPowerDamage = powerLog.reduce((acc, log) => {
-        const match = log.description.match(/Dealt (\d+) damage/);
-        return match ? acc + parseInt(match[1], 10) : acc;
-    }, 0);
+    
+    const totalBaseDamage = finalLiveState.totalBaseDamage || 0;
+    const totalPowerDamage = finalLiveState.totalPowerDamage || 0;
     const totalDamage = totalBaseDamage + totalPowerDamage;
-    const fallenAtEnd = allStudents.filter(s => s.hp <= 0).map(s => s.uid);
-    const empoweredAtEnd = liveState.empoweredMageUids || [];
+    const fallenAtEnd = finalLiveState.fallenPlayerUids || [];
+    const empoweredAtEnd = finalLiveState.empoweredMageUids || [];
     
     await logGameEvent(teacherUid, 'BOSS_BATTLE', `The party dealt a total of ${totalDamage} damage during '${battle.battleName}'.`);
 
@@ -953,10 +953,11 @@ export default function TeacherLiveBattlePage() {
                 updates.maxMp = calculateBaseMaxHp(studentData.class, newLevel, 'mp');
             }
             batch.update(studentRef, updates);
-
-            const studentSummaryRef = doc(db, 'teachers', teacherUid, 'students', uid, 'battleSummaries', battleId);
+            
+            // Create a unique summary document for each student.
+            const studentSummaryRef = doc(collection(db, 'teachers', teacherUid, 'students', uid, 'battleSummaries'));
             batch.set(studentSummaryRef, {
-                battleId: battleId,
+                battleId: battle.id,
                 battleName: battle?.battleName || '',
                 endedAt: serverTimestamp(),
                 xpGained: xpGained,
@@ -978,10 +979,11 @@ export default function TeacherLiveBattlePage() {
             batch.update(studentRef, { hp: newHp, maxHp: baseMaxHp });
         }
     }
-
-    const summaryRef = doc(db, 'teachers', teacherUid, `teacherSummaries`, battleId);
+    
+    // Create a new unique summary document for the teacher.
+    const summaryRef = doc(collection(db, 'teachers', teacherUid, 'teacherSummaries'));
     batch.set(summaryRef, {
-        battleId: battleId,
+        battleId: battle.id,
         battleName: battle?.battleName || '',
         questions: battle?.questions || [],
         resultsByRound: allRoundsData,
@@ -1008,7 +1010,7 @@ export default function TeacherLiveBattlePage() {
 
     await logGameEvent(teacherUid, 'BOSS_BATTLE', `Battle summary for '${battle.battleName}' was saved and live battle was cleaned up.`);
     
-    router.push(`/teacher/battle/summary/${battleId}`);
+    router.push(`/teacher/battle/summary/${summaryRef.id}`);
   };
   
   const handleExport = () => {
@@ -1249,5 +1251,3 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
-
-    

@@ -39,6 +39,8 @@ interface PowerLogEntry {
 }
 
 interface BattleSummary {
+  id: string; // The unique ID of this summary document
+  battleId: string; // The ID of the original battle template
   battleName: string;
   questions: Question[];
   resultsByRound: {
@@ -69,7 +71,7 @@ interface BattleSummary {
 export default function TeacherBattleSummaryPage() {
   const router = useRouter();
   const params = useParams();
-  const battleId = params.id as string;
+  const summaryId = params.id as string;
 
   const [summary, setSummary] = useState<BattleSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -89,15 +91,15 @@ export default function TeacherBattleSummaryPage() {
   }, [router]);
 
   useEffect(() => {
-    if (!battleId || !teacher) return;
+    if (!summaryId || !teacher) return;
 
     const fetchSummary = async () => {
       setIsLoading(true);
-      const summaryRef = doc(db, 'teachers', teacher.uid, 'teacherSummaries', battleId);
+      const summaryRef = doc(db, 'teachers', teacher.uid, 'teacherSummaries', summaryId);
       const docSnap = await getDoc(summaryRef);
 
       if (docSnap.exists()) {
-        setSummary(docSnap.data() as BattleSummary);
+        setSummary({ id: docSnap.id, ...docSnap.data() } as BattleSummary);
       } else {
         console.error("No summary found for this battle.");
         toast({ title: "Summary Not Found", description: "This battle summary may have already been cleaned up. Redirecting to battles list."})
@@ -107,7 +109,7 @@ export default function TeacherBattleSummaryPage() {
     };
 
     fetchSummary();
-  }, [battleId, teacher, router, toast]);
+  }, [summaryId, teacher, router, toast]);
   
   const handleCleanupBattle = async () => {
     if (!teacher) return;
@@ -117,38 +119,26 @@ export default function TeacherBattleSummaryPage() {
         const batch = writeBatch(db);
 
         // Define paths
-        const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
-        const summaryRef = doc(db, 'teachers', teacher.uid, 'teacherSummaries', battleId);
-
-        // Clean up subcollections of live battle
-        const subcollections = ['responses', 'powerActivations', 'battleLog', 'messages'];
-        for (const sub of subcollections) {
-            const subRef = collection(liveBattleRef, sub);
-            const snapshot = await getDocs(subRef);
-            snapshot.forEach(doc => batch.delete(doc.ref));
-        }
-
-        // Delete the main live battle document.
-        batch.delete(liveBattleRef);
-
+        const summaryRef = doc(db, 'teachers', teacher.uid, 'teacherSummaries', summaryId);
+        
         // Delete the teacher's summary document.
         batch.delete(summaryRef);
 
         await batch.commit();
 
         toast({
-            title: 'Battlefield Cleared!',
-            description: 'All temporary battle data has been reset.',
+            title: 'Battle Summary Cleared!',
+            description: 'The summary for this battle has been removed.',
         });
 
         router.push('/teacher/battles');
 
     } catch (error) {
-        console.error("Error cleaning up battle data:", error);
+        console.error("Error cleaning up battle summary:", error);
         toast({
             variant: 'destructive',
             title: 'Cleanup Failed',
-            description: 'There was an error resetting the battle data. Please try again.',
+            description: 'There was an error deleting the battle summary. Please try again.',
         });
     } finally {
         setIsCleaning(false);
@@ -227,21 +217,21 @@ export default function TeacherBattleSummaryPage() {
                 <AlertDialogTrigger asChild>
                     <Button variant="destructive" disabled={isCleaning}>
                         {isCleaning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                        Clear the Battlefield
+                        Clear This Summary
                     </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Clear the Battlefield?</AlertDialogTitle>
+                        <AlertDialogTitle>Clear This Summary?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will permanently delete this battle summary and all temporary live battle data, making the system ready for a new battle. This action cannot be undone. Student reports will be preserved.
+                           This will permanently delete this battle summary report. This action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={handleCleanupBattle} disabled={isCleaning}>
                             {isCleaning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Confirm & Clear Battlefield
+                            Confirm & Clear
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -251,7 +241,7 @@ export default function TeacherBattleSummaryPage() {
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="text-3xl">Battle Summary: {summary.battleName}</CardTitle>
-              <CardDescription>A complete report of the battle. Clean up when you're done to prepare for the next battle.</CardDescription>
+              <CardDescription>A complete report of the battle session.</CardDescription>
             </CardHeader>
           </Card>
 
