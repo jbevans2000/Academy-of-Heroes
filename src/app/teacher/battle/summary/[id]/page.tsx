@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { doc, getDoc, collection, query, getDocs, orderBy, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, getDocs, orderBy, deleteDoc, writeBatch } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
@@ -25,6 +25,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { logGameEvent } from '@/lib/gamelog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface Question {
   questionText: string;
@@ -62,6 +63,13 @@ interface SavedBattle {
   powerLog?: PowerLogEntry[];
   fallenAtEnd?: string[];
   status: 'WAITING' | 'BATTLE_ENDED';
+}
+
+interface ParticipantStats {
+    characterName: string;
+    correctAnswers: number;
+    incorrectAnswers: number;
+    powersUsed: number;
 }
 
 
@@ -291,6 +299,34 @@ export default function TeacherBattleSummaryPage() {
   })
   .filter(name => name !== null) as string[];
 
+  const participantStats: { [uid: string]: ParticipantStats } = {};
+    allRounds.forEach(round => {
+        round.responses.forEach(res => {
+            if (!participantStats[res.studentUid]) {
+                participantStats[res.studentUid] = {
+                    characterName: res.characterName,
+                    correctAnswers: 0,
+                    incorrectAnswers: 0,
+                    powersUsed: 0,
+                };
+            }
+            if (res.isCorrect) {
+                participantStats[res.studentUid].correctAnswers++;
+            } else {
+                participantStats[res.studentUid].incorrectAnswers++;
+            }
+        });
+    });
+
+    if (summary.powerLog) {
+        summary.powerLog.forEach(log => {
+            const student = allStudents.find(s => s.characterName === log.casterName);
+            if (student && participantStats[student.uid]) {
+                participantStats[student.uid].powersUsed++;
+            }
+        });
+    }
+
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <TeacherHeader />
@@ -337,32 +373,8 @@ export default function TeacherBattleSummaryPage() {
               <CardDescription>A complete report of the battle session.</CardDescription>
             </CardHeader>
           </Card>
-
            <Card>
                 <CardHeader>
-                    <CardTitle>Overall Battle Totals</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-wrap justify-around items-center text-center gap-6">
-                     <div className="flex flex-col items-center gap-2 p-2">
-                        <Shield className="h-8 w-8 text-blue-500" />
-                        <p className="text-2xl font-bold">{totalBaseDamage ?? 0}</p>
-                        <p className="text-sm font-medium">Base Damage</p>
-                    </div>
-                     <div className="flex flex-col items-center gap-2 p-2">
-                        <Sparkles className="h-8 w-8 text-purple-500" />
-                        <p className="text-2xl font-bold">{totalPowerDamage ?? 0}</p>
-                        <p className="text-sm font-medium">Power Damage</p>
-                    </div>
-                     <div className="flex flex-col items-center gap-2 p-2">
-                        <HeartCrack className="h-8 w-8 text-red-600" />
-                        <p className="text-3xl font-extrabold">{totalDamage ?? 0}</p>
-                        <p className="text-sm font-medium">Total Damage Dealt</p>
-                    </div>
-                </CardContent>
-            </Card>
-            
-            <Card>
-                 <CardHeader>
                     <CardTitle>Round-by-Round Breakdown</CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -374,15 +386,22 @@ export default function TeacherBattleSummaryPage() {
                             const correctCount = roundData.responses.filter(r => r.isCorrect).length;
                             const incorrectCount = roundData.responses.length - correctCount;
                             const roundLog = battleLogByRound[roundData.currentQuestionIndex] || [];
+                            const totalRoundDamage = roundData.lastRoundDamage || 0;
 
                             return (
                                 <AccordionItem key={roundData.id} value={roundData.id}>
                                     <AccordionTrigger className="text-lg hover:no-underline">
-                                        <div className="flex justify-between w-full pr-4">
-                                            <span className="text-left">Q{roundData.currentQuestionIndex + 1}: {question.questionText}</span>
-                                            <div className="flex gap-4">
-                                                <span className="text-green-500 font-semibold">{correctCount} Correct</span>
-                                                <span className="text-red-500 font-semibold">{incorrectCount} Incorrect</span>
+                                        <div className="flex justify-between w-full pr-4 items-center">
+                                            <span className="text-left font-semibold">Q{roundData.currentQuestionIndex + 1}: {question.questionText}</span>
+                                            <div className="flex items-center gap-6">
+                                                <div className="flex gap-4">
+                                                    <span className="text-green-500 font-semibold">{correctCount} Correct</span>
+                                                    <span className="text-red-500 font-semibold">{incorrectCount} Incorrect</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 text-red-600 font-bold">
+                                                    <HeartCrack className="w-5 h-5"/>
+                                                    <span>{totalRoundDamage} DMG</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </AccordionTrigger>
@@ -410,18 +429,6 @@ export default function TeacherBattleSummaryPage() {
                                                 </ul>
                                             </div>
                                         )}
-                                        {(roundData.lastRoundPowersUsed && roundData.lastRoundPowersUsed.length > 0) && (
-                                            <div className="mt-2 p-2 bg-blue-900/10 rounded-md">
-                                                <h4 className="font-semibold text-sm">Powers Used:</h4>
-                                                <ul className="text-xs text-muted-foreground list-disc list-inside">
-                                                    {roundData.lastRoundPowersUsed.map((power, idx) => (
-                                                        <li key={idx}>
-                                                          {power}
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        )}
                                     </AccordionContent>
                                 </AccordionItem>
                             )
@@ -430,25 +437,56 @@ export default function TeacherBattleSummaryPage() {
                 </CardContent>
             </Card>
 
-            {(summary.fallenAtEnd && summary.fallenAtEnd.length > 0) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Skull className="text-destructive"/> Fallen Heroes at Battle's End</CardTitle>
+                        <CardTitle>Participant Performance</CardTitle>
                     </CardHeader>
                     <CardContent>
-                         <ul className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                             {fallenHeroNames.map((name, idx) => (
-                                    <li key={idx} className="font-semibold p-2 bg-secondary rounded-md text-center">
-                                        {name}
-                                    </li>
-                                )
-                            )}
-                        </ul>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Character</TableHead>
+                                    <TableHead>Correct</TableHead>
+                                    <TableHead>Incorrect</TableHead>
+                                    <TableHead>Powers Used</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                               {Object.values(participantStats).map(stats => (
+                                    <TableRow key={stats.characterName}>
+                                        <TableCell className="font-medium">{stats.characterName}</TableCell>
+                                        <TableCell className="text-green-600">{stats.correctAnswers}</TableCell>
+                                        <TableCell className="text-red-600">{stats.incorrectAnswers}</TableCell>
+                                        <TableCell className="text-blue-600">{stats.powersUsed}</TableCell>
+                                    </TableRow>
+                               ))}
+                            </TableBody>
+                        </Table>
                     </CardContent>
                 </Card>
-            )}
+
+                {(summary.fallenAtEnd && summary.fallenAtEnd.length > 0) && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><Skull className="text-destructive"/> Fallen Heroes at Battle's End</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <ul className="grid grid-cols-2 gap-2">
+                                {fallenHeroNames.map((name, idx) => (
+                                        <li key={idx} className="font-semibold p-2 bg-secondary rounded-md text-center">
+                                            {name}
+                                        </li>
+                                    )
+                                )}
+                            </ul>
+                        </CardContent>
+                    </Card>
+                )}
+            </div>
         </div>
       </main>
     </div>
   );
 }
+
