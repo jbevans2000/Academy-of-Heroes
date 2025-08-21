@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, getDocs, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
@@ -9,7 +9,7 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, BookHeart, Swords } from 'lucide-react';
+import { ArrowLeft, BookHeart, Swords, RefreshCw, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -29,6 +29,7 @@ export default function BattleSummariesPage() {
   const { toast } = useToast();
   const [summaries, setSummaries] = useState<SavedBattleSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [teacher, setTeacher] = useState<User | null>(null);
 
   useEffect(() => {
@@ -42,13 +43,33 @@ export default function BattleSummariesPage() {
     return () => unsubscribe();
   }, [router]);
 
+  const fetchSummaries = useCallback(async (user: User) => {
+    if (isRefreshing) return; // Prevent multiple fetches
+    setIsLoading(true);
+    try {
+      const summariesRef = collection(db, 'teachers', user.uid, 'savedBattles');
+      const q = query(summariesRef, orderBy('savedAt', 'desc'));
+      const querySnapshot = await getDocs(q);
+      const summariesData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as SavedBattleSummary));
+      setSummaries(summariesData);
+    } catch (error) {
+      console.error("Error fetching summaries:", error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch battle summaries.' });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast, isRefreshing]);
+
   useEffect(() => {
     if (!teacher) return;
-
-    setIsLoading(true);
+  
     const summariesRef = collection(db, 'teachers', teacher.uid, 'savedBattles');
     const q = query(summariesRef, orderBy('savedAt', 'desc'));
-    
+  
+    // Initial load and real-time listener
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const summariesData = querySnapshot.docs.map(doc => ({
         id: doc.id,
@@ -57,15 +78,23 @@ export default function BattleSummariesPage() {
       setSummaries(summariesData);
       setIsLoading(false);
     }, (error) => {
-      console.error("Error fetching summaries:", error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch battle summaries.' });
+      console.error("Error with real-time listener:", error);
+      toast({ variant: 'destructive', title: 'Connection Error', description: 'Could not listen for real-time updates.' });
       setIsLoading(false);
     });
-
+  
+    // Cleanup the listener when the component unmounts
     return () => unsubscribe();
   }, [teacher, toast]);
 
-  if (isLoading) {
+  const handleRefresh = async () => {
+    if (!teacher) return;
+    setIsRefreshing(true);
+    await fetchSummaries(teacher);
+    setTimeout(() => setIsRefreshing(false), 500); // give some visual feedback
+  };
+
+  if (isLoading && summaries.length === 0) {
     return (
       <div className="flex flex-col min-h-screen bg-muted/40">
         <TeacherHeader />
@@ -94,6 +123,10 @@ export default function BattleSummariesPage() {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Battle Setup
             </Button>
+            <Button variant="secondary" onClick={handleRefresh} disabled={isRefreshing}>
+              {isRefreshing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+              Refresh the Archive
+            </Button>
           </div>
           <Card className="shadow-lg bg-card/80 backdrop-blur-sm">
             <CardHeader className="text-center">
@@ -106,7 +139,7 @@ export default function BattleSummariesPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {summaries.length === 0 ? (
+              {summaries.length === 0 && !isLoading ? (
                 <div className="text-center py-10 px-6 bg-secondary/50 rounded-lg">
                   <h3 className="text-xl font-semibold">Your Guild Has No History of Battle!</h3>
                   <p className="text-muted-foreground mt-2">
