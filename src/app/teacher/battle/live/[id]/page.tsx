@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs, writeBatch, serverTimestamp, setDoc, deleteDoc, increment, arrayUnion, arrayRemove, addDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
@@ -227,7 +227,7 @@ export default function TeacherLiveBattlePage() {
         // **NEW FIX:** Check if a battle has just started
         if (
             (prevStatusRef.current === 'BATTLE_ENDED' || prevStatusRef.current === null) &&
-            newState.status === 'WAITING'
+            (newState.status === 'WAITING' || newState.status === 'IN_PROGRESS')
         ) {
             console.log("New battle detected, resetting local state.");
             setAllRoundsData({});
@@ -492,7 +492,7 @@ export default function TeacherLiveBattlePage() {
             }
         }
     
-        const baseDamage = isDivinationSkip ? 0 : roundResults.filter(r => r.isCorrect).length;
+        const baseDamage = roundResults.filter(r => r.isCorrect).length;
         const totalDamageThisRound = baseDamage + powerDamage;
     
         const updatePayload: any = {
