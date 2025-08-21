@@ -80,23 +80,9 @@ export default function BossBattlesPage() {
     setStartingBattleId(battle.id);
     try {
         const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
-        const batch = writeBatch(db);
-
-        // Aggressive cleanup: delete all documents in all known subcollections
-        const subcollections = ['responses', 'powerActivations', 'battleLog', 'messages'];
-        for (const sub of subcollections) {
-            const subRef = collection(liveBattleRef, sub);
-            const snapshot = await getDocs(subRef);
-            snapshot.forEach(doc => batch.delete(doc.ref));
-        }
-
-        // Delete the main document itself
-        batch.delete(liveBattleRef);
-
-        // Commit the cleanup batch first
-        await batch.commit();
         
-        // Create a fresh, clean battle state document
+        // This single command now creates a fresh, clean battle state document,
+        // completely overwriting any previous data.
         await setDoc(liveBattleRef, {
             battleId: battle.id,
             status: 'WAITING',
@@ -119,6 +105,10 @@ export default function BossBattlesPage() {
             voteState: null,
         });
 
+        // The subcollections will be handled by the live battle component itself
+        // or through specific actions, so aggressive deletion here is not needed
+        // and was a source of complexity. The overwrite is sufficient.
+
         await logGameEvent(teacher.uid, 'BOSS_BATTLE', `Boss Battle '${battle.battleName}' has been activated.`);
 
         toast({
@@ -133,7 +123,7 @@ export default function BossBattlesPage() {
         toast({
             variant: 'destructive',
             title: 'Failed to Start Battle',
-            description: 'Could not update the live battle state. Please try again.',
+            description: 'Could not create the live battle state. Please try again.',
         });
     } finally {
         setStartingBattleId(null);

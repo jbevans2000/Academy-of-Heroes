@@ -220,13 +220,14 @@ export default function TeacherLiveBattlePage() {
     if (!teacherUid) return;
     setIsLoading(true);
     const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
-    const unsubscribe = onSnapshot(liveBattleRef, (doc) => {
-      if (doc.exists()) {
-        const newState = doc.data() as LiveBattleState;
+    const unsubscribe = onSnapshot(liveBattleRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const newState = docSnap.data() as LiveBattleState;
         
-        // **NEW FIX:** Check if a battle has just started
+        // This is the fix to reset local state when a new battle begins.
+        // It checks if the status has transitioned from a finished state back to a waiting state.
         if (
-            (prevStatusRef.current === 'BATTLE_ENDED' || prevStatusRef.current === null) &&
+            (prevStatusRef.current === 'BATTLE_ENDED' || prevStatusRef.current === 'SHOWING_RESULTS') &&
             (newState.status === 'WAITING' || newState.status === 'IN_PROGRESS')
         ) {
             console.log("New battle detected, resetting local state.");
