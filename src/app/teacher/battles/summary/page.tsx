@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, query, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
@@ -18,12 +18,21 @@ import { format } from 'date-fns';
 interface SavedBattleSummary {
   id: string;
   battleName: string;
-  savedAt: {
+  savedAt?: { // Make savedAt optional to handle old documents
     seconds: number;
     nanoseconds: number;
   };
   status: 'WAITING' | 'BATTLE_ENDED';
 }
+
+// Helper function to sort summaries safely
+const sortSummaries = (summaries: SavedBattleSummary[]) => {
+    return summaries.sort((a, b) => {
+        const timeA = a.savedAt ? a.savedAt.seconds : 0;
+        const timeB = b.savedAt ? b.savedAt.seconds : 0;
+        return timeB - timeA; // Sort descending
+    });
+};
 
 export default function BattleSummariesPage() {
   const router = useRouter();
@@ -48,16 +57,20 @@ export default function BattleSummariesPage() {
     setIsRefreshing(true);
     try {
       const summariesRef = collection(db, 'teachers', user.uid, 'savedBattles');
-      // Corrected: Order by 'savedAt', which is the actual field name used.
-      const q = query(summariesRef, orderBy('savedAt', 'desc'));
+      // Fetch ALL documents without ordering on the server
+      const q = query(summariesRef);
       
       const querySnapshot = await getDocs(q);
       const summariesData = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       } as SavedBattleSummary));
-      setSummaries(summariesData);
-      toast({title: "Archive Refreshed", description: "The list of battle archives is up to date."})
+      
+      // Sort on the client side
+      const sortedSummaries = sortSummaries(summariesData);
+      setSummaries(sortedSummaries);
+      toast({title: "Archive Refreshed", description: `Found ${sortedSummaries.length} battle archives.`})
+
     } catch (error) {
       console.error("Error fetching summaries:", error);
       toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch battle summaries.' });
@@ -71,15 +84,18 @@ export default function BattleSummariesPage() {
     if (!teacher) return;
   
     const summariesRef = collection(db, 'teachers', teacher.uid, 'savedBattles');
-    // Corrected: Order by 'savedAt', which is the actual field name used.
-    const q = query(summariesRef, orderBy('savedAt', 'desc'));
+    // Fetch ALL documents without server-side ordering to avoid missing any.
+    const q = query(summariesRef);
   
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const summariesData = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       } as SavedBattleSummary));
-      setSummaries(summariesData);
+      
+      // Perform sorting on the client side
+      const sortedSummaries = sortSummaries(summariesData);
+      setSummaries(sortedSummaries);
       setIsLoading(false);
     }, (error) => {
       console.error("Error with real-time listener:", error);
