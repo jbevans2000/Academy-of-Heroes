@@ -158,7 +158,6 @@ export default function TeacherLiveBattlePage() {
   const [battle, setBattle] = useState<Battle | null>(null);
   const [liveState, setLiveState] = useState<LiveBattleState | null>(null);
   const [roundResults, setRoundResults] = useState<Result[]>([]);
-  const [allRoundsData, setAllRoundsData] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isEndingRound, setIsEndingRound] = useState(false);
   const [isAdvancing, setIsAdvancing] = useState(false);
@@ -167,9 +166,6 @@ export default function TeacherLiveBattlePage() {
   const [teacherUid, setTeacherUid] = useState<string | null>(null);
   const [fallenStudentNames, setFallenStudentNames] = useState<string[]>([]);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
-  const [powerLog, setPowerLog] = useState<PowerLogEntry[]>([]);
-  const prevStatusRef = useRef<LiveBattleState['status'] | null>(null);
-
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -223,24 +219,10 @@ export default function TeacherLiveBattlePage() {
     const unsubscribe = onSnapshot(liveBattleRef, (docSnap) => {
       if (docSnap.exists()) {
         const newState = docSnap.data() as LiveBattleState;
-        
-        // This is the fix to reset local state when a new battle begins.
-        // It checks if the status has transitioned from a finished state back to a waiting state.
-        if (
-            (prevStatusRef.current === 'BATTLE_ENDED' || prevStatusRef.current === 'SHOWING_RESULTS') &&
-            (newState.status === 'WAITING' || newState.status === 'IN_PROGRESS')
-        ) {
-            console.log("New battle detected, resetting local state.");
-            setAllRoundsData({});
-            setRoundResults([]);
-        }
-
         setLiveState(newState);
-        prevStatusRef.current = newState.status;
-
 
         if (newState.status === 'BATTLE_ENDED') {
-            router.push(`/teacher/battle/summary/${battleId}`);
+            router.push(`/teacher/battle/summary/${newState.battleId}`);
         }
       } else {
         // If the document doesn't exist, it could mean the battle has ended and been cleaned up.
@@ -252,22 +234,7 @@ export default function TeacherLiveBattlePage() {
       setIsLoading(false);
     });
     
-    // Also listen to the power log for the summary page
-    const logRef = collection(liveBattleRef, 'battleLog');
-    const q = query(logRef);
-    const unsubLog = onSnapshot(q, (snapshot) => {
-      const entries: PowerLogEntry[] = [];
-      snapshot.forEach(doc => {
-        entries.push(doc.data() as PowerLogEntry)
-      });
-      setPowerLog(entries);
-    });
-
-
-    return () => {
-      unsubscribe();
-      unsubLog();
-    };
+    return () => unsubscribe();
   }, [battleId, router, teacherUid]);
   
   // Real-time listener for current round responses
@@ -300,137 +267,102 @@ export default function TeacherLiveBattlePage() {
   }, [teacherUid, liveState, liveState?.currentQuestionIndex]);
 
 
-    const generateAndSaveSummary = async (finalLiveState: LiveBattleState) => {
-        if (!battle || !teacherUid) return;
-
-        const fallenAtEnd = finalLiveState.fallenPlayerUids || [];
-        const empoweredAtEnd = finalLiveState.empoweredMageUids || [];
+    const handleEndBattle = async () => {
+        if (!liveState || !battle || !teacherUid) return;
         
-        let totalDamage = 0;
-        let totalBaseDamage = 0;
-        let totalPowerDamage = 0;
+        // 1. Finalize the last round's results
+        await calculateAndSetResults({});
 
-        // Use the final, reliable allRoundsData for the calculation
-        Object.values(allRoundsData).forEach((round: any) => {
-            totalBaseDamage += round.baseDamage || 0;
-            totalPowerDamage += round.powerDamage || 0;
-        });
-        totalDamage = totalBaseDamage + totalPowerDamage;
+        // 2. Fetch the complete, final state of the active battle
+        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
+        const finalLiveBattleSnap = await getDoc(liveBattleRef);
+
+        if (!finalLiveBattleSnap.exists()) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not retrieve final battle state.' });
+            return;
+        }
         
-        await logGameEvent(teacherUid, 'BOSS_BATTLE', `The party dealt a total of ${totalDamage} damage during '${battle.battleName}'.`);
+        const finalBattleData = finalLiveBattleSnap.data();
 
-        const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
-        const individualResultsByStudent: { [uid: string]: any } = {};
+        // Also fetch all subcollections
+        const responsesRef = collection(liveBattleRef, 'responses');
+        const powerLogRef = collection(liveBattleRef, 'battleLog');
+        const responsesSnap = await getDocs(responsesRef);
+        const powerLogSnap = await getDocs(powerLogRef);
         
-        Object.keys(allRoundsData).forEach(roundIndex => {
-            const roundData = allRoundsData[roundIndex];
-            if (roundData && roundData.responses) {
-                roundData.responses.forEach((res: any) => {
-                    if (!rewardsByStudent[res.studentUid]) {
-                        rewardsByStudent[res.studentUid] = { xpGained: 0, goldGained: 0 };
-                    }
-                    if (res.isCorrect) {
-                        rewardsByStudent[res.studentUid].xpGained += 5;
-                        rewardsByStudent[res.studentUid].goldGained += 10;
-                    }
-
-                    if (!individualResultsByStudent[res.studentUid]) {
-                        individualResultsByStudent[res.studentUid] = {};
-                    }
-                    individualResultsByStudent[res.studentUid][roundIndex] = {
-                        questionText: roundData.questionText,
-                        responses: [res] // Array with only this student's response
-                    };
-                });
-            }
+        const responsesByRound: { [key: string]: any } = {};
+        responsesSnap.forEach(doc => {
+            responsesByRound[doc.id] = doc.data();
         });
 
+        const powerLogData = powerLogSnap.docs.map(doc => doc.data());
+        
+        // 3. Create the new `savedBattles` document
+        const savedBattleRef = doc(collection(db, 'teachers', teacherUid, 'savedBattles'));
         const batch = writeBatch(db);
 
+        batch.set(savedBattleRef, {
+            ...finalBattleData,
+            battleName: battle.battleName, // Add battle name from the template
+            questions: battle.questions, // Add questions from the template
+            responsesByRound,
+            powerLog: powerLogData,
+            savedAt: serverTimestamp(),
+        });
+        
+        // 4. Award XP/Gold and apply stat changes
+        const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
+        for(const roundIndex in responsesByRound) {
+             responsesByRound[roundIndex].responses.forEach((res: any) => {
+                if (!rewardsByStudent[res.studentUid]) {
+                    rewardsByStudent[res.studentUid] = { xpGained: 0, goldGained: 0 };
+                }
+                if (res.isCorrect) {
+                    rewardsByStudent[res.studentUid].xpGained += 5;
+                    rewardsByStudent[res.studentUid].goldGained += 10;
+                }
+            });
+        }
+        
         for (const uid in rewardsByStudent) {
-            if (fallenAtEnd.includes(uid)) continue; 
-
             const studentRef = doc(db, 'teachers', teacherUid, 'students', uid);
             const studentSnap = await getDoc(studentRef);
             if (studentSnap.exists()) {
-                const studentData = studentSnap.data() as Student;
-                const { xpGained, goldGained } = rewardsByStudent[uid];
+                 const studentData = studentSnap.data() as Student;
+                 const { xpGained, goldGained } = rewardsByStudent[uid];
 
-                const currentXp = studentData.xp || 0;
-                const newXp = currentXp + xpGained;
-                const currentLevel = studentData.level || 1;
-                const newLevel = calculateLevel(newXp);
+                 const currentXp = studentData.xp || 0;
+                 const newXp = currentXp + xpGained;
+                 const currentLevel = studentData.level || 1;
+                 const newLevel = calculateLevel(newXp);
                 
-                const updates: any = {
+                 const updates: any = {
                     xp: newXp,
                     gold: (studentData.gold || 0) + goldGained,
-                };
+                 };
 
-                if (newLevel > currentLevel) {
-                    const levelsGained = newLevel - currentLevel;
+                 if (newLevel > currentLevel) {
                     updates.level = newLevel;
-                    updates.hp = (studentData.hp || 0) + calculateHpGain(studentData.class, levelsGained);
                     updates.maxHp = calculateBaseMaxHp(studentData.class, newLevel, 'hp');
-                    updates.mp = (studentData.mp || 0) + calculateMpGain(studentData.class, levelsGained);
                     updates.maxMp = calculateBaseMaxHp(studentData.class, newLevel, 'mp');
-                }
-                batch.update(studentRef, updates);
-                
-                const studentSummaryRef = doc(collection(db, 'teachers', teacherUid, 'students', uid, 'battleSummaries'));
-                batch.set(studentSummaryRef, {
-                    battleId: battle.id,
-                    battleName: battle?.battleName || '',
-                    endedAt: serverTimestamp(),
-                    xpGained: xpGained,
-                    goldGained: goldGained,
-                    questions: battle?.questions || [],
-                    resultsByRound: individualResultsByStudent[uid] || {},
-                    battleLog: powerLog,
-                });
-            }
-        }
-
-        for (const mageUid of empoweredAtEnd) {
-            const studentRef = doc(db, 'teachers', teacherUid, 'students', mageUid);
-            const studentSnap = await getDoc(studentRef);
-            if (studentSnap.exists()) {
-                const studentData = studentSnap.data() as Student;
-                const baseMaxHp = calculateBaseMaxHp(studentData.class, studentData.level);
-                const newHp = Math.min(studentData.hp, baseMaxHp); 
-                batch.update(studentRef, { hp: newHp, maxHp: baseMaxHp });
+                 }
+                 batch.update(studentRef, updates);
             }
         }
         
-        const summaryRef = doc(collection(db, 'teachers', teacherUid, 'teacherSummaries'));
-        batch.set(summaryRef, {
-            battleId: battle.id,
-            battleName: battle?.battleName || '',
-            questions: battle?.questions || [],
-            resultsByRound: allRoundsData,
-            battleLog: powerLog,
-            rewards: rewardsByStudent,
-            totalDamageDealt: totalDamage,
-            totalBaseDamage: totalBaseDamage,
-            totalPowerDamage: totalPowerDamage,
-            fallenAtEnd: fallenAtEnd,
-            endedAt: serverTimestamp(),
-        });
-        
-        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
-        const subcollections = ['responses', 'powerActivations', 'battleLog', 'messages'];
-        for (const sub of subcollections) {
-            const subRef = collection(liveBattleRef, sub);
-            const snapshot = await getDocs(subRef);
-            snapshot.forEach(doc => batch.delete(doc.ref));
+        // 5. Clean up the `active-battle` document and its subcollections
+        for (const roundIndex in responsesByRound) {
+            batch.delete(doc(responsesRef, roundIndex));
         }
+        powerLogSnap.forEach(doc => batch.delete(doc.ref));
         batch.delete(liveBattleRef);
 
         await batch.commit();
 
-        await logGameEvent(teacherUid, 'BOSS_BATTLE', `Battle summary for '${battle.battleName}' was saved and live battle was cleaned up.`);
+        await logGameEvent(teacherUid, 'BOSS_BATTLE', `Battle '${battle.battleName}' ended and archive was created.`);
         
-        router.push(`/teacher/battle/summary/${summaryRef.id}`);
-
+        // 6. Redirect to the new summary page, using the saved battle ID
+        router.push(`/teacher/battle/summary/${savedBattleRef.id}`);
     };
 
     const calculateAndSetResults = async ({ isDivinationSkip = false }: { isDivinationSkip?: boolean } = {}) => {
@@ -501,24 +433,6 @@ export default function TeacherLiveBattlePage() {
     
         const baseDamage = roundResults.filter(r => r.isCorrect).length;
         const totalDamageThisRound = baseDamage + powerDamage;
-
-        // Save the results of this round to the local allRoundsData state
-        const currentQuestion = battle.questions[liveState.currentQuestionIndex];
-        setAllRoundsData((prev: any) => ({
-            ...prev,
-            [liveState.currentQuestionIndex]: {
-                questionText: currentQuestion.questionText,
-                responses: roundResults.map(r => ({
-                    studentUid: r.studentUid,
-                    studentName: r.studentName,
-                    answerIndex: battle.questions[liveState.currentQuestionIndex].answers.indexOf(r.answer),
-                    isCorrect: r.isCorrect,
-                })),
-                powersUsed: powersUsedThisRound,
-                baseDamage,
-                powerDamage,
-            }
-        }));
     
         const updatePayload: any = {
             status: 'SHOWING_RESULTS',
@@ -998,19 +912,6 @@ export default function TeacherLiveBattlePage() {
     }
   };
 
-  const handleEndBattle = async () => {
-    if (!liveState || !battle || !teacherUid) return;
-    // First, ensure the final round's data is calculated and stored.
-    await calculateAndSetResults({});
-    
-    // Now, generate the summary using the most up-to-date state.
-    // We need to fetch the final liveState after the calculation completes.
-    const finalLiveStateSnap = await getDoc(doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle'));
-    if (finalLiveStateSnap.exists()) {
-        await generateAndSaveSummary(finalLiveStateSnap.data() as LiveBattleState);
-    }
-  };
-  
   const handleExport = () => {
     if (!battle || roundResults.length === 0 || !liveState) return;
     const questionText = battle.questions[liveState.currentQuestionIndex].questionText;

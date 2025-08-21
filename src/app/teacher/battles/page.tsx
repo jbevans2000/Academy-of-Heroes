@@ -24,7 +24,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { cleanupOldSummaries } from '@/ai/flows/manage-student';
 
 interface BossBattle {
   id: string;
@@ -81,8 +80,6 @@ export default function BossBattlesPage() {
     try {
         const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
         
-        // This single command now creates a fresh, clean battle state document,
-        // completely overwriting any previous data.
         await setDoc(liveBattleRef, {
             battleId: battle.id,
             status: 'WAITING',
@@ -104,10 +101,6 @@ export default function BossBattlesPage() {
             cosmicDivinationUses: 0,
             voteState: null,
         });
-
-        // The subcollections will be handled by the live battle component itself
-        // or through specific actions, so aggressive deletion here is not needed
-        // and was a source of complexity. The overwrite is sufficient.
 
         await logGameEvent(teacher.uid, 'BOSS_BATTLE', `Boss Battle '${battle.battleName}' has been activated.`);
 
@@ -152,16 +145,23 @@ export default function BossBattlesPage() {
     }
   };
 
-  const handleCleanupSummaries = async () => {
+  const handleCleanupArchives = async () => {
     if (!teacher) return;
     setIsCleaning(true);
     try {
-        const result = await cleanupOldSummaries({ teacherUid: teacher.uid });
-        if (result.success) {
-            toast({ title: "Cleanup Successful", description: result.message });
-        } else {
-            throw new Error(result.error);
+        const savedBattlesRef = collection(db, 'teachers', teacher.uid, 'savedBattles');
+        const snapshot = await getDocs(savedBattlesRef);
+        if (snapshot.empty) {
+            toast({ title: 'No Archives Found', description: 'There are no saved battle archives to clean up.' });
+            setIsCleaning(false);
+            return;
         }
+
+        const batch = writeBatch(db);
+        snapshot.docs.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+
+        toast({ title: 'Cleanup Successful', description: `Successfully deleted ${snapshot.size} archived battle(s).` });
     } catch (error: any) {
         console.error("Error during summary cleanup:", error);
         toast({ variant: 'destructive', title: "Cleanup Failed", description: error.message });
@@ -211,21 +211,21 @@ export default function BossBattlesPage() {
                 <AlertDialogTrigger asChild>
                     <Button variant="destructive">
                         <Trash2 className="mr-2 h-4 w-4" />
-                        Clean Up Old Battle Summaries
+                        Clean Up All Battle Archives
                     </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                        This will permanently delete all saved battle summary reports for both you and all of your students. This is useful for cleaning up data from old systems or test runs. This action CANNOT be undone.
+                        This will permanently delete all of your saved battle archives. This can be useful for clearing out old data, but it cannot be undone. Student "Songs and Stories" pages will also be cleared.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleCleanupSummaries} disabled={isCleaning}>
+                        <AlertDialogAction onClick={handleCleanupArchives} disabled={isCleaning}>
                             {isCleaning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Yes, Delete All Summaries
+                            Yes, Delete All Archives
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

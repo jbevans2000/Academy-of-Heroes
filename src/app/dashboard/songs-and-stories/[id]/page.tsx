@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
@@ -27,38 +27,38 @@ interface PowerLogEntry {
     description: string;
 }
 
-interface BattleSummary {
+interface SavedBattle {
     id: string;
     battleName: string;
-    endedAt: {
+    savedAt: {
         seconds: number;
         nanoseconds: number;
     };
-    xpGained: number;
-    goldGained: number;
     questions: Question[];
-    resultsByRound: {
+    responsesByRound: {
         [roundIndex: string]: {
             responses: {
                 studentUid: string;
-                studentName: string;
+                characterName: string;
                 answerIndex: number;
                 isCorrect: boolean;
             }[];
         };
     };
-    battleLog?: PowerLogEntry[];
+    powerLog?: PowerLogEntry[];
 }
 
 export default function BattleSummaryDetailPage() {
     const router = useRouter();
     const params = useParams();
-    const summaryId = params.id as string;
+    const savedBattleId = params.id as string;
     const { toast } = useToast();
 
     const [user, setUser] = useState<User | null>(null);
     const [teacherUid, setTeacherUid] = useState<string | null>(null);
-    const [summary, setSummary] = useState<BattleSummary | null>(null);
+    const [summary, setSummary] = useState<SavedBattle | null>(null);
+    const [xpGained, setXpGained] = useState(0);
+    const [goldGained, setGoldGained] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -81,15 +81,28 @@ export default function BattleSummaryDetailPage() {
     }, [router, toast]);
 
     useEffect(() => {
-        if (!user || !teacherUid || !summaryId) return;
+        if (!user || !teacherUid || !savedBattleId) return;
 
         const fetchSummary = async () => {
             setIsLoading(true);
             try {
-                const summaryRef = doc(db, 'teachers', teacherUid, 'students', user.uid, 'battleSummaries', summaryId);
+                const summaryRef = doc(db, 'teachers', teacherUid, 'savedBattles', savedBattleId);
                 const docSnap = await getDoc(summaryRef);
                 if (docSnap.exists()) {
-                    setSummary({ id: docSnap.id, ...docSnap.data() } as BattleSummary);
+                    const data = docSnap.data() as SavedBattle;
+                    setSummary({ id: docSnap.id, ...data });
+
+                    // Calculate XP and Gold for this specific student
+                    let correctAnswers = 0;
+                    Object.values(data.responsesByRound).forEach(round => {
+                        const studentResponse = round.responses.find(r => r.studentUid === user.uid);
+                        if (studentResponse?.isCorrect) {
+                            correctAnswers++;
+                        }
+                    });
+                    setXpGained(correctAnswers * 5);
+                    setGoldGained(correctAnswers * 10);
+
                 } else {
                     toast({ variant: 'destructive', title: 'Not Found', description: 'This battle report could not be found.' });
                     router.push('/dashboard/songs-and-stories');
@@ -103,7 +116,7 @@ export default function BattleSummaryDetailPage() {
         };
 
         fetchSummary();
-    }, [user, teacherUid, summaryId, router, toast]);
+    }, [user, teacherUid, savedBattleId, router, toast]);
 
     if (isLoading || !summary) {
         return (
@@ -121,11 +134,11 @@ export default function BattleSummaryDetailPage() {
         )
     }
 
-    const roundKeys = Object.keys(summary.resultsByRound);
+    const roundKeys = Object.keys(summary.responsesByRound);
     
     const battleLogByRound: { [round: number]: PowerLogEntry[] } = {};
-    if (summary.battleLog) {
-        summary.battleLog.forEach(log => {
+    if (summary.powerLog) {
+        summary.powerLog.forEach(log => {
             if (!battleLogByRound[log.round]) {
                 battleLogByRound[log.round] = [];
             }
@@ -150,7 +163,7 @@ export default function BattleSummaryDetailPage() {
                         <CardHeader className="text-center">
                             <CardTitle className="text-4xl font-headline">{summary.battleName}</CardTitle>
                             <CardDescription>
-                                Battle concluded on {summary.endedAt ? format(new Date(summary.endedAt.seconds * 1000), 'PPPp') : 'Date unknown'}
+                                Battle concluded on {summary.savedAt ? format(new Date(summary.savedAt.seconds * 1000), 'PPPp') : 'Date unknown'}
                             </CardDescription>
                         </CardHeader>
                     </Card>
@@ -162,12 +175,12 @@ export default function BattleSummaryDetailPage() {
                         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="flex flex-col items-center justify-center p-6 bg-secondary/50 rounded-lg">
                                 <Star className="h-12 w-12 text-yellow-400 mb-2" />
-                                <p className="text-3xl font-bold">{summary.xpGained}</p>
+                                <p className="text-3xl font-bold">{xpGained}</p>
                                 <p className="text-muted-foreground">Experience Gained</p>
                             </div>
                              <div className="flex flex-col items-center justify-center p-6 bg-secondary/50 rounded-lg">
                                 <Coins className="h-12 w-12 text-amber-500 mb-2" />
-                                <p className="text-3xl font-bold">{summary.goldGained}</p>
+                                <p className="text-3xl font-bold">{goldGained}</p>
                                 <p className="text-muted-foreground">Gold Gained</p>
                             </div>
                         </CardContent>
@@ -180,16 +193,20 @@ export default function BattleSummaryDetailPage() {
                         <CardContent>
                             <Accordion type="single" collapsible className="w-full">
                                 {roundKeys.map((roundIndex) => {
-                                    const roundData = summary.resultsByRound[roundIndex];
-                                    const studentResponse = roundData.responses[0];
+                                    const roundData = summary.responsesByRound[roundIndex];
+                                    if (!roundData) return null;
+
+                                    const studentResponse = roundData.responses.find(r => r.studentUid === user?.uid);
+                                    if (!studentResponse) return null; // Skip rounds the student didn't answer in
+
                                     const question = summary.questions[parseInt(roundIndex)];
 
                                     return (
                                         <AccordionItem key={roundIndex} value={`item-${roundIndex}`}>
                                             <AccordionTrigger className="text-lg hover:no-underline">
                                                 <div className="flex justify-between w-full pr-4 items-center">
-                                                    <span>Question {parseInt(roundIndex) + 1}: {question.questionText}</span>
-                                                    {studentResponse.isCorrect ? <CheckCircle className="h-6 w-6 text-green-500" /> : <XCircle className="h-6 w-6 text-red-500" />}
+                                                    <span className="text-left">Q{parseInt(roundIndex) + 1}: {question.questionText}</span>
+                                                    {studentResponse.isCorrect ? <CheckCircle className="h-6 w-6 text-green-500 ml-2" /> : <XCircle className="h-6 w-6 text-red-500 ml-2" />}
                                                 </div>
                                             </AccordionTrigger>
                                             <AccordionContent>

@@ -25,13 +25,20 @@ import {
 } from "@/components/ui/alert-dialog";
 import { format } from 'date-fns';
 
-interface BattleSummary {
+interface SavedBattle {
     id: string;
     battleName: string;
-    endedAt: {
+    savedAt: {
         seconds: number;
         nanoseconds: number;
-    }
+    },
+    responsesByRound: {
+        [roundIndex: string]: {
+            responses: {
+                studentUid: string;
+            }[];
+        };
+    };
 }
 
 export default function SongsAndStoriesPage() {
@@ -39,7 +46,7 @@ export default function SongsAndStoriesPage() {
     const { toast } = useToast();
     const [user, setUser] = useState<User | null>(null);
     const [teacherUid, setTeacherUid] = useState<string | null>(null);
-    const [summaries, setSummaries] = useState<BattleSummary[]>([]);
+    const [summaries, setSummaries] = useState<SavedBattle[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isDeleting, setIsDeleting] = useState(false);
 
@@ -67,41 +74,27 @@ export default function SongsAndStoriesPage() {
 
         const fetchSummaries = async () => {
             setIsLoading(true);
-            const summariesRef = collection(db, 'teachers', teacherUid, 'students', user.uid, 'battleSummaries');
-            const q = query(summariesRef, orderBy('endedAt', 'desc'));
+            const summariesRef = collection(db, 'teachers', teacherUid, 'savedBattles');
+            const q = query(summariesRef, orderBy('savedAt', 'desc'));
             const querySnapshot = await getDocs(q);
-            const summariesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BattleSummary));
-            setSummaries(summariesData);
+
+            const allSummaries = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SavedBattle));
+            
+            // Filter summaries to only include those where the current student participated
+            const studentSummaries = allSummaries.filter(summary => {
+                return Object.values(summary.responsesByRound).some(round => 
+                    round.responses.some(response => response.studentUid === user.uid)
+                );
+            });
+
+            setSummaries(studentSummaries);
             setIsLoading(false);
         };
         fetchSummaries();
     }, [user, teacherUid]);
     
-    const handleClearHistory = async () => {
-        if (!user || !teacherUid) return;
-        setIsDeleting(true);
-
-        try {
-            const summariesRef = collection(db, 'teachers', teacherUid, 'students', user.uid, 'battleSummaries');
-            const snapshot = await getDocs(summariesRef);
-            if (snapshot.empty) {
-                toast({ title: "History is already clear." });
-                return;
-            }
-            const batch = writeBatch(db);
-            snapshot.docs.forEach(doc => batch.delete(doc.ref));
-            await batch.commit();
-
-            setSummaries([]);
-            toast({ title: "Battle History Cleared", description: "All your past battle reports have been removed."});
-
-        } catch (error) {
-            console.error("Error clearing summaries:", error);
-            toast({ variant: "destructive", title: "Error", description: "Could not clear your battle history." });
-        } finally {
-            setIsDeleting(false);
-        }
-    };
+    // NOTE: Students cannot clear their own history from this page. 
+    // This action would need to be re-thought as it would now delete from the teacher's collection.
 
     if (isLoading) {
         return (
@@ -131,28 +124,6 @@ export default function SongsAndStoriesPage() {
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back to Dashboard
                 </Button>
-                <div className="ml-auto">
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive" disabled={summaries.length === 0 || isDeleting}>
-                                {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                                Clear History
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure you want to clear your history?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This action cannot be undone. All of your saved battle reports will be permanently deleted.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleClearHistory}>Yes, Clear History</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </div>
             </header>
              <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="max-w-4xl mx-auto space-y-6">
@@ -181,7 +152,7 @@ export default function SongsAndStoriesPage() {
                                             <div className="flex justify-between items-center">
                                                 <h3 className="font-semibold text-lg">{summary.battleName}</h3>
                                                 <p className="text-sm text-muted-foreground">
-                                                    {summary.endedAt ? format(new Date(summary.endedAt.seconds * 1000), 'PPP') : 'Date unknown'}
+                                                    {summary.savedAt ? format(new Date(summary.savedAt.seconds * 1000), 'PPP') : 'Date unknown'}
                                                 </p>
                                             </div>
                                         </div>
