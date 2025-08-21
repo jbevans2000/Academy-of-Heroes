@@ -402,7 +402,7 @@ export default function TeacherLiveBattlePage() {
                     isCorrect: r.isCorrect,
                 })),
                 powersUsed: powersUsedThisRound,
-                baseDamage, // Store this round's damages
+                baseDamage: baseDamage, // Store this round's damages
                 powerDamage,
             }
         }));
@@ -894,7 +894,7 @@ export default function TeacherLiveBattlePage() {
     // Recalculate totals from allRoundsData to ensure accuracy
     let totalBaseDamage = 0;
     let totalPowerDamage = 0;
-    Object.values(allRoundsData).forEach(round => {
+    Object.values(allRoundsData).forEach((round: any) => {
         totalBaseDamage += round.baseDamage || 0;
         totalPowerDamage += round.powerDamage || 0;
     });
