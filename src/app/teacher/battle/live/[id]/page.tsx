@@ -995,8 +995,8 @@ export default function TeacherLiveBattlePage() {
         battleLog: powerLog,
         rewards: rewardsByStudent,
         totalDamageDealt: totalDamage,
-        totalBaseDamage,
-        totalPowerDamage,
+        totalBaseDamage: totalBaseDamage,
+        totalPowerDamage: totalPowerDamage,
         fallenAtEnd: fallenAtEnd,
         endedAt: serverTimestamp(),
     });
