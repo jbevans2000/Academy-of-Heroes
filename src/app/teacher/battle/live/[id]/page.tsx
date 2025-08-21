@@ -290,14 +290,11 @@ export default function TeacherLiveBattlePage() {
 
         const fallenAtEnd = finalLiveState.fallenPlayerUids || [];
         const empoweredAtEnd = finalLiveState.empoweredMageUids || [];
-
-        let totalBaseDamage = 0;
-        let totalPowerDamage = 0;
-        Object.values(finalRoundsData).forEach((round: any) => {
-            totalBaseDamage += round.baseDamage || 0;
-            totalPowerDamage += round.powerDamage || 0;
-        });
-        const totalDamage = totalBaseDamage + totalPowerDamage;
+        
+        // The total damage is now reliably stored in the finalLiveState
+        const totalDamage = finalLiveState.totalDamage || 0;
+        const totalBaseDamage = finalLiveState.totalBaseDamage || 0;
+        const totalPowerDamage = finalLiveState.totalPowerDamage || 0;
         
         await logGameEvent(teacherUid, 'BOSS_BATTLE', `The party dealt a total of ${totalDamage} damage during '${battle.battleName}'.`);
 
@@ -505,8 +502,6 @@ export default function TeacherLiveBattlePage() {
     
         const currentQuestion = battle.questions[liveState.currentQuestionIndex];
         
-        // This is a temporary variable for THIS function's scope.
-        // It helps ensure that `setAllRoundsData` has the latest info.
         const submittedResponsesForThisRound = roundResults.map(r => ({
             studentUid: r.studentUid,
             studentName: r.studentName,
@@ -530,20 +525,12 @@ export default function TeacherLiveBattlePage() {
         await batch.commit();
     
         if (isFinalBattleRound) {
-            // Refetch liveState to get the absolute latest after batch commit
             const finalLiveStateSnap = await getDoc(liveBattleRef);
             if (finalLiveStateSnap.exists()) {
                 await generateAndSaveSummary(newRoundsData, finalLiveStateSnap.data() as LiveBattleState);
             }
         }
     };
-
-    const performRoundEnd = useCallback(async () => {
-        if (!battle || !liveState || !teacherUid || isEndingRound) return;
-        setIsEndingRound(true);
-        await calculateAndSetResults({});
-        setIsEndingRound(false);
-    }, [battle, liveState, teacherUid, isEndingRound, calculateAndSetResults]);
   
     // Effect for Cosmic Divination vote resolution
     useEffect(() => {
@@ -900,11 +887,11 @@ export default function TeacherLiveBattlePage() {
       const timeUntilExpiry = expiryDate.getTime() - now.getTime();
 
       const timer = setTimeout(() => {
-          performRoundEnd();
+          calculateAndSetResults({});
       }, timeUntilExpiry > 0 ? timeUntilExpiry : 0);
       
       return () => clearTimeout(timer);
-  }, [liveState?.status, liveState?.timerEndsAt, performRoundEnd]);
+  }, [liveState?.status, liveState?.timerEndsAt, calculateAndSetResults]);
 
   // Effect to resolve fallen UIDs to names
   useEffect(() => {
@@ -1002,7 +989,6 @@ export default function TeacherLiveBattlePage() {
 
   const handleEndBattle = async () => {
     if (!liveState || !battle || !teacherUid) return;
-    // The new parameter will trigger the final save sequence within calculateAndSetResults
     await calculateAndSetResults({ isFinalBattleRound: true });
   };
   
