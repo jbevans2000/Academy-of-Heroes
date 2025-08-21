@@ -1120,7 +1120,7 @@ export default function TeacherLiveBattlePage() {
                                     <Button onClick={handleStartFirstQuestion} size="lg">Start First Question</Button>
                                 )}
                                 <Button onClick={handleEndRound} disabled={!isRoundInProgress || isRoundEndingStatus}>
-                                    {isRoundEndingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                    {isEndingRound ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                     End Round
                                 </Button>
                                 <Button onClick={handleNextQuestion} disabled={!areResultsShowing || isLastQuestion || isAdvancing}>
