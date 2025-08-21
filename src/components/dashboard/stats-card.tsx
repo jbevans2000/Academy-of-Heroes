@@ -74,8 +74,8 @@ export function StatsCard({ xp, gold, level, hp, mp, maxHp, maxMp, characterName
     />
     <Card className="shadow-lg rounded-xl overflow-hidden relative">
       {company?.logoUrl && (
-          <div className="absolute inset-0 z-0">
-              <Image src={company.logoUrl} alt="Company Logo" fill className="object-cover opacity-50" />
+           <div className="absolute inset-0 z-0 flex items-center justify-center p-4">
+              <Image src={company.logoUrl} alt="Company Logo" fill className="object-contain opacity-50 scale-50" />
               <div className="absolute inset-0 bg-card/70 backdrop-blur-sm" />
           </div>
       )}
