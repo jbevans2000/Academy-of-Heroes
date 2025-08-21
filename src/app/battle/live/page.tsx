@@ -400,6 +400,7 @@ export default function LiveBattlePage() {
         setBattleState(newState);
       } else {
           setBattleState(null);
+          setBattle(null); // Clear battle details if the live battle doc is deleted
       }
       setIsLoading(false);
     }, (error) => {
@@ -486,6 +487,7 @@ export default function LiveBattlePage() {
     );
   }
 
+  // Pre-battle waiting room, before teacher has even picked a battle
   if (!battleState) {
     const waitingRoomImageUrl = "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FChatGPT%20Image%20Aug%2015%2C%202025%2C%2008_12_09%20AM.png?alt=media&token=45178e85-0ba2-42ef-b2fa-d76a8732b2c2";
     return (
@@ -515,6 +517,7 @@ export default function LiveBattlePage() {
     );
   }
   
+  // Video waiting room, after teacher has picked a battle but before first question
   if (battleState.status === 'WAITING' && battle) {
      const videoSrc = battle.videoUrl ? getYouTubeEmbedUrl(battle.videoUrl) : '';
      const waitingRoomImageUrl = battle.bossImageUrl || "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FChatGPT%20Image%20Aug%2015%2C%202025%2C%2008_12_09%20AM.png?alt=media&token=45178e85-0ba2-42ef-b2fa-d76a8732b2c2";
@@ -550,8 +553,8 @@ export default function LiveBattlePage() {
                         ) : (
                             <>
                                 <Shield className="h-24 w-24 text-primary mb-2 animate-pulse" />
-                                <h1 className="text-4xl font-bold tracking-tight text-white">Waiting Room</h1>
-                                <p className="text-xl text-primary-foreground/80">Waiting for the Boss to appear!</p>
+                                <h1 className="text-4xl font-bold tracking-tight text-white">Waiting for Battle</h1>
+                                <p className="text-xl text-primary-foreground/80">The {battle.battleName} appears!</p>
                             </>
                         )}
                         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mt-4" />
@@ -814,7 +817,3 @@ export default function LiveBattlePage() {
     </div>
   );
 }
-
-    
-
-    
