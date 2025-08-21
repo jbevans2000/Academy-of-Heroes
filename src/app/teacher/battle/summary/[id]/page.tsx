@@ -332,37 +332,6 @@ export default function TeacherBattleSummaryPage() {
                     </Accordion>
                 </CardContent>
             </Card>
-
-            {(summary.powerLog && summary.powerLog.length > 0) && (
-                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><ScrollText /> Power Usage Log</CardTitle>
-                        <CardDescription>A record of all powers used during the battle, grouped by round.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Accordion type="multiple" className="w-full">
-                            {Object.keys(battleLogByRound).map(roundNumber => (
-                                <AccordionItem key={roundNumber} value={`round-${roundNumber}`}>
-                                    <AccordionTrigger>Round {roundNumber}</AccordionTrigger>
-                                    <AccordionContent>
-                                        <ul className="space-y-2 pl-4">
-                                            {battleLogByRound[parseInt(roundNumber)].map((log, index) => (
-                                                <li key={index} className="flex justify-between items-center p-2 rounded-md bg-secondary/50">
-                                                    <div>
-                                                        <span className="font-bold">{log.casterName}</span> used <span className="font-semibold text-primary">{log.powerName}</span>.
-                                                        <p className="text-sm text-muted-foreground">Effect: {log.description}</p>
-                                                    </div>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </AccordionContent>
-                                </AccordionItem>
-                            ))}
-                        </Accordion>
-                    </CardContent>
-                </Card>
-            )}
-
         </div>
       </main>
     </div>
