@@ -38,31 +38,23 @@ interface PowerLogEntry {
     description: string;
 }
 
-interface BattleSummary {
+interface SavedBattle {
   id: string; // The unique ID of this summary document
   battleId: string; // The ID of the original battle template
   battleName: string;
   questions: Question[];
-  resultsByRound: {
+  responsesByRound: {
     [roundIndex: string]: {
-      questionText: string;
       responses: {
         studentUid: string;
-        studentName: string;
+        characterName: string;
         answerIndex: number;
         isCorrect: boolean;
       }[];
-      powersUsed?: string[];
     };
   };
-  battleLog?: PowerLogEntry[];
-  rewards?: {
-    [studentUid: string]: {
-      xpGained: number;
-      goldGained: number;
-    }
-  };
-  totalDamageDealt?: number;
+  powerLog?: PowerLogEntry[];
+  totalDamage?: number;
   totalBaseDamage?: number;
   totalPowerDamage?: number;
   fallenAtEnd?: string[];
@@ -71,9 +63,9 @@ interface BattleSummary {
 export default function TeacherBattleSummaryPage() {
   const router = useRouter();
   const params = useParams();
-  const summaryId = params.id as string;
+  const savedBattleId = params.id as string;
 
-  const [summary, setSummary] = useState<BattleSummary | null>(null);
+  const [summary, setSummary] = useState<SavedBattle | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCleaning, setIsCleaning] = useState(false);
   const [teacher, setTeacher] = useState<User | null>(null);
@@ -91,44 +83,37 @@ export default function TeacherBattleSummaryPage() {
   }, [router]);
 
   useEffect(() => {
-    if (!summaryId || !teacher) return;
+    if (!savedBattleId || !teacher) return;
 
     const fetchSummary = async () => {
       setIsLoading(true);
-      const summaryRef = doc(db, 'teachers', teacher.uid, 'teacherSummaries', summaryId);
+      const summaryRef = doc(db, 'teachers', teacher.uid, 'savedBattles', savedBattleId);
       const docSnap = await getDoc(summaryRef);
 
       if (docSnap.exists()) {
-        setSummary({ id: docSnap.id, ...docSnap.data() } as BattleSummary);
+        setSummary({ id: docSnap.id, ...docSnap.data() } as SavedBattle);
       } else {
         console.error("No summary found for this battle.");
-        toast({ title: "Summary Not Found", description: "This battle summary may have already been cleaned up. Redirecting to battles list."})
+        toast({ title: "Summary Not Found", description: "This battle summary may have been cleaned up or is still being generated. Redirecting to battles list."})
         router.push('/teacher/battles');
       }
       setIsLoading(false);
     };
 
     fetchSummary();
-  }, [summaryId, teacher, router, toast]);
+  }, [savedBattleId, teacher, router, toast]);
   
   const handleCleanupBattle = async () => {
     if (!teacher) return;
     setIsCleaning(true);
 
     try {
-        const batch = writeBatch(db);
-
-        // Define paths
-        const summaryRef = doc(db, 'teachers', teacher.uid, 'teacherSummaries', summaryId);
-        
-        // Delete the teacher's summary document.
-        batch.delete(summaryRef);
-
-        await batch.commit();
+        const summaryRef = doc(db, 'teachers', teacher.uid, 'savedBattles', savedBattleId);
+        await deleteDoc(summaryRef);
 
         toast({
-            title: 'Battle Summary Cleared!',
-            description: 'The summary for this battle has been removed.',
+            title: 'Battle Archive Cleared!',
+            description: 'The archived data for this battle has been removed.',
         });
 
         router.push('/teacher/battles');
@@ -138,7 +123,7 @@ export default function TeacherBattleSummaryPage() {
         toast({
             variant: 'destructive',
             title: 'Cleanup Failed',
-            description: 'There was an error deleting the battle summary. Please try again.',
+            description: 'There was an error deleting the battle archive. Please try again.',
         });
     } finally {
         setIsCleaning(false);
@@ -182,14 +167,29 @@ export default function TeacherBattleSummaryPage() {
     );
   }
 
-  const roundKeys = Object.keys(summary.resultsByRound);
+  const roundKeys = Object.keys(summary.responsesByRound);
   
-  const totalXpAwarded = summary.rewards ? Object.values(summary.rewards).reduce((acc, reward) => acc + reward.xpGained, 0) : 0;
-  const totalGoldAwarded = summary.rewards ? Object.values(summary.rewards).reduce((acc, reward) => acc + reward.goldGained, 0) : 0;
+  const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
+  if (summary.responsesByRound) {
+    for (const roundIndex in summary.responsesByRound) {
+      summary.responsesByRound[roundIndex].responses.forEach((res: any) => {
+          if (!rewardsByStudent[res.studentUid]) {
+              rewardsByStudent[res.studentUid] = { xpGained: 0, goldGained: 0 };
+          }
+          if (res.isCorrect) {
+              rewardsByStudent[res.studentUid].xpGained += 5;
+              rewardsByStudent[res.studentUid].goldGained += 10;
+          }
+      });
+    }
+  }
+
+  const totalXpAwarded = Object.values(rewardsByStudent).reduce((acc, reward) => acc + reward.xpGained, 0);
+  const totalGoldAwarded = Object.values(rewardsByStudent).reduce((acc, reward) => acc + reward.goldGained, 0);
   
   const battleLogByRound: { [round: number]: PowerLogEntry[] } = {};
-    if (summary.battleLog) {
-        summary.battleLog.forEach(log => {
+    if (summary.powerLog) {
+        summary.powerLog.forEach(log => {
             if (!battleLogByRound[log.round]) {
                 battleLogByRound[log.round] = [];
             }
@@ -217,14 +217,14 @@ export default function TeacherBattleSummaryPage() {
                 <AlertDialogTrigger asChild>
                     <Button variant="destructive" disabled={isCleaning}>
                         {isCleaning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                        Clear This Summary
+                        Clear This Archive
                     </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Clear This Summary?</AlertDialogTitle>
+                        <AlertDialogTitle>Clear This Battle Archive?</AlertDialogTitle>
                         <AlertDialogDescription>
-                           This will permanently delete this battle summary report. This action cannot be undone.
+                           This will permanently delete this battle's saved data. This action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -262,23 +262,19 @@ export default function TeacherBattleSummaryPage() {
                     </div>
                      <div className="flex flex-col items-center gap-2 p-2">
                         <HeartCrack className="h-8 w-8 text-red-600" />
-                        <p className="text-3xl font-extrabold">{summary.totalDamageDealt ?? 0}</p>
+                        <p className="text-3xl font-extrabold">{summary.totalDamage ?? 0}</p>
                         <p className="text-sm font-medium">Total Damage Dealt</p>
                     </div>
-                    {summary.rewards && (
-                       <>
-                         <div className="flex flex-col items-center gap-2 p-2">
-                           <Star className="h-8 w-8 text-yellow-500" />
-                           <p className="text-xl font-bold">{totalXpAwarded}</p>
-                           <p className="text-sm font-medium">Total XP Awarded</p>
-                         </div>
-                         <div className="flex flex-col items-center gap-2 p-2">
-                           <Coins className="h-8 w-8 text-amber-600" />
-                           <p className="text-xl font-bold">{totalGoldAwarded}</p>
-                           <p className="text-sm font-medium">Total Gold Awarded</p>
-                         </div>
-                       </>
-                    )}
+                     <div className="flex flex-col items-center gap-2 p-2">
+                       <Star className="h-8 w-8 text-yellow-500" />
+                       <p className="text-xl font-bold">{totalXpAwarded}</p>
+                       <p className="text-sm font-medium">Total XP Awarded</p>
+                     </div>
+                     <div className="flex flex-col items-center gap-2 p-2">
+                       <Coins className="h-8 w-8 text-amber-600" />
+                       <p className="text-xl font-bold">{totalGoldAwarded}</p>
+                       <p className="text-sm font-medium">Total Gold Awarded</p>
+                     </div>
                 </CardContent>
             </Card>
             
@@ -289,7 +285,8 @@ export default function TeacherBattleSummaryPage() {
                 <CardContent>
                     <Accordion type="single" collapsible className="w-full">
                         {roundKeys.map((roundIndex) => {
-                            const roundData = summary.resultsByRound[roundIndex];
+                            const roundData = summary.responsesByRound[roundIndex];
+                            if (!roundData) return null;
                             const question = summary.questions[parseInt(roundIndex)];
                             const correctCount = roundData.responses.filter(r => r.isCorrect).length;
                             const incorrectCount = roundData.responses.length - correctCount;
@@ -298,7 +295,7 @@ export default function TeacherBattleSummaryPage() {
                                 <AccordionItem key={roundIndex} value={`item-${roundIndex}`}>
                                     <AccordionTrigger className="text-lg hover:no-underline">
                                         <div className="flex justify-between w-full pr-4">
-                                            <span>Question {parseInt(roundIndex) + 1}: {roundData.questionText}</span>
+                                            <span>Question {parseInt(roundIndex) + 1}: {question.questionText}</span>
                                             <div className="flex gap-4">
                                                 <span className="text-green-500 font-semibold">{correctCount} Correct</span>
                                                 <span className="text-red-500 font-semibold">{incorrectCount} Incorrect</span>
@@ -309,7 +306,7 @@ export default function TeacherBattleSummaryPage() {
                                         <ul className="space-y-2 py-2 px-4 bg-secondary/50 rounded-md">
                                             {roundData.responses.map(res => (
                                                 <li key={res.studentUid} className="flex items-center justify-between p-2 rounded bg-background">
-                                                    <span className="font-medium">{res.studentName}</span>
+                                                    <span className="font-medium">{res.characterName}</span>
                                                     <div className="flex items-center gap-2">
                                                         <span>{question.answers[res.answerIndex]}</span>
                                                         {res.isCorrect ? <CheckCircle className="text-green-500" /> : <XCircle className="text-red-500" />}
@@ -337,7 +334,7 @@ export default function TeacherBattleSummaryPage() {
                 </CardContent>
             </Card>
 
-            {(summary.battleLog && summary.battleLog.length > 0) && (
+            {(summary.powerLog && summary.powerLog.length > 0) && (
                  <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><ScrollText /> Power Usage Log</CardTitle>

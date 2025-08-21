@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs, writeBatch, serverTimestamp, setDoc, deleteDoc, increment, arrayUnion, arrayRemove, addDoc } from 'firebase/firestore';
+import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs, writeBatch, serverTimestamp, setDoc, deleteDoc, arrayUnion, arrayRemove, addDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
@@ -166,6 +166,7 @@ export default function TeacherLiveBattlePage() {
   const [teacherUid, setTeacherUid] = useState<string | null>(null);
   const [fallenStudentNames, setFallenStudentNames] = useState<string[]>([]);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
+  const [redirectId, setRedirectId] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -270,7 +271,7 @@ export default function TeacherLiveBattlePage() {
     const handleEndBattle = async () => {
         if (!liveState || !battle || !teacherUid) return;
         
-        // 1. Finalize the last round's results
+        // Finalize the last round's results
         await calculateAndSetResults({});
 
         // 2. Fetch the complete, final state of the active battle
@@ -361,8 +362,7 @@ export default function TeacherLiveBattlePage() {
 
         await logGameEvent(teacherUid, 'BOSS_BATTLE', `Battle '${battle.battleName}' ended and archive was created.`);
         
-        // 6. Redirect to the new summary page, using the saved battle ID
-        router.push(`/teacher/battle/summary/${savedBattleRef.id}`);
+        setRedirectId(savedBattleRef.id);
     };
 
     const calculateAndSetResults = async ({ isDivinationSkip = false }: { isDivinationSkip?: boolean } = {}) => {
@@ -433,6 +433,8 @@ export default function TeacherLiveBattlePage() {
     
         const baseDamage = roundResults.filter(r => r.isCorrect).length;
         const totalDamageThisRound = baseDamage + powerDamage;
+
+        const currentLiveState = (await getDoc(liveBattleRef)).data() as LiveBattleState;
     
         const updatePayload: any = {
             status: 'SHOWING_RESULTS',
@@ -441,9 +443,9 @@ export default function TeacherLiveBattlePage() {
             lastRoundBaseDamage: baseDamage,
             lastRoundPowerDamage: powerDamage,
             lastRoundPowersUsed: powersUsedThisRound,
-            totalDamage: increment(totalDamageThisRound),
-            totalBaseDamage: increment(baseDamage),
-            totalPowerDamage: increment(powerDamage),
+            totalDamage: (currentLiveState.totalDamage || 0) + totalDamageThisRound,
+            totalBaseDamage: (currentLiveState.totalBaseDamage || 0) + baseDamage,
+            totalPowerDamage: (currentLiveState.totalPowerDamage || 0) + powerDamage,
             voteState: null,
         };
     
@@ -660,8 +662,8 @@ export default function TeacherLiveBattlePage() {
                 for (const targetUid of activation.targets) {
                     const targetRef = doc(db, 'teachers', teacherUid!, 'students', targetUid);
                     batch.update(targetRef, { 
-                        hp: increment(boostPerTarget),
-                        maxHp: increment(boostPerTarget)
+                        hp: arrayUnion(boostPerTarget),
+                        maxHp: arrayUnion(boostPerTarget)
                     });
                     const targetDoc = await getDoc(targetRef);
                     if(targetDoc.exists()) targetNames.push(targetDoc.data().characterName);
@@ -692,9 +694,9 @@ export default function TeacherLiveBattlePage() {
                 const voteEndsAt = new Date(Date.now() + 10000);
 
                 batch.update(liveBattleRef, {
-                    cosmicDivinationUses: increment(1),
-                    totalPowerDamage: increment(studentData.level),
-                    lastRoundPowerDamage: increment(studentData.level),
+                    cosmicDivinationUses: arrayUnion(1),
+                    totalPowerDamage: arrayUnion(studentData.level),
+                    lastRoundPowerDamage: arrayUnion(studentData.level),
                     lastRoundPowersUsed: arrayUnion(`Cosmic Divination (${studentData.level} dmg)`),
                     voteState: {
                         isActive: true,
@@ -773,7 +775,7 @@ export default function TeacherLiveBattlePage() {
                 });
             }
 
-            batch.update(studentRef, { mp: increment(-activation.powerMpCost) });
+            batch.update(studentRef, { mp: arrayUnion(-activation.powerMpCost) });
             batch.update(liveBattleRef, {
                 [`powerUsersThisRound.${activation.studentUid}`]: arrayUnion(activation.powerName),
             });
@@ -835,6 +837,14 @@ export default function TeacherLiveBattlePage() {
     }
     fetchNames();
   }, [liveState?.fallenPlayerUids, teacherUid]);
+  
+  // Effect to handle safe redirection after battle ends
+  useEffect(() => {
+    if (redirectId) {
+        router.push(`/teacher/battle/summary/${redirectId}`);
+    }
+  }, [redirectId, router]);
+
 
   const handleStartFirstQuestion = async () => {
     if(!teacherUid || !battle) return;
