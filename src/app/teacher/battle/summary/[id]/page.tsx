@@ -155,9 +155,11 @@ export default function TeacherBattleSummaryPage() {
         // Delete the rounds subcollection
         const roundsRef = collection(summaryRef, 'rounds');
         const roundsSnap = await getDocs(roundsRef);
-        const batch = db.batch();
-        roundsSnap.forEach(doc => batch.delete(doc.ref));
-        await batch.commit();
+        if (!roundsSnap.empty) {
+          const batch = writeBatch(db);
+          roundsSnap.forEach(doc => batch.delete(doc.ref));
+          await batch.commit();
+        }
         
         // Delete the main doc
         await deleteDoc(summaryRef);
@@ -237,7 +239,7 @@ export default function TeacherBattleSummaryPage() {
                         <Card>
                             <CardHeader>
                                 <CardTitle>Battle Concluded Prematurely</CardTitle>
-                                <CardDescription>This battle session for "{summary.battleName}" ended before any rounds were completed.</CardDescription>
+                                <CardDescription>This battle session for "{summary.battleName}" ended before any rounds were completed, so no detailed report is available.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <AlertDialog>
