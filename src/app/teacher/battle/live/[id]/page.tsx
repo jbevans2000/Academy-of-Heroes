@@ -47,7 +47,7 @@ interface LiveBattleState {
   parentArchiveId: string;
   status: 'WAITING' | 'IN_PROGRESS' | 'ROUND_ENDING' | 'SHOWING_RESULTS' | 'BATTLE_ENDED';
   currentQuestionIndex: number;
-  timerEndsAt?: { seconds: number; nanoseconds: number; };
+  timerEndsAt?: { seconds: number; nanoseconds: number; } | null;
   lastRoundDamage?: number;
   lastRoundBaseDamage?: number;
   lastRoundPowerDamage?: number;
@@ -275,7 +275,6 @@ export default function TeacherLiveBattlePage() {
             const batch = writeBatch(db);
             const parentArchiveRef = doc(db, 'teachers', teacherUid, 'savedBattles', liveState.parentArchiveId);
             
-            // Fetch the final state of fallen players
             const liveBattleSnap = await getDoc(doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle'));
             const finalLiveState = liveBattleSnap.exists() ? liveBattleSnap.data() as LiveBattleState : liveState;
 
@@ -283,7 +282,10 @@ export default function TeacherLiveBattlePage() {
             batch.update(parentArchiveRef, {
                 status: 'BATTLE_ENDED',
                 powerLog: await getDocs(collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog')).then(snap => snap.docs.map(d => d.data())),
-                fallenAtEnd: finalLiveState.fallenPlayerUids || [],
+                fallenAtEnd: finalLiveState.fallenPlayerUids?.map(uid => allStudents.find(s => s.uid === uid)?.characterName).filter(Boolean) || [],
+                totalDamage: finalLiveState.totalDamage,
+                totalBaseDamage: finalLiveState.totalBaseDamage,
+                totalPowerDamage: finalLiveState.totalPowerDamage,
             });
             
             // Award XP/Gold
@@ -331,7 +333,6 @@ export default function TeacherLiveBattlePage() {
                 }
             }
             
-            // Clean up the temporary `active-battle` document and its subcollections
             const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
             const subcollections = ['responses', 'powerActivations', 'battleLog', 'messages'];
             for (const sub of subcollections) {
@@ -423,14 +424,13 @@ export default function TeacherLiveBattlePage() {
         const baseDamage = roundResults.filter(r => r.isCorrect).length;
         const totalDamageThisRound = baseDamage + powerDamage;
 
-        // Fetch the most recent live state before updating to prevent stale data issues.
         const currentLiveSnap = await getDoc(liveBattleRef);
         if (!currentLiveSnap.exists()) return;
         const currentLiveState = currentLiveSnap.data() as LiveBattleState;
 
         const updatePayload: Partial<LiveBattleState> = {
             status: 'SHOWING_RESULTS',
-            timerEndsAt: undefined,
+            timerEndsAt: null,
             lastRoundDamage: totalDamageThisRound,
             lastRoundBaseDamage: baseDamage,
             lastRoundPowerDamage: powerDamage,
@@ -448,7 +448,6 @@ export default function TeacherLiveBattlePage() {
         batch.update(liveBattleRef, updatePayload);
         await batch.commit();
 
-        // New: Save a snapshot of this round to the permanent archive
         const updatedLiveSnap = await getDoc(liveBattleRef);
         if (updatedLiveSnap.exists() && liveState.parentArchiveId) {
              const roundDoc = await getDoc(doc(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${liveState.currentQuestionIndex}`));
