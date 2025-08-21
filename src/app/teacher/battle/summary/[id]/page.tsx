@@ -10,7 +10,7 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Star, Coins, ShieldCheck, Sparkles, ScrollText, Trash2, Loader2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Star, Coins, ShieldCheck, Sparkles, ScrollText, Trash2, Loader2, Swords, Shield } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -193,9 +193,7 @@ export default function TeacherBattleSummaryPage() {
   }
 
   const roundKeys = Object.keys(summary.resultsByRound);
-  const totalCorrect = roundKeys.reduce((acc, key) => acc + summary.resultsByRound[key].responses.filter(r => r.isCorrect).length, 0);
-  const totalIncorrect = roundKeys.reduce((acc, key) => acc + summary.resultsByRound[key].responses.filter(r => !r.isCorrect).length, 0);
-
+  
   const totalXpAwarded = summary.rewards ? Object.values(summary.rewards).reduce((acc, reward) => acc + reward.xpGained, 0) : 0;
   const totalGoldAwarded = summary.rewards ? Object.values(summary.rewards).reduce((acc, reward) => acc + reward.goldGained, 0) : 0;
   
@@ -255,93 +253,97 @@ export default function TeacherBattleSummaryPage() {
               <CardTitle className="text-3xl">Battle Summary: {summary.battleName}</CardTitle>
               <CardDescription>A complete report of the battle. Clean up when you're done to prepare for the next battle.</CardDescription>
             </CardHeader>
-            <CardContent>
-                <Accordion type="single" collapsible className="w-full">
-                    {roundKeys.map((roundIndex) => {
-                        const roundData = summary.resultsByRound[roundIndex];
-                        const question = summary.questions[parseInt(roundIndex)];
-                        const correctCount = roundData.responses.filter(r => r.isCorrect).length;
-                        const incorrectCount = roundData.responses.length - correctCount;
-
-                        return (
-                            <AccordionItem key={roundIndex} value={`item-${roundIndex}`}>
-                                <AccordionTrigger className="text-lg hover:no-underline">
-                                    <div className="flex justify-between w-full pr-4">
-                                        <span>Question {parseInt(roundIndex) + 1}: {roundData.questionText}</span>
-                                        <div className="flex gap-4">
-                                            <span className="text-green-500 font-semibold">{correctCount} Correct</span>
-                                            <span className="text-red-500 font-semibold">{incorrectCount} Incorrect</span>
-                                        </div>
-                                    </div>
-                                </AccordionTrigger>
-                                <AccordionContent>
-                                    <ul className="space-y-2 py-2 px-4 bg-secondary/50 rounded-md">
-                                        {roundData.responses.map(res => (
-                                            <li key={res.studentUid} className="flex items-center justify-between p-2 rounded bg-background">
-                                                <span className="font-medium">{res.studentName}</span>
-                                                <div className="flex items-center gap-2">
-                                                    <span>{question.answers[res.answerIndex]}</span>
-                                                    {res.isCorrect ? <CheckCircle className="text-green-500" /> : <XCircle className="text-red-500" />}
-                                                </div>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                    {(battleLogByRound[parseInt(roundIndex) + 1]) && (
-                                        <div className="mt-2 p-2 bg-blue-900/10 rounded-md">
-                                            <h4 className="font-semibold text-sm">Powers Used:</h4>
-                                            <ul className="text-xs text-muted-foreground list-disc list-inside">
-                                                 {battleLogByRound[parseInt(roundIndex) + 1].map((log, index) => (
-                                                    <li key={index}>
-                                                        <span className="font-bold">{log.casterName}</span> used <span className="font-semibold text-primary">{log.powerName}</span>. Effect: {log.description}
-                                                    </li>
-                                                 ))}
-                                            </ul>
-                                        </div>
-                                    )}
-                                </AccordionContent>
-                            </AccordionItem>
-                        )
-                    })}
-                </Accordion>
-            </CardContent>
           </Card>
 
            <Card>
                 <CardHeader>
                     <CardTitle>Overall Battle Totals</CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-wrap justify-around items-center text-center gap-4">
-                    <div className="flex flex-col items-center gap-2 text-green-600 p-2">
-                        <CheckCircle className="h-8 w-8" />
-                        <p className="text-xl font-bold">{totalCorrect}</p>
-                        <p className="text-sm font-medium">Total Correct Answers</p>
+                <CardContent className="flex flex-wrap justify-around items-center text-center gap-6">
+                     <div className="flex flex-col items-center gap-2 p-2">
+                        <Shield className="h-8 w-8 text-blue-500" />
+                        <p className="text-2xl font-bold">{summary.totalBaseDamage ?? 0}</p>
+                        <p className="text-sm font-medium">Base Damage</p>
                     </div>
-                     <div className="flex flex-col items-center gap-2 text-red-600 p-2">
-                        <XCircle className="h-8 w-8" />
-                        <p className="text-xl font-bold">{totalIncorrect}</p>
-                        <p className="text-sm font-medium">Total Incorrect Answers</p>
+                     <div className="flex flex-col items-center gap-2 p-2">
+                        <Sparkles className="h-8 w-8 text-purple-500" />
+                        <p className="text-2xl font-bold">{summary.totalPowerDamage ?? 0}</p>
+                        <p className="text-sm font-medium">Power Damage</p>
                     </div>
-                    {summary.totalDamageDealt !== undefined && (
-                        <div className="flex flex-col items-center gap-2 text-red-800 p-2">
-                            <HeartCrack className="h-8 w-8" />
-                            <p className="text-xl font-bold">{summary.totalDamageDealt}</p>
-                            <p className="text-sm font-medium">Total Damage Dealt</p>
-                        </div>
-                    )}
+                     <div className="flex flex-col items-center gap-2 p-2">
+                        <HeartCrack className="h-8 w-8 text-red-600" />
+                        <p className="text-3xl font-extrabold">{summary.totalDamageDealt ?? 0}</p>
+                        <p className="text-sm font-medium">Total Damage Dealt</p>
+                    </div>
                     {summary.rewards && (
                        <>
-                         <div className="flex flex-col items-center gap-2 text-yellow-500 p-2">
-                           <Star className="h-8 w-8" />
+                         <div className="flex flex-col items-center gap-2 p-2">
+                           <Star className="h-8 w-8 text-yellow-500" />
                            <p className="text-xl font-bold">{totalXpAwarded}</p>
                            <p className="text-sm font-medium">Total XP Awarded</p>
                          </div>
-                         <div className="flex flex-col items-center gap-2 text-amber-600 p-2">
-                           <Coins className="h-8 w-8" />
+                         <div className="flex flex-col items-center gap-2 p-2">
+                           <Coins className="h-8 w-8 text-amber-600" />
                            <p className="text-xl font-bold">{totalGoldAwarded}</p>
                            <p className="text-sm font-medium">Total Gold Awarded</p>
                          </div>
                        </>
                     )}
+                </CardContent>
+            </Card>
+            
+            <Card>
+                 <CardHeader>
+                    <CardTitle>Round-by-Round Breakdown</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Accordion type="single" collapsible className="w-full">
+                        {roundKeys.map((roundIndex) => {
+                            const roundData = summary.resultsByRound[roundIndex];
+                            const question = summary.questions[parseInt(roundIndex)];
+                            const correctCount = roundData.responses.filter(r => r.isCorrect).length;
+                            const incorrectCount = roundData.responses.length - correctCount;
+
+                            return (
+                                <AccordionItem key={roundIndex} value={`item-${roundIndex}`}>
+                                    <AccordionTrigger className="text-lg hover:no-underline">
+                                        <div className="flex justify-between w-full pr-4">
+                                            <span>Question {parseInt(roundIndex) + 1}: {roundData.questionText}</span>
+                                            <div className="flex gap-4">
+                                                <span className="text-green-500 font-semibold">{correctCount} Correct</span>
+                                                <span className="text-red-500 font-semibold">{incorrectCount} Incorrect</span>
+                                            </div>
+                                        </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent>
+                                        <ul className="space-y-2 py-2 px-4 bg-secondary/50 rounded-md">
+                                            {roundData.responses.map(res => (
+                                                <li key={res.studentUid} className="flex items-center justify-between p-2 rounded bg-background">
+                                                    <span className="font-medium">{res.studentName}</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span>{question.answers[res.answerIndex]}</span>
+                                                        {res.isCorrect ? <CheckCircle className="text-green-500" /> : <XCircle className="text-red-500" />}
+                                                    </div>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                        {(battleLogByRound[parseInt(roundIndex) + 1]) && (
+                                            <div className="mt-2 p-2 bg-blue-900/10 rounded-md">
+                                                <h4 className="font-semibold text-sm">Powers Used:</h4>
+                                                <ul className="text-xs text-muted-foreground list-disc list-inside">
+                                                    {battleLogByRound[parseInt(roundIndex) + 1].map((log, index) => (
+                                                        <li key={index}>
+                                                            <span className="font-bold">{log.casterName}</span> used <span className="font-semibold text-primary">{log.powerName}</span>. Effect: {log.description}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                    </AccordionContent>
+                                </AccordionItem>
+                            )
+                        })}
+                    </Accordion>
                 </CardContent>
             </Card>
 
@@ -380,5 +382,3 @@ export default function TeacherBattleSummaryPage() {
     </div>
   );
 }
-
-    
