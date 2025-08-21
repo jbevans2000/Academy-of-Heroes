@@ -215,10 +215,36 @@ export default function CompaniesPage() {
             if (companyLogo) {
                 const storage = getStorage(app);
                 const logoRef = ref(storage, `company-logos/${teacher.uid}/${Date.now()}_${companyLogo.name}`);
-                await uploadString(logoRef, await companyLogo.text(), 'data_url');
-                logoUrl = await getDownloadURL(logoRef);
+                
+                // Convert file to data URL to upload
+                const reader = new FileReader();
+                reader.readAsDataURL(companyLogo);
+                reader.onload = async (event) => {
+                    if (event.target?.result) {
+                        const dataUrl = event.target.result as string;
+                        await uploadString(logoRef, dataUrl, 'data_url');
+                        logoUrl = await getDownloadURL(logoRef);
+                        await saveCompanyData(logoUrl);
+                    }
+                };
+                reader.onerror = (error) => {
+                     throw new Error("Failed to read file for upload.");
+                };
+
+            } else {
+                 await saveCompanyData(logoUrl);
             }
             
+        } catch (error) {
+             console.error("Error saving company: ", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not save the company.' });
+            setIsSaving(false); // Ensure loading state is turned off on error
+        }
+    }
+    
+    const saveCompanyData = async (logoUrl: string) => {
+        if (!teacher) return;
+        try {
             if (editingCompany) {
                 // Update existing company
                 const companyRef = doc(db, 'teachers', teacher.uid, 'companies', editingCompany.id);
@@ -233,11 +259,8 @@ export default function CompaniesPage() {
                 });
                 toast({ title: 'Company Created', description: 'The new company is ready for members.' });
             }
-        } catch (error) {
-             console.error("Error saving company: ", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not save the company.' });
         } finally {
-            setIsSaving(false);
+             setIsSaving(false);
             setIsCompanyDialogOpen(false);
             setEditingCompany(null);
         }
