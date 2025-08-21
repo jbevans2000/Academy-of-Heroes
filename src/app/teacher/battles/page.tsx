@@ -85,6 +85,7 @@ export default function BossBattlesPage() {
         const archiveTimestamp = format(new Date(), "yyyy-MM-dd'T'HH:mm:ss");
         const archiveId = `${archiveTimestamp}-${battle.id}`;
         const archiveRef = doc(db, 'teachers', teacher.uid, 'savedBattles', archiveId);
+        
         batch.set(archiveRef, {
             battleId: battle.id,
             battleName: battle.battleName,
