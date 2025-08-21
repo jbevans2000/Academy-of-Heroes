@@ -35,7 +35,6 @@ export default function BossBattlesPage() {
   const [battles, setBattles] = useState<BossBattle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [startingBattleId, setStartingBattleId] = useState<string | null>(null);
-  const [isCleaning, setIsCleaning] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
   const [teacher, setTeacher] = useState<User | null>(null);
@@ -70,7 +69,6 @@ export default function BossBattlesPage() {
         setIsLoading(false);
     });
     
-    // Return the unsubscribe function for cleanup
     return () => unsubscribe;
 
   }, [teacher, toast]);
@@ -90,7 +88,6 @@ export default function BossBattlesPage() {
             savedAt: new Date(),
         });
 
-        // Create the temporary live battle document
         const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
         batch.set(liveBattleRef, {
             battleId: battle.id,
@@ -149,7 +146,6 @@ export default function BossBattlesPage() {
             title: 'Battle Deleted',
             description: 'The boss battle has been removed successfully.',
         });
-        // No need to call fetchBattles, onSnapshot will update the UI
     } catch (error) {
         console.error("Error deleting battle:", error);
         toast({
@@ -159,32 +155,6 @@ export default function BossBattlesPage() {
         });
     }
   };
-
-  const handleCleanupArchives = async () => {
-    if (!teacher) return;
-    setIsCleaning(true);
-    try {
-        const savedBattlesRef = collection(db, 'teachers', teacher.uid, 'savedBattles');
-        const snapshot = await getDocs(savedBattlesRef);
-        if (snapshot.empty) {
-            toast({ title: 'No Archives Found', description: 'There are no saved battle archives to clean up.' });
-            setIsCleaning(false);
-            return;
-        }
-
-        const batch = writeBatch(db);
-        snapshot.docs.forEach(doc => batch.delete(doc.ref));
-        await batch.commit();
-
-        toast({ title: 'Cleanup Successful', description: `Successfully deleted ${snapshot.size} archived battle(s).` });
-    } catch (error: any) {
-        console.error("Error during summary cleanup:", error);
-        toast({ variant: 'destructive', title: "Cleanup Failed", description: error.message });
-    } finally {
-        setIsCleaning(false);
-    }
-  };
-
 
   const navigateToCreate = () => {
     router.push('/teacher/battles/new');
@@ -220,33 +190,6 @@ export default function BossBattlesPage() {
             </Button>
           </div>
         </div>
-
-        <div className="mb-6">
-             <AlertDialog>
-                <AlertDialogTrigger asChild>
-                    <Button variant="destructive">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Clean Up All Battle Archives
-                    </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                        This will permanently delete all of your saved battle archives. This can be useful for clearing out old data, but it cannot be undone. Student "Songs and Stories" pages will also be cleared.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleCleanupArchives} disabled={isCleaning}>
-                            {isCleaning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Yes, Delete All Archives
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-        </div>
-
 
         {isLoading ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

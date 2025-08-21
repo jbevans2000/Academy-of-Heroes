@@ -3,34 +3,44 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, query, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, query, onSnapshot, writeBatch } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, BookHeart, Swords, RefreshCw, Loader2 } from 'lucide-react';
+import { ArrowLeft, BookHeart, Swords, RefreshCw, Loader2, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { format } from 'date-fns';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface SavedBattleSummary {
   id: string;
   battleName: string;
-  savedAt?: { // Make savedAt optional to handle old documents
+  savedAt?: { 
     seconds: number;
     nanoseconds: number;
   };
   status: 'WAITING' | 'BATTLE_ENDED';
 }
 
-// Helper function to sort summaries safely
 const sortSummaries = (summaries: SavedBattleSummary[]) => {
     return summaries.sort((a, b) => {
         const timeA = a.savedAt ? a.savedAt.seconds : 0;
         const timeB = b.savedAt ? b.savedAt.seconds : 0;
-        return timeB - timeA; // Sort descending
+        return timeB - timeA; 
     });
 };
 
@@ -40,6 +50,7 @@ export default function BattleSummariesPage() {
   const [summaries, setSummaries] = useState<SavedBattleSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isCleaning, setIsCleaning] = useState(false);
   const [teacher, setTeacher] = useState<User | null>(null);
 
   useEffect(() => {
@@ -57,7 +68,6 @@ export default function BattleSummariesPage() {
     setIsRefreshing(true);
     try {
       const summariesRef = collection(db, 'teachers', user.uid, 'savedBattles');
-      // Fetch ALL documents without ordering on the server
       const q = query(summariesRef);
       
       const querySnapshot = await getDocs(q);
@@ -66,7 +76,6 @@ export default function BattleSummariesPage() {
         ...doc.data()
       } as SavedBattleSummary));
       
-      // Sort on the client side
       const sortedSummaries = sortSummaries(summariesData);
       setSummaries(sortedSummaries);
       toast({title: "Archive Refreshed", description: `Found ${sortedSummaries.length} battle archives.`})
@@ -84,7 +93,6 @@ export default function BattleSummariesPage() {
     if (!teacher) return;
   
     const summariesRef = collection(db, 'teachers', teacher.uid, 'savedBattles');
-    // Fetch ALL documents without server-side ordering to avoid missing any.
     const q = query(summariesRef);
   
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -93,7 +101,6 @@ export default function BattleSummariesPage() {
         ...doc.data()
       } as SavedBattleSummary));
       
-      // Perform sorting on the client side
       const sortedSummaries = sortSummaries(summariesData);
       setSummaries(sortedSummaries);
       setIsLoading(false);
@@ -110,6 +117,32 @@ export default function BattleSummariesPage() {
     if (!teacher) return;
     await fetchSummaries(teacher);
   };
+  
+  const handleCleanupArchives = async () => {
+    if (!teacher) return;
+    setIsCleaning(true);
+    try {
+        const savedBattlesRef = collection(db, 'teachers', teacher.uid, 'savedBattles');
+        const snapshot = await getDocs(savedBattlesRef);
+        if (snapshot.empty) {
+            toast({ title: 'No Archives Found', description: 'There are no saved battle archives to clean up.' });
+            setIsCleaning(false);
+            return;
+        }
+
+        const batch = writeBatch(db);
+        snapshot.docs.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+
+        toast({ title: 'Cleanup Successful', description: `Successfully deleted ${snapshot.size} archived battle(s).` });
+    } catch (error: any) {
+        console.error("Error during summary cleanup:", error);
+        toast({ variant: 'destructive', title: "Cleanup Failed", description: error.message });
+    } finally {
+        setIsCleaning(false);
+    }
+  };
+
 
   if (isLoading) {
     return (
@@ -140,10 +173,35 @@ export default function BattleSummariesPage() {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Battle Setup
             </Button>
-            <Button variant="secondary" onClick={handleRefresh} disabled={isRefreshing}>
-              {isRefreshing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-              Refresh the Archive
-            </Button>
+            <div className="flex gap-2">
+                <Button variant="secondary" onClick={handleRefresh} disabled={isRefreshing}>
+                    {isRefreshing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                    Refresh
+                </Button>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" disabled={isCleaning}>
+                            {isCleaning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                            Clear the Battle Archive
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                            This will permanently delete ALL of your saved battle archives. This can be useful for clearing out old data, but it cannot be undone. Student "Songs and Stories" pages will also be cleared.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleCleanupArchives} disabled={isCleaning}>
+                                {isCleaning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Yes, Delete All Archives
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
           </div>
           <Card className="shadow-lg bg-card/80 backdrop-blur-sm">
             <CardHeader className="text-center">
