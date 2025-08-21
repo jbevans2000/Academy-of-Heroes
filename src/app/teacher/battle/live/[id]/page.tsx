@@ -285,15 +285,15 @@ export default function TeacherLiveBattlePage() {
   }, [teacherUid, liveState, liveState?.currentQuestionIndex]);
 
 
-    const generateAndSaveSummary = useCallback(async (finalRoundData: any) => {
-        if (!liveState || !battle || !teacherUid) return;
+    const generateAndSaveSummary = async (finalRoundsData: any, finalLiveState: LiveBattleState) => {
+        if (!battle || !teacherUid) return;
 
-        const fallenAtEnd = finalRoundData.fallenPlayerUids || [];
-        const empoweredAtEnd = finalRoundData.empoweredMageUids || [];
+        const fallenAtEnd = finalLiveState.fallenPlayerUids || [];
+        const empoweredAtEnd = finalLiveState.empoweredMageUids || [];
 
         let totalBaseDamage = 0;
         let totalPowerDamage = 0;
-        Object.values(finalRoundData).forEach((round: any) => {
+        Object.values(finalRoundsData).forEach((round: any) => {
             totalBaseDamage += round.baseDamage || 0;
             totalPowerDamage += round.powerDamage || 0;
         });
@@ -304,8 +304,8 @@ export default function TeacherLiveBattlePage() {
         const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
         const individualResultsByStudent: { [uid: string]: any } = {};
         
-        Object.keys(finalRoundData).forEach(roundIndex => {
-            const roundData = finalRoundData[roundIndex];
+        Object.keys(finalRoundsData).forEach(roundIndex => {
+            const roundData = finalRoundsData[roundIndex];
             if (roundData && roundData.responses) {
                 roundData.responses.forEach((res: any) => {
                     if (!rewardsByStudent[res.studentUid]) {
@@ -388,7 +388,7 @@ export default function TeacherLiveBattlePage() {
             battleId: battle.id,
             battleName: battle?.battleName || '',
             questions: battle?.questions || [],
-            resultsByRound: finalRoundData,
+            resultsByRound: finalRoundsData,
             battleLog: powerLog,
             rewards: rewardsByStudent,
             totalDamageDealt: totalDamage,
@@ -413,9 +413,9 @@ export default function TeacherLiveBattlePage() {
         
         router.push(`/teacher/battle/summary/${summaryRef.id}`);
 
-    }, [battle, liveState, powerLog, router, teacherUid]);
+    };
 
-    const calculateAndSetResults = useCallback(async ({ isDivinationSkip = false, isFinalBattleRound = false }: { isDivinationSkip?: boolean; isFinalBattleRound?: boolean } = {}) => {
+    const calculateAndSetResults = async ({ isDivinationSkip = false, isFinalBattleRound = false }: { isDivinationSkip?: boolean; isFinalBattleRound?: boolean } = {}) => {
         if (!liveState || !battle || !teacherUid || !allStudents.length) return;
     
         const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
@@ -519,7 +519,7 @@ export default function TeacherLiveBattlePage() {
         batch.update(liveBattleRef, updatePayload);
     
         const currentQuestion = battle.questions[liveState.currentQuestionIndex];
-        const newRoundData = {
+        const newRoundsData = {
             ...allRoundsData,
             [liveState.currentQuestionIndex]: {
                 questionText: currentQuestion.questionText,
@@ -534,15 +534,19 @@ export default function TeacherLiveBattlePage() {
                 powerDamage,
             }
         };
-        setAllRoundsData(newRoundData);
+        setAllRoundsData(newRoundsData);
     
         await batch.commit();
     
         if (isFinalBattleRound) {
-            await generateAndSaveSummary(newRoundData);
+            // Refetch liveState to get the absolute latest after batch commit
+            const finalLiveStateSnap = await getDoc(liveBattleRef);
+            if (finalLiveStateSnap.exists()) {
+                await generateAndSaveSummary(newRoundsData, finalLiveStateSnap.data() as LiveBattleState);
+            }
         }
     
-    }, [battle, liveState, teacherUid, allStudents, allRoundsData, generateAndSaveSummary]);
+    };
 
     const performRoundEnd = useCallback(async () => {
         if (!battle || !liveState || !teacherUid || isEndingRound) return;
@@ -1008,6 +1012,7 @@ export default function TeacherLiveBattlePage() {
 
   const handleEndBattle = async () => {
     if (!liveState || !battle || !teacherUid) return;
+    // The new parameter will trigger the final save sequence within calculateAndSetResults
     await calculateAndSetResults({ isFinalBattleRound: true });
   };
   
