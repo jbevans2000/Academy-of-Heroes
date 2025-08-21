@@ -9,7 +9,7 @@ import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from 'fir
 import { db, auth, app } from '@/lib/firebase';
 import type { Student, Company } from '@/lib/data';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,8 +17,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, Upload, Users, Briefcase } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, Upload, Users, Briefcase, X } from 'lucide-react';
 import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 const CompanyCard = ({ company, students, onEdit, onDelete, onDrop, onRemoveStudent }: {
     company: Company;
@@ -216,21 +217,29 @@ export default function CompaniesPage() {
                 const storage = getStorage(app);
                 const logoRef = ref(storage, `company-logos/${teacher.uid}/${Date.now()}_${companyLogo.name}`);
                 
-                // Convert file to data URL to upload
                 const reader = new FileReader();
                 reader.readAsDataURL(companyLogo);
                 reader.onload = async (event) => {
                     if (event.target?.result) {
                         const dataUrl = event.target.result as string;
-                        await uploadString(logoRef, dataUrl, 'data_url');
-                        logoUrl = await getDownloadURL(logoRef);
-                        await saveCompanyData(logoUrl);
+                        try {
+                            await uploadString(logoRef, dataUrl, 'data_url');
+                            logoUrl = await getDownloadURL(logoRef);
+                            await saveCompanyData(logoUrl);
+                        } catch(uploadError) {
+                            console.error("Error during logo upload and data save: ", uploadError);
+                            toast({ variant: 'destructive', title: 'Error', description: 'Could not upload the logo and save the company.' });
+                            setIsSaving(false);
+                        }
+                    } else {
+                        throw new Error("Failed to read file for upload.");
                     }
                 };
                 reader.onerror = (error) => {
-                     throw new Error("Failed to read file for upload.");
+                    console.error("File reading error: ", error);
+                    toast({ variant: 'destructive', title: 'Error', description: 'Could not read the selected file.' });
+                    setIsSaving(false);
                 };
-
             } else {
                  await saveCompanyData(logoUrl);
             }
@@ -238,31 +247,31 @@ export default function CompaniesPage() {
         } catch (error) {
              console.error("Error saving company: ", error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not save the company.' });
-            setIsSaving(false); // Ensure loading state is turned off on error
+            setIsSaving(false);
         }
     }
     
     const saveCompanyData = async (logoUrl: string) => {
         if (!teacher) return;
         try {
+            const companyData = { name: companyName, logoUrl };
             if (editingCompany) {
-                // Update existing company
                 const companyRef = doc(db, 'teachers', teacher.uid, 'companies', editingCompany.id);
-                await updateDoc(companyRef, { name: companyName, logoUrl });
+                await updateDoc(companyRef, companyData);
                 toast({ title: 'Company Updated', description: 'The company details have been saved.' });
             } else {
-                // Create new company
                 await addDoc(collection(db, 'teachers', teacher.uid, 'companies'), {
-                    name: companyName,
-                    logoUrl,
+                    ...companyData,
                     createdAt: serverTimestamp(),
                 });
                 toast({ title: 'Company Created', description: 'The new company is ready for members.' });
             }
         } finally {
-             setIsSaving(false);
+            setIsSaving(false);
             setIsCompanyDialogOpen(false);
             setEditingCompany(null);
+            setCompanyLogo(null);
+            setCompanyName('');
         }
     }
 
@@ -325,7 +334,15 @@ export default function CompaniesPage() {
                         </div>
                          <div className="space-y-2">
                             <Label htmlFor="company-logo">Company Logo</Label>
-                            <Input id="company-logo" type="file" accept="image/*" onChange={(e) => setCompanyLogo(e.target.files ? e.target.files[0] : null)} />
+                            <div className="flex items-center gap-2">
+                                <Label htmlFor="company-logo-upload" className={cn(buttonVariants({ variant: 'secondary' }), "cursor-pointer")}>
+                                    <Upload className="mr-2 h-4 w-4" />
+                                    Choose File
+                                </Label>
+                                <Input id="company-logo-upload" type="file" accept="image/*" className="hidden" onChange={(e) => setCompanyLogo(e.target.files ? e.target.files[0] : null)} />
+                                {companyLogo && <p className="text-sm text-muted-foreground">{companyLogo.name}</p>}
+                                {companyLogo && <Button variant="ghost" size="icon" onClick={() => setCompanyLogo(null)}><X className="h-4 w-4" /></Button>}
+                            </div>
                         </div>
                     </div>
                     <DialogFooter>
