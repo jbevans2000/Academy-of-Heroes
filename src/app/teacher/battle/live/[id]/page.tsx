@@ -883,25 +883,20 @@ export default function TeacherLiveBattlePage() {
     // Ensure the final round's results are calculated if not already
     if (liveState.status !== 'SHOWING_RESULTS') {
         await calculateAndSetResults();
-        // Give Firestore time to process the last write before we read it.
         await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-    
-    const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
-    const finalStateDoc = await getDoc(liveBattleRef);
-
-    if (!finalStateDoc.exists()) {
-        toast({ title: "Error ending battle", description: "Live battle document disappeared.", variant: 'destructive' });
-        return;
     }
 
     const batch = writeBatch(db);
-    const finalStateData = finalStateDoc.data();
-    const totalDamage = finalStateData?.totalDamage || 0;
-    const totalBaseDamage = finalStateData?.totalBaseDamage || 0;
-    const totalPowerDamage = finalStateData?.totalPowerDamage || 0;
-    const fallenAtEnd = finalStateData?.fallenPlayerUids || [];
-    const empoweredAtEnd = finalStateData?.empoweredMageUids || [];
+
+    const totalBaseDamage = Object.values(allRoundsData).reduce((acc, round: any) => acc + round.responses.filter((r: any) => r.isCorrect).length, 0);
+    const totalPowerDamage = powerLog.reduce((acc, log) => {
+        const match = log.description.match(/Dealt (\d+) damage/);
+        return match ? acc + parseInt(match[1], 10) : acc;
+    }, 0);
+    const totalDamage = totalBaseDamage + totalPowerDamage;
+    const fallenAtEnd = allStudents.filter(s => s.hp <= 0).map(s => s.uid);
+    const empoweredAtEnd = liveState.empoweredMageUids || [];
+    
     await logGameEvent(teacherUid, 'BOSS_BATTLE', `The party dealt a total of ${totalDamage} damage during '${battle.battleName}'.`);
 
     const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
@@ -984,7 +979,7 @@ export default function TeacherLiveBattlePage() {
         }
     }
 
-    const summaryRef = doc(db, 'teachers', teacherUid, `battleSummaries`, battleId);
+    const summaryRef = doc(db, 'teachers', teacherUid, `teacherSummaries`, battleId);
     batch.set(summaryRef, {
         battleId: battleId,
         battleName: battle?.battleName || '',
@@ -1000,6 +995,7 @@ export default function TeacherLiveBattlePage() {
     });
     
     // Automatic Cleanup
+    const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
     const subcollections = ['responses', 'powerActivations', 'battleLog', 'messages'];
     for (const sub of subcollections) {
         const subRef = collection(liveBattleRef, sub);
@@ -1253,3 +1249,5 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
+
+    

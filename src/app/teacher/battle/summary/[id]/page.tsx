@@ -93,7 +93,7 @@ export default function TeacherBattleSummaryPage() {
 
     const fetchSummary = async () => {
       setIsLoading(true);
-      const summaryRef = doc(db, 'teachers', teacher.uid, 'battleSummaries', battleId);
+      const summaryRef = doc(db, 'teachers', teacher.uid, 'teacherSummaries', battleId);
       const docSnap = await getDoc(summaryRef);
 
       if (docSnap.exists()) {
@@ -118,7 +118,7 @@ export default function TeacherBattleSummaryPage() {
 
         // Define paths
         const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
-        const summaryRef = doc(db, 'teachers', teacher.uid, 'battleSummaries', battleId);
+        const summaryRef = doc(db, 'teachers', teacher.uid, 'teacherSummaries', battleId);
 
         // Clean up subcollections of live battle
         const subcollections = ['responses', 'powerActivations', 'battleLog', 'messages'];
@@ -241,7 +241,10 @@ export default function TeacherBattleSummaryPage() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleCleanupBattle}>Confirm & Clear Battlefield</AlertDialogAction>
+                        <AlertDialogAction onClick={handleCleanupBattle} disabled={isCleaning}>
+                            {isCleaning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Confirm & Clear Battlefield
+                        </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
@@ -377,3 +380,5 @@ export default function TeacherBattleSummaryPage() {
     </div>
   );
 }
+
+    
