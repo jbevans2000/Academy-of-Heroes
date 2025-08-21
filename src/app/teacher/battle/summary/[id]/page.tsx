@@ -10,7 +10,7 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Sparkles, ScrollText, Trash2, Loader2, Swords, Shield, Skull } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Sparkles, ScrollText, Trash2, Loader2, Swords, Shield, Skull, Download } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { logGameEvent } from '@/lib/gamelog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { downloadCsv } from '@/lib/utils';
+import type { Student } from '@/lib/data';
 
 interface Question {
   questionText: string;
@@ -83,7 +85,7 @@ export default function TeacherBattleSummaryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCleaning, setIsCleaning] = useState(false);
   const [teacher, setTeacher] = useState<User | null>(null);
-  const [allStudents, setAllStudents] = useState<any[]>([]);
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -132,7 +134,7 @@ export default function TeacherBattleSummaryPage() {
             // 4. Fetch all students for mapping UIDs to names
             const studentsRef = collection(db, 'teachers', teacher.uid, 'students');
             const studentsSnapshot = await getDocs(studentsRef);
-            setAllStudents(studentsSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() })));
+            setAllStudents(studentsSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student)));
 
 
         } catch (error) {
@@ -184,6 +186,38 @@ export default function TeacherBattleSummaryPage() {
     } finally {
         setIsCleaning(false);
     }
+  };
+  
+  const handleDownloadCsv = () => {
+    if (!summary || allRounds.length === 0) {
+        toast({ variant: 'destructive', title: 'No Data', description: 'There is no data to download.' });
+        return;
+    }
+
+    const headers = ['Round', 'Student Name', 'Character Name', 'Question', 'Student Answer', 'Correct Answer', 'Result'];
+    const data: string[][] = [];
+
+    allRounds.forEach(round => {
+        const question = summary.questions[round.currentQuestionIndex];
+        if (!question) return;
+
+        round.responses.forEach(res => {
+            const studentInfo = allStudents.find(s => s.uid === res.studentUid);
+            const row = [
+                String(round.currentQuestionIndex + 1),
+                studentInfo?.studentName ?? 'Unknown',
+                res.characterName,
+                `"${question.questionText.replace(/"/g, '""')}"`,
+                `"${question.answers[res.answerIndex].replace(/"/g, '""')}"`,
+                `"${question.answers[question.correctAnswerIndex].replace(/"/g, '""')}"`,
+                res.isCorrect ? 'Correct' : 'Incorrect',
+            ];
+            data.push(row);
+        });
+    });
+
+    const filename = `battle_summary_${summary.battleName.replace(/ /g, '_')}.csv`;
+    downloadCsv(data, headers, filename);
   };
 
 
@@ -342,29 +376,35 @@ export default function TeacherBattleSummaryPage() {
                   Return to Dashboard
                 </Button>
             </div>
-             <AlertDialog>
-                <AlertDialogTrigger asChild>
-                    <Button variant="destructive" disabled={isCleaning}>
-                        {isCleaning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                        Clear This Archive
-                    </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Clear This Battle Archive?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                           This will permanently delete this battle's saved data. This action cannot be undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleCleanupBattle} disabled={isCleaning}>
-                            {isCleaning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Confirm & Clear
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+             <div className="flex items-center gap-4">
+                <Button variant="secondary" onClick={handleDownloadCsv}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Download Full Report
+                </Button>
+                 <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" disabled={isCleaning}>
+                            {isCleaning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                            Clear This Archive
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Clear This Battle Archive?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                               This will permanently delete this battle's saved data. This action cannot be undone.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleCleanupBattle} disabled={isCleaning}>
+                                {isCleaning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Confirm & Clear
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
           </div>
          
           <Card className="shadow-lg">
@@ -489,4 +529,5 @@ export default function TeacherBattleSummaryPage() {
     </div>
   );
 }
+
 
