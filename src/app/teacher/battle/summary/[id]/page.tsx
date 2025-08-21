@@ -276,10 +276,11 @@ export default function TeacherBattleSummaryPage() {
   const battleLogByRound: { [round: number]: PowerLogEntry[] } = {};
   if (summary.powerLog) {
       summary.powerLog.forEach(log => {
-          if (!battleLogByRound[log.round]) {
-              battleLogByRound[log.round] = [];
+          const roundKey = log.round - 1; // Align with 0-based index of rounds
+          if (!battleLogByRound[roundKey]) {
+              battleLogByRound[roundKey] = [];
           }
-          battleLogByRound[log.round].push(log);
+          battleLogByRound[roundKey].push(log);
       });
   }
   
@@ -372,6 +373,7 @@ export default function TeacherBattleSummaryPage() {
                             if (!question) return null;
                             const correctCount = roundData.responses.filter(r => r.isCorrect).length;
                             const incorrectCount = roundData.responses.length - correctCount;
+                            const roundLog = battleLogByRound[roundData.currentQuestionIndex] || [];
 
                             return (
                                 <AccordionItem key={roundData.id} value={roundData.id}>
@@ -396,6 +398,18 @@ export default function TeacherBattleSummaryPage() {
                                                 </li>
                                             ))}
                                         </ul>
+                                        {(roundLog.length > 0) && (
+                                            <div className="mt-2 p-2 bg-blue-900/10 rounded-md">
+                                                <h4 className="font-semibold text-sm flex items-center gap-2"><ScrollText className="w-4 h-4"/> Powers Used This Round:</h4>
+                                                <ul className="text-xs text-muted-foreground list-disc list-inside mt-1 space-y-1">
+                                                    {roundLog.map((log, index) => (
+                                                        <li key={index}>
+                                                          <span className="font-bold">{log.casterName}</span> used <span className="font-semibold text-primary">{log.powerName}</span>.
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
                                         {(roundData.lastRoundPowersUsed && roundData.lastRoundPowersUsed.length > 0) && (
                                             <div className="mt-2 p-2 bg-blue-900/10 rounded-md">
                                                 <h4 className="font-semibold text-sm">Powers Used:</h4>
@@ -438,4 +452,3 @@ export default function TeacherBattleSummaryPage() {
     </div>
   );
 }
-
