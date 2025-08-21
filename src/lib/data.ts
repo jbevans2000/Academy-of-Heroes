@@ -1,5 +1,12 @@
 
+
 export type ClassType = 'Guardian' | 'Healer' | 'Mage' | '';
+
+export type Company = {
+    id: string;
+    name: string;
+    logoUrl?: string;
+}
 
 export type Student = {
     uid: string;
@@ -25,6 +32,7 @@ export type Student = {
         status: 'online' | 'offline';
         lastSeen: any; // Firestore ServerTimestamp
     };
+    companyId?: string; // New field
 }
 
 export type PendingStudent = {
