@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, doc, writeBatch, deleteDoc, setDoc, onSnapshot, query, addDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, writeBatch, deleteDoc, setDoc, onSnapshot, query, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
@@ -74,7 +75,7 @@ export default function BossBattlesPage() {
 
   }, [teacher, toast]);
 
-  const handleStartIndividualBattle = async (battle: BossBattle) => {
+  const handleStartBattle = async (battle: BossBattle) => {
     if (!teacher) return;
     setStartingBattleId(battle.id);
     try {
@@ -187,7 +188,7 @@ export default function BossBattlesPage() {
                         <span className="font-semibold text-black">Group Battle</span>
                         <span className="text-xs text-black whitespace-normal">Teacher-led on a single screen.</span>
                     </Button>
-                     <Button variant="outline" className="h-24 flex-col gap-2 p-2" onClick={() => handleStartIndividualBattle(selectedBattleForStart!)}>
+                     <Button variant="outline" className="h-24 flex-col gap-2 p-2" onClick={() => handleStartBattle(selectedBattleForStart!)}>
                         {startingBattleId === selectedBattleForStart?.id ? (
                             <Loader2 className="h-8 w-8 animate-spin" />
                         ) : (
@@ -215,7 +216,7 @@ export default function BossBattlesPage() {
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">The Monster Compendium</h1>
+          <h1 className="text-3xl font-bold">The Field of Battle</h1>
           <div className="flex gap-2">
              <Button onClick={() => router.push('/teacher/battles/summary')} variant="secondary">
                 <BookHeart className="mr-2 h-5 w-5" />
