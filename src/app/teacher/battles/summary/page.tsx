@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, query, onSnapshot, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, onSnapshot, writeBatch } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
@@ -25,21 +25,35 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-interface SavedBattleSummary {
+
+interface IndividualBattleSummary {
   id: string;
   battleName: string;
   savedAt?: { 
     seconds: number;
     nanoseconds: number;
   };
+  startedAt?: any; // Keep for sorting
   status: 'WAITING' | 'BATTLE_ENDED';
 }
 
-const sortSummaries = (summaries: SavedBattleSummary[]) => {
+interface GroupBattleSummary {
+    id: string;
+    battleName: string;
+    score: number;
+    totalQuestions: number;
+    completedAt: {
+        seconds: number;
+        nanoseconds: number;
+    };
+}
+
+const sortSummaries = (summaries: IndividualBattleSummary[]) => {
     return summaries.sort((a, b) => {
-        const timeA = a.savedAt ? a.savedAt.seconds : 0;
-        const timeB = b.savedAt ? b.savedAt.seconds : 0;
+        const timeA = a.startedAt?.seconds ?? a.savedAt?.seconds ?? 0;
+        const timeB = b.startedAt?.seconds ?? b.savedAt?.seconds ?? 0;
         return timeB - timeA; 
     });
 };
@@ -47,7 +61,9 @@ const sortSummaries = (summaries: SavedBattleSummary[]) => {
 export default function BattleSummariesPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [summaries, setSummaries] = useState<SavedBattleSummary[]>([]);
+  const [individualSummaries, setIndividualSummaries] = useState<IndividualBattleSummary[]>([]);
+  const [groupSummaries, setGroupSummaries] = useState<GroupBattleSummary[]>([]);
+
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isCleaning, setIsCleaning] = useState(false);
@@ -64,58 +80,51 @@ export default function BattleSummariesPage() {
     return () => unsubscribe();
   }, [router]);
 
-  const fetchSummaries = useCallback(async (user: User) => {
-    setIsRefreshing(true);
-    try {
-      const summariesRef = collection(db, 'teachers', user.uid, 'savedBattles');
-      const q = query(summariesRef);
-      
-      const querySnapshot = await getDocs(q);
-      const summariesData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as SavedBattleSummary));
-      
-      const sortedSummaries = sortSummaries(summariesData);
-      setSummaries(sortedSummaries);
-      toast({title: "Archive Refreshed", description: `Found ${sortedSummaries.length} battle archives.`})
-
-    } catch (error) {
-      console.error("Error fetching summaries:", error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch battle summaries.' });
-    } finally {
-      setIsRefreshing(false);
-    }
+  const fetchIndividualSummaries = useCallback((user: User) => {
+    const summariesRef = collection(db, 'teachers', user.uid, 'savedBattles');
+    const q = query(summariesRef);
+    return onSnapshot(q, (querySnapshot) => {
+        const summariesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as IndividualBattleSummary));
+        setIndividualSummaries(sortSummaries(summariesData));
+    }, (error) => {
+        console.error("Error fetching individual summaries:", error);
+        toast({ variant: 'destructive', title: 'Connection Error', description: 'Could not listen for individual battle updates.' });
+    });
   }, [toast]);
 
+  const fetchGroupSummaries = useCallback((user: User) => {
+    const summariesRef = collection(db, 'teachers', user.uid, 'groupBattleSummaries');
+    const q = query(summariesRef, orderBy('completedAt', 'desc'));
+     return onSnapshot(q, (querySnapshot) => {
+        const summariesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GroupBattleSummary));
+        setGroupSummaries(summariesData);
+    }, (error) => {
+        console.error("Error fetching group summaries:", error);
+        toast({ variant: 'destructive', title: 'Connection Error', description: 'Could not listen for group battle updates.' });
+    });
+  }, [toast]);
 
   useEffect(() => {
     if (!teacher) return;
-  
-    const summariesRef = collection(db, 'teachers', teacher.uid, 'savedBattles');
-    const q = query(summariesRef);
-  
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const summariesData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as SavedBattleSummary));
-      
-      const sortedSummaries = sortSummaries(summariesData);
-      setSummaries(sortedSummaries);
-      setIsLoading(false);
-    }, (error) => {
-      console.error("Error with real-time listener:", error);
-      toast({ variant: 'destructive', title: 'Connection Error', description: 'Could not listen for real-time updates.' });
-      setIsLoading(false);
-    });
-  
-    return () => unsubscribe();
-  }, [teacher, toast]);
+    setIsLoading(true);
+    const unsubIndividual = fetchIndividualSummaries(teacher);
+    const unsubGroup = fetchGroupSummaries(teacher);
+    setIsLoading(false);
+    return () => {
+        unsubIndividual();
+        unsubGroup();
+    };
+  }, [teacher, fetchIndividualSummaries, fetchGroupSummaries]);
 
   const handleRefresh = async () => {
     if (!teacher) return;
-    await fetchSummaries(teacher);
+    setIsRefreshing(true);
+    await Promise.all([
+        getDocs(query(collection(db, 'teachers', teacher.uid, 'savedBattles'))),
+        getDocs(query(collection(db, 'teachers', teacher.uid, 'groupBattleSummaries'))),
+    ]);
+    setIsRefreshing(false);
+    toast({title: "Archive Refreshed", description: "The list of battle archives is up to date."})
   };
   
   const handleCleanupArchives = async () => {
@@ -123,18 +132,22 @@ export default function BattleSummariesPage() {
     setIsCleaning(true);
     try {
         const savedBattlesRef = collection(db, 'teachers', teacher.uid, 'savedBattles');
-        const snapshot = await getDocs(savedBattlesRef);
-        if (snapshot.empty) {
+        const groupBattlesRef = collection(db, 'teachers', teacher.uid, 'groupBattleSummaries');
+        const savedSnapshot = await getDocs(savedBattlesRef);
+        const groupSnapshot = await getDocs(groupBattlesRef);
+        
+        if (savedSnapshot.empty && groupSnapshot.empty) {
             toast({ title: 'No Archives Found', description: 'There are no saved battle archives to clean up.' });
             setIsCleaning(false);
             return;
         }
 
         const batch = writeBatch(db);
-        snapshot.docs.forEach(doc => batch.delete(doc.ref));
+        savedSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+        groupSnapshot.docs.forEach(doc => batch.delete(doc.ref));
         await batch.commit();
 
-        toast({ title: 'Cleanup Successful', description: `Successfully deleted ${snapshot.size} archived battle(s).` });
+        toast({ title: 'Cleanup Successful', description: `Successfully deleted ${savedSnapshot.size + groupSnapshot.size} archived battle(s).` });
     } catch (error: any) {
         console.error("Error during summary cleanup:", error);
         toast({ variant: 'destructive', title: "Cleanup Failed", description: error.message });
@@ -182,14 +195,14 @@ export default function BattleSummariesPage() {
                     <AlertDialogTrigger asChild>
                         <Button variant="destructive" disabled={isCleaning}>
                             {isCleaning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                            Clear the Battle Archive
+                            Clear All Archives
                         </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
                             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                             <AlertDialogDescription>
-                            This will permanently delete ALL of your saved battle archives. This can be useful for clearing out old data, but it cannot be undone. Student "Songs and Stories" pages will also be cleared.
+                            This will permanently delete ALL of your saved battle archives (both individual and group). This cannot be undone.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -213,36 +226,61 @@ export default function BattleSummariesPage() {
                 Review the tales of your guild's past battles.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {summaries.length === 0 && !isLoading ? (
-                <div className="text-center py-10 px-6 bg-secondary/50 rounded-lg">
-                  <h3 className="text-xl font-semibold">Your Guild Has No History of Battle!</h3>
-                  <p className="text-muted-foreground mt-2">
-                    Once you complete a boss battle, a summary report will be archived here.
-                  </p>
-                  <Button className="mt-4" onClick={() => router.push('/teacher/battles')}>
-                      <Swords className="mr-2 h-4 w-4" /> Go to Battles
-                  </Button>
-                </div>
-              ) : (
-                summaries.map(summary => (
-                  <Link key={summary.id} href={`/teacher/battle/summary/${summary.id}`} passHref>
-                    <div className="block border p-4 rounded-lg hover:bg-primary/10 transition-colors cursor-pointer">
-                      <div className="flex justify-between items-center">
-                        <div>
-                            <h3 className="font-semibold text-lg">{summary.battleName}</h3>
-                             <p className="text-sm text-muted-foreground">
-                              {summary.status === 'BATTLE_ENDED' ? 'Concluded' : 'In Progress / Ended Early'}
-                            </p>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {summary.savedAt ? format(new Date(summary.savedAt.seconds * 1000), 'PPPp') : 'Date unknown'}
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
-                ))
-              )}
+            <CardContent>
+                <Tabs defaultValue="individual" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="individual">Individual Battles</TabsTrigger>
+                        <TabsTrigger value="group">Group Battles</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="individual" className="mt-4 space-y-4">
+                        {individualSummaries.length === 0 ? (
+                            <div className="text-center py-10 px-6 bg-secondary/50 rounded-lg">
+                                <h3 className="text-xl font-semibold">No Individual Battles Found</h3>
+                                <p className="text-muted-foreground mt-2">Completed Individual Battles will be recorded here.</p>
+                            </div>
+                        ) : (
+                            individualSummaries.map(summary => (
+                                <Link key={summary.id} href={`/teacher/battle/summary/${summary.id}`} passHref>
+                                    <div className="block border p-4 rounded-lg hover:bg-primary/10 transition-colors cursor-pointer">
+                                        <div className="flex justify-between items-center">
+                                            <div>
+                                                <h3 className="font-semibold text-lg">{summary.battleName}</h3>
+                                                <p className="text-sm text-muted-foreground">
+                                                {summary.status === 'BATTLE_ENDED' ? 'Concluded' : 'In Progress / Ended Early'}
+                                                </p>
+                                            </div>
+                                            <p className="text-sm text-muted-foreground">
+                                            {(summary.startedAt || summary.savedAt) ? format(new Date((summary.startedAt || summary.savedAt)!.seconds * 1000), 'PPPp') : 'Date unknown'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </Link>
+                            ))
+                        )}
+                    </TabsContent>
+                    <TabsContent value="group" className="mt-4 space-y-4">
+                         {groupSummaries.length === 0 ? (
+                            <div className="text-center py-10 px-6 bg-secondary/50 rounded-lg">
+                                <h3 className="text-xl font-semibold">No Group Battles Found</h3>
+                                <p className="text-muted-foreground mt-2">Saved Group Battle summaries will be recorded here.</p>
+                            </div>
+                        ) : (
+                           groupSummaries.map(summary => (
+                                <div key={summary.id} className="block border p-4 rounded-lg">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <h3 className="font-semibold text-lg">{summary.battleName}</h3>
+                                            <p className="font-bold text-xl">Score: {summary.score} / {summary.totalQuestions}</p>
+                                        </div>
+                                        <p className="text-sm text-muted-foreground">
+                                            {summary.completedAt ? format(new Date(summary.completedAt.seconds * 1000), 'PPPp') : 'Date unknown'}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </TabsContent>
+                </Tabs>
             </CardContent>
           </Card>
         </div>
