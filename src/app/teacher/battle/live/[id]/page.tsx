@@ -257,9 +257,10 @@ export default function TeacherLiveBattlePage() {
   
   // Real-time listener for current round responses
   useEffect(() => {
-      if (!teacherUid || !liveState || liveState.status !== 'IN_PROGRESS' && liveState.status !== 'ROUND_ENDING' && liveState.status !== 'SHOWING_RESULTS') {
+      if (!teacherUid || !liveState) {
           return;
       }
+      
       const roundDocRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${liveState.currentQuestionIndex}`);
 
       const unsubscribe = onSnapshot(roundDocRef, (docSnap) => {
@@ -281,7 +282,7 @@ export default function TeacherLiveBattlePage() {
       });
 
       return () => unsubscribe();
-  }, [teacherUid, liveState, liveState?.currentQuestionIndex, liveState?.status]);
+  }, [teacherUid, liveState, liveState?.currentQuestionIndex]);
 
 
     const calculateAndSetResults = useCallback(async (isDivinationSkip: boolean = false) => {
@@ -950,9 +951,9 @@ export default function TeacherLiveBattlePage() {
             if (newLevel > currentLevel) {
                 const levelsGained = newLevel - currentLevel;
                 updates.level = newLevel;
-                updates.hp = studentData.hp + calculateHpGain(studentData.class, levelsGained);
+                updates.hp = (studentData.hp || 0) + calculateHpGain(studentData.class, levelsGained);
                 updates.maxHp = calculateBaseMaxHp(studentData.class, newLevel, 'hp');
-                updates.mp = studentData.mp + calculateMpGain(studentData.class, levelsGained);
+                updates.mp = (studentData.mp || 0) + calculateMpGain(studentData.class, levelsGained);
                 updates.maxMp = calculateBaseMaxHp(studentData.class, newLevel, 'mp');
             }
             batch.update(studentRef, updates);
@@ -1060,7 +1061,7 @@ export default function TeacherLiveBattlePage() {
   
   const isWaitingToStart = liveState.status === 'WAITING';
   const isRoundInProgress = liveState.status === 'IN_PROGRESS' || liveState.status === 'ROUND_ENDING';
-  const isRoundEnding = liveState.status === 'ROUND_ENDING';
+  const isRoundEndingStatus = liveState.status === 'ROUND_ENDING';
   const areResultsShowing = liveState.status === 'SHOWING_RESULTS';
   const isLastQuestion = liveState.currentQuestionIndex >= battle.questions.length - 1;
   const expiryTimestamp = liveState.timerEndsAt ? new Date(liveState.timerEndsAt.seconds * 1000) : null;
@@ -1118,8 +1119,8 @@ export default function TeacherLiveBattlePage() {
                                 {isWaitingToStart && (
                                     <Button onClick={handleStartFirstQuestion} size="lg">Start First Question</Button>
                                 )}
-                                <Button onClick={handleEndRound} disabled={!isRoundInProgress || isEndingRound}>
-                                    {isEndingRound ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                <Button onClick={handleEndRound} disabled={!isRoundInProgress || isRoundEndingStatus}>
+                                    {isRoundEndingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                     End Round
                                 </Button>
                                 <Button onClick={handleNextQuestion} disabled={!areResultsShowing || isLastQuestion || isAdvancing}>
@@ -1190,7 +1191,7 @@ export default function TeacherLiveBattlePage() {
                         </Button>
                     </CardHeader>
                     <CardContent>
-                        {isRoundEnding && expiryTimestamp && <CountdownTimer expiryTimestamp={expiryTimestamp} />}
+                        {isRoundEndingStatus && expiryTimestamp && <CountdownTimer expiryTimestamp={expiryTimestamp} />}
                         <RoundResults results={roundResults} />
                          {(areResultsShowing && liveState.lastRoundDamage !== undefined) && (
                             <div className="mt-4 p-4 rounded-md bg-sky-900/70 border border-sky-700 text-sky-200 flex flex-col gap-4">
