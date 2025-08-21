@@ -402,7 +402,7 @@ export default function TeacherLiveBattlePage() {
                     isCorrect: r.isCorrect,
                 })),
                 powersUsed: powersUsedThisRound,
-                baseDamage: baseDamage, // Store this round's damages
+                baseDamage,
                 powerDamage,
             }
         }));
@@ -995,8 +995,8 @@ export default function TeacherLiveBattlePage() {
         battleLog: powerLog,
         rewards: rewardsByStudent,
         totalDamageDealt: totalDamage,
-        totalBaseDamage: totalBaseDamage,
-        totalPowerDamage: totalPowerDamage,
+        totalBaseDamage,
+        totalPowerDamage,
         fallenAtEnd: fallenAtEnd,
         endedAt: serverTimestamp(),
     });
