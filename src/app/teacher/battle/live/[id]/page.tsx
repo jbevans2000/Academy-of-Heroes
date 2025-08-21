@@ -285,33 +285,162 @@ export default function TeacherLiveBattlePage() {
   }, [teacherUid, liveState, liveState?.currentQuestionIndex]);
 
 
-    const calculateAndSetResults = useCallback(async (isDivinationSkip: boolean = false) => {
-        if (!liveState || !battle || !teacherUid || !allStudents.length) return;
+    const generateAndSaveSummary = useCallback(async (finalRoundData: any) => {
+        if (!liveState || !battle || !teacherUid) return;
 
-        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
+        const fallenAtEnd = finalRoundData.fallenPlayerUids || [];
+        const empoweredAtEnd = finalRoundData.empoweredMageUids || [];
+
+        let totalBaseDamage = 0;
+        let totalPowerDamage = 0;
+        Object.values(finalRoundData).forEach((round: any) => {
+            totalBaseDamage += round.baseDamage || 0;
+            totalPowerDamage += round.powerDamage || 0;
+        });
+        const totalDamage = totalBaseDamage + totalPowerDamage;
+        
+        await logGameEvent(teacherUid, 'BOSS_BATTLE', `The party dealt a total of ${totalDamage} damage during '${battle.battleName}'.`);
+
+        const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
+        const individualResultsByStudent: { [uid: string]: any } = {};
+        
+        Object.keys(finalRoundData).forEach(roundIndex => {
+            const roundData = finalRoundData[roundIndex];
+            if (roundData && roundData.responses) {
+                roundData.responses.forEach((res: any) => {
+                    if (!rewardsByStudent[res.studentUid]) {
+                        rewardsByStudent[res.studentUid] = { xpGained: 0, goldGained: 0 };
+                    }
+                    if (res.isCorrect) {
+                        rewardsByStudent[res.studentUid].xpGained += 5;
+                        rewardsByStudent[res.studentUid].goldGained += 10;
+                    }
+
+                    if (!individualResultsByStudent[res.studentUid]) {
+                        individualResultsByStudent[res.studentUid] = {};
+                    }
+                    individualResultsByStudent[res.studentUid][roundIndex] = {
+                        questionText: roundData.questionText,
+                        responses: [res] // Array with only this student's response
+                    };
+                });
+            }
+        });
+
         const batch = writeBatch(db);
 
+        for (const uid in rewardsByStudent) {
+            if (fallenAtEnd.includes(uid)) continue; 
+
+            const studentRef = doc(db, 'teachers', teacherUid, 'students', uid);
+            const studentSnap = await getDoc(studentRef);
+            if (studentSnap.exists()) {
+                const studentData = studentSnap.data() as Student;
+                const { xpGained, goldGained } = rewardsByStudent[uid];
+
+                const currentXp = studentData.xp || 0;
+                const newXp = currentXp + xpGained;
+                const currentLevel = studentData.level || 1;
+                const newLevel = calculateLevel(newXp);
+                
+                const updates: any = {
+                    xp: newXp,
+                    gold: (studentData.gold || 0) + goldGained,
+                };
+
+                if (newLevel > currentLevel) {
+                    const levelsGained = newLevel - currentLevel;
+                    updates.level = newLevel;
+                    updates.hp = (studentData.hp || 0) + calculateHpGain(studentData.class, levelsGained);
+                    updates.maxHp = calculateBaseMaxHp(studentData.class, newLevel, 'hp');
+                    updates.mp = (studentData.mp || 0) + calculateMpGain(studentData.class, levelsGained);
+                    updates.maxMp = calculateBaseMaxHp(studentData.class, newLevel, 'mp');
+                }
+                batch.update(studentRef, updates);
+                
+                const studentSummaryRef = doc(collection(db, 'teachers', teacherUid, 'students', uid, 'battleSummaries'));
+                batch.set(studentSummaryRef, {
+                    battleId: battle.id,
+                    battleName: battle?.battleName || '',
+                    endedAt: serverTimestamp(),
+                    xpGained: xpGained,
+                    goldGained: goldGained,
+                    questions: battle?.questions || [],
+                    resultsByRound: individualResultsByStudent[uid] || {},
+                    battleLog: powerLog,
+                });
+            }
+        }
+
+        for (const mageUid of empoweredAtEnd) {
+            const studentRef = doc(db, 'teachers', teacherUid, 'students', mageUid);
+            const studentSnap = await getDoc(studentRef);
+            if (studentSnap.exists()) {
+                const studentData = studentSnap.data() as Student;
+                const baseMaxHp = calculateBaseMaxHp(studentData.class, studentData.level);
+                const newHp = Math.min(studentData.hp, baseMaxHp); 
+                batch.update(studentRef, { hp: newHp, maxHp: baseMaxHp });
+            }
+        }
+        
+        const summaryRef = doc(collection(db, 'teachers', teacherUid, 'teacherSummaries'));
+        batch.set(summaryRef, {
+            battleId: battle.id,
+            battleName: battle?.battleName || '',
+            questions: battle?.questions || [],
+            resultsByRound: finalRoundData,
+            battleLog: powerLog,
+            rewards: rewardsByStudent,
+            totalDamageDealt: totalDamage,
+            totalBaseDamage: totalBaseDamage,
+            totalPowerDamage: totalPowerDamage,
+            fallenAtEnd: fallenAtEnd,
+            endedAt: serverTimestamp(),
+        });
+        
+        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
+        const subcollections = ['responses', 'powerActivations', 'battleLog', 'messages'];
+        for (const sub of subcollections) {
+            const subRef = collection(liveBattleRef, sub);
+            const snapshot = await getDocs(subRef);
+            snapshot.forEach(doc => batch.delete(doc.ref));
+        }
+        batch.delete(liveBattleRef);
+
+        await batch.commit();
+
+        await logGameEvent(teacherUid, 'BOSS_BATTLE', `Battle summary for '${battle.battleName}' was saved and live battle was cleaned up.`);
+        
+        router.push(`/teacher/battle/summary/${summaryRef.id}`);
+
+    }, [battle, liveState, powerLog, router, teacherUid]);
+
+    const calculateAndSetResults = useCallback(async ({ isDivinationSkip = false, isFinalBattleRound = false }: { isDivinationSkip?: boolean; isFinalBattleRound?: boolean } = {}) => {
+        if (!liveState || !battle || !teacherUid || !allStudents.length) return;
+    
+        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
+        const batch = writeBatch(db);
+    
         const roundDocRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${liveState.currentQuestionIndex}`);
         const roundDocSnap = await getDoc(roundDocRef);
-        
+    
         const submittedResponses: StudentResponse[] = roundDocSnap.exists() ? roundDocSnap.data().responses || [] : [];
         const studentMap = new Map(allStudents.map(doc => [doc.uid, doc]));
-        
+    
         const results: Result[] = [];
         const newlyFallenUids: string[] = [];
-
-        // Determine which students were online and not fallen *at the start of the question* to check for damage
+    
         const activeStudentsUids = allStudents
             .filter(s => s.onlineStatus?.status === 'online' && !liveState.fallenPlayerUids?.includes(s.uid))
             .map(s => s.uid);
-
+    
         for (const uid of activeStudentsUids) {
             const student = studentMap.get(uid);
             if (!student) continue;
-
+    
             const response = submittedResponses.find(r => r.studentUid === student.uid);
             const isCorrect = response?.isCorrect ?? false;
-            
+    
             results.push({
                 studentUid: student.uid,
                 studentName: student.characterName,
@@ -319,11 +448,11 @@ export default function TeacherLiveBattlePage() {
                 isCorrect: isCorrect,
                 powerUsed: liveState.powerUsersThisRound?.[student.uid]?.join(', ') || undefined,
             });
-
+    
             if (!isCorrect && !isDivinationSkip) {
                 const currentQuestion = battle.questions[liveState.currentQuestionIndex];
                 const damageOnIncorrect = currentQuestion.damage || 0;
-
+    
                 if (damageOnIncorrect > 0) {
                     const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
                     const newHp = Math.max(0, student.hp - damageOnIncorrect);
@@ -334,17 +463,17 @@ export default function TeacherLiveBattlePage() {
                 }
             }
         }
-        
+    
         setRoundResults(results);
-
+    
         let powerDamage = isDivinationSkip ? (liveState.lastRoundPowerDamage || 0) : 0;
         const powersUsedThisRound: string[] = isDivinationSkip ? (liveState.lastRoundPowersUsed || []) : [];
-        const battleLogRef = collection(db, 'teachers', teacherUid!, 'liveBattles/active-battle/battleLog');
-
+        const battleLogRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
+    
         if (!isDivinationSkip) {
             for (const power of liveState.queuedPowers || []) {
                 const casterResponse = results.find(res => res.studentUid === power.casterUid);
-
+    
                 if (casterResponse?.isCorrect) {
                     powerDamage += power.damage;
                     powersUsedThisRound.push(`${power.powerName} (${power.damage} dmg)`);
@@ -356,7 +485,7 @@ export default function TeacherLiveBattlePage() {
                         timestamp: serverTimestamp()
                     });
                 } else {
-                     batch.set(doc(battleLogRef), {
+                    batch.set(doc(battleLogRef), {
                         round: liveState.currentQuestionIndex + 1,
                         casterName: casterResponse?.studentName || studentMap.get(power.casterUid)?.characterName || 'Unknown Mage',
                         powerName: power.powerName,
@@ -366,12 +495,12 @@ export default function TeacherLiveBattlePage() {
                 }
             }
         }
-
+    
         const baseDamage = isDivinationSkip ? 0 : results.filter(r => r.isCorrect).length;
         const totalDamageThisRound = baseDamage + powerDamage;
-
-        const updatePayload: any = { 
-            status: 'SHOWING_RESULTS', 
+    
+        const updatePayload: any = {
+            status: 'SHOWING_RESULTS',
             timerEndsAt: null,
             lastRoundDamage: totalDamageThisRound,
             lastRoundBaseDamage: baseDamage,
@@ -382,17 +511,16 @@ export default function TeacherLiveBattlePage() {
             totalPowerDamage: increment(powerDamage),
             voteState: null,
         };
-        
+    
         if (newlyFallenUids.length > 0) {
             updatePayload.fallenPlayerUids = arrayUnion(...newlyFallenUids);
         }
-
+    
         batch.update(liveBattleRef, updatePayload);
-        
+    
         const currentQuestion = battle.questions[liveState.currentQuestionIndex];
-        // Set state for the final summary data
-        setAllRoundsData(prev => ({
-            ...prev,
+        const newRoundData = {
+            ...allRoundsData,
             [liveState.currentQuestionIndex]: {
                 questionText: currentQuestion.questionText,
                 responses: submittedResponses.map(r => ({
@@ -405,11 +533,16 @@ export default function TeacherLiveBattlePage() {
                 baseDamage,
                 powerDamage,
             }
-        }));
-
+        };
+        setAllRoundsData(newRoundData);
+    
         await batch.commit();
-
-    }, [battle, liveState, teacherUid, allStudents]);
+    
+        if (isFinalBattleRound) {
+            await generateAndSaveSummary(newRoundData);
+        }
+    
+    }, [battle, liveState, teacherUid, allStudents, allRoundsData, generateAndSaveSummary]);
 
     const performRoundEnd = useCallback(async () => {
         if (!battle || !liveState || !teacherUid || isEndingRound) return;
@@ -435,9 +568,8 @@ export default function TeacherLiveBattlePage() {
             const votePassed = currentVoteState.votesFor.length > (currentVoteState.totalVoters / 2);
 
             if (votePassed) {
-                await calculateAndSetResults(true); // End the round immediately, keeping the power damage
+                await calculateAndSetResults({ isDivinationSkip: true });
             } else {
-                // Vote failed, clear the vote state and show message
                 await updateDoc(liveBattleRef, { 
                     voteState: null,
                     powerEventMessage: "The party is divided! The attempt to skip time fails." 
@@ -470,7 +602,7 @@ export default function TeacherLiveBattlePage() {
              const studentData = studentDoc.data() as Student;
              
              if (studentData.mp < activation.powerMpCost) return;
-             if ((battleData.powerUsersThisRound?.[activation.studentUid] || []).length > 0) return; // Prevent multiple powers per round
+             if ((battleData.powerUsersThisRound?.[activation.studentUid] || []).length > 0) return;
 
             const batch = writeBatch(db);
 
@@ -540,11 +672,10 @@ export default function TeacherLiveBattlePage() {
                         timestamp: serverTimestamp()
                     });
                 } else if (targetSnap.exists() && targetSnap.data().hp > 0) {
-                     // Target is not fallen, send feedback to caster
                     const targetedEvent: TargetedEvent = { targetUid: activation.studentUid, message: `${targetSnap.data().characterName} has already been restored! Choose another power.` };
                     await updateDoc(liveBattleRef, { targetedEvent: targetedEvent });
                     setTimeout(() => updateDoc(liveBattleRef, { targetedEvent: null }), 5000);
-                    return; // Stop processing this power
+                    return; 
                 }
             } else if (activation.powerName === 'Lesser Heal') {
                 if (!activation.targets || activation.targets.length === 0) return;
@@ -554,7 +685,7 @@ export default function TeacherLiveBattlePage() {
 
                 const roll = Math.floor(Math.random() * 6) + 1;
                 const totalHeal = roll + (studentData.level || 1);
-                const healPerTarget = Math.ceil(totalHeal / maxTargets); // Strict power division
+                const healPerTarget = Math.ceil(totalHeal / maxTargets);
                 
                 const targetNames: string[] = [];
                 for (const targetUid of activation.targets) {
@@ -619,7 +750,7 @@ export default function TeacherLiveBattlePage() {
                 const roll2 = Math.floor(Math.random() * 6) + 1;
                 const totalBoost = roll1 + roll2 + (studentData.level || 1);
                 
-                const boostPerTarget = Math.ceil(totalBoost / maxTargets); // Strict power division
+                const boostPerTarget = Math.ceil(totalBoost / maxTargets);
 
                 const targetNames: string[] = [];
                 for (const targetUid of activation.targets) {
@@ -705,7 +836,7 @@ export default function TeacherLiveBattlePage() {
 
                 const roll = Math.floor(Math.random() * 6) + 1;
                 const totalRestore = roll + (studentData.level || 1);
-                const restorePerTarget = Math.ceil(totalRestore / maxTargets); // Strict power division
+                const restorePerTarget = Math.ceil(totalRestore / maxTargets);
                 
                 const targetNames = [];
                 for (const targetUid of activation.targets) {
@@ -716,7 +847,6 @@ export default function TeacherLiveBattlePage() {
                         targetNames.push(targetData.characterName);
                         const newMp = Math.min(targetData.maxMp, targetData.mp + restorePerTarget);
                         batch.update(targetRef, { mp: newMp });
-                        // Send targeted message
                         batch.update(liveBattleRef, { 
                             targetedEvent: {
                                 targetUid: targetUid,
@@ -745,12 +875,10 @@ export default function TeacherLiveBattlePage() {
             });
             await batch.commit();
 
-            // Clear the public message after a delay
             setTimeout(async () => {
                  await updateDoc(liveBattleRef, { powerEventMessage: '' });
             }, 5000);
             
-            // Delete the activation document after processing
             const activationDocRef = doc(db, `${liveBattleRef.path}/powerActivations`, activation.id!);
             await deleteDoc(activationDocRef);
         };
@@ -848,7 +976,6 @@ export default function TeacherLiveBattlePage() {
     try {
         const batch = writeBatch(db);
 
-        // Delete the master response document for the previous round
         const prevRoundDocRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${liveState.currentQuestionIndex}`);
         batch.delete(prevRoundDocRef);
         
@@ -881,141 +1008,7 @@ export default function TeacherLiveBattlePage() {
 
   const handleEndBattle = async () => {
     if (!liveState || !battle || !teacherUid) return;
-    
-    // Ensure the final round's results are calculated if not already
-    if (liveState.status !== 'SHOWING_RESULTS') {
-        await calculateAndSetResults();
-        await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-    
-    const fallenAtEnd = liveState.fallenPlayerUids || [];
-    const empoweredAtEnd = liveState.empoweredMageUids || [];
-
-    // Recalculate totals from allRoundsData to ensure accuracy
-    let totalBaseDamage = 0;
-    let totalPowerDamage = 0;
-    Object.values(allRoundsData).forEach((round: any) => {
-        totalBaseDamage += round.baseDamage || 0;
-        totalPowerDamage += round.powerDamage || 0;
-    });
-    const totalDamage = totalBaseDamage + totalPowerDamage;
-    
-    await logGameEvent(teacherUid, 'BOSS_BATTLE', `The party dealt a total of ${totalDamage} damage during '${battle.battleName}'.`);
-
-    const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
-    const individualResultsByStudent: { [uid: string]: any } = {};
-    
-    Object.keys(allRoundsData).forEach(roundIndex => {
-        const roundData = allRoundsData[roundIndex];
-        if (roundData && roundData.responses) {
-            roundData.responses.forEach((res: any) => {
-                if (!rewardsByStudent[res.studentUid]) {
-                    rewardsByStudent[res.studentUid] = { xpGained: 0, goldGained: 0 };
-                }
-                if (res.isCorrect) {
-                    rewardsByStudent[res.studentUid].xpGained += 5;
-                    rewardsByStudent[res.studentUid].goldGained += 10;
-                }
-
-                 if (!individualResultsByStudent[res.studentUid]) {
-                    individualResultsByStudent[res.studentUid] = {};
-                }
-                individualResultsByStudent[res.studentUid][roundIndex] = {
-                    questionText: roundData.questionText,
-                    responses: [res] // Array with only this student's response
-                };
-            });
-        }
-    });
-
-    const batch = writeBatch(db);
-
-    for (const uid in rewardsByStudent) {
-        if (fallenAtEnd.includes(uid)) continue; 
-
-        const studentRef = doc(db, 'teachers', teacherUid, 'students', uid);
-        const studentSnap = await getDoc(studentRef);
-        if (studentSnap.exists()) {
-            const studentData = studentSnap.data() as Student;
-            const { xpGained, goldGained } = rewardsByStudent[uid];
-
-            const currentXp = studentData.xp || 0;
-            const newXp = currentXp + xpGained;
-            const currentLevel = studentData.level || 1;
-            const newLevel = calculateLevel(newXp);
-            
-            const updates: any = {
-                xp: newXp,
-                gold: (studentData.gold || 0) + goldGained,
-            };
-
-            if (newLevel > currentLevel) {
-                const levelsGained = newLevel - currentLevel;
-                updates.level = newLevel;
-                updates.hp = (studentData.hp || 0) + calculateHpGain(studentData.class, levelsGained);
-                updates.maxHp = calculateBaseMaxHp(studentData.class, newLevel, 'hp');
-                updates.mp = (studentData.mp || 0) + calculateMpGain(studentData.class, levelsGained);
-                updates.maxMp = calculateBaseMaxHp(studentData.class, newLevel, 'mp');
-            }
-            batch.update(studentRef, updates);
-            
-            // Create a unique summary document for each student.
-            const studentSummaryRef = doc(collection(db, 'teachers', teacherUid, 'students', uid, 'battleSummaries'));
-            batch.set(studentSummaryRef, {
-                battleId: battle.id,
-                battleName: battle?.battleName || '',
-                endedAt: serverTimestamp(),
-                xpGained: xpGained,
-                goldGained: goldGained,
-                questions: battle?.questions || [],
-                resultsByRound: individualResultsByStudent[uid] || {},
-                battleLog: powerLog,
-            });
-        }
-    }
-
-    for (const mageUid of empoweredAtEnd) {
-        const studentRef = doc(db, 'teachers', teacherUid, 'students', mageUid);
-        const studentSnap = await getDoc(studentRef);
-        if (studentSnap.exists()) {
-            const studentData = studentSnap.data() as Student;
-            const baseMaxHp = calculateBaseMaxHp(studentData.class, studentData.level);
-            const newHp = Math.min(studentData.hp, baseMaxHp); 
-            batch.update(studentRef, { hp: newHp, maxHp: baseMaxHp });
-        }
-    }
-    
-    // Create a new unique summary document for the teacher.
-    const summaryRef = doc(collection(db, 'teachers', teacherUid, 'teacherSummaries'));
-    batch.set(summaryRef, {
-        battleId: battle.id,
-        battleName: battle?.battleName || '',
-        questions: battle?.questions || [],
-        resultsByRound: allRoundsData,
-        battleLog: powerLog,
-        rewards: rewardsByStudent,
-        totalDamageDealt: totalDamage,
-        totalBaseDamage: totalBaseDamage,
-        totalPowerDamage: totalPowerDamage,
-        fallenAtEnd: fallenAtEnd,
-        endedAt: serverTimestamp(),
-    });
-    
-    // Automatic Cleanup
-    const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
-    const subcollections = ['responses', 'powerActivations', 'battleLog', 'messages'];
-    for (const sub of subcollections) {
-        const subRef = collection(liveBattleRef, sub);
-        const snapshot = await getDocs(subRef);
-        snapshot.forEach(doc => batch.delete(doc.ref));
-    }
-    batch.delete(liveBattleRef);
-
-    await batch.commit();
-
-    await logGameEvent(teacherUid, 'BOSS_BATTLE', `Battle summary for '${battle.battleName}' was saved and live battle was cleaned up.`);
-    
-    router.push(`/teacher/battle/summary/${summaryRef.id}`);
+    await calculateAndSetResults({ isFinalBattleRound: true });
   };
   
   const handleExport = () => {
