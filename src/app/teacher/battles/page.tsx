@@ -81,23 +81,20 @@ export default function BossBattlesPage() {
     try {
         const batch = writeBatch(db);
         
-        // Create a new permanent archive document for this battle session
-        const archiveTimestamp = format(new Date(), "yyyy-MM-dd'T'HH:mm:ss");
-        const archiveId = `${archiveTimestamp}-${battle.id}`;
-        const archiveRef = doc(db, 'teachers', teacher.uid, 'savedBattles', archiveId);
+        const archiveRef = doc(collection(db, 'teachers', teacher.uid, 'savedBattles'));
         
         batch.set(archiveRef, {
             battleId: battle.id,
             battleName: battle.battleName,
             status: 'WAITING',
-            startedAt: new Date(),
+            savedAt: new Date(),
         });
 
         // Create the temporary live battle document
         const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
         batch.set(liveBattleRef, {
             battleId: battle.id,
-            parentArchiveId: archiveId, // Link to the permanent archive
+            parentArchiveId: archiveRef.id,
             status: 'WAITING',
             currentQuestionIndex: 0,
             lastRoundDamage: 0,

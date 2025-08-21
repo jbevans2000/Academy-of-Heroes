@@ -22,6 +22,7 @@ interface SavedBattleSummary {
     seconds: number;
     nanoseconds: number;
   };
+  status: 'WAITING' | 'BATTLE_ENDED';
 }
 
 export default function BattleSummariesPage() {
@@ -44,32 +45,35 @@ export default function BattleSummariesPage() {
   }, [router]);
 
   const fetchSummaries = useCallback(async (user: User) => {
-    if (isRefreshing) return; // Prevent multiple fetches
-    setIsLoading(true);
+    setIsRefreshing(true);
     try {
       const summariesRef = collection(db, 'teachers', user.uid, 'savedBattles');
+      // Corrected: Order by 'savedAt', which is the actual field name used.
       const q = query(summariesRef, orderBy('savedAt', 'desc'));
+      
       const querySnapshot = await getDocs(q);
       const summariesData = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       } as SavedBattleSummary));
       setSummaries(summariesData);
+      toast({title: "Archive Refreshed", description: "The list of battle archives is up to date."})
     } catch (error) {
       console.error("Error fetching summaries:", error);
       toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch battle summaries.' });
     } finally {
-      setIsLoading(false);
+      setIsRefreshing(false);
     }
-  }, [toast, isRefreshing]);
+  }, [toast]);
+
 
   useEffect(() => {
     if (!teacher) return;
   
     const summariesRef = collection(db, 'teachers', teacher.uid, 'savedBattles');
+    // Corrected: Order by 'savedAt', which is the actual field name used.
     const q = query(summariesRef, orderBy('savedAt', 'desc'));
   
-    // Initial load and real-time listener
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const summariesData = querySnapshot.docs.map(doc => ({
         id: doc.id,
@@ -83,18 +87,15 @@ export default function BattleSummariesPage() {
       setIsLoading(false);
     });
   
-    // Cleanup the listener when the component unmounts
     return () => unsubscribe();
   }, [teacher, toast]);
 
   const handleRefresh = async () => {
     if (!teacher) return;
-    setIsRefreshing(true);
     await fetchSummaries(teacher);
-    setTimeout(() => setIsRefreshing(false), 500); // give some visual feedback
   };
 
-  if (isLoading && summaries.length === 0) {
+  if (isLoading) {
     return (
       <div className="flex flex-col min-h-screen bg-muted/40">
         <TeacherHeader />
@@ -154,7 +155,12 @@ export default function BattleSummariesPage() {
                   <Link key={summary.id} href={`/teacher/battle/summary/${summary.id}`} passHref>
                     <div className="block border p-4 rounded-lg hover:bg-primary/10 transition-colors cursor-pointer">
                       <div className="flex justify-between items-center">
-                        <h3 className="font-semibold text-lg">{summary.battleName}</h3>
+                        <div>
+                            <h3 className="font-semibold text-lg">{summary.battleName}</h3>
+                             <p className="text-sm text-muted-foreground">
+                              {summary.status === 'BATTLE_ENDED' ? 'Concluded' : 'In Progress / Ended Early'}
+                            </p>
+                        </div>
                         <p className="text-sm text-muted-foreground">
                           {summary.savedAt ? format(new Date(summary.savedAt.seconds * 1000), 'PPPp') : 'Date unknown'}
                         </p>
