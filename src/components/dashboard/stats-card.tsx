@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { PowersSheet } from './powers-sheet';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import Image from 'next/image';
 
 interface StatsCardProps {
   xp: number;
@@ -71,77 +72,84 @@ export function StatsCard({ xp, gold, level, hp, mp, maxHp, maxMp, characterName
         student={student}
         battleState={null} // Not in a battle context
     />
-    <Card className="shadow-lg rounded-xl">
-      <CardHeader>
-        <CardTitle className="font-headline">{studentName}</CardTitle>
-        <CardDescription>{characterName}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-center">
-           <div className="flex flex-col items-center justify-center space-y-2 bg-secondary p-4 rounded-lg">
-            {classIconMap[characterClass]}
-            <div>
-              <p className="text-sm text-muted-foreground">Class</p>
-              <p className="text-xl font-bold">{characterClass}</p>
+    <Card className="shadow-lg rounded-xl overflow-hidden relative">
+      {company?.logoUrl && (
+          <div className="absolute inset-0 z-0">
+              <Image src={company.logoUrl} alt="Company Logo" fill className="object-cover opacity-50" />
+              <div className="absolute inset-0 bg-card/70 backdrop-blur-sm" />
+          </div>
+      )}
+      <div className="relative z-10">
+        <CardHeader>
+          <CardTitle className="font-headline">{studentName}</CardTitle>
+          <CardDescription>{characterName}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-center">
+            <div className="flex flex-col items-center justify-center space-y-2 bg-secondary/80 p-4 rounded-lg">
+              {classIconMap[characterClass]}
+              <div>
+                <p className="text-sm text-muted-foreground">Class</p>
+                <p className="text-xl font-bold">{characterClass}</p>
+              </div>
+            </div>
+            <div className="flex flex-col items-center justify-center space-y-2 bg-secondary/80 p-4 rounded-lg">
+              <Trophy className="h-8 w-8 text-orange-400" />
+              <div>
+                <p className="text-sm text-muted-foreground">Level</p>
+                <p className="text-xl font-bold">{level}</p>
+              </div>
+            </div>
+            <div className="flex flex-col items-center justify-center space-y-2 bg-secondary/80 p-4 rounded-lg">
+              <Briefcase className="h-8 w-8 text-indigo-500" />
+              <div>
+                <p className="text-sm text-muted-foreground">Company</p>
+                <p className="text-xl font-bold">{company?.name || 'Freelancer'}</p>
+              </div>
+            </div>
+            <div className="flex flex-col items-center justify-center space-y-2 bg-secondary/80 p-4 rounded-lg">
+              <Heart className="h-8 w-8 text-red-500" />
+              <div>
+                <p className="text-sm text-muted-foreground">HP</p>
+                <p className="text-xl font-bold">{hp} / {maxHp}</p>
+              </div>
+            </div>
+            <div className="flex flex-col items-center justify-center space-y-2 bg-secondary/80 p-4 rounded-lg">
+              <Zap className="h-8 w-8 text-yellow-500" />
+              <div>
+                <p className="text-sm text-muted-foreground">MP</p>
+                <p className="text-xl font-bold">{mp} / {maxMp}</p>
+              </div>
+            </div>
+            <div className="flex flex-col items-center justify-center space-y-2 bg-secondary/80 p-4 rounded-lg">
+              <Star className="h-8 w-8 text-yellow-400" />
+              <div>
+                <p className="text-sm text-muted-foreground">Experience</p>
+                <p className="text-xl font-bold">{xp.toLocaleString()}</p>
+              </div>
+            </div>
+            <div className="flex flex-col items-center justify-center space-y-2 bg-secondary/80 p-4 rounded-lg col-span-2 sm:col-span-1">
+              <Coins className="h-8 w-8 text-amber-500" />
+              <div>
+                <p className="text-sm text-muted-foreground">Gold</p>
+                <p className="text-xl font-bold">{gold.toLocaleString()}</p>
+              </div>
+            </div>
+            <div className="flex flex-col items-center justify-center space-y-4 bg-secondary/80 p-4 rounded-lg col-span-2 sm:col-span-2">
+                <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => setIsPowersSheetOpen(true)}
+                    className="w-full bg-background/50 hover:bg-background/80"
+                >
+                    <Flame className="mr-2 h-5 w-5" />
+                    View Powers
+                </Button>
             </div>
           </div>
-           <div className="flex flex-col items-center justify-center space-y-2 bg-secondary p-4 rounded-lg">
-            <Trophy className="h-8 w-8 text-orange-400" />
-            <div>
-              <p className="text-sm text-muted-foreground">Level</p>
-              <p className="text-xl font-bold">{level}</p>
-            </div>
-          </div>
-           <div className="flex flex-col items-center justify-center space-y-2 bg-secondary p-4 rounded-lg">
-            <Briefcase className="h-8 w-8 text-indigo-500" />
-            <div>
-              <p className="text-sm text-muted-foreground">Company</p>
-              <p className="text-xl font-bold">{company?.name || 'Freelancer'}</p>
-            </div>
-          </div>
-          <div className="flex flex-col items-center justify-center space-y-2 bg-secondary p-4 rounded-lg">
-            <Heart className="h-8 w-8 text-red-500" />
-            <div>
-              <p className="text-sm text-muted-foreground">HP</p>
-              <p className="text-xl font-bold">{hp} / {maxHp}</p>
-            </div>
-          </div>
-          <div className="flex flex-col items-center justify-center space-y-2 bg-secondary p-4 rounded-lg">
-            <Zap className="h-8 w-8 text-yellow-500" />
-            <div>
-              <p className="text-sm text-muted-foreground">MP</p>
-              <p className="text-xl font-bold">{mp} / {maxMp}</p>
-            </div>
-          </div>
-           <div className="flex flex-col items-center justify-center space-y-2 bg-secondary p-4 rounded-lg">
-            <Star className="h-8 w-8 text-yellow-400" />
-            <div>
-              <p className="text-sm text-muted-foreground">Experience</p>
-              <p className="text-xl font-bold">{xp.toLocaleString()}</p>
-            </div>
-          </div>
-          <div className="flex flex-col items-center justify-center space-y-2 bg-secondary p-4 rounded-lg col-span-2 sm:col-span-1">
-            <Coins className="h-8 w-8 text-amber-500" />
-            <div>
-              <p className="text-sm text-muted-foreground">Gold</p>
-              <p className="text-xl font-bold">{gold.toLocaleString()}</p>
-            </div>
-          </div>
-           <div className="flex flex-col items-center justify-center space-y-4 bg-secondary p-4 rounded-lg col-span-2 sm:col-span-2">
-              <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={() => setIsPowersSheetOpen(true)}
-                  className="w-full"
-              >
-                  <Flame className="mr-2 h-5 w-5" />
-                  View Powers
-              </Button>
-          </div>
-        </div>
-      </CardContent>
+        </CardContent>
+      </div>
     </Card>
     </>
   );
 }
-
