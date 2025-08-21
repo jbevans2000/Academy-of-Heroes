@@ -90,10 +90,10 @@ export default function TeacherBattleSummaryPage() {
       const summaryRef = doc(db, 'teachers', teacher.uid, 'savedBattles', savedBattleId);
       const docSnap = await getDoc(summaryRef);
 
-      if (docSnap.exists() && docSnap.data().status === 'BATTLE_ENDED') {
+      if (docSnap.exists()) {
         setSummary({ id: docSnap.id, ...docSnap.data() } as SavedBattle);
       } else {
-        toast({ title: "Summary Not Ready", description: "This battle summary may still be processing. Please wait a moment and try again."})
+        toast({ title: "Summary Not Found", description: "This battle summary may have already been cleaned up. Redirecting to battles list."})
         router.push('/teacher/battles');
       }
       setIsLoading(false);
