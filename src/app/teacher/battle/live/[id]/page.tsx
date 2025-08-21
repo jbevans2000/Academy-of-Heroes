@@ -883,7 +883,8 @@ export default function TeacherLiveBattlePage() {
     // Ensure the final round's results are calculated if not already
     if (liveState.status !== 'SHOWING_RESULTS') {
         await calculateAndSetResults();
-        await new Promise(resolve => setTimeout(resolve, 500)); // Give Firestore time to sync before reading final state
+        // Give Firestore time to process the last write before we read it.
+        await new Promise(resolve => setTimeout(resolve, 1000));
     }
     
     const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
@@ -1252,4 +1253,3 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
-
