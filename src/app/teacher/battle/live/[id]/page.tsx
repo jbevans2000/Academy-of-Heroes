@@ -157,17 +157,17 @@ export default function TeacherLiveBattlePage() {
 
   const [battle, setBattle] = useState<Battle | null>(null);
   const [liveState, setLiveState] = useState<LiveBattleState | null>(null);
-  const [roundResults, setRoundResults = useState<Result[]>([]);
-  const [allRoundsData, setAllRoundsData = useState<any>({});
-  const [isLoading, setIsLoading = useState(true);
-  const [isEndingRound, setIsEndingRound = useState(false);
-  const [isAdvancing, setIsAdvancing = useState(false);
-  const [user, setUser = useState<User | null>(null);
-  const [teacherData, setTeacherData = useState<TeacherData | null>(null);
-  const [teacherUid, setTeacherUid = useState<string | null>(null);
-  const [fallenStudentNames, setFallenStudentNames = useState<string[]>([]);
-  const [allStudents, setAllStudents = useState<Student[]>([]);
-  const [powerLog, setPowerLog = useState<PowerLogEntry[]>([]);
+  const [roundResults, setRoundResults] = useState<Result[]>([]);
+  const [allRoundsData, setAllRoundsData] = useState<any>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [isEndingRound, setIsEndingRound] = useState(false);
+  const [isAdvancing, setIsAdvancing] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [teacherData, setTeacherData] = useState<TeacherData | null>(null);
+  const [teacherUid, setTeacherUid] = useState<string | null>(null);
+  const [fallenStudentNames, setFallenStudentNames] = useState<string[]>([]);
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
+  const [powerLog, setPowerLog] = useState<PowerLogEntry[]>([]);
 
 
   useEffect(() => {
@@ -1253,4 +1253,3 @@ export default function TeacherLiveBattlePage() {
   );
 }
 
-    
