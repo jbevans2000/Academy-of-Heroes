@@ -300,7 +300,7 @@ export default function TeacherLiveBattlePage() {
   }, [teacherUid, liveState, liveState?.currentQuestionIndex]);
 
 
-    const generateAndSaveSummary = async (finalRoundsData: any, finalLiveState: LiveBattleState) => {
+    const generateAndSaveSummary = async (finalLiveState: LiveBattleState) => {
         if (!battle || !teacherUid) return;
 
         const fallenAtEnd = finalLiveState.fallenPlayerUids || [];
@@ -310,7 +310,8 @@ export default function TeacherLiveBattlePage() {
         let totalBaseDamage = 0;
         let totalPowerDamage = 0;
 
-        Object.values(finalRoundsData).forEach((round: any) => {
+        // Use the final, reliable allRoundsData for the calculation
+        Object.values(allRoundsData).forEach((round: any) => {
             totalBaseDamage += round.baseDamage || 0;
             totalPowerDamage += round.powerDamage || 0;
         });
@@ -321,8 +322,8 @@ export default function TeacherLiveBattlePage() {
         const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
         const individualResultsByStudent: { [uid: string]: any } = {};
         
-        Object.keys(finalRoundsData).forEach(roundIndex => {
-            const roundData = finalRoundsData[roundIndex];
+        Object.keys(allRoundsData).forEach(roundIndex => {
+            const roundData = allRoundsData[roundIndex];
             if (roundData && roundData.responses) {
                 roundData.responses.forEach((res: any) => {
                     if (!rewardsByStudent[res.studentUid]) {
@@ -405,7 +406,7 @@ export default function TeacherLiveBattlePage() {
             battleId: battle.id,
             battleName: battle?.battleName || '',
             questions: battle?.questions || [],
-            resultsByRound: finalRoundsData,
+            resultsByRound: allRoundsData,
             battleLog: powerLog,
             rewards: rewardsByStudent,
             totalDamageDealt: totalDamage,
@@ -432,7 +433,7 @@ export default function TeacherLiveBattlePage() {
 
     };
 
-    const calculateAndSetResults = async ({ isDivinationSkip = false, isFinalBattleRound = false }: { isDivinationSkip?: boolean; isFinalBattleRound?: boolean } = {}) => {
+    const calculateAndSetResults = async ({ isDivinationSkip = false }: { isDivinationSkip?: boolean } = {}) => {
         if (!liveState || !battle || !teacherUid || !allStudents.length) return;
     
         const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
@@ -500,6 +501,24 @@ export default function TeacherLiveBattlePage() {
     
         const baseDamage = roundResults.filter(r => r.isCorrect).length;
         const totalDamageThisRound = baseDamage + powerDamage;
+
+        // Save the results of this round to the local allRoundsData state
+        const currentQuestion = battle.questions[liveState.currentQuestionIndex];
+        setAllRoundsData((prev: any) => ({
+            ...prev,
+            [liveState.currentQuestionIndex]: {
+                questionText: currentQuestion.questionText,
+                responses: roundResults.map(r => ({
+                    studentUid: r.studentUid,
+                    studentName: r.studentName,
+                    answerIndex: battle.questions[liveState.currentQuestionIndex].answers.indexOf(r.answer),
+                    isCorrect: r.isCorrect,
+                })),
+                powersUsed: powersUsedThisRound,
+                baseDamage,
+                powerDamage,
+            }
+        }));
     
         const updatePayload: any = {
             status: 'SHOWING_RESULTS',
@@ -520,27 +539,6 @@ export default function TeacherLiveBattlePage() {
     
         batch.update(liveBattleRef, updatePayload);
         await batch.commit();
-
-        if (isFinalBattleRound) {
-            const finalLiveStateSnap = await getDoc(liveBattleRef);
-            if (finalLiveStateSnap.exists()) {
-                const currentQuestion = battle.questions[liveState.currentQuestionIndex];
-                const finalRoundData = {
-                    questionText: currentQuestion.questionText,
-                    responses: roundResults.map(r => ({
-                        studentUid: r.studentUid,
-                        studentName: r.studentName,
-                        answerIndex: battle.questions[liveState.currentQuestionIndex].answers.indexOf(r.answer),
-                        isCorrect: r.isCorrect,
-                    })),
-                    powersUsed: powersUsedThisRound,
-                    baseDamage,
-                    powerDamage,
-                };
-                const finalAllRoundsData = { ...allRoundsData, [liveState.currentQuestionIndex]: finalRoundData };
-                await generateAndSaveSummary(finalAllRoundsData, finalLiveStateSnap.data() as LiveBattleState);
-            }
-        }
     };
   
     // Effect for Cosmic Divination vote resolution
@@ -966,23 +964,6 @@ export default function TeacherLiveBattlePage() {
 
     setIsAdvancing(true);
     
-    const currentQuestion = battle.questions[liveState.currentQuestionIndex];
-    setAllRoundsData((prev: any) => ({
-        ...prev,
-        [liveState.currentQuestionIndex]: {
-            questionText: currentQuestion.questionText,
-            responses: roundResults.map(r => ({
-                studentUid: r.studentUid,
-                studentName: r.studentName,
-                answerIndex: battle.questions[liveState.currentQuestionIndex].answers.indexOf(r.answer),
-                isCorrect: r.isCorrect,
-            })),
-            powersUsed: liveState.lastRoundPowersUsed,
-            baseDamage: liveState.lastRoundBaseDamage,
-            powerDamage: liveState.lastRoundPowerDamage,
-        }
-    }));
-    
     setRoundResults([]);
     try {
         const batch = writeBatch(db);
@@ -1019,7 +1000,15 @@ export default function TeacherLiveBattlePage() {
 
   const handleEndBattle = async () => {
     if (!liveState || !battle || !teacherUid) return;
-    await calculateAndSetResults({ isFinalBattleRound: true });
+    // First, ensure the final round's data is calculated and stored.
+    await calculateAndSetResults({});
+    
+    // Now, generate the summary using the most up-to-date state.
+    // We need to fetch the final liveState after the calculation completes.
+    const finalLiveStateSnap = await getDoc(doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle'));
+    if (finalLiveStateSnap.exists()) {
+        await generateAndSaveSummary(finalLiveStateSnap.data() as LiveBattleState);
+    }
   };
   
   const handleExport = () => {
