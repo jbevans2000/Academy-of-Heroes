@@ -301,7 +301,7 @@ export function StudentCard({ student, isSelected, onSelect, setStudents, teache
         <Card className={cn("shadow-lg rounded-xl flex flex-col overflow-hidden transition-all duration-300 relative", isSelected ? "ring-2 ring-primary scale-105" : "hover:scale-105")}>
             {company?.logoUrl && (
                 <div className="absolute inset-0 z-0">
-                    <Image src={company.logoUrl} alt="Company Logo" fill className="object-cover opacity-25" />
+                    <Image src={company.logoUrl} alt="Company Logo" fill className="object-cover opacity-50" />
                 </div>
             )}
            <div className="relative z-10 flex flex-col h-full bg-card/80">
