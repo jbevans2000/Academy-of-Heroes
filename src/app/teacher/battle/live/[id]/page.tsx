@@ -268,91 +268,89 @@ export default function TeacherLiveBattlePage() {
   }, [teacherUid, liveState, liveState?.currentQuestionIndex]);
 
   const handleEndBattleAndAggregate = async () => {
-        if (!liveState || !battle || !teacherUid || !liveState.parentArchiveId) return;
-        setIsEndingBattle(true);
+    if (!liveState || !battle || !teacherUid || !liveState.parentArchiveId) return;
+    setIsEndingBattle(true);
 
-        try {
-            const batch = writeBatch(db);
-            const parentArchiveRef = doc(db, 'teachers', teacherUid, 'savedBattles', liveState.parentArchiveId);
-            
-            const liveBattleSnap = await getDoc(doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle'));
-            const finalLiveState = liveBattleSnap.exists() ? liveBattleSnap.data() as LiveBattleState : liveState;
+    try {
+        const batch = writeBatch(db);
+        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
+        const parentArchiveRef = doc(db, 'teachers', teacherUid, 'savedBattles', liveState.parentArchiveId);
+        
+        // Fetch the final state before deleting
+        const finalLiveStateSnap = await getDoc(liveBattleRef);
+        const finalLiveState = finalLiveStateSnap.data() as LiveBattleState | undefined;
 
-            // Mark the parent archive as 'BATTLE_ENDED' and log the battle log and fallen players
-            batch.update(parentArchiveRef, {
-                status: 'BATTLE_ENDED',
-                powerLog: await getDocs(collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog')).then(snap => snap.docs.map(d => d.data())),
-                fallenAtEnd: finalLiveState.fallenPlayerUids?.map(uid => allStudents.find(s => s.uid === uid)?.characterName).filter(Boolean) || [],
-                totalDamage: finalLiveState.totalDamage,
-                totalBaseDamage: finalLiveState.totalBaseDamage,
-                totalPowerDamage: finalLiveState.totalPowerDamage,
-            });
-            
-            // Award XP/Gold
-            const studentDocs = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
-            const studentMap = new Map(studentDocs.docs.map(d => [d.id, d.data() as Student]));
-            const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
-            const roundsArchiveRef = collection(db, 'teachers', teacherUid, 'savedBattles', liveState.parentArchiveId, 'rounds');
-            const roundsSnap = await getDocs(roundsArchiveRef);
+        // Mark the parent archive as 'BATTLE_ENDED' and log the fallen players
+        batch.update(parentArchiveRef, {
+            status: 'BATTLE_ENDED',
+            fallenAtEnd: finalLiveState?.fallenPlayerUids || [],
+        });
 
-            roundsSnap.docs.forEach(roundDoc => {
-                const roundData = roundDoc.data();
-                (roundData.responses || []).forEach((res: any) => {
-                    if (!rewardsByStudent[res.studentUid]) {
-                        rewardsByStudent[res.studentUid] = { xpGained: 0, goldGained: 0 };
-                    }
-                    if (res.isCorrect) {
-                        rewardsByStudent[res.studentUid].xpGained += 5;
-                        rewardsByStudent[res.studentUid].goldGained += 10;
-                    }
-                });
-            });
+        // Award XP/Gold
+        const studentDocs = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
+        const studentMap = new Map(studentDocs.docs.map(d => [d.id, d.data() as Student]));
+        const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
+        const roundsArchiveRef = collection(db, 'teachers', teacherUid, 'savedBattles', liveState.parentArchiveId, 'rounds');
+        const roundsSnap = await getDocs(roundsArchiveRef);
 
-            for (const uid in rewardsByStudent) {
-                const studentData = studentMap.get(uid);
-                if (studentData) {
-                    const studentRef = doc(db, 'teachers', teacherUid, 'students', uid);
-                    const { xpGained, goldGained } = rewardsByStudent[uid];
-
-                     const currentXp = studentData.xp || 0;
-                     const newXp = currentXp + xpGained;
-                     const currentLevel = studentData.level || 1;
-                     const newLevel = calculateLevel(newXp);
-
-                     const updates: any = {
-                        xp: newXp,
-                        gold: (studentData.gold || 0) + goldGained,
-                     };
-
-                     if (newLevel > currentLevel) {
-                        updates.level = newLevel;
-                        updates.maxHp = calculateBaseMaxHp(studentData.class, newLevel, 'hp');
-                        updates.maxMp = calculateBaseMaxHp(studentData.class, newLevel, 'mp');
-                     }
-                     batch.update(studentRef, updates);
+        roundsSnap.docs.forEach(roundDoc => {
+            const roundData = roundDoc.data();
+            (roundData.responses || []).forEach((res: any) => {
+                if (!rewardsByStudent[res.studentUid]) {
+                    rewardsByStudent[res.studentUid] = { xpGained: 0, goldGained: 0 };
                 }
-            }
-            
-            const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
-            const subcollections = ['responses', 'powerActivations', 'battleLog', 'messages'];
-            for (const sub of subcollections) {
-                const subRef = collection(liveBattleRef, sub);
-                const snapshot = await getDocs(subRef);
-                snapshot.forEach(d => batch.delete(d.ref));
-            }
-            batch.delete(liveBattleRef);
+                if (res.isCorrect) {
+                    rewardsByStudent[res.studentUid].xpGained += 5;
+                    rewardsByStudent[res.studentUid].goldGained += 10;
+                }
+            });
+        });
 
-            await batch.commit();
+        for (const uid in rewardsByStudent) {
+            const studentData = studentMap.get(uid);
+            if (studentData) {
+                const studentRef = doc(db, 'teachers', teacherUid, 'students', uid);
+                const { xpGained, goldGained } = rewardsByStudent[uid];
 
-            await logGameEvent(teacherUid, 'BOSS_BATTLE', `Battle '${battle.battleName}' ended.`);
-            setRedirectId(liveState.parentArchiveId);
-        } catch (e) {
-            console.error("Error ending battle:", e);
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to end battle and aggregate results.' });
-        } finally {
-            setIsEndingBattle(false);
+                 const currentXp = studentData.xp || 0;
+                 const newXp = currentXp + xpGained;
+                 const currentLevel = studentData.level || 1;
+                 const newLevel = calculateLevel(newXp);
+
+                 const updates: any = {
+                    xp: newXp,
+                    gold: (studentData.gold || 0) + goldGained,
+                 };
+
+                 if (newLevel > currentLevel) {
+                    updates.level = newLevel;
+                    updates.maxHp = calculateBaseMaxHp(studentData.class, newLevel, 'hp');
+                    updates.maxMp = calculateBaseMaxHp(studentData.class, newLevel, 'mp');
+                 }
+                 batch.update(studentRef, updates);
+            }
         }
-    };
+        
+        // Delete the temporary battle documents
+        const subcollections = ['responses', 'powerActivations', 'battleLog', 'messages'];
+        for (const sub of subcollections) {
+            const subRef = collection(liveBattleRef, sub);
+            const snapshot = await getDocs(subRef);
+            snapshot.forEach(d => batch.delete(d.ref));
+        }
+        batch.delete(liveBattleRef);
+
+        await batch.commit();
+
+        await logGameEvent(teacherUid, 'BOSS_BATTLE', `Battle '${battle.battleName}' ended.`);
+        setRedirectId(liveState.parentArchiveId);
+    } catch (e) {
+        console.error("Error ending battle:", e);
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to end battle and aggregate results.' });
+    } finally {
+        setIsEndingBattle(false);
+    }
+};
 
 
     const calculateAndSetResults = async ({ isDivinationSkip = false }: { isDivinationSkip?: boolean } = {}) => {

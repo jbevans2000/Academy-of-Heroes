@@ -39,10 +39,11 @@ interface PowerLogEntry {
 }
 
 interface RoundSnapshot {
+  id: string; // The ID of the round document itself
   currentQuestionIndex: number;
-  totalDamage: number;
-  totalBaseDamage: number;
-  totalPowerDamage: number;
+  totalDamage?: number;
+  totalBaseDamage?: number;
+  totalPowerDamage?: number;
   responses: {
       studentUid: string;
       characterName: string;
@@ -55,7 +56,7 @@ interface SavedBattle {
   id: string; // The unique ID of this summary document
   battleId: string; // The ID of the original battle template
   battleName: string;
-  questions: Question[];
+  questions: Question[]; // This will now be populated from the original battle doc
   powerLog?: PowerLogEntry[];
   fallenAtEnd?: string[];
   status: 'WAITING' | 'BATTLE_ENDED';
@@ -102,6 +103,7 @@ export default function TeacherBattleSummaryPage() {
         
         const battleData = { id: docSnap.id, ...docSnap.data() } as SavedBattle;
         
+        // Fetch the original questions from the battle template
         const battleTemplateRef = doc(db, 'teachers', teacher.uid, 'bossBattles', battleData.battleId);
         const battleTemplateSnap = await getDoc(battleTemplateRef);
         
@@ -114,7 +116,7 @@ export default function TeacherBattleSummaryPage() {
         const roundsRef = collection(summaryRef, 'rounds');
         const roundsQuery = query(roundsRef, orderBy('currentQuestionIndex'));
         const roundsSnap = await getDocs(roundsQuery);
-        const roundsData = roundsSnap.docs.map(d => d.data() as RoundSnapshot);
+        const roundsData = roundsSnap.docs.map(d => ({id: d.id, ...d.data()} as RoundSnapshot));
         setAllRounds(roundsData);
 
       } catch (error) {
@@ -250,7 +252,12 @@ export default function TeacherBattleSummaryPage() {
     }
 
   const finalRound = allRounds[allRounds.length - 1];
-  const { totalDamage, totalBaseDamage, totalPowerDamage } = finalRound;
+  const { totalDamage, totalBaseDamage, totalPowerDamage } = allRounds.reduce((acc, round) => {
+    acc.totalDamage += round.totalDamage || 0;
+    acc.totalBaseDamage += round.totalBaseDamage || 0;
+    acc.totalPowerDamage += round.totalPowerDamage || 0;
+    return acc;
+  }, { totalDamage: 0, totalBaseDamage: 0, totalPowerDamage: 0 });
 
   const battleLogByRound: { [round: number]: PowerLogEntry[] } = {};
   if (summary.powerLog) {
@@ -347,7 +354,7 @@ export default function TeacherBattleSummaryPage() {
                             const incorrectCount = roundData.responses.length - correctCount;
 
                             return (
-                                <AccordionItem key={index} value={`item-${index}`}>
+                                <AccordionItem key={roundData.id} value={roundData.id}>
                                     <AccordionTrigger className="text-lg hover:no-underline">
                                         <div className="flex justify-between w-full pr-4">
                                             <span className="text-left">Q{roundData.currentQuestionIndex + 1}: {question.questionText}</span>
