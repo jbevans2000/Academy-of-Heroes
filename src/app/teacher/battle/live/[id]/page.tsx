@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs, writeBatch, serverTimestamp, setDoc, deleteDoc, arrayUnion, arrayRemove, addDoc, orderBy } from 'firebase/firestore';
+import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs, writeBatch, serverTimestamp, setDoc, deleteDoc, arrayUnion, arrayRemove, addDoc, orderBy, increment } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
@@ -775,7 +775,7 @@ export default function TeacherLiveBattlePage() {
                 });
             }
 
-            batch.update(studentRef, { mp: arrayUnion(-activation.powerMpCost) });
+            batch.update(studentRef, { mp: increment(-activation.powerMpCost) });
             batch.update(liveBattleRef, {
                 [`powerUsersThisRound.${activation.studentUid}`]: arrayUnion(activation.powerName),
             });
