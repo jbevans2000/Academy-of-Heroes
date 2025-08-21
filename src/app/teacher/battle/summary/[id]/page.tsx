@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { doc, getDoc, collection, query, getDocs, writeBatch, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, getDocs, writeBatch, deleteDoc, orderBy } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
@@ -38,27 +38,29 @@ interface PowerLogEntry {
     description: string;
 }
 
+interface RoundSnapshot {
+  currentQuestionIndex: number;
+  totalDamage: number;
+  totalBaseDamage: number;
+  totalPowerDamage: number;
+  responses: {
+      studentUid: string;
+      characterName: string;
+      answerIndex: number;
+      isCorrect: boolean;
+  }[];
+}
+
 interface SavedBattle {
   id: string; // The unique ID of this summary document
   battleId: string; // The ID of the original battle template
   battleName: string;
   questions: Question[];
-  responsesByRound: {
-    [roundIndex: string]: {
-      responses: {
-        studentUid: string;
-        characterName: string;
-        answerIndex: number;
-        isCorrect: boolean;
-      }[];
-    };
-  };
   powerLog?: PowerLogEntry[];
-  totalDamage?: number;
-  totalBaseDamage?: number;
-  totalPowerDamage?: number;
   fallenAtEnd?: string[];
+  status: 'WAITING' | 'BATTLE_ENDED';
 }
+
 
 export default function TeacherBattleSummaryPage() {
   const router = useRouter();
@@ -66,6 +68,7 @@ export default function TeacherBattleSummaryPage() {
   const savedBattleId = params.id as string;
 
   const [summary, setSummary] = useState<SavedBattle | null>(null);
+  const [allRounds, setAllRounds] = useState<RoundSnapshot[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCleaning, setIsCleaning] = useState(false);
   const [teacher, setTeacher] = useState<User | null>(null);
@@ -87,27 +90,59 @@ export default function TeacherBattleSummaryPage() {
 
     const fetchSummary = async () => {
       setIsLoading(true);
-      const summaryRef = doc(db, 'teachers', teacher.uid, 'savedBattles', savedBattleId);
-      const docSnap = await getDoc(summaryRef);
+      try {
+        const summaryRef = doc(db, 'teachers', teacher.uid, 'savedBattles', savedBattleId);
+        const docSnap = await getDoc(summaryRef);
 
-      if (docSnap.exists()) {
-        setSummary({ id: docSnap.id, ...docSnap.data() } as SavedBattle);
-      } else {
-        toast({ title: "Summary Not Found", description: "This battle summary may have already been cleaned up. Redirecting to battles list."})
-        router.push('/teacher/battles');
+        if (!docSnap.exists() || docSnap.data().status !== 'BATTLE_ENDED') {
+            toast({ title: "Summary Not Ready", description: "The battle has not concluded or the archive is missing. Redirecting...", variant: 'destructive' });
+            router.push('/teacher/battles');
+            return;
+        }
+        
+        const battleData = { id: docSnap.id, ...docSnap.data() } as SavedBattle;
+        
+        const battleTemplateRef = doc(db, 'teachers', teacher.uid, 'bossBattles', battleData.battleId);
+        const battleTemplateSnap = await getDoc(battleTemplateRef);
+        
+        if(battleTemplateSnap.exists()){
+            battleData.questions = battleTemplateSnap.data().questions;
+        }
+
+        setSummary(battleData);
+        
+        const roundsRef = collection(summaryRef, 'rounds');
+        const roundsQuery = query(roundsRef, orderBy('currentQuestionIndex'));
+        const roundsSnap = await getDocs(roundsQuery);
+        const roundsData = roundsSnap.docs.map(d => d.data() as RoundSnapshot);
+        setAllRounds(roundsData);
+
+      } catch (error) {
+         console.error("Error fetching summary:", error);
+         toast({ title: "Error Loading Summary", description: "There was a problem loading the battle report.", variant: 'destructive' });
+         router.push('/teacher/battles');
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     fetchSummary();
   }, [savedBattleId, teacher, router, toast]);
-
+  
   const handleCleanupBattle = async () => {
     if (!teacher) return;
     setIsCleaning(true);
 
     try {
         const summaryRef = doc(db, 'teachers', teacher.uid, 'savedBattles', savedBattleId);
+        // Clean up subcollections first
+        const roundsRef = collection(summaryRef, 'rounds');
+        const roundsSnap = await getDocs(roundsRef);
+        const batch = writeBatch(db);
+        roundsSnap.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        
+        // Delete the main doc
         await deleteDoc(summaryRef);
 
         toast({
@@ -145,15 +180,15 @@ export default function TeacherBattleSummaryPage() {
     );
   }
 
-  if (!summary) {
+  if (!summary || allRounds.length === 0) {
     return (
       <div className="flex min-h-screen w-full flex-col">
         <TeacherHeader />
         <main className="flex-1 p-4 md:p-6 lg:p-8">
           <Card>
             <CardHeader>
-              <CardTitle>Summary Not Found</CardTitle>
-              <CardDescription>The summary for this battle could not be loaded. It may have already been cleaned up.</CardDescription>
+              <CardTitle>Summary Not Found or Incomplete</CardTitle>
+              <CardDescription>The summary for this battle could not be loaded. It may have been cleaned up or no rounds were completed.</CardDescription>
             </CardHeader>
             <CardContent>
               <Button onClick={() => router.push('/teacher/battles')}>
@@ -166,35 +201,18 @@ export default function TeacherBattleSummaryPage() {
     );
   }
 
-  const roundKeys = Object.keys(summary.responsesByRound || {});
-
-  const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
-  if (summary.responsesByRound) {
-    for (const roundIndex in summary.responsesByRound) {
-      summary.responsesByRound[roundIndex].responses.forEach((res: any) => {
-          if (!rewardsByStudent[res.studentUid]) {
-              rewardsByStudent[res.studentUid] = { xpGained: 0, goldGained: 0 };
-          }
-          if (res.isCorrect) {
-              rewardsByStudent[res.studentUid].xpGained += 5;
-              rewardsByStudent[res.studentUid].goldGained += 10;
-          }
-      });
-    }
-  }
-
-  const totalXpAwarded = Object.values(rewardsByStudent).reduce((acc, reward) => acc + reward.xpGained, 0);
-  const totalGoldAwarded = Object.values(rewardsByStudent).reduce((acc, reward) => acc + reward.goldGained, 0);
+  const finalRound = allRounds[allRounds.length - 1];
+  const { totalDamage, totalBaseDamage, totalPowerDamage } = finalRound;
 
   const battleLogByRound: { [round: number]: PowerLogEntry[] } = {};
-    if (summary.powerLog) {
-        summary.powerLog.forEach(log => {
-            if (!battleLogByRound[log.round]) {
-                battleLogByRound[log.round] = [];
-            }
-            battleLogByRound[log.round].push(log);
-        });
-    }
+  if (summary.powerLog) {
+      summary.powerLog.forEach(log => {
+          if (!battleLogByRound[log.round]) {
+              battleLogByRound[log.round] = [];
+          }
+          battleLogByRound[log.round].push(log);
+      });
+  }
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -236,7 +254,7 @@ export default function TeacherBattleSummaryPage() {
                 </AlertDialogContent>
             </AlertDialog>
           </div>
-
+         
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="text-3xl">Battle Summary: {summary.battleName}</CardTitle>
@@ -251,50 +269,39 @@ export default function TeacherBattleSummaryPage() {
                 <CardContent className="flex flex-wrap justify-around items-center text-center gap-6">
                      <div className="flex flex-col items-center gap-2 p-2">
                         <Shield className="h-8 w-8 text-blue-500" />
-                        <p className="text-2xl font-bold">{summary.totalBaseDamage ?? 0}</p>
+                        <p className="text-2xl font-bold">{totalBaseDamage ?? 0}</p>
                         <p className="text-sm font-medium">Base Damage</p>
                     </div>
                      <div className="flex flex-col items-center gap-2 p-2">
                         <Sparkles className="h-8 w-8 text-purple-500" />
-                        <p className="text-2xl font-bold">{summary.totalPowerDamage ?? 0}</p>
+                        <p className="text-2xl font-bold">{totalPowerDamage ?? 0}</p>
                         <p className="text-sm font-medium">Power Damage</p>
                     </div>
                      <div className="flex flex-col items-center gap-2 p-2">
                         <HeartCrack className="h-8 w-8 text-red-600" />
-                        <p className="text-3xl font-extrabold">{summary.totalDamage ?? 0}</p>
+                        <p className="text-3xl font-extrabold">{totalDamage ?? 0}</p>
                         <p className="text-sm font-medium">Total Damage Dealt</p>
                     </div>
-                     <div className="flex flex-col items-center gap-2 p-2">
-                       <Star className="h-8 w-8 text-yellow-500" />
-                       <p className="text-xl font-bold">{totalXpAwarded}</p>
-                       <p className="text-sm font-medium">Total XP Awarded</p>
-                     </div>
-                     <div className="flex flex-col items-center gap-2 p-2">
-                       <Coins className="h-8 w-8 text-amber-600" />
-                       <p className="text-xl font-bold">{totalGoldAwarded}</p>
-                       <p className="text-sm font-medium">Total Gold Awarded</p>
-                     </div>
                 </CardContent>
             </Card>
-
+            
             <Card>
                  <CardHeader>
                     <CardTitle>Round-by-Round Breakdown</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <Accordion type="single" collapsible className="w-full">
-                        {roundKeys.map((roundIndex) => {
-                            const roundData = summary.responsesByRound[roundIndex];
+                        {allRounds.map((roundData, index) => {
                             if (!roundData || !roundData.responses) return null;
-                            const question = summary.questions[parseInt(roundIndex)];
+                            const question = summary.questions[roundData.currentQuestionIndex];
                             const correctCount = roundData.responses.filter(r => r.isCorrect).length;
                             const incorrectCount = roundData.responses.length - correctCount;
 
                             return (
-                                <AccordionItem key={roundIndex} value={`item-${roundIndex}`}>
+                                <AccordionItem key={index} value={`item-${index}`}>
                                     <AccordionTrigger className="text-lg hover:no-underline">
                                         <div className="flex justify-between w-full pr-4">
-                                            <span>Question {parseInt(roundIndex) + 1}: {question.questionText}</span>
+                                            <span>Question {roundData.currentQuestionIndex + 1}: {question.questionText}</span>
                                             <div className="flex gap-4">
                                                 <span className="text-green-500 font-semibold">{correctCount} Correct</span>
                                                 <span className="text-red-500 font-semibold">{incorrectCount} Incorrect</span>
@@ -313,12 +320,12 @@ export default function TeacherBattleSummaryPage() {
                                                 </li>
                                             ))}
                                         </ul>
-                                        {(battleLogByRound[parseInt(roundIndex) + 1]) && (
+                                        {(battleLogByRound[roundData.currentQuestionIndex + 1]) && (
                                             <div className="mt-2 p-2 bg-blue-900/10 rounded-md">
                                                 <h4 className="font-semibold text-sm">Powers Used:</h4>
                                                 <ul className="text-xs text-muted-foreground list-disc list-inside">
-                                                    {battleLogByRound[parseInt(roundIndex) + 1].map((log, index) => (
-                                                        <li key={index}>
+                                                    {battleLogByRound[roundData.currentQuestionIndex + 1].map((log, logIndex) => (
+                                                        <li key={logIndex}>
                                                             <span className="font-bold">{log.casterName}</span> used <span className="font-semibold text-primary">{log.powerName}</span>. Effect: {log.description}
                                                         </li>
                                                     ))}

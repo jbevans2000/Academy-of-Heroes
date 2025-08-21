@@ -222,13 +222,9 @@ export default function TeacherLiveBattlePage() {
       if (docSnap.exists()) {
         const newState = docSnap.data() as LiveBattleState;
         setLiveState(newState);
-
-        if (newState.status === 'BATTLE_ENDED' && newState.parentArchiveId) {
-            setRedirectId(newState.parentArchiveId);
-        }
       } else {
-        // If the document doesn't exist, it could mean the battle has ended and been cleaned up.
-        // Or it hasn't started. The redirect logic should handle this.
+        // This can happen normally if a battle ends and this client is still on the page.
+        // It should not redirect unless it was explicitly told to.
       }
       setIsLoading(false);
     }, (error) => {
@@ -268,58 +264,27 @@ export default function TeacherLiveBattlePage() {
       return () => unsubscribe();
   }, [teacherUid, liveState, liveState?.currentQuestionIndex]);
 
-  const handleEndBattleAndAggregate = async () => {
+  const handleEndBattle = async () => {
     if (!liveState || !battle || !teacherUid || !liveState.parentArchiveId) return;
     setIsEndingBattle(true);
 
     try {
         const batch = writeBatch(db);
         const parentArchiveRef = doc(db, 'teachers', teacherUid, 'savedBattles', liveState.parentArchiveId);
-
-        // 1. Fetch all round snapshots from the archive
-        const roundsArchiveRef = collection(parentArchiveRef, 'rounds');
-        const roundsQuery = query(roundsArchiveRef, orderBy('currentQuestionIndex'));
-        const roundsSnap = await getDocs(roundsQuery);
-        const allRoundsData = roundsSnap.docs.map(d => d.data());
-
-        // 2. Aggregate final data from the snapshots
-        const responsesByRound: { [key: string]: any } = {};
-        allRoundsData.forEach(roundData => {
-            const roundIndex = roundData.currentQuestionIndex;
-            // The `responses` array should already be on the round snapshot
-            responsesByRound[roundIndex] = { responses: roundData.responses || [] };
+        
+        // Mark the parent archive as 'BATTLE_ENDED'
+        batch.update(parentArchiveRef, {
+            status: 'BATTLE_ENDED',
         });
         
-        const finalRound = allRoundsData[allRoundsData.length - 1];
-        if (!finalRound) {
-            throw new Error("No round data was archived to create a summary.");
-        }
-
-        // Fetch the complete battle log from the live battle
-        const battleLogRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
-        const powerLogSnap = await getDocs(battleLogRef);
-        const powerLogData = powerLogSnap.docs.map(doc => doc.data());
-
-        // 3. Create the final summary object to update the parent document
-        const finalSummary = {
-            battleName: battle.battleName,
-            questions: battle.questions,
-            responsesByRound,
-            powerLog: powerLogData,
-            totalDamage: finalRound.totalDamage,
-            totalBaseDamage: finalRound.totalBaseDamage,
-            totalPowerDamage: finalRound.totalPowerDamage,
-            fallenAtEnd: finalRound.fallenPlayerUids || [],
-            status: 'BATTLE_ENDED',
-            savedAt: serverTimestamp(),
-        };
-
-        batch.update(parentArchiveRef, finalSummary);
-
-        // 4. Award XP/Gold
+        // Award XP/Gold
+        const roundsArchiveRef = collection(parentArchiveRef, 'rounds');
+        const roundsSnap = await getDocs(roundsArchiveRef);
+        const allRoundsData = roundsSnap.docs.map(d => d.data());
+        
         const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
-        for(const roundIndex in responsesByRound) {
-             responsesByRound[roundIndex].responses.forEach((res: any) => {
+        allRoundsData.forEach(roundData => {
+            (roundData.responses || []).forEach((res: any) => {
                 if (!rewardsByStudent[res.studentUid]) {
                     rewardsByStudent[res.studentUid] = { xpGained: 0, goldGained: 0 };
                 }
@@ -328,7 +293,7 @@ export default function TeacherLiveBattlePage() {
                     rewardsByStudent[res.studentUid].goldGained += 10;
                 }
             });
-        }
+        });
 
         const studentDocs = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
         const studentMap = new Map(studentDocs.docs.map(d => [d.id, d.data() as Student]));
@@ -357,10 +322,10 @@ export default function TeacherLiveBattlePage() {
                  batch.update(studentRef, updates);
             }
         }
-
-        // 5. Clean up the `active-battle` document and its subcollections
+        
+        // Clean up the `active-battle` document and its subcollections
         const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
-        const subcollections = ['responses', 'powerActivations', 'battleLog', 'messages', 'rounds'];
+        const subcollections = ['responses', 'powerActivations', 'battleLog', 'messages'];
         for (const sub of subcollections) {
             const subRef = collection(liveBattleRef, sub);
             const snapshot = await getDocs(subRef);
@@ -370,11 +335,11 @@ export default function TeacherLiveBattlePage() {
 
         await batch.commit();
 
-        await logGameEvent(teacherUid, 'BOSS_BATTLE', `Battle '${battle.battleName}' ended and archive was created.`);
+        await logGameEvent(teacherUid, 'BOSS_BATTLE', `Battle '${battle.battleName}' ended.`);
         setRedirectId(liveState.parentArchiveId); // This will trigger the useEffect for redirection
     } catch (e) {
         console.error("Error ending battle:", e);
-        toast({ variant: 'destructive', title: 'Error', description: 'Failed to end battle and aggregate results.' });
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to end battle.' });
     } finally {
         setIsEndingBattle(false);
     }
@@ -1087,7 +1052,7 @@ export default function TeacherLiveBattlePage() {
                                     </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
-                                <Button variant="destructive" onClick={handleEndBattleAndAggregate} disabled={isEndingBattle || isAdvancing || isEndingRound}>
+                                <Button variant="destructive" onClick={handleEndBattle} disabled={isEndingBattle || isAdvancing || isEndingRound}>
                                     {isEndingBattle ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                     End Battle
                                 </Button>
