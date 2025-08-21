@@ -65,68 +65,6 @@ interface SavedBattle {
 }
 
 
-// --- MOCK DATA ---
-const mockSummaryData: SavedBattle = {
-  id: "mock-battle-summary-id",
-  battleId: "mock-battle-template-id",
-  battleName: "Mock Battle: The Crystal Golem",
-  status: 'BATTLE_ENDED',
-  questions: [
-    { questionText: "What is 2 + 2?", answers: ["4", "3", "5", "2"], correctAnswerIndex: 0 },
-    { questionText: "What is the capital of France?", answers: ["Paris", "London", "Berlin", "Rome"], correctAnswerIndex: 0 },
-    { questionText: "Which planet is known as the Red Planet?", answers: ["Mars", "Jupiter", "Saturn", "Venus"], correctAnswerIndex: 0 }
-  ],
-  powerLog: [
-    { round: 1, casterName: "Elara", powerName: "Wildfire", description: "Dealt 8 damage." },
-    { round: 2, casterName: "Grom", powerName: "Guard", description: "Redirected damage." }
-  ],
-  fallenAtEnd: ["student-id-3"],
-};
-
-const mockRoundsData: RoundSnapshot[] = [
-  {
-    id: "round-0",
-    currentQuestionIndex: 0,
-    lastRoundDamage: 2,
-    lastRoundBaseDamage: 2,
-    lastRoundPowerDamage: 0,
-    lastRoundPowersUsed: [],
-    responses: [
-      { studentUid: "student-id-1", characterName: "Aethelred", answerIndex: 0, isCorrect: true },
-      { studentUid: "student-id-2", characterName: "Grom", answerIndex: 1, isCorrect: false },
-      { studentUid: "student-id-3", characterName: "Elara", answerIndex: 0, isCorrect: true },
-    ]
-  },
-  {
-    id: "round-1",
-    currentQuestionIndex: 1,
-    lastRoundDamage: 9,
-    lastRoundBaseDamage: 1,
-    lastRoundPowerDamage: 8,
-    lastRoundPowersUsed: ["Wildfire (8 dmg)"],
-    responses: [
-      { studentUid: "student-id-1", characterName: "Aethelred", answerIndex: 2, isCorrect: false },
-      { studentUid: "student-id-2", characterName: "Grom", answerIndex: 3, isCorrect: false },
-      { studentUid: "student-id-3", characterName: "Elara", answerIndex: 0, isCorrect: true },
-    ]
-  },
-   {
-    id: "round-2",
-    currentQuestionIndex: 2,
-    lastRoundDamage: 2,
-    lastRoundBaseDamage: 2,
-    lastRoundPowerDamage: 0,
-    lastRoundPowersUsed: [],
-    responses: [
-      { studentUid: "student-id-1", characterName: "Aethelred", answerIndex: 0, isCorrect: true },
-      { studentUid: "student-id-2", characterName: "Grom", answerIndex: 0, isCorrect: true },
-      { studentUid: "student-id-3", characterName: "Elara", answerIndex: 2, isCorrect: false },
-    ]
-  }
-];
-// --- END MOCK DATA ---
-
-
 export default function TeacherBattleSummaryPage() {
   const router = useRouter();
   const params = useParams();
@@ -141,28 +79,9 @@ export default function TeacherBattleSummaryPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // This effect now uses the mock data instead of fetching from Firestore.
-    // It simulates the loading process.
-    const loadMockData = () => {
-        setIsLoading(true);
-        // Simulate a network request delay
-        setTimeout(() => {
-            setSummary(mockSummaryData);
-            setAllRounds(mockRoundsData);
-            setAllStudents([
-                { uid: "student-id-1", characterName: "Aethelred" },
-                { uid: "student-id-2", characterName: "Grom" },
-                { uid: "student-id-3", characterName: "Elara" },
-            ]);
-            setIsLoading(false);
-        }, 1000);
-    };
-
-    // Keep auth check to simulate a logged-in state
     const unsubscribe = onAuthStateChanged(auth, user => {
         if (user) {
             setTeacher(user);
-            loadMockData(); // Load mock data once user is "verified"
         } else {
             router.push('/teacher/login');
         }
@@ -170,8 +89,93 @@ export default function TeacherBattleSummaryPage() {
     return () => unsubscribe();
   }, [router]);
   
+  useEffect(() => {
+    if (!savedBattleId || !teacher) return;
+
+    const fetchFullSummary = async () => {
+        setIsLoading(true);
+        try {
+            // 1. Fetch the main summary document
+            const summaryRef = doc(db, 'teachers', teacher.uid, 'savedBattles', savedBattleId);
+            const summarySnap = await getDoc(summaryRef);
+            
+            if (!summarySnap.exists()) {
+                toast({ title: "Summary Not Found", description: "This battle summary may have been cleaned up.", variant: "destructive" });
+                router.push('/teacher/battles/summary');
+                return;
+            }
+
+            const summaryData = { id: summarySnap.id, ...summarySnap.data() } as Omit<SavedBattle, 'questions'> & { battleId: string };
+            
+            // 2. Fetch the original battle to get the questions
+            const battleTemplateRef = doc(db, 'teachers', teacher.uid, 'bossBattles', summaryData.battleId);
+            const battleTemplateSnap = await getDoc(battleTemplateRef);
+            const questions = battleTemplateSnap.exists() ? battleTemplateSnap.data().questions : [];
+            
+            setSummary({ ...summaryData, questions });
+
+            // 3. Fetch the rounds subcollection
+            const roundsRef = collection(db, 'teachers', teacher.uid, 'savedBattles', savedBattleId, 'rounds');
+            const roundsQuery = query(roundsRef, orderBy('currentQuestionIndex'));
+            const roundsSnapshot = await getDocs(roundsQuery);
+            const roundsData = roundsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as RoundSnapshot);
+            setAllRounds(roundsData);
+
+            // 4. Fetch all students for mapping UIDs to names
+            const studentsRef = collection(db, 'teachers', teacher.uid, 'students');
+            const studentsSnapshot = await getDocs(studentsRef);
+            setAllStudents(studentsSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() })));
+
+
+        } catch (error) {
+            console.error("Error fetching full battle summary:", error);
+            toast({ title: "Error", description: "Failed to load the full battle report.", variant: "destructive" });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    fetchFullSummary();
+
+  }, [savedBattleId, teacher, router, toast]);
+
+  
   const handleCleanupBattle = async () => {
-    toast({ title: "Action Disabled", description: "Cleanup is disabled in mock data view." });
+    if (!teacher) return;
+    setIsCleaning(true);
+
+    try {
+        const summaryRef = doc(db, 'teachers', teacher.uid, 'savedBattles', savedBattleId);
+        
+        // Delete subcollections first
+        const roundsRef = collection(summaryRef, 'rounds');
+        const roundsSnap = await getDocs(roundsRef);
+        const batch = writeBatch(db);
+        roundsSnap.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        
+        // Then delete the main document
+        await deleteDoc(summaryRef);
+        
+        await logGameEvent(teacher.uid, 'GAMEMASTER', `Cleared battle archive: ${summary?.battleName || savedBattleId}`);
+
+        toast({
+            title: 'Battle Archive Cleared!',
+            description: 'The archived data for this battle has been removed.',
+        });
+
+        router.push('/teacher/battles/summary');
+
+    } catch (error) {
+        console.error("Error cleaning up battle summary:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Cleanup Failed',
+            description: 'There was an error deleting the battle archive. Please try again.',
+        });
+    } finally {
+        setIsCleaning(false);
+    }
   };
 
 
