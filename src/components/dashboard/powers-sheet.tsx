@@ -60,7 +60,7 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
 
 
   useEffect(() => {
-    if (!isBattleView || !teacherUid || !battleId) return;
+    if (!isBattleView || !teacherUid) return;
 
     // This listener will keep party members' stats (HP, MP) up to date in real-time
     const studentsRef = collection(db, 'teachers', teacherUid, 'students');
