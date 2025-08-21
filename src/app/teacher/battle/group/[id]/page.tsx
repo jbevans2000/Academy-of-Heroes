@@ -178,7 +178,7 @@ export default function GroupBattlePage() {
                                     {selectedAnswerIndex === currentQuestion.correctAnswerIndex ? (
                                         <>
                                             <CheckCircle className="h-24 w-24 mx-auto text-green-400" />
-                                            <p className="text-5xl font-bold mt-4 text-green-300">Your strike has landed!</p>
+                                            <p className="text-5xl font-bold mt-4 text-green-600">Your strike has landed!</p>
                                         </>
                                     ) : (
                                         <>
