@@ -306,10 +306,15 @@ export default function TeacherLiveBattlePage() {
         const fallenAtEnd = finalLiveState.fallenPlayerUids || [];
         const empoweredAtEnd = finalLiveState.empoweredMageUids || [];
         
-        // The total damage is now reliably stored in the finalLiveState
-        const totalDamage = finalLiveState.totalDamage || 0;
-        const totalBaseDamage = finalLiveState.totalBaseDamage || 0;
-        const totalPowerDamage = finalLiveState.totalPowerDamage || 0;
+        let totalDamage = 0;
+        let totalBaseDamage = 0;
+        let totalPowerDamage = 0;
+
+        Object.values(finalRoundsData).forEach((round: any) => {
+            totalBaseDamage += round.baseDamage || 0;
+            totalPowerDamage += round.powerDamage || 0;
+        });
+        totalDamage = totalBaseDamage + totalPowerDamage;
         
         await logGameEvent(teacherUid, 'BOSS_BATTLE', `The party dealt a total of ${totalDamage} damage during '${battle.battleName}'.`);
 
@@ -514,35 +519,26 @@ export default function TeacherLiveBattlePage() {
         }
     
         batch.update(liveBattleRef, updatePayload);
-    
-        const currentQuestion = battle.questions[liveState.currentQuestionIndex];
-        
-        const submittedResponsesForThisRound = roundResults.map(r => ({
-            studentUid: r.studentUid,
-            studentName: r.studentName,
-            answerIndex: battle.questions[liveState.currentQuestionIndex].answers.indexOf(r.answer),
-            isCorrect: r.isCorrect,
-        }));
-
-        const newRoundsData = {
-            ...allRoundsData,
-            [liveState.currentQuestionIndex]: {
-                questionText: currentQuestion.questionText,
-                responses: submittedResponsesForThisRound,
-                powersUsed: powersUsedThisRound,
-                baseDamage,
-                powerDamage,
-            }
-        };
-
-        setAllRoundsData(newRoundsData);
-    
         await batch.commit();
-    
+
         if (isFinalBattleRound) {
             const finalLiveStateSnap = await getDoc(liveBattleRef);
             if (finalLiveStateSnap.exists()) {
-                await generateAndSaveSummary(newRoundsData, finalLiveStateSnap.data() as LiveBattleState);
+                const currentQuestion = battle.questions[liveState.currentQuestionIndex];
+                const finalRoundData = {
+                    questionText: currentQuestion.questionText,
+                    responses: roundResults.map(r => ({
+                        studentUid: r.studentUid,
+                        studentName: r.studentName,
+                        answerIndex: battle.questions[liveState.currentQuestionIndex].answers.indexOf(r.answer),
+                        isCorrect: r.isCorrect,
+                    })),
+                    powersUsed: powersUsedThisRound,
+                    baseDamage,
+                    powerDamage,
+                };
+                const finalAllRoundsData = { ...allRoundsData, [liveState.currentQuestionIndex]: finalRoundData };
+                await generateAndSaveSummary(finalAllRoundsData, finalLiveStateSnap.data() as LiveBattleState);
             }
         }
     };
@@ -907,7 +903,7 @@ export default function TeacherLiveBattlePage() {
       
       return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [liveState?.status, liveState?.timerEndsAt, calculateAndSetResults]);
+  }, [liveState?.status, liveState?.timerEndsAt]);
 
   // Effect to resolve fallen UIDs to names
   useEffect(() => {
@@ -969,6 +965,24 @@ export default function TeacherLiveBattlePage() {
     if (!battle || liveState === null || !teacherUid || liveState.currentQuestionIndex >= battle.questions.length - 1) return;
 
     setIsAdvancing(true);
+    
+    const currentQuestion = battle.questions[liveState.currentQuestionIndex];
+    setAllRoundsData((prev: any) => ({
+        ...prev,
+        [liveState.currentQuestionIndex]: {
+            questionText: currentQuestion.questionText,
+            responses: roundResults.map(r => ({
+                studentUid: r.studentUid,
+                studentName: r.studentName,
+                answerIndex: battle.questions[liveState.currentQuestionIndex].answers.indexOf(r.answer),
+                isCorrect: r.isCorrect,
+            })),
+            powersUsed: liveState.lastRoundPowersUsed,
+            baseDamage: liveState.lastRoundBaseDamage,
+            powerDamage: liveState.lastRoundPowerDamage,
+        }
+    }));
+    
     setRoundResults([]);
     try {
         const batch = writeBatch(db);
