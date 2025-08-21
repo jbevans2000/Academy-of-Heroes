@@ -168,6 +168,7 @@ export default function TeacherLiveBattlePage() {
   const [fallenStudentNames, setFallenStudentNames] = useState<string[]>([]);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [powerLog, setPowerLog] = useState<PowerLogEntry[]>([]);
+  const prevStatusRef = useRef<LiveBattleState['status'] | null>(null);
 
 
   useEffect(() => {
@@ -222,7 +223,20 @@ export default function TeacherLiveBattlePage() {
     const unsubscribe = onSnapshot(liveBattleRef, (doc) => {
       if (doc.exists()) {
         const newState = doc.data() as LiveBattleState;
+        
+        // **NEW FIX:** Check if a battle has just started
+        if (
+            (prevStatusRef.current === 'BATTLE_ENDED' || prevStatusRef.current === null) &&
+            newState.status === 'WAITING'
+        ) {
+            console.log("New battle detected, resetting local state.");
+            setAllRoundsData({});
+            setRoundResults([]);
+        }
+
         setLiveState(newState);
+        prevStatusRef.current = newState.status;
+
 
         if (newState.status === 'BATTLE_ENDED') {
             router.push(`/teacher/battle/summary/${battleId}`);
@@ -891,6 +905,7 @@ export default function TeacherLiveBattlePage() {
       }, timeUntilExpiry > 0 ? timeUntilExpiry : 0);
       
       return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveState?.status, liveState?.timerEndsAt, calculateAndSetResults]);
 
   // Effect to resolve fallen UIDs to names
