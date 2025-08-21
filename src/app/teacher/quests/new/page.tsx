@@ -30,7 +30,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { generateStory, generateSummary, type StoryGeneratorInput } from '@/ai/flows/story-generator';
 import { v4 as uuidv4 } from 'uuid';
 import { cn } from '@/lib/utils';
 
@@ -110,12 +109,6 @@ export default function NewQuestPage() {
 
   // State for AI generator
   const [isOracleOpen, setIsOracleOpen] = useState(false);
-  const [oracleMode, setOracleMode] = useState<'standalone' | 'saga' | null>(null);
-  const [oracleGradeLevel, setOracleGradeLevel] = useState('');
-  const [oraclePredecessorHub, setOraclePredecessorHub] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isConfirmStandaloneOpen, setIsConfirmStandaloneOpen] = useState(false);
-
 
   // State for the new Hub creator
   const [hubs, setHubs] = useState<QuestHub[]>([]);
@@ -217,82 +210,6 @@ export default function NewQuestPage() {
     }
     return true;
   }
-  
-  const handleOracleGenerate = async () => {
-    if (!oracleGradeLevel || !oracleMode || !teacher) {
-        toast({ variant: 'destructive', title: "The Oracle's Query is Incomplete", description: 'Please provide all required elements for the Oracle.' });
-        return;
-    }
-
-    setIsGenerating(true);
-
-    try {
-        let previousHubSummary: string | undefined;
-        let currentHubSummary: string | undefined;
-        let previousChapterStory: string | undefined;
-
-        if (oracleMode === 'saga') {
-            // Fetch predecessor hub summary if selected
-            if (oraclePredecessorHub && oraclePredecessorHub !== 'none') {
-                const hubRef = doc(db, 'teachers', teacher.uid, 'questHubs', oraclePredecessorHub);
-                const hubSnap = await getDoc(hubRef);
-                if (hubSnap.exists()) {
-                    previousHubSummary = hubSnap.data().storySummary;
-                }
-            }
-            // Fetch current hub summary
-            if (selectedHubId && selectedHubId !== 'new') {
-                 const currentHubRef = doc(db, 'teachers', teacher.uid, 'questHubs', selectedHubId);
-                 const currentHubSnap = await getDoc(currentHubRef);
-                 if (currentHubSnap.exists()) {
-                    currentHubSummary = currentHubSnap.data().storySummary;
-                 }
-            }
-            // Fetch previous chapter story
-            if (selectedHubId && selectedHubId !== 'new' && typeof chapterNumber === 'number' && chapterNumber > 1) {
-                const prevChapterQuery = query(
-                    collection(db, 'teachers', teacher.uid, 'chapters'),
-                    where('hubId', '==', selectedHubId),
-                    where('chapterNumber', '==', chapterNumber - 1)
-                );
-                const prevChapterSnap = await getDocs(prevChapterQuery);
-                if (!prevChapterSnap.empty) {
-                    previousChapterStory = prevChapterSnap.docs[0].data().storyContent;
-                }
-            }
-        }
-        
-        const input: StoryGeneratorInput = {
-            gradeLevel: oracleGradeLevel as any,
-            mode: oracleMode,
-            previousHubSummary,
-            currentHubSummary,
-            previousChapterStory,
-        };
-
-        const result = await generateStory(input);
-        
-        setChapterTitle(result.title);
-        setStoryContent(result.storyContent);
-
-        // If saga mode, update the hub's story summary
-        if (oracleMode === 'saga' && selectedHubId && selectedHubId !== 'new') {
-            const newSummary = await generateSummary(currentHubSummary, result.storyContent);
-            const hubRef = doc(db, 'teachers', teacher.uid, 'questHubs', selectedHubId);
-            await updateDoc(hubRef, { storySummary: newSummary });
-        }
-
-        toast({ title: 'The Oracle has Spoken!', description: 'The chapter title and story have been divined.' });
-        setIsOracleOpen(false); // Close the main dialog
-        setOracleMode(null); // Reset for next time
-
-    } catch (error) {
-        console.error("Error generating story from Oracle:", error);
-        toast({ variant: 'destructive', title: 'The Oracle is Silent', description: 'The AI failed to generate a story.' });
-    } finally {
-        setIsGenerating(false);
-    }
-  };
 
   const handleSaveQuest = async () => {
     if (!validateInputs() || !teacher) return;
@@ -349,98 +266,6 @@ export default function NewQuestPage() {
         setIsSaving(false);
     }
   }
-
-  const renderOracleDialog = () => {
-    if (!oracleMode) {
-        return (
-            <>
-            <AlertDialogHeader>
-                <AlertDialogTitle>The Oracle Awaits Your Query</AlertDialogTitle>
-                <AlertDialogDescription>
-                    How shall the Oracle weave its tale?
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-                <Button variant="outline" onClick={() => setOracleMode('standalone')}>Create a Standalone Story</Button>
-                <Button onClick={() => setOracleMode('saga')}>
-                  {chapterNumber === 1 || chapterNumber === '' ? 'Begin the Saga' : 'Continue the Saga'}
-                </Button>
-            </div>
-             <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setOracleMode(null)}>Return to my own thoughts</AlertDialogCancel>
-            </AlertDialogFooter>
-            </>
-        )
-    }
-
-    if (oracleMode === 'standalone') {
-        return (
-             <>
-            <AlertDialogHeader>
-                <AlertDialogTitle>A Standalone Tale</AlertDialogTitle>
-                 <AlertDialogDescription>
-                     Provide the Oracle with the grade level for a self-contained story. The Oracle will generate an appropriate title and story.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <div className="space-y-4 py-4">
-                 <div className="space-y-2">
-                    <Label>Grade Level</Label>
-                    <Select onValueChange={setOracleGradeLevel} value={oracleGradeLevel}>
-                        <SelectTrigger><SelectValue placeholder="For which students?" /></SelectTrigger>
-                        <SelectContent>{['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'].map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
-                    </Select>
-                 </div>
-            </div>
-            <AlertDialogFooter>
-                <Button variant="ghost" onClick={() => setOracleMode(null)}>Back</Button>
-                <AlertDialogAction onClick={() => { setIsOracleOpen(false); setIsConfirmStandaloneOpen(true); }} disabled={isGenerating || !oracleGradeLevel}>
-                    Write a Standalone Chapter
-                </AlertDialogAction>
-            </AlertDialogFooter>
-            </>
-        )
-    }
-    
-     if (oracleMode === 'saga') {
-        return (
-             <>
-            <AlertDialogHeader>
-                <AlertDialogTitle>Weave a Continuous Saga</AlertDialogTitle>
-                 <AlertDialogDescription>
-                    The Oracle will consult its records of the past to write the next chapter.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                    <Label>Grade Level</Label>
-                     <Select onValueChange={setOracleGradeLevel} value={oracleGradeLevel}>
-                        <SelectTrigger><SelectValue placeholder="For which students?" /></SelectTrigger>
-                        <SelectContent>{['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'].map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
-                    </Select>
-                 </div>
-                  <div className="space-y-2">
-                    <Label>Is this the first chapter of a sequel to a previous Hub? (Optional)</Label>
-                     <Select onValueChange={setOraclePredecessorHub} value={oraclePredecessorHub}>
-                        <SelectTrigger><SelectValue placeholder="Select previous hub..." /></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
-                            {hubs.map(hub => <SelectItem key={hub.id} value={hub.id}>{hub.name}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                 </div>
-            </div>
-            <AlertDialogFooter>
-                <Button variant="ghost" onClick={() => setOracleMode(null)} disabled={isGenerating}>Back</Button>
-                <AlertDialogAction onClick={handleOracleGenerate} disabled={isGenerating || !oracleGradeLevel || !selectedHubId || selectedHubId === 'new'}>
-                    {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    {chapterNumber === 1 || chapterNumber === '' ? 'Begin the Saga' : 'Continue the Saga'}
-                </AlertDialogAction>
-            </AlertDialogFooter>
-            </>
-        )
-    }
-  }
-
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -538,7 +363,7 @@ export default function NewQuestPage() {
               {teacher && <div className="space-y-6 p-6 border rounded-lg">
                 <div className="flex justify-between items-center">
                     <h3 className="text-xl font-semibold">Phase 2: Chapter Content</h3>
-                    <Button variant="outline" onClick={() => setIsOracleOpen(true)} disabled={isSaving || !chapterTitle}>
+                    <Button variant="outline" onClick={() => setIsOracleOpen(true)} disabled>
                         <Sparkles className="mr-2 h-4 w-4" />
                         Consult the Oracle
                     </Button>
@@ -633,25 +458,14 @@ export default function NewQuestPage() {
         </div>
         <AlertDialog open={isOracleOpen} onOpenChange={setIsOracleOpen}>
             <AlertDialogContent>
-                {renderOracleDialog()}
-            </AlertDialogContent>
-        </AlertDialog>
-        <AlertDialog open={isConfirmStandaloneOpen} onOpenChange={setIsConfirmStandaloneOpen}>
-            <AlertDialogContent>
                  <AlertDialogHeader>
-                    <AlertDialogTitle>A Word of Caution from the Oracle</AlertDialogTitle>
+                    <AlertDialogTitle>The Oracle Is Resting</AlertDialogTitle>
                     <AlertDialogDescription>
-                         The Oracle prepares to tell a self-contained story, unbound by the past or future. Such tales are best kept in a dedicated tome.
-                         <br/><br/>
-                         For best organization, please create such chapters in a Hub named 'Independent Chapters'.
-                         <strong>Are you in a Quest Hub named 'Independent Chapters'?</strong>
+                        The AI story generation feature is temporarily disabled. Please write your story manually.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => {setIsOracleOpen(true)}}>No, I must prepare</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => {setIsConfirmStandaloneOpen(false); handleOracleGenerate()}}>
-                        Yes, the tome is open
-                    </AlertDialogAction>
+                    <AlertDialogAction onClick={() => setIsOracleOpen(false)}>I Understand</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>

@@ -30,7 +30,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { classData, type ClassType } from '@/lib/data';
 import { logGameEvent } from '@/lib/gamelog';
-import { generateName, type NameInput } from '@/ai/flows/name-generator';
 
 export default function RegisterPage() {
   const [classCode, setClassCode] = useState('');
@@ -42,7 +41,6 @@ export default function RegisterPage() {
   const [selectedClass, setSelectedClass] = useState<ClassType>('');
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isGeneratingName, setIsGeneratingName] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -58,23 +56,6 @@ export default function RegisterPage() {
     
     return querySnapshot.docs[0].id;
   }
-
-  const handleGenerateName = async (gender: NameInput['gender']) => {
-    setIsGeneratingName(true);
-    try {
-        const name = await generateName({ gender });
-        setCharacterName(name);
-    } catch (error) {
-        console.error("Error generating name:", error);
-        toast({
-            variant: 'destructive',
-            title: 'Name Generation Failed',
-            description: 'The Oracle could not divine a name. Please try again or scribe one yourself.',
-        });
-    } finally {
-        setIsGeneratingName(false);
-    }
-  };
 
   const handleSubmit = async () => {
     if (!classCode || !studentId || !password || !studentName || !characterName || !selectedClass || !selectedAvatar) {
@@ -234,19 +215,19 @@ export default function RegisterPage() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="character-name" className="flex items-center"><Star className="w-4 h-4 mr-2" />Character Name</Label>
-                    <Input id="character-name" placeholder="Your hero's name" value={characterName} onChange={(e) => setCharacterName(e.target.value)} disabled={isLoading || isGeneratingName} />
+                    <Input id="character-name" placeholder="Your hero's name" value={characterName} onChange={(e) => setCharacterName(e.target.value)} disabled={isLoading} />
                 </div>
                 <div className="space-y-2">
                     <Label>Need help with a name?</Label>
                     <div className="grid grid-cols-2 gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handleGenerateName('Male')} disabled={isGeneratingName}>
-                           {isGeneratingName ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Random Male'}
+                        <Button variant="outline" size="sm" disabled>
+                           Random Male
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleGenerateName('Female')} disabled={isGeneratingName}>
-                           {isGeneratingName ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Random Female'}
+                        <Button variant="outline" size="sm" disabled>
+                           Random Female
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleGenerateName('Non-binary')} disabled={isGeneratingName} className="col-span-2">
-                           {isGeneratingName ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Random Non-binary'}
+                        <Button variant="outline" size="sm" disabled className="col-span-2">
+                           Random Non-binary
                         </Button>
                     </div>
                 </div>

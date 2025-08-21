@@ -7,7 +7,6 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Dices, Loader2, BrainCircuit, PersonStanding, Download } from 'lucide-react';
-import { generateActivity, type ActivityInput, type Activity } from '@/ai/flows/activity-generator';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
@@ -20,42 +19,11 @@ const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th
 export default function RandomActivityPage() {
     const router = useRouter();
     const { toast } = useToast();
-    const [currentActivity, setCurrentActivity] = useState<Activity | null>(null);
+    const [currentActivity, setCurrentActivity] = useState<any | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [loadingType, setLoadingType] = useState<'Mental' | 'Physical' | null>(null);
     const [selectedGrade, setSelectedGrade] = useState<string>('');
 
-    const handleGenerateActivity = async (activityType: 'Mental' | 'Physical') => {
-        if (!selectedGrade) {
-            toast({
-                variant: 'destructive',
-                title: 'Please select a grade level first.',
-            });
-            return;
-        }
-
-        setIsLoading(true);
-        setLoadingType(activityType);
-        setCurrentActivity(null);
-
-        try {
-            const activity = await generateActivity({ 
-                activityType, 
-                gradeLevel: selectedGrade as ActivityInput['gradeLevel'] 
-            });
-            setCurrentActivity(activity);
-        } catch (error) {
-            console.error("Error generating activity:", error);
-            toast({
-                variant: 'destructive',
-                title: 'AI Error',
-                description: 'The AI failed to generate an activity. Please try again.',
-            })
-        } finally {
-            setIsLoading(false);
-            setLoadingType(null);
-        }
-    };
 
     const handleDownload = () => {
         if (!currentActivity?.documentContent) return;
@@ -156,20 +124,12 @@ export default function RandomActivityPage() {
                         </CardContent>
                     </Card>
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Button size="lg" className="text-lg py-8" onClick={() => handleGenerateActivity('Mental')} disabled={isLoading || !selectedGrade}>
-                            {isLoading && loadingType === 'Mental' ? (
-                                <Loader2 className="mr-4 h-6 w-6 animate-spin" />
-                            ) : (
-                                <BrainCircuit className="mr-4 h-6 w-6" />
-                            )}
+                        <Button size="lg" className="text-lg py-8" disabled>
+                            <BrainCircuit className="mr-4 h-6 w-6" />
                             Generate Mental Task
                         </Button>
-                         <Button size="lg" className="text-lg py-8" onClick={() => handleGenerateActivity('Physical')} disabled={isLoading || !selectedGrade}>
-                            {isLoading && loadingType === 'Physical' ? (
-                                <Loader2 className="mr-4 h-6 w-6 animate-spin" />
-                            ) : (
-                                <PersonStanding className="mr-4 h-6 w-6" />
-                            )}
+                         <Button size="lg" className="text-lg py-8" disabled>
+                            <PersonStanding className="mr-4 h-6 w-6" />
                             Generate Physical Task
                         </Button>
                     </div>

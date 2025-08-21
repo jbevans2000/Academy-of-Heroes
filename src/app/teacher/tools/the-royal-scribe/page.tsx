@@ -7,7 +7,6 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ScrollText, Loader2, Sparkles } from 'lucide-react';
-import { generateWritingPrompt, type WritingPromptInput } from '@/ai/flows/writing-prompt-generator';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -30,41 +29,6 @@ export default function RoyalScribePage() {
     const [promptType, setPromptType] = useState<'Fiction' | 'Non-Fiction' | ''>('');
     const [genreOrSubject, setGenreOrSubject] = useState('');
     const [specificTopic, setSpecificTopic] = useState('');
-
-    const handleGeneratePrompt = async () => {
-        if (!gradeLevel || !promptType || !genreOrSubject) {
-            toast({
-                variant: 'destructive',
-                title: 'Missing Information',
-                description: 'Please complete all required selections before generating a prompt.',
-            });
-            return;
-        }
-
-        setIsLoading(true);
-        setGeneratedPrompt(null);
-
-        const input: WritingPromptInput = {
-            gradeLevel: gradeLevel as WritingPromptInput['gradeLevel'],
-            promptType: promptType as WritingPromptInput['promptType'],
-            genreOrSubject,
-            specificTopic: specificTopic || undefined
-        };
-
-        try {
-            const result = await generateWritingPrompt(input);
-            setGeneratedPrompt(result);
-        } catch (error) {
-             console.error("Error generating writing prompt:", error);
-            toast({
-                variant: 'destructive',
-                title: 'AI Error',
-                description: 'The AI failed to generate a prompt. Please try again.',
-            })
-        } finally {
-            setIsLoading(false);
-        }
-    }
 
     const resetSelections = () => {
         setGradeLevel('');
@@ -155,8 +119,8 @@ export default function RoyalScribePage() {
                             )}
 
                              <div className="pt-4">
-                                <Button size="lg" onClick={handleGeneratePrompt} disabled={isLoading || !genreOrSubject}>
-                                    {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
+                                <Button size="lg" disabled>
+                                    <Sparkles className="mr-2 h-5 w-5" />
                                     Generate Prompt
                                 </Button>
                              </div>
