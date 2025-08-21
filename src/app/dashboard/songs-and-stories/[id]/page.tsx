@@ -134,7 +134,7 @@ export default function BattleSummaryDetailPage() {
         )
     }
 
-    const roundKeys = Object.keys(summary.responsesByRound);
+    const roundKeys = Object.keys(summary.responsesByRound || {});
     
     const battleLogByRound: { [round: number]: PowerLogEntry[] } = {};
     if (summary.powerLog) {

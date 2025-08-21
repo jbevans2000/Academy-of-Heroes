@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs, writeBatch, serverTimestamp, setDoc, deleteDoc, arrayUnion, arrayRemove, addDoc } from 'firebase/firestore';
+import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs, writeBatch, serverTimestamp, setDoc, deleteDoc, arrayUnion, arrayRemove, addDoc, increment } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
@@ -44,6 +44,7 @@ interface VoteState {
 
 interface LiveBattleState {
   battleId: string | null;
+  parentArchiveId: string; // New: To link to the permanent record
   status: 'WAITING' | 'IN_PROGRESS' | 'ROUND_ENDING' | 'SHOWING_RESULTS' | 'BATTLE_ENDED';
   currentQuestionIndex: number;
   timerEndsAt?: { seconds: number; nanoseconds: number; };
@@ -223,7 +224,7 @@ export default function TeacherLiveBattlePage() {
         setLiveState(newState);
 
         if (newState.status === 'BATTLE_ENDED') {
-            router.push(`/teacher/battle/summary/${newState.battleId}`);
+            router.push(`/teacher/battle/summary/${newState.parentArchiveId}`);
         }
       } else {
         // If the document doesn't exist, it could mean the battle has ended and been cleaned up.
@@ -274,7 +275,7 @@ export default function TeacherLiveBattlePage() {
         // Finalize the last round's results
         await calculateAndSetResults({});
 
-        // 2. Fetch the complete, final state of the active battle
+        // 2. Fetch the complete, final state of the active battle to archive it
         const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
         const finalLiveBattleSnap = await getDoc(liveBattleRef);
 
@@ -299,17 +300,18 @@ export default function TeacherLiveBattlePage() {
         const powerLogData = powerLogSnap.docs.map(doc => doc.data());
         
         // 3. Create the new `savedBattles` document
-        const savedBattleRef = doc(collection(db, 'teachers', teacherUid, 'savedBattles'));
+        const archiveDocRef = doc(db, 'teachers', teacherUid, 'savedBattles', liveState.parentArchiveId);
         const batch = writeBatch(db);
 
-        batch.set(savedBattleRef, {
+        batch.set(archiveDocRef, {
             ...finalBattleData,
             battleName: battle.battleName, // Add battle name from the template
             questions: battle.questions, // Add questions from the template
             responsesByRound,
             powerLog: powerLogData,
             savedAt: serverTimestamp(),
-        });
+            status: 'BATTLE_ENDED', // Explicitly set status to ended in archive
+        }, { merge: true });
         
         // 4. Award XP/Gold and apply stat changes
         const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
@@ -362,7 +364,7 @@ export default function TeacherLiveBattlePage() {
 
         await logGameEvent(teacherUid, 'BOSS_BATTLE', `Battle '${battle.battleName}' ended and archive was created.`);
         
-        setRedirectId(savedBattleRef.id);
+        setRedirectId(liveState.parentArchiveId);
     };
 
     const calculateAndSetResults = async ({ isDivinationSkip = false }: { isDivinationSkip?: boolean } = {}) => {
@@ -434,7 +436,10 @@ export default function TeacherLiveBattlePage() {
         const baseDamage = roundResults.filter(r => r.isCorrect).length;
         const totalDamageThisRound = baseDamage + powerDamage;
 
-        const currentLiveState = (await getDoc(liveBattleRef)).data() as LiveBattleState;
+        // Fetch the most recent live state before updating to prevent stale data issues.
+        const currentLiveSnap = await getDoc(liveBattleRef);
+        if (!currentLiveSnap.exists()) return;
+        const currentLiveState = currentLiveSnap.data() as LiveBattleState;
     
         const updatePayload: any = {
             status: 'SHOWING_RESULTS',
@@ -443,6 +448,7 @@ export default function TeacherLiveBattlePage() {
             lastRoundBaseDamage: baseDamage,
             lastRoundPowerDamage: powerDamage,
             lastRoundPowersUsed: powersUsedThisRound,
+            // Use direct calculation instead of increment to prevent race conditions
             totalDamage: (currentLiveState.totalDamage || 0) + totalDamageThisRound,
             totalBaseDamage: (currentLiveState.totalBaseDamage || 0) + baseDamage,
             totalPowerDamage: (currentLiveState.totalPowerDamage || 0) + powerDamage,
@@ -455,6 +461,13 @@ export default function TeacherLiveBattlePage() {
     
         batch.update(liveBattleRef, updatePayload);
         await batch.commit();
+
+        // New: Save a snapshot of this round to the permanent archive
+        const updatedLiveSnap = await getDoc(liveBattleRef);
+        if(updatedLiveSnap.exists()) {
+            const archiveRoundRef = doc(db, 'teachers', teacherUid, 'savedBattles', liveState.parentArchiveId, 'rounds', String(liveState.currentQuestionIndex));
+            await setDoc(archiveRoundRef, updatedLiveSnap.data());
+        }
     };
   
     // Effect for Cosmic Divination vote resolution
@@ -849,8 +862,7 @@ export default function TeacherLiveBattlePage() {
   const handleStartFirstQuestion = async () => {
     if(!teacherUid || !battle) return;
     const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
-    await setDoc(liveBattleRef, { 
-        battleId: battle.id,
+    await updateDoc(liveBattleRef, { 
         status: 'IN_PROGRESS', 
         currentQuestionIndex: 0,
         totalDamage: 0,

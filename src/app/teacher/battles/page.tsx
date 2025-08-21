@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, doc, writeBatch, deleteDoc, setDoc, onSnapshot, query } from 'firebase/firestore';
+import { collection, getDocs, doc, writeBatch, deleteDoc, setDoc, onSnapshot, query, addDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
+import { format } from 'date-fns';
 
 interface BossBattle {
   id: string;
@@ -78,10 +79,24 @@ export default function BossBattlesPage() {
     if (!teacher) return;
     setStartingBattleId(battle.id);
     try {
-        const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
+        const batch = writeBatch(db);
         
-        await setDoc(liveBattleRef, {
+        // Create a new permanent archive document for this battle session
+        const archiveTimestamp = format(new Date(), "yyyy-MM-dd'T'HH:mm:ss");
+        const archiveId = `${archiveTimestamp}-${battle.id}`;
+        const archiveRef = doc(db, 'teachers', teacher.uid, 'savedBattles', archiveId);
+        batch.set(archiveRef, {
             battleId: battle.id,
+            battleName: battle.battleName,
+            status: 'WAITING',
+            startedAt: new Date(),
+        });
+
+        // Create the temporary live battle document
+        const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
+        batch.set(liveBattleRef, {
+            battleId: battle.id,
+            parentArchiveId: archiveId, // Link to the permanent archive
             status: 'WAITING',
             currentQuestionIndex: 0,
             lastRoundDamage: 0,
@@ -101,6 +116,8 @@ export default function BossBattlesPage() {
             cosmicDivinationUses: 0,
             voteState: null,
         });
+        
+        await batch.commit();
 
         await logGameEvent(teacher.uid, 'BOSS_BATTLE', `Boss Battle '${battle.battleName}' has been activated.`);
 
