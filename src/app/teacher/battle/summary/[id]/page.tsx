@@ -10,7 +10,7 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Star, Coins, ShieldCheck, Sparkles, ScrollText, Trash2, Loader2, Swords, Shield } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Star, Coins, ShieldCheck, Sparkles, ScrollText, Trash2, Loader2, Swords, Shield, Skull } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -180,14 +180,15 @@ export default function TeacherBattleSummaryPage() {
     );
   }
 
-  if (!summary || allRounds.length === 0) {
+  if (!summary) {
+    // This case should ideally be handled by the loading state and redirect logic
     return (
       <div className="flex min-h-screen w-full flex-col">
         <TeacherHeader />
         <main className="flex-1 p-4 md:p-6 lg:p-8">
           <Card>
             <CardHeader>
-              <CardTitle>Summary Not Found or Incomplete</CardTitle>
+              <CardTitle>Summary Not Found</CardTitle>
               <CardDescription>The summary for this battle could not be loaded. It may have been cleaned up or no rounds were completed.</CardDescription>
             </CardHeader>
             <CardContent>
@@ -200,6 +201,53 @@ export default function TeacherBattleSummaryPage() {
       </div>
     );
   }
+
+  // Handle the edge case of a zero-round battle
+    if (allRounds.length === 0) {
+        return (
+            <div className="flex min-h-screen w-full flex-col bg-muted/40">
+                <TeacherHeader />
+                <main className="flex-1 p-4 md:p-6 lg:p-8">
+                    <div className="max-w-6xl mx-auto space-y-6">
+                        <Button variant="outline" onClick={() => router.push('/teacher/battles')}>
+                            <ArrowLeft className="mr-2 h-4 w-4" /> Back to All Battles
+                        </Button>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Battle Concluded Prematurely</CardTitle>
+                                <CardDescription>This battle session for "{summary.battleName}" ended before any rounds were completed.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="destructive" disabled={isCleaning}>
+                                            {isCleaning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                                            Clear This Archive
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Clear This Battle Archive?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                            This will permanently delete this battle's saved data. This action cannot be undone.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={handleCleanupBattle} disabled={isCleaning}>
+                                                {isCleaning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                Confirm & Clear
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </main>
+            </div>
+        );
+    }
 
   const finalRound = allRounds[allRounds.length - 1];
   const { totalDamage, totalBaseDamage, totalPowerDamage } = finalRound;
@@ -294,6 +342,7 @@ export default function TeacherBattleSummaryPage() {
                         {allRounds.map((roundData, index) => {
                             if (!roundData || !roundData.responses) return null;
                             const question = summary.questions[roundData.currentQuestionIndex];
+                            if (!question) return null; // Add a check for the question
                             const correctCount = roundData.responses.filter(r => r.isCorrect).length;
                             const incorrectCount = roundData.responses.length - correctCount;
 
@@ -301,7 +350,7 @@ export default function TeacherBattleSummaryPage() {
                                 <AccordionItem key={index} value={`item-${index}`}>
                                     <AccordionTrigger className="text-lg hover:no-underline">
                                         <div className="flex justify-between w-full pr-4">
-                                            <span>Question {roundData.currentQuestionIndex + 1}: {question.questionText}</span>
+                                            <span className="text-left">Q{roundData.currentQuestionIndex + 1}: {question.questionText}</span>
                                             <div className="flex gap-4">
                                                 <span className="text-green-500 font-semibold">{correctCount} Correct</span>
                                                 <span className="text-red-500 font-semibold">{incorrectCount} Incorrect</span>
@@ -340,32 +389,17 @@ export default function TeacherBattleSummaryPage() {
                 </CardContent>
             </Card>
 
-            {(summary.powerLog && summary.powerLog.length > 0) && (
-                 <Card>
+            {(summary.fallenAtEnd && summary.fallenAtEnd.length > 0) && (
+                <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><ScrollText /> Power Usage Log</CardTitle>
-                        <CardDescription>A record of all powers used during the battle, grouped by round.</CardDescription>
+                        <CardTitle className="flex items-center gap-2"><Skull className="text-destructive"/> Fallen Heroes at Battle's End</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <Accordion type="multiple" className="w-full">
-                            {Object.keys(battleLogByRound).map(roundNumber => (
-                                <AccordionItem key={roundNumber} value={`round-${roundNumber}`}>
-                                    <AccordionTrigger>Round {roundNumber}</AccordionTrigger>
-                                    <AccordionContent>
-                                        <ul className="space-y-2 pl-4">
-                                            {battleLogByRound[parseInt(roundNumber)].map((log, index) => (
-                                                <li key={index} className="flex justify-between items-center p-2 rounded-md bg-secondary/50">
-                                                    <div>
-                                                        <span className="font-bold">{log.casterName}</span> used <span className="font-semibold text-primary">{log.powerName}</span>.
-                                                        <p className="text-sm text-muted-foreground">Effect: {log.description}</p>
-                                                    </div>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </AccordionContent>
-                                </AccordionItem>
+                        <ul className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                             {summary.fallenAtEnd.map((studentName, index) => (
+                                <li key={index} className="font-semibold p-2 bg-secondary rounded-md text-center">{studentName}</li>
                             ))}
-                        </Accordion>
+                        </ul>
                     </CardContent>
                 </Card>
             )}
@@ -375,5 +409,3 @@ export default function TeacherBattleSummaryPage() {
     </div>
   );
 }
-
-    
