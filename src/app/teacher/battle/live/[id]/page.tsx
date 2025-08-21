@@ -160,7 +160,7 @@ export default function TeacherLiveBattlePage() {
   const [roundResults, setRoundResults] = useState<Result[]>([]);
   const [allRoundsData, setAllRoundsData] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
-  const [isEndingRound, setIsEndingRound] = useState(false);
+  const [isEndingRound, setIsEndingRound] = useState(isEndingRound);
   const [isAdvancing, setIsAdvancing] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [teacherData, setTeacherData] = useState<TeacherData | null>(null);
@@ -254,6 +254,35 @@ export default function TeacherLiveBattlePage() {
       unsubLog();
     };
   }, [battleId, router, teacherUid]);
+  
+  // Real-time listener for current round responses
+  useEffect(() => {
+      if (!teacherUid || !liveState || liveState.status !== 'IN_PROGRESS' && liveState.status !== 'ROUND_ENDING' && liveState.status !== 'SHOWING_RESULTS') {
+          return;
+      }
+      const roundDocRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${liveState.currentQuestionIndex}`);
+
+      const unsubscribe = onSnapshot(roundDocRef, (docSnap) => {
+          if (docSnap.exists()) {
+              const submittedResponses: StudentResponse[] = docSnap.data().responses || [];
+              const results: Result[] = submittedResponses.map(res => ({
+                  studentUid: res.studentUid,
+                  studentName: res.characterName,
+                  answer: res.answer,
+                  isCorrect: res.isCorrect,
+                  powerUsed: liveState.powerUsersThisRound?.[res.studentUid]?.join(', ') || undefined,
+              }));
+              setRoundResults(results);
+          } else {
+              setRoundResults([]); // Reset if document doesn't exist (e.g., new round)
+          }
+      }, (error) => {
+          console.error("Error listening to round responses:", error);
+      });
+
+      return () => unsubscribe();
+  }, [teacherUid, liveState, liveState?.currentQuestionIndex, liveState?.status]);
+
 
     const calculateAndSetResults = useCallback(async (isDivinationSkip: boolean = false) => {
         if (!liveState || !battle || !teacherUid || !allStudents.length) return;
@@ -305,7 +334,6 @@ export default function TeacherLiveBattlePage() {
             }
         }
         
-        // This is the key change: Set state for the live view immediately
         setRoundResults(results);
 
         let powerDamage = isDivinationSkip ? (liveState.lastRoundPowerDamage || 0) : 0;
@@ -1031,7 +1059,7 @@ export default function TeacherLiveBattlePage() {
   }
   
   const isWaitingToStart = liveState.status === 'WAITING';
-  const isRoundInProgress = liveState.status === 'IN_PROGRESS';
+  const isRoundInProgress = liveState.status === 'IN_PROGRESS' || liveState.status === 'ROUND_ENDING';
   const isRoundEnding = liveState.status === 'ROUND_ENDING';
   const areResultsShowing = liveState.status === 'SHOWING_RESULTS';
   const isLastQuestion = liveState.currentQuestionIndex >= battle.questions.length - 1;
@@ -1150,32 +1178,22 @@ export default function TeacherLiveBattlePage() {
                     </Card>
                 )}
 
-                {isRoundEnding && expiryTimestamp && (
-                    <Card className="bg-card/60 backdrop-blur-sm">
-                        <CardHeader>
-                            <CardTitle>Ending Round...</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <CountdownTimer expiryTimestamp={expiryTimestamp} />
-                        </CardContent>
-                    </Card>
-                )}
-
-                {areResultsShowing && (
-                    <Card className="bg-card/60 backdrop-blur-sm">
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <div>
-                                <CardTitle>Round Results</CardTitle>
-                                <CardDescription>Review of student answers for the last question.</CardDescription>
-                            </div>
-                            <Button onClick={handleExport} variant="outline" size="sm" disabled={roundResults.length === 0}>
-                                <Download className="mr-2 h-4 w-4" />
-                                Export to CSV
-                            </Button>
-                        </CardHeader>
-                        <CardContent>
-                            <RoundResults results={roundResults} />
-                             <div className="mt-4 p-4 rounded-md bg-sky-900/70 border border-sky-700 text-sky-200 flex flex-col gap-4">
+                 <Card className="bg-card/60 backdrop-blur-sm">
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <div>
+                            <CardTitle>Round Results</CardTitle>
+                            <CardDescription>Live view of student answers for the current round.</CardDescription>
+                        </div>
+                         <Button onClick={handleExport} variant="outline" size="sm" disabled={roundResults.length === 0}>
+                            <Download className="mr-2 h-4 w-4" />
+                            Export to CSV
+                        </Button>
+                    </CardHeader>
+                    <CardContent>
+                        {isRoundEnding && expiryTimestamp && <CountdownTimer expiryTimestamp={expiryTimestamp} />}
+                        <RoundResults results={roundResults} />
+                         {(areResultsShowing && liveState.lastRoundDamage !== undefined) && (
+                            <div className="mt-4 p-4 rounded-md bg-sky-900/70 border border-sky-700 text-sky-200 flex flex-col gap-4">
                                 <div className="flex items-center justify-center gap-4 text-center">
                                     <div className="flex-1">
                                         <p className="text-sm font-bold uppercase text-sky-300">Base Damage</p>
@@ -1201,9 +1219,9 @@ export default function TeacherLiveBattlePage() {
                                      </div>
                                 )}
                             </div>
-                        </CardContent>
-                    </Card>
-                )}
+                         )}
+                    </CardContent>
+                </Card>
             </div>
              <div className="lg:col-span-1 space-y-6">
                 <BattleChatBox 
@@ -1233,3 +1251,5 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
+
+    
