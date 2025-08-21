@@ -80,11 +80,21 @@ export default function BossBattlesPage() {
     setStartingBattleId(battle.id);
     try {
         const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
+        const batch = writeBatch(db);
 
-        // Aggressive cleanup again right before starting, just in case.
-        await deleteDoc(liveBattleRef).catch(err => {
-             if (err.code !== 'not-found') console.warn("Pre-start cleanup failed, proceeding.", err);
-        });
+        // Aggressive cleanup: delete all documents in all known subcollections
+        const subcollections = ['responses', 'powerActivations', 'battleLog', 'messages'];
+        for (const sub of subcollections) {
+            const subRef = collection(liveBattleRef, sub);
+            const snapshot = await getDocs(subRef);
+            snapshot.forEach(doc => batch.delete(doc.ref));
+        }
+
+        // Delete the main document itself
+        batch.delete(liveBattleRef);
+
+        // Commit the cleanup batch first
+        await batch.commit();
         
         // Create a fresh, clean battle state document
         await setDoc(liveBattleRef, {
