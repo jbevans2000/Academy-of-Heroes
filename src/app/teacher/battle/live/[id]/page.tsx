@@ -421,13 +421,8 @@ export default function TeacherLiveBattlePage() {
         const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
         const batch = writeBatch(db);
     
-        const roundDocRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${liveState.currentQuestionIndex}`);
-        const roundDocSnap = await getDoc(roundDocRef);
-    
-        const submittedResponses: StudentResponse[] = roundDocSnap.exists() ? roundDocSnap.data().responses || [] : [];
         const studentMap = new Map(allStudents.map(doc => [doc.uid, doc]));
     
-        const results: Result[] = [];
         const newlyFallenUids: string[] = [];
     
         const activeStudentsUids = allStudents
@@ -438,16 +433,8 @@ export default function TeacherLiveBattlePage() {
             const student = studentMap.get(uid);
             if (!student) continue;
     
-            const response = submittedResponses.find(r => r.studentUid === student.uid);
+            const response = roundResults.find(r => r.studentUid === student.uid);
             const isCorrect = response?.isCorrect ?? false;
-    
-            results.push({
-                studentUid: student.uid,
-                studentName: student.characterName,
-                answer: response?.answer ?? "No Answer",
-                isCorrect: isCorrect,
-                powerUsed: liveState.powerUsersThisRound?.[student.uid]?.join(', ') || undefined,
-            });
     
             if (!isCorrect && !isDivinationSkip) {
                 const currentQuestion = battle.questions[liveState.currentQuestionIndex];
@@ -464,15 +451,13 @@ export default function TeacherLiveBattlePage() {
             }
         }
     
-        setRoundResults(results);
-    
         let powerDamage = isDivinationSkip ? (liveState.lastRoundPowerDamage || 0) : 0;
         const powersUsedThisRound: string[] = isDivinationSkip ? (liveState.lastRoundPowersUsed || []) : [];
         const battleLogRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
     
         if (!isDivinationSkip) {
             for (const power of liveState.queuedPowers || []) {
-                const casterResponse = results.find(res => res.studentUid === power.casterUid);
+                const casterResponse = roundResults.find(res => res.studentUid === power.casterUid);
     
                 if (casterResponse?.isCorrect) {
                     powerDamage += power.damage;
@@ -496,7 +481,7 @@ export default function TeacherLiveBattlePage() {
             }
         }
     
-        const baseDamage = isDivinationSkip ? 0 : results.filter(r => r.isCorrect).length;
+        const baseDamage = isDivinationSkip ? 0 : roundResults.filter(r => r.isCorrect).length;
         const totalDamageThisRound = baseDamage + powerDamage;
     
         const updatePayload: any = {
@@ -519,21 +504,27 @@ export default function TeacherLiveBattlePage() {
         batch.update(liveBattleRef, updatePayload);
     
         const currentQuestion = battle.questions[liveState.currentQuestionIndex];
+        
+        // This is a temporary variable for THIS function's scope.
+        // It helps ensure that `setAllRoundsData` has the latest info.
+        const submittedResponsesForThisRound = roundResults.map(r => ({
+            studentUid: r.studentUid,
+            studentName: r.studentName,
+            answerIndex: battle.questions[liveState.currentQuestionIndex].answers.indexOf(r.answer),
+            isCorrect: r.isCorrect,
+        }));
+
         const newRoundsData = {
             ...allRoundsData,
             [liveState.currentQuestionIndex]: {
                 questionText: currentQuestion.questionText,
-                responses: submittedResponses.map(r => ({
-                    studentUid: r.studentUid,
-                    studentName: r.characterName,
-                    answerIndex: r.answerIndex,
-                    isCorrect: r.isCorrect,
-                })),
+                responses: submittedResponsesForThisRound,
                 powersUsed: powersUsedThisRound,
                 baseDamage,
                 powerDamage,
             }
         };
+
         setAllRoundsData(newRoundsData);
     
         await batch.commit();
@@ -545,13 +536,12 @@ export default function TeacherLiveBattlePage() {
                 await generateAndSaveSummary(newRoundsData, finalLiveStateSnap.data() as LiveBattleState);
             }
         }
-    
     };
 
     const performRoundEnd = useCallback(async () => {
         if (!battle || !liveState || !teacherUid || isEndingRound) return;
         setIsEndingRound(true);
-        await calculateAndSetResults();
+        await calculateAndSetResults({});
         setIsEndingRound(false);
     }, [battle, liveState, teacherUid, isEndingRound, calculateAndSetResults]);
   
@@ -585,7 +575,7 @@ export default function TeacherLiveBattlePage() {
 
         return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [liveState?.voteState, teacherUid, calculateAndSetResults]);
+    }, [liveState?.voteState, teacherUid]);
 
     // Power Activation Listener
     useEffect(() => {
