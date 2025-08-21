@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,7 +7,7 @@ import { db, auth } from '@/lib/firebase';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Eye, Loader2, LayoutDashboard, Edit, Trash2, BookHeart } from 'lucide-react';
+import { PlusCircle, Eye, Loader2, LayoutDashboard, Edit, Trash2, BookHeart, Users, User } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -23,7 +22,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { logGameEvent } from '@/lib/gamelog';
-import { onAuthStateChanged, type User } from 'firebase/auth';
+import { onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
 import { format } from 'date-fns';
 
 interface BossBattle {
@@ -35,9 +34,11 @@ export default function BossBattlesPage() {
   const [battles, setBattles] = useState<BossBattle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [startingBattleId, setStartingBattleId] = useState<string | null>(null);
+  const [selectedBattleForStart, setSelectedBattleForStart] = useState<BossBattle | null>(null);
+  const [isStartBattleDialogOpen, setIsStartBattleDialogOpen] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const [teacher, setTeacher] = useState<User | null>(null);
+  const [teacher, setTeacher] = useState<FirebaseUser | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -73,7 +74,7 @@ export default function BossBattlesPage() {
 
   }, [teacher, toast]);
 
-  const handleStartBattle = async (battle: BossBattle) => {
+  const handleStartIndividualBattle = async (battle: BossBattle) => {
     if (!teacher) return;
     setStartingBattleId(battle.id);
     try {
@@ -85,7 +86,7 @@ export default function BossBattlesPage() {
             battleId: battle.id,
             battleName: battle.battleName,
             status: 'WAITING',
-            savedAt: new Date(),
+            startedAt: serverTimestamp(),
         });
 
         const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
@@ -114,10 +115,10 @@ export default function BossBattlesPage() {
         
         await batch.commit();
 
-        await logGameEvent(teacher.uid, 'BOSS_BATTLE', `Boss Battle '${battle.battleName}' has been activated.`);
+        await logGameEvent(teacher.uid, 'BOSS_BATTLE', `Individual Boss Battle '${battle.battleName}' has been activated.`);
 
         toast({
-            title: 'Battle Started!',
+            title: 'Individual Battle Started!',
             description: 'Students can now join the battle waiting room.',
         });
 
@@ -132,8 +133,14 @@ export default function BossBattlesPage() {
         });
     } finally {
         setStartingBattleId(null);
+        setIsStartBattleDialogOpen(false);
     }
   };
+
+  const handleStartGroupBattle = (battleId: string) => {
+    router.push(`/teacher/battle/group/${battleId}`);
+    setIsStartBattleDialogOpen(false);
+  }
 
   const handleDeleteBattle = async (battleId: string) => {
     if (!teacher) return;
@@ -166,6 +173,36 @@ export default function BossBattlesPage() {
 
   return (
     <div className="relative flex min-h-screen w-full flex-col">
+        <AlertDialog open={isStartBattleDialogOpen} onOpenChange={setIsStartBattleDialogOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Choose Battle Mode for "{selectedBattleForStart?.battleName}"</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        How would you like to run this battle?
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="grid grid-cols-2 gap-4 py-4">
+                    <Button variant="outline" className="h-24 flex-col gap-2" onClick={() => handleStartGroupBattle(selectedBattleForStart!.id)}>
+                        <Users className="h-8 w-8 text-primary"/>
+                        <span className="font-semibold">Group Battle</span>
+                        <span className="text-xs text-muted-foreground text-center">Teacher-led on a single screen.</span>
+                    </Button>
+                     <Button variant="outline" className="h-24 flex-col gap-2" onClick={() => handleStartIndividualBattle(selectedBattleForStart!)}>
+                        {startingBattleId === selectedBattleForStart?.id ? (
+                            <Loader2 className="h-8 w-8 animate-spin" />
+                        ) : (
+                            <User className="h-8 w-8 text-primary"/>
+                        )}
+                        <span className="font-semibold">Individual Battle</span>
+                        <span className="text-xs text-muted-foreground text-center">Students log in and play on their own devices.</span>
+                    </Button>
+                </div>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
         <div 
             className="absolute inset-0 -z-10"
             style={{
@@ -217,8 +254,11 @@ export default function BossBattlesPage() {
                     <div className="flex flex-col gap-2">
                         <Button 
                             className="w-full" 
-                            onClick={() => handleStartBattle(battle)}
-                            disabled={startingBattleId === battle.id}
+                            onClick={() => {
+                                setSelectedBattleForStart(battle);
+                                setIsStartBattleDialogOpen(true);
+                            }}
+                            disabled={!!startingBattleId}
                         >
                             {startingBattleId === battle.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                             Start Battle
