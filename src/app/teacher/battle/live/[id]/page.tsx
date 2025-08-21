@@ -272,9 +272,11 @@ export default function TeacherLiveBattlePage() {
         const batch = writeBatch(db);
         const parentArchiveRef = doc(db, 'teachers', teacherUid, 'savedBattles', liveState.parentArchiveId);
         
-        // Mark the parent archive as 'BATTLE_ENDED'
+        // Mark the parent archive as 'BATTLE_ENDED' and log the battle log and fallen players
         batch.update(parentArchiveRef, {
             status: 'BATTLE_ENDED',
+            powerLog: await getDocs(collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog')).then(snap => snap.docs.map(d => d.data())),
+            fallenAtEnd: liveState.fallenPlayerUids || [],
         });
         
         // Award XP/Gold
@@ -323,7 +325,7 @@ export default function TeacherLiveBattlePage() {
             }
         }
         
-        // Clean up the `active-battle` document and its subcollections
+        // Clean up the temporary `active-battle` document and its subcollections
         const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
         const subcollections = ['responses', 'powerActivations', 'battleLog', 'messages'];
         for (const sub of subcollections) {
@@ -1145,3 +1147,5 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
+
+    
