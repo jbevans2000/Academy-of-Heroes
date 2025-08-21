@@ -506,6 +506,10 @@ export default function Dashboard() {
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
+                    <DropdownMenuItem onClick={() => router.push('/teacher/tools')}>
+                        <Wrench className="mr-2 h-4 w-4" />
+                        <span>The Guild Leader's Toolkit</span>
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/teacher/quests')}>
                         <BookOpen className="mr-2 h-4 w-4" />
                         <span>The Quest Archives</span>
@@ -521,10 +525,6 @@ export default function Dashboard() {
                     <DropdownMenuItem onClick={() => router.push('/teacher/battles/summary')}>
                         <BookHeart className="mr-2 h-4 w-4" />
                         <span>Battle Archives</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push('/teacher/tools')}>
-                        <Wrench className="mr-2 h-4 w-4" />
-                        <span>The Guild Leader's Toolkit</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/teacher/gamelog')}>
                         <BookOpen className="mr-2 h-4 w-4" />
