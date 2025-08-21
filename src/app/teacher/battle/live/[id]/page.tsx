@@ -402,6 +402,8 @@ export default function TeacherLiveBattlePage() {
                     isCorrect: r.isCorrect,
                 })),
                 powersUsed: powersUsedThisRound,
+                baseDamage, // Store this round's damages
+                powerDamage,
             }
         }));
 
@@ -886,16 +888,17 @@ export default function TeacherLiveBattlePage() {
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
     
-    const liveBattleSnap = await getDoc(doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle'));
-    const finalLiveState = liveBattleSnap.data() as LiveBattleState;
+    const fallenAtEnd = liveState.fallenPlayerUids || [];
+    const empoweredAtEnd = liveState.empoweredMageUids || [];
 
-    const batch = writeBatch(db);
-    
-    const totalBaseDamage = finalLiveState.totalBaseDamage || 0;
-    const totalPowerDamage = finalLiveState.totalPowerDamage || 0;
+    // Recalculate totals from allRoundsData to ensure accuracy
+    let totalBaseDamage = 0;
+    let totalPowerDamage = 0;
+    Object.values(allRoundsData).forEach(round => {
+        totalBaseDamage += round.baseDamage || 0;
+        totalPowerDamage += round.powerDamage || 0;
+    });
     const totalDamage = totalBaseDamage + totalPowerDamage;
-    const fallenAtEnd = finalLiveState.fallenPlayerUids || [];
-    const empoweredAtEnd = finalLiveState.empoweredMageUids || [];
     
     await logGameEvent(teacherUid, 'BOSS_BATTLE', `The party dealt a total of ${totalDamage} damage during '${battle.battleName}'.`);
 
@@ -924,6 +927,8 @@ export default function TeacherLiveBattlePage() {
             });
         }
     });
+
+    const batch = writeBatch(db);
 
     for (const uid in rewardsByStudent) {
         if (fallenAtEnd.includes(uid)) continue; 
