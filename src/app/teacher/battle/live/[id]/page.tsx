@@ -223,8 +223,6 @@ export default function TeacherLiveBattlePage() {
         const newState = docSnap.data() as LiveBattleState;
         setLiveState(newState);
       } else {
-        // This can happen normally if a battle ends and this client is still on the page.
-        // It should not redirect unless it was explicitly told to.
         if (redirectId === null) {
           router.push('/teacher/battles');
         }
@@ -276,14 +274,13 @@ export default function TeacherLiveBattlePage() {
         const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
         const parentArchiveRef = doc(db, 'teachers', teacherUid, 'savedBattles', liveState.parentArchiveId);
         
-        // Fetch the final state before deleting
         const finalLiveStateSnap = await getDoc(liveBattleRef);
         const finalLiveState = finalLiveStateSnap.data() as LiveBattleState | undefined;
-
-        // Mark the parent archive as 'BATTLE_ENDED' and log the fallen players
+        const fallenUids = finalLiveState?.fallenPlayerUids || [];
+        
         batch.update(parentArchiveRef, {
             status: 'BATTLE_ENDED',
-            fallenAtEnd: finalLiveState?.fallenPlayerUids || [],
+            fallenAtEnd: fallenUids,
         });
 
         // Award XP/Gold
@@ -331,7 +328,6 @@ export default function TeacherLiveBattlePage() {
             }
         }
         
-        // Delete the temporary battle documents
         const subcollections = ['responses', 'powerActivations', 'battleLog', 'messages'];
         for (const sub of subcollections) {
             const subRef = collection(liveBattleRef, sub);
@@ -1150,3 +1146,5 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
+
+    

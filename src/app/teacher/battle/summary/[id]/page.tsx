@@ -95,9 +95,10 @@ export default function TeacherBattleSummaryPage() {
         const summaryRef = doc(db, 'teachers', teacher.uid, 'savedBattles', savedBattleId);
         const docSnap = await getDoc(summaryRef);
 
-        if (!docSnap.exists() || docSnap.data().status !== 'BATTLE_ENDED') {
-            toast({ title: "Summary Not Ready", description: "The battle has not concluded or the archive is missing. Redirecting...", variant: 'destructive' });
-            router.push('/teacher/battles');
+        if (!docSnap.exists()) {
+            toast({ variant: 'destructive', title: 'Not Found', description: 'There is no Battle History to Display!' });
+            setSummary(null); // Explicitly set to null on not found
+            setIsLoading(false);
             return;
         }
         
@@ -122,7 +123,6 @@ export default function TeacherBattleSummaryPage() {
       } catch (error) {
          console.error("Error fetching summary:", error);
          toast({ title: "Error Loading Summary", description: "There was a problem loading the battle report.", variant: 'destructive' });
-         router.push('/teacher/battles');
       } finally {
         setIsLoading(false);
       }
@@ -132,11 +132,12 @@ export default function TeacherBattleSummaryPage() {
   }, [savedBattleId, teacher, router, toast]);
   
   const handleCleanupBattle = async () => {
-    if (!teacher) return;
+    if (!teacher || !savedBattleId) return;
     setIsCleaning(true);
 
     try {
         const summaryRef = doc(db, 'teachers', teacher.uid, 'savedBattles', savedBattleId);
+        
         // Clean up subcollections first
         const roundsRef = collection(summaryRef, 'rounds');
         const roundsSnap = await getDocs(roundsRef);
@@ -152,7 +153,7 @@ export default function TeacherBattleSummaryPage() {
             description: 'The archived data for this battle has been removed.',
         });
 
-        router.push('/teacher/battles');
+        router.push('/teacher/battles/summary');
 
     } catch (error) {
         console.error("Error cleaning up battle summary:", error);
@@ -183,22 +184,26 @@ export default function TeacherBattleSummaryPage() {
   }
 
   if (!summary) {
-    // This case should ideally be handled by the loading state and redirect logic
     return (
-      <div className="flex min-h-screen w-full flex-col">
+      <div className="flex min-h-screen w-full flex-col bg-muted/40">
         <TeacherHeader />
         <main className="flex-1 p-4 md:p-6 lg:p-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Summary Not Found</CardTitle>
-              <CardDescription>The summary for this battle could not be loaded. It may have been cleaned up or no rounds were completed.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={() => router.push('/teacher/battles')}>
-                <ArrowLeft className="mr-2 h-4 w-4" /> Back to Battles
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="max-w-6xl mx-auto space-y-6">
+             <Button variant="outline" onClick={() => router.push('/teacher/battles/summary')}>
+                <ArrowLeft className="mr-2 h-4 w-4" /> Back to All Battle Archives
+            </Button>
+            <Card>
+                <CardHeader>
+                <CardTitle>Summary Not Found</CardTitle>
+                <CardDescription>There is no Battle History to Display for this entry! It may have been deleted.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                <Button onClick={() => router.push('/teacher/battles')}>
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to Battle Creation
+                </Button>
+                </CardContent>
+            </Card>
+          </div>
         </main>
       </div>
     );
@@ -211,8 +216,8 @@ export default function TeacherBattleSummaryPage() {
                 <TeacherHeader />
                 <main className="flex-1 p-4 md:p-6 lg:p-8">
                     <div className="max-w-6xl mx-auto space-y-6">
-                        <Button variant="outline" onClick={() => router.push('/teacher/battles')}>
-                            <ArrowLeft className="mr-2 h-4 w-4" /> Back to All Battles
+                        <Button variant="outline" onClick={() => router.push('/teacher/battles/summary')}>
+                            <ArrowLeft className="mr-2 h-4 w-4" /> Back to All Battle Archives
                         </Button>
                         <Card>
                             <CardHeader>
@@ -251,7 +256,6 @@ export default function TeacherBattleSummaryPage() {
         );
     }
 
-  const finalRound = allRounds[allRounds.length - 1];
   const { totalDamage, totalBaseDamage, totalPowerDamage } = allRounds.reduce((acc, round) => {
     acc.totalDamage += round.totalDamage || 0;
     acc.totalBaseDamage += round.totalBaseDamage || 0;
@@ -276,9 +280,8 @@ export default function TeacherBattleSummaryPage() {
         <div className="max-w-6xl mx-auto space-y-6">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <Button variant="outline" onClick={() => router.push('/teacher/battles')}>
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to All Battles
+              <Button variant="outline" onClick={() => router.push('/teacher/battles/summary')}>
+                  <ArrowLeft className="mr-2 h-4 w-4" /> Back to All Battle Archives
                 </Button>
                 <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
                   <LayoutDashboard className="mr-2 h-4 w-4" />
@@ -346,10 +349,10 @@ export default function TeacherBattleSummaryPage() {
                 </CardHeader>
                 <CardContent>
                     <Accordion type="single" collapsible className="w-full">
-                        {allRounds.map((roundData, index) => {
+                        {allRounds.map((roundData) => {
                             if (!roundData || !roundData.responses) return null;
                             const question = summary.questions[roundData.currentQuestionIndex];
-                            if (!question) return null; // Add a check for the question
+                            if (!question) return null;
                             const correctCount = roundData.responses.filter(r => r.isCorrect).length;
                             const incorrectCount = roundData.responses.length - correctCount;
 
@@ -403,9 +406,14 @@ export default function TeacherBattleSummaryPage() {
                     </CardHeader>
                     <CardContent>
                         <ul className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                             {summary.fallenAtEnd.map((studentName, index) => (
-                                <li key={index} className="font-semibold p-2 bg-secondary rounded-md text-center">{studentName}</li>
-                            ))}
+                             {summary.fallenAtEnd.map((uid, index) => {
+                                const student = allRounds[0]?.responses.find(r => r.studentUid === uid);
+                                return (
+                                    <li key={index} className="font-semibold p-2 bg-secondary rounded-md text-center">
+                                        {student ? student.characterName : 'Unknown Hero'}
+                                    </li>
+                                )
+                            })}
                         </ul>
                     </CardContent>
                 </Card>
@@ -416,3 +424,5 @@ export default function TeacherBattleSummaryPage() {
     </div>
   );
 }
+
+    
