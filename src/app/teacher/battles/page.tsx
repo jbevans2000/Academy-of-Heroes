@@ -8,7 +8,7 @@ import { db, auth } from '@/lib/firebase';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Eye, Loader2, LayoutDashboard, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, Eye, Loader2, LayoutDashboard, Edit, Trash2, BookHeart } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -213,9 +213,9 @@ export default function BossBattlesPage() {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold">The Monster Compendium</h1>
           <div className="flex gap-2">
-            <Button onClick={navigateToDashboard} variant="outline">
-              <LayoutDashboard className="mr-2 h-5 w-5" />
-              Return to Dais
+             <Button onClick={() => router.push('/teacher/battles/summary')} variant="secondary">
+                <BookHeart className="mr-2 h-5 w-5" />
+                Archived Battles
             </Button>
             <Button onClick={navigateToCreate}>
               <PlusCircle className="mr-2 h-5 w-5" />
