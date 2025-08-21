@@ -512,7 +512,7 @@ export default function Dashboard() {
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/teacher/battles')}>
                         <Swords className="mr-2 h-4 w-4" />
-                        <span>The Monster Compendium</span>
+                        <span>The Field of Battle</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/teacher/companies')}>
                         <Users className="mr-2 h-4 w-4" />
