@@ -3,14 +3,14 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { doc, getDoc, collection, query, getDocs, writeBatch, deleteDoc, orderBy } from 'firebase/firestore';
+import { doc, getDoc, collection, query, getDocs, orderBy } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Star, Coins, ShieldCheck, Sparkles, ScrollText, Trash2, Loader2, Swords, Shield, Skull } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Sparkles, ScrollText, Trash2, Loader2, Swords, Shield, Skull } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -23,7 +23,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
+import { logGameEvent } from '@/lib/gamelog';
 
 interface Question {
   questionText: string;
@@ -96,15 +97,14 @@ export default function TeacherBattleSummaryPage() {
         const docSnap = await getDoc(summaryRef);
 
         if (!docSnap.exists()) {
-            toast({ variant: 'destructive', title: 'Not Found', description: 'There is no Battle History to Display!' });
-            setSummary(null); // Explicitly set to null on not found
+            toast({ variant: 'destructive', title: 'Not Found', description: 'This battle summary could not be found.' });
+            setSummary(null);
             setIsLoading(false);
             return;
         }
         
         const battleData = { id: docSnap.id, ...docSnap.data() } as SavedBattle;
         
-        // Fetch the original questions from the battle template
         const battleTemplateRef = doc(db, 'teachers', teacher.uid, 'bossBattles', battleData.battleId);
         const battleTemplateSnap = await getDoc(battleTemplateRef);
         
@@ -138,10 +138,10 @@ export default function TeacherBattleSummaryPage() {
     try {
         const summaryRef = doc(db, 'teachers', teacher.uid, 'savedBattles', savedBattleId);
         
-        // Clean up subcollections first
+        // Clean up subcollections first is more robust
         const roundsRef = collection(summaryRef, 'rounds');
         const roundsSnap = await getDocs(roundsRef);
-        const batch = writeBatch(db);
+        const batch = db.batch(); // Use Firestore batch from the SDK
         roundsSnap.forEach(doc => batch.delete(doc.ref));
         await batch.commit();
         
@@ -152,6 +152,8 @@ export default function TeacherBattleSummaryPage() {
             title: 'Battle Archive Cleared!',
             description: 'The archived data for this battle has been removed.',
         });
+        
+        await logGameEvent(teacher.uid, 'GAMEMASTER', `Cleared battle archive: ${summary?.battleName || savedBattleId}`);
 
         router.push('/teacher/battles/summary');
 
@@ -209,7 +211,6 @@ export default function TeacherBattleSummaryPage() {
     );
   }
 
-  // Handle the edge case of a zero-round battle
     if (allRounds.length === 0) {
         return (
             <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -272,6 +273,8 @@ export default function TeacherBattleSummaryPage() {
           battleLogByRound[log.round].push(log);
       });
   }
+
+  const allParticipants = [...new Map(allRounds.flatMap(r => r.responses).map(res => [res.studentUid, res.characterName])).values()];
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -405,12 +408,12 @@ export default function TeacherBattleSummaryPage() {
                         <CardTitle className="flex items-center gap-2"><Skull className="text-destructive"/> Fallen Heroes at Battle's End</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <ul className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                             {summary.fallenAtEnd.map((uid, index) => {
-                                const student = allRounds[0]?.responses.find(r => r.studentUid === uid);
+                         <ul className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                             {summary.fallenAtEnd.map((uid) => {
+                                const participantName = allParticipants.find(name => name === name);
                                 return (
-                                    <li key={index} className="font-semibold p-2 bg-secondary rounded-md text-center">
-                                        {student ? student.characterName : 'Unknown Hero'}
+                                    <li key={uid} className="font-semibold p-2 bg-secondary rounded-md text-center">
+                                        {participantName || 'Unknown Hero'}
                                     </li>
                                 )
                             })}
@@ -418,11 +421,8 @@ export default function TeacherBattleSummaryPage() {
                     </CardContent>
                 </Card>
             )}
-
         </div>
       </main>
     </div>
   );
 }
-
-    
