@@ -160,7 +160,7 @@ export default function TeacherLiveBattlePage() {
   const [roundResults, setRoundResults] = useState<Result[]>([]);
   const [allRoundsData, setAllRoundsData] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
-  const [isEndingRound, setIsEndingRound] = useState(isEndingRound);
+  const [isEndingRound, setIsEndingRound] = useState(false);
   const [isAdvancing, setIsAdvancing] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [teacherData, setTeacherData] = useState<TeacherData | null>(null);
@@ -1251,5 +1251,3 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
-
-    
