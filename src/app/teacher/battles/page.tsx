@@ -182,19 +182,19 @@ export default function BossBattlesPage() {
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="grid grid-cols-2 gap-4 py-4">
-                    <Button variant="outline" className="h-24 flex-col gap-2" onClick={() => handleStartGroupBattle(selectedBattleForStart!.id)}>
+                    <Button variant="outline" className="h-24 flex-col gap-2 p-2" onClick={() => handleStartGroupBattle(selectedBattleForStart!.id)}>
                         <Users className="h-8 w-8 text-primary"/>
-                        <span className="font-semibold">Group Battle</span>
-                        <span className="text-xs text-muted-foreground text-center">Teacher-led on a single screen.</span>
+                        <span className="font-semibold text-black">Group Battle</span>
+                        <span className="text-xs text-black whitespace-normal">Teacher-led on a single screen.</span>
                     </Button>
-                     <Button variant="outline" className="h-24 flex-col gap-2" onClick={() => handleStartIndividualBattle(selectedBattleForStart!)}>
+                     <Button variant="outline" className="h-24 flex-col gap-2 p-2" onClick={() => handleStartIndividualBattle(selectedBattleForStart!)}>
                         {startingBattleId === selectedBattleForStart?.id ? (
                             <Loader2 className="h-8 w-8 animate-spin" />
                         ) : (
                             <User className="h-8 w-8 text-primary"/>
                         )}
-                        <span className="font-semibold">Individual Battle</span>
-                        <span className="text-xs text-muted-foreground text-center">Students log in and play on their own devices.</span>
+                        <span className="font-semibold text-black">Individual Battle</span>
+                        <span className="text-xs text-black whitespace-normal">Students play on their own devices.</span>
                     </Button>
                 </div>
                 <AlertDialogFooter>
