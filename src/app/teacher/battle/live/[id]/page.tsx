@@ -274,10 +274,10 @@ export default function TeacherLiveBattlePage() {
         const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
         const parentArchiveRef = doc(db, 'teachers', teacherUid, 'savedBattles', liveState.parentArchiveId);
         
+        // Fetch the most recent state before updating
         const finalLiveStateSnap = await getDoc(liveBattleRef);
-        const finalLiveState = finalLiveStateSnap.data() as LiveBattleState | undefined;
-        const fallenUids = finalLiveState?.fallenPlayerUids || [];
-        
+        const fallenUids = finalLiveStateSnap.exists() ? (finalLiveStateSnap.data().fallenPlayerUids || []) : [];
+
         batch.update(parentArchiveRef, {
             status: 'BATTLE_ENDED',
             fallenAtEnd: fallenUids,
@@ -1146,5 +1146,3 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
-
-    

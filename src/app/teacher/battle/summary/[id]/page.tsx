@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { doc, getDoc, collection, query, getDocs, orderBy } from 'firebase/firestore';
+import { doc, getDoc, collection, query, getDocs, orderBy, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
@@ -42,9 +42,10 @@ interface PowerLogEntry {
 interface RoundSnapshot {
   id: string; // The ID of the round document itself
   currentQuestionIndex: number;
-  totalDamage?: number;
-  totalBaseDamage?: number;
-  totalPowerDamage?: number;
+  lastRoundDamage?: number;
+  lastRoundBaseDamage?: number;
+  lastRoundPowerDamage?: number;
+  lastRoundPowersUsed?: string[];
   responses: {
       studentUid: string;
       characterName: string;
@@ -54,10 +55,10 @@ interface RoundSnapshot {
 }
 
 interface SavedBattle {
-  id: string; // The unique ID of this summary document
-  battleId: string; // The ID of the original battle template
+  id: string;
+  battleId: string; 
   battleName: string;
-  questions: Question[]; // This will now be populated from the original battle doc
+  questions: Question[]; 
   powerLog?: PowerLogEntry[];
   fallenAtEnd?: string[];
   status: 'WAITING' | 'BATTLE_ENDED';
@@ -74,6 +75,7 @@ export default function TeacherBattleSummaryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCleaning, setIsCleaning] = useState(false);
   const [teacher, setTeacher] = useState<User | null>(null);
+  const [allStudents, setAllStudents] = useState<any[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -86,6 +88,15 @@ export default function TeacherBattleSummaryPage() {
     });
     return () => unsubscribe();
   }, [router]);
+  
+  useEffect(() => {
+    if (!teacher) return;
+    const fetchAllStudents = async () => {
+        const studentSnap = await getDocs(collection(db, 'teachers', teacher.uid, 'students'));
+        setAllStudents(studentSnap.docs.map(d => ({uid: d.id, ...d.data()})));
+    }
+    fetchAllStudents();
+  }, [teacher]);
 
   useEffect(() => {
     if (!savedBattleId || !teacher) return;
@@ -105,11 +116,14 @@ export default function TeacherBattleSummaryPage() {
         
         const battleData = { id: docSnap.id, ...docSnap.data() } as SavedBattle;
         
+        // Fetch the original questions from the battle template
         const battleTemplateRef = doc(db, 'teachers', teacher.uid, 'bossBattles', battleData.battleId);
         const battleTemplateSnap = await getDoc(battleTemplateRef);
         
         if(battleTemplateSnap.exists()){
             battleData.questions = battleTemplateSnap.data().questions;
+        } else {
+            battleData.questions = []; // Set empty if template is gone
         }
 
         setSummary(battleData);
@@ -138,10 +152,10 @@ export default function TeacherBattleSummaryPage() {
     try {
         const summaryRef = doc(db, 'teachers', teacher.uid, 'savedBattles', savedBattleId);
         
-        // Clean up subcollections first is more robust
+        // Delete the rounds subcollection
         const roundsRef = collection(summaryRef, 'rounds');
         const roundsSnap = await getDocs(roundsRef);
-        const batch = db.batch(); // Use Firestore batch from the SDK
+        const batch = db.batch();
         roundsSnap.forEach(doc => batch.delete(doc.ref));
         await batch.commit();
         
@@ -172,13 +186,13 @@ export default function TeacherBattleSummaryPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen w-full flex-col">
+      <div className="flex min-h-screen w-full flex-col bg-muted/40">
         <TeacherHeader />
-        <main className="flex-1 p-4 md:p-6 lg:p-8">
-          <div className="max-w-6xl mx-auto space-y-6">
-            <Skeleton className="h-12 w-1/3" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-64 w-full" />
+        <main className="flex-1 flex items-center justify-center p-4">
+          <div className="text-center">
+             <Loader2 className="h-16 w-16 mx-auto animate-spin text-primary mb-4" />
+             <h1 className="text-3xl font-bold">The Oracle is consulting the chronicles...</h1>
+             <p className="text-muted-foreground mt-2">Loading Battle Report</p>
           </div>
         </main>
       </div>
@@ -258,9 +272,9 @@ export default function TeacherBattleSummaryPage() {
     }
 
   const { totalDamage, totalBaseDamage, totalPowerDamage } = allRounds.reduce((acc, round) => {
-    acc.totalDamage += round.totalDamage || 0;
-    acc.totalBaseDamage += round.totalBaseDamage || 0;
-    acc.totalPowerDamage += round.totalPowerDamage || 0;
+    acc.totalDamage += round.lastRoundDamage || 0;
+    acc.totalBaseDamage += round.lastRoundBaseDamage || 0;
+    acc.totalPowerDamage += round.lastRoundPowerDamage || 0;
     return acc;
   }, { totalDamage: 0, totalBaseDamage: 0, totalPowerDamage: 0 });
 
@@ -273,8 +287,13 @@ export default function TeacherBattleSummaryPage() {
           battleLogByRound[log.round].push(log);
       });
   }
-
-  const allParticipants = [...new Map(allRounds.flatMap(r => r.responses).map(res => [res.studentUid, res.characterName])).values()];
+  
+  const fallenHeroNames = (summary.fallenAtEnd || [])
+  .map(uid => {
+      const student = allStudents.find(s => s.uid === uid);
+      return student ? student.characterName : null;
+  })
+  .filter(name => name !== null) as string[];
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -353,7 +372,7 @@ export default function TeacherBattleSummaryPage() {
                 <CardContent>
                     <Accordion type="single" collapsible className="w-full">
                         {allRounds.map((roundData) => {
-                            if (!roundData || !roundData.responses) return null;
+                            if (!roundData || !roundData.responses || !summary.questions) return null;
                             const question = summary.questions[roundData.currentQuestionIndex];
                             if (!question) return null;
                             const correctCount = roundData.responses.filter(r => r.isCorrect).length;
@@ -382,13 +401,13 @@ export default function TeacherBattleSummaryPage() {
                                                 </li>
                                             ))}
                                         </ul>
-                                        {(battleLogByRound[roundData.currentQuestionIndex + 1]) && (
+                                        {(roundData.lastRoundPowersUsed && roundData.lastRoundPowersUsed.length > 0) && (
                                             <div className="mt-2 p-2 bg-blue-900/10 rounded-md">
                                                 <h4 className="font-semibold text-sm">Powers Used:</h4>
                                                 <ul className="text-xs text-muted-foreground list-disc list-inside">
-                                                    {battleLogByRound[roundData.currentQuestionIndex + 1].map((log, logIndex) => (
-                                                        <li key={logIndex}>
-                                                            <span className="font-bold">{log.casterName}</span> used <span className="font-semibold text-primary">{log.powerName}</span>. Effect: {log.description}
+                                                    {roundData.lastRoundPowersUsed.map((power, idx) => (
+                                                        <li key={idx}>
+                                                          {power}
                                                         </li>
                                                     ))}
                                                 </ul>
@@ -409,14 +428,12 @@ export default function TeacherBattleSummaryPage() {
                     </CardHeader>
                     <CardContent>
                          <ul className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                             {summary.fallenAtEnd.map((uid) => {
-                                const participantName = allParticipants.find(name => name === name);
-                                return (
-                                    <li key={uid} className="font-semibold p-2 bg-secondary rounded-md text-center">
-                                        {participantName || 'Unknown Hero'}
+                             {fallenHeroNames.map((name, idx) => (
+                                    <li key={idx} className="font-semibold p-2 bg-secondary rounded-md text-center">
+                                        {name}
                                     </li>
                                 )
-                            })}
+                            )}
                         </ul>
                     </CardContent>
                 </Card>
