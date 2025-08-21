@@ -31,7 +31,7 @@ interface SavedBattle {
     savedAt: {
         seconds: number;
         nanoseconds: number;
-    },
+    };
     responsesByRound: {
         [roundIndex: string]: {
             responses: {
@@ -82,8 +82,8 @@ export default function SongsAndStoriesPage() {
             
             // Filter summaries to only include those where the current student participated
             const studentSummaries = allSummaries.filter(summary => {
-                return Object.values(summary.responsesByRound).some(round => 
-                    round.responses.some(response => response.studentUid === user.uid)
+                return Object.values(summary.responsesByRound || {}).some(round => 
+                    (round.responses || []).some(response => response.studentUid === user.uid)
                 );
             });
 

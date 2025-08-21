@@ -94,8 +94,8 @@ export default function BattleSummaryDetailPage() {
 
                     // Calculate XP and Gold for this specific student
                     let correctAnswers = 0;
-                    Object.values(data.responsesByRound).forEach(round => {
-                        const studentResponse = round.responses.find(r => r.studentUid === user.uid);
+                    Object.values(data.responsesByRound || {}).forEach(round => {
+                        const studentResponse = (round.responses || []).find(r => r.studentUid === user.uid);
                         if (studentResponse?.isCorrect) {
                             correctAnswers++;
                         }
@@ -194,7 +194,7 @@ export default function BattleSummaryDetailPage() {
                             <Accordion type="single" collapsible className="w-full">
                                 {roundKeys.map((roundIndex) => {
                                     const roundData = summary.responsesByRound[roundIndex];
-                                    if (!roundData) return null;
+                                    if (!roundData || !roundData.responses) return null;
 
                                     const studentResponse = roundData.responses.find(r => r.studentUid === user?.uid);
                                     if (!studentResponse) return null; // Skip rounds the student didn't answer in
