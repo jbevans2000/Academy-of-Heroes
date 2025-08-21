@@ -101,7 +101,7 @@ export default function TeacherBattleSummaryPage() {
 
     fetchSummary();
   }, [savedBattleId, teacher, router, toast]);
-  
+
   const handleCleanupBattle = async () => {
     if (!teacher) return;
     setIsCleaning(true);
@@ -166,8 +166,8 @@ export default function TeacherBattleSummaryPage() {
     );
   }
 
-  const roundKeys = Object.keys(summary.responsesByRound);
-  
+  const roundKeys = Object.keys(summary.responsesByRound || {});
+
   const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
   if (summary.responsesByRound) {
     for (const roundIndex in summary.responsesByRound) {
@@ -185,7 +185,7 @@ export default function TeacherBattleSummaryPage() {
 
   const totalXpAwarded = Object.values(rewardsByStudent).reduce((acc, reward) => acc + reward.xpGained, 0);
   const totalGoldAwarded = Object.values(rewardsByStudent).reduce((acc, reward) => acc + reward.goldGained, 0);
-  
+
   const battleLogByRound: { [round: number]: PowerLogEntry[] } = {};
     if (summary.powerLog) {
         summary.powerLog.forEach(log => {
@@ -236,7 +236,7 @@ export default function TeacherBattleSummaryPage() {
                 </AlertDialogContent>
             </AlertDialog>
           </div>
-         
+
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="text-3xl">Battle Summary: {summary.battleName}</CardTitle>
@@ -276,7 +276,7 @@ export default function TeacherBattleSummaryPage() {
                      </div>
                 </CardContent>
             </Card>
-            
+
             <Card>
                  <CardHeader>
                     <CardTitle>Round-by-Round Breakdown</CardTitle>
@@ -285,7 +285,7 @@ export default function TeacherBattleSummaryPage() {
                     <Accordion type="single" collapsible className="w-full">
                         {roundKeys.map((roundIndex) => {
                             const roundData = summary.responsesByRound[roundIndex];
-                            if (!roundData) return null;
+                            if (!roundData || !roundData.responses) return null;
                             const question = summary.questions[parseInt(roundIndex)];
                             const correctCount = roundData.responses.filter(r => r.isCorrect).length;
                             const incorrectCount = roundData.responses.length - correctCount;
@@ -332,6 +332,37 @@ export default function TeacherBattleSummaryPage() {
                     </Accordion>
                 </CardContent>
             </Card>
+
+            {(summary.powerLog && summary.powerLog.length > 0) && (
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><ScrollText /> Power Usage Log</CardTitle>
+                        <CardDescription>A record of all powers used during the battle, grouped by round.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Accordion type="multiple" className="w-full">
+                            {Object.keys(battleLogByRound).map(roundNumber => (
+                                <AccordionItem key={roundNumber} value={`round-${roundNumber}`}>
+                                    <AccordionTrigger>Round {roundNumber}</AccordionTrigger>
+                                    <AccordionContent>
+                                        <ul className="space-y-2 pl-4">
+                                            {battleLogByRound[parseInt(roundNumber)].map((log, index) => (
+                                                <li key={index} className="flex justify-between items-center p-2 rounded-md bg-secondary/50">
+                                                    <div>
+                                                        <span className="font-bold">{log.casterName}</span> used <span className="font-semibold text-primary">{log.powerName}</span>.
+                                                        <p className="text-sm text-muted-foreground">Effect: {log.description}</p>
+                                                    </div>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            ))}
+                        </Accordion>
+                    </CardContent>
+                </Card>
+            )}
+
         </div>
       </main>
     </div>
