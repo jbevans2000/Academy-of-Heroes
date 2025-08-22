@@ -69,6 +69,15 @@ const defaultBoons = [
     studentMessage: "You may now listen to your tunes during independent work. Keep one ear open for instructions!",
   },
   {
+    name: "Hero's Respite",
+    description: "Leave 5 minutes early for recess.",
+    cost: 200,
+    imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FHeroes%20Respite.jpg?alt=media&token=3419c982-2aec-4ab7-adce-07011af329a6",
+    effect: { type: 'REAL_WORLD_PERK', value: "Leave 5 minutes early for recess." },
+    requiresApproval: true,
+    studentMessage: "Present this boon to your Guild Leader to begin your respite!",
+  },
+  {
     name: "Time-Turner's Grace",
     description: "A 24-hour extension on one assignment.",
     cost: 300,
@@ -254,5 +263,7 @@ export async function denyBoonRequest(teacherUid: string, requestId: string): Pr
         return { success: false, error: "Failed to deny the request." };
     }
 }
+
+    
 
     
