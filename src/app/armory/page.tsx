@@ -136,7 +136,7 @@ export default function ArmoryPage() {
         >
             <DashboardHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
-                <div className="max-w-6xl mx-auto space-y-6">
+                <div className="max-w-7xl mx-auto space-y-6">
                     <Button variant="outline" onClick={() => router.push('/dashboard')} className="bg-background/80">
                         <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
                     </Button>
@@ -150,8 +150,8 @@ export default function ArmoryPage() {
                     </Card>
 
                      {isLoading ? (
-                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-80" />)}
+                        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                            {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-80" />)}
                         </div>
                     ) : boons.length === 0 ? (
                          <Card className="text-center py-20 bg-card/80 backdrop-blur-sm">
@@ -161,7 +161,7 @@ export default function ArmoryPage() {
                             </CardHeader>
                         </Card>
                     ) : (
-                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                             {boons.map(boon => <BoonCard key={boon.id} boon={boon} onPurchase={handlePurchaseBoon} student={student} disabled={isPurchasingAny} />)}
                         </div>
                     )}
