@@ -53,7 +53,7 @@ export default function StudentHelpPage() {
                  <AccordionItem value="item-5">
                   <AccordionTrigger>How do I change my character's avatar?</AccordionTrigger>
                   <AccordionContent>
-                    From your dashboard, click the "Change Avatar" button. This will take you to a page where you can see all the looks you have unlocked by leveling up. New avatars are unlocked at every level!
+                    From your dashboard, click the "Change Avatar" button. As you gain levels, you will unlock new sets of avatars for your class. The Change Avatar page will show you all of the looks you have unlocked so far, grouped by the level at which you earned them. Select any unlocked avatar and click "Save New Avatar" to change your appearance.
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
