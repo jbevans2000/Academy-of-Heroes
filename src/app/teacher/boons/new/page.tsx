@@ -31,7 +31,6 @@ export default function NewBoonPage() {
     const [description, setDescription] = useState('');
     const [cost, setCost] = useState<number | ''>('');
     const [imageUrl, setImageUrl] = useState('');
-    const [effectValue, setEffectValue] = useState('');
 
     // Upload State
     const [imageFile, setImageFile] = useState<File | null>(null);
@@ -70,7 +69,7 @@ export default function NewBoonPage() {
     const handleSave = async () => {
         if (!teacher) return;
         
-        if (!name || cost === '' || !imageUrl || !effectValue) {
+        if (!name || cost === '' || !imageUrl || !description) {
             toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill out all required fields, including uploading an image.' });
             return;
         }
@@ -84,7 +83,7 @@ export default function NewBoonPage() {
                 imageUrl,
                 effect: {
                     type: 'REAL_WORLD_PERK',
-                    value: effectValue,
+                    value: description, // Use the main description as the effect value
                 },
             });
 
@@ -123,7 +122,7 @@ export default function NewBoonPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="description">Description</Label>
-                                <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g., A magical scroll that changes the scenery of your dashboard." />
+                                <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g., The student may chew gum in class for one day." />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="cost">Cost (in Gold)</Label>
@@ -145,11 +144,6 @@ export default function NewBoonPage() {
                                 </div>
                             </div>
                             
-                            <div className="space-y-2">
-                                <Label htmlFor="effect-value">Real-World Perk Description</Label>
-                                <Input id="effect-value" value={effectValue} onChange={(e) => setEffectValue(e.target.value)} placeholder="e.g., May chew gum in class for one day." />
-                            </div>
-
                              <div className="flex justify-end">
                                 <Button onClick={handleSave} disabled={isSaving}>
                                     {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4" />}

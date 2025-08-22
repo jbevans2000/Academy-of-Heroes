@@ -92,27 +92,25 @@ export default function EditBoonPage() {
         }
     };
     
-    const handleBoonChange = (field: keyof Boon, value: any) => {
-        setBoon(prev => prev ? { ...prev, [field]: value } : null);
-    };
-
-    const handleEffectValueChange = (value: string) => {
+    const handleBoonChange = (field: keyof Boon | 'effect.value', value: any) => {
         setBoon(prev => {
             if (!prev) return null;
-            // Ensure the effect type is always REAL_WORLD_PERK
-            return {
-                ...prev,
-                effect: {
-                    type: 'REAL_WORLD_PERK',
-                    value: value,
+            if (field === 'effect.value') {
+                return {
+                    ...prev,
+                    effect: {
+                        ...prev.effect,
+                        value: value
+                    }
                 }
-            };
+            }
+            return { ...prev, [field]: value };
         });
-    }
+    };
 
     const handleSave = async () => {
         if (!teacher || !boon) return;
-        if (!boon.name || boon.cost < 0 || !boon.imageUrl || !boon.effect.value) {
+        if (!boon.name || boon.cost < 0 || !boon.imageUrl || !boon.description) {
             toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill out all required fields.' });
             return;
         }
@@ -123,8 +121,8 @@ export default function EditBoonPage() {
             const boonToSave = {
                 ...boon,
                 effect: {
-                    ...boon.effect,
                     type: 'REAL_WORLD_PERK' as const,
+                    value: boon.description, // Use the main description as the effect value
                 }
             };
 
@@ -180,7 +178,7 @@ export default function EditBoonPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="description">Description</Label>
-                                <Textarea id="description" value={boon.description} onChange={(e) => handleBoonChange('description', e.target.value)} />
+                                <Textarea id="description" value={boon.description} onChange={(e) => handleBoonChange('description', e.target.value)} placeholder="e.g., The student may chew gum in class for one day." />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="cost">Cost (in Gold)</Label>
@@ -198,11 +196,6 @@ export default function EditBoonPage() {
                                     {isUploading && <Loader2 className="h-4 w-4 animate-spin"/>}
                                     {boon.imageUrl && <Image src={boon.imageUrl} alt="Boon preview" width={100} height={100} className="rounded-md border"/>}
                                 </div>
-                            </div>
-                            
-                            <div className="space-y-2">
-                                <Label htmlFor="effect-value">Real-World Perk Description</Label>
-                                <Input id="effect-value" value={boon.effect.value} onChange={(e) => handleEffectValueChange(e.target.value)} placeholder="e.g., May chew gum in class for one day." />
                             </div>
 
                              <div className="flex justify-end">
