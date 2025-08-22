@@ -24,7 +24,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Dialog, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { v4 as uuidv4 } from 'uuid';
@@ -139,13 +141,13 @@ export default function QuestsPage() {
   return (
     <div className="flex min-h-screen w-full flex-col">
        <Dialog open={isMapDialogOpen} onOpenChange={setIsMapDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Set Your World Map Image</AlertDialogTitle>
-            <AlertDialogDescription>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Set Your World Map Image</DialogTitle>
+            <DialogDescription>
               Upload a new image to serve as the world map for your quests.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+            </DialogDescription>
+          </DialogHeader>
           <div className="py-4 space-y-4">
              <div className="flex items-center gap-2">
                 <Label htmlFor="map-upload" className={cn(buttonVariants({ variant: 'default' }), "cursor-pointer")}>
@@ -167,14 +169,14 @@ export default function QuestsPage() {
               </div>
             )}
           </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleWorldMapUpload} disabled={!mapImageFile || isUploadingMap}>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsMapDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleWorldMapUpload} disabled={!mapImageFile || isUploadingMap}>
               {isUploadingMap ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
               Confirm Upload
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
