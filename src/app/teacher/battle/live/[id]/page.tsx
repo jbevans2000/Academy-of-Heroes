@@ -370,22 +370,39 @@ export default function TeacherLiveBattlePage() {
         const studentMap = new Map(allStudents.map(doc => [doc.uid, doc]));
         const newlyFallenUids: string[] = [];
 
-        // --- FIX STARTS HERE ---
-        // Iterate only over students who submitted a response, not all online students.
-        for (const result of roundResults) {
-            // If the student's answer was incorrect, apply damage.
-            if (!result.isCorrect && !isDivinationSkip) {
-                const student = studentMap.get(result.studentUid);
-                if (!student) continue;
+        // --- FIX STARTS HERE: Identify students who need to take damage ---
+        // Students who answered incorrectly or did not answer at all should take damage.
+        const studentsWhoAnswered = new Set(roundResults.map(res => res.studentUid));
+        const activeStudentsInClass = allStudents.filter(s => s.onlineStatus?.status === 'online');
 
-                const currentQuestion = battle.questions[liveState.currentQuestionIndex];
-                const damageOnIncorrect = currentQuestion.damage || 0;
+        const studentsToDamage: Student[] = [];
 
-                if (damageOnIncorrect > 0) {
+        // 1. Add students who answered incorrectly
+        roundResults.forEach(res => {
+            if (!res.isCorrect) {
+                const student = studentMap.get(res.studentUid);
+                if (student) studentsToDamage.push(student);
+            }
+        });
+
+        // 2. Add online students who did NOT answer
+        activeStudentsInClass.forEach(student => {
+            if (!studentsWhoAnswered.has(student.uid)) {
+                studentsToDamage.push(student);
+            }
+        });
+
+        // 3. Apply damage to the combined list of students
+        if (!isDivinationSkip) {
+            const currentQuestion = battle.questions[liveState.currentQuestionIndex];
+            const damageOnIncorrect = currentQuestion.damage || 0;
+
+            if (damageOnIncorrect > 0) {
+                 for (const student of studentsToDamage) {
                     const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
                     const newHp = Math.max(0, student.hp - damageOnIncorrect);
                     batch.update(studentRef, { hp: newHp });
-                    if (newHp === 0) {
+                    if (newHp === 0 && !liveState.fallenPlayerUids?.includes(student.uid)) {
                         newlyFallenUids.push(student.uid);
                     }
                 }
