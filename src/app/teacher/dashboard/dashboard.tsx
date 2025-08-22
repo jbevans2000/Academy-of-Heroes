@@ -87,39 +87,23 @@ export default function Dashboard() {
   
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async user => {
-      if (user) {
-        setTeacher(user);
-        
-        // Fetch static teacher data once
-        const teacherRef = doc(db, 'teachers', user.uid);
-        const teacherSnap = await getDoc(teacherRef);
-        if (teacherSnap.exists()) {
-            setTeacherData(teacherSnap.data() as TeacherData);
+        if (!user) {
+            router.push('/teacher/login');
+            return;
         }
 
-        // Set up real-time listener for students
-        const studentsQuery = collection(db, "teachers", user.uid, "students");
-        const studentsUnsubscribe = onSnapshot(studentsQuery, (snapshot) => {
-            const studentData = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
-            setStudents(studentData);
-            setIsLoading(false);
-        });
-      
-        // Set up real-time listener for pending students
-        const pendingStudentsQuery = collection(db, "teachers", user.uid, "pendingStudents");
-        const pendingUnsubscribe = onSnapshot(pendingStudentsQuery, (snapshot) => {
-            setPendingStudents(snapshot.docs.map(doc => ({ ...doc.data() } as PendingStudent)));
-        });
+        const adminRef = doc(db, 'admins', user.uid);
+        const adminSnap = await getDoc(adminRef);
+        const isAdmin = adminSnap.exists();
+        const viewingTeacherId = searchParams.get('teacherId');
 
-        // Cleanup listeners on unmount
-        return () => {
-            studentsUnsubscribe();
-            pendingUnsubscribe();
-        };
-
-      } else {
-        router.push('/teacher/login');
-      }
+        if (isAdmin && viewingTeacherId) {
+            // Admin is viewing a specific teacher's dashboard
+            setTeacher({ uid: viewingTeacherId } as User);
+        } else {
+            // Regular teacher viewing their own dashboard
+            setTeacher(user);
+        }
     });
 
     if (searchParams.get('new') === 'true') {
@@ -127,8 +111,42 @@ export default function Dashboard() {
     }
 
     return () => unsubscribe();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Changed to run only once
+  }, [searchParams, router]);
+
+  useEffect(() => {
+    if (!teacher?.uid) return;
+
+    const teacherUid = teacher.uid;
+    
+    // Fetch static teacher data once
+    const teacherRef = doc(db, 'teachers', teacherUid);
+    getDoc(teacherRef).then(teacherSnap => {
+        if (teacherSnap.exists()) {
+            setTeacherData(teacherSnap.data() as TeacherData);
+        }
+    });
+
+    // Set up real-time listener for students
+    const studentsQuery = collection(db, "teachers", teacherUid, "students");
+    const studentsUnsubscribe = onSnapshot(studentsQuery, (snapshot) => {
+        const studentData = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
+        setStudents(studentData);
+        setIsLoading(false);
+    });
+    
+    // Set up real-time listener for pending students
+    const pendingStudentsQuery = collection(db, "teachers", teacherUid, "pendingStudents");
+    const pendingUnsubscribe = onSnapshot(pendingStudentsQuery, (snapshot) => {
+        setPendingStudents(snapshot.docs.map(doc => ({ ...doc.data() } as PendingStudent)));
+    });
+
+    // Cleanup listeners on unmount
+    return () => {
+        studentsUnsubscribe();
+        pendingUnsubscribe();
+    };
+  }, [teacher]);
+
 
   const sortedStudents = useMemo(() => {
     const sorted = [...students];

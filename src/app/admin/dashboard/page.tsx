@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getGlobalSettings, updateGlobalSettings } from '@/ai/flows/manage-settings';
 import { Loader2, ToggleLeft, ToggleRight, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 interface Teacher {
     id: string;
@@ -142,21 +143,23 @@ export default function AdminDashboardPage() {
                  <Card className="lg:col-span-2">
                     <CardHeader>
                         <CardTitle>All Guilds</CardTitle>
-                        <CardDescription>A list of all registered teachers and their guilds.</CardDescription>
+                        <CardDescription>A list of all registered teachers and their guilds. Click a card to view that teacher's dashboard.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                             {teachers.map((teacher) => (
-                                <Card key={teacher.id}>
-                                    <CardHeader>
-                                        <CardTitle>{teacher.className}</CardTitle>
-                                        <CardDescription>{teacher.name} - {teacher.schoolName}</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <p className="font-semibold">{teacher.studentCount} student(s)</p>
-                                        <p className="text-sm text-muted-foreground">{teacher.email}</p>
-                                    </CardContent>
-                                </Card>
+                                <Link href={`/teacher/dashboard?teacherId=${teacher.id}`} key={teacher.id}>
+                                    <Card className="h-full hover:shadow-lg hover:border-primary transition-all">
+                                        <CardHeader>
+                                            <CardTitle>{teacher.className}</CardTitle>
+                                            <CardDescription>{teacher.name} - {teacher.schoolName}</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <p className="font-semibold">{teacher.studentCount} student(s)</p>
+                                            <p className="text-sm text-muted-foreground">{teacher.email}</p>
+                                        </CardContent>
+                                    </Card>
+                                </Link>
                             ))}
                         </div>
                         {teachers.length === 0 && !isLoading && (
