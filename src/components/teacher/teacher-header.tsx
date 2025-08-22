@@ -10,12 +10,15 @@ import { signOut, onAuthStateChanged, type User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
+import { getGlobalSettings } from "@/ai/flows/manage-settings";
+import { Bug, Lightbulb } from "lucide-react";
 
 export function TeacherHeader() {
   const router = useRouter();
   const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [isFeedbackPanelVisible, setIsFeedbackPanelVisible] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -28,6 +31,12 @@ export function TeacherHeader() {
             }
         }
     });
+     const fetchSettings = async () => {
+        const settings = await getGlobalSettings();
+        setIsFeedbackPanelVisible(settings.isFeedbackPanelVisible || false);
+    };
+
+    fetchSettings();
     return () => unsubscribe();
   }, []);
 
@@ -55,7 +64,17 @@ export function TeacherHeader() {
         <School className="h-6 w-6 text-primary" />
         <span className="text-xl">The Guild Leader's Podium</span>
       </Link>
-      <div className="ml-auto flex items-center gap-4">
+      <div className="ml-auto flex items-center gap-2">
+        {isFeedbackPanelVisible && (
+            <>
+                 <Button variant="outline" size="sm" onClick={() => router.push('/teacher/feedback?type=bug')}>
+                    <Bug className="mr-2 h-4 w-4" /> Report a Bug
+                </Button>
+                 <Button variant="outline" size="sm" onClick={() => router.push('/teacher/feedback?type=feature')}>
+                    <Lightbulb className="mr-2 h-4 w-4" /> Request a Feature
+                </Button>
+            </>
+        )}
         {isAdmin && (
              <Button variant="secondary" onClick={() => router.push('/admin/dashboard')}>
                 <Shield className="mr-2 h-5 w-5" />
