@@ -46,7 +46,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift } from 'lucide-react';
+import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -544,20 +544,16 @@ export default function Dashboard() {
             {selectedStudents.length === students.length ? 'Deselect All' : 'Select All'}
             </Button>
             
-             <DropdownMenu>
+            <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="text-black border-black">
-                    <Wrench className="mr-2 h-4 w-4" />
-                    Manage
-                    <ChevronDown className="ml-2 h-4 w-4" />
+                        <Gamepad2 className="mr-2 h-4 w-4" />
+                        Game Management
+                        <ChevronDown className="ml-2 h-4 w-4" />
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
-                    <DropdownMenuItem onClick={() => router.push('/teacher/tools')}>
-                        <Wrench className="mr-2 h-4 w-4" />
-                        <span>The Guild Leader's Toolkit</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push('/teacher/quests')}>
+                     <DropdownMenuItem onClick={() => router.push('/teacher/quests')}>
                         <BookOpen className="mr-2 h-4 w-4" />
                         <span>The Quest Archives</span>
                     </DropdownMenuItem>
@@ -565,21 +561,37 @@ export default function Dashboard() {
                         <Star className="mr-2 h-4 w-4" />
                         <span>Guild Rewards</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push('/teacher/rewards')}>
-                        <Gift className="mr-2 h-4 w-4" />
-                        <span>Manage Rewards</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push('/teacher/battles')}>
+                     <DropdownMenuItem onClick={() => router.push('/teacher/battles')}>
                         <Swords className="mr-2 h-4 w-4" />
                         <span>The Field of Battle</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push('/teacher/companies')}>
-                        <Users className="mr-2 h-4 w-4" />
-                        <span>Manage Companies</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/teacher/battles/summary')}>
                         <BookHeart className="mr-2 h-4 w-4" />
                         <span>Battle Archives</span>
+                    </DropdownMenuItem>
+                     <DropdownMenuItem onClick={() => router.push('/teacher/tools')}>
+                        <Wrench className="mr-2 h-4 w-4" />
+                        <span>The Guild Leader's Toolkit</span>
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+            
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="text-black border-black">
+                        <School className="mr-2 h-4 w-4" />
+                        Classroom
+                        <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                    <DropdownMenuItem onClick={() => router.push('/teacher/rewards')}>
+                        <Gift className="mr-2 h-4 w-4" />
+                        <span>Manage Rewards</span>
+                    </DropdownMenuItem>
+                     <DropdownMenuItem onClick={() => router.push('/teacher/companies')}>
+                        <Users className="mr-2 h-4 w-4" />
+                        <span>Manage Companies</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/teacher/gamelog')}>
                         <BookOpen className="mr-2 h-4 w-4" />
