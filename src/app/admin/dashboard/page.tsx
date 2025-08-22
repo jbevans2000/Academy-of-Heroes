@@ -12,7 +12,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { getGlobalSettings, updateGlobalSettings } from '@/ai/flows/manage-settings';
-import { Loader2, ToggleLeft, ToggleRight, RefreshCw } from 'lucide-react';
+import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -30,6 +30,7 @@ export default function AdminDashboardPage() {
     const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
+    const [isFeedbackPanelVisible, setIsFeedbackPanelVisible] = useState(false);
     const [isSettingsLoading, setIsSettingsLoading] = useState(true);
     const router = useRouter();
     const { toast } = useToast();
@@ -89,6 +90,7 @@ export default function AdminDashboardPage() {
         try {
             const settings = await getGlobalSettings();
             setIsRegistrationOpen(settings.isRegistrationOpen);
+            setIsFeedbackPanelVisible(settings.isFeedbackPanelVisible || false);
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not load global settings.' });
         } finally {
@@ -106,6 +108,27 @@ export default function AdminDashboardPage() {
                 toast({
                     title: 'Settings Updated',
                     description: `New account registration is now ${newStatus ? 'ENABLED' : 'DISABLED'}.`
+                });
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
+        } finally {
+            setIsSettingsLoading(false);
+        }
+    }
+    
+    const handleToggleFeedbackPanel = async () => {
+        setIsSettingsLoading(true);
+        try {
+            const newStatus = !isFeedbackPanelVisible;
+            const result = await updateGlobalSettings({ isFeedbackPanelVisible: newStatus });
+            if (result.success) {
+                setIsFeedbackPanelVisible(newStatus);
+                toast({
+                    title: 'Settings Updated',
+                    description: `Beta Feedback Panel is now ${newStatus ? 'VISIBLE' : 'HIDDEN'}.`
                 });
             } else {
                 throw new Error(result.error);
@@ -169,36 +192,58 @@ export default function AdminDashboardPage() {
                         )}
                    </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Global Settings</CardTitle>
-                        <CardDescription>Control application-wide settings.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex items-center justify-between rounded-lg border p-4">
-                            <div>
-                                <h4 className="font-semibold">Account Registration</h4>
-                                <p className={cn("text-sm font-bold", isRegistrationOpen ? 'text-green-600' : 'text-red-600')}>
-                                    {isRegistrationOpen ? 'ACTIVE' : 'DISABLED'}
-                                </p>
+                <div className="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Global Settings</CardTitle>
+                            <CardDescription>Control application-wide settings.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex items-center justify-between rounded-lg border p-4">
+                                <div>
+                                    <h4 className="font-semibold">Account Registration</h4>
+                                    <p className={cn("text-sm font-bold", isRegistrationOpen ? 'text-green-600' : 'text-red-600')}>
+                                        {isRegistrationOpen ? 'ACTIVE' : 'DISABLED'}
+                                    </p>
+                                </div>
+                                <Button onClick={handleToggleRegistration} disabled={isSettingsLoading} size="lg">
+                                    {isSettingsLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : isRegistrationOpen ? <ToggleRight className="mr-2 h-6 w-6"/> : <ToggleLeft className="mr-2 h-6 w-6"/>}
+                                    {isRegistrationOpen ? 'Deactivate' : 'Activate'}
+                                </Button>
                             </div>
-                             <Button onClick={handleToggleRegistration} disabled={isSettingsLoading} size="lg">
-                                {isSettingsLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : isRegistrationOpen ? <ToggleRight className="mr-2 h-6 w-6"/> : <ToggleLeft className="mr-2 h-6 w-6"/>}
-                                {isRegistrationOpen ? 'Deactivate' : 'Activate'}
-                            </Button>
-                        </div>
-                         <div className="flex items-center justify-between rounded-lg border p-4">
-                            <div>
-                                <h4 className="font-semibold">Refresh Data</h4>
-                                <p className="text-sm text-muted-foreground">Reload all guild and student information.</p>
+                            <div className="flex items-center justify-between rounded-lg border p-4">
+                                <div>
+                                    <h4 className="font-semibold">Refresh Data</h4>
+                                    <p className="text-sm text-muted-foreground">Reload all guild and student information.</p>
+                                </div>
+                                <Button onClick={fetchTeachers} disabled={isLoading} size="lg">
+                                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4"/>}
+                                    Refresh
+                                </Button>
                             </div>
-                             <Button onClick={fetchTeachers} disabled={isLoading} size="lg">
-                                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4"/>}
-                                Refresh
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Beta Features</CardTitle>
+                            <CardDescription>Toggle experimental features for all users.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex items-center justify-between rounded-lg border p-4">
+                                <div>
+                                    <h4 className="font-semibold">Teacher Feedback Panel</h4>
+                                    <p className={cn("text-sm font-bold", isFeedbackPanelVisible ? 'text-green-600' : 'text-red-600')}>
+                                        {isFeedbackPanelVisible ? 'ACTIVE' : 'INACTIVE'}
+                                    </p>
+                                </div>
+                                 <Button onClick={handleToggleFeedbackPanel} disabled={isSettingsLoading} size="lg">
+                                    {isSettingsLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : isFeedbackPanelVisible ? <ToggleRight className="mr-2 h-6 w-6"/> : <ToggleLeft className="mr-2 h-6 w-6"/>}
+                                    {isFeedbackPanelVisible ? 'Deactivate' : 'Activate'}
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
             </main>
         </div>
     );

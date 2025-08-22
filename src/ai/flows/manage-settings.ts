@@ -9,6 +9,7 @@ import { db } from '@/lib/firebase';
 
 interface Settings {
     isRegistrationOpen: boolean;
+    isFeedbackPanelVisible?: boolean;
 }
 
 const settingsRef = doc(db, 'settings', 'global');
@@ -21,14 +22,19 @@ export async function getGlobalSettings(): Promise<Settings> {
     try {
         const docSnap = await getDoc(settingsRef);
         if (docSnap.exists()) {
-            return docSnap.data() as Settings;
+            const data = docSnap.data();
+            // Provide default for new setting if it doesn't exist
+            return {
+                isRegistrationOpen: data.isRegistrationOpen ?? true,
+                isFeedbackPanelVisible: data.isFeedbackPanelVisible ?? false,
+            };
         }
         // Default to registration being open if the document doesn't exist
-        return { isRegistrationOpen: true };
+        return { isRegistrationOpen: true, isFeedbackPanelVisible: false };
     } catch (error) {
         console.error("Error fetching global settings:", error);
         // Fail-safe default
-        return { isRegistrationOpen: true };
+        return { isRegistrationOpen: true, isFeedbackPanelVisible: false };
     }
 }
 
