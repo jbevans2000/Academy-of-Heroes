@@ -32,7 +32,8 @@ export type Student = {
         status: 'online' | 'offline';
         lastSeen: any; // Firestore ServerTimestamp
     };
-    companyId?: string; // New field
+    companyId?: string;
+    inBattle?: boolean; // New field
 }
 
 export type PendingStudent = {

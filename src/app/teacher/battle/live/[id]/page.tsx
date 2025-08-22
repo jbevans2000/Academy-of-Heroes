@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs, writeBatch, serverTimestamp, setDoc, deleteDoc, arrayUnion, arrayRemove, addDoc, orderBy, increment } from 'firebase/firestore';
+import { onSnapshot, doc, getDoc, collection, query, updateDoc, getDocs, writeBatch, serverTimestamp, setDoc, deleteDoc, arrayUnion, arrayRemove, addDoc, orderBy, increment, where } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
@@ -311,33 +311,32 @@ export default function TeacherLiveBattlePage() {
             totalPowerDamage: finalLiveState.totalPowerDamage || 0,
         });
 
-        // Award XP/Gold
+        // Award XP/Gold and clear inBattle status
         const studentDocs = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
         const studentMap = new Map(studentDocs.docs.map(d => [d.id, d.data() as Student]));
 
-        for (const uid in rewardsByStudent) {
-            const studentData = studentMap.get(uid);
-            if (studentData) {
-                const studentRef = doc(db, 'teachers', teacherUid, 'students', uid);
-                const { xpGained, goldGained } = rewardsByStudent[uid];
+        for (const studentDoc of studentDocs.docs) {
+             const studentRef = doc(db, 'teachers', teacherUid, 'students', studentDoc.id);
+             const studentData = studentDoc.data() as Student;
+             const rewards = rewardsByStudent[studentDoc.id];
+             const updates: any = { inBattle: false }; // Clear battle status for all students
 
+             if (rewards) {
                  const currentXp = studentData.xp || 0;
-                 const newXp = currentXp + xpGained;
+                 const newXp = currentXp + rewards.xpGained;
                  const currentLevel = studentData.level || 1;
                  const newLevel = calculateLevel(newXp);
-
-                 const updates: any = {
-                    xp: newXp,
-                    gold: (studentData.gold || 0) + goldGained,
-                 };
+                 
+                 updates.xp = newXp;
+                 updates.gold = (studentData.gold || 0) + rewards.goldGained;
 
                  if (newLevel > currentLevel) {
                     updates.level = newLevel;
                     updates.maxHp = calculateBaseMaxHp(studentData.class, newLevel, 'hp');
                     updates.maxMp = calculateBaseMaxHp(studentData.class, newLevel, 'mp');
                  }
-                 batch.update(studentRef, updates);
-            }
+             }
+             batch.update(studentRef, updates);
         }
         
         const subcollections = ['responses', 'powerActivations', 'battleLog', 'messages'];
@@ -369,11 +368,11 @@ export default function TeacherLiveBattlePage() {
 
         const studentMap = new Map(allStudents.map(doc => [doc.uid, doc]));
         const newlyFallenUids: string[] = [];
-
-        // --- FIX STARTS HERE: Identify students who need to take damage ---
-        // Students who answered incorrectly or did not answer at all should take damage.
+        
+        // --- FIX STARTS HERE: Identify students in battle and apply damage ---
+        // Get all students marked as currently being in the battle.
+        const studentsInBattle = allStudents.filter(s => s.inBattle);
         const studentsWhoAnswered = new Set(roundResults.map(res => res.studentUid));
-        const activeStudentsInClass = allStudents.filter(s => s.onlineStatus?.status === 'online');
 
         const studentsToDamage: Student[] = [];
 
@@ -385,8 +384,8 @@ export default function TeacherLiveBattlePage() {
             }
         });
 
-        // 2. Add online students who did NOT answer
-        activeStudentsInClass.forEach(student => {
+        // 2. Add students in the battle who did NOT answer
+        studentsInBattle.forEach(student => {
             if (!studentsWhoAnswered.has(student.uid)) {
                 studentsToDamage.push(student);
             }
@@ -1093,7 +1092,7 @@ export default function TeacherLiveBattlePage() {
                             <CardTitle>Waiting for Students</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-muted-foreground">Students are now in the pre-battle waiting room. They can see the intro video if one was provided. When you are ready, click "Start First Question" to begin the battle.</p>
+                            <p className="text-muted-foreground">Students can now join the pre-battle waiting room by clicking "Ready for Battle" on their dashboards. When you are ready, click "Start First Question" to begin.</p>
                         </CardContent>
                     </Card>
                 )}

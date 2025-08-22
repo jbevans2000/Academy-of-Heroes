@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { collection, doc, getDoc, onSnapshot, writeBatch, deleteDoc, getDocs } from 'firebase/firestore';
+import { collection, doc, getDoc, onSnapshot, writeBatch, deleteDoc, getDocs, query, where } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student, PendingStudent, ClassType } from '@/lib/data';
 import { TeacherHeader } from "@/components/teacher/teacher-header";
@@ -46,7 +46,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users } from 'lucide-react';
+import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -355,6 +355,7 @@ export default function Dashboard() {
         questProgress: {},
         hubsCompleted: 0,
         isNewlyApproved: true,
+        inBattle: false,
       };
       
       const newStudentRef = doc(db, 'teachers', teacher.uid, 'students', uid);
@@ -378,6 +379,31 @@ export default function Dashboard() {
     // UI will update from the listener
     if (pendingStudents.length === 1) {
       setIsApprovalDialogOpen(false); // Close dialog if it was the last one
+    }
+  };
+
+  const handleClearAllBattleStatus = async () => {
+    if (!teacher) return;
+    setIsAwarding(true); // Reuse the awarding loader state
+    try {
+        const q = query(collection(db, 'teachers', teacher.uid, 'students'), where('inBattle', '==', true));
+        const studentsInBattle = await getDocs(q);
+
+        if (studentsInBattle.empty) {
+            toast({ title: 'All Clear', description: 'No students had a lingering battle status.' });
+            return;
+        }
+
+        const batch = writeBatch(db);
+        studentsInBattle.forEach(doc => {
+            batch.update(doc.ref, { inBattle: false });
+        });
+        await batch.commit();
+        toast({ title: 'Battle Statuses Cleared', description: `${studentsInBattle.size} student(s) have been removed from battle.` });
+    } catch (error) {
+         toast({ variant: 'destructive', title: 'Error', description: 'Could not clear battle statuses.' });
+    } finally {
+        setIsAwarding(false);
     }
   };
 
@@ -529,6 +555,11 @@ export default function Dashboard() {
                     <DropdownMenuItem onClick={() => router.push('/teacher/gamelog')}>
                         <BookOpen className="mr-2 h-4 w-4" />
                         <span>The Chronicler's Scroll</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleClearAllBattleStatus} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                        <ShieldAlert className="mr-2 h-4 w-4" />
+                        <span>Clear All Battle Statuses</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuSub>
