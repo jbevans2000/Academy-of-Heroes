@@ -21,7 +21,7 @@ const defaultBoons = [
     imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FJester's%20Favor.jpg?alt=media&token=294dd79f-bc38-4465-86c2-50fbbedbbc60",
     effect: { type: 'REAL_WORLD_PERK', value: "Tell a joke in class." },
     requiresApproval: true,
-    studentMessage: "Present this boon to your Guild Leader to share your joke with the class!",
+    studentMessage: "Inform your Guild Leader you have used this Reward!",
   },
   {
     name: "Scribe's Permission",
@@ -30,7 +30,7 @@ const defaultBoons = [
     imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FScribe's%20Permission.jpg?alt=media&token=424602ba-50d4-4b00-9379-286024d93a5f",
     effect: { type: 'REAL_WORLD_PERK', value: "Use a special pen for the day." },
     requiresApproval: false,
-    studentMessage: "Show this boon to your Guild Leader to use your special writing tool.",
+    studentMessage: "Inform your Guild Leader you have used this Reward!",
   },
   {
     name: "Wanderer's Pass",
@@ -39,7 +39,7 @@ const defaultBoons = [
     imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FWanderer's%20Pass.jpg?alt=media&token=69ce6dcc-5e34-46ae-ba00-c17bf500da33",
     effect: { type: 'REAL_WORLD_PERK', value: "Choose seat for the day." },
     requiresApproval: true,
-    studentMessage: "The Guild Leader must approve your seat change. Show them this pass!",
+    studentMessage: "Inform your Guild Leader you have used this Reward!",
   },
   {
     name: "Emissary's Duty",
@@ -48,7 +48,7 @@ const defaultBoons = [
     imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FEmissary's%20Duty.jpg?alt=media&token=45484a0f-d05c-40d7-bae0-6a2cbedc9242",
     effect: { type: 'REAL_WORLD_PERK', value: "Deliver a message to another classroom." },
     requiresApproval: true,
-    studentMessage: "Your message is sealed. Present this to your Guild Leader to arrange for its delivery.",
+    studentMessage: "Inform your Guild Leader you have used this Reward!",
   },
   {
     name: "Oracle's Insight",
@@ -57,7 +57,7 @@ const defaultBoons = [
     imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FOracle's%20Insight.jpg?alt=media&token=a41ef92b-6b7f-4ea4-80da-50372fd109aa",
     effect: { type: 'REAL_WORLD_PERK', value: "1-minute private teacher consultation." },
     requiresApproval: true,
-    studentMessage: "Schedule a time with your Guild Leader to receive your minute of insight.",
+    studentMessage: "Inform your Guild Leader you have used this Reward!",
   },
   {
     name: "Bard's Tune",
@@ -66,7 +66,7 @@ const defaultBoons = [
     imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FBard's%20Tune.jpg?alt=media&token=89a03ef6-26bc-46fa-9b84-2183f6528437",
     effect: { type: 'REAL_WORLD_PERK', value: "Listen to music during independent work." },
     requiresApproval: false,
-    studentMessage: "You may now listen to your tunes during independent work. Keep one ear open for instructions!",
+    studentMessage: "Inform your Guild Leader you have used this Reward!",
   },
   {
     name: "Hero's Respite",
@@ -75,7 +75,7 @@ const defaultBoons = [
     imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FHeroes%20Respite.jpg?alt=media&token=3419c982-2aec-4ab7-adce-07011af329a6",
     effect: { type: 'REAL_WORLD_PERK', value: "Leave 5 minutes early for recess." },
     requiresApproval: true,
-    studentMessage: "Present this boon to your Guild Leader to begin your respite!",
+    studentMessage: "Inform your Guild Leader you have used this Reward!",
   },
   {
     name: "Time-Turner's Grace",
@@ -84,7 +84,7 @@ const defaultBoons = [
     imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FTime%20Turner's%20Grace.jpg?alt=media&token=57032694-2c8a-42ec-b26e-7c0a2c414d50",
     effect: { type: 'REAL_WORLD_PERK', value: "24-hour assignment extension." },
     requiresApproval: false,
-    studentMessage: "You've gained an extra day for your assignment! Let your teacher know which one you're using it on.",
+    studentMessage: "Inform your Guild Leader you have used this Reward!",
   },
    {
     name: "Keeper of the Scroll",
@@ -93,7 +93,7 @@ const defaultBoons = [
     imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FKeeper%20of%20the%20Scroll.jpg?alt=media&token=8a3bcfce-a86c-40a3-8cba-1b7a4754f3dd",
     effect: { type: 'REAL_WORLD_PERK', value: "Erase one incorrect answer on a past assignment." },
     requiresApproval: false,
-    studentMessage: "You have gained the power to rewrite history! Inform your Guild Leader which assignment's past you wish to change.",
+    studentMessage: "Inform your Guild Leader you have used this Reward!",
   },
   {
     name: "Scholar's Pardon",
@@ -102,7 +102,7 @@ const defaultBoons = [
     imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FScholar's%20Pardon.jpg?alt=media&token=900a3c30-0a94-4585-bff6-13621f9a1a33",
     effect: { type: 'REAL_WORLD_PERK', value: "Single small homework pass." },
     requiresApproval: false,
-    studentMessage: "You are pardoned from one small homework assignment. Inform your Guild Leader which quest you are bypassing.",
+    studentMessage: "Inform your Guild Leader you have used this Reward!",
   },
 ];
 
