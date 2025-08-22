@@ -181,13 +181,22 @@ function EditablePairedStat({ student, stat, maxStat, icon, label, setStudents, 
 
     const handleSave = async () => {
         setIsLoading(true);
-        const currentAmount = Number(currentValue);
+        let currentAmount = Number(currentValue);
         const maxAmount = Number(maxValue);
 
         if (isNaN(currentAmount) || isNaN(maxAmount) || currentAmount < 0 || maxAmount < 0) {
             toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please enter non-negative numbers.' });
             setIsLoading(false);
             return;
+        }
+
+        if (currentAmount > maxAmount) {
+            toast({
+                title: 'Value Adjusted',
+                description: `Current ${label} cannot exceed the maximum. It has been set to ${maxAmount}.`,
+            });
+            currentAmount = maxAmount;
+            setCurrentValue(maxAmount);
         }
 
         const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
