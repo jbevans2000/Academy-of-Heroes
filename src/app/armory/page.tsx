@@ -30,7 +30,7 @@ const BoonCard = ({ boon, onPurchase, student, disabled }: { boon: Boon, onPurch
     const canAfford = student && student.gold >= boon.cost;
 
     return (
-        <Card className="flex flex-col text-center">
+        <Card className="flex flex-col text-center bg-card/80 backdrop-blur-sm">
             <CardHeader>
                 <div className="aspect-square relative w-full bg-secondary rounded-md overflow-hidden">
                     <Image src={boon.imageUrl || 'https://placehold.co/400x400.png'} alt={boon.name} fill className="object-cover" data-ai-hint="fantasy item" />
@@ -131,18 +131,21 @@ export default function ArmoryPage() {
     };
 
     return (
-        <div className="flex min-h-screen w-full flex-col bg-muted/40">
+        <div 
+            className="flex min-h-screen w-full flex-col bg-cover bg-center"
+            style={{ backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-a78eccd5-9dd1-4ce7-bad4-44d11234177c.jpg?alt=media&token=bfe048b0-1e6c-4281-9d4e-523263132966')`}}
+        >
             <DashboardHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="max-w-6xl mx-auto space-y-6">
-                    <Button variant="outline" onClick={() => router.push('/dashboard')}>
+                    <Button variant="outline" onClick={() => router.push('/dashboard')} className="bg-background/80">
                         <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
                     </Button>
 
-                    <Card>
+                    <Card className="bg-card/80 backdrop-blur-sm">
                         <CardHeader className="text-center">
                             <Gem className="h-12 w-12 mx-auto text-primary" />
-                            <CardTitle className="text-3xl font-headline mt-2">The Armory</CardTitle>
+                            <CardTitle className="text-3xl font-headline mt-2">The Vault</CardTitle>
                             <CardDescription>Spend your hard-earned gold on powerful boons and cosmetic items.</CardDescription>
                         </CardHeader>
                     </Card>
@@ -152,9 +155,9 @@ export default function ArmoryPage() {
                             {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-80" />)}
                         </div>
                     ) : boons.length === 0 ? (
-                         <Card className="text-center py-20">
+                         <Card className="text-center py-20 bg-card/80 backdrop-blur-sm">
                             <CardHeader>
-                                <CardTitle>The Armory is Empty</CardTitle>
+                                <CardTitle>The Vault is Empty</CardTitle>
                                 <CardDescription>The Guildmaster has not yet stocked the store with any items. Check back later!</CardDescription>
                             </CardHeader>
                         </Card>
