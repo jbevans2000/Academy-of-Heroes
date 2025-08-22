@@ -109,7 +109,7 @@ export default function ChangeAvatarPage() {
     const unlockedLevels = Object.keys(classAvatars)
         .map(Number)
         .filter(l => l <= level)
-        .sort((a,b) => b-a); // Sort descending to show highest level first
+        .sort((a,b) => a-b); // Sort ascending
     
     return unlockedLevels.map(lvl => (
         <div key={lvl}>
@@ -146,6 +146,7 @@ export default function ChangeAvatarPage() {
   }
 
   const nextUnlockLevel = student.level + 1;
+  const isMaxLevel = student.level >= 20;
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -187,7 +188,9 @@ export default function ChangeAvatarPage() {
                     <CardHeader>
                         <CardTitle className="text-3xl font-headline">Choose Your Avatar</CardTitle>
                         <CardDescription>
-                            Select from any of your unlocked looks. New avatars unlock at Level {nextUnlockLevel}!
+                            {isMaxLevel 
+                                ? "You have unlocked all avatar images! You have ascended!" 
+                                : `Select from any of your unlocked looks. New avatars unlock at Level ${nextUnlockLevel}!`}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
