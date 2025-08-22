@@ -34,6 +34,7 @@ export type Student = {
     };
     companyId?: string;
     inBattle: boolean; 
+    inventory?: string[]; // Array of boon IDs
 }
 
 export type PendingStudent = {

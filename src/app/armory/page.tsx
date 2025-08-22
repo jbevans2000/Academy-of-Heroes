@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -6,15 +7,28 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, onSnapshot, query, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Boon } from '@/lib/boons';
+import type { Student } from '@/lib/data';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Coins, Gem, Ban } from 'lucide-react';
+import { ArrowLeft, Coins, Gem, Ban, ShoppingCart, Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import { purchaseBoon } from '@/ai/flows/manage-inventory';
 
-const BoonCard = ({ boon }: { boon: Boon }) => {
+const BoonCard = ({ boon, onPurchase, student, disabled }: { boon: Boon, onPurchase: (boonId: string) => void, student: Student | null, disabled: boolean }) => {
+    const [isPurchasing, setIsPurchasing] = useState(false);
+    
+    const handlePurchase = async () => {
+        setIsPurchasing(true);
+        await onPurchase(boon.id);
+        setIsPurchasing(false);
+    }
+    
+    const hasBoon = student?.inventory?.includes(boon.id);
+    const canAfford = student && student.gold >= boon.cost;
+
     return (
         <Card className="flex flex-col text-center">
             <CardHeader>
@@ -31,9 +45,9 @@ const BoonCard = ({ boon }: { boon: Boon }) => {
                     <Coins className="h-6 w-6" />
                     <span>{boon.cost}</span>
                 </div>
-                 <Button className="w-full" disabled>
-                    <Ban className="mr-2 h-4 w-4" />
-                    Purchasing Coming Soon
+                 <Button className="w-full" onClick={handlePurchase} disabled={disabled || isPurchasing || hasBoon || !canAfford}>
+                    {isPurchasing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : hasBoon ? <Ban className="mr-2 h-4 w-4" /> : <ShoppingCart className="mr-2 h-4 w-4" />}
+                    {hasBoon ? 'Already Owned' : !canAfford ? 'Not Enough Gold' : 'Purchase'}
                 </Button>
             </CardFooter>
         </Card>
@@ -44,18 +58,29 @@ export default function ArmoryPage() {
     const router = useRouter();
     const { toast } = useToast();
 
-    const [teacherUid, setTeacherUid] = useState<string | null>(null);
+    const [user, setUser] = useState<User | null>(null);
+    const [student, setStudent] = useState<Student | null>(null);
     const [boons, setBoons] = useState<Boon[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isPurchasingAny, setIsPurchasingAny] = useState(false);
+
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                const studentMetaRef = doc(db, 'students', user.uid);
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            if (currentUser) {
+                setUser(currentUser);
+                const studentMetaRef = doc(db, 'students', currentUser.uid);
                 const studentMetaSnap = await getDoc(studentMetaRef);
 
                 if (studentMetaSnap.exists()) {
-                    setTeacherUid(studentMetaSnap.data().teacherUid);
+                    const studentRef = doc(db, 'teachers', studentMetaSnap.data().teacherUid, 'students', currentUser.uid);
+                    // Use onSnapshot to get real-time updates for student's gold and inventory
+                    const unsubStudent = onSnapshot(studentRef, (docSnap) => {
+                        if (docSnap.exists()) {
+                            setStudent(docSnap.data() as Student);
+                        }
+                    });
+                    return () => unsubStudent();
                 } else {
                     toast({ variant: 'destructive', title: 'Error', description: 'Could not identify your guild.' });
                     router.push('/dashboard');
@@ -68,9 +93,9 @@ export default function ArmoryPage() {
     }, [router, toast]);
     
     useEffect(() => {
-        if (!teacherUid) return;
+        if (!student?.teacherUid) return;
 
-        const boonsQuery = query(collection(db, 'teachers', teacherUid, 'boons'), orderBy('createdAt', 'desc'));
+        const boonsQuery = query(collection(db, 'teachers', student.teacherUid, 'boons'), orderBy('createdAt', 'desc'));
 
         const unsubscribe = onSnapshot(boonsQuery, (snapshot) => {
             setBoons(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Boon)));
@@ -82,8 +107,24 @@ export default function ArmoryPage() {
         });
 
         return () => unsubscribe();
-    }, [teacherUid, toast]);
+    }, [student?.teacherUid, toast]);
+    
+    const handlePurchaseBoon = async (boonId: string) => {
+        if (!user || !student) return;
+        setIsPurchasingAny(true);
+        const result = await purchaseBoon({
+            teacherUid: student.teacherUid,
+            studentUid: user.uid,
+            boonId: boonId,
+        });
 
+        if (result.success) {
+            toast({ title: 'Purchase Successful!', description: result.message });
+        } else {
+            toast({ variant: 'destructive', title: 'Purchase Failed', description: result.error });
+        }
+        setIsPurchasingAny(false);
+    };
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -115,7 +156,7 @@ export default function ArmoryPage() {
                         </Card>
                     ) : (
                         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                            {boons.map(boon => <BoonCard key={boon.id} boon={boon} />)}
+                            {boons.map(boon => <BoonCard key={boon.id} boon={boon} onPurchase={handlePurchaseBoon} student={student} disabled={isPurchasingAny} />)}
                         </div>
                     )}
                 </div>

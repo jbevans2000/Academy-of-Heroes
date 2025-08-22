@@ -12,16 +12,6 @@ import { db } from '@/lib/firebase';
 import Image from 'next/image';
 
 interface StatsCardProps {
-  xp: number;
-  gold: number;
-  level: number;
-  hp: number;
-  mp: number;
-  maxHp: number;
-  maxMp: number;
-  characterName: string;
-  studentName: string;
-  characterClass: ClassType;
   student: Student;
 }
 
@@ -32,9 +22,11 @@ const classIconMap = {
     '': null
 }
 
-export function StatsCard({ xp, gold, level, hp, mp, maxHp, maxMp, characterName, studentName, characterClass, student }: StatsCardProps) {
+export function StatsCard({ student }: StatsCardProps) {
   const [isPowersSheetOpen, setIsPowersSheetOpen] = useState(false);
   const [company, setCompany] = useState<Company | null>(null);
+
+  const { xp, gold, level, hp, mp, maxHp, maxMp, characterName, studentName, class: characterClass } = student;
 
   useEffect(() => {
       let isMounted = true;
@@ -73,6 +65,14 @@ export function StatsCard({ xp, gold, level, hp, mp, maxHp, maxMp, characterName
         battleState={null} // Not in a battle context
     />
     <Card className="shadow-lg rounded-xl overflow-hidden relative">
+       {student.backgroundUrl && (
+           <Image 
+                src={student.backgroundUrl}
+                alt="Dashboard Background"
+                fill
+                className="object-cover z-0 opacity-30"
+           />
+       )}
       {company?.logoUrl && (
            <div className="absolute inset-0 z-0 flex items-center justify-center p-4">
               <Image src={company.logoUrl} alt="Company Logo" fill className="object-contain opacity-50 scale-50" />
