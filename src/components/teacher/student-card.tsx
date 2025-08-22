@@ -430,7 +430,7 @@ export function StudentCard({ student, isSelected, onSelect, setStudents, teache
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-[70vh] overflow-y-auto">
-              <DashboardClient student={student} />
+              <DashboardClient student={student} isTeacherPreview={true} />
           </div>
         </DialogContent>
       </Dialog>

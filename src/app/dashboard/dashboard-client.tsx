@@ -21,9 +21,10 @@ import Image from 'next/image';
 
 interface DashboardClientProps {
   student: Student;
+  isTeacherPreview?: boolean;
 }
 
-export function DashboardClient({ student }: DashboardClientProps) {
+export function DashboardClient({ student, isTeacherPreview = false }: DashboardClientProps) {
   const router = useRouter();
   const { toast } = useToast();
 
@@ -83,27 +84,29 @@ export function DashboardClient({ student }: DashboardClientProps) {
             characterClass={student.class}
             student={student}
         />
-        <div className="flex justify-center pt-6">
-            <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger>
-                        <div className="relative cursor-pointer transition-transform hover:scale-105">
-                            <Image 
-                                src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Button%20Images%2Fenvato-labs-ai-3b15fc38-f56c-4a0a-ad37-13b60023783c.jpg?alt=media&token=faf4cc58-1c2c-43f9-babc-23ad285da1b0" 
-                                alt="The Armory - Coming Soon"
-                                width={300}
-                                height={100}
-                                className="rounded-lg shadow-lg border-2 border-transparent hover:border-primary"
-                                data-ai-hint="fantasy blacksmith"
-                            />
-                        </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p>The Armory has been ransacked by hobgoblins. Check back soon!</p>
-                    </TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
-        </div>
+        {!isTeacherPreview && (
+            <div className="flex justify-center pt-6">
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <div className="relative cursor-pointer transition-transform hover:scale-105">
+                                <Image 
+                                    src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Button%20Images%2Fenvato-labs-ai-3b15fc38-f56c-4a0a-ad37-13b60023783c.jpg?alt=media&token=faf4cc58-1c2c-43f9-babc-23ad285da1b0" 
+                                    alt="The Armory - Coming Soon"
+                                    width={300}
+                                    height={100}
+                                    className="rounded-lg shadow-lg border-2 border-transparent hover:border-primary"
+                                    data-ai-hint="fantasy blacksmith"
+                                />
+                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>The Armory has been ransacked by hobgoblins. Check back soon!</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            </div>
+        )}
       </div>
     </div>
   );
