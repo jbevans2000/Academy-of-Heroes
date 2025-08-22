@@ -181,6 +181,7 @@ function EditablePairedStat({ student, stat, maxStat, icon, label, setStudents, 
 
     const handleSave = async () => {
         setIsLoading(true);
+        let wasAdjusted = false;
         let currentAmount = Number(currentValue);
         const maxAmount = Number(maxValue);
 
@@ -197,6 +198,7 @@ function EditablePairedStat({ student, stat, maxStat, icon, label, setStudents, 
             });
             currentAmount = maxAmount;
             setCurrentValue(maxAmount);
+            wasAdjusted = true;
         }
 
         const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
@@ -207,8 +209,11 @@ function EditablePairedStat({ student, stat, maxStat, icon, label, setStudents, 
             };
 
             await updateDoc(studentRef, updates);
-            // Real-time listener will update the state
-            toast({ title: 'Stat Updated!', description: `${student.characterName}'s ${label} has been updated.` });
+            
+            // Only show the "Updated" toast if the value wasn't auto-adjusted.
+            if (!wasAdjusted) {
+                toast({ title: 'Stat Updated!', description: `${student.characterName}'s ${label} has been updated.` });
+            }
 
         } catch (error) {
             console.error(`Error updating ${label}:`, error);
