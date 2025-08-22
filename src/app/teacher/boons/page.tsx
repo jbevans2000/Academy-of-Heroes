@@ -27,76 +27,9 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, Star, Coins, EyeOff, Eye } from 'lucide-react';
 import Image from 'next/image';
-import { deleteBoon, updateBoonVisibility, createBoon } from '@/ai/flows/manage-boons';
+import { deleteBoon, updateBoonVisibility, populateDefaultBoons } from '@/ai/flows/manage-boons';
 import { cn } from '@/lib/utils';
 import { logGameEvent } from '@/lib/gamelog';
-
-const defaultBoons = [
-  {
-    name: "Jester's Favor",
-    description: "Share a school-appropriate joke with the class.",
-    cost: 50,
-    imageUrl: "https://placehold.co/400x400.png",
-    effect: { type: 'REAL_WORLD_PERK', value: "Tell a joke in class." },
-  },
-  {
-    name: "Scribe's Permission",
-    description: "Use a special pen or marker for your assignments for the day.",
-    cost: 75,
-    imageUrl: "https://placehold.co/400x400.png",
-    effect: { type: 'REAL_WORLD_PERK', value: "Use a special pen for the day." },
-  },
-  {
-    name: "Wanderer's Pass",
-    description: "Choose your seat for one class period.",
-    cost: 100,
-    imageUrl: "https://placehold.co/400x400.png",
-    effect: { type: 'REAL_WORLD_PERK', value: "Choose seat for the day." },
-  },
-  {
-    name: "Oracle's Insight",
-    description: "Get a one-minute private consultation with the Guildmaster about an assignment.",
-    cost: 150,
-    imageUrl: "https://placehold.co/400x400.png",
-    effect: { type: 'REAL_WORLD_PERK', value: "1-minute private teacher consultation." },
-  },
-  {
-    name: "Bard's Tune",
-    description: "Listen to music with headphones during independent work.",
-    cost: 200,
-    imageUrl: "https://placehold.co/400x400.png",
-    effect: { type: 'REAL_WORLD_PERK', value: "Listen to music during independent work." },
-  },
-  {
-    name: "Time-Turner's Grace",
-    description: "A 24-hour extension on one assignment.",
-    cost: 300,
-    imageUrl: "https://placehold.co/400x400.png",
-    effect: { type: 'REAL_WORLD_PERK', value: "24-hour assignment extension." },
-  },
-  {
-    name: "Scholar's Pardon",
-    description: "A one-time pass on a single, small homework assignment.",
-    cost: 500,
-    imageUrl: "https://placehold.co/400x400.png",
-    effect: { type: 'REAL_WORLD_PERK', value: "Single small homework pass." },
-  },
-  {
-    name: "Emissary's Duty",
-    description: "Be the line leader or designated helper for the day.",
-    cost: 120,
-    imageUrl: "https://placehold.co/400x400.png",
-    effect: { type: 'REAL_WORLD_PERK', value: "Line leader or teacher's helper." },
-  },
-  {
-    name: "Keeper of the Scroll",
-    description: "Be in charge of the remote control for the projector for one lesson.",
-    cost: 90,
-    imageUrl: "https://placehold.co/400x400.png",
-    effect: { type: 'REAL_WORLD_PERK', value: "Controls the projector remote." },
-  },
-];
-
 
 export default function BoonsPage() {
     const router = useRouter();
@@ -141,20 +74,14 @@ export default function BoonsPage() {
         if (!teacher) return;
         setIsPopulating(true);
         try {
-            const boonsRef = collection(db, 'teachers', teacher.uid, 'boons');
-            const batch = writeBatch(db);
-
-            defaultBoons.forEach(boon => {
-                const docRef = doc(boonsRef);
-                batch.set(docRef, { ...boon, isVisibleToStudents: false, createdAt: new Date() });
-            });
-            await batch.commit();
-            await logGameEvent(teacher.uid, 'GAMEMASTER', 'Populated the Boons Workshop with default items.');
-
+            const result = await populateDefaultBoons(teacher.uid);
+            if (!result.success) {
+                throw new Error(result.error || 'An unknown error occurred.');
+            }
             toast({ title: "Workshop Stocked!", description: "A set of default boons has been added to your workshop." });
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error populating boons:", error);
-            toast({ variant: "destructive", title: "Failed to Stock", description: "Could not add the default boons." });
+            toast({ variant: "destructive", title: "Failed to Stock", description: error.message });
         } finally {
             setIsPopulating(false);
         }
