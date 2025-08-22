@@ -288,62 +288,82 @@ export default function TeacherLiveBattlePage() {
         
         const totalDamageDealt = finalLiveState.totalDamage || 0;
         const totalRounds = battle.questions.length;
-        const damageShareXp = Math.floor(totalDamageDealt * 0.25);
-
+        
         // Fetch all rounds data to calculate participation
         const roundsArchiveRef = collection(db, 'teachers', teacherUid, 'savedBattles', liveState.parentArchiveId, 'rounds');
         const roundsSnap = await getDocs(roundsArchiveRef);
-        const battleLogSnap = await getDocs(collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog'));
+        const battleLogRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
+        const battleLogSnap = await getDocs(battleLogRef);
 
-        // --- New Reward Calculation ---
-        const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
+        const rewardsByStudent: { [uid: string]: any } = {};
         const participationCount: { [uid: string]: number } = {};
         const powerUsageCount: { [uid: string]: number } = {};
         const participantUids = new Set<string>();
 
-        // 1. Tally correct answers and participation
+        // 1. Tally correct answers and participation from archived rounds
         roundsSnap.docs.forEach(roundDoc => {
             const roundData = roundDoc.data();
             (roundData.responses || []).forEach((res: any) => {
                 participantUids.add(res.studentUid);
-                if (!rewardsByStudent[res.studentUid]) {
-                    rewardsByStudent[res.studentUid] = { xpGained: 0, goldGained: 0 };
-                    participationCount[res.studentUid] = 0;
-                }
+                if (!participationCount[res.studentUid]) participationCount[res.studentUid] = 0;
                 participationCount[res.studentUid]++;
+
+                if (!rewardsByStudent[res.studentUid]) {
+                    rewardsByStudent[res.studentUid] = { xp: 0, gold: 0, correctAnswers: 0, powersUsed: 0 };
+                }
                 if (res.isCorrect) {
-                    rewardsByStudent[res.studentUid].xpGained += 5; // Correct answer bonus
-                    rewardsByStudent[res.studentUid].goldGained += 10;
+                    rewardsByStudent[res.studentUid].correctAnswers++;
                 }
             });
         });
         
-        // 2. Tally power usage
+        // 2. Tally power usage from the battle log
         battleLogSnap.docs.forEach(logDoc => {
             const logData = logDoc.data();
             const caster = allStudents.find(s => s.characterName === logData.casterName);
             if (caster) {
                  if (!powerUsageCount[caster.uid]) powerUsageCount[caster.uid] = 0;
                  powerUsageCount[caster.uid]++;
+                 if (rewardsByStudent[caster.uid]) {
+                    rewardsByStudent[caster.uid].powersUsed = (rewardsByStudent[caster.uid].powersUsed || 0) + 1;
+                 }
             }
         });
         
         // 3. Calculate final rewards for each participant
         for (const uid of participantUids) {
-            // Power Usage Bonus
-            const powersUsed = powerUsageCount[uid] || 0;
-            rewardsByStudent[uid].xpGained += powersUsed * 2;
-            rewardsByStudent[uid].goldGained += powersUsed * 1;
+            const studentRewards = rewardsByStudent[uid];
+            const xpFromAnswers = studentRewards.correctAnswers * 5;
+            const goldFromAnswers = studentRewards.correctAnswers * 10;
             
-            // Full Participation & Damage Share Bonus
-            if (participationCount[uid] === totalRounds) {
-                rewardsByStudent[uid].xpGained += 25; // Full participation XP
-                rewardsByStudent[uid].goldGained += 10; // Full participation Gold
-                rewardsByStudent[uid].xpGained += damageShareXp; // Damage share XP
-            }
-        }
+            const xpFromPowers = studentRewards.powersUsed * 2;
+            const goldFromPowers = studentRewards.powersUsed * 1;
 
-        // --- End of New Reward Calculation ---
+            let xpFromParticipation = 0;
+            let goldFromParticipation = 0;
+            let xpFromDamageShare = 0;
+
+            const hasFullParticipation = participationCount[uid] === totalRounds;
+
+            if (hasFullParticipation) {
+                xpFromParticipation = 25;
+                goldFromParticipation = 10;
+                xpFromDamageShare = Math.floor(totalDamageDealt * 0.25);
+            }
+            
+            studentRewards.xpGained = xpFromAnswers + xpFromPowers + xpFromParticipation + xpFromDamageShare;
+            studentRewards.goldGained = goldFromAnswers + goldFromPowers + goldFromParticipation;
+            
+            // Store the breakdown for the student summary page
+            studentRewards.breakdown = {
+                xpFromAnswers, goldFromAnswers,
+                xpFromPowers, goldFromPowers,
+                xpFromParticipation, goldFromParticipation,
+                xpFromDamageShare,
+                hadFullParticipation: hasFullParticipation,
+                totalDamageDealt,
+            };
+        }
 
         batch.update(parentArchiveRef, {
             status: 'BATTLE_ENDED',

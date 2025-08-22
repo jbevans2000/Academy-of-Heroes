@@ -9,7 +9,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Star, Coins, CheckCircle, XCircle, ScrollText, HeartCrack, Sparkles, Shield } from 'lucide-react';
+import { ArrowLeft, Star, Coins, CheckCircle, XCircle, ScrollText, HeartCrack, Sparkles, Shield, UserCheck, BarChart, Dices } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -32,6 +32,18 @@ interface RoundSnapshot {
     lastRoundPowersUsed?: string[];
 }
 
+interface RewardBreakdown {
+    xpFromAnswers: number;
+    goldFromAnswers: number;
+    xpFromPowers: number;
+    goldFromPowers: number;
+    xpFromParticipation: number;
+    goldFromParticipation: number;
+    xpFromDamageShare: number;
+    hadFullParticipation: boolean;
+    totalDamageDealt: number;
+}
+
 interface SavedBattle {
     id: string;
     battleName: string;
@@ -42,9 +54,10 @@ interface SavedBattle {
         [uid: string]: {
             xpGained: number;
             goldGained: number;
+            breakdown: RewardBreakdown;
         }
     };
-    powerLog?: any[]; // Keep for future use, not displayed for now
+    powerLog?: any[];
     totalDamage?: number;
     totalBaseDamage?: number;
     totalPowerDamage?: number;
@@ -140,7 +153,8 @@ export default function BattleSummaryDetailPage() {
         )
     }
     
-    const userRewards = summary.rewardsByStudent?.[user.uid] || { xpGained: 0, goldGained: 0 };
+    const userRewards = summary.rewardsByStudent?.[user.uid];
+    const breakdown = userRewards?.breakdown;
     const date = summary.startedAt ?? summary.savedAt;
 
     return (
@@ -165,48 +179,46 @@ export default function BattleSummaryDetailPage() {
                         </CardHeader>
                     </Card>
 
-                    <Card className="shadow-2xl bg-card/80 backdrop-blur-sm">
+                    <Card>
                         <CardHeader>
-                            <CardTitle className="text-2xl text-center">Your Spoils of War</CardTitle>
+                            <CardTitle className="text-2xl text-center">Your Battle Report</CardTitle>
                         </CardHeader>
-                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="flex flex-col items-center justify-center p-6 bg-secondary/50 rounded-lg">
-                                <Star className="h-12 w-12 text-yellow-400 mb-2" />
-                                <p className="text-3xl font-bold">{userRewards.xpGained}</p>
-                                <p className="text-muted-foreground">Experience Gained</p>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
+                                <div className="p-4 bg-secondary rounded-lg">
+                                    <p className="text-sm font-medium text-muted-foreground">TOTAL XP GAINED</p>
+                                    <p className="text-4xl font-bold flex items-center justify-center gap-2"><Star className="h-8 w-8 text-yellow-400" /> {userRewards?.xpGained || 0}</p>
+                                </div>
+                                <div className="p-4 bg-secondary rounded-lg">
+                                    <p className="text-sm font-medium text-muted-foreground">TOTAL GOLD GAINED</p>
+                                    <p className="text-4xl font-bold flex items-center justify-center gap-2"><Coins className="h-8 w-8 text-amber-500" /> {userRewards?.goldGained || 0}</p>
+                                </div>
                             </div>
-                             <div className="flex flex-col items-center justify-center p-6 bg-secondary/50 rounded-lg">
-                                <Coins className="h-12 w-12 text-amber-500 mb-2" />
-                                <p className="text-3xl font-bold">{userRewards.goldGained}</p>
-                                <p className="text-muted-foreground">Gold Gained</p>
-                            </div>
+                            {breakdown && (
+                                <div className="p-4 border rounded-lg space-y-3">
+                                    <h4 className="font-semibold text-lg text-center">Reward Breakdown</h4>
+                                    <div className="flex justify-between items-center">
+                                        <span className="flex items-center gap-2"><CheckCircle className="h-5 w-5 text-green-500" />Correct Answers</span>
+                                        <span className="font-semibold">+{breakdown.xpFromAnswers} XP, +{breakdown.goldFromAnswers} Gold</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="flex items-center gap-2"><Dices className="h-5 w-5 text-blue-500" />Powers Used</span>
+                                        <span className="font-semibold">+{breakdown.xpFromPowers} XP, +{breakdown.goldFromPowers} Gold</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="flex items-center gap-2"><UserCheck className="h-5 w-5 text-purple-500" />Full Participation Bonus</span>
+                                        <span className="font-semibold">{breakdown.hadFullParticipation ? `+${breakdown.xpFromParticipation} XP, +${breakdown.goldFromParticipation} Gold` : <XCircle className="h-5 w-5 text-destructive" />}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="flex items-center gap-2"><BarChart className="h-5 w-5 text-orange-500" />Damage Share Bonus</span>
+                                        <span className="font-semibold">{breakdown.hadFullParticipation ? `+${breakdown.xpFromDamageShare} XP` : <XCircle className="h-5 w-5 text-destructive" />}</span>
+                                    </div>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-2xl text-center">Total Damage Dealt by Party</CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex flex-wrap justify-around items-center text-center gap-6">
-                            <div className="flex flex-col items-center gap-2 p-2">
-                                <Shield className="h-8 w-8 text-blue-500" />
-                                <p className="text-2xl font-bold">{summary.totalBaseDamage ?? 0}</p>
-                                <p className="text-sm font-medium text-muted-foreground">Base Damage</p>
-                            </div>
-                             <div className="flex flex-col items-center gap-2 p-2">
-                                <Sparkles className="h-8 w-8 text-purple-500" />
-                                <p className="text-2xl font-bold">{summary.totalPowerDamage ?? 0}</p>
-                                <p className="text-sm font-medium text-muted-foreground">Power Damage</p>
-                            </div>
-                             <div className="flex flex-col items-center gap-2 p-2">
-                                <HeartCrack className="h-8 w-8 text-red-600" />
-                                <p className="text-3xl font-extrabold">{summary.totalDamage ?? 0}</p>
-                                <p className="text-sm font-medium text-muted-foreground">Total Damage</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    
-                     <Card className="shadow-2xl bg-card/80 backdrop-blur-sm">
+                    <Card className="shadow-2xl bg-card/80 backdrop-blur-sm">
                         <CardHeader>
                             <CardTitle className="text-2xl text-center">Your Battle Performance</CardTitle>
                         </CardHeader>
