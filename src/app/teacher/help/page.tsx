@@ -70,7 +70,7 @@ export default function TeacherHelpPage() {
                     <>
                         <AlertDialogTitle className="text-2xl">Getting Students Signed Up</AlertDialogTitle>
                         <AlertDialogDescription asChild>
-                            <div className="text-base text-black space-y-4">
+                            <div className="text-lg text-black space-y-4">
                                 <p>Here is the simple, 3-step process for students to create their accounts and join your class:</p>
                                 <ol className="list-decimal list-inside space-y-2">
                                     <li><strong>Navigate Home:</strong> Direct students to the application's main home page.</li>
@@ -93,7 +93,7 @@ export default function TeacherHelpPage() {
                     <>
                         <AlertDialogTitle className="text-2xl">Understanding the Dashboard</AlertDialogTitle>
                         <AlertDialogDescription asChild>
-                            <div className="text-base text-black space-y-4">
+                            <div className="text-lg text-black space-y-4">
                                 <p>The Teacher Dashboard is your central command center. Here’s a quick breakdown:</p>
                                 <Image src="https://placehold.co/800x400.png" alt="Placeholder for dashboard screenshot" width={800} height={400} className="rounded-lg border" data-ai-hint="dashboard interface" />
                                 <ul className="list-disc list-inside space-y-2">
@@ -112,7 +112,7 @@ export default function TeacherHelpPage() {
                     <>
                         <AlertDialogTitle className="text-2xl">Awarding XP & Gold</AlertDialogTitle>
                         <AlertDialogDescription asChild>
-                             <div className="text-base text-black space-y-4">
+                             <div className="text-lg text-black space-y-4">
                                 <p>You can award Experience Points (XP) and Gold to students individually or in groups.</p>
                                 <ol className="list-decimal list-inside space-y-2">
                                     <li><strong>Select Students:</strong> On the dashboard, click the checkbox on the cards of the students you want to reward. Use "Select All" for the whole class.</li>
@@ -130,7 +130,7 @@ export default function TeacherHelpPage() {
                     <>
                         <AlertDialogTitle className="text-2xl">Managing Guild Rewards</AlertDialogTitle>
                         <AlertDialogDescription asChild>
-                            <div className="text-base text-black space-y-4">
+                            <div className="text-lg text-black space-y-4">
                                 <p><strong>Guild Rewards</strong> are custom real-world or in-game perks you can create for your students to purchase with their Gold.</p>
                                 <h4 className="font-bold mt-2">Creating Rewards</h4>
                                 <p>From your main Podium, navigate to Game Management &gt; Guild Rewards. Here, you can click "Create New Reward" to design a new item. You can set its name, description, cost, and image. You can also decide if a purchase requires your approval.</p>
@@ -152,7 +152,7 @@ export default function TeacherHelpPage() {
                     <>
                         <AlertDialogTitle className="text-2xl">Creating Quests & Chapters</AlertDialogTitle>
                          <AlertDialogDescription asChild>
-                           <div className="text-base text-black space-y-4">
+                           <div className="text-lg text-black space-y-4">
                                 <p>The Quest system is how you deliver your curriculum content through a story.</p>
                                 <Image src="https://placehold.co/800x400.png" alt="Placeholder for quest creation screenshot" width={800} height={400} className="rounded-lg border" data-ai-hint="quest map" />
                                 <h3 className="font-bold">Key Concepts:</h3>
@@ -177,7 +177,7 @@ export default function TeacherHelpPage() {
                     <>
                         <AlertDialogTitle className="text-2xl">Running Boss Battles</AlertDialogTitle>
                          <AlertDialogDescription asChild>
-                             <div className="text-base text-black space-y-4">
+                             <div className="text-lg text-black space-y-4">
                                 <p>Boss Battles are live, timed quiz games for the whole class.</p>
                                 <ol className="list-decimal list-inside space-y-2">
                                     <li><strong>Create a Battle:</strong> Go to "The Field of Battle" and click "Create New". Give it a name, a boss image/video, and add your questions, answers, and the HP damage for incorrect answers.</li>
@@ -200,7 +200,7 @@ export default function TeacherHelpPage() {
                     <>
                         <AlertDialogTitle className="text-2xl">Using Classroom Tools</AlertDialogTitle>
                          <AlertDialogDescription asChild>
-                           <div className="text-base text-black space-y-4">
+                           <div className="text-lg text-black space-y-4">
                                 <p>The Guild Leader's Toolkit is a suite of utilities to help you manage your class with a fantasy theme.</p>
                                 <ul className="list-disc list-inside space-y-2">
                                     <li><strong>Mystical Clock:</strong> A themed timer and stopwatch.</li>
