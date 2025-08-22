@@ -1,7 +1,6 @@
+
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { collection, doc, getDoc, getDocs } from "firebase/firestore";
-import { db } from "./firebase";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -26,31 +25,3 @@ a.setAttribute('download', filename);
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
-
-/**
- * Finds the teacher UID for a given student UID by searching through all teachers.
- * This is inefficient and not recommended for production at scale, but is
- * suitable for this specific application's architecture.
- * @param studentUid The UID of the student to find.
- * @returns The UID of the teacher if found, otherwise null.
- */
-export const findTeacherForStudent = async (studentUid: string): Promise<string | null> => {
-    // First, check the new, faster way by looking for a student document directly.
-    // Note: This requires knowing the teacher's UID in advance, which is the problem
-    // this function is trying to solve. The new logic will store teacherUid on the student doc.
-    // This function remains as a fallback during transition but should be deprecated.
-
-    const teachersRef = collection(db, 'teachers');
-    const teacherSnapshot = await getDocs(teachersRef);
-
-    for (const teacherDoc of teacherSnapshot.docs) {
-      const studentDocRef = doc(db, 'teachers', teacherDoc.id, 'students', studentUid);
-      const studentSnap = await getDoc(studentDocRef);
-      if (studentSnap.exists()) {
-        return teacherDoc.id;
-      }
-    }
-    return null;
-}
-
-    

@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { collection, doc, getDoc, onSnapshot, writeBatch, deleteDoc, getDocs, query, where } from 'firebase/firestore';
+import { collection, doc, getDoc, onSnapshot, writeBatch, deleteDoc, getDocs, query, where, updateDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student, PendingStudent, ClassType } from '@/lib/data';
 import { TeacherHeader } from "@/components/teacher/teacher-header";
@@ -50,6 +50,7 @@ import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Cop
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
+import { moderateStudent } from '@/ai/flows/manage-student';
 
 interface TeacherData {
     name: string;
@@ -301,21 +302,17 @@ export default function Dashboard() {
       setIsDeleting(true);
 
       try {
-          const batch = writeBatch(db);
-          for (const uid of selectedStudents) {
-              const studentRef = doc(db, 'teachers', teacher.uid, 'students', uid);
-              batch.delete(studentRef);
+          const studentsToDelete = students.filter(s => selectedStudents.includes(s.uid));
+          for (const student of studentsToDelete) {
+             await moderateStudent({ teacherUid: teacher.uid, studentUid: student.uid, action: 'delete' });
           }
-          await batch.commit();
-          // Real-time listener will update UI
           
-          await logGameEvent(teacher.uid, 'GAMEMASTER', `Deleted ${selectedStudents.length} student(s) from the database.`);
+          await logGameEvent(teacher.uid, 'GAMEMASTER', `Deleted ${selectedStudents.length} student(s) from the guild.`);
           setSelectedStudents([]);
           
           toast({
-              title: 'Student Data Deleted',
-              description: 'IMPORTANT: You must now manually delete the user(s) from the Firebase Authentication console to prevent them from logging back in.',
-              duration: 10000,
+              title: 'Student(s) Removed',
+              description: `${selectedStudents.length} student(s) have been deleted from Firestore and Firebase Authentication.`,
           });
 
       } catch (error) {
@@ -323,7 +320,7 @@ export default function Dashboard() {
           toast({
               variant: 'destructive',
               title: 'Deletion Failed',
-              description: 'Could not delete student data from Firestore.',
+              description: 'Could not delete all selected students.',
           });
       } finally {
           setIsDeleting(false);
@@ -365,15 +362,21 @@ export default function Dashboard() {
       batch.delete(pendingStudentRef);
       
       await batch.commit();
+      
+      await updateDoc(doc(db, 'students', uid), { approved: true });
+
       // Real-time listeners will handle UI updates.
       
       await logGameEvent(teacher.uid, 'ACCOUNT', `${newStudent.studentName} (${newStudent.characterName}) was approved and joined the guild.`);
       toast({ title: "Hero Approved!", description: `${newStudent.characterName} has joined your guild.` });
     } else {
-      // If rejected, delete the pending doc. Deleting from Auth is a manual step.
+      // If rejected, just delete the pending doc. Admin must manually delete from Auth.
       await deleteDoc(pendingStudentRef);
+      // Also delete the global student doc
+      await deleteDoc(doc(db, 'students', uid));
+
       await logGameEvent(teacher.uid, 'ACCOUNT', `The application for ${pendingStudent.studentName} (${pendingStudent.characterName}) was rejected.`);
-      toast({ title: "Request Rejected", description: `The request for ${pendingStudent.characterName} has been deleted.` });
+      toast({ title: "Request Rejected", description: `The request for ${pendingStudent.characterName} has been deleted. You may need to delete the user from Firebase Authentication manually if they should be prevented from re-registering.` });
     }
   
     // UI will update from the listener
@@ -673,7 +676,7 @@ export default function Dashboard() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure? (Step 1 of 2)</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will permanently delete all character data (XP, Gold, Level, etc.) for the
+                            This will permanently delete all character data (XP, Gold, Level, etc.) and the login account for the
                             <span className="font-bold"> {selectedStudents.length} selected student(s)</span>.
                             This action cannot be undone.
                         </AlertDialogDescription>
@@ -695,7 +698,7 @@ export default function Dashboard() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Final Confirmation (Step 2 of 2)</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This is your final warning. Deleting this data is permanent. After this, you must also delete the user from Firebase Authentication to fully remove them.
+                            This is your final warning. Deleting this data is permanent.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

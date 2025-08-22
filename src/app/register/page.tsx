@@ -4,9 +4,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase';
-import { doc, setDoc, collection, query, where, getDocs, limit, serverTimestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -29,8 +26,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { classData, type ClassType } from '@/lib/data';
-import { logGameEvent } from '@/lib/gamelog';
 import { getGlobalSettings } from '@/ai/flows/manage-settings';
+import { createStudentAccount } from '@/ai/flows/create-student';
 
 export default function RegisterPage() {
   const [classCode, setClassCode] = useState('');
@@ -65,30 +62,8 @@ export default function RegisterPage() {
     checkRegistrationStatus();
   }, []);
 
-  const getTeacherUidFromClassCode = async (code: string): Promise<string | null> => {
-    const uppercaseCode = code.toUpperCase();
-    const teachersRef = collection(db, 'teachers');
-    const q = query(teachersRef, where('classCode', '==', uppercaseCode), limit(1));
-    const querySnapshot = await getDocs(q);
-
-    if (querySnapshot.empty) {
-        return null;
-    }
-    
-    return querySnapshot.docs[0].id;
-  }
 
   const handleSubmit = async () => {
-    // Critical check added here
-    if (!isRegistrationOpen) {
-        toast({
-            variant: 'destructive',
-            title: 'Registration Closed',
-            description: 'New hero creation has been paused by the guild master.',
-        });
-        return;
-    }
-
     if (!classCode || !studentId || !password || !studentName || !characterName || !selectedClass || !selectedAvatar) {
       toast({
         variant: 'destructive',
@@ -99,63 +74,32 @@ export default function RegisterPage() {
     }
     setIsLoading(true);
 
-    const teacherUid = await getTeacherUidFromClassCode(classCode);
-    if (!teacherUid) {
-        toast({
-            variant: 'destructive',
-            title: 'Invalid Guild Code',
-            description: 'The Guild Code you entered does not exist. Please check with your Guild Leader.',
-        });
-        setIsLoading(false);
-        return;
-    }
-
-    const email = `${studentId}@academy-heroes-mziuf.firebaseapp.com`;
-
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      const classInfo = classData[selectedClass];
-      const baseStats = classInfo.baseStats;
-
-      // Create the main pending student document
-      await setDoc(doc(db, 'teachers', teacherUid, 'pendingStudents', user.uid), {
-        uid: user.uid,
-        teacherUid: teacherUid,
-        studentId: studentId,
-        email: email,
-        studentName: studentName,
-        characterName: characterName,
-        class: selectedClass,
-        avatarUrl: selectedAvatar,
-        hp: baseStats.hp,
-        mp: baseStats.mp,
-        maxHp: baseStats.hp,
-        maxMp: baseStats.mp,
-        status: 'pending',
-        requestedAt: serverTimestamp(),
+      const result = await createStudentAccount({
+        classCode,
+        studentId,
+        password,
+        studentName,
+        characterName,
+        selectedClass,
+        selectedAvatar,
       });
 
-      // Create the global student metadata document for quick lookup
-      await setDoc(doc(db, 'students', user.uid), {
-        teacherUid: teacherUid,
-      });
-      
-      toast({
-        title: 'Your Hero Awaits Approval!',
-        description: "Your request to join the guild has been sent.",
-      });
-      router.push('/awaiting-approval');
+      if (result.success) {
+        toast({
+          title: 'Your Hero Awaits Approval!',
+          description: "Your request to join the guild has been sent.",
+        });
+        router.push('/awaiting-approval');
+      } else {
+        throw new Error(result.error);
+      }
     } catch (error: any) {
       console.error(error);
       toast({
         variant: 'destructive',
         title: 'Registration Failed',
-        description:
-          error.code === 'auth/email-already-in-use'
-            ? 'This Hero\\'s Alias is already registered for this guild.'
-            : 'An unexpected error occurred. Please try again.',
+        description: error.message || 'An unexpected error occurred. Please try again.',
       });
     } finally {
       setIsLoading(false);
