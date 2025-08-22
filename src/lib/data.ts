@@ -33,7 +33,7 @@ export type Student = {
         lastSeen: any; // Firestore ServerTimestamp
     };
     companyId?: string;
-    inBattle?: boolean; // New field
+    inBattle: boolean; 
 }
 
 export type PendingStudent = {

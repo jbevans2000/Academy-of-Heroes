@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -288,11 +289,16 @@ export default function LiveBattlePage() {
   const [allStudents, setAllStudents] = useState<Student[]>([]);
 
   const battleStateRef = useRef(battleState);
+  const studentRef = useRef(student);
   const router = useRouter();
-
+  
   useEffect(() => {
     battleStateRef.current = battleState;
   }, [battleState]);
+
+  useEffect(() => {
+    studentRef.current = student;
+  }, [student]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -304,35 +310,8 @@ export default function LiveBattlePage() {
         if (studentMetaSnap.exists()) {
             const meta = studentMetaSnap.data();
             setTeacherUid(meta.teacherUid);
-            
-            const studentRef = doc(db, 'teachers', meta.teacherUid, 'students', user.uid);
-            const studentSnap = await getDoc(studentRef);
-
-            if (studentSnap.exists()) {
-                setStudent(studentSnap.data() as Student);
-            } else {
-                router.push('/');
-            }
         } else {
-            console.error("Student metadata document not found at root. This may be an existing student. Attempting fallback.");
-            const teachersSnapshot = await getDocs(collection(db, 'teachers'));
-            let found = false;
-            for (const teacherDoc of teachersSnapshot.docs) {
-                const studentRef = doc(db, 'teachers', teacherDoc.id, 'students', user.uid);
-                const studentSnap = await getDoc(studentRef);
-                if (studentSnap.exists()) {
-                    setTeacherUid(teacherDoc.id);
-                    setStudent(studentSnap.data() as Student);
-                    // Create the metadata doc for next time
-                    await setDoc(doc(db, 'students', user.uid), { teacherUid: teacherDoc.id });
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                 console.error("Student document not found in any teacher's subcollection.");
-                 router.push('/');
-            }
+            router.push('/');
         }
       } else {
         router.push('/');
@@ -340,6 +319,33 @@ export default function LiveBattlePage() {
     });
     return () => unsubscribe();
   }, [router]);
+  
+  useEffect(() => {
+    if (!user || !teacherUid) return;
+    
+    // Set up a real-time listener for the student's own document
+    const studentDocRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
+    const unsubscribe = onSnapshot(studentDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+            const studentData = docSnap.data() as Student;
+            const wasInBattle = studentRef.current?.inBattle;
+
+            setStudent(studentData);
+
+            // Check for the specific change from inBattle:true to inBattle:false
+            if (wasInBattle === true && studentData.inBattle === false) {
+                 setTimeout(() => {
+                    router.push('/dashboard/songs-and-stories');
+                 }, 2000); // 2-second delay
+            }
+
+        } else {
+            router.push('/');
+        }
+    });
+
+    return () => unsubscribe();
+  }, [user, teacherUid, router]);
 
   useEffect(() => {
     if (!teacherUid) return;
