@@ -90,7 +90,7 @@ const defaultBoons = [
     name: "Scholar's Pardon",
     description: "A one-time pass on a single, small homework assignment.",
     cost: 500,
-    imageUrl: "https://placehold.co/400x400.png",
+    imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FScholar's%20Pardon.jpg?alt=media&token=900a3c30-0a94-4585-bff6-13621f9a1a33",
     effect: { type: 'REAL_WORLD_PERK', value: "Single small homework pass." },
     requiresApproval: false,
     studentMessage: "You are pardoned from one small homework assignment. Inform your Guild Leader which quest you are bypassing.",
