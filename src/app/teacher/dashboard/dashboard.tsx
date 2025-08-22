@@ -563,7 +563,7 @@ export default function Dashboard() {
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/teacher/boons')}>
                         <Star className="mr-2 h-4 w-4" />
-                        <span>The Boons Workshop</span>
+                        <span>Guild Rewards</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/teacher/battles')}>
                         <Swords className="mr-2 h-4 w-4" />

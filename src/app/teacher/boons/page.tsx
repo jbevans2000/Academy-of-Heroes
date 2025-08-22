@@ -168,7 +168,7 @@ export default function BoonsPage() {
                 <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 space-y-6">
                         <div className="flex items-center justify-between">
-                            <h1 className="text-3xl font-bold flex items-center gap-2"><Star className="text-yellow-400"/> Boons Workshop</h1>
+                            <h1 className="text-3xl font-bold flex items-center gap-2"><Star className="text-yellow-400"/> Guild Rewards</h1>
                             <div className="flex gap-2">
                                 <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
                                     <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
