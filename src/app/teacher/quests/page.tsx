@@ -24,7 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
@@ -186,29 +186,7 @@ export default function QuestsPage() {
               </div>
             )}
           </div>
-          <DialogFooter className="sm:justify-between">
-            <AlertDialog>
-                <AlertDialogTrigger asChild>
-                    <Button variant="destructive" disabled={isReverting}>
-                        {isReverting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                        Revert to Default Map
-                    </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will remove your custom world map and revert to the default image. Your hub positions will be kept.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleRevertToDefault} className="bg-destructive hover:bg-destructive/90">
-                            Yes, Revert
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+          <DialogFooter className="sm:justify-end">
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setIsMapDialogOpen(false)}>Cancel</Button>
               <Button onClick={handleWorldMapUpload} disabled={!mapImageFile || isUploadingMap}>
@@ -232,6 +210,28 @@ export default function QuestsPage() {
                 <ImageIcon className="mr-2 h-5 w-5" />
                 Set World Map
             </Button>
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="destructive" disabled={isReverting}>
+                        {isReverting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                        Revert to Default Map
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will remove your custom world map and revert to the default image. Your hub positions will be kept.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleRevertToDefault} className="bg-destructive hover:bg-destructive/90">
+                            Yes, Revert
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
             <Button onClick={() => router.push('/teacher/quests/new')}>
               <PlusCircle className="mr-2 h-5 w-5" />
               Create New Quest
