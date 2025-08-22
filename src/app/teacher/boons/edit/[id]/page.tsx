@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db, auth, app } from '@/lib/firebase';
 import type { Boon } from '@/lib/boons';
 
@@ -18,9 +18,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Save, Loader2, Upload, Star } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { updateBoon } from '@/ai/flows/manage-boons';
+import { updateBoon as saveBoonChanges } from '@/ai/flows/manage-boons';
 import { v4 as uuidv4 } from 'uuid';
 import Image from 'next/image';
+import { Switch } from '@/components/ui/switch';
 
 export default function EditBoonPage() {
     const router = useRouter();
@@ -33,7 +34,7 @@ export default function EditBoonPage() {
     const [isSaving, setIsSaving] = useState(false);
 
     // Boon State
-    const [boon, setBoon] = useState<Boon | null>(null);
+    const [boon, setBoon] = useState<Partial<Boon> | null>(null);
 
     // Upload State
     const [isUploading, setIsUploading] = useState(false);
@@ -92,41 +93,28 @@ export default function EditBoonPage() {
         }
     };
     
-    const handleBoonChange = (field: keyof Boon | 'effect.value', value: any) => {
-        setBoon(prev => {
-            if (!prev) return null;
-            if (field === 'effect.value') {
-                return {
-                    ...prev,
-                    effect: {
-                        ...prev.effect,
-                        value: value
-                    }
-                }
-            }
-            return { ...prev, [field]: value };
-        });
+    const handleBoonChange = (field: keyof Boon, value: any) => {
+        setBoon(prev => prev ? { ...prev, [field]: value } : null);
     };
 
     const handleSave = async () => {
-        if (!teacher || !boon) return;
-        if (!boon.name || boon.cost < 0 || !boon.imageUrl || !boon.description) {
+        if (!teacher || !boon?.id) return;
+        if (!boon.name || boon.cost === undefined || boon.cost < 0 || !boon.imageUrl || !boon.description) {
             toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill out all required fields.' });
             return;
         }
 
         setIsSaving(true);
         try {
-             // Ensure the effect type is correctly set before saving
             const boonToSave = {
                 ...boon,
                 effect: {
                     type: 'REAL_WORLD_PERK' as const,
-                    value: boon.description, // Use the main description as the effect value
+                    value: boon.description,
                 }
             };
 
-            const result = await updateBoon(teacher.uid, boonToSave);
+            const result = await saveBoonChanges(teacher.uid, boonToSave as Boon);
             if (result.success) {
                 toast({ title: 'Boon Updated!', description: `${boon.name} has been updated.` });
                 router.push('/teacher/boons');
@@ -174,15 +162,15 @@ export default function EditBoonPage() {
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="name">Boon Name</Label>
-                                <Input id="name" value={boon.name} onChange={(e) => handleBoonChange('name', e.target.value)} />
+                                <Input id="name" value={boon.name || ''} onChange={(e) => handleBoonChange('name', e.target.value)} />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="description">Description</Label>
-                                <Textarea id="description" value={boon.description} onChange={(e) => handleBoonChange('description', e.target.value)} placeholder="e.g., The student may chew gum in class for one day." />
+                                <Textarea id="description" value={boon.description || ''} onChange={(e) => handleBoonChange('description', e.target.value)} placeholder="e.g., The student may chew gum in class for one day." />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="cost">Cost (in Gold)</Label>
-                                <Input id="cost" type="number" value={boon.cost} onChange={(e) => handleBoonChange('cost', Number(e.target.value))} />
+                                <Input id="cost" type="number" value={boon.cost ?? ''} onChange={(e) => handleBoonChange('cost', Number(e.target.value))} />
                             </div>
 
                             <div className="space-y-2">
@@ -196,6 +184,16 @@ export default function EditBoonPage() {
                                     {isUploading && <Loader2 className="h-4 w-4 animate-spin"/>}
                                     {boon.imageUrl && <Image src={boon.imageUrl} alt="Boon preview" width={100} height={100} className="rounded-md border"/>}
                                 </div>
+                            </div>
+                            
+                            <div className="flex items-center space-x-2 p-4 border rounded-md">
+                                <Switch id="requires-approval" checked={boon.requiresApproval} onCheckedChange={(checked) => handleBoonChange('requiresApproval', checked)} />
+                                <Label htmlFor="requires-approval">Require Approval?</Label>
+                            </div>
+                            
+                            <div className="space-y-2">
+                                <Label htmlFor="student-message">Student Message (Optional)</Label>
+                                <Textarea id="student-message" value={boon.studentMessage || ''} onChange={(e) => handleBoonChange('studentMessage', e.target.value)} placeholder="A message shown to the student when they use this item." />
                             </div>
 
                              <div className="flex justify-end">

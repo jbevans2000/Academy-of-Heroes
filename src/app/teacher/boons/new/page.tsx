@@ -18,9 +18,9 @@ import { ArrowLeft, Save, Loader2, Upload, Star } from 'lucide-react';
 import { createBoon } from '@/ai/flows/manage-boons';
 import { v4 as uuidv4 } from 'uuid';
 import Image from 'next/image';
+import { Switch } from '@/components/ui/switch';
 
 const defaultBoonImageUrl = 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2Fenvato-labs-ai-82960861-9a1e-4e31-9309-085a9b998ca6.jpg?alt=media&token=a15a8c71-faaa-4a38-bc17-b68dc83fba50';
-
 
 export default function NewBoonPage() {
     const router = useRouter();
@@ -34,6 +34,8 @@ export default function NewBoonPage() {
     const [description, setDescription] = useState('');
     const [cost, setCost] = useState<number | ''>('');
     const [imageUrl, setImageUrl] = useState('');
+    const [requiresApproval, setRequiresApproval] = useState(false);
+    const [studentMessage, setStudentMessage] = useState('');
 
     // Upload State
     const [imageFile, setImageFile] = useState<File | null>(null);
@@ -90,6 +92,8 @@ export default function NewBoonPage() {
                     type: 'REAL_WORLD_PERK',
                     value: description,
                 },
+                requiresApproval,
+                studentMessage,
             });
 
             if (result.success) {
@@ -134,7 +138,7 @@ export default function NewBoonPage() {
                                 <Input id="cost" type="number" value={cost} onChange={(e) => setCost(e.target.value === '' ? '' : Number(e.target.value))} placeholder="e.g., 500" />
                             </div>
 
-                            <div className="space-y-2">
+                             <div className="space-y-2">
                                 <Label>Boon Image (Optional)</Label>
                                 <div className="p-4 border rounded-md space-y-2">
                                     <Input type="file" accept="image/*" onChange={e => setImageFile(e.target.files ? e.target.files[0] : null)} disabled={isUploading} />
@@ -150,6 +154,16 @@ export default function NewBoonPage() {
                                 </div>
                             </div>
                             
+                            <div className="flex items-center space-x-2 p-4 border rounded-md">
+                                <Switch id="requires-approval" checked={requiresApproval} onCheckedChange={setRequiresApproval} />
+                                <Label htmlFor="requires-approval">Require Approval?</Label>
+                            </div>
+                            
+                            <div className="space-y-2">
+                                <Label htmlFor="student-message">Student Message (Optional)</Label>
+                                <Textarea id="student-message" value={studentMessage} onChange={(e) => setStudentMessage(e.target.value)} placeholder="A message shown to the student when they use this item." />
+                            </div>
+
                              <div className="flex justify-end">
                                 <Button onClick={handleSave} disabled={isSaving}>
                                     {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4" />}

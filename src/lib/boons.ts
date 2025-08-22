@@ -14,4 +14,17 @@ export type Boon = {
   effect: BoonEffect;
   createdAt: any; // Firestore ServerTimestamp
   isVisibleToStudents: boolean;
+  requiresApproval?: boolean; // New: Does this boon purchase need teacher approval?
+  studentMessage?: string; // New: A message shown to the student on use.
 };
+
+export interface PendingBoonRequest {
+    id: string;
+    studentUid: string;
+    studentName: string;
+    characterName: string;
+    boonId: string;
+    boonName: string;
+    cost: number;
+    requestedAt: any; // Firestore ServerTimestamp
+}

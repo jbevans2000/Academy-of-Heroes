@@ -1,7 +1,7 @@
 
 'use server';
 
-import { doc, addDoc, updateDoc, deleteDoc, collection, serverTimestamp, writeBatch, setDoc } from 'firebase/firestore';
+import { doc, addDoc, updateDoc, deleteDoc, collection, serverTimestamp, writeBatch, setDoc, runTransaction } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Boon } from '@/lib/boons';
 import { logGameEvent } from '@/lib/gamelog';
@@ -19,6 +19,8 @@ const defaultBoons = [
     cost: 50,
     imageUrl: "https://placehold.co/400x400.png",
     effect: { type: 'REAL_WORLD_PERK', value: "Tell a joke in class." },
+    requiresApproval: true,
+    studentMessage: "Present this boon to your Guild Leader to share your joke with the class!",
   },
   {
     name: "Scribe's Permission",
@@ -26,6 +28,8 @@ const defaultBoons = [
     cost: 75,
     imageUrl: "https://placehold.co/400x400.png",
     effect: { type: 'REAL_WORLD_PERK', value: "Use a special pen for the day." },
+    requiresApproval: false,
+    studentMessage: "Show this boon to your Guild Leader to use your special writing tool.",
   },
   {
     name: "Wanderer's Pass",
@@ -33,6 +37,8 @@ const defaultBoons = [
     cost: 100,
     imageUrl: "https://placehold.co/400x400.png",
     effect: { type: 'REAL_WORLD_PERK', value: "Choose seat for the day." },
+    requiresApproval: true,
+    studentMessage: "The Guild Leader must approve your seat change. Show them this pass!",
   },
   {
     name: "Oracle's Insight",
@@ -40,6 +46,8 @@ const defaultBoons = [
     cost: 150,
     imageUrl: "https://placehold.co/400x400.png",
     effect: { type: 'REAL_WORLD_PERK', value: "1-minute private teacher consultation." },
+    requiresApproval: true,
+    studentMessage: "Schedule a time with your Guild Leader to receive your minute of insight.",
   },
   {
     name: "Bard's Tune",
@@ -47,6 +55,8 @@ const defaultBoons = [
     cost: 200,
     imageUrl: "https://placehold.co/400x400.png",
     effect: { type: 'REAL_WORLD_PERK', value: "Listen to music during independent work." },
+    requiresApproval: false,
+    studentMessage: "You may now listen to your tunes during independent work. Keep one ear open for instructions!",
   },
   {
     name: "Time-Turner's Grace",
@@ -54,6 +64,8 @@ const defaultBoons = [
     cost: 300,
     imageUrl: "https://placehold.co/400x400.png",
     effect: { type: 'REAL_WORLD_PERK', value: "24-hour assignment extension." },
+    requiresApproval: false,
+    studentMessage: "You've gained an extra day for your assignment! Let your teacher know which one you're using it on.",
   },
   {
     name: "Scholar's Pardon",
@@ -61,20 +73,8 @@ const defaultBoons = [
     cost: 500,
     imageUrl: "https://placehold.co/400x400.png",
     effect: { type: 'REAL_WORLD_PERK', value: "Single small homework pass." },
-  },
-  {
-    name: "Emissary's Duty",
-    description: "Be the line leader or designated helper for the day.",
-    cost: 120,
-    imageUrl: "https://placehold.co/400x400.png",
-    effect: { type: 'REAL_WORLD_PERK', value: "Line leader or teacher's helper." },
-  },
-  {
-    name: "Keeper of the Scroll",
-    description: "Be in charge of the remote control for the projector for one lesson.",
-    cost: 90,
-    imageUrl: "https://placehold.co/400x400.png",
-    effect: { type: 'REAL_WORLD_PERK', value: "Controls the projector remote." },
+    requiresApproval: false,
+    studentMessage: "You are pardoned from one small homework assignment. Inform your Guild Leader which quest you are bypassing.",
   },
 ];
 
@@ -110,7 +110,7 @@ export async function createBoon(teacherUid: string, boonData: CreateBoonInput):
     const boonsRef = collection(db, 'teachers', teacherUid, 'boons');
     await addDoc(boonsRef, {
       ...boonData,
-      isVisibleToStudents: false, // Hidden by default
+      isVisibleToStudents: true, // Visible by default now
       createdAt: serverTimestamp(),
     });
     await logGameEvent(teacherUid, 'GAMEMASTER', `Created a new boon: ${boonData.name}.`);
@@ -121,19 +121,16 @@ export async function createBoon(teacherUid: string, boonData: CreateBoonInput):
   }
 }
 
-type UpdateBoonInput = Omit<Boon, 'createdAt'>;
+type UpdateBoonInput = Partial<Boon> & { id: string };
 
 export async function updateBoon(teacherUid: string, boonData: UpdateBoonInput): Promise<ActionResponse> {
   if (!teacherUid) return { success: false, error: 'User not authenticated.' };
-  if (!boonData.name || boonData.cost < 0) {
-    return { success: false, error: 'Invalid boon data.' };
-  }
-
+  
   try {
     const boonRef = doc(db, 'teachers', teacherUid, 'boons', boonData.id);
     const { id, ...dataToUpdate } = boonData;
     await updateDoc(boonRef, dataToUpdate);
-    await logGameEvent(teacherUid, 'GAMEMASTER', `Updated boon: ${boonData.name}.`);
+    await logGameEvent(teacherUid, 'GAMEMASTER', `Updated boon: ${boonData.name || boonData.id}.`);
     return { success: true, message: 'Boon updated successfully.' };
   } catch (error: any) {
     console.error("Error updating boon: ", error);
@@ -156,7 +153,6 @@ export async function updateBoonVisibility(teacherUid: string, boonId: string, i
     }
 }
 
-
 export async function deleteBoon(teacherUid: string, boonId: string): Promise<ActionResponse> {
   if (!teacherUid) return { success: false, error: 'User not authenticated.' };
 
@@ -169,4 +165,71 @@ export async function deleteBoon(teacherUid: string, boonId: string): Promise<Ac
     console.error("Error deleting boon: ", error);
     return { success: false, error: error.message || 'Failed to delete boon.' };
   }
+}
+
+interface ApproveBoonRequestInput {
+    teacherUid: string;
+    requestId: string;
+}
+
+export async function approveBoonRequest(input: ApproveBoonRequestInput): Promise<ActionResponse> {
+    const { teacherUid, requestId } = input;
+    if (!teacherUid || !requestId) return { success: false, error: 'Invalid input.' };
+
+    const requestRef = doc(db, 'teachers', teacherUid, 'pendingBoonRequests', requestId);
+
+    try {
+        return await runTransaction(db, async (transaction) => {
+            const requestSnap = await transaction.get(requestRef);
+            if (!requestSnap.exists()) throw new Error("This boon request no longer exists.");
+
+            const { studentUid, boonId, boonName, cost, characterName } = requestSnap.data();
+            const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
+            const studentSnap = await transaction.get(studentRef);
+
+            if (!studentSnap.exists()) throw new Error("The student who made this request could not be found.");
+
+            const student = studentSnap.data();
+
+            if (student.gold < cost) {
+                // If student can't afford it anymore, delete the request and inform teacher.
+                transaction.delete(requestRef);
+                return { success: false, error: `${characterName} no longer has enough gold (${cost}) for this boon. Request removed.` };
+            }
+
+            const newGold = student.gold - cost;
+            const currentQuantity = student.inventory?.[boonId] || 0;
+            const newQuantity = currentQuantity + 1;
+
+            transaction.update(studentRef, { 
+                gold: newGold,
+                [`inventory.${boonId}`]: newQuantity
+            });
+
+            // Delete the processed request
+            transaction.delete(requestRef);
+
+            await logGameEvent(teacherUid, 'GAMEMASTER', `Approved boon purchase for ${characterName}: ${boonName}.`);
+
+            return { success: true, message: `Boon purchase for ${characterName} approved!` };
+        });
+    } catch (error: any) {
+        console.error("Error approving boon request:", error);
+        return { success: false, error: error.message || 'Failed to approve request.' };
+    }
+}
+
+export async function denyBoonRequest(teacherUid: string, requestId: string): Promise<ActionResponse> {
+    if (!teacherUid || !requestId) return { success: false, error: 'Invalid input.' };
+
+    try {
+        const requestRef = doc(db, 'teachers', teacherUid, 'pendingBoonRequests', requestId);
+        await deleteDoc(requestRef);
+
+        await logGameEvent(teacherUid, 'GAMEMASTER', `Denied and deleted boon request ${requestId}.`);
+        return { success: true, message: 'Request denied.' };
+    } catch (error: any) {
+        console.error("Error denying boon request:", error);
+        return { success: false, error: "Failed to deny the request." };
+    }
 }

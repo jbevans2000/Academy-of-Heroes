@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
-import type { Boon } from '@/lib/boons';
+import type { Boon, PendingBoonRequest } from '@/lib/boons';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -25,10 +25,12 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, Star, Coins, EyeOff, Eye } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, Star, Coins, EyeOff, Eye, Bell, Check, X } from 'lucide-react';
 import Image from 'next/image';
-import { deleteBoon, updateBoonVisibility, populateDefaultBoons } from '@/ai/flows/manage-boons';
+import { deleteBoon, updateBoonVisibility, populateDefaultBoons, approveBoonRequest, denyBoonRequest } from '@/ai/flows/manage-boons';
 import { cn } from '@/lib/utils';
+import { formatDistanceToNow } from 'date-fns';
+
 
 export default function BoonsPage() {
     const router = useRouter();
@@ -36,10 +38,12 @@ export default function BoonsPage() {
 
     const [teacher, setTeacher] = useState<User | null>(null);
     const [boons, setBoons] = useState<Boon[]>([]);
+    const [pendingRequests, setPendingRequests] = useState<PendingBoonRequest[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
     const [isToggling, setIsToggling] = useState<string | null>(null);
     const [isPopulating, setIsPopulating] = useState(false);
+    const [isProcessingRequest, setIsProcessingRequest] = useState<string | null>(null);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -56,8 +60,9 @@ export default function BoonsPage() {
         if (!teacher) return;
         
         const boonsQuery = query(collection(db, 'teachers', teacher.uid, 'boons'), orderBy('createdAt', 'desc'));
+        const pendingQuery = query(collection(db, 'teachers', teacher.uid, 'pendingBoonRequests'), orderBy('requestedAt', 'desc'));
         
-        const unsubscribe = onSnapshot(boonsQuery, (snapshot) => {
+        const unsubBoons = onSnapshot(boonsQuery, (snapshot) => {
             setBoons(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Boon)));
             setIsLoading(false);
         }, (error) => {
@@ -66,7 +71,14 @@ export default function BoonsPage() {
             setIsLoading(false);
         });
 
-        return () => unsubscribe();
+        const unsubPending = onSnapshot(pendingQuery, (snapshot) => {
+            setPendingRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PendingBoonRequest)));
+        });
+
+        return () => {
+            unsubBoons();
+            unsubPending();
+        };
     }, [teacher, toast]);
     
     const handlePopulateBoons = async () => {
@@ -113,7 +125,6 @@ export default function BoonsPage() {
             if (!result.success) {
                 throw new Error(result.error);
             }
-            // The local state will be updated by the onSnapshot listener
         } catch(error: any) {
              console.error("Error toggling boon visibility: ", error);
             toast({ variant: "destructive", title: "Update Failed", description: error.message });
@@ -121,6 +132,27 @@ export default function BoonsPage() {
             setIsToggling(null);
         }
     }
+
+    const handleApproval = async (requestId: string, approve: boolean) => {
+        if (!teacher) return;
+        setIsProcessingRequest(requestId);
+        try {
+            const result = approve 
+                ? await approveBoonRequest({ teacherUid: teacher.uid, requestId })
+                : await denyBoonRequest(teacher.uid, requestId);
+            
+            if (result.success) {
+                toast({ title: 'Success!', description: result.message });
+            } else {
+                toast({ variant: 'destructive', title: 'Action Failed', description: result.error });
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: 'An unexpected error occurred.' });
+        } finally {
+            setIsProcessingRequest(null);
+        }
+    };
+
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -138,12 +170,46 @@ export default function BoonsPage() {
                             </Button>
                         </div>
                     </div>
+                    
+                    {pendingRequests.length > 0 && (
+                        <Card className="border-primary">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Bell className="h-6 w-6 text-primary animate-pulse" />
+                                    Pending Purchase Approvals
+                                </CardTitle>
+                                <CardDescription>Students are waiting for you to approve these boon purchases.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                                {pendingRequests.map(req => (
+                                    <div key={req.id} className="flex items-center justify-between p-3 border rounded-lg">
+                                        <div>
+                                            <p className="font-bold">{req.characterName} ({req.studentName})</p>
+                                            <p className="text-sm text-muted-foreground">
+                                                Wants to purchase <span className="font-semibold">{req.boonName}</span> for <span className="font-semibold text-amber-600">{req.cost} Gold</span>
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">Requested {formatDistanceToNow(new Date(req.requestedAt.seconds * 1000), { addSuffix: true })}</p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <Button size="sm" variant="destructive" onClick={() => handleApproval(req.id, false)} disabled={isProcessingRequest === req.id}>
+                                                {isProcessingRequest === req.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+                                            </Button>
+                                            <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleApproval(req.id, true)} disabled={isProcessingRequest === req.id}>
+                                                {isProcessingRequest === req.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </Card>
+                    )}
+
 
                     {isLoading ? (
                         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                             {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-64" />)}
                         </div>
-                    ) : boons.length === 0 ? (
+                    ) : boons.length === 0 && pendingRequests.length === 0 ? (
                         <Card className="text-center py-20">
                             <CardHeader>
                                 <CardTitle>The Workshop is Empty</CardTitle>

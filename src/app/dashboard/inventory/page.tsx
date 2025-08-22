@@ -29,14 +29,42 @@ import {
 
 const InventoryBoonCard = ({ boon, quantity, onUse }: { boon: Boon; quantity: number; onUse: (boonId: string) => void; }) => {
     const [isUsing, setIsUsing] = useState(false);
+    const [isStudentMessageOpen, setIsStudentMessageOpen] = useState(false);
 
     const handleUse = async () => {
         setIsUsing(true);
         await onUse(boon.id);
-        // The component will re-render or disappear based on the parent's state change, so we don't need to set isUsing back to false.
+    };
+
+    const handleActivateBoon = () => {
+        if (boon.studentMessage) {
+            setIsStudentMessageOpen(true);
+        } else {
+            handleUse();
+        }
     };
     
     return (
+        <>
+        <AlertDialog open={isStudentMessageOpen} onOpenChange={setIsStudentMessageOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>{boon.name}</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        {boon.studentMessage}
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogAction onClick={() => {
+                        setIsStudentMessageOpen(false);
+                        handleUse();
+                    }}>
+                        Use Boon
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
         <Card className="flex flex-col text-center">
             <CardHeader>
                 <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full h-8 w-8 flex items-center justify-center font-bold text-sm border-2 border-white">
@@ -51,38 +79,13 @@ const InventoryBoonCard = ({ boon, quantity, onUse }: { boon: Boon; quantity: nu
                 <CardDescription>{boon.description}</CardDescription>
             </CardContent>
             <CardFooter>
-                 {boon.effect.type === 'BACKGROUND_CHANGE' ? (
-                     <Button className="w-full" onClick={handleUse} disabled={isUsing}>
-                        {isUsing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                        Use Boon
-                    </Button>
-                 ) : (
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                             <Button className="w-full" variant="secondary">
-                                <Info className="mr-2 h-4 w-4" />
-                                How to Use
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>This is a Real-World Perk!</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    To use "{boon.name}", show this item to your teacher in the real world to claim your privilege:
-                                    <br />
-                                    <strong className="text-primary mt-2 block">"{boon.effect.value}"</strong>
-                                    <br />
-                                    Your teacher will then remove it from your inventory for you.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogAction>Got it!</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                 )}
+                <Button className="w-full" onClick={handleActivateBoon} disabled={isUsing}>
+                    {isUsing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                    Use Boon
+                </Button>
             </CardFooter>
         </Card>
+        </>
     )
 }
 
@@ -160,17 +163,12 @@ export default function InventoryPage() {
     const handleUseBoon = async (boonId: string) => {
         if (!user || !student?.teacherUid) return;
 
-        const result = await useBoon({
-            teacherUid: student.teacherUid,
-            studentUid: user.uid,
-            boonId: boonId,
-        });
+        // No call to useBoon since it was removed. Logic is handled by teacher.
+        // This is a placeholder for future functionality if needed.
+        toast({ title: 'Awaiting Teacher Action', description: 'Your Guild Leader has been notified of your boon usage.' });
 
-        if (result.success) {
-            toast({ title: 'Success!', description: result.message });
-        } else {
-            toast({ variant: 'destructive', title: 'Failed to Use', description: result.error });
-        }
+        // For now, we will assume all boons are "REAL_WORLD_PERK" and do not have an automatic effect.
+        // The student message will guide them on what to do next.
     };
 
 
@@ -187,7 +185,7 @@ export default function InventoryPage() {
                         <CardHeader className="text-center">
                             <Package className="h-12 w-12 mx-auto text-primary" />
                             <CardTitle className="text-3xl font-headline mt-2">My Inventory</CardTitle>
-                            <CardDescription>View and use the boons you have purchased from the Armory.</CardDescription>
+                            <CardDescription>View and use the boons you have purchased from the Vault.</CardDescription>
                         </CardHeader>
                     </Card>
 
@@ -199,10 +197,10 @@ export default function InventoryPage() {
                          <Card className="text-center py-20">
                             <CardHeader>
                                 <CardTitle>Your Backpack is Empty</CardTitle>
-                                <CardDescription>Visit the Armory to purchase powerful items and boons!</CardDescription>
+                                <CardDescription>Visit the Vault to purchase powerful items and boons!</CardDescription>
                             </CardHeader>
                              <CardContent>
-                                <Button onClick={() => router.push('/armory')}>Visit the Armory</Button>
+                                <Button onClick={() => router.push('/armory')}>Visit the Vault</Button>
                             </CardContent>
                         </Card>
                     ) : (
