@@ -69,8 +69,8 @@ export default function NewBoonPage() {
     const handleSave = async () => {
         if (!teacher) return;
         
-        if (!name || cost === '' || !imageUrl || !description) {
-            toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill out all required fields, including uploading an image.' });
+        if (!name || cost === '' || !description || !imageUrl) {
+            toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill out all fields and upload an image for the boon.' });
             return;
         }
 
@@ -83,7 +83,7 @@ export default function NewBoonPage() {
                 imageUrl,
                 effect: {
                     type: 'REAL_WORLD_PERK',
-                    value: description, // Use the main description as the effect value
+                    value: description,
                 },
             });
 
