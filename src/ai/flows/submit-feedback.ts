@@ -38,7 +38,7 @@ export async function submitFeedback(input: FeedbackInput): Promise<ActionRespon
     await addDoc(feedbackRef, {
         teacherUid: teacher.uid,
         teacherName: teacherData.name || 'Unknown Teacher',
-        teacherEmail: teacherData.email || 'Unknown Email',
+        teacherEmail: teacher.email || 'Unknown Email',
         feedbackType,
         message,
         createdAt: serverTimestamp(),
