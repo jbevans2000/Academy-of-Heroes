@@ -19,6 +19,9 @@ import { createBoon } from '@/ai/flows/manage-boons';
 import { v4 as uuidv4 } from 'uuid';
 import Image from 'next/image';
 
+const defaultBoonImageUrl = 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2Fenvato-labs-ai-82960861-9a1e-4e31-9309-085a9b998ca6.jpg?alt=media&token=a15a8c71-faaa-4a38-bc17-b68dc83fba50';
+
+
 export default function NewBoonPage() {
     const router = useRouter();
     const { toast } = useToast();
@@ -69,18 +72,20 @@ export default function NewBoonPage() {
     const handleSave = async () => {
         if (!teacher) return;
         
-        if (!name || cost === '' || !description || !imageUrl) {
-            toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill out all fields and upload an image for the boon.' });
+        if (!name || cost === '' || !description) {
+            toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill out all required fields: Name, Description, and Cost.' });
             return;
         }
 
         setIsSaving(true);
         try {
+            const finalImageUrl = imageUrl || defaultBoonImageUrl;
+
             const result = await createBoon(teacher.uid, {
                 name,
                 description,
                 cost: Number(cost),
-                imageUrl,
+                imageUrl: finalImageUrl,
                 effect: {
                     type: 'REAL_WORLD_PERK',
                     value: description,
@@ -130,7 +135,7 @@ export default function NewBoonPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Boon Image</Label>
+                                <Label>Boon Image (Optional)</Label>
                                 <div className="p-4 border rounded-md space-y-2">
                                     <Input type="file" accept="image/*" onChange={e => setImageFile(e.target.files ? e.target.files[0] : null)} disabled={isUploading} />
                                     <Button onClick={async () => {
@@ -140,7 +145,8 @@ export default function NewBoonPage() {
                                         {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4"/>}
                                         Upload Image
                                     </Button>
-                                    {imageUrl && <Image src={imageUrl} alt="Boon preview" width={100} height={100} className="rounded-md border"/>}
+                                    <p className="text-xs text-muted-foreground">If no image is uploaded, a default icon will be used.</p>
+                                    {(imageUrl || defaultBoonImageUrl) && <Image src={imageUrl || defaultBoonImageUrl} alt="Boon preview" width={100} height={100} className="rounded-md border"/>}
                                 </div>
                             </div>
                             
