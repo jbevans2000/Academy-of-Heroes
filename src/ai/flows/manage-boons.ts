@@ -1,7 +1,7 @@
 
 'use server';
 
-import { doc, addDoc, updateDoc, deleteDoc, collection, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { doc, addDoc, updateDoc, deleteDoc, collection, serverTimestamp, writeBatch, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Boon } from '@/lib/boons';
 import { logGameEvent } from '@/lib/gamelog';
@@ -89,7 +89,6 @@ export async function populateDefaultBoons(teacherUid: string): Promise<ActionRe
 
       defaultBoons.forEach(boon => {
           const docRef = doc(boonsRef);
-          // Ensure isVisibleToStudents is explicitly set to false
           batch.set(docRef, { ...boon, isVisibleToStudents: false, createdAt: serverTimestamp() });
       });
       await batch.commit();
@@ -146,8 +145,9 @@ export async function updateBoonVisibility(teacherUid: string, boonId: string, i
     if (!teacherUid) return { success: false, error: 'User not authenticated.' };
     try {
         const boonRef = doc(db, 'teachers', teacherUid, 'boons', boonId);
-        // Use updateDoc to ensure the field is either created or updated.
-        await updateDoc(boonRef, { isVisibleToStudents: isVisible });
+        // Use setDoc with merge: true. This will create the field if it doesn't exist,
+        // or update it if it does. This is more robust than updateDoc.
+        await setDoc(boonRef, { isVisibleToStudents: isVisible }, { merge: true });
         await logGameEvent(teacherUid, 'GAMEMASTER', `Set boon ${boonId} visibility to ${isVisible}.`);
         return { success: true };
     } catch (error: any) {

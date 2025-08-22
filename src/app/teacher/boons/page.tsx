@@ -29,7 +29,6 @@ import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, Star, Coins, EyeOff, Eye 
 import Image from 'next/image';
 import { deleteBoon, updateBoonVisibility, populateDefaultBoons } from '@/ai/flows/manage-boons';
 import { cn } from '@/lib/utils';
-import { logGameEvent } from '@/lib/gamelog';
 
 export default function BoonsPage() {
     const router = useRouter();
@@ -181,7 +180,7 @@ export default function BoonsPage() {
                                         <div className="flex items-center space-x-2 w-full border p-2 rounded-md justify-center">
                                             {isToggling === boon.id ? <Loader2 className="h-4 w-4 animate-spin"/> : <Switch
                                                 id={`visibility-${boon.id}`}
-                                                checked={boon.isVisibleToStudents}
+                                                checked={boon.isVisibleToStudents ?? false}
                                                 onCheckedChange={() => handleVisibilityToggle(boon)}
                                             />}
                                             <Label htmlFor={`visibility-${boon.id}`} className="flex items-center gap-1 cursor-pointer">
