@@ -98,7 +98,7 @@ export default function ArmoryPage() {
         const boonsQuery = query(
             collection(db, 'teachers', student.teacherUid, 'boons'),
             where('isVisibleToStudents', '==', true),
-            orderBy('createdAt', 'desc')
+            orderBy('name', 'asc')
         );
 
         const unsubscribe = onSnapshot(boonsQuery, (snapshot) => {
