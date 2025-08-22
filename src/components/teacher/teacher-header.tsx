@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import { signOut, onAuthStateChanged, type User } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { getGlobalSettings } from "@/ai/flows/manage-settings";
@@ -21,7 +21,7 @@ export function TeacherHeader() {
   const [isFeedbackPanelVisible, setIsFeedbackPanelVisible] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
         if(currentUser) {
             setUser(currentUser);
             const adminRef = doc(db, 'admins', currentUser.uid);
@@ -31,13 +31,18 @@ export function TeacherHeader() {
             }
         }
     });
-     const fetchSettings = async () => {
-        const settings = await getGlobalSettings();
-        setIsFeedbackPanelVisible(settings.isFeedbackPanelVisible || false);
-    };
 
-    fetchSettings();
-    return () => unsubscribe();
+    const settingsRef = doc(db, 'settings', 'global');
+    const unsubscribeSettings = onSnapshot(settingsRef, (docSnap) => {
+        if (docSnap.exists()) {
+            setIsFeedbackPanelVisible(docSnap.data().isFeedbackPanelVisible || false);
+        }
+    });
+
+    return () => {
+        unsubscribeAuth();
+        unsubscribeSettings();
+    };
   }, []);
 
   const handleLogout = async () => {
