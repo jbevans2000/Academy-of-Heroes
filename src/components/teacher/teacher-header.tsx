@@ -10,20 +10,17 @@ import { signOut, onAuthStateChanged, type User } from "firebase/auth";
 import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
-import { getGlobalSettings } from "@/ai/flows/manage-settings";
 import { Bug, Lightbulb } from "lucide-react";
 
 export function TeacherHeader() {
   const router = useRouter();
   const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
   const [isFeedbackPanelVisible, setIsFeedbackPanelVisible] = useState(false);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
         if(currentUser) {
-            setUser(currentUser);
             const adminRef = doc(db, 'admins', currentUser.uid);
             const adminSnap = await getDoc(adminRef);
             if (adminSnap.exists()) {
