@@ -277,22 +277,16 @@ export default function TeacherLiveBattlePage() {
         // Fetch the most recent state before updating
         const finalLiveStateSnap = await getDoc(liveBattleRef);
         const fallenUids = finalLiveStateSnap.exists() ? (finalLiveStateSnap.data().fallenPlayerUids || []) : [];
-
-        batch.update(parentArchiveRef, {
-            status: 'BATTLE_ENDED',
-            fallenAtEnd: fallenUids,
-        });
-
-        // Award XP/Gold
-        const studentDocs = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
-        const studentMap = new Map(studentDocs.docs.map(d => [d.id, d.data() as Student]));
-        const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
         const roundsArchiveRef = collection(db, 'teachers', teacherUid, 'savedBattles', liveState.parentArchiveId, 'rounds');
         const roundsSnap = await getDocs(roundsArchiveRef);
+
+        const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
+        const participantUids = new Set<string>();
 
         roundsSnap.docs.forEach(roundDoc => {
             const roundData = roundDoc.data();
             (roundData.responses || []).forEach((res: any) => {
+                participantUids.add(res.studentUid); // Add student to participants
                 if (!rewardsByStudent[res.studentUid]) {
                     rewardsByStudent[res.studentUid] = { xpGained: 0, goldGained: 0 };
                 }
@@ -302,6 +296,17 @@ export default function TeacherLiveBattlePage() {
                 }
             });
         });
+        
+        batch.update(parentArchiveRef, {
+            status: 'BATTLE_ENDED',
+            fallenAtEnd: fallenUids,
+            rewardsByStudent: rewardsByStudent,
+            participantUids: Array.from(participantUids),
+        });
+
+        // Award XP/Gold
+        const studentDocs = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
+        const studentMap = new Map(studentDocs.docs.map(d => [d.id, d.data() as Student]));
 
         for (const uid in rewardsByStudent) {
             const studentData = studentMap.get(uid);

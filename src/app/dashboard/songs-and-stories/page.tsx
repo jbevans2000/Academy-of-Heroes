@@ -3,42 +3,29 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, query, orderBy, writeBatch, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, BookHeart, Trash2, Loader2 } from 'lucide-react';
+import { ArrowLeft, BookHeart } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { format } from 'date-fns';
 
 interface SavedBattle {
     id: string;
     battleName: string;
-    savedAt: {
+    savedAt?: {
         seconds: number;
         nanoseconds: number;
     };
-    responsesByRound: {
-        [roundIndex: string]: {
-            responses: {
-                studentUid: string;
-            }[];
-        };
+     startedAt?: {
+        seconds: number;
+        nanoseconds: number;
     };
+    participantUids: string[];
 }
 
 export default function SongsAndStoriesPage() {
@@ -48,7 +35,6 @@ export default function SongsAndStoriesPage() {
     const [teacherUid, setTeacherUid] = useState<string | null>(null);
     const [summaries, setSummaries] = useState<SavedBattle[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -74,27 +60,31 @@ export default function SongsAndStoriesPage() {
 
         const fetchSummaries = async () => {
             setIsLoading(true);
-            const summariesRef = collection(db, 'teachers', teacherUid, 'savedBattles');
-            const q = query(summariesRef, orderBy('savedAt', 'desc'));
-            const querySnapshot = await getDocs(q);
+            try {
+                const summariesRef = collection(db, 'teachers', teacherUid, 'savedBattles');
+                const q = query(summariesRef, where('participantUids', 'array-contains', user.uid));
+                const querySnapshot = await getDocs(q);
 
-            const allSummaries = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SavedBattle));
-            
-            // Filter summaries to only include those where the current student participated
-            const studentSummaries = allSummaries.filter(summary => {
-                return Object.values(summary.responsesByRound || {}).some(round => 
-                    (round.responses || []).some(response => response.studentUid === user.uid)
-                );
-            });
+                const allSummaries = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SavedBattle));
+                
+                // Sort by date, preferring startedAt, falling back to savedAt
+                allSummaries.sort((a, b) => {
+                    const timeA = a.startedAt?.seconds ?? a.savedAt?.seconds ?? 0;
+                    const timeB = b.startedAt?.seconds ?? b.savedAt?.seconds ?? 0;
+                    return timeB - timeA;
+                });
 
-            setSummaries(studentSummaries);
-            setIsLoading(false);
+                setSummaries(allSummaries);
+            } catch (error) {
+                console.error("Error fetching battle summaries: ", error);
+                toast({ variant: 'destructive', title: 'Error', description: 'Could not load your battle history.' });
+            } finally {
+                setIsLoading(false);
+            }
         };
         fetchSummaries();
-    }, [user, teacherUid]);
+    }, [user, teacherUid, toast]);
     
-    // NOTE: Students cannot clear their own history from this page. 
-    // This action would need to be re-thought as it would now delete from the teacher's collection.
 
     if (isLoading) {
         return (
@@ -146,18 +136,21 @@ export default function SongsAndStoriesPage() {
                                     </p>
                                 </div>
                             ) : (
-                                summaries.map(summary => (
-                                    <Link key={summary.id} href={`/dashboard/songs-and-stories/${summary.id}`} passHref>
-                                        <div className="block border p-4 rounded-lg hover:bg-primary/10 transition-colors cursor-pointer">
-                                            <div className="flex justify-between items-center">
-                                                <h3 className="font-semibold text-lg">{summary.battleName}</h3>
-                                                <p className="text-sm text-muted-foreground">
-                                                    {summary.savedAt ? format(new Date(summary.savedAt.seconds * 1000), 'PPP') : 'Date unknown'}
-                                                </p>
+                                summaries.map(summary => {
+                                    const date = summary.startedAt ?? summary.savedAt;
+                                    return (
+                                        <Link key={summary.id} href={`/dashboard/songs-and-stories/${summary.id}`} passHref>
+                                            <div className="block border p-4 rounded-lg hover:bg-primary/10 transition-colors cursor-pointer">
+                                                <div className="flex justify-between items-center">
+                                                    <h3 className="font-semibold text-lg">{summary.battleName}</h3>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {date ? format(new Date(date.seconds * 1000), 'PPP') : 'Date unknown'}
+                                                    </p>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </Link>
-                                ))
+                                        </Link>
+                                    );
+                                })
                             )}
                         </CardContent>
                     </Card>
