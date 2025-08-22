@@ -12,7 +12,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { getGlobalSettings, updateGlobalSettings } from '@/ai/flows/manage-settings';
-import { Loader2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Loader2, ToggleLeft, ToggleRight, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Teacher {
@@ -71,6 +71,10 @@ export default function AdminDashboardPage() {
                 };
             }));
             setTeachers(teachersData);
+             toast({
+                title: 'Data Refreshed',
+                description: 'The latest guild and student data has been loaded.',
+            });
         } catch (error) {
             console.error("Error fetching teachers:", error);
         } finally {
@@ -177,6 +181,16 @@ export default function AdminDashboardPage() {
                              <Button onClick={handleToggleRegistration} disabled={isSettingsLoading} size="lg">
                                 {isSettingsLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : isRegistrationOpen ? <ToggleRight className="mr-2 h-6 w-6"/> : <ToggleLeft className="mr-2 h-6 w-6"/>}
                                 {isRegistrationOpen ? 'Deactivate' : 'Activate'}
+                            </Button>
+                        </div>
+                         <div className="flex items-center justify-between rounded-lg border p-4">
+                            <div>
+                                <h4 className="font-semibold">Refresh Data</h4>
+                                <p className="text-sm text-muted-foreground">Reload all guild and student information.</p>
+                            </div>
+                             <Button onClick={fetchTeachers} disabled={isLoading} size="lg">
+                                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4"/>}
+                                Refresh
                             </Button>
                         </div>
                     </CardContent>
