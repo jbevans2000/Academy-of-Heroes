@@ -4,11 +4,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { PlusCircle, LayoutDashboard, Edit, Trash2, Loader2, Eye, Wrench } from 'lucide-react';
-import { collection, getDocs, doc, deleteDoc, onSnapshot } from 'firebase/firestore';
-import { db, auth } from '@/lib/firebase';
+import { PlusCircle, LayoutDashboard, Edit, Trash2, Loader2, Eye, Wrench, Image as ImageIcon, Upload, X } from 'lucide-react';
+import { collection, getDocs, doc, deleteDoc, onSnapshot, updateDoc, getDoc } from 'firebase/firestore';
+import { db, auth, app } from '@/lib/firebase';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import type { QuestHub, Chapter } from '@/lib/quests';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -23,8 +24,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { Dialog, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { onAuthStateChanged, type User } from 'firebase/auth';
+import { v4 as uuidv4 } from 'uuid';
+import { cn } from '@/lib/utils';
+import NextImage from 'next/image';
 
 export default function QuestsPage() {
   const router = useRouter();
@@ -34,6 +39,12 @@ export default function QuestsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [teacher, setTeacher] = useState<User | null>(null);
+  
+  // State for world map dialog
+  const [isMapDialogOpen, setIsMapDialogOpen] = useState(false);
+  const [worldMapUrl, setWorldMapUrl] = useState('');
+  const [mapImageFile, setMapImageFile] = useState<File | null>(null);
+  const [isUploadingMap, setIsUploadingMap] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -52,31 +63,32 @@ export default function QuestsPage() {
 
     const hubsRef = collection(db, 'teachers', teacher.uid, 'questHubs');
     const chaptersRef = collection(db, 'teachers', teacher.uid, 'chapters');
+    const teacherRef = doc(db, 'teachers', teacher.uid);
 
     const unsubHubs = onSnapshot(hubsRef, (querySnapshot) => {
         const hubsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
         hubsData.sort((a,b) => a.hubOrder - b.hubOrder);
         setHubs(hubsData);
-    }, (error) => {
-        console.error("Error fetching quest hubs: ", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not load quest hubs data.' });
     });
     
     const unsubChapters = onSnapshot(chaptersRef, (querySnapshot) => {
         const chaptersData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
         setChapters(chaptersData);
-        setIsLoading(false); // Set loading to false after both are fetched
-    }, (error) => {
-        console.error("Error fetching chapters: ", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not load chapters data.' });
+    });
+    
+    const unsubTeacher = onSnapshot(teacherRef, (docSnap) => {
+        if (docSnap.exists()) {
+            setWorldMapUrl(docSnap.data().worldMapUrl || '');
+        }
         setIsLoading(false);
     });
 
     return () => {
         unsubHubs();
         unsubChapters();
+        unsubTeacher();
     };
-  }, [teacher, toast]);
+  }, [teacher]);
 
   const handleDeleteChapter = async (chapterId: string) => {
     if (!teacher) return;
@@ -87,7 +99,6 @@ export default function QuestsPage() {
             title: 'Chapter Deleted',
             description: 'The chapter has been successfully removed.',
         });
-        // No need to manually filter, onSnapshot will update the state
     } catch (error) {
         console.error('Error deleting chapter:', error);
         toast({
@@ -100,8 +111,71 @@ export default function QuestsPage() {
     }
   };
 
+  const handleWorldMapUpload = async () => {
+    if (!mapImageFile || !teacher) return;
+    setIsUploadingMap(true);
+    try {
+        const storage = getStorage(app);
+        const imageId = uuidv4();
+        const storageRef = ref(storage, `world-maps/${teacher.uid}/${imageId}`);
+        
+        await uploadBytes(storageRef, mapImageFile);
+        const downloadUrl = await getDownloadURL(storageRef);
+
+        const teacherRef = doc(db, 'teachers', teacher.uid);
+        await updateDoc(teacherRef, { worldMapUrl: downloadUrl });
+
+        toast({ title: 'World Map Updated!', description: 'Your new world map has been saved.' });
+        setIsMapDialogOpen(false);
+        setMapImageFile(null);
+    } catch (error) {
+        console.error("Error uploading world map:", error);
+        toast({ variant: 'destructive', title: 'Upload Failed' });
+    } finally {
+        setIsUploadingMap(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen w-full flex-col">
+       <Dialog open={isMapDialogOpen} onOpenChange={setIsMapDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Set Your World Map Image</AlertDialogTitle>
+            <AlertDialogDescription>
+              Upload a new image to serve as the world map for your quests.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4 space-y-4">
+             <div className="flex items-center gap-2">
+                <Label htmlFor="map-upload" className={cn(buttonVariants({ variant: 'default' }), "cursor-pointer")}>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Choose File
+                </Label>
+                <Input id="map-upload" type="file" accept="image/*" onChange={(e) => setMapImageFile(e.target.files ? e.target.files[0] : null)} className="hidden" disabled={isUploadingMap}/>
+                {mapImageFile && <p className="text-sm text-muted-foreground">{mapImageFile.name}</p>}
+            </div>
+            {mapImageFile && (
+              <div className="border p-2 rounded-md">
+                <NextImage 
+                  src={URL.createObjectURL(mapImageFile)} 
+                  alt="Map preview" 
+                  width={400} 
+                  height={300} 
+                  className="w-full h-auto object-contain rounded-md"
+                />
+              </div>
+            )}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleWorldMapUpload} disabled={!mapImageFile || isUploadingMap}>
+              {isUploadingMap ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+              Confirm Upload
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </Dialog>
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="flex items-center justify-between mb-6">
@@ -110,6 +184,10 @@ export default function QuestsPage() {
             <Button onClick={() => router.push('/teacher/dashboard')} variant="outline">
               <LayoutDashboard className="mr-2 h-5 w-5" />
               Return to Podium
+            </Button>
+             <Button variant="secondary" onClick={() => setIsMapDialogOpen(true)}>
+                <ImageIcon className="mr-2 h-5 w-5" />
+                Set World Map
             </Button>
             <Button onClick={() => router.push('/teacher/quests/new')}>
               <PlusCircle className="mr-2 h-5 w-5" />

@@ -22,18 +22,27 @@ export default function WorldMapPage() {
     const [student, setStudent] = useState<Student | null>(null);
     const [teacherUid, setTeacherUid] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const worldMapImageUrl = "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FWorld%20Map.JPG?alt=media&token=2d88af7d-a54c-4f34-b4c7-1a7c04485b8b";
+    const defaultWorldMapImageUrl = "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FWorld%20Map.JPG?alt=media&token=2d88af7d-a54c-4f34-b4c7-1a7c04485b8b";
+    const [worldMapUrl, setWorldMapUrl] = useState(defaultWorldMapImageUrl);
 
     useEffect(() => {
         const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const teachersSnapshot = await getDocs(collection(db, 'teachers'));
-                for (const teacherDoc of teachersSnapshot.docs) {
-                  const studentDocRef = doc(db, 'teachers', teacherDoc.id, 'students', user.uid);
-                  const studentSnap = await getDoc(studentDocRef);
-                  if (studentSnap.exists()) {
-                    setTeacherUid(teacherDoc.id);
-                    const studentUnsubscribe = onSnapshot(studentDocRef, (docSnap) => {
+                const studentMetaRef = doc(db, 'students', user.uid);
+                const studentMetaSnap = await getDoc(studentMetaRef);
+
+                if (studentMetaSnap.exists()) {
+                    const foundTeacherUid = studentMetaSnap.data().teacherUid;
+                    setTeacherUid(foundTeacherUid);
+                    
+                    const teacherRef = doc(db, 'teachers', foundTeacherUid);
+                    const teacherSnap = await getDoc(teacherRef);
+                    if (teacherSnap.exists() && teacherSnap.data().worldMapUrl) {
+                        setWorldMapUrl(teacherSnap.data().worldMapUrl);
+                    }
+
+                    const studentRef = doc(db, 'teachers', foundTeacherUid, 'students', user.uid);
+                    const studentUnsubscribe = onSnapshot(studentRef, (docSnap) => {
                         if (docSnap.exists()) {
                             setStudent(docSnap.data() as Student);
                         } else {
@@ -42,7 +51,9 @@ export default function WorldMapPage() {
                         setIsLoading(false);
                     });
                     return () => studentUnsubscribe();
-                  }
+                } else {
+                     router.push('/');
+                     setIsLoading(false);
                 }
             } else {
                 router.push('/');
@@ -79,7 +90,7 @@ export default function WorldMapPage() {
                 <CardContent className="p-2">
                     <div className="relative aspect-[2048/1536] rounded-lg overflow-hidden bg-muted/50">
                         <Image
-                            src={worldMapImageUrl}
+                            src={worldMapUrl}
                             alt="World Map"
                             fill
                             className="object-contain"
@@ -122,5 +133,3 @@ export default function WorldMapPage() {
         </div>
     );
 }
-
-    

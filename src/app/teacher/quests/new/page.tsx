@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -103,8 +104,9 @@ export default function NewQuestPage() {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const worldMapImageUrl = "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FWorld%20Map.JPG?alt=media&token=2d88af7d-a54c-4f34-b4c7-1a7c04485b8b";
+  const defaultWorldMap = "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FWorld%20Map.JPG?alt=media&token=2d88af7d-a54c-4f34-b4c7-1a7c04485b8b";
   const [teacher, setTeacher] = useState<User | null>(null);
+  const [teacherWorldMapUrl, setTeacherWorldMapUrl] = useState(defaultWorldMap);
 
   // State for AI generator
   const [isOracleOpen, setIsOracleOpen] = useState(false);
@@ -149,22 +151,31 @@ export default function NewQuestPage() {
 
   useEffect(() => {
     if (!teacher) return;
-    const fetchHubs = async () => {
+    const fetchInitialData = async () => {
         setIsLoading(true);
         try {
+            // Fetch Hubs
             const hubsQuery = query(collection(db, 'teachers', teacher.uid, 'questHubs'), orderBy('hubOrder'));
             const hubsSnapshot = await getDocs(hubsQuery);
             const hubsData = hubsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
             setHubs(hubsData);
-            setNewHubOrder(hubsData.length + 1); // Default next hub order
+            setNewHubOrder(hubsData.length + 1);
+
+            // Fetch Teacher's custom world map
+            const teacherRef = doc(db, 'teachers', teacher.uid);
+            const teacherSnap = await getDoc(teacherRef);
+            if (teacherSnap.exists() && teacherSnap.data().worldMapUrl) {
+                setTeacherWorldMapUrl(teacherSnap.data().worldMapUrl);
+            }
+
         } catch (error) {
-            console.error("Error fetching hubs: ", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch quest hubs.' });
+            console.error("Error fetching initial data: ", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch initial quest data.' });
         } finally {
             setIsLoading(false);
         }
     };
-    fetchHubs();
+    fetchInitialData();
   }, [teacher, toast]);
   
   const handleMapDrag = (e: React.MouseEvent<HTMLDivElement, MouseEvent>, type: 'hub' | 'chapter') => {
@@ -337,7 +348,7 @@ export default function NewQuestPage() {
                                     onMouseDown={(e) => handleMapDrag(e, 'hub')}
                                 >
                                     <Image
-                                        src={worldMapImageUrl}
+                                        src={teacherWorldMapUrl}
                                         alt="World Map for Placement"
                                         fill
                                         className="object-contain"
