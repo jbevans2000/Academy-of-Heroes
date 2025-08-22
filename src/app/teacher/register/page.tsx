@@ -1,18 +1,19 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, User, KeyRound, School, Briefcase, Phone, Check, Star, ArrowLeft } from 'lucide-react';
+import { Loader2, User, KeyRound, School, Briefcase, Phone, Check, Star, ArrowLeft, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { doc, setDoc, collection, serverTimestamp, addDoc } from 'firebase/firestore';
+import { getGlobalSettings } from '@/ai/flows/manage-settings';
 
 // Function to generate a random, easy-to-read class code
 const generateClassCode = () => {
@@ -37,8 +38,28 @@ export default function TeacherRegisterPage() {
   const [className, setClassName] = useState('');
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(true);
+
   const router = useRouter();
   const { toast } = useToast();
+
+   useEffect(() => {
+    const checkRegistrationStatus = async () => {
+        setIsCheckingStatus(true);
+        try {
+            const settings = await getGlobalSettings();
+            setIsRegistrationOpen(settings.isRegistrationOpen);
+        } catch (error) {
+            console.error("Failed to check registration status:", error);
+            // Default to open if there's an error, to not block registration unintentionally
+            setIsRegistrationOpen(true);
+        } finally {
+            setIsCheckingStatus(false);
+        }
+    };
+    checkRegistrationStatus();
+  }, []);
   
   const handleNextStep = () => {
     // Add validation before proceeding
@@ -58,7 +79,18 @@ export default function TeacherRegisterPage() {
   }
 
   const handleSubmit = async () => {
-    // This is where final submission happens. For now, we skip actual payment.
+    // Authoritative check on submission
+    const settings = await getGlobalSettings();
+    if (!settings.isRegistrationOpen) {
+        toast({
+            variant: 'destructive',
+            title: 'Registration Closed',
+            description: 'New account creation has been paused by the Grandmaster.',
+        });
+        setIsRegistrationOpen(false); // Update UI just in case
+        return;
+    }
+
     setIsLoading(true);
     
     try {
@@ -125,6 +157,32 @@ export default function TeacherRegisterPage() {
         setIsLoading(false);
     }
   };
+
+  const RegistrationClosedCard = () => (
+    <Card className="w-full max-w-lg shadow-2xl bg-card/80 backdrop-blur-sm">
+        <CardHeader className="text-center">
+            <ShieldAlert className="h-16 w-16 mx-auto text-amber-500" />
+            <CardTitle className="text-3xl font-headline text-primary">Registration Temporarily Closed</CardTitle>
+            <CardDescription>New Guild Leader registration has been paused by the Grandmaster.</CardDescription>
+        </CardHeader>
+        <CardContent className="text-center">
+            <p>Please check back later. The realm awaits your return!</p>
+        </CardContent>
+         <CardFooter>
+            <Button className="w-full" asChild>
+                <Link href="/login">Return to Login</Link>
+            </Button>
+        </CardFooter>
+    </Card>
+  );
+
+  if (isCheckingStatus) {
+    return <Loader2 className="h-16 w-16 animate-spin text-primary" />;
+  }
+
+  if (!isRegistrationOpen) {
+    return <RegistrationClosedCard />;
+  }
   
   return (
     <div 
