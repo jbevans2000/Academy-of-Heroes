@@ -176,14 +176,6 @@ export default function TeacherRegisterPage() {
     </Card>
   );
 
-  if (isCheckingStatus) {
-    return <Loader2 className="h-16 w-16 animate-spin text-primary" />;
-  }
-
-  if (!isRegistrationOpen) {
-    return <RegistrationClosedCard />;
-  }
-  
   return (
     <div 
         className="relative flex items-center justify-center min-h-screen p-4"
@@ -196,133 +188,139 @@ export default function TeacherRegisterPage() {
                 backgroundPosition: 'center',
             }}
         />
-      <Card className="w-full max-w-lg shadow-2xl bg-card/90">
-        <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-headline text-primary">Guild Leader's Registration</CardTitle>
-            <CardDescription>Join the Academy of Heroes and bring your classroom to life.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            {/* Step Indicator */}
-            <div className="flex justify-center items-center mb-6">
-                <div className="flex items-center">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>1</div>
-                    <div className={`w-16 h-1 ${step > 1 ? 'bg-primary' : 'bg-muted'}`}></div>
-                </div>
-                 <div className="flex items-center">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>2</div>
-                    <div className={`w-16 h-1 ${step > 2 ? 'bg-primary' : 'bg-muted'}`}></div>
-                </div>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 3 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>3</div>
-            </div>
 
-            {/* Step 1: Account Info */}
-            {step === 1 && (
-                <div className="space-y-4 animate-in fade-in-50">
-                    <h3 className="text-xl font-semibold text-center">Step 1: Account Information</h3>
-                    <div className="space-y-2">
-                        <Label htmlFor="name"><User className="inline-block mr-2" />Full Name</Label>
-                        <Input id="name" placeholder="e.g., Jane Doe" value={name} onChange={(e) => setName(e.target.value)} />
+        {isCheckingStatus ? (
+             <Loader2 className="h-16 w-16 animate-spin text-primary" />
+        ) : !isRegistrationOpen ? (
+            <RegistrationClosedCard />
+        ) : (
+            <Card className="w-full max-w-lg shadow-2xl bg-card/90">
+                <CardHeader className="text-center">
+                    <CardTitle className="text-3xl font-headline text-primary">Guild Leader's Registration</CardTitle>
+                    <CardDescription>Join the Academy of Heroes and bring your classroom to life.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {/* Step Indicator */}
+                    <div className="flex justify-center items-center mb-6">
+                        <div className="flex items-center">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>1</div>
+                            <div className={`w-16 h-1 ${step > 1 ? 'bg-primary' : 'bg-muted'}`}></div>
+                        </div>
+                        <div className="flex items-center">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>2</div>
+                            <div className={`w-16 h-1 ${step > 2 ? 'bg-primary' : 'bg-muted'}`}></div>
+                        </div>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 3 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>3</div>
                     </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="email"><User className="inline-block mr-2" />Email Address</Label>
-                        <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="password"><KeyRound className="inline-block mr-2" />Password</Label>
-                        <Input id="password" type="password" placeholder="Choose a secure password (at least 6 characters)" value={password} onChange={(e) => setPassword(e.target.value)} />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="phone"><Phone className="inline-block mr-2" />Phone Number (Optional)</Label>
-                        <Input id="phone" type="tel" placeholder="For optional two-factor authentication" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
-                    </div>
-                </div>
-            )}
 
-            {/* Step 2: School Info */}
-            {step === 2 && (
-                <div className="space-y-4 animate-in fade-in-50">
-                    <h3 className="text-xl font-semibold text-center">Step 2: Guild Information</h3>
-                    <div className="space-y-2">
-                        <Label htmlFor="school-name"><School className="inline-block mr-2" />School Name</Label>
-                        <Input id="school-name" placeholder="e.g., Luminaria High" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="class-name"><Briefcase className="inline-block mr-2" />Guild Name</Label>
-                        <Input id="class-name" placeholder="e.g., Grade 5 History" value={className} onChange={(e) => setClassName(e.target.value)} />
-                    </div>
-                </div>
-            )}
-
-             {/* Step 3: Billing Placeholder */}
-            {step === 3 && (
-                <div className="space-y-4 animate-in fade-in-50">
-                    <h3 className="text-xl font-semibold text-center">Step 3: Choose Your Plan</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Free Plan */}
-                        <Card className="p-4 flex flex-col text-center">
-                             <CardHeader>
-                                <CardTitle>Free Plan</CardTitle>
-                                <CardDescription>$0 / month</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex-grow">
-                                <ul className="space-y-2 text-sm text-muted-foreground text-left">
-                                    <li className="flex items-center"><Check className="w-4 h-4 mr-2 text-green-500" />Up to 30 students</li>
-                                    <li className="flex items-center"><Check className="w-4 h-4 mr-2 text-green-500" />Basic questing</li>
-                                    <li className="flex items-center"><Check className="w-4 h-4 mr-2 text-green-500" />Basic tools</li>
-                                </ul>
-                            </CardContent>
-                            <CardFooter>
-                                <Button variant="outline" className="w-full" onClick={handleSubmit} disabled={isLoading}>
-                                     {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Select Free Plan
-                                </Button>
-                            </CardFooter>
-                        </Card>
-                         {/* Premium Plan */}
-                        <Card className="p-4 flex flex-col text-center border-primary border-2 relative">
-                            <div className="absolute top-0 -translate-y-1/2 w-full">
-                                <div className="mx-auto bg-primary text-primary-foreground text-sm font-bold px-3 py-1 rounded-full w-fit">Most Popular</div>
+                    {/* Step 1: Account Info */}
+                    {step === 1 && (
+                        <div className="space-y-4 animate-in fade-in-50">
+                            <h3 className="text-xl font-semibold text-center">Step 1: Account Information</h3>
+                            <div className="space-y-2">
+                                <Label htmlFor="name"><User className="inline-block mr-2" />Full Name</Label>
+                                <Input id="name" placeholder="e.g., Jane Doe" value={name} onChange={(e) => setName(e.target.value)} />
                             </div>
-                             <CardHeader>
-                                <CardTitle>Premium Plan</CardTitle>
-                                <CardDescription>$12 / month</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex-grow">
-                                <ul className="space-y-2 text-sm text-muted-foreground text-left">
-                                    <li className="flex items-center"><Star className="w-4 h-4 mr-2 text-yellow-500" />Unlimited students</li>
-                                    <li className="flex items-center"><Star className="w-4 h-4 mr-2 text-yellow-500" />Advanced customization</li>
-                                    <li className="flex items-center"><Star className="w-4 h-4 mr-2 text-yellow-500" />All classroom tools</li>
-                                    <li className="flex items-center"><Star className="w-4 h-4 mr-2 text-yellow-500" />Priority support</li>
-                                </ul>
-                            </CardContent>
-                             <CardFooter>
-                                <Button className="w-full" onClick={handleSubmit} disabled={isLoading}>
-                                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Select Premium Plan
-                                </Button>
-                            </CardFooter>
-                        </Card>
+                            <div className="space-y-2">
+                                <Label htmlFor="email"><User className="inline-block mr-2" />Email Address</Label>
+                                <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="password"><KeyRound className="inline-block mr-2" />Password</Label>
+                                <Input id="password" type="password" placeholder="Choose a secure password (at least 6 characters)" value={password} onChange={(e) => setPassword(e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="phone"><Phone className="inline-block mr-2" />Phone Number (Optional)</Label>
+                                <Input id="phone" type="tel" placeholder="For optional two-factor authentication" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Step 2: School Info */}
+                    {step === 2 && (
+                        <div className="space-y-4 animate-in fade-in-50">
+                            <h3 className="text-xl font-semibold text-center">Step 2: Guild Information</h3>
+                            <div className="space-y-2">
+                                <Label htmlFor="school-name"><School className="inline-block mr-2" />School Name</Label>
+                                <Input id="school-name" placeholder="e.g., Luminaria High" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="class-name"><Briefcase className="inline-block mr-2" />Guild Name</Label>
+                                <Input id="class-name" placeholder="e.g., Grade 5 History" value={className} onChange={(e) => setClassName(e.target.value)} />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Step 3: Billing Placeholder */}
+                    {step === 3 && (
+                        <div className="space-y-4 animate-in fade-in-50">
+                            <h3 className="text-xl font-semibold text-center">Step 3: Choose Your Plan</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Free Plan */}
+                                <Card className="p-4 flex flex-col text-center">
+                                    <CardHeader>
+                                        <CardTitle>Free Plan</CardTitle>
+                                        <CardDescription>$0 / month</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="flex-grow">
+                                        <ul className="space-y-2 text-sm text-muted-foreground text-left">
+                                            <li className="flex items-center"><Check className="w-4 h-4 mr-2 text-green-500" />Up to 30 students</li>
+                                            <li className="flex items-center"><Check className="w-4 h-4 mr-2 text-green-500" />Basic questing</li>
+                                            <li className="flex items-center"><Check className="w-4 h-4 mr-2 text-green-500" />Basic tools</li>
+                                        </ul>
+                                    </CardContent>
+                                    <CardFooter>
+                                        <Button variant="outline" className="w-full" onClick={handleSubmit} disabled={isLoading}>
+                                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Select Free Plan
+                                        </Button>
+                                    </CardFooter>
+                                </Card>
+                                {/* Premium Plan */}
+                                <Card className="p-4 flex flex-col text-center border-primary border-2 relative">
+                                    <div className="absolute top-0 -translate-y-1/2 w-full">
+                                        <div className="mx-auto bg-primary text-primary-foreground text-sm font-bold px-3 py-1 rounded-full w-fit">Most Popular</div>
+                                    </div>
+                                    <CardHeader>
+                                        <CardTitle>Premium Plan</CardTitle>
+                                        <CardDescription>$12 / month</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="flex-grow">
+                                        <ul className="space-y-2 text-sm text-muted-foreground text-left">
+                                            <li className="flex items-center"><Star className="w-4 h-4 mr-2 text-yellow-500" />Unlimited students</li>
+                                            <li className="flex items-center"><Star className="w-4 h-4 mr-2 text-yellow-500" />Advanced customization</li>
+                                            <li className="flex items-center"><Star className="w-4 h-4 mr-2 text-yellow-500" />All classroom tools</li>
+                                            <li className="flex items-center"><Star className="w-4 h-4 mr-2 text-yellow-500" />Priority support</li>
+                                        </ul>
+                                    </CardContent>
+                                    <CardFooter>
+                                        <Button className="w-full" onClick={handleSubmit} disabled={isLoading}>
+                                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Select Premium Plan
+                                        </Button>
+                                    </CardFooter>
+                                </Card>
+                            </div>
+                        </div>
+                    )}
+                </CardContent>
+                <CardFooter className="flex flex-col gap-4">
+                    <div className="flex justify-between w-full">
+                        {step > 1 ? (
+                            <Button variant="outline" onClick={handlePrevStep} disabled={isLoading}>Previous</Button>
+                        ) : <div />}
+                        {step < 3 && (
+                            <Button onClick={handleNextStep} disabled={isLoading}>Next</Button>
+                        )}
                     </div>
-                </div>
-            )}
-            
-        </CardContent>
-        <CardFooter className="flex flex-col gap-4">
-             <div className="flex justify-between w-full">
-                {step > 1 ? (
-                    <Button variant="outline" onClick={handlePrevStep} disabled={isLoading}>Previous</Button>
-                ) : <div />}
-                {step < 3 && (
-                    <Button onClick={handleNextStep} disabled={isLoading}>Next</Button>
-                )}
-             </div>
-             <div className="text-center text-sm text-muted-foreground">
-                Already Registered? <Link href="/teacher/login" className="underline text-primary">Login here</Link>.
-             </div>
-             <Button variant="link" className="w-full text-muted-foreground" onClick={() => router.push('/')}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Return to Splash Page
-            </Button>
-        </CardFooter>
-      </Card>
+                    <div className="text-center text-sm text-muted-foreground">
+                        Already Registered? <Link href="/teacher/login" className="underline text-primary">Login here</Link>.
+                    </div>
+                    <Button variant="link" className="w-full text-muted-foreground" onClick={() => router.push('/')}>
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Return to Splash Page
+                    </Button>
+                </CardFooter>
+            </Card>
+        )}
     </div>
   );
 }
