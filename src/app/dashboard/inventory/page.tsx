@@ -62,7 +62,7 @@ const InventoryBoonCard = ({ boon, quantity, onUse }: { boon: Boon; quantity: nu
                         setIsStudentMessageOpen(false);
                         handleUse();
                     }}>
-                        Use Boon
+                        Use Reward
                     </AlertDialogAction>
                      <AlertDialogCancel>Cancel</AlertDialogCancel>
                 </AlertDialogFooter>
@@ -85,7 +85,7 @@ const InventoryBoonCard = ({ boon, quantity, onUse }: { boon: Boon; quantity: nu
             <CardFooter>
                 <Button className="w-full" onClick={handleActivateBoon} disabled={isUsing}>
                     {isUsing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                    Use Boon
+                    Use Reward
                 </Button>
             </CardFooter>
         </Card>
@@ -195,7 +195,7 @@ export default function InventoryPage() {
                         <CardHeader className="text-center">
                             <Package className="h-12 w-12 mx-auto text-primary" />
                             <CardTitle className="text-3xl font-headline mt-2">My Inventory</CardTitle>
-                            <CardDescription>View and use the boons you have purchased from the Vault.</CardDescription>
+                            <CardDescription>View and use the Rewards you have purchased from the Vault.</CardDescription>
                         </CardHeader>
                     </Card>
 
@@ -207,7 +207,7 @@ export default function InventoryPage() {
                          <Card className="text-center py-20">
                             <CardHeader>
                                 <CardTitle>Your Backpack is Empty</CardTitle>
-                                <CardDescription>Visit the Vault to purchase powerful items and boons!</CardDescription>
+                                <CardDescription>Visit the Vault to purchase powerful items and Rewards!</CardDescription>
                             </CardHeader>
                              <CardContent>
                                 <Button onClick={() => router.push('/armory')}>Visit the Vault</Button>

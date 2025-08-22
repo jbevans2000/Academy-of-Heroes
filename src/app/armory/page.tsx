@@ -150,7 +150,7 @@ export default function ArmoryPage() {
                         <CardHeader className="text-center">
                             <Gem className="h-12 w-12 mx-auto text-primary" />
                             <CardTitle className="text-3xl font-headline mt-2">The Vault</CardTitle>
-                            <CardDescription>Spend your hard-earned gold on powerful boons and cosmetic items.</CardDescription>
+                            <CardDescription>Spend your hard-earned gold on powerful Rewards and cosmetic items.</CardDescription>
                         </CardHeader>
                     </Card>
 

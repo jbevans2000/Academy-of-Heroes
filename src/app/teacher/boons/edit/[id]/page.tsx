@@ -61,12 +61,12 @@ export default function EditBoonPage() {
                 if (docSnap.exists()) {
                     setBoon({ id: docSnap.id, ...docSnap.data() } as Boon);
                 } else {
-                    toast({ variant: 'destructive', title: 'Not Found', description: 'This boon does not exist.' });
+                    toast({ variant: 'destructive', title: 'Not Found', description: 'This Reward does not exist.' });
                     router.push('/teacher/boons');
                 }
             } catch (error) {
                 console.error("Error fetching boon:", error);
-                toast({ variant: 'destructive', title: 'Error', description: 'Failed to load boon data.' });
+                toast({ variant: 'destructive', title: 'Error', description: 'Failed to load Reward data.' });
             } finally {
                 setIsLoading(false);
             }
@@ -116,7 +116,7 @@ export default function EditBoonPage() {
 
             const result = await saveBoonChanges(teacher.uid, boonToSave as Boon);
             if (result.success) {
-                toast({ title: 'Boon Updated!', description: `${boon.name} has been updated.` });
+                toast({ title: 'Reward Updated!', description: `${boon.name} has been updated.` });
                 router.push('/teacher/boons');
             } else {
                 throw new Error(result.error);
@@ -151,17 +151,17 @@ export default function EditBoonPage() {
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="max-w-2xl mx-auto space-y-6">
                     <Button variant="outline" onClick={() => router.push('/teacher/boons')}>
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to All Boons
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to All Rewards
                     </Button>
 
                     <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><Star className="text-yellow-400"/> Edit Boon</CardTitle>
-                            <CardDescription>Make changes to this boon. Your changes will be reflected in the store.</CardDescription>
+                            <CardTitle className="flex items-center gap-2"><Star className="text-yellow-400"/> Edit Reward</CardTitle>
+                            <CardDescription>Make changes to this Reward. Your changes will be reflected in the store.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="name">Boon Name</Label>
+                                <Label htmlFor="name">Reward Name</Label>
                                 <Input id="name" value={boon.name || ''} onChange={(e) => handleBoonChange('name', e.target.value)} />
                             </div>
                             <div className="space-y-2">
@@ -174,7 +174,7 @@ export default function EditBoonPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Boon Image</Label>
+                                <Label>Reward Image</Label>
                                 <div className="p-4 border rounded-md space-y-2">
                                     <Input type="file" accept="image/*" onChange={async e => {
                                         const file = e.target.files?.[0];

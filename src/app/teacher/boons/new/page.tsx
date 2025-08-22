@@ -97,7 +97,7 @@ export default function NewBoonPage() {
             });
 
             if (result.success) {
-                toast({ title: 'Boon Created!', description: `${name} has been added to the store.` });
+                toast({ title: 'Reward Created!', description: `${name} has been added to the store.` });
                 router.push('/teacher/boons');
             } else {
                 throw new Error(result.error);
@@ -116,17 +116,17 @@ export default function NewBoonPage() {
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="max-w-2xl mx-auto space-y-6">
                     <Button variant="outline" onClick={() => router.push('/teacher/boons')}>
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to All Boons
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to All Rewards
                     </Button>
 
                     <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><Star className="text-yellow-400"/> Create New Boon</CardTitle>
+                            <CardTitle className="flex items-center gap-2"><Star className="text-yellow-400"/> Create New Reward</CardTitle>
                             <CardDescription>Fill in the details for the new item you want to add to your store.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="name">Boon Name</Label>
+                                <Label htmlFor="name">Reward Name</Label>
                                 <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., A New View" />
                             </div>
                             <div className="space-y-2">
@@ -139,7 +139,7 @@ export default function NewBoonPage() {
                             </div>
 
                              <div className="space-y-2">
-                                <Label>Boon Image (Optional)</Label>
+                                <Label>Reward Image (Optional)</Label>
                                 <div className="p-4 border rounded-md space-y-2">
                                     <Input type="file" accept="image/*" onChange={e => setImageFile(e.target.files ? e.target.files[0] : null)} disabled={isUploading} />
                                     <Button onClick={async () => {
@@ -167,7 +167,7 @@ export default function NewBoonPage() {
                              <div className="flex justify-end">
                                 <Button onClick={handleSave} disabled={isSaving}>
                                     {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4" />}
-                                    Create Boon
+                                    Create Reward
                                 </Button>
                             </div>
 

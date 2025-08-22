@@ -96,7 +96,7 @@ export default function BoonsPage() {
             if (!result.success) {
                 throw new Error(result.error || 'An unknown error occurred.');
             }
-            toast({ title: "Workshop Stocked!", description: "A set of default boons has been added to your workshop." });
+            toast({ title: "Workshop Stocked!", description: "A set of suggested classroom Rewards has been added to your workshop." });
         } catch (error: any) {
             console.error("Error populating boons:", error);
             toast({ variant: "destructive", title: "Failed to Stock", description: error.message });
@@ -111,7 +111,7 @@ export default function BoonsPage() {
         try {
             const result = await deleteBoon(teacher.uid, boonId);
             if (result.success) {
-                toast({ title: "Boon Deleted", description: "The boon has been removed from your store." });
+                toast({ title: "Reward Deleted", description: "The Reward has been removed from your store." });
             } else {
                 throw new Error(result.error);
             }
@@ -174,7 +174,7 @@ export default function BoonsPage() {
                                     <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
                                 </Button>
                                 <Button onClick={() => router.push('/teacher/boons/new')}>
-                                    <PlusCircle className="mr-2 h-4 w-4" /> Create New Boon
+                                    <PlusCircle className="mr-2 h-4 w-4" /> Create New Reward
                                 </Button>
                             </div>
                         </div>
@@ -187,12 +187,12 @@ export default function BoonsPage() {
                             <Card className="text-center py-20">
                                 <CardHeader>
                                     <CardTitle>The Workshop is Empty</CardTitle>
-                                    <CardDescription>Would you like to populate the workshop with a set of suggested classroom boons?</CardDescription>
+                                    <CardDescription>Would you like to populate the workshop with a set of suggested classroom Rewards?</CardDescription>
                                 </CardHeader>
                                 <CardContent className="flex flex-col items-center gap-4">
                                     <Button onClick={handlePopulateBoons} disabled={isPopulating}>
                                         {isPopulating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Star className="mr-2 h-4 w-4" />}
-                                        Yes, Add Default Boons
+                                        Yes, Add Default Rewards
                                     </Button>
                                     <Button variant="secondary" onClick={() => router.push('/teacher/boons/new')}>
                                         <PlusCircle className="mr-2 h-4 w-4" /> No, I'll Create My Own
@@ -242,7 +242,7 @@ export default function BoonsPage() {
                                                         <AlertDialogHeader>
                                                             <AlertDialogTitle>Delete "{boon.name}"?</AlertDialogTitle>
                                                             <AlertDialogDescription>
-                                                                This will permanently remove the boon from your workshop. This action cannot be undone.
+                                                                This will permanently remove the Reward from your workshop. This action cannot be undone.
                                                             </AlertDialogDescription>
                                                         </AlertDialogHeader>
                                                         <AlertDialogFooter>
@@ -298,7 +298,7 @@ export default function BoonsPage() {
                                     <History className="h-6 w-6" />
                                     Transaction Log
                                 </CardTitle>
-                                <CardDescription>The most recent boon purchases and uses.</CardDescription>
+                                <CardDescription>The most recent Reward purchases and uses.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-3 max-h-96 overflow-y-auto">
                                 {transactions.length === 0 && <p className="text-muted-foreground text-sm text-center">No transactions yet.</p>}
