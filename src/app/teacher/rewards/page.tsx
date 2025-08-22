@@ -39,7 +39,7 @@ export default function ManageRewardsPage() {
     useEffect(() => {
         if (!teacher) return;
         
-        const studentsQuery = query(collection(db, 'teachers', teacher.uid, 'students'), orderBy('characterName'));
+        const studentsQuery = query(collection(db, 'teachers', teacher.uid, 'students'), orderBy('studentName'));
         const unsubStudents = onSnapshot(studentsQuery, (snapshot) => {
             setStudents(snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student)));
             setIsLoading(false);
@@ -121,7 +121,8 @@ export default function ManageRewardsPage() {
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead className="sticky left-0 bg-muted z-10">Student</TableHead>
+                                            <TableHead className="sticky left-0 bg-muted z-10">Student Name</TableHead>
+                                            <TableHead>Character Name</TableHead>
                                             {rewards.map(reward => (
                                                 <TableHead key={reward.id} className="text-center">{reward.name}</TableHead>
                                             ))}
@@ -130,7 +131,8 @@ export default function ManageRewardsPage() {
                                     <TableBody>
                                         {students.map(student => (
                                             <TableRow key={student.uid}>
-                                                <TableCell className="font-semibold sticky left-0 bg-card z-10">{student.characterName}</TableCell>
+                                                <TableCell className="font-semibold sticky left-0 bg-card z-10">{student.studentName}</TableCell>
+                                                <TableCell className="font-semibold">{student.characterName}</TableCell>
                                                 {rewards.map(reward => {
                                                     const quantity = student.inventory?.[reward.id] || 0;
                                                     const updateKey = `${student.uid}-${reward.id}`;
