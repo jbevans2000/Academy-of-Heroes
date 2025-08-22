@@ -18,7 +18,7 @@ const defaultBoons = [
     name: "Jester's Favor",
     description: "Share a school-appropriate joke with the class.",
     cost: 50,
-    imageUrl: "https://placehold.co/400x400.png",
+    imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FJester's%20Favor.jpg?alt=media&token=294dd79f-bc38-4465-86c2-50fbbedbbc60",
     effect: { type: 'REAL_WORLD_PERK', value: "Tell a joke in class." },
     requiresApproval: true,
     studentMessage: "Present this boon to your Guild Leader to share your joke with the class!",
