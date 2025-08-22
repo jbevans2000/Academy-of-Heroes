@@ -223,6 +223,9 @@ export default function TeacherLiveBattlePage() {
       if (docSnap.exists()) {
         const newState = docSnap.data() as LiveBattleState;
         setLiveState(newState);
+         if (newState.status === 'BATTLE_ENDED') {
+            setRedirectId(newState.parentArchiveId);
+        }
       } else {
         if (redirectId === null) {
           router.push('/teacher/battles');
@@ -273,42 +276,78 @@ export default function TeacherLiveBattlePage() {
     try {
         const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
 
-        // First, update the live battle doc to signal the end to clients
+        // Update the live battle doc to signal the end to clients
         await updateDoc(liveBattleRef, { status: 'BATTLE_ENDED' });
 
         const batch = writeBatch(db);
         const parentArchiveRef = doc(db, 'teachers', teacherUid, 'savedBattles', liveState.parentArchiveId);
         
         const finalLiveStateSnap = await getDoc(liveBattleRef);
-        if (!finalLiveStateSnap.exists()) {
-            throw new Error("Live battle document disappeared before aggregation.");
-        }
+        if (!finalLiveStateSnap.exists()) throw new Error("Live battle document disappeared before aggregation.");
         const finalLiveState = finalLiveStateSnap.data() as LiveBattleState;
+        
+        const totalDamageDealt = finalLiveState.totalDamage || 0;
+        const totalRounds = battle.questions.length;
+        const damageShareXp = Math.floor(totalDamageDealt * 0.25);
 
-        const fallenUids = finalLiveState.fallenPlayerUids || [];
+        // Fetch all rounds data to calculate participation
         const roundsArchiveRef = collection(db, 'teachers', teacherUid, 'savedBattles', liveState.parentArchiveId, 'rounds');
         const roundsSnap = await getDocs(roundsArchiveRef);
+        const battleLogSnap = await getDocs(collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog'));
 
+        // --- New Reward Calculation ---
         const rewardsByStudent: { [uid: string]: { xpGained: number, goldGained: number } } = {};
+        const participationCount: { [uid: string]: number } = {};
+        const powerUsageCount: { [uid: string]: number } = {};
         const participantUids = new Set<string>();
 
+        // 1. Tally correct answers and participation
         roundsSnap.docs.forEach(roundDoc => {
             const roundData = roundDoc.data();
             (roundData.responses || []).forEach((res: any) => {
                 participantUids.add(res.studentUid);
                 if (!rewardsByStudent[res.studentUid]) {
                     rewardsByStudent[res.studentUid] = { xpGained: 0, goldGained: 0 };
+                    participationCount[res.studentUid] = 0;
                 }
+                participationCount[res.studentUid]++;
                 if (res.isCorrect) {
-                    rewardsByStudent[res.studentUid].xpGained += 5;
+                    rewardsByStudent[res.studentUid].xpGained += 5; // Correct answer bonus
                     rewardsByStudent[res.studentUid].goldGained += 10;
                 }
             });
         });
         
+        // 2. Tally power usage
+        battleLogSnap.docs.forEach(logDoc => {
+            const logData = logDoc.data();
+            const caster = allStudents.find(s => s.characterName === logData.casterName);
+            if (caster) {
+                 if (!powerUsageCount[caster.uid]) powerUsageCount[caster.uid] = 0;
+                 powerUsageCount[caster.uid]++;
+            }
+        });
+        
+        // 3. Calculate final rewards for each participant
+        for (const uid of participantUids) {
+            // Power Usage Bonus
+            const powersUsed = powerUsageCount[uid] || 0;
+            rewardsByStudent[uid].xpGained += powersUsed * 2;
+            rewardsByStudent[uid].goldGained += powersUsed * 1;
+            
+            // Full Participation & Damage Share Bonus
+            if (participationCount[uid] === totalRounds) {
+                rewardsByStudent[uid].xpGained += 25; // Full participation XP
+                rewardsByStudent[uid].goldGained += 10; // Full participation Gold
+                rewardsByStudent[uid].xpGained += damageShareXp; // Damage share XP
+            }
+        }
+
+        // --- End of New Reward Calculation ---
+
         batch.update(parentArchiveRef, {
             status: 'BATTLE_ENDED',
-            fallenAtEnd: fallenUids,
+            fallenAtEnd: finalLiveState.fallenPlayerUids || [],
             rewardsByStudent: rewardsByStudent,
             participantUids: Array.from(participantUids),
             totalDamage: finalLiveState.totalDamage || 0,
@@ -322,7 +361,7 @@ export default function TeacherLiveBattlePage() {
              const studentRef = doc(db, 'teachers', teacherUid, 'students', studentDoc.id);
              const studentData = studentDoc.data() as Student;
              const rewards = rewardsByStudent[studentDoc.id];
-             const updates: any = { inBattle: false }; // Clear battle status for all students
+             const updates: any = { inBattle: false };
 
              if (rewards) {
                  const currentXp = studentData.xp || 0;
@@ -357,12 +396,11 @@ export default function TeacherLiveBattlePage() {
             } catch (cleanupError) {
                 console.error("Error during delayed cleanup:", cleanupError);
             }
-        }, 10000); // 10-second delay to allow clients to redirect
+        }, 10000);
 
         await batch.commit();
 
         await logGameEvent(teacherUid, 'BOSS_BATTLE', `Battle '${battle.battleName}' ended.`);
-        setRedirectId(liveState.parentArchiveId);
     } catch (e) {
         console.error("Error ending battle:", e);
         toast({ variant: 'destructive', title: 'Error', description: 'Failed to end battle and aggregate results.' });
