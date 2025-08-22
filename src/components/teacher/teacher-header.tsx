@@ -1,7 +1,7 @@
 
 'use client';
 
-import { School, LogOut, LifeBuoy, Shield } from "lucide-react";
+import { School, LogOut, LifeBuoy, Shield, User as UserIcon } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -62,6 +62,10 @@ export function TeacherHeader() {
                 Return to Admin Dashboard
             </Button>
         )}
+        <Button variant="outline" onClick={() => router.push('/teacher/profile')}>
+            <UserIcon className="mr-2 h-5 w-5" />
+            My Profile
+        </Button>
         <Button variant="outline" onClick={() => router.push('/teacher/help')}>
             <LifeBuoy className="mr-2 h-5 w-5" />
             Help
