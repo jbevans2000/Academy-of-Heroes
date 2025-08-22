@@ -28,3 +28,13 @@ export interface PendingBoonRequest {
     cost: number;
     requestedAt: any; // Firestore ServerTimestamp
 }
+
+export interface BoonTransaction {
+    id: string;
+    studentUid: string;
+    characterName: string;
+    boonName: string;
+    transactionType: 'purchase' | 'use';
+    cost?: number; // Only for purchases
+    timestamp: any; // Firestore ServerTimestamp
+}

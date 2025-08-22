@@ -18,13 +18,13 @@ import Image from 'next/image';
 import { useBoon } from '@/ai/flows/manage-inventory';
 import {
   AlertDialog,
-  AlertDialogTrigger,
+  AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
   AlertDialogDescription,
   AlertDialogFooter,
-  AlertDialogAction,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 
 const InventoryBoonCard = ({ boon, quantity, onUse }: { boon: Boon; quantity: number; onUse: (boonId: string) => void; }) => {
@@ -34,6 +34,9 @@ const InventoryBoonCard = ({ boon, quantity, onUse }: { boon: Boon; quantity: nu
     const handleUse = async () => {
         setIsUsing(true);
         await onUse(boon.id);
+        // Do not set isUsing to false here. The component will re-render with new data,
+        // or be removed if quantity becomes 0. If there's an error, onUse should handle the toast.
+        // A finally block in onUse could set it to false if needed.
     };
 
     const handleActivateBoon = () => {
@@ -61,6 +64,7 @@ const InventoryBoonCard = ({ boon, quantity, onUse }: { boon: Boon; quantity: nu
                     }}>
                         Use Boon
                     </AlertDialogAction>
+                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
@@ -163,12 +167,18 @@ export default function InventoryPage() {
     const handleUseBoon = async (boonId: string) => {
         if (!user || !student?.teacherUid) return;
 
-        // No call to useBoon since it was removed. Logic is handled by teacher.
-        // This is a placeholder for future functionality if needed.
-        toast({ title: 'Awaiting Teacher Action', description: 'Your Guild Leader has been notified of your boon usage.' });
+        const result = await useBoon({
+            teacherUid: student.teacherUid,
+            studentUid: user.uid,
+            boonId: boonId,
+        });
 
-        // For now, we will assume all boons are "REAL_WORLD_PERK" and do not have an automatic effect.
-        // The student message will guide them on what to do next.
+        if (result.success) {
+            toast({ title: 'Success!', description: result.message });
+        } else {
+            toast({ variant: 'destructive', title: 'Action Failed', description: result.error });
+        }
+        // The onSnapshot listener will handle the UI update automatically.
     };
 
 
@@ -207,6 +217,7 @@ export default function InventoryPage() {
                         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                             {inventoryBoons.map(boon => {
                                 const quantity = student?.inventory?.[boon.id] || 0;
+                                if (quantity === 0) return null; // Don't show boons the student has used up
                                 return <InventoryBoonCard key={boon.id} boon={boon} quantity={quantity} onUse={handleUseBoon} />
                             })}
                         </div>

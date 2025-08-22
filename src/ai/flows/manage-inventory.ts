@@ -1,11 +1,13 @@
 
 'use server';
 
-import { doc, runTransaction, getDoc, updateDoc, deleteField, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, runTransaction, getDoc, updateDoc, deleteField, addDoc, collection, serverTimestamp, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import type { Boon } from '@/lib/boons';
 import { logGameEvent } from '@/lib/gamelog';
+import { logBoonTransaction } from '@/lib/transactions';
+
 
 interface ActionResponse {
   success: boolean;
@@ -57,8 +59,7 @@ export async function purchaseBoon(input: PurchaseBoonInput): Promise<ActionResp
             } else {
                 // If no approval is needed, process the purchase immediately
                 const newGold = student.gold - boon.cost;
-                const currentQuantity = student.inventory?.[boonId] || 0;
-                const newQuantity = currentQuantity + 1;
+                const newQuantity = (student.inventory?.[boonId] || 0) + 1;
 
                 transaction.update(studentRef, { 
                     gold: newGold,
@@ -66,6 +67,7 @@ export async function purchaseBoon(input: PurchaseBoonInput): Promise<ActionResp
                 });
                 
                 await logGameEvent(teacherUid, 'GAMEMASTER', `${student.characterName} purchased the boon: ${boon.name}.`);
+                await logBoonTransaction(teacherUid, studentUid, student.characterName, boon.name, 'purchase', boon.cost);
 
                 return { success: true, message: `You have successfully purchased ${boon.name}!` };
             }
@@ -73,5 +75,60 @@ export async function purchaseBoon(input: PurchaseBoonInput): Promise<ActionResp
     } catch (error: any) {
         console.error("Error purchasing boon:", error);
         return { success: false, error: error.message || 'Failed to complete purchase.' };
+    }
+}
+
+interface UseBoonInput {
+    teacherUid: string;
+    studentUid: string;
+    boonId: string;
+}
+
+export async function useBoon(input: UseBoonInput): Promise<ActionResponse> {
+    const { teacherUid, studentUid, boonId } = input;
+    if (!teacherUid || !studentUid || !boonId) return { success: false, error: 'Invalid input.' };
+    
+    const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
+    const boonRef = doc(db, 'teachers', teacherUid, 'boons', boonId);
+
+    try {
+        return await runTransaction(db, async (transaction) => {
+            const studentSnap = await transaction.get(studentRef);
+            const boonSnap = await transaction.get(boonRef);
+
+            if (!studentSnap.exists()) throw new Error("Student not found.");
+            if (!boonSnap.exists()) throw new Error("Boon not found.");
+            
+            const student = studentSnap.data() as Student;
+            const boon = { id: boonSnap.id, ...boonSnap.data() } as Boon;
+
+            const currentQuantity = student.inventory?.[boonId] || 0;
+
+            if (currentQuantity <= 0) {
+                return { success: false, error: "You do not own this boon." };
+            }
+
+            // Decrement the quantity
+            const newQuantity = currentQuantity - 1;
+            
+            const updateData: any = {
+                [`inventory.${boonId}`]: newQuantity
+            };
+            
+            // If the quantity is zero, remove the boon from the inventory to keep it clean
+            if (newQuantity === 0) {
+                 updateData[`inventory.${boonId}`] = deleteField();
+            }
+
+            transaction.update(studentRef, updateData);
+            
+            await logGameEvent(teacherUid, 'GAMEMASTER', `${student.characterName} used the boon: ${boon.name}.`);
+            await logBoonTransaction(teacherUid, studentUid, student.characterName, boon.name, 'use');
+
+            return { success: true, message: `You have used ${boon.name}.` };
+        });
+    } catch (error: any) {
+        console.error("Error using boon:", error);
+        return { success: false, error: error.message || "Failed to use the boon." };
     }
 }

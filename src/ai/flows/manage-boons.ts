@@ -5,6 +5,7 @@ import { doc, addDoc, updateDoc, deleteDoc, collection, serverTimestamp, writeBa
 import { db } from '@/lib/firebase';
 import type { Boon } from '@/lib/boons';
 import { logGameEvent } from '@/lib/gamelog';
+import { logBoonTransaction } from '@/lib/transactions';
 
 interface ActionResponse {
   success: boolean;
@@ -205,6 +206,8 @@ export async function approveBoonRequest(input: ApproveBoonRequestInput): Promis
                 gold: newGold,
                 [`inventory.${boonId}`]: newQuantity
             });
+            
+            await logBoonTransaction(teacherUid, studentUid, characterName, boonName, 'purchase', cost);
 
             // Delete the processed request
             transaction.delete(requestRef);
