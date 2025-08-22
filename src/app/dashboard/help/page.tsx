@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowLeft, LifeBuoy, Shield, Heart, Wand2 } from "lucide-react";
+import { ArrowLeft, LifeBuoy, Shield, Heart, Wand2, Gem } from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/header";
 
 export default function StudentHelpPage() {
@@ -54,6 +54,16 @@ export default function StudentHelpPage() {
                   <AccordionTrigger>How do I change my character's avatar?</AccordionTrigger>
                   <AccordionContent>
                     From your dashboard, click the "Change Avatar" button. As you gain levels, you will unlock new sets of avatars for your class. The Change Avatar page will show you all of the looks you have unlocked so far, grouped by the level at which you earned them. Select any unlocked avatar and click "Save New Avatar" to change your appearance.
+                  </AccordionContent>
+                </AccordionItem>
+                 <AccordionItem value="item-6">
+                  <AccordionTrigger>What are Rewards and how do I use them?</AccordionTrigger>
+                  <AccordionContent>
+                    <strong>Rewards</strong> are special privileges or items you can purchase with your Gold. They can be anything from a special pen for the day to getting a hint on an assignment.
+                    <br/><br/>
+                    To see what's available, visit <strong>The Vault</strong> from your dashboard. If you have enough Gold, you can purchase a Reward. Some Rewards may require your teacher's approval before they are given to you.
+                    <br/><br/>
+                    Once you own a Reward, you can use it by going to your <strong>My Inventory</strong> page, also accessible from the dashboard.
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
