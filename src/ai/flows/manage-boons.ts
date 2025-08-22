@@ -89,6 +89,7 @@ export async function populateDefaultBoons(teacherUid: string): Promise<ActionRe
 
       defaultBoons.forEach(boon => {
           const docRef = doc(boonsRef);
+          // Ensure isVisibleToStudents is explicitly set to false
           batch.set(docRef, { ...boon, isVisibleToStudents: false, createdAt: serverTimestamp() });
       });
       await batch.commit();
@@ -145,6 +146,7 @@ export async function updateBoonVisibility(teacherUid: string, boonId: string, i
     if (!teacherUid) return { success: false, error: 'User not authenticated.' };
     try {
         const boonRef = doc(db, 'teachers', teacherUid, 'boons', boonId);
+        // Use updateDoc to ensure the field is either created or updated.
         await updateDoc(boonRef, { isVisibleToStudents: isVisible });
         await logGameEvent(teacherUid, 'GAMEMASTER', `Set boon ${boonId} visibility to ${isVisible}.`);
         return { success: true };
