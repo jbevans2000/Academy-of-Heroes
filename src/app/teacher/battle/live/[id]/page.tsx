@@ -368,21 +368,16 @@ export default function TeacherLiveBattlePage() {
         const batch = writeBatch(db);
 
         const studentMap = new Map(allStudents.map(doc => [doc.uid, doc]));
-
         const newlyFallenUids: string[] = [];
 
-        const activeStudentsUids = allStudents
-            .filter(s => s.onlineStatus?.status === 'online' && !liveState.fallenPlayerUids?.includes(s.uid))
-            .map(s => s.uid);
+        // --- FIX STARTS HERE ---
+        // Iterate only over students who submitted a response, not all online students.
+        for (const result of roundResults) {
+            // If the student's answer was incorrect, apply damage.
+            if (!result.isCorrect && !isDivinationSkip) {
+                const student = studentMap.get(result.studentUid);
+                if (!student) continue;
 
-        for (const uid of activeStudentsUids) {
-            const student = studentMap.get(uid);
-            if (!student) continue;
-
-            const response = roundResults.find(r => r.studentUid === student.uid);
-            const isCorrect = response?.isCorrect ?? false;
-
-            if (!isCorrect && !isDivinationSkip) {
                 const currentQuestion = battle.questions[liveState.currentQuestionIndex];
                 const damageOnIncorrect = currentQuestion.damage || 0;
 
@@ -396,6 +391,7 @@ export default function TeacherLiveBattlePage() {
                 }
             }
         }
+        // --- FIX ENDS HERE ---
 
         let powerDamage = isDivinationSkip ? (liveState.lastRoundPowerDamage || 0) : 0;
         const powersUsedThisRound: string[] = isDivinationSkip ? (liveState.lastRoundPowersUsed || []) : [];
