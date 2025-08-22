@@ -74,11 +74,11 @@ export default function TeacherHelpPage() {
                                 <p>Here is the simple, 3-step process for students to create their accounts and join your class:</p>
                                 <ol className="list-decimal list-inside space-y-2">
                                     <li><strong>Navigate Home:</strong> Direct students to the application's main home page.</li>
-                                    <li><strong>Create a Hero:</strong> They should click the "Create New Hero & Join a Class" button.</li>
-                                    <li><strong>Enter Class Code:</strong> On the registration page, the most important step is to enter your unique Class Code below.</li>
+                                    <li><strong>Create a Hero:</strong> They should click the "Forge Your Hero & Join a Guild" button.</li>
+                                    <li><strong>Enter Guild Code:</strong> On the registration page, the most important step is to enter your unique Guild Code below.</li>
                                 </ol>
                                 <div className="text-center p-4 bg-primary/10 rounded-lg">
-                                    <p className="font-semibold text-black">Your Unique Class Code:</p>
+                                    <p className="font-semibold">Your Unique Guild Code:</p>
                                     <div className="flex items-center justify-center gap-2 mt-1">
                                         <strong className="text-3xl font-mono tracking-widest text-primary">{teacherData?.classCode || 'Loading...'}</strong>
                                         <Button size="icon" variant="ghost" onClick={copyClassCode}><Copy className="w-5 h-5" /></Button>
@@ -101,7 +101,7 @@ export default function TeacherHelpPage() {
                                     <li><strong>Selection:</strong> Click the checkbox in the top-right of a card to select a student. You can select multiple students, or use the "Select All" button.</li>
                                     <li><strong>Manual Stat Editing:</strong> You can directly edit a student's XP, Gold, HP, or MP by clicking on the stat on their card. A small input box will appear for you to enter a new value.</li>
                                     <li><strong>View Details:</strong> Click the "View Details" button on a card to see a full-screen preview of that student's dashboard, exactly as they see it.</li>
-                                    <li><strong>Global Actions:</strong> The buttons at the top (Award XP, Award Gold, Delete) apply to all currently selected students.</li>
+                                    <li><strong>Dropdown Menus:</strong> The "Game Management" and "Classroom" dropdowns contain all your tools for managing the game and your students.</li>
                                 </ul>
                             </div>
                         </AlertDialogDescription>
@@ -116,7 +116,7 @@ export default function TeacherHelpPage() {
                                 <p>You can award Experience Points (XP) and Gold to students individually or in groups.</p>
                                 <ol className="list-decimal list-inside space-y-2">
                                     <li><strong>Select Students:</strong> On the dashboard, click the checkbox on the cards of the students you want to reward. Use "Select All" for the whole class.</li>
-                                    <li><strong>Click Award Button:</strong> Click either the "Award Experience" or "Award Gold" button at the top of the dashboard.</li>
+                                    <li><strong>Click Award Button:</strong> Click either the "Bestow Experience" or "Bestow Gold" button at the top of the dashboard.</li>
                                     <li><strong>Enter Amount:</strong> A dialog will appear. Enter the amount you wish to give. You can also enter a negative number to subtract points.</li>
                                     <li><strong>Confirm:</strong> Click "Confirm Award". The points will be applied, and any level-ups (from XP), HP, or MP gains will be calculated automatically.</li>
                                 </ol>
@@ -162,7 +162,7 @@ export default function TeacherHelpPage() {
                                 </ul>
                                 <h3 className="font-bold">How to Create:</h3>
                                 <ol className="list-decimal list-inside space-y-2">
-                                    <li>Navigate to "Manage Quests" from the dashboard.</li>
+                                    <li>Navigate to "The Quest Archives" from the dashboard.</li>
                                     <li>Click "Create New Quest".</li>
                                     <li>First, either select an existing Hub or choose to create a new one by providing its name, map URL, and position on the world map.</li>
                                     <li>Next, fill out the content for your new Chapter, including its title, story, lesson, and any images or videos.</li>
@@ -180,7 +180,7 @@ export default function TeacherHelpPage() {
                              <div className="text-base text-black space-y-4">
                                 <p>Boss Battles are live, timed quiz games for the whole class.</p>
                                 <ol className="list-decimal list-inside space-y-2">
-                                    <li><strong>Create a Battle:</strong> Go to "Manage Boss Battles" and click "Create New". Give it a name, a boss image/video, and add your questions, answers, and the HP damage for incorrect answers.</li>
+                                    <li><strong>Create a Battle:</strong> Go to "The Field of Battle" and click "Create New". Give it a name, a boss image/video, and add your questions, answers, and the HP damage for incorrect answers.</li>
                                     <li><strong>Start the Battle:</strong> From the battles list, click "Start Battle". This opens the waiting room for students.</li>
                                     <li><strong>Run the Battle:</strong> On the Live Battle Control Panel, you will advance the game:
                                         <ul className="list-disc list-inside ml-6">
@@ -201,11 +201,11 @@ export default function TeacherHelpPage() {
                         <AlertDialogTitle className="text-2xl">Using Classroom Tools</AlertDialogTitle>
                          <AlertDialogDescription asChild>
                            <div className="text-base text-black space-y-4">
-                                <p>The Classroom Tools are utilities to help you manage your class with a fantasy theme.</p>
+                                <p>The Guild Leader's Toolkit is a suite of utilities to help you manage your class with a fantasy theme.</p>
                                 <ul className="list-disc list-inside space-y-2">
                                     <li><strong>Mystical Clock:</strong> A themed timer and stopwatch.</li>
                                     <li><strong>Sleeping Dragon:</strong> A noise monitor. The dragon on screen wakes up if the class gets too loud!</li>
-                                    <li><strong>Call to Duty:</strong> A random student selector.</li>
+                                    <li><strong>The Runes of Destiny:</strong> A random student selector.</li>
                                     <li><strong>A Task from the Throne:</strong> An AI-powered generator for quick, fun, fantasy-themed classroom activities (e.g., "Draw a mythical creature").</li>
                                     <li><strong>Group Guilder:</strong> Randomly sorts your students into named groups or "guilds".</li>
                                     <li><strong>The Royal Scribe:</strong> An AI-powered generator for grade-specific writing prompts.</li>
