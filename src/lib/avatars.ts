@@ -61,7 +61,7 @@ export const avatarData: ClassAvatarData = {
     ],
     2: generatePlaceholders(8, 'fantasy wizard'),
     3: generatePlaceholders(8, 'dark mage'),
-    4; generatePlaceholders(8, 'elemental wizard'),
+    4: generatePlaceholders(8, 'elemental wizard'),
     5: generatePlaceholders(8, 'epic mage'),
     // ... up to level 20
   },
