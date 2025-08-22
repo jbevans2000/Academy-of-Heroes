@@ -82,7 +82,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                             <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
                                 <Gem className="h-12 w-12 text-amber-500" />
                                 <div>
-                                    <h3 className="text-xl font-bold">The Armory</h3>
+                                    <h3 className="text-xl font-bold">The Vault</h3>
                                     <p className="text-muted-foreground">Spend your gold!</p>
                                 </div>
                                 </div>
@@ -96,7 +96,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                                     <Hammer className="h-12 w-12 text-gray-500" />
                                     <div>
                                         <h3 className="text-xl font-bold">The Forge</h3>
-                                        <p className="text-muted-foreground">Craft new items!</p>
+                                        <p className="text-muted-foreground">Equip your Avatar!</p>
                                     </div>
                                 </div>
                             </Button>
@@ -124,4 +124,3 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
     </div>
   );
 }
-
