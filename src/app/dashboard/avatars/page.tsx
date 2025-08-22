@@ -109,7 +109,7 @@ export default function ChangeAvatarPage() {
     const unlockedLevels = Object.keys(classAvatars)
         .map(Number)
         .filter(l => l <= level)
-        .sort((a,b) => a-b); // Sort ascending
+        .sort((a,b) => a-b);
     
     return unlockedLevels.map(lvl => (
         <div key={lvl}>
