@@ -18,28 +18,30 @@ import Image from 'next/image';
 import { useBoon } from '@/ai/flows/manage-inventory';
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
+  AlertDialogTrigger,
   AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
 } from "@/components/ui/alert-dialog"
 
-const InventoryBoonCard = ({ boon, onUse }: { boon: Boon; onUse: (boonId: string) => void; }) => {
+const InventoryBoonCard = ({ boon, quantity, onUse }: { boon: Boon; quantity: number; onUse: (boonId: string) => void; }) => {
     const [isUsing, setIsUsing] = useState(false);
 
     const handleUse = async () => {
         setIsUsing(true);
         await onUse(boon.id);
-        // No need to set isUsing to false, as the item will disappear from the inventory on success
+        // The component will re-render or disappear based on the parent's state change, so we don't need to set isUsing back to false.
     };
     
     return (
         <Card className="flex flex-col text-center">
             <CardHeader>
+                <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full h-8 w-8 flex items-center justify-center font-bold text-sm border-2 border-white">
+                    {quantity}
+                </div>
                 <div className="aspect-square relative w-full bg-secondary rounded-md overflow-hidden">
                     <Image src={boon.imageUrl || 'https://placehold.co/400x400.png'} alt={boon.name} fill className="object-cover" data-ai-hint="fantasy item" />
                 </div>
@@ -128,7 +130,10 @@ export default function InventoryPage() {
         };
 
         const fetchInventoryBoons = async () => {
-            if (!student.inventory || student.inventory.length === 0) {
+            const inventory = student.inventory || {};
+            const boonIds = Object.keys(inventory);
+
+            if (boonIds.length === 0) {
                 setInventoryBoons([]);
                 setIsLoading(false);
                 return;
@@ -136,9 +141,9 @@ export default function InventoryPage() {
             
             setIsLoading(true);
             try {
-                const boonsRef = collection(db, 'teachers', student.teacherUid, 'boons');
                 // Firestore 'in' query is limited to 30 items. If a student has more, we'd need to batch.
-                const q = query(boonsRef, where('__name__', 'in', student.inventory.slice(0,30)));
+                const boonsRef = collection(db, 'teachers', student.teacherUid, 'boons');
+                const q = query(boonsRef, where('__name__', 'in', boonIds.slice(0,30)));
                 const querySnapshot = await getDocs(q);
                 setInventoryBoons(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Boon)));
             } catch (error) {
@@ -202,7 +207,10 @@ export default function InventoryPage() {
                         </Card>
                     ) : (
                         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                            {inventoryBoons.map(boon => <InventoryBoonCard key={boon.id} boon={boon} onUse={handleUseBoon} />)}
+                            {inventoryBoons.map(boon => {
+                                const quantity = student?.inventory?.[boon.id] || 0;
+                                return <InventoryBoonCard key={boon.id} boon={boon} quantity={quantity} onUse={handleUseBoon} />
+                            })}
                         </div>
                     )}
                 </div>

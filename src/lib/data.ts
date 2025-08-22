@@ -34,7 +34,7 @@ export type Student = {
     };
     companyId?: string;
     inBattle: boolean; 
-    inventory?: string[]; // Array of boon IDs
+    inventory?: { [boonId: string]: number }; // Map of boonId to quantity
 }
 
 export type PendingStudent = {

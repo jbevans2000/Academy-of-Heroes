@@ -26,12 +26,17 @@ const BoonCard = ({ boon, onPurchase, student, disabled }: { boon: Boon, onPurch
         setIsPurchasing(false);
     }
     
-    const hasBoon = student?.inventory?.includes(boon.id);
+    const ownedQuantity = student?.inventory?.[boon.id] || 0;
     const canAfford = student && student.gold >= boon.cost;
 
     return (
         <Card className="flex flex-col text-center bg-card/80 backdrop-blur-sm">
             <CardHeader>
+                 {ownedQuantity > 0 && (
+                    <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full h-8 w-8 flex items-center justify-center font-bold text-sm border-2 border-white">
+                        {ownedQuantity}
+                    </div>
+                 )}
                 <div className="aspect-square relative w-full bg-secondary rounded-md overflow-hidden">
                     <Image src={boon.imageUrl || 'https://placehold.co/400x400.png'} alt={boon.name} fill className="object-cover" data-ai-hint="fantasy item" />
                 </div>
@@ -45,9 +50,9 @@ const BoonCard = ({ boon, onPurchase, student, disabled }: { boon: Boon, onPurch
                     <Coins className="h-6 w-6" />
                     <span>{boon.cost}</span>
                 </div>
-                 <Button className="w-full" onClick={handlePurchase} disabled={disabled || isPurchasing || hasBoon || !canAfford}>
-                    {isPurchasing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : hasBoon ? <Ban className="mr-2 h-4 w-4" /> : <ShoppingCart className="mr-2 h-4 w-4" />}
-                    {hasBoon ? 'Already Owned' : !canAfford ? 'Not Enough Gold' : 'Purchase'}
+                 <Button className="w-full" onClick={handlePurchase} disabled={disabled || isPurchasing || !canAfford}>
+                    {isPurchasing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShoppingCart className="mr-2 h-4 w-4" />}
+                    {!canAfford ? 'Not Enough Gold' : 'Purchase'}
                 </Button>
             </CardFooter>
         </Card>
@@ -150,8 +155,8 @@ export default function ArmoryPage() {
                     </Card>
 
                      {isLoading ? (
-                        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                            {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-80" />)}
+                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+                            {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-96" />)}
                         </div>
                     ) : boons.length === 0 ? (
                          <Card className="text-center py-20 bg-card/80 backdrop-blur-sm">
@@ -161,7 +166,7 @@ export default function ArmoryPage() {
                             </CardHeader>
                         </Card>
                     ) : (
-                        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
                             {boons.map(boon => <BoonCard key={boon.id} boon={boon} onPurchase={handlePurchaseBoon} student={student} disabled={isPurchasingAny} />)}
                         </div>
                     )}

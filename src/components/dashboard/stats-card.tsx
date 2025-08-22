@@ -15,7 +15,7 @@ interface StatsCardProps {
   student: Student;
 }
 
-const classIconMap = {
+const classIconMap: { [key in ClassType]?: React.ReactNode } = {
     Guardian: <Shield className="h-8 w-8 text-primary" />,
     Healer: <Heart className="h-8 w-8 text-primary" />,
     Mage: <Wand2 className="h-8 w-8 text-primary" />,
