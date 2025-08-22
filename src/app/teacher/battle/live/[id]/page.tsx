@@ -482,6 +482,8 @@ export default function TeacherLiveBattlePage() {
         let powerDamage = isDivinationSkip ? (liveState.lastRoundPowerDamage || 0) : 0;
         const powersUsedThisRound: string[] = isDivinationSkip ? (liveState.lastRoundPowersUsed || []) : [];
         const battleLogRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
+        
+        let baseDamageFromPowers = 0;
 
         if (!isDivinationSkip) {
             for (const power of liveState.queuedPowers || []) {
@@ -507,10 +509,21 @@ export default function TeacherLiveBattlePage() {
                     });
                 }
             }
+            
+            // Check for Sorcerer's Intuition uses this round
+            for (const studentUid in liveState.powerUsersThisRound) {
+                if (liveState.powerUsersThisRound[studentUid].includes('Sorcerer’s Intuition')) {
+                    const caster = studentMap.get(studentUid);
+                    if (caster) {
+                        baseDamageFromPowers += Math.ceil((caster.level || 1) * 0.5);
+                    }
+                }
+            }
         }
 
-        const baseDamage = roundResults.filter(r => r.isCorrect).length;
-        const totalDamageThisRound = baseDamage + powerDamage;
+        const baseDamageFromAnswers = roundResults.filter(r => r.isCorrect).length;
+        const totalBaseDamage = baseDamageFromAnswers + baseDamageFromPowers;
+        const totalDamageThisRound = totalBaseDamage + powerDamage;
 
         const currentLiveSnap = await getDoc(liveBattleRef);
         if (!currentLiveSnap.exists()) return;
@@ -520,11 +533,11 @@ export default function TeacherLiveBattlePage() {
             status: 'SHOWING_RESULTS',
             timerEndsAt: null,
             lastRoundDamage: totalDamageThisRound,
-            lastRoundBaseDamage: baseDamage,
+            lastRoundBaseDamage: totalBaseDamage,
             lastRoundPowerDamage: powerDamage,
             lastRoundPowersUsed: powersUsedThisRound,
             totalDamage: (currentLiveState.totalDamage || 0) + totalDamageThisRound,
-            totalBaseDamage: (currentLiveState.totalBaseDamage || 0) + baseDamage,
+            totalBaseDamage: (currentLiveState.totalBaseDamage || 0) + totalBaseDamage,
             totalPowerDamage: (currentLiveState.totalPowerDamage || 0) + powerDamage,
             voteState: null,
         };
