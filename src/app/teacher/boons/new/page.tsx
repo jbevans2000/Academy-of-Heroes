@@ -42,6 +42,7 @@ export default function NewBoonPage() {
 
     // Upload State
     const [imageFile, setImageFile] = useState<File | null>(null);
+    const [backgroundFile, setBackgroundFile] = useState<File | null>(null);
     const [isUploading, setIsUploading] = useState(false);
 
     useEffect(() => {
@@ -76,8 +77,24 @@ export default function NewBoonPage() {
 
     const handleSave = async () => {
         if (!teacher) return;
-        if (!name || cost === '' || !imageUrl || !effectValue) {
-            toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill out all required fields.' });
+        
+        let isValid = true;
+        if (!name || cost === '' || !imageUrl) {
+            isValid = false;
+        }
+
+        if (effectType === 'REAL_WORLD_PERK' && !effectValue) {
+            isValid = false;
+        }
+        
+        // For background change, effectValue will be the URL, so it's also checked implicitly by !effectValue
+        if (effectType === 'BACKGROUND_CHANGE' && !effectValue) {
+            isValid = false;
+        }
+
+
+        if (!isValid) {
+            toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill out all required fields, including uploading all images.' });
             return;
         }
 
@@ -153,7 +170,10 @@ export default function NewBoonPage() {
                             
                             <div className="space-y-2">
                                 <Label>Boon Effect</Label>
-                                <Select value={effectType} onValueChange={setEffectType}>
+                                <Select value={effectType} onValueChange={(value) => {
+                                    setEffectType(value);
+                                    setEffectValue(''); // Reset effect value when type changes
+                                }}>
                                     <SelectTrigger><SelectValue/></SelectTrigger>
                                     <SelectContent>
                                         {effectTypes.map(et => <SelectItem key={et.value} value={et.value}>{et.label}</SelectItem>)}
@@ -165,11 +185,11 @@ export default function NewBoonPage() {
                                 <div className="space-y-2">
                                     <Label>Background Image</Label>
                                     <div className="p-4 border rounded-md space-y-2">
-                                        <Input type="file" accept="image/*" onChange={e => setImageFile(e.target.files ? e.target.files[0] : null)} disabled={isUploading} />
+                                        <Input type="file" accept="image/*" onChange={e => setBackgroundFile(e.target.files ? e.target.files[0] : null)} disabled={isUploading} />
                                         <Button onClick={async () => {
-                                            const url = await handleFileUpload(imageFile, 'dashboard-backgrounds');
+                                            const url = await handleFileUpload(backgroundFile, 'dashboard-backgrounds');
                                             if (url) setEffectValue(url);
-                                        }} disabled={isUploading || !imageFile}>
+                                        }} disabled={isUploading || !backgroundFile}>
                                              {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4"/>}
                                             Upload Background
                                         </Button>
