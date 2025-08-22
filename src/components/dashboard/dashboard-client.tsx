@@ -7,7 +7,10 @@ import { AvatarDisplay } from "./avatar-display";
 import { Button } from "../ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, Map, Swords, Sparkles, BookHeart } from "lucide-react";
+import { User, Map, Swords, Sparkles, BookHeart, ImageIcon } from "lucide-react";
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
 
 interface DashboardClientProps {
   student: Student;
@@ -15,8 +18,15 @@ interface DashboardClientProps {
 
 export function DashboardClient({ student }: DashboardClientProps) {
   const router = useRouter();
+  const { toast } = useToast();
 
-  const handleReadyForBattle = () => {
+  const handleReadyForBattle = async () => {
+    if (!student.teacherUid) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Cannot find your teacher\'s guild.' });
+      return;
+    }
+    const studentRef = doc(db, 'teachers', student.teacherUid, 'students', student.uid);
+    await updateDoc(studentRef, { inBattle: true });
     router.push('/battle/live');
   };
 
@@ -43,6 +53,12 @@ export function DashboardClient({ student }: DashboardClientProps) {
                 <Button size="lg" variant="secondary" className="w-full py-8 text-lg">
                     <BookHeart className="mr-4 h-8 w-8" />
                     Songs and Stories
+                </Button>
+            </Link>
+             <Link href="/dashboard/avatars" passHref className="w-full">
+                <Button size="lg" variant="secondary" className="w-full py-8 text-lg">
+                    <ImageIcon className="mr-4 h-8 w-8" />
+                    Change Avatar
                 </Button>
             </Link>
           </div>
