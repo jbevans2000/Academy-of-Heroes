@@ -3,13 +3,14 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, doc, getDoc, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, query, orderBy, updateDoc } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
 import { AdminHeader } from '@/components/admin/admin-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { getGlobalSettings, updateGlobalSettings } from '@/ai/flows/manage-settings';
 import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb } from 'lucide-react';
@@ -34,9 +35,7 @@ interface Feedback {
         seconds: number;
         nanoseconds: number;
     };
-    // teacherName and teacherEmail are now optional as we transition to anonymous
-    teacherName?: string;
-    teacherEmail?: string;
+    status: 'new' | 'addressed';
 }
 
 export default function AdminDashboardPage() {
@@ -168,6 +167,18 @@ export default function AdminDashboardPage() {
         }
     }
 
+    const handleFeedbackStatusChange = async (feedbackId: string, currentStatus: 'new' | 'addressed') => {
+        const newStatus = currentStatus === 'new' ? 'addressed' : 'new';
+        try {
+            const feedbackRef = doc(db, 'feedback', feedbackId);
+            await updateDoc(feedbackRef, { status: newStatus });
+            setFeedback(prev => prev.map(item => item.id === feedbackId ? { ...item, status: newStatus } : item));
+        } catch (error) {
+            console.error("Error updating feedback status:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not update feedback status.' });
+        }
+    };
+
 
     if (isLoading || !user) {
         return (
@@ -234,16 +245,29 @@ export default function AdminDashboardPage() {
                                     {feedback.map(item => (
                                         <div key={item.id} className="p-4 border rounded-lg">
                                             <div className="flex justify-between items-start">
-                                                <div>
+                                                <div className="flex-grow">
                                                     <div className="flex items-center gap-2 font-bold text-lg">
                                                          {item.feedbackType === 'bug' ? <Bug className="h-5 w-5 text-destructive" /> : <Lightbulb className="h-5 w-5 text-yellow-500" />}
                                                          <span>{item.feedbackType === 'bug' ? 'Bug Report' : 'Feature Request'}</span>
                                                     </div>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {item.teacherName ? `From: ${item.teacherName} (${item.teacherEmail})` : 'From: Anonymous'}
-                                                    </p>
+                                                    <p className="text-sm text-muted-foreground">From: Anonymous</p>
                                                 </div>
-                                                <p className="text-xs text-muted-foreground">{format(new Date(item.createdAt.seconds * 1000), 'PPP p')}</p>
+                                                <div className="flex flex-col items-end gap-2">
+                                                    <p className="text-xs text-muted-foreground">{format(new Date(item.createdAt.seconds * 1000), 'PPP p')}</p>
+                                                    <div className="flex items-center space-x-2">
+                                                        <Checkbox
+                                                            id={`feedback-${item.id}`}
+                                                            checked={item.status === 'addressed'}
+                                                            onCheckedChange={() => handleFeedbackStatusChange(item.id, item.status)}
+                                                        />
+                                                        <label
+                                                            htmlFor={`feedback-${item.id}`}
+                                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                                        >
+                                                            Addressed
+                                                        </label>
+                                                    </div>
+                                                </div>
                                             </div>
                                             <p className="mt-2 whitespace-pre-wrap">{item.message}</p>
                                         </div>
