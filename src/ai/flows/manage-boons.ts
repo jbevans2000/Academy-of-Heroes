@@ -77,6 +77,15 @@ const defaultBoons = [
     requiresApproval: false,
     studentMessage: "You've gained an extra day for your assignment! Let your teacher know which one you're using it on.",
   },
+   {
+    name: "Keeper of the Scroll",
+    description: "Erase one incorrect answer on a past assignment before it is graded.",
+    cost: 400,
+    imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FKeeper%20of%20the%20Scroll.jpg?alt=media&token=8a3bcfce-a86c-40a3-8cba-1b7a4754f3dd",
+    effect: { type: 'REAL_WORLD_PERK', value: "Erase one incorrect answer on a past assignment." },
+    requiresApproval: false,
+    studentMessage: "You have gained the power to rewrite history! Inform your Guild Leader which assignment's past you wish to change.",
+  },
   {
     name: "Scholar's Pardon",
     description: "A one-time pass on a single, small homework assignment.",
