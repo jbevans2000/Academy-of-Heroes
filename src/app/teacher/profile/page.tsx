@@ -104,7 +104,7 @@ export default function TeacherProfilePage() {
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="max-w-2xl mx-auto space-y-6">
                     <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Return to Podium
                     </Button>
 
                     <Card>

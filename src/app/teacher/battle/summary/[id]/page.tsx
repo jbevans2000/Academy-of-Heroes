@@ -373,7 +373,7 @@ export default function TeacherBattleSummaryPage() {
                 </Button>
                 <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
                   <LayoutDashboard className="mr-2 h-4 w-4" />
-                  Return to Dashboard
+                  Return to Podium
                 </Button>
             </div>
              <div className="flex items-center gap-4">
@@ -529,5 +529,6 @@ export default function TeacherBattleSummaryPage() {
     </div>
   );
 }
+
 
 

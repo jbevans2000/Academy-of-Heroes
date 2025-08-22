@@ -296,7 +296,7 @@ export default function CompaniesPage() {
                         <p className="text-muted-foreground">Drag and drop students to assign them to companies.</p>
                     </div>
                     <div className="flex gap-2">
-                        <Button onClick={() => router.push('/teacher/dashboard')} variant="outline"><ArrowLeft className="mr-2 h-4 w-4"/> Back to Dashboard</Button>
+                        <Button onClick={() => router.push('/teacher/dashboard')} variant="outline"><ArrowLeft className="mr-2 h-4 w-4"/> Return to Podium</Button>
                         <Button onClick={openNewCompanyDialog}><PlusCircle className="mr-2 h-4 w-4" /> Create New Company</Button>
                     </div>
                 </div>
