@@ -53,7 +53,7 @@ export function TeacherHeader() {
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
       <Link href="/teacher/dashboard" className="flex items-center gap-2 font-semibold">
         <School className="h-6 w-6 text-primary" />
-        <span className="text-xl">The Guild Leader's Dais</span>
+        <span className="text-xl">The Guild Leader's Podium</span>
       </Link>
       <div className="ml-auto flex items-center gap-4">
         {isAdmin && (

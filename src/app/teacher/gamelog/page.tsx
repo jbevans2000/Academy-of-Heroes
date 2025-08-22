@@ -142,7 +142,7 @@ export default function GameLogPage() {
           <div className="flex justify-between items-center">
             <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Dais
+                Back to Podium
             </Button>
             <AlertDialog>
                 <AlertDialogTrigger asChild>

@@ -109,7 +109,7 @@ export default function QuestsPage() {
           <div className="flex gap-2">
             <Button onClick={() => router.push('/teacher/dashboard')} variant="outline">
               <LayoutDashboard className="mr-2 h-5 w-5" />
-              Return to Dais
+              Return to Podium
             </Button>
             <Button onClick={() => router.push('/teacher/quests/new')}>
               <PlusCircle className="mr-2 h-5 w-5" />
