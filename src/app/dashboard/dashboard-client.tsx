@@ -7,7 +7,7 @@ import { AvatarDisplay } from "./avatar-display";
 import { Button } from "../ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, Map, Swords, Sparkles, BookHeart, Image as ImageIcon } from "lucide-react";
+import { User, Map, Swords, Sparkles, BookHeart, ImageIcon } from "lucide-react";
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
