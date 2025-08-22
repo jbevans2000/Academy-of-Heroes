@@ -27,7 +27,7 @@ const defaultBoons = [
     name: "Scribe's Permission",
     description: "Use a special pen or marker for your assignments for the day.",
     cost: 75,
-    imageUrl: "https://placehold.co/400x400.png",
+    imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FScribe's%20Permission.jpg?alt=media&token=424602ba-50d4-4b00-9379-286024d93a5f",
     effect: { type: 'REAL_WORLD_PERK', value: "Use a special pen for the day." },
     requiresApproval: false,
     studentMessage: "Show this boon to your Guild Leader to use your special writing tool.",
@@ -254,3 +254,5 @@ export async function denyBoonRequest(teacherUid: string, requestId: string): Pr
         return { success: false, error: "Failed to deny the request." };
     }
 }
+
+    
