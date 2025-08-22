@@ -36,7 +36,7 @@ const defaultBoons = [
     name: "Wanderer's Pass",
     description: "Choose your seat for one class period.",
     cost: 100,
-    imageUrl: "https://placehold.co/400x400.png",
+    imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FWanderer's%20Pass.jpg?alt=media&token=69ce6dcc-5e34-46ae-ba00-c17bf500da33",
     effect: { type: 'REAL_WORLD_PERK', value: "Choose seat for the day." },
     requiresApproval: true,
     studentMessage: "The Guild Leader must approve your seat change. Show them this pass!",
