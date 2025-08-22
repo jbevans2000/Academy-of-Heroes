@@ -47,6 +47,7 @@ export default function QuestsPage() {
   const [worldMapUrl, setWorldMapUrl] = useState('');
   const [mapImageFile, setMapImageFile] = useState<File | null>(null);
   const [isUploadingMap, setIsUploadingMap] = useState(false);
+  const [isReverting, setIsReverting] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -138,6 +139,22 @@ export default function QuestsPage() {
     }
   };
 
+  const handleRevertToDefault = async () => {
+    if (!teacher) return;
+    setIsReverting(true);
+    try {
+        const teacherRef = doc(db, 'teachers', teacher.uid);
+        await updateDoc(teacherRef, { worldMapUrl: '' }); // Set to empty string to trigger fallback
+        toast({ title: 'Map Reverted', description: 'Your world map has been reverted to the default image.' });
+        setIsMapDialogOpen(false);
+    } catch (error) {
+        console.error("Error reverting world map:", error);
+        toast({ variant: 'destructive', title: 'Revert Failed' });
+    } finally {
+        setIsReverting(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen w-full flex-col">
        <Dialog open={isMapDialogOpen} onOpenChange={setIsMapDialogOpen}>
@@ -169,12 +186,36 @@ export default function QuestsPage() {
               </div>
             )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsMapDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleWorldMapUpload} disabled={!mapImageFile || isUploadingMap}>
-              {isUploadingMap ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-              Confirm Upload
-            </Button>
+          <DialogFooter className="sm:justify-between">
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="destructive" disabled={isReverting}>
+                        {isReverting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                        Revert to Default Map
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will remove your custom world map and revert to the default image. Your hub positions will be kept.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleRevertToDefault} className="bg-destructive hover:bg-destructive/90">
+                            Yes, Revert
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setIsMapDialogOpen(false)}>Cancel</Button>
+              <Button onClick={handleWorldMapUpload} disabled={!mapImageFile || isUploadingMap}>
+                {isUploadingMap ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                Confirm Upload
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
