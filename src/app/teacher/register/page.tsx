@@ -12,7 +12,7 @@ import { Loader2, User, KeyRound, School, Briefcase, Phone, Check, Star, ArrowLe
 import Link from 'next/link';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, setDoc, collection, serverTimestamp, addDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, serverTimestamp, addDoc, writeBatch } from 'firebase/firestore';
 import { getGlobalSettings } from '@/ai/flows/manage-settings';
 
 // Function to generate a random, easy-to-read class code
@@ -24,6 +24,58 @@ const generateClassCode = () => {
     }
     return result.match(/.{1,3}/g)!.join('-'); // Add a hyphen in the middle
 };
+
+const defaultBoons = [
+  {
+    name: "Jester's Favor",
+    description: "Share a school-appropriate joke with the class.",
+    cost: 50,
+    imageUrl: "https://placehold.co/400x400.png",
+    effect: { type: 'REAL_WORLD_PERK', value: "Tell a joke in class." },
+  },
+  {
+    name: "Scribe's Permission",
+    description: "Use a special pen or marker for your assignments for the day.",
+    cost: 75,
+    imageUrl: "https://placehold.co/400x400.png",
+    effect: { type: 'REAL_WORLD_PERK', value: "Use a special pen for the day." },
+  },
+  {
+    name: "Wanderer's Pass",
+    description: "Choose your seat for one class period.",
+    cost: 100,
+    imageUrl: "https://placehold.co/400x400.png",
+    effect: { type: 'REAL_WORLD_PERK', value: "Choose seat for the day." },
+  },
+  {
+    name: "Oracle's Insight",
+    description: "Get a one-minute private consultation with the Guildmaster about an assignment.",
+    cost: 150,
+    imageUrl: "https://placehold.co/400x400.png",
+    effect: { type: 'REAL_WORLD_PERK', value: "1-minute private teacher consultation." },
+  },
+  {
+    name: "Bard's Tune",
+    description: "Listen to music with headphones during independent work.",
+    cost: 200,
+    imageUrl: "https://placehold.co/400x400.png",
+    effect: { type: 'REAL_WORLD_PERK', value: "Listen to music during independent work." },
+  },
+  {
+    name: "Time-Turner's Grace",
+    description: "A 24-hour extension on one assignment.",
+    cost: 300,
+    imageUrl: "https://placehold.co/400x400.png",
+    effect: { type: 'REAL_WORLD_PERK', value: "24-hour assignment extension." },
+  },
+  {
+    name: "Scholar's Pardon",
+    description: "A one-time pass on a single, small homework assignment.",
+    cost: 500,
+    imageUrl: "https://placehold.co/400x400.png",
+    effect: { type: 'REAL_WORLD_PERK', value: "Single small homework pass." },
+  },
+];
 
 
 export default function TeacherRegisterPage() {
@@ -113,18 +165,37 @@ export default function TeacherRegisterPage() {
             teacherData.phoneNumber = phoneNumber;
         }
 
-        // Save teacher info to a new document in the 'teachers' collection
-        await setDoc(doc(db, "teachers", user.uid), teacherData);
+        // Use a batch to perform multiple writes atomically
+        const batch = writeBatch(db);
 
-        // Automatically create the first "Independent Chapters" Hub for the new teacher
+        // 1. Save teacher info to a new document in the 'teachers' collection
+        const teacherRef = doc(db, "teachers", user.uid);
+        batch.set(teacherRef, teacherData);
+
+        // 2. Automatically create the first "Independent Chapters" Hub for the new teacher
         const questHubsRef = collection(db, 'teachers', user.uid, 'questHubs');
-        await addDoc(questHubsRef, {
+        const newHubRef = doc(questHubsRef); // Create a reference with a new ID
+        batch.set(newHubRef, {
             name: "Independent Chapters",
             hubOrder: 1,
             worldMapUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FGeneric%20Map.jpg?alt=media&token=8d234199-3178-432e-9087-3e117498305c",
             coordinates: { x: 50, y: 50 },
             createdAt: serverTimestamp(),
         });
+        
+        // 3. Create the default set of boons
+        const boonsRef = collection(db, 'teachers', user.uid, 'boons');
+        defaultBoons.forEach(boon => {
+            const boonRef = doc(boonsRef); // Create a ref for each new boon
+            batch.set(boonRef, {
+                ...boon,
+                createdAt: serverTimestamp(),
+                isVisibleToStudents: false, // Default to hidden
+            });
+        });
+
+        // Commit the batch
+        await batch.commit();
 
         toast({
             title: 'Registration Successful!',

@@ -1,7 +1,8 @@
 
+
 export type BoonEffect = {
-  type: 'BACKGROUND_CHANGE';
-  value: string; // e.g., the URL of the background image
+  type: 'REAL_WORLD_PERK' | 'BACKGROUND_CHANGE';
+  value: string; // e.g., URL for background or description of perk
 };
 
 export type Boon = {
@@ -12,4 +13,5 @@ export type Boon = {
   imageUrl: string;
   effect: BoonEffect;
   createdAt: any; // Firestore ServerTimestamp
+  isVisibleToStudents: boolean;
 };

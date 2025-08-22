@@ -25,6 +25,7 @@ import Image from 'next/image';
 
 const effectTypes = [
     { value: 'BACKGROUND_CHANGE', label: 'Change Dashboard Background' },
+    { value: 'REAL_WORLD_PERK', label: 'Real-World Classroom Perk' },
 ];
 
 export default function EditBoonPage() {
@@ -196,7 +197,7 @@ export default function EditBoonPage() {
                                 </Select>
                             </div>
 
-                            {boon.effect.type === 'BACKGROUND_CHANGE' && (
+                             {boon.effect.type === 'BACKGROUND_CHANGE' && (
                                 <div className="space-y-2">
                                     <Label>Background Image</Label>
                                     <div className="p-4 border rounded-md space-y-2">
@@ -210,6 +211,14 @@ export default function EditBoonPage() {
                                     </div>
                                 </div>
                             )}
+
+                             {boon.effect.type === 'REAL_WORLD_PERK' && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="effect-value">Perk Description</Label>
+                                    <Input id="effect-value" value={boon.effect.value} onChange={(e) => handleEffectChange('value', e.target.value)} placeholder="e.g., May chew gum in class for one day." />
+                                </div>
+                            )}
+
 
                              <div className="flex justify-end">
                                 <Button onClick={handleSave} disabled={isSaving}>

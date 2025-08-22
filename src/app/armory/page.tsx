@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, onSnapshot, query, orderBy, doc, getDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, doc, getDoc, where } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Boon } from '@/lib/boons';
 import type { Student } from '@/lib/data';
@@ -95,7 +95,11 @@ export default function ArmoryPage() {
     useEffect(() => {
         if (!student?.teacherUid) return;
 
-        const boonsQuery = query(collection(db, 'teachers', student.teacherUid, 'boons'), orderBy('createdAt', 'desc'));
+        const boonsQuery = query(
+            collection(db, 'teachers', student.teacherUid, 'boons'),
+            where('isVisibleToStudents', '==', true),
+            orderBy('createdAt', 'desc')
+        );
 
         const unsubscribe = onSnapshot(boonsQuery, (snapshot) => {
             setBoons(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Boon)));

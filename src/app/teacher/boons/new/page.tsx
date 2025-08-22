@@ -22,6 +22,7 @@ import Image from 'next/image';
 
 const effectTypes = [
     { value: 'BACKGROUND_CHANGE', label: 'Change Dashboard Background' },
+    { value: 'REAL_WORLD_PERK', label: 'Real-World Classroom Perk' },
 ];
 
 export default function NewBoonPage() {
@@ -36,7 +37,7 @@ export default function NewBoonPage() {
     const [description, setDescription] = useState('');
     const [cost, setCost] = useState<number | ''>('');
     const [imageUrl, setImageUrl] = useState('');
-    const [effectType, setEffectType] = useState('BACKGROUND_CHANGE');
+    const [effectType, setEffectType] = useState('REAL_WORLD_PERK');
     const [effectValue, setEffectValue] = useState('');
 
     // Upload State
@@ -88,7 +89,7 @@ export default function NewBoonPage() {
                 cost: Number(cost),
                 imageUrl,
                 effect: {
-                    type: effectType as 'BACKGROUND_CHANGE',
+                    type: effectType as 'BACKGROUND_CHANGE' | 'REAL_WORLD_PERK',
                     value: effectValue,
                 },
             });
@@ -174,6 +175,13 @@ export default function NewBoonPage() {
                                         </Button>
                                         {effectValue && <Image src={effectValue} alt="Effect preview" width={200} height={100} className="rounded-md border"/>}
                                     </div>
+                                </div>
+                            )}
+
+                             {effectType === 'REAL_WORLD_PERK' && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="effect-value">Perk Description</Label>
+                                    <Input id="effect-value" value={effectValue} onChange={(e) => setEffectValue(e.target.value)} placeholder="e.g., May chew gum in class for one day." />
                                 </div>
                             )}
 

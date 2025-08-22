@@ -13,9 +13,20 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Package, Sparkles, Loader2 } from 'lucide-react';
+import { ArrowLeft, Package, Sparkles, Loader2, Info } from 'lucide-react';
 import Image from 'next/image';
 import { useBoon } from '@/ai/flows/manage-inventory';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 const InventoryBoonCard = ({ boon, onUse }: { boon: Boon; onUse: (boonId: string) => void; }) => {
     const [isUsing, setIsUsing] = useState(false);
@@ -23,7 +34,7 @@ const InventoryBoonCard = ({ boon, onUse }: { boon: Boon; onUse: (boonId: string
     const handleUse = async () => {
         setIsUsing(true);
         await onUse(boon.id);
-        setIsUsing(false);
+        // No need to set isUsing to false, as the item will disappear from the inventory on success
     };
     
     return (
@@ -38,10 +49,36 @@ const InventoryBoonCard = ({ boon, onUse }: { boon: Boon; onUse: (boonId: string
                 <CardDescription>{boon.description}</CardDescription>
             </CardContent>
             <CardFooter>
-                 <Button className="w-full" onClick={handleUse} disabled={isUsing}>
-                    {isUsing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                    Use Boon
-                </Button>
+                 {boon.effect.type === 'BACKGROUND_CHANGE' ? (
+                     <Button className="w-full" onClick={handleUse} disabled={isUsing}>
+                        {isUsing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                        Use Boon
+                    </Button>
+                 ) : (
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                             <Button className="w-full" variant="secondary">
+                                <Info className="mr-2 h-4 w-4" />
+                                How to Use
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>This is a Real-World Perk!</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    To use "{boon.name}", show this item to your teacher in the real world to claim your privilege:
+                                    <br />
+                                    <strong className="text-primary mt-2 block">"{boon.effect.value}"</strong>
+                                    <br />
+                                    Your teacher will then remove it from your inventory for you.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogAction>Got it!</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                 )}
             </CardFooter>
         </Card>
     )
@@ -86,16 +123,19 @@ export default function InventoryPage() {
     useEffect(() => {
         if (!student || !student.teacherUid) {
             setIsLoading(false);
+            setInventoryBoons([]); // Clear boons if student/teacher is not available
             return;
         };
 
         const fetchInventoryBoons = async () => {
+            if (!student.inventory || student.inventory.length === 0) {
+                setInventoryBoons([]);
+                setIsLoading(false);
+                return;
+            }
+            
             setIsLoading(true);
             try {
-                if (!student.inventory || student.inventory.length === 0) {
-                    setInventoryBoons([]);
-                    return;
-                }
                 const boonsRef = collection(db, 'teachers', student.teacherUid, 'boons');
                 // Firestore 'in' query is limited to 30 items. If a student has more, we'd need to batch.
                 const q = query(boonsRef, where('__name__', 'in', student.inventory.slice(0,30)));

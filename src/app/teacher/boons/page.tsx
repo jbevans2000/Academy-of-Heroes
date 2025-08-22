@@ -7,7 +7,6 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Boon } from '@/lib/boons';
-
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -24,9 +23,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, Star, Coins } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, Star, Coins, EyeOff, Eye } from 'lucide-react';
 import Image from 'next/image';
-import { deleteBoon } from '@/ai/flows/manage-boons';
+import { deleteBoon, updateBoonVisibility } from '@/ai/flows/manage-boons';
+import { cn } from '@/lib/utils';
 
 export default function BoonsPage() {
     const router = useRouter();
@@ -36,6 +38,7 @@ export default function BoonsPage() {
     const [boons, setBoons] = useState<Boon[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
+    const [isToggling, setIsToggling] = useState<string | null>(null);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -82,6 +85,24 @@ export default function BoonsPage() {
             setIsDeleting(null);
         }
     };
+    
+    const handleVisibilityToggle = async (boon: Boon) => {
+        if (!teacher) return;
+        const newVisibility = !boon.isVisibleToStudents;
+        setIsToggling(boon.id);
+        try {
+            const result = await updateBoonVisibility(teacher.uid, boon.id, newVisibility);
+            if (!result.success) {
+                throw new Error(result.error);
+            }
+            // The local state will be updated by the onSnapshot listener
+        } catch(error: any) {
+             console.error("Error toggling boon visibility: ", error);
+            toast({ variant: "destructive", title: "Update Failed", description: error.message });
+        } finally {
+            setIsToggling(null);
+        }
+    }
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -119,7 +140,7 @@ export default function BoonsPage() {
                     ) : (
                         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                             {boons.map(boon => (
-                                <Card key={boon.id} className="flex flex-col">
+                                <Card key={boon.id} className={cn("flex flex-col transition-all", !boon.isVisibleToStudents && 'bg-muted/50 border-dashed')}>
                                     <CardHeader>
                                         <div className="aspect-square relative w-full bg-secondary rounded-md overflow-hidden">
                                             <Image src={boon.imageUrl || 'https://placehold.co/400x400.png'} alt={boon.name} fill className="object-cover" data-ai-hint="fantasy item" />
@@ -133,31 +154,44 @@ export default function BoonsPage() {
                                         </div>
                                         <CardDescription>{boon.description}</CardDescription>
                                     </CardContent>
-                                    <CardFooter className="flex gap-2">
-                                        <Button variant="outline" className="w-full" onClick={() => router.push(`/teacher/boons/edit/${boon.id}`)}>
-                                            <Edit className="h-4 w-4" />
-                                        </Button>
-                                         <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button variant="destructive" className="w-full" disabled={isDeleting === boon.id}>
-                                                    {isDeleting === boon.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                                                </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Delete "{boon.name}"?</AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        This will permanently remove the boon from your store. This action cannot be undone.
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDelete(boon.id)}>
-                                                        Yes, Delete
-                                                    </AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
+                                    <CardFooter className="flex-col gap-4">
+                                        <div className="flex items-center space-x-2 w-full border p-2 rounded-md justify-center">
+                                            {isToggling === boon.id ? <Loader2 className="h-4 w-4 animate-spin"/> : <Switch
+                                                id={`visibility-${boon.id}`}
+                                                checked={boon.isVisibleToStudents}
+                                                onCheckedChange={() => handleVisibilityToggle(boon)}
+                                            />}
+                                            <Label htmlFor={`visibility-${boon.id}`} className="flex items-center gap-1 cursor-pointer">
+                                                {boon.isVisibleToStudents ? <Eye className="w-4 h-4"/> : <EyeOff className="w-4 h-4"/>}
+                                                {boon.isVisibleToStudents ? 'Visible' : 'Hidden'}
+                                            </Label>
+                                        </div>
+                                        <div className="flex w-full gap-2">
+                                            <Button variant="outline" className="w-full" onClick={() => router.push(`/teacher/boons/edit/${boon.id}`)}>
+                                                <Edit className="h-4 w-4" />
+                                            </Button>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="destructive" className="w-full" disabled={isDeleting === boon.id}>
+                                                        {isDeleting === boon.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Delete "{boon.name}"?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            This will permanently remove the boon from your workshop. This action cannot be undone.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleDelete(boon.id)}>
+                                                            Yes, Delete
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </div>
                                     </CardFooter>
                                 </Card>
                             ))}

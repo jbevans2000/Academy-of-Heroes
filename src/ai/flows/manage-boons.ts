@@ -12,7 +12,7 @@ interface ActionResponse {
   error?: string;
 }
 
-type CreateBoonInput = Omit<Boon, 'id' | 'createdAt'>;
+type CreateBoonInput = Omit<Boon, 'id' | 'createdAt' | 'isVisibleToStudents'>;
 
 export async function createBoon(teacherUid: string, boonData: CreateBoonInput): Promise<ActionResponse> {
   if (!teacherUid) return { success: false, error: 'User not authenticated.' };
@@ -25,6 +25,7 @@ export async function createBoon(teacherUid: string, boonData: CreateBoonInput):
     await addDoc(boonsRef, {
       ...boonData,
       createdAt: serverTimestamp(),
+      isVisibleToStudents: true, // Default to visible when manually created
     });
     await logGameEvent(teacherUid, 'GAMEMASTER', `Created a new boon: ${boonData.name}.`);
     return { success: true, message: 'Boon created successfully.' };
@@ -52,6 +53,19 @@ export async function updateBoon(teacherUid: string, boonData: UpdateBoonInput):
     console.error("Error updating boon: ", error);
     return { success: false, error: error.message || 'Failed to update boon.' };
   }
+}
+
+export async function updateBoonVisibility(teacherUid: string, boonId: string, isVisible: boolean): Promise<ActionResponse> {
+    if (!teacherUid) return { success: false, error: 'User not authenticated.' };
+    try {
+        const boonRef = doc(db, 'teachers', teacherUid, 'boons', boonId);
+        await updateDoc(boonRef, { isVisibleToStudents: isVisible });
+        await logGameEvent(teacherUid, 'GAMEMASTER', `Set boon ${boonId} visibility to ${isVisible}.`);
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error updating boon visibility:", error);
+        return { success: false, error: "Failed to update boon visibility." };
+    }
 }
 
 export async function deleteBoon(teacherUid: string, boonId: string): Promise<ActionResponse> {
