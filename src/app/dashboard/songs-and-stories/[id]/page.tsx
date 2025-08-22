@@ -20,13 +20,6 @@ interface Question {
   correctAnswerIndex: number;
 }
 
-interface PowerLogEntry {
-    round: number;
-    casterName: string;
-    powerName: string;
-    description: string;
-}
-
 interface RoundSnapshot {
     id: string;
     currentQuestionIndex: number;
@@ -36,6 +29,7 @@ interface RoundSnapshot {
         answerIndex: number;
         isCorrect: boolean;
     }[];
+    lastRoundPowersUsed?: string[];
 }
 
 interface SavedBattle {
@@ -50,7 +44,7 @@ interface SavedBattle {
             goldGained: number;
         }
     };
-    powerLog?: PowerLogEntry[];
+    powerLog?: any[]; // Keep for future use, not displayed for now
 }
 
 export default function BattleSummaryDetailPage() {
@@ -146,17 +140,6 @@ export default function BattleSummaryDetailPage() {
     const userRewards = summary.rewardsByStudent?.[user.uid] || { xpGained: 0, goldGained: 0 };
     const date = summary.startedAt ?? summary.savedAt;
 
-    const battleLogByRound: { [round: number]: PowerLogEntry[] } = {};
-    if (summary.powerLog) {
-        summary.powerLog.forEach(log => {
-            const roundKey = log.round - 1; // Align with 0-based index
-            if (!battleLogByRound[roundKey]) {
-                battleLogByRound[roundKey] = [];
-            }
-            battleLogByRound[roundKey].push(log);
-        });
-    }
-
     return (
         <div 
             className="flex flex-col min-h-screen bg-cover bg-center"
@@ -223,14 +206,12 @@ export default function BattleSummaryDetailPage() {
                                                     <p className="font-semibold">You answered: <span className="font-normal">{question.answers[studentResponse.answerIndex]}</span></p>
                                                     <p className="font-semibold">Correct answer: <span className="font-normal">{question.answers[question.correctAnswerIndex]}</span></p>
                                                 </div>
-                                                {(battleLogByRound[round.currentQuestionIndex]) && (
+                                                {(round.lastRoundPowersUsed && round.lastRoundPowersUsed.length > 0) && (
                                                     <div className="mt-2 p-2 bg-blue-900/10 rounded-md">
-                                                        <h4 className="font-semibold text-sm flex items-center gap-2"><ScrollText className="w-4 h-4"/> Powers Used This Round:</h4>
-                                                        <ul className="text-xs text-muted-foreground list-disc list-inside mt-1">
-                                                            {battleLogByRound[round.currentQuestionIndex].map((log, index) => (
-                                                                <li key={index}>
-                                                                    <span className="font-bold">{log.casterName}</span> used <span className="font-semibold text-primary">{log.powerName}</span>.
-                                                                </li>
+                                                        <h4 className="font-semibold text-sm flex items-center gap-2"><ScrollText className="w-4 h-4"/> Party Powers Used This Round:</h4>
+                                                        <ul className="text-sm text-muted-foreground list-disc list-inside mt-1">
+                                                            {round.lastRoundPowersUsed.map((power, index) => (
+                                                                <li key={index}>{power}</li>
                                                             ))}
                                                         </ul>
                                                     </div>
