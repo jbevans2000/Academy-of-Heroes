@@ -89,7 +89,7 @@ export async function populateDefaultBoons(teacherUid: string): Promise<ActionRe
 
       defaultBoons.forEach(boon => {
           const docRef = doc(boonsRef);
-          batch.set(docRef, { ...boon, isVisibleToStudents: true, createdAt: serverTimestamp() });
+          batch.set(docRef, { ...boon, isVisibleToStudents: false, createdAt: serverTimestamp() });
       });
       await batch.commit();
       await logGameEvent(teacherUid, 'GAMEMASTER', 'Populated the Boons Workshop with default items.');
@@ -110,7 +110,7 @@ export async function createBoon(teacherUid: string, boonData: CreateBoonInput):
     const boonsRef = collection(db, 'teachers', teacherUid, 'boons');
     await addDoc(boonsRef, {
       ...boonData,
-      isVisibleToStudents: true, // Visible by default
+      isVisibleToStudents: false, // Hidden by default
       createdAt: serverTimestamp(),
     });
     await logGameEvent(teacherUid, 'GAMEMASTER', `Created a new boon: ${boonData.name}.`);
