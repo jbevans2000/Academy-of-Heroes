@@ -61,12 +61,13 @@ export default function AdminDashboardPage() {
             const teachersSnapshot = await getDocs(collection(db, 'teachers'));
             const teachersData = await Promise.all(teachersSnapshot.docs.map(async (teacherDoc) => {
                 const studentsSnapshot = await getDocs(collection(db, 'teachers', teacherDoc.id, 'students'));
+                const data = teacherDoc.data();
                 return {
                     id: teacherDoc.id,
-                    name: teacherDoc.data().name,
-                    email: teacherDoc.data().email,
-                    className: teacherDoc.data().className,
-                    schoolName: teacherDoc.data().schoolName,
+                    name: data.name || '[No Name]',
+                    email: data.email || '[No Email]',
+                    className: data.className || '[No Class Name]',
+                    schoolName: data.schoolName || '[No School]',
                     studentCount: studentsSnapshot.size,
                 };
             }));
