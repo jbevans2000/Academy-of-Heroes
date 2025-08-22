@@ -1,7 +1,7 @@
 
 'use server';
 
-import { doc, runTransaction, getDoc, updateDoc, deleteField, addDoc, collection, serverTimestamp, increment } from 'firebase/firestore';
+import { doc, runTransaction, getDoc, updateDoc, deleteField, addDoc, collection, serverTimestamp, increment, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import type { Boon } from '@/lib/boons';
@@ -34,7 +34,7 @@ export async function purchaseBoon(input: PurchaseBoonInput): Promise<ActionResp
             const boonSnap = await transaction.get(boonRef);
 
             if (!studentSnap.exists()) throw new Error("Student not found.");
-            if (!boonSnap.exists()) throw new Error("Boon not found.");
+            if (!boonSnap.exists()) throw new Error("Reward not found.");
 
             const student = studentSnap.data() as Student;
             const boon = { id: boonSnap.id, ...boonSnap.data() } as Boon;
@@ -66,7 +66,7 @@ export async function purchaseBoon(input: PurchaseBoonInput): Promise<ActionResp
                     [`inventory.${boonId}`]: newQuantity
                 });
                 
-                await logGameEvent(teacherUid, 'GAMEMASTER', `${student.characterName} purchased the boon: ${boon.name}.`);
+                await logGameEvent(teacherUid, 'GAMEMASTER', `${student.characterName} purchased the reward: ${boon.name}.`);
                 await logBoonTransaction(teacherUid, studentUid, student.characterName, boon.name, 'purchase', boon.cost);
 
                 return { success: true, message: `You have successfully purchased ${boon.name}!` };
@@ -97,7 +97,7 @@ export async function useBoon(input: UseBoonInput): Promise<ActionResponse> {
             const boonSnap = await transaction.get(boonRef);
 
             if (!studentSnap.exists()) throw new Error("Student not found.");
-            if (!boonSnap.exists()) throw new Error("Boon not found.");
+            if (!boonSnap.exists()) throw new Error("Reward not found.");
             
             const student = studentSnap.data() as Student;
             const boon = { id: boonSnap.id, ...boonSnap.data() } as Boon;
@@ -105,7 +105,7 @@ export async function useBoon(input: UseBoonInput): Promise<ActionResponse> {
             const currentQuantity = student.inventory?.[boonId] || 0;
 
             if (currentQuantity <= 0) {
-                return { success: false, error: "You do not own this boon." };
+                return { success: false, error: "You do not own this reward." };
             }
 
             // Decrement the quantity
@@ -122,13 +122,56 @@ export async function useBoon(input: UseBoonInput): Promise<ActionResponse> {
 
             transaction.update(studentRef, updateData);
             
-            await logGameEvent(teacherUid, 'GAMEMASTER', `${student.characterName} used the boon: ${boon.name}.`);
+            await logGameEvent(teacherUid, 'GAMEMASTER', `${student.characterName} used the reward: ${boon.name}.`);
             await logBoonTransaction(teacherUid, studentUid, student.characterName, boon.name, 'use');
 
             return { success: true, message: `You have used ${boon.name}.` };
         });
     } catch (error: any) {
         console.error("Error using boon:", error);
-        return { success: false, error: error.message || "Failed to use the boon." };
+        return { success: false, error: error.message || "Failed to use the reward." };
+    }
+}
+
+
+interface AdjustInventoryInput {
+    teacherUid: string;
+    studentUid: string;
+    boonId: string;
+    change: number; // e.g., 1 to add, -1 to remove
+}
+
+export async function adjustStudentInventory(input: AdjustInventoryInput): Promise<ActionResponse> {
+    const { teacherUid, studentUid, boonId, change } = input;
+    if (!teacherUid || !studentUid || !boonId) return { success: false, error: 'Invalid input.' };
+
+    const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
+
+    try {
+        const studentSnap = await getDoc(studentRef);
+        if (!studentSnap.exists()) {
+            return { success: false, error: 'Student not found.' };
+        }
+
+        const studentData = studentSnap.data();
+        const currentQuantity = studentData.inventory?.[boonId] || 0;
+        const newQuantity = Math.max(0, currentQuantity + change);
+
+        const updateData: any = {};
+        if (newQuantity === 0) {
+            updateData[`inventory.${boonId}`] = deleteField();
+        } else {
+            updateData[`inventory.${boonId}`] = newQuantity;
+        }
+
+        await updateDoc(studentRef, updateData);
+        
+        await logGameEvent(teacherUid, 'GAMEMASTER', `Manually adjusted ${studentData.characterName}'s inventory for item ID ${boonId} by ${change}.`);
+
+        return { success: true };
+
+    } catch (error: any) {
+        console.error("Error adjusting inventory:", error);
+        return { success: false, error: "Failed to update student's inventory." };
     }
 }
