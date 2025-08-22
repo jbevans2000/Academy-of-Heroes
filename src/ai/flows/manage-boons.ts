@@ -54,7 +54,7 @@ const defaultBoons = [
     name: "Oracle's Insight",
     description: "Get a one-minute private consultation with the Guildmaster about an assignment.",
     cost: 150,
-    imageUrl: "https://placehold.co/400x400.png",
+    imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FOracle's%20Insight.jpg?alt=media&token=a41ef92b-6b7f-4ea4-80da-50372fd109aa",
     effect: { type: 'REAL_WORLD_PERK', value: "1-minute private teacher consultation." },
     requiresApproval: true,
     studentMessage: "Schedule a time with your Guild Leader to receive your minute of insight.",
