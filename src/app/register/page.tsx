@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
@@ -12,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Shield, Heart, Wand, User, KeyRound, Star, Eye, EyeOff, BookUser, ChevronsUpDown } from 'lucide-react';
+import { Loader2, Shield, Heart, Wand, User, KeyRound, Star, Eye, EyeOff, BookUser, ChevronsUpDown, ShieldAlert } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import {
@@ -29,6 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { classData, type ClassType } from '@/lib/data';
 import { logGameEvent } from '@/lib/gamelog';
+import { getGlobalSettings } from '@/ai/flows/manage-settings';
 
 export default function RegisterPage() {
   const [classCode, setClassCode] = useState('');
@@ -40,8 +42,21 @@ export default function RegisterPage() {
   const [selectedClass, setSelectedClass] = useState<ClassType>('');
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(true);
+
   const router = useRouter();
   const { toast } = useToast();
+  
+  useEffect(() => {
+    const checkRegistrationStatus = async () => {
+        setIsCheckingStatus(true);
+        const settings = await getGlobalSettings();
+        setIsRegistrationOpen(settings.isRegistrationOpen);
+        setIsCheckingStatus(false);
+    };
+    checkRegistrationStatus();
+  }, []);
 
   const getTeacherUidFromClassCode = async (code: string): Promise<string | null> => {
     const uppercaseCode = code.toUpperCase();
@@ -122,7 +137,7 @@ export default function RegisterPage() {
         title: 'Registration Failed',
         description:
           error.code === 'auth/email-already-in-use'
-            ? 'This Hero\'s Alias is already registered for this guild.'
+            ? 'This Hero\\'s Alias is already registered for this guild.'
             : 'An unexpected error occurred. Please try again.',
       });
     } finally {
@@ -135,6 +150,24 @@ export default function RegisterPage() {
     setSelectedClass(classValue);
     setSelectedAvatar(null);
   };
+  
+  const RegistrationClosedCard = () => (
+    <Card className="w-full max-w-lg shadow-2xl bg-card/80 backdrop-blur-sm">
+        <CardHeader className="text-center">
+            <ShieldAlert className="h-16 w-16 mx-auto text-amber-500" />
+            <CardTitle className="text-3xl font-headline text-primary">Registration Temporarily Closed</CardTitle>
+            <CardDescription>New hero creation has been paused by the Grandmaster.</CardDescription>
+        </CardHeader>
+        <CardContent className="text-center">
+            <p className="text-black">Please check back later or contact your Guild Leader for more information. The realm awaits your return!</p>
+        </CardContent>
+         <CardFooter>
+            <Button className="w-full" asChild>
+                <Link href="/login">Return to Login</Link>
+            </Button>
+        </CardFooter>
+    </Card>
+  );
 
   return (
     <TooltipProvider>
@@ -147,6 +180,8 @@ export default function RegisterPage() {
           backgroundRepeat: 'no-repeat',
         }}
       >
+        {isCheckingStatus ? <Loader2 className="h-16 w-16 animate-spin text-primary" /> :
+         !isRegistrationOpen ? <RegistrationClosedCard /> :
         <Card className="w-full max-w-4xl shadow-2xl bg-card/80 backdrop-blur-sm">
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-headline text-primary">Forge Your Hero</CardTitle>
@@ -281,6 +316,7 @@ export default function RegisterPage() {
            </div>
           </CardContent>
         </Card>
+        }
       </div>
     </TooltipProvider>
   );

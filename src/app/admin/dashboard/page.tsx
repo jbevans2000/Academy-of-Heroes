@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,6 +9,11 @@ import { db, auth } from '@/lib/firebase';
 import { AdminHeader } from '@/components/admin/admin-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { getGlobalSettings, updateGlobalSettings } from '@/ai/flows/manage-settings';
+import { Loader2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface Teacher {
     id: string;
@@ -22,24 +28,25 @@ export default function AdminDashboardPage() {
     const [user, setUser] = useState<User | null>(null);
     const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
+    const [isSettingsLoading, setIsSettingsLoading] = useState(true);
     const router = useRouter();
+    const { toast } = useToast();
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
-                // Verify if the user is an admin
                 const adminRef = doc(db, 'admins', currentUser.uid);
                 const adminSnap = await getDoc(adminRef);
 
                 if (adminSnap.exists()) {
                     setUser(currentUser);
                     fetchTeachers();
+                    fetchSettings();
                 } else {
-                    // Not an admin, redirect to teacher dashboard
                     router.push('/teacher/dashboard');
                 }
             } else {
-                // No user logged in, redirect to login
                 router.push('/teacher/login');
             }
         });
@@ -71,6 +78,40 @@ export default function AdminDashboardPage() {
         }
     };
 
+    const fetchSettings = async () => {
+        setIsSettingsLoading(true);
+        try {
+            const settings = await getGlobalSettings();
+            setIsRegistrationOpen(settings.isRegistrationOpen);
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not load global settings.' });
+        } finally {
+            setIsSettingsLoading(false);
+        }
+    };
+    
+    const handleToggleRegistration = async () => {
+        setIsSettingsLoading(true);
+        try {
+            const newStatus = !isRegistrationOpen;
+            const result = await updateGlobalSettings({ isRegistrationOpen: newStatus });
+            if (result.success) {
+                setIsRegistrationOpen(newStatus);
+                toast({
+                    title: 'Settings Updated',
+                    description: `New account registration is now ${newStatus ? 'ENABLED' : 'DISABLED'}.`
+                });
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
+        } finally {
+            setIsSettingsLoading(false);
+        }
+    }
+
+
     if (isLoading || !user) {
         return (
             <div className="flex min-h-screen w-full flex-col">
@@ -91,9 +132,9 @@ export default function AdminDashboardPage() {
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
             <AdminHeader />
-            <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-6">
+            <main className="flex-1 p-4 md:p-6 lg:p-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                  
-                 <Card>
+                 <Card className="lg:col-span-2">
                     <CardHeader>
                         <CardTitle>All Guilds</CardTitle>
                         <CardDescription>A list of all registered teachers and their guilds.</CardDescription>
@@ -119,6 +160,26 @@ export default function AdminDashboardPage() {
                             </div>
                         )}
                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Global Settings</CardTitle>
+                        <CardDescription>Control application-wide settings.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="flex items-center justify-between rounded-lg border p-4">
+                            <div>
+                                <h4 className="font-semibold">Account Registration</h4>
+                                <p className={cn("text-sm font-bold", isRegistrationOpen ? 'text-green-600' : 'text-red-600')}>
+                                    {isRegistrationOpen ? 'ACTIVE' : 'DISABLED'}
+                                </p>
+                            </div>
+                             <Button onClick={handleToggleRegistration} disabled={isSettingsLoading} size="lg">
+                                {isSettingsLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : isRegistrationOpen ? <ToggleRight className="mr-2 h-6 w-6"/> : <ToggleLeft className="mr-2 h-6 w-6"/>}
+                                {isRegistrationOpen ? 'Deactivate' : 'Activate'}
+                            </Button>
+                        </div>
+                    </CardContent>
                 </Card>
             </main>
         </div>
