@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, query, orderBy } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
 import { AdminHeader } from '@/components/admin/admin-header';
@@ -12,9 +12,10 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { getGlobalSettings, updateGlobalSettings } from '@/ai/flows/manage-settings';
-import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star } from 'lucide-react';
+import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { format } from 'date-fns';
 
 interface Teacher {
     id: string;
@@ -25,9 +26,22 @@ interface Teacher {
     studentCount: number;
 }
 
+interface Feedback {
+    id: string;
+    teacherName: string;
+    teacherEmail: string;
+    feedbackType: 'bug' | 'feature';
+    message: string;
+    createdAt: {
+        seconds: number;
+        nanoseconds: number;
+    };
+}
+
 export default function AdminDashboardPage() {
     const [user, setUser] = useState<User | null>(null);
     const [teachers, setTeachers] = useState<Teacher[]>([]);
+    const [feedback, setFeedback] = useState<Feedback[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
     const [isFeedbackPanelVisible, setIsFeedbackPanelVisible] = useState(false);
@@ -45,6 +59,7 @@ export default function AdminDashboardPage() {
                     setUser(currentUser);
                     fetchTeachers();
                     fetchSettings();
+                    fetchFeedback();
                 } else {
                     router.push('/teacher/dashboard');
                 }
@@ -84,6 +99,18 @@ export default function AdminDashboardPage() {
             setIsLoading(false);
         }
     };
+    
+    const fetchFeedback = async () => {
+        try {
+            const feedbackQuery = query(collection(db, 'feedback'), orderBy('createdAt', 'desc'));
+            const feedbackSnapshot = await getDocs(feedbackQuery);
+            const feedbackData = feedbackSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Feedback));
+            setFeedback(feedbackData);
+        } catch (error) {
+             console.error("Error fetching feedback:", error);
+             toast({ variant: 'destructive', title: 'Error', description: 'Could not load feedback submissions.' });
+        }
+    }
 
     const fetchSettings = async () => {
         setIsSettingsLoading(true);
@@ -163,35 +190,67 @@ export default function AdminDashboardPage() {
             <AdminHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                  
-                 <Card className="lg:col-span-2">
-                    <CardHeader>
-                        <CardTitle>All Guilds</CardTitle>
-                        <CardDescription>A list of all registered teachers and their guilds. Click a card to view that teacher's dashboard.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                            {teachers.map((teacher) => (
-                                <Link href={`/teacher/dashboard?teacherId=${teacher.id}`} key={teacher.id}>
-                                    <Card className="h-full hover:shadow-lg hover:border-primary transition-all">
-                                        <CardHeader>
-                                            <CardTitle>{teacher.className}</CardTitle>
-                                            <CardDescription>{teacher.name} - {teacher.schoolName}</CardDescription>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <p className="font-semibold">{teacher.studentCount} student(s)</p>
-                                            <p className="text-sm text-muted-foreground">{teacher.email}</p>
-                                        </CardContent>
-                                    </Card>
-                                </Link>
-                            ))}
-                        </div>
-                        {teachers.length === 0 && !isLoading && (
-                            <div className="text-center py-10">
-                                <p className="text-muted-foreground">No teachers have registered yet.</p>
+                 <div className="lg:col-span-2 space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>All Guilds</CardTitle>
+                            <CardDescription>A list of all registered teachers and their guilds. Click a card to view that teacher's dashboard.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                                {teachers.map((teacher) => (
+                                    <Link href={`/teacher/dashboard?teacherId=${teacher.id}`} key={teacher.id}>
+                                        <Card className="h-full hover:shadow-lg hover:border-primary transition-all">
+                                            <CardHeader>
+                                                <CardTitle>{teacher.className}</CardTitle>
+                                                <CardDescription>{teacher.name} - {teacher.schoolName}</CardDescription>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <p className="font-semibold">{teacher.studentCount} student(s)</p>
+                                                <p className="text-sm text-muted-foreground">{teacher.email}</p>
+                                            </CardContent>
+                                        </Card>
+                                    </Link>
+                                ))}
                             </div>
-                        )}
-                   </CardContent>
-                </Card>
+                            {teachers.length === 0 && !isLoading && (
+                                <div className="text-center py-10">
+                                    <p className="text-muted-foreground">No teachers have registered yet.</p>
+                                </div>
+                            )}
+                    </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Teacher Feedback</CardTitle>
+                            <CardDescription>Logs of all submitted bug reports and feature requests.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {feedback.length === 0 ? (
+                                <p className="text-muted-foreground">No feedback has been submitted yet.</p>
+                            ) : (
+                                <div className="space-y-4 max-h-[500px] overflow-y-auto">
+                                    {feedback.map(item => (
+                                        <div key={item.id} className="p-4 border rounded-lg">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <div className="flex items-center gap-2 font-bold text-lg">
+                                                         {item.feedbackType === 'bug' ? <Bug className="h-5 w-5 text-destructive" /> : <Lightbulb className="h-5 w-5 text-yellow-500" />}
+                                                         <span>{item.feedbackType === 'bug' ? 'Bug Report' : 'Feature Request'}</span>
+                                                    </div>
+                                                    <p className="text-sm text-muted-foreground">From: {item.teacherName} ({item.teacherEmail})</p>
+                                                </div>
+                                                <p className="text-xs text-muted-foreground">{format(new Date(item.createdAt.seconds * 1000), 'PPP p')}</p>
+                                            </div>
+                                            <p className="mt-2 whitespace-pre-wrap">{item.message}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                 </div>
+
                 <div className="space-y-6">
                     <Card>
                         <CardHeader>
