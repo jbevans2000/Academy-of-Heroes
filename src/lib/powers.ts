@@ -36,9 +36,9 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Sorcerer’s Intuition',
-      description: 'Guarantees an automatic hit for 3 base damage, regardless of your answer.',
+      description: 'You wall upon the psychic winds to enhance your knowledge and bolster your attack.',
       level: 5,
-      mpCost: 15,
+      mpCost: 10,
       type: 'utility',
     },
     {

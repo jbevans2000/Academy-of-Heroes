@@ -65,6 +65,7 @@ interface LiveBattleState {
   empoweredMageUids?: string[]; // For Solar Empowerment
   cosmicDivinationUses?: number; // For Cosmic Divination
   voteState?: VoteState | null; // For Cosmic Divination
+  sorcerersIntuitionUses?: { [key: string]: number }; // For Sorcerer's Intuition
 }
 
 interface PowerActivation {
@@ -866,12 +867,43 @@ export default function TeacherLiveBattlePage() {
                     description: logDescription,
                     timestamp: serverTimestamp()
                 });
+            } else if (activation.powerName === 'Sorcerer’s Intuition') {
+                const uses = battleData.sorcerersIntuitionUses?.[activation.studentUid] || 0;
+                if (uses >= 3) {
+                     batch.update(liveBattleRef, {
+                        targetedEvent: {
+                            targetUid: activation.studentUid,
+                            message: `The Psychic winds will no longer answer your call.`
+                        }
+                    });
+                } else {
+                     const damage = Math.ceil((studentData.level || 1) * 0.5);
+                     batch.update(liveBattleRef, {
+                        [`sorcerersIntuitionUses.${activation.studentUid}`]: increment(1),
+                        totalBaseDamage: increment(damage),
+                        powerEventMessage: `${activation.studentName} used Sorcerer's Intuition!`,
+                         targetedEvent: {
+                            targetUid: activation.studentUid,
+                            message: `You cast Sorcerer’s Intuition! Your strike will partially land even if you get the wrong answer!`
+                        }
+                    });
+                     batch.set(doc(battleLogRef), {
+                        round: liveState.currentQuestionIndex + 1,
+                        casterName: activation.studentName,
+                        powerName: activation.powerName,
+                        description: `Guaranteed ${damage} base damage.`,
+                        timestamp: serverTimestamp()
+                    });
+                }
             }
 
-            batch.update(studentRef, { mp: increment(-activation.powerMpCost) });
-            batch.update(liveBattleRef, {
-                [`powerUsersThisRound.${activation.studentUid}`]: arrayUnion(activation.powerName),
-            });
+            if (activation.powerName !== 'Sorcerer’s Intuition' || (battleData.sorcerersIntuitionUses?.[activation.studentUid] || 0) < 3) {
+                batch.update(studentRef, { mp: increment(-activation.powerMpCost) });
+                batch.update(liveBattleRef, {
+                    [`powerUsersThisRound.${activation.studentUid}`]: arrayUnion(activation.powerName),
+                });
+            }
+
             await batch.commit();
 
             setTimeout(async () => {
@@ -951,6 +983,7 @@ export default function TeacherLiveBattlePage() {
         fallenPlayerUids: [],
         empoweredMageUids: [],
         cosmicDivinationUses: 0,
+        sorcerersIntuitionUses: {},
         voteState: null,
     });
     await logGameEvent(teacherUid, 'BOSS_BATTLE', `Round 1 of '${battle.battleName}' has started.`);
