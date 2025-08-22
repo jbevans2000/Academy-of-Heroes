@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, onSnapshot, query, orderBy, writeBatch } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Boon } from '@/lib/boons';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
@@ -107,7 +107,7 @@ export default function BoonsPage() {
     
     const handleVisibilityToggle = async (boon: Boon) => {
         if (!teacher) return;
-        const newVisibility = !boon.isVisibleToStudents;
+        const newVisibility = !(boon.isVisibleToStudents ?? false);
         setIsToggling(boon.id);
         try {
             const result = await updateBoonVisibility(teacher.uid, boon.id, newVisibility);

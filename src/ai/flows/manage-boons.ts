@@ -79,7 +79,7 @@ const defaultBoons = [
 ];
 
 
-type CreateBoonInput = Omit<Boon, 'id' | 'createdAt'>;
+type CreateBoonInput = Omit<Boon, 'id' | 'createdAt' | 'isVisibleToStudents'>;
 
 export async function populateDefaultBoons(teacherUid: string): Promise<ActionResponse> {
   if (!teacherUid) return { success: false, error: 'User not authenticated.' };
@@ -110,6 +110,7 @@ export async function createBoon(teacherUid: string, boonData: CreateBoonInput):
     const boonsRef = collection(db, 'teachers', teacherUid, 'boons');
     await addDoc(boonsRef, {
       ...boonData,
+      isVisibleToStudents: false, // Always hidden by default
       createdAt: serverTimestamp(),
     });
     await logGameEvent(teacherUid, 'GAMEMASTER', `Created a new boon: ${boonData.name}.`);
