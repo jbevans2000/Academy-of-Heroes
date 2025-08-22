@@ -8,7 +8,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { doc, setDoc, collection, query, where, getDocs, limit, serverTimestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -51,9 +51,16 @@ export default function RegisterPage() {
   useEffect(() => {
     const checkRegistrationStatus = async () => {
         setIsCheckingStatus(true);
-        const settings = await getGlobalSettings();
-        setIsRegistrationOpen(settings.isRegistrationOpen);
-        setIsCheckingStatus(false);
+        try {
+            const settings = await getGlobalSettings();
+            setIsRegistrationOpen(settings.isRegistrationOpen);
+        } catch (error) {
+            console.error("Failed to check registration status:", error);
+            // Default to open if there's an error, to not block registration unintentionally
+            setIsRegistrationOpen(true);
+        } finally {
+            setIsCheckingStatus(false);
+        }
     };
     checkRegistrationStatus();
   }, []);
@@ -72,6 +79,16 @@ export default function RegisterPage() {
   }
 
   const handleSubmit = async () => {
+    // Critical check added here
+    if (!isRegistrationOpen) {
+        toast({
+            variant: 'destructive',
+            title: 'Registration Closed',
+            description: 'New hero creation has been paused by the guild master.',
+        });
+        return;
+    }
+
     if (!classCode || !studentId || !password || !studentName || !characterName || !selectedClass || !selectedAvatar) {
       toast({
         variant: 'destructive',
