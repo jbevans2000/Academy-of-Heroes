@@ -10,10 +10,12 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction } from '@/components/ui/alert-dialog';
-import { ArrowLeft, BookOpen, Swords, Wrench, Star, UserPlus, LayoutDashboard, Copy } from 'lucide-react';
+import { ArrowLeft, BookOpen, Swords, Wrench, Star, UserPlus, LayoutDashboard, Copy, Gift } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+
 
 interface TeacherData {
     classCode: string;
@@ -23,6 +25,7 @@ const helpTopics = [
     { id: 'signup', title: 'Student Sign-Up', icon: <UserPlus className="h-8 w-8 text-primary" />, description: 'How to get students registered and into your class.' },
     { id: 'dashboard', title: 'Understanding the Dashboard', icon: <LayoutDashboard className="h-8 w-8 text-primary" />, description: 'An overview of the main dashboard features.' },
     { id: 'awarding', title: 'Awarding XP & Gold', icon: <Star className="h-8 w-8 text-primary" />, description: 'How to give rewards and edit student stats.' },
+    { id: 'rewards', title: 'Managing Guild Rewards', icon: <Gift className="h-8 w-8 text-primary" />, description: 'Create and manage custom rewards for your students.' },
     { id: 'quests', title: 'Quests & Chapters', icon: <BookOpen className="h-8 w-8 text-primary" />, description: 'Learn how to create and manage the story campaign.' },
     { id: 'battles', title: 'Boss Battles', icon: <Swords className="h-8 w-8 text-primary" />, description: 'Set up and run exciting, live boss battles.' },
     { id: 'tools', title: 'Classroom Tools', icon: <Wrench className="h-8 w-8 text-primary" />, description: 'Discover the suite of helpful classroom utilities.' },
@@ -118,6 +121,28 @@ export default function TeacherHelpPage() {
                                     <li><strong>Confirm:</strong> Click "Confirm Award". The points will be applied, and any level-ups (from XP), HP, or MP gains will be calculated automatically.</li>
                                 </ol>
                                 <p className="font-semibold">Note: You can also set a stat to a specific number by clicking directly on it within a student's card.</p>
+                            </div>
+                        </AlertDialogDescription>
+                    </>
+                );
+            case 'rewards':
+                return (
+                    <>
+                        <AlertDialogTitle className="text-2xl">Managing Guild Rewards</AlertDialogTitle>
+                        <AlertDialogDescription asChild>
+                            <div className="text-base text-black space-y-4">
+                                <p><strong>Guild Rewards</strong> are custom real-world or in-game perks you can create for your students to purchase with their Gold.</p>
+                                <h4 className="font-bold mt-2">Creating Rewards</h4>
+                                <p>From your main Podium, navigate to Game Management &gt; Guild Rewards. Here, you can click "Create New Reward" to design a new item. You can set its name, description, cost, and image. You can also decide if a purchase requires your approval.</p>
+                                <h4 className="font-bold mt-2">Managing Rewards</h4>
+                                <p>On the Guild Rewards page, you can see all the rewards you've created. Each card has controls to:</p>
+                                <ul className="list-disc list-inside">
+                                    <li><strong>Toggle Visibility:</strong> Make a reward visible or hidden from the student store.</li>
+                                    <li><strong>Edit:</strong> Change any of the reward's details.</li>
+                                    <li><strong>Delete:</strong> Permanently remove the reward.</li>
+                                </ul>
+                                <h4 className="font-bold mt-2">Student Experience</h4>
+                                <p>Students browse and purchase visible rewards in "The Vault". If a reward requires approval, you will see a request on your Guild Rewards page. Students use their purchased rewards from the "My Inventory" page.</p>
                             </div>
                         </AlertDialogDescription>
                     </>
