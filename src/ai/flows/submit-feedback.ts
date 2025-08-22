@@ -3,7 +3,7 @@
 /**
  * @fileOverview A server-side flow for handling anonymous teacher feedback submissions.
  */
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 interface ActionResponse {
@@ -38,4 +38,17 @@ export async function submitFeedback(input: FeedbackInput): Promise<ActionRespon
     console.error("Error submitting feedback: ", error);
     return { success: false, error: error.message || 'An unexpected error occurred.' };
   }
+}
+
+export async function deleteFeedback(feedbackId: string): Promise<ActionResponse> {
+    if (!feedbackId) {
+        return { success: false, error: 'Feedback ID is required.' };
+    }
+    try {
+        await deleteDoc(doc(db, 'feedback', feedbackId));
+        return { success: true, message: 'Feedback entry deleted.' };
+    } catch (error: any) {
+        console.error("Error deleting feedback:", error);
+        return { success: false, error: 'Failed to delete feedback entry.' };
+    }
 }

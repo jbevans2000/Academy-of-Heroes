@@ -13,7 +13,19 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { getGlobalSettings, updateGlobalSettings } from '@/ai/flows/manage-settings';
-import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb } from 'lucide-react';
+import { deleteFeedback } from '@/ai/flows/submit-feedback';
+import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { format } from 'date-fns';
@@ -46,6 +58,8 @@ export default function AdminDashboardPage() {
     const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
     const [isFeedbackPanelVisible, setIsFeedbackPanelVisible] = useState(false);
     const [isSettingsLoading, setIsSettingsLoading] = useState(true);
+    const [feedbackToDelete, setFeedbackToDelete] = useState<string | null>(null);
+    const [isDeletingFeedback, setIsDeletingFeedback] = useState(false);
     const router = useRouter();
     const { toast } = useToast();
 
@@ -178,6 +192,25 @@ export default function AdminDashboardPage() {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not update feedback status.' });
         }
     };
+    
+    const handleDeleteFeedback = async () => {
+        if (!feedbackToDelete) return;
+        setIsDeletingFeedback(true);
+        try {
+            const result = await deleteFeedback(feedbackToDelete);
+            if(result.success) {
+                toast({ title: 'Feedback Deleted', description: 'The entry has been removed.' });
+                setFeedback(prev => prev.filter(item => item.id !== feedbackToDelete));
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Could not delete the feedback entry.' });
+        } finally {
+            setIsDeletingFeedback(false);
+            setFeedbackToDelete(null);
+        }
+    };
 
 
     if (isLoading || !user) {
@@ -255,6 +288,9 @@ export default function AdminDashboardPage() {
                                                 <div className="flex flex-col items-end gap-2">
                                                     <p className="text-xs text-muted-foreground">{format(new Date(item.createdAt.seconds * 1000), 'PPP p')}</p>
                                                     <div className="flex items-center space-x-2">
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setFeedbackToDelete(item.id)}>
+                                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                                        </Button>
                                                         <Checkbox
                                                             id={`feedback-${item.id}`}
                                                             checked={item.status === 'addressed'}
@@ -329,6 +365,22 @@ export default function AdminDashboardPage() {
                             </div>
                         </CardContent>
                     </Card>
+                    <AlertDialog open={!!feedbackToDelete} onOpenChange={(isOpen) => !isOpen && setFeedbackToDelete(null)}>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                This will permanently delete this feedback entry. This action cannot be undone.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel disabled={isDeletingFeedback}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteFeedback} disabled={isDeletingFeedback}>
+                                    {isDeletingFeedback ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Delete'}
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </div>
             </main>
         </div>
