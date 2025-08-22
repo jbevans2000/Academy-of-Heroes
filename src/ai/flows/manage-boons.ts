@@ -54,7 +54,7 @@ const defaultBoons = [
     name: "Bard's Tune",
     description: "Listen to music with headphones during independent work.",
     cost: 200,
-    imageUrl: "https://placehold.co/400x400.png",
+    imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FBard's%20Tune.jpg?alt=media&token=89a03ef6-26bc-46fa-9b84-2183f6528437",
     effect: { type: 'REAL_WORLD_PERK', value: "Listen to music during independent work." },
     requiresApproval: false,
     studentMessage: "You may now listen to your tunes during independent work. Keep one ear open for instructions!",
