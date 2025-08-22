@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -270,8 +271,12 @@ export default function TeacherLiveBattlePage() {
     setIsEndingBattle(true);
 
     try {
-        const batch = writeBatch(db);
         const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
+
+        // First, update the live battle doc to signal the end to clients
+        await updateDoc(liveBattleRef, { status: 'BATTLE_ENDED' });
+
+        const batch = writeBatch(db);
         const parentArchiveRef = doc(db, 'teachers', teacherUid, 'savedBattles', liveState.parentArchiveId);
         
         const finalLiveStateSnap = await getDoc(liveBattleRef);
@@ -313,8 +318,6 @@ export default function TeacherLiveBattlePage() {
 
         // Award XP/Gold and clear inBattle status
         const studentDocs = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
-        const studentMap = new Map(studentDocs.docs.map(d => [d.id, d.data() as Student]));
-
         for (const studentDoc of studentDocs.docs) {
              const studentRef = doc(db, 'teachers', teacherUid, 'students', studentDoc.id);
              const studentData = studentDoc.data() as Student;
@@ -339,13 +342,22 @@ export default function TeacherLiveBattlePage() {
              batch.update(studentRef, updates);
         }
         
-        const subcollections = ['responses', 'powerActivations', 'battleLog', 'messages'];
-        for (const sub of subcollections) {
-            const subRef = collection(liveBattleRef, sub);
-            const snapshot = await getDocs(subRef);
-            snapshot.forEach(d => batch.delete(d.ref));
-        }
-        batch.delete(liveBattleRef);
+        // Schedule deletion of the live battle document after a delay
+        setTimeout(async () => {
+            try {
+                const finalBatch = writeBatch(db);
+                const subcollections = ['responses', 'powerActivations', 'battleLog', 'messages'];
+                for (const sub of subcollections) {
+                    const subRef = collection(liveBattleRef, sub);
+                    const snapshot = await getDocs(subRef);
+                    snapshot.forEach(d => finalBatch.delete(d.ref));
+                }
+                finalBatch.delete(liveBattleRef);
+                await finalBatch.commit();
+            } catch (cleanupError) {
+                console.error("Error during delayed cleanup:", cleanupError);
+            }
+        }, 10000); // 10-second delay to allow clients to redirect
 
         await batch.commit();
 
@@ -354,7 +366,6 @@ export default function TeacherLiveBattlePage() {
     } catch (e) {
         console.error("Error ending battle:", e);
         toast({ variant: 'destructive', title: 'Error', description: 'Failed to end battle and aggregate results.' });
-    } finally {
         setIsEndingBattle(false);
     }
 };

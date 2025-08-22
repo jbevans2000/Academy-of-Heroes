@@ -331,14 +331,6 @@ export default function LiveBattlePage() {
             const wasInBattle = studentRef.current?.inBattle;
 
             setStudent(studentData);
-
-            // Check for the specific change from inBattle:true to inBattle:false
-            if (wasInBattle === true && studentData.inBattle === false) {
-                 setTimeout(() => {
-                    router.push('/dashboard/songs-and-stories');
-                 }, 2000); // 2-second delay
-            }
-
         } else {
             router.push('/');
         }
@@ -373,6 +365,12 @@ export default function LiveBattlePage() {
         const newState = docSnapshot.data() as LiveBattleState;
         const currentBattleState = battleStateRef.current;
         
+        // Redirect if battle has ended
+        if (newState.status === 'BATTLE_ENDED') {
+            router.push('/dashboard/songs-and-stories');
+            return;
+        }
+
         // Reset state on new question or on battle start
         if (
             currentBattleState && (
