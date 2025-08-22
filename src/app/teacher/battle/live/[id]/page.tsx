@@ -274,9 +274,13 @@ export default function TeacherLiveBattlePage() {
         const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
         const parentArchiveRef = doc(db, 'teachers', teacherUid, 'savedBattles', liveState.parentArchiveId);
         
-        // Fetch the most recent state before updating
         const finalLiveStateSnap = await getDoc(liveBattleRef);
-        const fallenUids = finalLiveStateSnap.exists() ? (finalLiveStateSnap.data().fallenPlayerUids || []) : [];
+        if (!finalLiveStateSnap.exists()) {
+            throw new Error("Live battle document disappeared before aggregation.");
+        }
+        const finalLiveState = finalLiveStateSnap.data() as LiveBattleState;
+
+        const fallenUids = finalLiveState.fallenPlayerUids || [];
         const roundsArchiveRef = collection(db, 'teachers', teacherUid, 'savedBattles', liveState.parentArchiveId, 'rounds');
         const roundsSnap = await getDocs(roundsArchiveRef);
 
@@ -286,7 +290,7 @@ export default function TeacherLiveBattlePage() {
         roundsSnap.docs.forEach(roundDoc => {
             const roundData = roundDoc.data();
             (roundData.responses || []).forEach((res: any) => {
-                participantUids.add(res.studentUid); // Add student to participants
+                participantUids.add(res.studentUid);
                 if (!rewardsByStudent[res.studentUid]) {
                     rewardsByStudent[res.studentUid] = { xpGained: 0, goldGained: 0 };
                 }
@@ -302,6 +306,9 @@ export default function TeacherLiveBattlePage() {
             fallenAtEnd: fallenUids,
             rewardsByStudent: rewardsByStudent,
             participantUids: Array.from(participantUids),
+            totalDamage: finalLiveState.totalDamage || 0,
+            totalBaseDamage: finalLiveState.totalBaseDamage || 0,
+            totalPowerDamage: finalLiveState.totalPowerDamage || 0,
         });
 
         // Award XP/Gold

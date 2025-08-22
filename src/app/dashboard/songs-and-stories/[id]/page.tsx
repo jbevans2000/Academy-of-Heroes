@@ -9,7 +9,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Star, Coins, CheckCircle, XCircle, ScrollText } from 'lucide-react';
+import { ArrowLeft, Star, Coins, CheckCircle, XCircle, ScrollText, HeartCrack, Sparkles, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -45,6 +45,9 @@ interface SavedBattle {
         }
     };
     powerLog?: any[]; // Keep for future use, not displayed for now
+    totalDamage?: number;
+    totalBaseDamage?: number;
+    totalPowerDamage?: number;
 }
 
 export default function BattleSummaryDetailPage() {
@@ -164,7 +167,7 @@ export default function BattleSummaryDetailPage() {
 
                     <Card className="shadow-2xl bg-card/80 backdrop-blur-sm">
                         <CardHeader>
-                            <CardTitle className="text-2xl text-center">Spoils of War</CardTitle>
+                            <CardTitle className="text-2xl text-center">Your Spoils of War</CardTitle>
                         </CardHeader>
                         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="flex flex-col items-center justify-center p-6 bg-secondary/50 rounded-lg">
@@ -179,10 +182,33 @@ export default function BattleSummaryDetailPage() {
                             </div>
                         </CardContent>
                     </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-2xl text-center">Total Damage Dealt by Party</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex flex-wrap justify-around items-center text-center gap-6">
+                            <div className="flex flex-col items-center gap-2 p-2">
+                                <Shield className="h-8 w-8 text-blue-500" />
+                                <p className="text-2xl font-bold">{summary.totalBaseDamage ?? 0}</p>
+                                <p className="text-sm font-medium text-muted-foreground">Base Damage</p>
+                            </div>
+                             <div className="flex flex-col items-center gap-2 p-2">
+                                <Sparkles className="h-8 w-8 text-purple-500" />
+                                <p className="text-2xl font-bold">{summary.totalPowerDamage ?? 0}</p>
+                                <p className="text-sm font-medium text-muted-foreground">Power Damage</p>
+                            </div>
+                             <div className="flex flex-col items-center gap-2 p-2">
+                                <HeartCrack className="h-8 w-8 text-red-600" />
+                                <p className="text-3xl font-extrabold">{summary.totalDamage ?? 0}</p>
+                                <p className="text-sm font-medium text-muted-foreground">Total Damage</p>
+                            </div>
+                        </CardContent>
+                    </Card>
                     
                      <Card className="shadow-2xl bg-card/80 backdrop-blur-sm">
                         <CardHeader>
-                            <CardTitle className="text-2xl text-center">Battle Performance</CardTitle>
+                            <CardTitle className="text-2xl text-center">Your Battle Performance</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <Accordion type="single" collapsible className="w-full">
