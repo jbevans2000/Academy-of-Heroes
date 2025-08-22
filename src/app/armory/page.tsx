@@ -95,9 +95,9 @@ export default function ArmoryPage() {
     useEffect(() => {
         if (!student?.teacherUid) return;
 
+        // NEW: Query the publicBoons collection instead of the teacher's private collection
         const boonsQuery = query(
-            collection(db, 'teachers', student.teacherUid, 'boons'),
-            where('isVisibleToStudents', '==', true),
+            collection(db, 'publicBoons', student.teacherUid, 'boons'),
             orderBy('name', 'asc')
         );
 

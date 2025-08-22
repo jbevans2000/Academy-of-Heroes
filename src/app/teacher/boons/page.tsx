@@ -109,7 +109,8 @@ export default function BoonsPage() {
         const newVisibility = !(boon.isVisibleToStudents ?? false);
         setIsToggling(boon.id);
         try {
-            const result = await updateBoonVisibility(teacher.uid, boon.id, newVisibility);
+            // Pass the full boon object to the server function
+            const result = await updateBoonVisibility(teacher.uid, boon.id, boon, newVisibility);
             if (!result.success) {
                 throw new Error(result.error);
             }

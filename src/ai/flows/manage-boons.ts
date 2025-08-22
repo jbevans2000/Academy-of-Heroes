@@ -133,6 +133,19 @@ export async function updateBoon(teacherUid: string, boonData: UpdateBoonInput):
     const boonRef = doc(db, 'teachers', teacherUid, 'boons', boonData.id);
     const { id, ...dataToUpdate } = boonData;
     await updateDoc(boonRef, dataToUpdate);
+    
+    // Also update the public boon if it exists
+    if (boonData.isVisibleToStudents) {
+        const publicBoonRef = doc(db, 'publicBoons', teacherUid, 'boons', boonData.id);
+        await setDoc(publicBoonRef, {
+             name: boonData.name,
+             description: boonData.description,
+             cost: boonData.cost,
+             imageUrl: boonData.imageUrl,
+             effect: boonData.effect
+        }, { merge: true });
+    }
+
     await logGameEvent(teacherUid, 'GAMEMASTER', `Updated boon: ${boonData.name}.`);
     return { success: true, message: 'Boon updated successfully.' };
   } catch (error: any) {
@@ -141,13 +154,38 @@ export async function updateBoon(teacherUid: string, boonData: UpdateBoonInput):
   }
 }
 
-export async function updateBoonVisibility(teacherUid: string, boonId: string, isVisible: boolean): Promise<ActionResponse> {
+export async function updateBoonVisibility(teacherUid: string, boonId: string, boon: Boon, isVisible: boolean): Promise<ActionResponse> {
     if (!teacherUid) return { success: false, error: 'User not authenticated.' };
+    
+    const teacherBoonRef = doc(db, 'teachers', teacherUid, 'boons', boonId);
+    const publicBoonRef = doc(db, 'publicBoons', teacherUid, 'boons', boonId);
+
     try {
-        const boonRef = doc(db, 'teachers', teacherUid, 'boons', boonId);
-        // Use setDoc with merge: true. This will create the field if it doesn't exist,
-        // or update it if it does. This is more robust than updateDoc.
-        await setDoc(boonRef, { isVisibleToStudents: isVisible }, { merge: true });
+        if (isVisible) {
+            // Make boon visible: update teacher's copy and create/update public copy
+            const batch = writeBatch(db);
+            batch.update(teacherBoonRef, { isVisibleToStudents: true });
+            
+            // Data for the public document (only safe fields)
+            const publicData = {
+                name: boon.name,
+                description: boon.description,
+                cost: boon.cost,
+                imageUrl: boon.imageUrl,
+                effect: boon.effect
+            };
+            batch.set(publicBoonRef, publicData);
+
+            await batch.commit();
+
+        } else {
+            // Make boon hidden: update teacher's copy and delete public copy
+             const batch = writeBatch(db);
+             batch.update(teacherBoonRef, { isVisibleToStudents: false });
+             batch.delete(publicBoonRef);
+             await batch.commit();
+        }
+
         await logGameEvent(teacherUid, 'GAMEMASTER', `Set boon ${boonId} visibility to ${isVisible}.`);
         return { success: true };
     } catch (error: any) {
@@ -156,12 +194,22 @@ export async function updateBoonVisibility(teacherUid: string, boonId: string, i
     }
 }
 
+
 export async function deleteBoon(teacherUid: string, boonId: string): Promise<ActionResponse> {
   if (!teacherUid) return { success: false, error: 'User not authenticated.' };
 
   try {
+    const batch = writeBatch(db);
+    // Delete the teacher's version
     const boonRef = doc(db, 'teachers', teacherUid, 'boons', boonId);
-    await deleteDoc(boonRef);
+    batch.delete(boonRef);
+
+    // Also delete the public version if it exists
+    const publicBoonRef = doc(db, 'publicBoons', teacherUid, 'boons', boonId);
+    batch.delete(publicBoonRef);
+
+    await batch.commit();
+
     await logGameEvent(teacherUid, 'GAMEMASTER', `Deleted boon with ID: ${boonId}.`);
     return { success: true, message: 'Boon deleted successfully.' };
   } catch (error: any) {
