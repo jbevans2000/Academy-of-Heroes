@@ -44,7 +44,7 @@ function FeedbackFormComponent() {
         }
         setIsSubmitting(true);
         try {
-            const result = await submitFeedback({ teacher, feedbackType, message });
+            const result = await submitFeedback({ feedbackType, message });
             if (result.success) {
                 toast({ title: 'Feedback Sent!', description: 'Thank you for helping us improve The Academy of Heroes.' });
                 router.push('/teacher/dashboard');

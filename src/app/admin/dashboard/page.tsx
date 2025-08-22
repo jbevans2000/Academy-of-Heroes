@@ -28,14 +28,15 @@ interface Teacher {
 
 interface Feedback {
     id: string;
-    teacherName: string;
-    teacherEmail: string;
     feedbackType: 'bug' | 'feature';
     message: string;
     createdAt: {
         seconds: number;
         nanoseconds: number;
     };
+    // teacherName and teacherEmail are now optional as we transition to anonymous
+    teacherName?: string;
+    teacherEmail?: string;
 }
 
 export default function AdminDashboardPage() {
@@ -238,7 +239,9 @@ export default function AdminDashboardPage() {
                                                          {item.feedbackType === 'bug' ? <Bug className="h-5 w-5 text-destructive" /> : <Lightbulb className="h-5 w-5 text-yellow-500" />}
                                                          <span>{item.feedbackType === 'bug' ? 'Bug Report' : 'Feature Request'}</span>
                                                     </div>
-                                                    <p className="text-sm text-muted-foreground">From: {item.teacherName} ({item.teacherEmail})</p>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {item.teacherName ? `From: ${item.teacherName} (${item.teacherEmail})` : 'From: Anonymous'}
+                                                    </p>
                                                 </div>
                                                 <p className="text-xs text-muted-foreground">{format(new Date(item.createdAt.seconds * 1000), 'PPP p')}</p>
                                             </div>
