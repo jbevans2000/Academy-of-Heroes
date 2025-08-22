@@ -72,7 +72,7 @@ const defaultBoons = [
     name: "Time-Turner's Grace",
     description: "A 24-hour extension on one assignment.",
     cost: 300,
-    imageUrl: "https://placehold.co/400x400.png",
+    imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FTime%20Turner's%20Grace.jpg?alt=media&token=57032694-2c8a-42ec-b26e-7c0a2c414d50",
     effect: { type: 'REAL_WORLD_PERK', value: "24-hour assignment extension." },
     requiresApproval: false,
     studentMessage: "You've gained an extra day for your assignment! Let your teacher know which one you're using it on.",
