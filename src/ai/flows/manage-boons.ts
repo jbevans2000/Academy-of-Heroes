@@ -42,6 +42,15 @@ const defaultBoons = [
     studentMessage: "The Guild Leader must approve your seat change. Show them this pass!",
   },
   {
+    name: "Emissary's Duty",
+    description: "Deliver a message to another classroom or teacher.",
+    cost: 120,
+    imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FEmissary's%20Duty.jpg?alt=media&token=45484a0f-d05c-40d7-bae0-6a2cbedc9242",
+    effect: { type: 'REAL_WORLD_PERK', value: "Deliver a message to another classroom." },
+    requiresApproval: true,
+    studentMessage: "Your message is sealed. Present this to your Guild Leader to arrange for its delivery.",
+  },
+  {
     name: "Oracle's Insight",
     description: "Get a one-minute private consultation with the Guildmaster about an assignment.",
     cost: 150,
