@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, writeBatch } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Boon } from '@/lib/boons';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
@@ -27,8 +27,76 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, Star, Coins, EyeOff, Eye } from 'lucide-react';
 import Image from 'next/image';
-import { deleteBoon, updateBoonVisibility } from '@/ai/flows/manage-boons';
+import { deleteBoon, updateBoonVisibility, createBoon } from '@/ai/flows/manage-boons';
 import { cn } from '@/lib/utils';
+import { logGameEvent } from '@/lib/gamelog';
+
+const defaultBoons = [
+  {
+    name: "Jester's Favor",
+    description: "Share a school-appropriate joke with the class.",
+    cost: 50,
+    imageUrl: "https://placehold.co/400x400.png",
+    effect: { type: 'REAL_WORLD_PERK', value: "Tell a joke in class." },
+  },
+  {
+    name: "Scribe's Permission",
+    description: "Use a special pen or marker for your assignments for the day.",
+    cost: 75,
+    imageUrl: "https://placehold.co/400x400.png",
+    effect: { type: 'REAL_WORLD_PERK', value: "Use a special pen for the day." },
+  },
+  {
+    name: "Wanderer's Pass",
+    description: "Choose your seat for one class period.",
+    cost: 100,
+    imageUrl: "https://placehold.co/400x400.png",
+    effect: { type: 'REAL_WORLD_PERK', value: "Choose seat for the day." },
+  },
+  {
+    name: "Oracle's Insight",
+    description: "Get a one-minute private consultation with the Guildmaster about an assignment.",
+    cost: 150,
+    imageUrl: "https://placehold.co/400x400.png",
+    effect: { type: 'REAL_WORLD_PERK', value: "1-minute private teacher consultation." },
+  },
+  {
+    name: "Bard's Tune",
+    description: "Listen to music with headphones during independent work.",
+    cost: 200,
+    imageUrl: "https://placehold.co/400x400.png",
+    effect: { type: 'REAL_WORLD_PERK', value: "Listen to music during independent work." },
+  },
+  {
+    name: "Time-Turner's Grace",
+    description: "A 24-hour extension on one assignment.",
+    cost: 300,
+    imageUrl: "https://placehold.co/400x400.png",
+    effect: { type: 'REAL_WORLD_PERK', value: "24-hour assignment extension." },
+  },
+  {
+    name: "Scholar's Pardon",
+    description: "A one-time pass on a single, small homework assignment.",
+    cost: 500,
+    imageUrl: "https://placehold.co/400x400.png",
+    effect: { type: 'REAL_WORLD_PERK', value: "Single small homework pass." },
+  },
+  {
+    name: "Emissary's Duty",
+    description: "Be the line leader or designated helper for the day.",
+    cost: 120,
+    imageUrl: "https://placehold.co/400x400.png",
+    effect: { type: 'REAL_WORLD_PERK', value: "Line leader or teacher's helper." },
+  },
+  {
+    name: "Keeper of the Scroll",
+    description: "Be in charge of the remote control for the projector for one lesson.",
+    cost: 90,
+    imageUrl: "https://placehold.co/400x400.png",
+    effect: { type: 'REAL_WORLD_PERK', value: "Controls the projector remote." },
+  },
+];
+
 
 export default function BoonsPage() {
     const router = useRouter();
@@ -39,6 +107,7 @@ export default function BoonsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
     const [isToggling, setIsToggling] = useState<string | null>(null);
+    const [isPopulating, setIsPopulating] = useState(false);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -67,6 +136,29 @@ export default function BoonsPage() {
 
         return () => unsubscribe();
     }, [teacher, toast]);
+    
+    const handlePopulateBoons = async () => {
+        if (!teacher) return;
+        setIsPopulating(true);
+        try {
+            const boonsRef = collection(db, 'teachers', teacher.uid, 'boons');
+            const batch = writeBatch(db);
+
+            defaultBoons.forEach(boon => {
+                const docRef = doc(boonsRef);
+                batch.set(docRef, { ...boon, isVisibleToStudents: false, createdAt: new Date() });
+            });
+            await batch.commit();
+            await logGameEvent(teacher.uid, 'GAMEMASTER', 'Populated the Boons Workshop with default items.');
+
+            toast({ title: "Workshop Stocked!", description: "A set of default boons has been added to your workshop." });
+        } catch (error) {
+            console.error("Error populating boons:", error);
+            toast({ variant: "destructive", title: "Failed to Stock", description: "Could not add the default boons." });
+        } finally {
+            setIsPopulating(false);
+        }
+    }
 
     const handleDelete = async (boonId: string) => {
         if (!teacher) return;
@@ -129,11 +221,15 @@ export default function BoonsPage() {
                         <Card className="text-center py-20">
                             <CardHeader>
                                 <CardTitle>The Workshop is Empty</CardTitle>
-                                <CardDescription>You haven't created any boons yet. Create one to get started!</CardDescription>
+                                <CardDescription>Would you like to populate the workshop with a set of suggested classroom boons?</CardDescription>
                             </CardHeader>
-                            <CardContent>
-                                 <Button onClick={() => router.push('/teacher/boons/new')}>
-                                    <PlusCircle className="mr-2 h-4 w-4" /> Create New Boon
+                            <CardContent className="flex flex-col items-center gap-4">
+                                 <Button onClick={handlePopulateBoons} disabled={isPopulating}>
+                                    {isPopulating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Star className="mr-2 h-4 w-4" />}
+                                    Yes, Add Default Boons
+                                </Button>
+                                 <Button variant="secondary" onClick={() => router.push('/teacher/boons/new')}>
+                                    <PlusCircle className="mr-2 h-4 w-4" /> No, I'll Create My Own
                                 </Button>
                             </CardContent>
                         </Card>

@@ -12,7 +12,7 @@ interface ActionResponse {
   error?: string;
 }
 
-type CreateBoonInput = Omit<Boon, 'id' | 'createdAt' | 'isVisibleToStudents'>;
+type CreateBoonInput = Omit<Boon, 'id' | 'createdAt'>;
 
 export async function createBoon(teacherUid: string, boonData: CreateBoonInput): Promise<ActionResponse> {
   if (!teacherUid) return { success: false, error: 'User not authenticated.' };
@@ -25,7 +25,6 @@ export async function createBoon(teacherUid: string, boonData: CreateBoonInput):
     await addDoc(boonsRef, {
       ...boonData,
       createdAt: serverTimestamp(),
-      isVisibleToStudents: true, // Default to visible when manually created
     });
     await logGameEvent(teacherUid, 'GAMEMASTER', `Created a new boon: ${boonData.name}.`);
     return { success: true, message: 'Boon created successfully.' };
