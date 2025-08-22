@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, onSnapshot, query, orderBy, doc, getDoc, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Boon } from '@/lib/boons';
 import type { Student } from '@/lib/data';
@@ -95,10 +95,9 @@ export default function ArmoryPage() {
     useEffect(() => {
         if (!student?.teacherUid) return;
 
-        // NEW: Query the publicBoons collection instead of the teacher's private collection
         const boonsQuery = query(
-            collection(db, 'publicBoons', student.teacherUid, 'boons'),
-            orderBy('name', 'asc')
+            collection(db, 'teachers', student.teacherUid, 'boons'),
+            where('isVisibleToStudents', '==', true)
         );
 
         const unsubscribe = onSnapshot(boonsQuery, (snapshot) => {
