@@ -13,17 +13,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Save, Loader2, Upload, Star } from 'lucide-react';
 import { createBoon } from '@/ai/flows/manage-boons';
 import { v4 as uuidv4 } from 'uuid';
 import Image from 'next/image';
-
-const effectTypes = [
-    { value: 'BACKGROUND_CHANGE', label: 'Change Dashboard Background' },
-    { value: 'REAL_WORLD_PERK', label: 'Real-World Classroom Perk' },
-];
 
 export default function NewBoonPage() {
     const router = useRouter();
@@ -37,12 +31,10 @@ export default function NewBoonPage() {
     const [description, setDescription] = useState('');
     const [cost, setCost] = useState<number | ''>('');
     const [imageUrl, setImageUrl] = useState('');
-    const [effectType, setEffectType] = useState('REAL_WORLD_PERK');
     const [effectValue, setEffectValue] = useState('');
 
     // Upload State
     const [imageFile, setImageFile] = useState<File | null>(null);
-    const [backgroundFile, setBackgroundFile] = useState<File | null>(null);
     const [isUploading, setIsUploading] = useState(false);
 
     useEffect(() => {
@@ -78,23 +70,8 @@ export default function NewBoonPage() {
     const handleSave = async () => {
         if (!teacher) return;
         
-        let isValid = true;
-        if (!name || cost === '' || !imageUrl) {
-            isValid = false;
-        }
-
-        if (effectType === 'REAL_WORLD_PERK' && !effectValue) {
-            isValid = false;
-        }
-        
-        // For background change, effectValue will be the URL, so it's also checked implicitly by !effectValue
-        if (effectType === 'BACKGROUND_CHANGE' && !effectValue) {
-            isValid = false;
-        }
-
-
-        if (!isValid) {
-            toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill out all required fields, including uploading all images.' });
+        if (!name || cost === '' || !imageUrl || !effectValue) {
+            toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill out all required fields, including uploading an image.' });
             return;
         }
 
@@ -106,7 +83,7 @@ export default function NewBoonPage() {
                 cost: Number(cost),
                 imageUrl,
                 effect: {
-                    type: effectType as 'BACKGROUND_CHANGE' | 'REAL_WORLD_PERK',
+                    type: 'REAL_WORLD_PERK',
                     value: effectValue,
                 },
             });
@@ -169,41 +146,9 @@ export default function NewBoonPage() {
                             </div>
                             
                             <div className="space-y-2">
-                                <Label>Boon Effect</Label>
-                                <Select value={effectType} onValueChange={(value) => {
-                                    setEffectType(value);
-                                    setEffectValue(''); // Reset effect value when type changes
-                                }}>
-                                    <SelectTrigger><SelectValue/></SelectTrigger>
-                                    <SelectContent>
-                                        {effectTypes.map(et => <SelectItem key={et.value} value={et.value}>{et.label}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
+                                <Label htmlFor="effect-value">Real-World Perk Description</Label>
+                                <Input id="effect-value" value={effectValue} onChange={(e) => setEffectValue(e.target.value)} placeholder="e.g., May chew gum in class for one day." />
                             </div>
-
-                            {effectType === 'BACKGROUND_CHANGE' && (
-                                <div className="space-y-2">
-                                    <Label>Background Image</Label>
-                                    <div className="p-4 border rounded-md space-y-2">
-                                        <Input type="file" accept="image/*" onChange={e => setBackgroundFile(e.target.files ? e.target.files[0] : null)} disabled={isUploading} />
-                                        <Button onClick={async () => {
-                                            const url = await handleFileUpload(backgroundFile, 'dashboard-backgrounds');
-                                            if (url) setEffectValue(url);
-                                        }} disabled={isUploading || !backgroundFile}>
-                                             {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4"/>}
-                                            Upload Background
-                                        </Button>
-                                        {effectValue && <Image src={effectValue} alt="Effect preview" width={200} height={100} className="rounded-md border"/>}
-                                    </div>
-                                </div>
-                            )}
-
-                             {effectType === 'REAL_WORLD_PERK' && (
-                                <div className="space-y-2">
-                                    <Label htmlFor="effect-value">Perk Description</Label>
-                                    <Input id="effect-value" value={effectValue} onChange={(e) => setEffectValue(e.target.value)} placeholder="e.g., May chew gum in class for one day." />
-                                </div>
-                            )}
 
                              <div className="flex justify-end">
                                 <Button onClick={handleSave} disabled={isSaving}>
