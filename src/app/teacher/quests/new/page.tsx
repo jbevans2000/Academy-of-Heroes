@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -106,7 +106,7 @@ const ImageUploader = ({ label, imageUrl, onUploadSuccess, teacherUid, storagePa
 };
 
 
-export default function NewQuestPage() {
+function NewQuestForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -324,6 +324,15 @@ export default function NewQuestPage() {
         setIsSaving(false);
     }
   }
+  
+    if (isLoading) {
+        return (
+             <div className="flex min-h-screen w-full flex-col bg-muted/40">
+                <TeacherHeader />
+                <main className="flex-1 p-4 md:p-6 lg:p-8"><Loader2 className="mx-auto h-12 w-12 animate-spin" /></main>
+            </div>
+        )
+    }
 
   return (
     <>
@@ -558,4 +567,12 @@ export default function NewQuestPage() {
       </div>
     </>
   );
+}
+
+export default function NewQuestPage() {
+    return (
+        <Suspense fallback={<div className="flex min-h-screen w-full flex-col bg-muted/40"><TeacherHeader /><main className="flex-1 p-4 md:p-6 lg:p-8"><Loader2 className="mx-auto h-12 w-12 animate-spin" /></main></div>}>
+            <NewQuestForm />
+        </Suspense>
+    )
 }
