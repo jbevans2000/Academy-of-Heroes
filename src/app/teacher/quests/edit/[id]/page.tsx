@@ -183,11 +183,10 @@ export default function EditQuestPage() {
         return;
     }
     const fetchChaptersForHub = async () => {
-        const chaptersQuery = query(collection(db, 'teachers', teacher.uid, 'chapters'), where('hubId', '==', selectedHubId));
-        const chaptersSnapshot = await getDocs(chaptersQuery);
-        let chaptersData = chaptersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
-        // Sort on the client side to avoid needing a composite index
-        chaptersData.sort((a,b) => a.chapterNumber - b.chapterNumber);
+        const q = query(collection(db, 'teachers', teacher.uid, 'chapters'), where('hubId', '==', selectedHubId));
+        const snapshot = await getDocs(q);
+        const chaptersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
+        chaptersData.sort((a, b) => a.chapterNumber - b.chapterNumber); // Sort client-side
         setChaptersInHub(chaptersData);
     };
     fetchChaptersForHub();
@@ -366,7 +365,7 @@ export default function EditQuestPage() {
                                              const nextChapter = chaptersInHub.find(nextC => nextC.chapterNumber === c.chapterNumber + 1);
                                              if (nextChapter && nextChapter.id !== chapterId) {
                                                 return (
-                                                    <line key={`line-${c.id}`} x1={`${c.coordinates.x}%`} y1={`${c.coordinates.y}%`} x2={`${nextChapter.coordinates.x}%`} y2={`${nextChapter.coordinates.y}%`} stroke="#10B981" strokeWidth="3" strokeDasharray="5,5" />
+                                                    <line key={`line-${c.id}`} x1={`${c.coordinates.x}%`} y1={`${c.coordinates.y}%`} x2={`${nextChapter.coordinates.x}%`} y2={`${nextChapter.coordinates.y}%`} stroke="#10B981" strokeWidth="3" />
                                                 )
                                              }
                                              return null;

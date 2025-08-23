@@ -135,7 +135,6 @@ export default function HubMapPage() {
                                         y2={`${nextChapter.coordinates.y}%`}
                                         stroke="#10B981"
                                         strokeWidth="3"
-                                        strokeDasharray="5, 5"
                                     />
                                 );
                             })}

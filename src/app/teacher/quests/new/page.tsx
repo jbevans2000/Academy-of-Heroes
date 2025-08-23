@@ -202,11 +202,10 @@ export default function NewQuestPage() {
       return;
     }
     const fetchChaptersForHub = async () => {
-        const chaptersQuery = query(collection(db, 'teachers', teacher.uid, 'chapters'), where('hubId', '==', selectedHubId));
-        const chaptersSnapshot = await getDocs(chaptersQuery);
-        let chaptersData = chaptersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
-        // Sort on the client to avoid needing a composite index
-        chaptersData.sort((a,b) => a.chapterNumber - b.chapterNumber);
+        const q = query(collection(db, 'teachers', teacher.uid, 'chapters'), where('hubId', '==', selectedHubId));
+        const snapshot = await getDocs(q);
+        const chaptersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
+        chaptersData.sort((a, b) => a.chapterNumber - b.chapterNumber); // Sort client-side
         setChaptersInHub(chaptersData);
         setChapterNumber(chaptersData.length + 1);
     };
@@ -486,11 +485,11 @@ export default function NewQuestPage() {
                                           {chaptersInHub.slice(0, -1).map((chapter, index) => {
                                               const nextChapter = chaptersInHub[index + 1];
                                               return (
-                                                  <line key={`line-${chapter.id}`} x1={`${chapter.coordinates.x}%`} y1={`${chapter.coordinates.y}%`} x2={`${nextChapter.coordinates.x}%`} y2={`${nextChapter.coordinates.y}%`} stroke="#10B981" strokeWidth="3" strokeDasharray="5,5" />
+                                                  <line key={`line-${chapter.id}`} x1={`${chapter.coordinates.x}%`} y1={`${chapter.coordinates.y}%`} x2={`${nextChapter.coordinates.x}%`} y2={`${nextChapter.coordinates.y}%`} stroke="#10B981" strokeWidth="3" />
                                               )
                                           })}
                                            {chaptersInHub.length > 0 && (
-                                                <line x1={`${chaptersInHub[chaptersInHub.length - 1].coordinates.x}%`} y1={`${chaptersInHub[chaptersInHub.length - 1].coordinates.y}%`} x2={`${chapterCoordinates.x}%`} y2={`${chapterCoordinates.y}%`} stroke="#10B981" strokeWidth="3" strokeDasharray="5,5" />
+                                                <line x1={`${chaptersInHub[chaptersInHub.length - 1].coordinates.x}%`} y1={`${chaptersInHub[chaptersInHub.length - 1].coordinates.y}%`} x2={`${chapterCoordinates.x}%`} y2={`${chapterCoordinates.y}%`} stroke="#10B981" strokeWidth="3" />
                                            )}
                                       </svg>
                                       {chaptersInHub.map(chapter => (
