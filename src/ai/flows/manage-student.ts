@@ -174,22 +174,20 @@ export async function migrateStudentData(input: MigrateDataInput): Promise<Actio
 
         const oldData = oldStudentSnap.data();
         
-        // Explicitly copy only the game progress data.
-        // Do NOT copy studentName, characterName, studentId, or email.
+        // Explicitly copy only the game progress data with default fallbacks.
         const dataToCopy = {
-            level: oldData.level,
-            xp: oldData.xp,
-            gold: oldData.gold,
-            hp: oldData.hp,
-            maxHp: oldData.maxHp,
-            mp: oldData.mp,
-            maxMp: oldData.maxMp,
-            questProgress: oldData.questProgress,
-            hubsCompleted: oldData.hubsCompleted,
-            inventory: oldData.inventory,
-            // We also copy the avatar and background so their look is preserved
-            avatarUrl: oldData.avatarUrl,
-            backgroundUrl: oldData.backgroundUrl,
+            level: oldData.level || 1,
+            xp: oldData.xp || 0,
+            gold: oldData.gold || 0,
+            hp: oldData.hp || 1,
+            maxHp: oldData.maxHp || 1,
+            mp: oldData.mp || 0,
+            maxMp: oldData.maxMp || 0,
+            questProgress: oldData.questProgress || {},
+            hubsCompleted: oldData.hubsCompleted || 0,
+            inventory: oldData.inventory || {},
+            avatarUrl: oldData.avatarUrl || '',
+            backgroundUrl: oldData.backgroundUrl || '',
         };
         
         const batch = writeBatch(db);
