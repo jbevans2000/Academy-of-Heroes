@@ -54,7 +54,7 @@ export function LoginForm() {
       
       const studentSnap = await getDoc(doc(db, 'teachers', teacherUid, 'students', user.uid));
       if (studentSnap.exists()) {
-          await logGameEvent(teacherUid, 'ACCOUNT', `${studentSnap.data().studentName} logged in.`);
+          await logGameEvent(teacherUid, 'ACCOUNT', `${studentSnap.data().characterName} logged in.`);
           const justApproved = studentSnap.data().isNewlyApproved ?? false;
           const teacherData = await getDoc(doc(db, 'teachers', teacherUid));
           const className = teacherData.exists() ? teacherData.data().className : 'the guild';
