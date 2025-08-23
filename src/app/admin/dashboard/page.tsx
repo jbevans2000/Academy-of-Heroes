@@ -336,6 +336,7 @@ export default function AdminDashboardPage() {
                                     <TableRow>
                                         <TableHead>Guild Name</TableHead>
                                         <TableHead>Leader (Teacher)</TableHead>
+                                        <TableHead>Email</TableHead>
                                         <TableHead>School</TableHead>
                                         <TableHead>Students</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
@@ -350,6 +351,7 @@ export default function AdminDashboardPage() {
                                                 </Link>
                                             </TableCell>
                                             <TableCell>{teacher.name}</TableCell>
+                                            <TableCell>{teacher.email}</TableCell>
                                             <TableCell>{teacher.schoolName}</TableCell>
                                             <TableCell>{teacher.studentCount}</TableCell>
                                             <TableCell className="text-right">
