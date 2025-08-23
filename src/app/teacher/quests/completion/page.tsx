@@ -207,8 +207,8 @@ export default function ManageQuestCompletionPage() {
                                     return (
                                         <div key={student.uid} className="flex items-center justify-between p-2 border rounded-md">
                                             <div>
-                                                <p className="font-semibold">{student.characterName}</p>
-                                                <p className="text-sm text-muted-foreground">{student.studentName}</p>
+                                                <p className="font-semibold">{student.studentName}</p>
+                                                <p className="text-sm text-muted-foreground">{student.characterName}</p>
                                             </div>
                                             <div className="flex items-center space-x-2">
                                                 <span className={cn('text-xs font-semibold', isRestricted ? 'text-destructive' : 'text-green-700')}>
