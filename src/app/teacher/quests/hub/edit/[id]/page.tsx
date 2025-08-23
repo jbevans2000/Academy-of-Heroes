@@ -6,7 +6,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowLeft, Loader2, Save, Upload, X } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Upload, X, Library } from 'lucide-react';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -19,15 +19,17 @@ import Image from 'next/image';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { v4 as uuidv4 } from 'uuid';
 import { cn } from '@/lib/utils';
+import { MapGallery } from '@/components/teacher/map-gallery';
 
 const defaultWorldMap = "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FWorld%20Map.JPG?alt=media&token=2d88af7d-a54c-4f34-b4c7-1a7c04485b8b";
 
-const ImageUploader = ({ label, imageUrl, onUploadSuccess, teacherUid, storagePath }: {
+const ImageUploader = ({ label, imageUrl, onUploadSuccess, teacherUid, storagePath, onGalleryOpen }: {
   label: string;
   imageUrl: string;
   onUploadSuccess: (url: string) => void;
   teacherUid: string;
   storagePath: string;
+  onGalleryOpen?: () => void;
 }) => {
     const { toast } = useToast();
     const [file, setFile] = useState<File | null>(null);
@@ -60,12 +62,17 @@ const ImageUploader = ({ label, imageUrl, onUploadSuccess, teacherUid, storagePa
     return (
         <div className="space-y-2 p-3 border rounded-md">
             <Label className="text-base font-medium">{label}</Label>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
                 <Label htmlFor={`upload-${label}`} className={cn(buttonVariants({ variant: 'outline' }), "cursor-pointer")}>
                     <Upload className="mr-2 h-4 w-4" />
                     Choose File
                 </Label>
                 <Input id={`upload-${label}`} type="file" accept="image/*" onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)} className="hidden" disabled={isUploading}/>
+                {onGalleryOpen && (
+                     <Button variant="outline" onClick={onGalleryOpen}>
+                        <Library className="mr-2 h-4 w-4" /> Choose From Library
+                    </Button>
+                )}
                 {file && (
                     <>
                         <Button onClick={handleUpload} disabled={!file || isUploading}>
@@ -96,6 +103,7 @@ export default function EditQuestHubPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [teacher, setTeacher] = useState<User | null>(null);
     const [teacherWorldMapUrl, setTeacherWorldMapUrl] = useState(defaultWorldMap);
+    const [isGalleryOpen, setIsGalleryOpen] = useState(false);
     
     // Hub State
     const [hub, setHub] = useState<Partial<QuestHub> | null>(null);
@@ -205,72 +213,76 @@ export default function EditQuestHubPage() {
     }
 
     return (
-        <div className="flex min-h-screen w-full flex-col bg-muted/40">
-            <TeacherHeader />
-            <main className="flex-1 p-4 md:p-6 lg:p-8">
-                <div className="max-w-4xl mx-auto space-y-6">
-                    <Button variant="outline" onClick={() => router.push('/teacher/quests')}>
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Quest Archives
-                    </Button>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Edit Quest Hub</CardTitle>
-                            <CardDescription>Modify the details for "{hub.name}".</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="space-y-2">
-                                <Label htmlFor="hub-name">Hub Name</Label>
-                                <Input id="hub-name" value={hub.name || ''} onChange={(e) => handleFieldChange('name', e.target.value)} disabled={isSaving} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="hub-order">Hub Order</Label>
-                                <Input id="hub-order" type="number" value={hub.hubOrder ?? ''} onChange={(e) => handleFieldChange('hubOrder', Number(e.target.value))} disabled={isSaving} />
-                            </div>
-                            
-                            <ImageUploader 
-                                label="Hub's Regional Map" 
-                                imageUrl={hub.worldMapUrl || ''} 
-                                onUploadSuccess={(url) => handleFieldChange('worldMapUrl', url)} 
-                                teacherUid={teacher.uid}
-                                storagePath="hub-maps"
-                            />
-
-                             <div className="pt-4 space-y-2">
-                                <Label>Position Hub on World Map</Label>
-                                <div 
-                                    className="relative aspect-[2048/1536] rounded-lg overflow-hidden bg-muted/50 border cursor-grab"
-                                    onMouseDown={(e) => handleMapDrag(e)}
-                                >
-                                    <Image
-                                        src={teacherWorldMapUrl}
-                                        alt="World Map for Placement"
-                                        fill
-                                        className="object-contain"
-                                        priority
-                                    />
-                                    {hub.coordinates && (
-                                        <div
-                                            className="absolute -translate-x-1/2 -translate-y-1/2 cursor-grabbing"
-                                            style={{
-                                                left: `${hub.coordinates.x}%`,
-                                                top: `${hub.coordinates.y}%`,
-                                            }}
-                                        >
-                                            <div className="w-5 h-5 bg-yellow-400 rounded-full ring-2 ring-white shadow-xl animate-pulse-glow"></div>
-                                        </div>
-                                    )}
+        <>
+            <MapGallery isOpen={isGalleryOpen} onOpenChange={setIsGalleryOpen} onMapSelect={(url) => handleFieldChange('worldMapUrl', url)} />
+            <div className="flex min-h-screen w-full flex-col bg-muted/40">
+                <TeacherHeader />
+                <main className="flex-1 p-4 md:p-6 lg:p-8">
+                    <div className="max-w-4xl mx-auto space-y-6">
+                        <Button variant="outline" onClick={() => router.push('/teacher/quests')}>
+                            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Quest Archives
+                        </Button>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Edit Quest Hub</CardTitle>
+                                <CardDescription>Modify the details for "{hub.name}".</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="space-y-2">
+                                    <Label htmlFor="hub-name">Hub Name</Label>
+                                    <Input id="hub-name" value={hub.name || ''} onChange={(e) => handleFieldChange('name', e.target.value)} disabled={isSaving} />
                                 </div>
-                            </div>
-                             <div className="flex justify-end pt-4 border-t">
-                                <Button size="lg" onClick={handleSaveChanges} disabled={isSaving}>
-                                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                                    Save Changes
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            </main>
-        </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="hub-order">Hub Order</Label>
+                                    <Input id="hub-order" type="number" value={hub.hubOrder ?? ''} onChange={(e) => handleFieldChange('hubOrder', Number(e.target.value))} disabled={isSaving} />
+                                </div>
+                                
+                                <ImageUploader 
+                                    label="Hub's Regional Map" 
+                                    imageUrl={hub.worldMapUrl || ''} 
+                                    onUploadSuccess={(url) => handleFieldChange('worldMapUrl', url)} 
+                                    teacherUid={teacher.uid}
+                                    storagePath="hub-maps"
+                                    onGalleryOpen={() => setIsGalleryOpen(true)}
+                                />
+
+                                <div className="pt-4 space-y-2">
+                                    <Label>Position Hub on World Map</Label>
+                                    <div 
+                                        className="relative aspect-[2048/1536] rounded-lg overflow-hidden bg-muted/50 border cursor-grab"
+                                        onMouseDown={(e) => handleMapDrag(e)}
+                                    >
+                                        <Image
+                                            src={teacherWorldMapUrl}
+                                            alt="World Map for Placement"
+                                            fill
+                                            className="object-contain"
+                                            priority
+                                        />
+                                        {hub.coordinates && (
+                                            <div
+                                                className="absolute -translate-x-1/2 -translate-y-1/2 cursor-grabbing"
+                                                style={{
+                                                    left: `${hub.coordinates.x}%`,
+                                                    top: `${hub.coordinates.y}%`,
+                                                }}
+                                            >
+                                                <div className="w-5 h-5 bg-yellow-400 rounded-full ring-2 ring-white shadow-xl animate-pulse-glow"></div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="flex justify-end pt-4 border-t">
+                                    <Button size="lg" onClick={handleSaveChanges} disabled={isSaving}>
+                                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                        Save Changes
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </main>
+            </div>
+        </>
     )
 }

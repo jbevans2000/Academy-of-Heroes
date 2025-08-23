@@ -1,0 +1,23 @@
+
+export const defaultHubMaps = [
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/hub-maps%2FDefault%20Hub%20Maps%2FMap%20Two.PNG?alt=media&token=b5ffb4f4-abe1-47f9-aaa7-6f06568a52b9",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/hub-maps%2FDefault%20Hub%20Maps%2FMap%20Eleven.JPG?alt=media&token=ec1b4cbc-1bbb-4a9a-9321-eb1496eee824",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/hub-maps%2FDefault%20Hub%20Maps%2FMap%20Fifteen.JPG?alt=media&token=544ccb94-10c5-4ffc-83e9-f2819ad62fe0",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/hub-maps%2FDefault%20Hub%20Maps%2FMap%20Five.JPG?alt=media&token=49ef44d6-9f1e-4e8f-9b25-740d80ce2f9d",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/hub-maps%2FDefault%20Hub%20Maps%2FMap%20Four.JPG?alt=media&token=db28d4a2-7761-4c76-b566-32b671821ab0",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/hub-maps%2FDefault%20Hub%20Maps%2FMap%20Fourteen.JPG?alt=media&token=bd84434b-e1a9-4c19-b390-4b7643a75ea3",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/hub-maps%2FDefault%20Hub%20Maps%2FMap%20Nine.JPG?alt=media&token=65e755ff-c640-4b75-b9f8-7a558da640f2",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/hub-maps%2FDefault%20Hub%20Maps%2FMap%20Nineteen.JPG?alt=media&token=a067b213-0369-4e55-9a0b-4bda3e0ba161",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/hub-maps%2FDefault%20Hub%20Maps%2FMap%20One.PNG?alt=media&token=6c767479-00e8-460a-bfb0-1ed2bcbf0b28",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/hub-maps%2FDefault%20Hub%20Maps%2FMap%20Seventeen.JPG?alt=media&token=1d3d5b08-0c12-4ec4-a389-ec79853be313",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/hub-maps%2FDefault%20Hub%20Maps%2FMap%20Six.JPG?alt=media&token=bdb4c473-086f-49cc-af6c-bacd4dc223d9",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/hub-maps%2FDefault%20Hub%20Maps%2FMap%20Sixteen.JPG?alt=media&token=1c914a53-2b8c-47c7-aa8b-7fa3b7089215",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/hub-maps%2FDefault%20Hub%20Maps%2FMap%20Ten.JPG?alt=media&token=84596d91-7ddd-4242-8955-12b82aeccf9b",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/hub-maps%2FDefault%20Hub%20Maps%2FMap%20Three.PNG?alt=media&token=ca182d9f-b2d2-44c1-abb8-30372ef9dcce",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/hub-maps%2FDefault%20Hub%20Maps%2FMap%20Twenty%20Four.JPG?alt=media&token=bd69fc6c-9c8a-4b13-aec1-29f5874cd522",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/hub-maps%2FDefault%20Hub%20Maps%2FMap%20Twenty%20Seven.JPG?alt=media&token=6b97973a-40a7-46ef-a4f8-39c0d4a37f1b",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/hub-maps%2FDefault%20Hub%20Maps%2FMap%20Twenty%20Six.JPG?alt=media&token=0998ee65-4a32-4072-8b8e-6c6fcb7ebe4a",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/hub-maps%2FDefault%20Hub%20Maps%2FMap%20Twenty%20Two.JPG?alt=media&token=d1cf61b0-0d4b-4e1a-bd3d-77c5bc307c07",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/hub-maps%2FDefault%20Hub%20Maps%2FCapital.JPG?alt=media&token=5ce45706-4439-472d-9c2e-4b5c3790a1ff",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/hub-maps%2FDefault%20Hub%20Maps%2FMap%20Eight.JPG?alt=media&token=d9d34597-e786-480b-b7e4-6d782996c4f2",
+];
