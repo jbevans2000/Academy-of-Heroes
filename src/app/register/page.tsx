@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Shield, Heart, Wand, User, KeyRound, Star, Eye, EyeOff, BookUser, ChevronsUpDown, ShieldAlert } from 'lucide-react';
+import { Loader2, Shield, Heart, Wand, User, KeyRound, Star, Eye, EyeOff, BookUser, ChevronsUpDown, ShieldAlert, Mail } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import {
@@ -24,10 +24,14 @@ import { getGlobalSettings } from '@/ai/flows/manage-settings';
 import { createStudentDocuments } from '@/ai/flows/create-student';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { Switch } from '@/components/ui/switch';
+
 
 export default function RegisterPage() {
+  const [useEmail, setUseEmail] = useState(true);
   const [classCode, setClassCode] = useState('');
   const [studentId, setStudentId] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [studentName, setStudentName] = useState('');
@@ -60,7 +64,7 @@ export default function RegisterPage() {
 
 
   const handleSubmit = async () => {
-    if (!classCode || !studentId || !password || !studentName || !characterName || !selectedClass || !selectedAvatar) {
+    if (!classCode || (!useEmail && !studentId) || (useEmail && !email) || !password || !studentName || !characterName || !selectedClass || !selectedAvatar) {
       toast({
         variant: 'destructive',
         title: 'Missing Information',
@@ -80,16 +84,18 @@ export default function RegisterPage() {
 
     try {
       // Step 1: Create user in Firebase Auth on the client
-      const email = `${studentId}@academy-heroes-mziuf.firebaseapp.com`;
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const finalEmail = useEmail ? email : `${studentId}@academy-heroes-mziuf.firebaseapp.com`;
+      const finalStudentId = useEmail ? email : studentId; // Use email as identifier if provided
+
+      const userCredential = await createUserWithEmailAndPassword(auth, finalEmail, password);
       const user = userCredential.user;
 
       // Step 2: Call server action to create Firestore documents
       const result = await createStudentDocuments({
         classCode,
         userUid: user.uid,
-        email: email,
-        studentId,
+        email: finalEmail,
+        studentId: finalStudentId,
         studentName,
         characterName,
         selectedClass,
@@ -113,10 +119,10 @@ export default function RegisterPage() {
       if (error.code) {
         switch(error.code) {
           case 'auth/email-already-in-use':
-            description = 'This Hero\'s Alias is already registered for this guild. Please choose another.';
+            description = useEmail ? 'This email is already registered.' : 'This Hero\'s Alias is already registered. Please choose another.';
             break;
           case 'auth/invalid-email':
-            description = 'The Hero\'s Alias created an invalid email. Please use only letters and numbers.';
+            description = 'The email address is not valid.';
             break;
           case 'auth/weak-password':
             description = 'The password is too weak. Please choose a stronger password.';
@@ -197,10 +203,24 @@ export default function RegisterPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Left Column: Form Inputs */}
                 <div className="space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="student-id" className="flex items-center"><KeyRound className="w-4 h-4 mr-2" />Hero's Alias</Label>
-                    <Input id="student-id" placeholder="Choose a hero's alias (username)" value={studentId} onChange={(e) => setStudentId(e.target.value)} disabled={isLoading} />
-                </div>
+                  <div className="flex items-center space-x-2">
+                    <Label htmlFor="signup-mode">Use Hero's Alias</Label>
+                    <Switch id="signup-mode" checked={!useEmail} onCheckedChange={(checked) => setUseEmail(!checked)} />
+                    <Label htmlFor="signup-mode">Use Email</Label>
+                  </div>
+
+                  {useEmail ? (
+                    <div className="space-y-2 animate-in fade-in-50">
+                        <Label htmlFor="email" className="flex items-center"><Mail className="w-4 h-4 mr-2" />Email Address</Label>
+                        <Input id="email" placeholder="Your email address" type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading} />
+                    </div>
+                  ) : (
+                    <div className="space-y-2 animate-in fade-in-50">
+                        <Label htmlFor="student-id" className="flex items-center"><KeyRound className="w-4 h-4 mr-2" />Hero's Alias (Username)</Label>
+                        <Input id="student-id" placeholder="Choose a unique hero's alias" value={studentId} onChange={(e) => setStudentId(e.target.value)} disabled={isLoading} />
+                    </div>
+                  )}
+
                 <div className="space-y-2">
                     <Label htmlFor="password" className="flex items-center"><Eye className="w-4 h-4 mr-2" />Password</Label>
                     <div className="relative">

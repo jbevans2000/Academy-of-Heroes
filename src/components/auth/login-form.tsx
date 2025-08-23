@@ -11,10 +11,11 @@ import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Loader2, KeyRound } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
-import { doc, getDoc, getDocs, collection, query, writeBatch, serverTimestamp, setDoc } from 'firebase/firestore';
+import { doc, getDoc, getDocs, collection, query, writeBatch, serverTimestamp, setDoc, where } from 'firebase/firestore';
+import Link from 'next/link';
 
 export function LoginForm() {
-  const [studentId, setStudentId] = useState('');
+  const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -22,11 +23,11 @@ export function LoginForm() {
   const { toast } = useToast();
 
   const handleLogin = async () => {
-    if (!studentId || !password) {
+    if (!loginId || !password) {
       toast({
         variant: 'destructive',
         title: 'Missing Fields',
-        description: "Please enter your Hero's Alias and Password.",
+        description: "Please enter your email or Hero's Alias and Password.",
       });
       return;
     }
@@ -34,71 +35,25 @@ export function LoginForm() {
     setIsLoading(true);
 
     try {
-      const email = `${studentId}@academy-heroes-mziuf.firebaseapp.com`;
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      const studentMetaRef = doc(db, 'students', user.uid);
-      let studentMetaSnap = await getDoc(studentMetaRef);
-      let teacherUid = '';
-      let isApproved = false;
-
-      if (studentMetaSnap.exists()) {
-        teacherUid = studentMetaSnap.data().teacherUid;
-        isApproved = studentMetaSnap.data().approved;
-      } else {
-        // Legacy account or failed registration: The student meta doc doesn't exist.
-        // We need to find their teacher and create it for them.
-        toast({ title: 'Updating Account...', description: "Your hero's records are being updated to the new system." });
-        
-        const teachersQuery = query(collection(db, 'teachers'));
-        const teachersSnapshot = await getDocs(teachersQuery);
-        let foundTeacherUid: string | null = null;
-        
-        for (const teacherDoc of teachersSnapshot.docs) {
-            const studentInTeacherRef = doc(db, 'teachers', teacherDoc.id, 'students', user.uid);
-            const studentInTeacherSnap = await getDoc(studentInTeacherRef);
-            if (studentInTeacherSnap.exists()) {
-                foundTeacherUid = teacherDoc.id;
-                break;
+      // First, try logging in assuming loginId is a Hero's Alias
+      try {
+        const dummyEmail = `${loginId}@academy-heroes-mziuf.firebaseapp.com`;
+        await attemptLogin(dummyEmail, password);
+      } catch (aliasError: any) {
+        // If the alias login fails (likely with user-not-found or invalid-credential),
+        // try again assuming the loginId is a real email.
+        if (aliasError.code === 'auth/invalid-credential' || aliasError.code === 'auth/user-not-found') {
+            try {
+                 await attemptLogin(loginId, password);
+            } catch (emailError: any) {
+                // If the email login also fails, show a generic error.
+                throw emailError;
             }
-        }
-
-        if (foundTeacherUid) {
-            // Found the teacher, now create the missing global student doc
-            await setDoc(studentMetaRef, {
-                teacherUid: foundTeacherUid,
-                approved: true
-            });
-            teacherUid = foundTeacherUid;
-            isApproved = true;
-            toast({ title: 'Account Updated!', description: "Your hero is ready for adventure!" });
         } else {
-             // If we can't find them in any teacher's roster, they are truly lost.
-             throw new Error("Your hero's record could not be found in any guild.");
+            // If the error was something else (e.g., network error), throw it.
+            throw aliasError;
         }
       }
-
-      if (!isApproved) {
-        router.push('/awaiting-approval');
-        return;
-      }
-      
-      const studentSnap = await getDoc(doc(db, 'teachers', teacherUid, 'students', user.uid));
-      if (studentSnap.exists()) {
-          await logGameEvent(teacherUid, 'ACCOUNT', `${studentSnap.data().characterName} logged in.`);
-          const justApproved = studentSnap.data().isNewlyApproved ?? false;
-          const teacherData = await getDoc(doc(db, 'teachers', teacherUid));
-          const className = teacherData.exists() ? teacherData.data().className : 'the guild';
-
-          router.push(`/dashboard${justApproved ? `?approved=true&className=${encodeURIComponent(className)}` : ''}`);
-      } else {
-         // This case means they were approved in the global doc but their data doc doesn't exist in the teacher's subcollection.
-         // This points to a data integrity issue. The most user-friendly way to handle this is to send them back to the pending queue.
-         await setDoc(doc(db, 'students', user.uid), { teacherUid: teacherUid, approved: false });
-         router.push('/awaiting-approval');
-      }
-
     } catch (error: any) {
       console.error(error);
       let description = 'An unexpected error occurred. Please try again.';
@@ -107,7 +62,7 @@ export function LoginForm() {
           case 'auth/invalid-credential':
           case 'auth/user-not-found':
           case 'auth/wrong-password':
-            description = 'Invalid hero alias or password.';
+            description = 'Invalid email/alias or password.';
             break;
           case 'auth/network-request-failed':
             description = 'Network error. Please check your connection.';
@@ -128,17 +83,53 @@ export function LoginForm() {
     }
   };
 
+  const attemptLogin = async (email: string, pass: string) => {
+      const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+      const user = userCredential.user;
+
+      const studentMetaRef = doc(db, 'students', user.uid);
+      let studentMetaSnap = await getDoc(studentMetaRef);
+      
+      let teacherUid = '';
+      let isApproved = false;
+
+      if (studentMetaSnap.exists()) {
+        teacherUid = studentMetaSnap.data().teacherUid;
+        isApproved = studentMetaSnap.data().approved;
+      } else {
+        throw new Error("Your hero's record could not be found in any guild.");
+      }
+
+      if (!isApproved) {
+        router.push('/awaiting-approval');
+        return;
+      }
+      
+      const studentSnap = await getDoc(doc(db, 'teachers', teacherUid, 'students', user.uid));
+      if (studentSnap.exists()) {
+          await logGameEvent(teacherUid, 'ACCOUNT', `${studentSnap.data().characterName} logged in.`);
+          const justApproved = studentSnap.data().isNewlyApproved ?? false;
+          const teacherData = await getDoc(doc(db, 'teachers', teacherUid));
+          const className = teacherData.exists() ? teacherData.data().className : 'the guild';
+
+          router.push(`/dashboard${justApproved ? `?approved=true&className=${encodeURIComponent(className)}` : ''}`);
+      } else {
+         await setDoc(doc(db, 'students', user.uid), { teacherUid: teacherUid, approved: false });
+         router.push('/awaiting-approval');
+      }
+  }
+
   return (
     <div className="space-y-4 rounded-lg bg-background/50 p-4 border">
         <div className="space-y-2">
-            <Label htmlFor="student-id"><KeyRound className="inline-block mr-2 h-4 w-4" />Hero's Alias</Label>
+            <Label htmlFor="login-id"><KeyRound className="inline-block mr-2 h-4 w-4" />Email or Hero's Alias</Label>
             <Input
-                id="student-id"
+                id="login-id"
                 type="text"
-                placeholder="Enter your hero's alias"
+                placeholder="Enter your email or alias"
                 required
-                value={studentId}
-                onChange={(e) => setStudentId(e.target.value)}
+                value={loginId}
+                onChange={(e) => setLoginId(e.target.value)}
                 disabled={isLoading}
             />
         </div>
@@ -176,6 +167,11 @@ export function LoginForm() {
         ) : null}
         Login to My Hero
         </Button>
+        <div className="text-center text-sm">
+            <Link href="/forgot-password" className="underline text-primary hover:text-primary/80">
+                Forgot your password?
+            </Link>
+        </div>
     </div>
   );
 }
