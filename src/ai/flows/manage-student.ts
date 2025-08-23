@@ -175,7 +175,7 @@ export async function migrateStudentData(input: MigrateDataInput): Promise<Actio
         const oldData = oldStudentSnap.data();
         
         // Exclude properties that should not be copied
-        const { uid, email, studentId, isArchived, ...dataToCopy } = oldData;
+        const { uid, email, studentId, ...dataToCopy } = oldData;
         
         const batch = writeBatch(db);
 
