@@ -108,6 +108,7 @@ export default function NewQuestPage() {
   const defaultWorldMap = "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FWorld%20Map.JPG?alt=media&token=2d88af7d-a54c-4f34-b4c7-1a7c04485b8b";
   const [teacher, setTeacher] = useState<User | null>(null);
   const [teacherWorldMapUrl, setTeacherWorldMapUrl] = useState(defaultWorldMap);
+  const [isHubOnlyMode, setIsHubOnlyMode] = useState(false);
 
   // State for AI generator
   const [isOracleOpen, setIsOracleOpen] = useState(false);
@@ -152,6 +153,7 @@ export default function NewQuestPage() {
 
   useEffect(() => {
     if (!teacher) return;
+    setIsHubOnlyMode(searchParams.get('hubOnly') === 'true');
     const fetchInitialData = async () => {
         setIsLoading(true);
         try {
@@ -169,7 +171,7 @@ export default function NewQuestPage() {
                 setTeacherWorldMapUrl(teacherSnap.data().worldMapUrl);
             }
 
-            // Check for hubId from query params
+            // Check for hubId from query params to pre-select it
             const preselectedHubId = searchParams.get('hubId');
             if (preselectedHubId) {
                 setSelectedHubId(preselectedHubId);
@@ -213,17 +215,24 @@ export default function NewQuestPage() {
   const hubMapUrl = selectedHub ? selectedHub.worldMapUrl : newHubMapUrl;
 
   const validateInputs = () => {
-    if (!selectedHubId) {
-        toast({ variant: 'destructive', title: 'Validation Error', description: 'You must select or create a Hub.' });
-        return false;
-    }
-    if (selectedHubId === 'new' && (!newHubName || !newHubMapUrl || !newHubOrder)) {
-        toast({ variant: 'destructive', title: 'Validation Error', description: 'New Hub Name, Map URL, and Order are required.' });
-        return false;
-    }
-     if (!chapterTitle || chapterNumber === '') {
-        toast({ variant: 'destructive', title: 'Validation Error', description: 'Please fill out all required chapter fields: Title and Number.' });
-        return false;
+    if (isHubOnlyMode) {
+         if (!newHubName || !newHubMapUrl || !newHubOrder) {
+            toast({ variant: 'destructive', title: 'Validation Error', description: 'New Hub Name, Map URL, and Order are required.' });
+            return false;
+        }
+    } else {
+        if (!selectedHubId) {
+            toast({ variant: 'destructive', title: 'Validation Error', description: 'You must select or create a Hub.' });
+            return false;
+        }
+        if (selectedHubId === 'new' && (!newHubName || !newHubMapUrl || !newHubOrder)) {
+            toast({ variant: 'destructive', title: 'Validation Error', description: 'New Hub Name, Map URL, and Order are required.' });
+            return false;
+        }
+        if (!chapterTitle || chapterNumber === '') {
+            toast({ variant: 'destructive', title: 'Validation Error', description: 'Chapter Title and Number are required.' });
+            return false;
+        }
     }
     return true;
   }
@@ -235,8 +244,8 @@ export default function NewQuestPage() {
     try {
         let finalHubId = selectedHubId;
 
-        // 1. Create a new hub if necessary
-        if (selectedHubId === 'new') {
+        // Create a new hub if 'new' is selected
+        if (selectedHubId === 'new' || isHubOnlyMode) {
             const newHubRef = doc(collection(db, 'teachers', teacher.uid, 'questHubs'));
             await setDoc(newHubRef, {
                 name: newHubName,
@@ -246,9 +255,16 @@ export default function NewQuestPage() {
                 createdAt: serverTimestamp(),
             });
             finalHubId = newHubRef.id;
+            toast({ title: 'Hub Created!', description: 'The new quest hub has been added to your world map.' });
+            
+            // If we are in hub-only mode, we are done.
+            if (isHubOnlyMode) {
+                router.push('/teacher/quests');
+                return;
+            }
         }
 
-        // 2. Create the new chapter
+        // Create the new chapter
         await addDoc(collection(db, 'teachers', teacher.uid, 'chapters'), {
             hubId: finalHubId,
             title: chapterTitle,
@@ -295,36 +311,43 @@ export default function NewQuestPage() {
           </Button>
           <Card className="shadow-lg">
             <CardHeader>
-              <CardTitle className="text-3xl">Create New Quest</CardTitle>
+              <CardTitle className="text-3xl">{isHubOnlyMode ? 'Create New Quest Hub' : 'Create New Quest'}</CardTitle>
               <CardDescription>
-                Design a new chapter for your students. Start by defining the Hub, then add the chapter content.
+                {isHubOnlyMode 
+                    ? 'Define a new region on your world map where chapters can be placed.'
+                    : 'Design a new chapter for your students. Start by defining the Hub, then add the chapter content.'
+                }
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-8">
               
               <div className="space-y-4 p-6 border rounded-lg">
-                <h3 className="text-xl font-semibold">Phase 1: Quest Hub</h3>
+                <h3 className="text-xl font-semibold">
+                    {isHubOnlyMode ? 'New Hub Details' : 'Phase 1: Quest Hub'}
+                </h3>
                 <p className="text-muted-foreground mb-4">A Hub is a location on the world map that contains multiple chapters, like a city or region.</p>
                 
                 {isLoading || !teacher ? (
                     <Skeleton className="h-10 w-full" />
                 ) : (
                     <div className="space-y-4">
-                        <div>
-                            <Label htmlFor="hub-select">Select an Existing Hub or Create a New One</Label>
-                            <Select onValueChange={setSelectedHubId} value={selectedHubId} disabled={isSaving}>
-                                <SelectTrigger id="hub-select">
-                                    <SelectValue placeholder="Choose a Hub..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="new">-- Create a New Hub --</SelectItem>
-                                    {hubs.map(hub => (
-                                        <SelectItem key={hub.id} value={hub.id}>{hub.name} (Order: {hub.hubOrder})</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        {selectedHubId === 'new' && (
+                        {!isHubOnlyMode && (
+                            <div>
+                                <Label htmlFor="hub-select">Select an Existing Hub or Create a New One</Label>
+                                <Select onValueChange={setSelectedHubId} value={selectedHubId} disabled={isSaving}>
+                                    <SelectTrigger id="hub-select">
+                                        <SelectValue placeholder="Choose a Hub..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="new">-- Create a New Hub --</SelectItem>
+                                        {hubs.map(hub => (
+                                            <SelectItem key={hub.id} value={hub.id}>{hub.name} (Order: {hub.hubOrder})</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+                        {(selectedHubId === 'new' || isHubOnlyMode) && (
                             <div className="p-4 border bg-secondary/50 rounded-md space-y-4">
                                 <h4 className="font-semibold text-md">New Hub Details</h4>
                                 <div className="space-y-2">
@@ -377,96 +400,98 @@ export default function NewQuestPage() {
                 )}
               </div>
               
-              {teacher && <div className="space-y-6 p-6 border rounded-lg">
-                <div className="flex justify-between items-center">
-                    <h3 className="text-xl font-semibold">Phase 2: Chapter Content</h3>
-                    <Button variant="outline" onClick={() => setIsOracleOpen(true)} disabled>
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        Consult the Oracle
-                    </Button>
-                </div>
-                <Tabs defaultValue="story" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="story">Story</TabsTrigger>
-                    <TabsTrigger value="lesson">Lesson</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="story" className="mt-6 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="chapter-title">Chapter Title</Label>
-                            <Input id="chapter-title" placeholder="e.g., A Summons from the Throne" value={chapterTitle} onChange={e => setChapterTitle(e.target.value)} disabled={isSaving} />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="chapter-number">Chapter Number</Label>
-                            <Input id="chapter-number" type="number" placeholder="e.g., 1" value={chapterNumber} onChange={e => setChapterNumber(e.target.value === '' ? '' : Number(e.target.value))} disabled={isSaving} />
-                        </div>
+              {teacher && !isHubOnlyMode && (
+                <div className="space-y-6 p-6 border rounded-lg">
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-xl font-semibold">Phase 2: Chapter Content</h3>
+                        <Button variant="outline" onClick={() => setIsOracleOpen(true)} disabled>
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            Consult the Oracle
+                        </Button>
                     </div>
-                    <ImageUploader label="Main Story Image" imageUrl={mainImageUrl} onUploadSuccess={setMainImageUrl} teacherUid={teacher.uid} storagePath="quest-images" />
-                    <div className="space-y-2">
-                        <Label htmlFor="story-content">Story Content</Label>
-                        <RichTextEditor value={storyContent} onChange={setStoryContent} />
-                    </div>
-                    <ImageUploader label="Decorative Image 1" imageUrl={decorativeImageUrl1} onUploadSuccess={setDecorativeImageUrl1} teacherUid={teacher.uid} storagePath="quest-images" />
-                    <div className="space-y-2">
-                        <Label htmlFor="story-additional-content">Additional Story Content</Label>
-                        <RichTextEditor value={storyAdditionalContent} onChange={setStoryAdditionalContent} />
-                    </div>
-                    <ImageUploader label="Decorative Image 2" imageUrl={decorativeImageUrl2} onUploadSuccess={setDecorativeImageUrl2} teacherUid={teacher.uid} storagePath="quest-images" />
-                     <div className="space-y-2">
-                        <Label htmlFor="video-url">YouTube Video URL</Label>
-                        <Input id="video-url" placeholder="https://youtube.com/watch?v=..." value={videoUrl} onChange={e => setVideoUrl(e.target.value)} disabled={isSaving} />
-                    </div>
-                     {hubMapUrl && (
-                        <div className="pt-4 space-y-2">
-                            <Label>Position Chapter on Hub Map</Label>
-                            <div 
-                                className="relative aspect-[2048/1152] rounded-lg overflow-hidden bg-muted/50 border cursor-grab"
-                                onMouseDown={(e) => handleMapDrag(e, 'chapter')}
-                            >
-                                <Image
-                                    src={hubMapUrl}
-                                    alt="Hub Map for Placement"
-                                    fill
-                                    className="object-contain"
-                                    priority
-                                />
-                                <div
-                                    className="absolute -translate-x-1/2 -translate-y-1/2 cursor-grabbing"
-                                    style={{
-                                        left: `${chapterCoordinates.x}%`,
-                                        top: `${chapterCoordinates.y}%`,
-                                    }}
-                                >
-                                    <div className="w-5 h-5 bg-yellow-400 rounded-full ring-2 ring-white shadow-xl animate-pulse-glow"></div>
-                                </div>
+                    <Tabs defaultValue="story" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="story">Story</TabsTrigger>
+                        <TabsTrigger value="lesson">Lesson</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="story" className="mt-6 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="chapter-title">Chapter Title</Label>
+                                <Input id="chapter-title" placeholder="e.g., A Summons from the Throne" value={chapterTitle} onChange={e => setChapterTitle(e.target.value)} disabled={isSaving} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="chapter-number">Chapter Number</Label>
+                                <Input id="chapter-number" type="number" placeholder="e.g., 1" value={chapterNumber} onChange={e => setChapterNumber(e.target.value === '' ? '' : Number(e.target.value))} disabled={isSaving} />
                             </div>
                         </div>
-                    )}
-                  </TabsContent>
-                  <TabsContent value="lesson" className="mt-6 space-y-4">
-                     <ImageUploader label="Main Lesson Image" imageUrl={lessonMainImageUrl} onUploadSuccess={setLessonMainImageUrl} teacherUid={teacher.uid} storagePath="quest-images" />
-                     <div className="space-y-2">
-                        <Label htmlFor="lesson-content">Lesson Content</Label>
-                        <RichTextEditor value={lessonContent} onChange={setLessonContent} />
-                    </div>
-                    <ImageUploader label="Lesson Decorative Image 1" imageUrl={lessonDecorativeImageUrl1} onUploadSuccess={setLessonDecorativeImageUrl1} teacherUid={teacher.uid} storagePath="quest-images" />
-                    <div className="space-y-2">
-                        <Label htmlFor="lesson-additional-content">Additional Lesson Content</Label>
-                        <RichTextEditor value={lessonAdditionalContent} onChange={setLessonAdditionalContent} />
-                    </div>
-                    <ImageUploader label="Lesson Decorative Image 2" imageUrl={lessonDecorativeImageUrl2} onUploadSuccess={setLessonDecorativeImageUrl2} teacherUid={teacher.uid} storagePath="quest-images" />
-                    <div className="space-y-2">
-                        <Label htmlFor="lesson-video-url">Lesson YouTube Video URL</Label>
-                        <Input id="lesson-video-url" placeholder="https://youtube.com/watch?v=..." value={lessonVideoUrl} onChange={e => setLessonVideoUrl(e.target.value)} disabled={isSaving} />
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </div>}
+                        <ImageUploader label="Main Story Image" imageUrl={mainImageUrl} onUploadSuccess={setMainImageUrl} teacherUid={teacher.uid} storagePath="quest-images" />
+                        <div className="space-y-2">
+                            <Label htmlFor="story-content">Story Content</Label>
+                            <RichTextEditor value={storyContent} onChange={setStoryContent} />
+                        </div>
+                        <ImageUploader label="Decorative Image 1" imageUrl={decorativeImageUrl1} onUploadSuccess={setDecorativeImageUrl1} teacherUid={teacher.uid} storagePath="quest-images" />
+                        <div className="space-y-2">
+                            <Label htmlFor="story-additional-content">Additional Story Content</Label>
+                            <RichTextEditor value={storyAdditionalContent} onChange={setStoryAdditionalContent} />
+                        </div>
+                        <ImageUploader label="Decorative Image 2" imageUrl={decorativeImageUrl2} onUploadSuccess={setDecorativeImageUrl2} teacherUid={teacher.uid} storagePath="quest-images" />
+                        <div className="space-y-2">
+                            <Label htmlFor="video-url">YouTube Video URL</Label>
+                            <Input id="video-url" placeholder="https://youtube.com/watch?v=..." value={videoUrl} onChange={e => setVideoUrl(e.target.value)} disabled={isSaving} />
+                        </div>
+                        {hubMapUrl && (
+                            <div className="pt-4 space-y-2">
+                                <Label>Position Chapter on Hub Map</Label>
+                                <div 
+                                    className="relative aspect-[2048/1152] rounded-lg overflow-hidden bg-muted/50 border cursor-grab"
+                                    onMouseDown={(e) => handleMapDrag(e, 'chapter')}
+                                >
+                                    <Image
+                                        src={hubMapUrl}
+                                        alt="Hub Map for Placement"
+                                        fill
+                                        className="object-contain"
+                                        priority
+                                    />
+                                    <div
+                                        className="absolute -translate-x-1/2 -translate-y-1/2 cursor-grabbing"
+                                        style={{
+                                            left: `${chapterCoordinates.x}%`,
+                                            top: `${chapterCoordinates.y}%`,
+                                        }}
+                                    >
+                                        <div className="w-5 h-5 bg-yellow-400 rounded-full ring-2 ring-white shadow-xl animate-pulse-glow"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </TabsContent>
+                    <TabsContent value="lesson" className="mt-6 space-y-4">
+                        <ImageUploader label="Main Lesson Image" imageUrl={lessonMainImageUrl} onUploadSuccess={setLessonMainImageUrl} teacherUid={teacher.uid} storagePath="quest-images" />
+                        <div className="space-y-2">
+                            <Label htmlFor="lesson-content">Lesson Content</Label>
+                            <RichTextEditor value={lessonContent} onChange={setLessonContent} />
+                        </div>
+                        <ImageUploader label="Lesson Decorative Image 1" imageUrl={lessonDecorativeImageUrl1} onUploadSuccess={setLessonDecorativeImageUrl1} teacherUid={teacher.uid} storagePath="quest-images" />
+                        <div className="space-y-2">
+                            <Label htmlFor="lesson-additional-content">Additional Lesson Content</Label>
+                            <RichTextEditor value={lessonAdditionalContent} onChange={setLessonAdditionalContent} />
+                        </div>
+                        <ImageUploader label="Lesson Decorative Image 2" imageUrl={lessonDecorativeImageUrl2} onUploadSuccess={setLessonDecorativeImageUrl2} teacherUid={teacher.uid} storagePath="quest-images" />
+                        <div className="space-y-2">
+                            <Label htmlFor="lesson-video-url">Lesson YouTube Video URL</Label>
+                            <Input id="lesson-video-url" placeholder="https://youtube.com/watch?v=..." value={lessonVideoUrl} onChange={e => setLessonVideoUrl(e.target.value)} disabled={isSaving} />
+                        </div>
+                    </TabsContent>
+                    </Tabs>
+                </div>
+              )}
 
               <div className="flex justify-end pt-4 border-t">
                 <Button size="lg" onClick={handleSaveQuest} disabled={isSaving}>
                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                    Save Quest
+                    {isHubOnlyMode ? 'Save Hub' : 'Save Quest'}
                 </Button>
               </div>
 

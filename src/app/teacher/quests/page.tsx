@@ -233,9 +233,9 @@ export default function QuestsPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-            <Button onClick={() => router.push('/teacher/quests/new')}>
+            <Button onClick={() => router.push('/teacher/quests/new?hubOnly=true')}>
               <PlusCircle className="mr-2 h-5 w-5" />
-              Create New Quest
+              Create New Hub
             </Button>
           </div>
         </div>
@@ -249,9 +249,9 @@ export default function QuestsPage() {
             <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 py-20 text-center">
                 <h2 className="text-xl font-semibold text-muted-foreground">No Quests Created Yet</h2>
                 <p className="mt-2 text-sm text-muted-foreground">This area will show a list of all the quests and chapters you have created.</p>
-                <Button onClick={() => router.push('/teacher/quests/new')} className="mt-4">
+                <Button onClick={() => router.push('/teacher/quests/new?hubOnly=true')} className="mt-4">
                 <PlusCircle className="mr-2 h-5 w-5" />
-                Create Your First Quest
+                Create Your First Hub
                 </Button>
             </div>
         ) : (
