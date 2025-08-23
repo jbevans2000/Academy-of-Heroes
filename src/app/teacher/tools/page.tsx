@@ -57,22 +57,6 @@ const tools = [
         path: '/teacher/tools/the-royal-scribe',
         disabled: false,
         bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-061eec79-9062-4e42-a63e-0458bee737cd.jpg?alt=media&token=6077d818-0966-4653-b533-1d97e6c33d31',
-    },
-    {
-        title: 'Data Migration',
-        description: 'Transfer a student\'s data to a new account if they lose their alias/password.',
-        icon: <DatabaseZap className="h-10 w-10 text-primary" />,
-        path: '/teacher/tools/data-migration',
-        disabled: false,
-        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-4c7b8979-3c81-4217-a128-2e06180a0889.jpg?alt=media&token=6e2e2801-b54c-4e8c-a1d2-06b6a07da061',
-    },
-    {
-        title: 'Archived Heroes',
-        description: 'View and manage student accounts that have been archived after data migration.',
-        icon: <Archive className="h-10 w-10 text-primary" />,
-        path: '/teacher/tools/archived-heroes',
-        disabled: false,
-        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-cc5a5198-d2e8-466d-995a-c21e64df42d8.jpg?alt=media&token=f014798a-7a5d-4f18-ab93-41a4a5840d24',
     }
 ]
 
