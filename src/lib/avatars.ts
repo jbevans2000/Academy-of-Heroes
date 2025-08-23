@@ -56,7 +56,16 @@ export const avatarData: ClassAvatarData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%201%20(7).jpg?alt=media&token=8c914f55-7faf-4a0a-b21e-82088cca6086',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%201%20(8).jpg?alt=media&token=c283d613-712e-4f78-bc68-3d7d92aa9271'
     ],
-    2: generatePlaceholders(8, 'fantasy cleric'),
+    2: [
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%202%20(1).jpg?alt=media&token=ec205d05-ed0d-4c37-a1cb-3b06edd532e4',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%202%20(2).jpg?alt=media&token=bf7e6e66-f010-4c2b-ac72-3a2737171a20',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%202%20(3).jpg?alt=media&token=76b4a7a0-09a7-4531-800c-99db3be4e57b',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%202%20(4).jpg?alt=media&token=431561cd-c3b5-4660-9fd5-dff7ea6bbd5f',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%202%20(5).jpg?alt=media&token=79f3cb99-bca3-42be-b788-22f4b7e5a4c1',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%202%20(6).jpg?alt=media&token=f4fbde86-a318-4f5f-8dad-b6fea1ff126b',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%202%20(7).jpg?alt=media&token=b79bb544-6076-45ae-972b-e9d5872d879e',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%202%20(8).jpg?alt=media&token=329bee89-1d37-4daa-a7cf-82f80eb2d82a'
+    ],
     3: generatePlaceholders(8, 'holy priest'),
     4: generatePlaceholders(8, 'nature healer'),
     5: generatePlaceholders(8, 'epic cleric'),
