@@ -105,7 +105,16 @@ export const avatarData: ClassAvatarData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FLevel%201%20Mage%201%20(7).jpg?alt=media&token=6b520ca9-9c40-4be6-bdfb-9ccf185440ee',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FLevel%201%20Mage%201%20(8).jpg?alt=media&token=c3f4688e-f03a-4e26-a10b-d27c529cf3a9'
     ],
-    2: generatePlaceholders(8, 'fantasy wizard'),
+    2: [
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%202%20(1).jpg?alt=media&token=1689ed00-9d7b-4f11-8cc5-33c92d3a3130',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%202%20(2).jpg?alt=media&token=c9b28e67-89e2-4399-aa95-659c81db8c07',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%202%20(3).jpg?alt=media&token=b9ad0f3f-2675-45fc-bde9-b3ba89fcd055',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%202%20(4).jpg?alt=media&token=f8eb4f32-6874-4823-b5be-22ecd6b1ec49',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%202%20(5).jpg?alt=media&token=100f07ca-069f-4425-baee-7d6653011450',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%202%20(6).jpg?alt=media&token=1d46da5e-69f5-4721-a2f4-1cfcdcc9463d',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%202%20(7).jpg?alt=media&token=8941fa94-b80a-4357-9cea-7c49d79825a9',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%202%20(8).jpg?alt=media&token=b6abe374-ea1e-4587-96e1-815e09149d5c'
+    ],
     3: generatePlaceholders(8, 'dark mage'),
     4: generatePlaceholders(8, 'elemental wizard'),
     5: generatePlaceholders(8, 'epic mage'),
