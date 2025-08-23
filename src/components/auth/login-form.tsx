@@ -61,7 +61,10 @@ export function LoginForm() {
 
           router.push(`/dashboard${justApproved ? `?approved=true&className=${encodeURIComponent(className)}` : ''}`);
       } else {
-         throw new Error("Student data not found in their designated guild.");
+         // This case handles if the student is approved in meta but not yet in the students subcollection
+         // which can happen for a moment after teacher approval. We send them to await approval,
+         // but the dashboard page itself will handle final redirection once the document appears.
+         router.push('/awaiting-approval');
       }
 
     } catch (error: any) {

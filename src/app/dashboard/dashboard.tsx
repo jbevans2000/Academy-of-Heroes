@@ -43,27 +43,29 @@ export default function Dashboard() {
         const studentMetaSnap = await getDoc(studentMetaRef);
 
         if (studentMetaSnap.exists()) {
-          const foundTeacherUid = studentMetaSnap.data().teacherUid;
+          const { teacherUid: foundTeacherUid, approved } = studentMetaSnap.data();
           setTeacherUid(foundTeacherUid);
           
-          // Now, check if the student is in pending or main list
-          const pendingStudentRef = doc(db, 'teachers', foundTeacherUid, 'pendingStudents', user.uid);
-          const pendingStudentSnap = await getDoc(pendingStudentRef);
-
-          if (pendingStudentSnap.exists()) {
+          if (!approved) {
              router.push('/awaiting-approval');
              return;
           }
 
+          // If approved, listen to the actual student document.
+          // This listener will handle the case where the document is created *after* the teacher approves.
           const studentRef = doc(db, 'teachers', foundTeacherUid, 'students', user.uid);
           const unsub = onSnapshot(studentRef, (docSnap) => {
             if (docSnap.exists()) {
               setStudent({ uid: docSnap.id, ...docSnap.data() } as Student);
               setIsLoading(false);
             } else {
-              // This could happen if the teacher deletes the student
-              router.push('/');
+              // The student is approved but the doc doesn't exist yet. The user might see a brief loading state.
+              // This is better than redirecting, as the listener will eventually fire.
+              setIsLoading(true);
             }
+          }, (error) => {
+             console.error("Error listening to student document:", error);
+             router.push('/');
           });
           
           // Return the listener cleanup function
