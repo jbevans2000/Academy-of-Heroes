@@ -187,7 +187,7 @@ export default function ManageQuestCompletionPage() {
                             </CardHeader>
                             <CardContent className="space-y-3 max-h-96 overflow-y-auto">
                                 {students.map(student => {
-                                    const hasOverride = studentOverrides[student.uid] !== undefined;
+                                    const hasOverride = studentOverrides[student.uid];
                                     
                                     return (
                                         <div key={student.uid} className="flex items-center justify-between p-2 border rounded-md">
@@ -196,7 +196,7 @@ export default function ManageQuestCompletionPage() {
                                                 <p className="text-sm text-muted-foreground">{student.studentName}</p>
                                             </div>
                                             <div className="flex items-center space-x-2">
-                                                <span className={`text-xs font-semibold ${!hasOverride ? 'text-muted-foreground' : 'text-primary'}`}>
+                                                <span className={`text-xs font-semibold ${!hasOverride ? 'text-muted-foreground' : 'text-destructive'}`}>
                                                      {!hasOverride ? 'Standard' : 'Restricted'}
                                                 </span>
                                                 <Switch 
@@ -213,7 +213,7 @@ export default function ManageQuestCompletionPage() {
 
                         <Card>
                              <CardHeader>
-                                <CardTitle className="flex items-center gap-2"><Bell className={pendingRequests.length > 0 ? "text-primary animate-pulse" : ""}/> Pending Requests</CardTitle>
+                                <CardTitle className="flex items-center gap-2"><Bell className={pendingRequests.length > 0 ? "text-primary animate-pulse" : ""} /> Pending Requests</CardTitle>
                                 <CardDescription>Students waiting for approval to advance.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-2">
