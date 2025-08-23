@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { getGlobalSettings, updateGlobalSettings } from '@/ai/flows/manage-settings';
 import { deleteFeedback } from '@/ai/flows/submit-feedback';
+import { moderateStudent } from '@/ai/flows/manage-student';
 import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2 } from 'lucide-react';
 import {
   AlertDialog,
@@ -70,6 +71,11 @@ export default function AdminDashboardPage() {
     const [isSettingsLoading, setIsSettingsLoading] = useState(true);
     const [feedbackToDelete, setFeedbackToDelete] = useState<string | null>(null);
     const [isDeletingFeedback, setIsDeletingFeedback] = useState(false);
+    
+    // State for deleting students
+    const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
+    const [isDeletingStudent, setIsDeletingStudent] = useState(false);
+
     const router = useRouter();
     const { toast } = useToast();
 
@@ -247,6 +253,29 @@ export default function AdminDashboardPage() {
         }
     };
 
+    const handleDeleteStudent = async () => {
+        if (!studentToDelete) return;
+        setIsDeletingStudent(true);
+        try {
+            const result = await moderateStudent({
+                teacherUid: studentToDelete.teacherId,
+                studentUid: studentToDelete.uid,
+                action: 'delete'
+            });
+            if (result.success) {
+                toast({ title: "Student Deleted", description: `${studentToDelete.characterName} has been removed from the system.`});
+                setAllStudents(prev => prev.filter(s => s.uid !== studentToDelete.uid));
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+             toast({ variant: 'destructive', title: 'Deletion Failed', description: error.message || 'Could not delete the student.' });
+        } finally {
+            setIsDeletingStudent(false);
+            setStudentToDelete(null);
+        }
+    }
+
 
     if (isLoading || !user) {
         return (
@@ -313,6 +342,7 @@ export default function AdminDashboardPage() {
                                         <TableHead>Character Name</TableHead>
                                         <TableHead>Login Alias</TableHead>
                                         <TableHead>Guild / Teacher</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -325,6 +355,11 @@ export default function AdminDashboardPage() {
                                                  <Link href={`/teacher/dashboard?teacherId=${student.teacherId}`} className="underline hover:text-primary">
                                                     {student.teacherName}
                                                 </Link>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button variant="destructive" size="sm" onClick={() => setStudentToDelete(student)}>
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
                                             </TableCell>
                                         </TableRow>
                                     ))}
@@ -438,10 +473,24 @@ export default function AdminDashboardPage() {
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
+                    <AlertDialog open={!!studentToDelete} onOpenChange={(isOpen) => !isOpen && setStudentToDelete(null)}>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Student: {studentToDelete?.characterName}?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                This will permanently delete the student's account and all their character data. This action is irreversible.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel disabled={isDeletingStudent}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteStudent} disabled={isDeletingStudent} className="bg-destructive hover:bg-destructive/90">
+                                    {isDeletingStudent ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Yes, Permanently Delete'}
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </div>
             </main>
         </div>
     );
 }
-
-    

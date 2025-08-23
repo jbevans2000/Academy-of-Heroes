@@ -84,11 +84,16 @@ export async function moderateStudent(input: ModerateStudentInput): Promise<Acti
         await auth.updateUser(input.studentUid, { disabled: false });
         return { success: true, message: 'Student has been unbanned and can now log in.' };
       case 'delete':
-        // This is a two-step process: delete from Auth, then from Firestore.
-        await auth.deleteUser(input.studentUid);
-        const studentRef = doc(db, 'teachers', input.teacherUid, 'students', input.studentUid);
-        await deleteDoc(studentRef);
-        return { success: true, message: 'Student has been permanently removed from the guild.' };
+        // This is a multi-step process to ensure all data is removed.
+        await auth.deleteUser(input.studentUid); // 1. Delete from Auth
+        
+        const teacherStudentRef = doc(db, 'teachers', input.teacherUid, 'students', input.studentUid);
+        await deleteDoc(teacherStudentRef); // 2. Delete from teacher's collection
+        
+        const globalStudentRef = doc(db, 'students', input.studentUid);
+        await deleteDoc(globalStudentRef); // 3. Delete from global students collection
+
+        return { success: true, message: 'Student has been permanently removed from the system.' };
       default:
         return { success: false, error: 'Invalid moderation action.' };
     }
