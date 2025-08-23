@@ -10,7 +10,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, Download, Timer, HeartCrack, Video, ShieldCheck, Sparkles, Skull, Trash2 } from 'lucide-react';
+import { Loader2, Download, Timer, HeartCrack, Video, ShieldCheck, Sparkles, Skull, Trash2, VolumeX, Volume1, Volume2 as VolumeIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RoundResults, type Result } from '@/components/teacher/round-results';
 import { downloadCsv } from '@/lib/utils';
@@ -21,6 +21,7 @@ import { logGameEvent } from '@/lib/gamelog';
 import { BattleChatBox } from '@/components/battle/chat-box';
 import { useToast } from '@/hooks/use-toast';
 import { classPowers } from '@/lib/powers';
+import { Slider } from '@/components/ui/slider';
 
 
 interface QueuedPower {
@@ -91,6 +92,7 @@ interface Battle {
     battleName: string;
     questions: Question[];
     videoUrl?: string;
+    musicUrl?: string;
 }
 
 interface StudentResponse {
@@ -150,6 +152,38 @@ const getYouTubeEmbedUrl = (url: string) => {
     return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`;
 };
 
+function VolumeControl({ audioRef }: { audioRef: React.RefObject<HTMLAudioElement> }) {
+    const [volume, setVolume] = useState(0); // Start muted
+
+    const handleVolumeChange = (value: number[]) => {
+        const newVolume = value[0];
+        setVolume(newVolume);
+        if (audioRef.current) {
+            audioRef.current.volume = newVolume / 100;
+        }
+    };
+    
+    const getVolumeIcon = () => {
+        if (volume === 0) return <VolumeX className="h-6 w-6" />;
+        if (volume <= 50) return <Volume1 className="h-6 w-6" />;
+        return <VolumeIcon className="h-6 w-6" />;
+    };
+
+    return (
+        <div className="fixed bottom-4 right-4 z-50 w-48 p-4 rounded-lg bg-black/50 backdrop-blur-sm">
+            <div className="flex items-center gap-2">
+                {getVolumeIcon()}
+                <Slider
+                    value={[volume]}
+                    onValueChange={handleVolumeChange}
+                    max={100}
+                    step={1}
+                />
+            </div>
+        </div>
+    );
+}
+
 
 export default function TeacherLiveBattlePage() {
   const params = useParams();
@@ -170,6 +204,8 @@ export default function TeacherLiveBattlePage() {
   const [fallenStudentNames, setFallenStudentNames] = useState<string[]>([]);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [redirectId, setRedirectId] = useState<string | null>(null);
+  
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -240,6 +276,23 @@ export default function TeacherLiveBattlePage() {
 
     return () => unsubscribe();
   }, [battleId, router, teacherUid, redirectId]);
+  
+    // Audio playback effect for teacher
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio || !battle || !battle.musicUrl) return;
+
+        if (liveState?.status === 'IN_PROGRESS' || liveState?.status === 'ROUND_ENDING' || liveState?.status === 'SHOWING_RESULTS') {
+            if (audio.src !== battle.musicUrl) {
+                audio.src = battle.musicUrl;
+            }
+            audio.loop = true;
+            audio.volume = 0; // Start muted
+            audio.play().catch(e => console.error("Audio play failed:", e));
+        } else {
+            audio.pause();
+        }
+    }, [liveState?.status, battle, battle?.musicUrl]);
 
   // Real-time listener for current round responses
   useEffect(() => {
@@ -1118,6 +1171,7 @@ export default function TeacherLiveBattlePage() {
     <div
         className="relative flex min-h-screen w-full flex-col"
     >
+        <audio ref={audioRef} />
         <div
             className="absolute inset-0 -z-10 bg-black/50"
             style={{
@@ -1282,6 +1336,7 @@ export default function TeacherLiveBattlePage() {
             </div>
         </div>
       </main>
+      {battle.musicUrl && <VolumeControl audioRef={audioRef} />}
     </div>
   );
 }
