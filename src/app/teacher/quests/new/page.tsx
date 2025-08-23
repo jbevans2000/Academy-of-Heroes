@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { QuestHub } from '@/lib/quests';
+import { QuestHub, Chapter } from '@/lib/quests';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -123,6 +123,7 @@ export default function NewQuestPage() {
 
   // State for the new Hub creator
   const [hubs, setHubs] = useState<QuestHub[]>([]);
+  const [chaptersInHub, setChaptersInHub] = useState<Chapter[]>([]);
   const [selectedHubId, setSelectedHubId] = useState('');
   const [newHubName, setNewHubName] = useState('');
   const [newHubMapUrl, setNewHubMapUrl] = useState('');
@@ -194,6 +195,21 @@ export default function NewQuestPage() {
     };
     fetchInitialData();
   }, [teacher, toast, searchParams]);
+
+  useEffect(() => {
+    if (!selectedHubId || selectedHubId === 'new' || !teacher) {
+      setChaptersInHub([]);
+      return;
+    }
+    const fetchChaptersForHub = async () => {
+        const chaptersQuery = query(collection(db, 'teachers', teacher.uid, 'chapters'), where('hubId', '==', selectedHubId), orderBy('chapterNumber'));
+        const chaptersSnapshot = await getDocs(chaptersQuery);
+        const chaptersData = chaptersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
+        setChaptersInHub(chaptersData);
+        setChapterNumber(chaptersData.length + 1);
+    };
+    fetchChaptersForHub();
+  }, [selectedHubId, teacher]);
   
   const handleMapDrag = (e: React.MouseEvent<HTMLDivElement, MouseEvent>, type: 'hub' | 'chapter') => {
     const map = e.currentTarget;
@@ -464,6 +480,22 @@ export default function NewQuestPage() {
                                           className="object-contain"
                                           priority
                                       />
+                                      <svg className="absolute top-0 left-0 w-full h-full" style={{ pointerEvents: 'none' }}>
+                                          {chaptersInHub.slice(0, -1).map((chapter, index) => {
+                                              const nextChapter = chaptersInHub[index + 1];
+                                              return (
+                                                  <line key={`line-${chapter.id}`} x1={`${chapter.coordinates.x}%`} y1={`${chapter.coordinates.y}%`} x2={`${nextChapter.coordinates.x}%`} y2={`${nextChapter.coordinates.y}%`} stroke="#10B981" strokeWidth="2" />
+                                              )
+                                          })}
+                                           {chaptersInHub.length > 0 && (
+                                                <line x1={`${chaptersInHub[chaptersInHub.length - 1].coordinates.x}%`} y1={`${chaptersInHub[chaptersInHub.length - 1].coordinates.y}%`} x2={`${chapterCoordinates.x}%`} y2={`${chapterCoordinates.y}%`} stroke="#10B981" strokeWidth="2" />
+                                           )}
+                                      </svg>
+                                      {chaptersInHub.map(chapter => (
+                                          <div key={chapter.id} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${chapter.coordinates.x}%`, top: `${chapter.coordinates.y}%`}}>
+                                            <div className="w-5 h-5 bg-green-500 rounded-full ring-2 ring-white shadow-xl"></div>
+                                          </div>
+                                      ))}
                                       <div
                                           className="absolute -translate-x-1/2 -translate-y-1/2 cursor-grabbing"
                                           style={{

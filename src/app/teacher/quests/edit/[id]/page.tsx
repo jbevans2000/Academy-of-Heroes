@@ -113,6 +113,7 @@ export default function EditQuestPage() {
   
   // State for Hubs
   const [hubs, setHubs] = useState<QuestHub[]>([]);
+  const [chaptersInHub, setChaptersInHub] = useState<Chapter[]>([]);
   
   // State for the Chapter
   const [chapter, setChapter] = useState<Partial<Chapter> | null>(null);
@@ -174,6 +175,21 @@ export default function EditQuestPage() {
     }
     fetchChapter();
   }, [chapterId, router, toast, teacher]);
+  
+   // Fetch chapters for the currently selected hub
+  useEffect(() => {
+    if (!selectedHubId || !teacher) {
+        setChaptersInHub([]);
+        return;
+    }
+    const fetchChaptersForHub = async () => {
+        const chaptersQuery = query(collection(db, 'teachers', teacher.uid, 'chapters'), where('hubId', '==', selectedHubId), orderBy('chapterNumber'));
+        const chaptersSnapshot = await getDocs(chaptersQuery);
+        const chaptersData = chaptersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
+        setChaptersInHub(chaptersData);
+    };
+    fetchChaptersForHub();
+  }, [selectedHubId, teacher]);
 
   const handleMapDrag = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     const map = e.currentTarget;
@@ -206,8 +222,8 @@ export default function EditQuestPage() {
         toast({ variant: 'destructive', title: 'Validation Error', description: 'A Hub must be selected.' });
         return false;
     }
-     if (!chapter?.title || chapter?.chapterNumber === undefined || chapter.chapterNumber === null || !chapter?.storyContent || !chapter?.lessonContent) {
-        toast({ variant: 'destructive', title: 'Validation Error', description: 'Please fill out all required chapter fields: Title, Number, Story Content, and Lesson Content.' });
+     if (!chapter?.title || chapter?.chapterNumber === undefined || chapter.chapterNumber === null) {
+        toast({ variant: 'destructive', title: 'Validation Error', description: 'Please fill out required chapter fields: Title and Number.' });
         return false;
     }
     return true;
@@ -342,6 +358,26 @@ export default function EditQuestPage() {
                                         className="object-contain"
                                         priority
                                     />
+                                    <svg className="absolute top-0 left-0 w-full h-full" style={{ pointerEvents: 'none' }}>
+                                        {chaptersInHub.map((c, index) => {
+                                             if (c.id === chapterId) return null; // Don't draw lines from/to the chapter being edited
+                                             const nextChapter = chaptersInHub.find(nextC => nextC.chapterNumber === c.chapterNumber + 1);
+                                             if (nextChapter && nextChapter.id !== chapterId) {
+                                                return (
+                                                    <line key={`line-${c.id}`} x1={`${c.coordinates.x}%`} y1={`${c.coordinates.y}%`} x2={`${nextChapter.coordinates.x}%`} y2={`${nextChapter.coordinates.y}%`} stroke="#10B981" strokeWidth="2" />
+                                                )
+                                             }
+                                             return null;
+                                        })}
+                                    </svg>
+                                    {chaptersInHub.map(c => {
+                                        if (c.id === chapterId) return null;
+                                        return (
+                                            <div key={c.id} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${c.coordinates.x}%`, top: `${c.coordinates.y}%`}}>
+                                                <div className="w-5 h-5 bg-green-500 rounded-full ring-2 ring-white shadow-xl"></div>
+                                            </div>
+                                        )
+                                    })}
                                     <div
                                         className="absolute -translate-x-1/2 -translate-y-1/2 cursor-grabbing"
                                         style={{

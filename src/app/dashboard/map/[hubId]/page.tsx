@@ -29,12 +29,14 @@ export default function HubMapPage() {
     useEffect(() => {
         const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const teachersSnapshot = await getDocs(collection(db, 'teachers'));
-                for (const teacherDoc of teachersSnapshot.docs) {
-                  const studentDocRef = doc(db, 'teachers', teacherDoc.id, 'students', user.uid);
-                  const studentSnap = await getDoc(studentDocRef);
-                  if (studentSnap.exists()) {
-                    setTeacherUid(teacherDoc.id);
+                // This logic seems complex, let's simplify. A student belongs to one teacher.
+                const studentMetaRef = doc(db, 'students', user.uid);
+                const studentMetaSnap = await getDoc(studentMetaRef);
+
+                if (studentMetaSnap.exists()) {
+                    const teacherUid = studentMetaSnap.data().teacherUid;
+                    setTeacherUid(teacherUid);
+                    const studentDocRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
                     const studentUnsubscribe = onSnapshot(studentDocRef, (docSnap) => {
                         if (docSnap.exists()) {
                             setStudent(docSnap.data() as Student);
@@ -43,7 +45,8 @@ export default function HubMapPage() {
                         }
                     });
                     return () => studentUnsubscribe();
-                  }
+                } else {
+                    router.push('/');
                 }
             } else {
                 router.push('/');
@@ -51,6 +54,7 @@ export default function HubMapPage() {
         });
         return () => authUnsubscribe();
     }, [router]);
+
 
     useEffect(() => {
         if (!hubId || !teacherUid) return;
@@ -100,6 +104,9 @@ export default function HubMapPage() {
     if (!hub) {
         return <p>Hub not found.</p>;
     }
+    
+    const completedChapters = unlockedChapters.filter(c => c.chapterNumber <= lastCompletedChapter);
+    const currentChapter = unlockedChapters.find(c => c.chapterNumber === lastCompletedChapter + 1);
 
     return (
         <div className="flex flex-col items-center justify-start bg-background p-2">
@@ -116,8 +123,25 @@ export default function HubMapPage() {
                             className="object-contain"
                             priority
                          />
-                         {unlockedChapters.map(chapter => (
-                             <Link key={chapter.id} href={`/dashboard/map/${hubId}/${chapter.id}`} passHref>
+                         <svg className="absolute top-0 left-0 w-full h-full" style={{ pointerEvents: 'none' }}>
+                            {completedChapters.slice(0, -1).map((chapter, index) => {
+                                const nextChapter = completedChapters[index + 1];
+                                return (
+                                    <line
+                                        key={`line-${chapter.id}`}
+                                        x1={`${chapter.coordinates.x}%`}
+                                        y1={`${chapter.coordinates.y}%`}
+                                        x2={`${nextChapter.coordinates.x}%`}
+                                        y2={`${nextChapter.coordinates.y}%`}
+                                        stroke="#10B981"
+                                        strokeWidth="3"
+                                        strokeDasharray="5, 5"
+                                    />
+                                );
+                            })}
+                         </svg>
+                         {completedChapters.map(chapter => (
+                             <Link key={`completed-${chapter.id}`} href={`/dashboard/map/${hubId}/${chapter.id}`} passHref>
                                 <div
                                     className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
                                     style={{
@@ -125,7 +149,7 @@ export default function HubMapPage() {
                                         top: `${chapter.coordinates.y}%`,
                                     }}
                                 >
-                                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap text-center">
+                                     <div className="absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap text-center">
                                         <div className="text-white font-bold text-shadow-lg bg-black/50 rounded px-2 py-1 mb-1">
                                             Chapter {chapter.chapterNumber}
                                         </div>
@@ -133,10 +157,31 @@ export default function HubMapPage() {
                                             {chapter.title}
                                         </div>
                                     </div>
+                                    <div className="w-5 h-5 bg-green-500 rounded-full ring-2 ring-white shadow-xl"></div>
+                                </div>
+                             </Link>
+                         ))}
+                          {currentChapter && (
+                             <Link key={`current-${currentChapter.id}`} href={`/dashboard/map/${hubId}/${currentChapter.id}`} passHref>
+                                <div
+                                    className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
+                                    style={{
+                                        left: `${currentChapter.coordinates.x}%`,
+                                        top: `${currentChapter.coordinates.y}%`,
+                                    }}
+                                >
+                                     <div className="absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap text-center">
+                                        <div className="text-white font-bold text-shadow-lg bg-black/50 rounded px-2 py-1 mb-1">
+                                            Chapter {currentChapter.chapterNumber}
+                                        </div>
+                                        <div className="text-white font-semibold text-shadow-lg bg-black/50 rounded px-2 py-1 transition-opacity duration-300 opacity-0 group-hover:opacity-100">
+                                            {currentChapter.title}
+                                        </div>
+                                    </div>
                                     <div className="w-5 h-5 bg-yellow-400 rounded-full ring-2 ring-white shadow-xl animate-pulse-glow"></div>
                                 </div>
                             </Link>
-                         ))}
+                         )}
                     </div>
                 </CardContent>
             </Card>
@@ -159,5 +204,3 @@ export default function HubMapPage() {
         </div>
     );
 }
-
-    
