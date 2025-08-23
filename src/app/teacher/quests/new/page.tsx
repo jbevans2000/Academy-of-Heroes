@@ -214,8 +214,8 @@ export default function NewQuestPage() {
         toast({ variant: 'destructive', title: 'Validation Error', description: 'New Hub Name, Map URL, and Order are required.' });
         return false;
     }
-     if (!chapterTitle || chapterNumber === '' || !storyContent || !lessonContent) {
-        toast({ variant: 'destructive', title: 'Validation Error', description: 'Please fill out all required chapter fields: Title, Number, Story Content, and Lesson Content.' });
+     if (!chapterTitle || chapterNumber === '') {
+        toast({ variant: 'destructive', title: 'Validation Error', description: 'Please fill out all required chapter fields: Title and Number.' });
         return false;
     }
     return true;
