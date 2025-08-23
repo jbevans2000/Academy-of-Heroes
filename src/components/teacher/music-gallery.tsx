@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { royaltyFreeTracks } from '@/lib/music';
 import { cn } from '@/lib/utils';
 import { CheckCircle, Play, Pause } from 'lucide-react';
+import { Card } from '@/components/ui/card';
 
 interface MusicGalleryProps {
     isOpen: boolean;
@@ -97,4 +98,3 @@ export function MusicGallery({ isOpen, onOpenChange, onMusicSelect }: MusicGalle
         </Dialog>
     );
 }
-
