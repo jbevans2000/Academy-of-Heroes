@@ -107,7 +107,7 @@ export default function ManageQuestCompletionPage() {
         try {
             const result = approve
                 ? await approveChapterCompletion({ teacherUid: teacher.uid, requestId })
-                : await denyChapterCompletion({ teacherUid: teacher.uid, requestId });
+                : await denyChapterCompletion(teacher.uid, requestId);
             
             if (result.success) {
                 toast({ title: 'Success', description: result.message });
@@ -190,7 +190,7 @@ export default function ManageQuestCompletionPage() {
                                             </div>
                                             <div className="flex items-center space-x-2">
                                                 <span className={`text-xs font-semibold ${isUsingGlobal ? 'text-muted-foreground' : 'text-primary'}`}>
-                                                    {isUsingGlobal ? 'Global' : 'Override'}
+                                                     {isUsingGlobal ? 'Standard' : 'Restricted'}
                                                 </span>
                                                 <Switch 
                                                     checked={effectiveValue} 
@@ -224,7 +224,7 @@ export default function ManageQuestCompletionPage() {
                                             <div className="flex-grow">
                                                 <p className="font-bold">{req.characterName}</p>
                                                 <p className="text-sm">wants to complete: <span className="font-semibold">{req.chapterTitle}</span></p>
-                                                <p className="text-xs text-muted-foreground">{formatDistanceToNow(req.requestedAt.toDate(), { addSuffix: true })}</p>
+                                                <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(req.requestedAt.seconds * 1000), { addSuffix: true })}</p>
                                             </div>
                                             <div className="flex gap-2">
                                                 <Button size="icon" variant="destructive" onClick={() => handleRequest(req.id, false)} disabled={!!isProcessing}>
