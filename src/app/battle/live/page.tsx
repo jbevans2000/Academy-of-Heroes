@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 import { onSnapshot, doc, getDoc, setDoc, updateDoc, increment, arrayUnion, collection, query, getDocs, serverTimestamp } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
-import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Hourglass, VolumeX, Flame, Lightbulb, Skull, ScrollText } from 'lucide-react';
+import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Hourglass, VolumeX, Flame, Lightbulb, Skull, ScrollText, Volume1, Volume, Volume2 as VolumeIcon } from 'lucide-react';
 import { type Student } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
@@ -24,6 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Slider } from '@/components/ui/slider';
 
 interface TargetedEvent {
     targetUid: string;
@@ -77,6 +78,7 @@ interface Battle {
   battleName: string;
   bossImageUrl: string;
   videoUrl?: string;
+  musicUrl?: string;
   questions: Question[];
 }
 
@@ -272,6 +274,38 @@ function PowerLog({ teacherUid }: { teacherUid: string }) {
     )
 }
 
+function VolumeControl({ audioRef }: { audioRef: React.RefObject<HTMLAudioElement> }) {
+    const [volume, setVolume] = useState(0); // Start muted
+
+    const handleVolumeChange = (value: number[]) => {
+        const newVolume = value[0];
+        setVolume(newVolume);
+        if (audioRef.current) {
+            audioRef.current.volume = newVolume / 100;
+        }
+    };
+    
+    const getVolumeIcon = () => {
+        if (volume === 0) return <VolumeX className="h-6 w-6" />;
+        if (volume <= 50) return <Volume1 className="h-6 w-6" />;
+        return <VolumeIcon className="h-6 w-6" />;
+    };
+
+    return (
+        <div className="fixed bottom-4 right-4 z-50 w-48 p-4 rounded-lg bg-black/50 backdrop-blur-sm">
+            <div className="flex items-center gap-2">
+                {getVolumeIcon()}
+                <Slider
+                    value={[volume]}
+                    onValueChange={handleVolumeChange}
+                    max={100}
+                    step={1}
+                />
+            </div>
+        </div>
+    );
+}
+
 export default function LiveBattlePage() {
   const [battleState, setBattleState] = useState<LiveBattleState | null>(null);
   const [battle, setBattle] = useState<Battle | null>(null);
@@ -290,6 +324,7 @@ export default function LiveBattlePage() {
 
   const battleStateRef = useRef(battleState);
   const studentRef = useRef(student);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const router = useRouter();
   
   useEffect(() => {
@@ -426,6 +461,23 @@ export default function LiveBattlePage() {
       fetchBattle();
     }
   }, [battleState?.battleId, teacherUid, battle]);
+  
+  // Audio playback effect
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !battle || !battle.musicUrl) return;
+
+    if (battleState?.status === 'IN_PROGRESS' || battleState?.status === 'ROUND_ENDING' || battleState?.status === 'SHOWING_RESULTS') {
+        if (audio.src !== battle.musicUrl) {
+            audio.src = battle.musicUrl;
+        }
+        audio.loop = true;
+        audio.volume = 0; // Start muted
+        audio.play().catch(e => console.error("Audio play failed:", e));
+    } else {
+        audio.pause();
+    }
+  }, [battleState?.status, battle, battle?.musicUrl]);
 
   const handleSubmitAnswer = async () => {
     if (!user || !student || !battleState?.battleId || !battle || (battleState.status !== 'IN_PROGRESS' && battleState.status !== 'ROUND_ENDING') || !teacherUid || isFallen || submittedAnswer || selectedAnswer === null) return;
@@ -581,6 +633,7 @@ export default function LiveBattlePage() {
 
     return (
       <>
+        <audio ref={audioRef} />
         <FallenPlayerDialog isOpen={showFallenDialog} onOpenChange={setShowFallenDialog} />
         <VoteDialog voteState={battleState.voteState || null} userUid={user.uid} teacherUid={teacherUid} />
         <PowersSheet
@@ -713,6 +766,7 @@ export default function LiveBattlePage() {
                     />
                 </div>
             </div>
+            {battle.musicUrl && <VolumeControl audioRef={audioRef} />}
         </div>
       </>
     )
@@ -777,6 +831,7 @@ export default function LiveBattlePage() {
                     </CardContent>
                 </Card>
             </div>
+             {battle.musicUrl && <VolumeControl audioRef={audioRef} />}
         </div>
       );
   }

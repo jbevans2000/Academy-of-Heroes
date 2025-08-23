@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ArrowLeft, PlusCircle, Trash2, Eye, GitBranch, Loader2, Save, Sparkles, Image as ImageIcon, Upload, X } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Trash2, Eye, GitBranch, Loader2, Save, Sparkles, Image as ImageIcon, Upload, X, Music, Library } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -22,6 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import NextImage from 'next/image';
 import { v4 as uuidv4 } from 'uuid';
 import { cn } from '@/lib/utils';
+import { MusicGallery } from '@/components/teacher/music-gallery';
 
 const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
@@ -43,6 +44,7 @@ export default function EditBossBattlePage() {
   const [battleTitle, setBattleTitle] = useState('');
   const [bossImageUrl, setBossImageUrl] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
+  const [musicUrl, setMusicUrl] = useState('');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -50,6 +52,11 @@ export default function EditBossBattlePage() {
   // Image Upload State
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  // Music Upload State
+  const [musicFile, setMusicFile] = useState<File | null>(null);
+  const [isUploadingMusic, setIsUploadingMusic] = useState(false);
+  const [isMusicGalleryOpen, setIsMusicGalleryOpen] = useState(false);
 
   // AI Question Generation State
   const [aiSubject, setAiSubject] = useState('');
@@ -84,6 +91,7 @@ export default function EditBossBattlePage() {
                 setBattleTitle(data.battleName || '');
                 setBossImageUrl(data.bossImageUrl || '');
                 setVideoUrl(data.videoUrl || '');
+                setMusicUrl(data.musicUrl || '');
                 setQuestions(data.questions.map((q: any, index: number) => ({
                     ...q,
                     id: Date.now() + index,
@@ -136,6 +144,32 @@ export default function EditBossBattlePage() {
         setImageFile(null);
     }
   };
+
+    const handleUploadMusic = async () => {
+        if (!musicFile || !teacher) {
+            toast({ variant: 'destructive', title: 'No File Selected', description: 'Please choose an audio file to upload.' });
+            return;
+        }
+        setIsUploadingMusic(true);
+        try {
+            const storage = getStorage(app);
+            const musicId = uuidv4();
+            const storageRef = ref(storage, `battle-music/${teacher.uid}/${musicId}`);
+            
+            await uploadBytes(storageRef, musicFile);
+            const downloadUrl = await getDownloadURL(storageRef);
+
+            setMusicUrl(downloadUrl);
+            toast({ title: 'Upload Successful!', description: 'The battle music has been updated.' });
+        } catch (error) {
+            console.error("Error uploading music:", error);
+            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload the music. Please try again.' });
+        } finally {
+            setIsUploadingMusic(false);
+            setMusicFile(null);
+        }
+    };
+
 
   const handleAddQuestion = () => {
     setQuestions([
@@ -225,6 +259,7 @@ export default function EditBossBattlePage() {
             battleName: battleTitle,
             bossImageUrl,
             videoUrl,
+            musicUrl,
             questions: questionsToSave,
         }, { merge: true });
 
@@ -260,6 +295,8 @@ export default function EditBossBattlePage() {
   }
 
   return (
+    <>
+    <MusicGallery isOpen={isMusicGalleryOpen} onOpenChange={setIsMusicGalleryOpen} onMusicSelect={setMusicUrl} />
     <div className="flex min-h-screen w-full flex-col bg-cover bg-center" style={{ backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-5c865a8c-e16c-4e32-b822-164b15894c5b.jpg?alt=media&token=11c25a8d-193a-44cf-bdfd-a752d57ccade')` }}>
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
@@ -331,6 +368,50 @@ export default function EditBossBattlePage() {
                     </div>
                  )}
                </div>
+
+                <Separator />
+                
+                <div className="space-y-4 p-6 border rounded-lg bg-background/30">
+                    <h3 className="text-xl font-semibold flex items-center gap-2"><Music className="text-primary" /> Battle Music</h3>
+                    <div className="space-y-2 p-4 border rounded-md">
+                        <Label className="text-base font-medium">Upload Music (.mp3, .wav)</Label>
+                        <div className="flex items-center gap-2">
+                            <Label htmlFor="music-upload" className={cn(buttonVariants({ variant: 'default' }), "cursor-pointer")}>
+                                <Upload className="mr-2 h-4 w-4" />
+                                Choose File
+                            </Label>
+                            <Input id="music-upload" type="file" accept="audio/mpeg, audio/wav" onChange={(e) => setMusicFile(e.target.files ? e.target.files[0] : null)} className="hidden" disabled={isUploadingMusic}/>
+                            {musicFile && (
+                                <>
+                                    <Button onClick={handleUploadMusic} disabled={!musicFile || isUploadingMusic}>
+                                        {isUploadingMusic ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                                        Upload Music
+                                    </Button>
+                                    <Button variant="ghost" size="icon" onClick={() => setMusicFile(null)}>
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </>
+                            )}
+                        </div>
+                        {musicFile && <p className="text-sm text-muted-foreground">Selected: {musicFile.name}</p>}
+                    </div>
+                     <div className="space-y-2">
+                        <Label>Or, select from the Music Library</Label>
+                        <Button variant="outline" onClick={() => setIsMusicGalleryOpen(true)}>
+                            <Library className="mr-2 h-4 w-4" />
+                            Open Music Gallery
+                        </Button>
+                     </div>
+                     {musicUrl && (
+                        <div className="pt-4">
+                            <Label>Current Music</Label>
+                            <div className="mt-2 p-4 border rounded-md bg-background/50">
+                                <audio src={musicUrl} controls className="w-full"></audio>
+                            </div>
+                        </div>
+                     )}
+                </div>
+
 
               <div className="space-y-4 p-6 border rounded-lg bg-background/30">
                 <h3 className="text-xl font-semibold flex items-center gap-2"><Sparkles className="text-primary" /> Generate Questions with the Oracle</h3>
@@ -442,5 +523,6 @@ export default function EditBossBattlePage() {
         </div>
       </main>
     </div>
+    </>
   );
 }
