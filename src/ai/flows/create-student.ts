@@ -12,9 +12,6 @@ import { db } from '@/lib/firebase';
 import { classData, type ClassType } from '@/lib/data';
 import { getGlobalSettings } from '@/ai/flows/manage-settings';
 
-// Initialize the Firebase Admin SDK
-const adminApp = getFirebaseAdminApp();
-
 interface RegistrationInput {
   classCode: string;
   studentId: string;
@@ -64,6 +61,9 @@ export async function createStudentAccount(input: RegistrationInput): Promise<Ac
   }
 
   const email = `${input.studentId}@academy-heroes-mziuf.firebaseapp.com`;
+  
+  // Initialize the Firebase Admin SDK inside the function
+  const adminApp = getFirebaseAdminApp();
   const auth = getAuth(adminApp);
 
   try {
