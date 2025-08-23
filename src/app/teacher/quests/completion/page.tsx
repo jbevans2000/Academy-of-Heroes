@@ -196,11 +196,11 @@ export default function ManageQuestCompletionPage() {
                                                 <p className="text-sm text-muted-foreground">{student.studentName}</p>
                                             </div>
                                             <div className="flex items-center space-x-2">
-                                                <span className={`text-xs font-semibold ${!hasOverride ? 'text-muted-foreground' : 'text-destructive'}`}>
+                                                <span className={`text-xs font-semibold ${!hasOverride ? 'text-green-700' : 'text-destructive'}`}>
                                                      {!hasOverride ? 'Standard' : 'Restricted'}
                                                 </span>
                                                 <Switch 
-                                                    checked={hasOverride} 
+                                                    checked={!!hasOverride} 
                                                     onCheckedChange={(checked) => handleStudentToggle(student.uid, checked)}
                                                     disabled={isUpdating}
                                                 />
