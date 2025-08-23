@@ -35,23 +35,23 @@ export function LoginForm() {
     setIsLoading(true);
 
     try {
-      // First, try logging in assuming loginId is a Hero's Alias
+      // First, try logging in assuming loginId is a real email.
       try {
-        const dummyEmail = `${loginId}@academy-heroes-mziuf.firebaseapp.com`;
-        await attemptLogin(dummyEmail, password);
-      } catch (aliasError: any) {
-        // If the alias login fails (likely with user-not-found or invalid-credential),
-        // try again assuming the loginId is a real email.
-        if (aliasError.code === 'auth/invalid-credential' || aliasError.code === 'auth/user-not-found') {
+        await attemptLogin(loginId, password);
+      } catch (emailError: any) {
+        // If the email login fails (likely with user-not-found or invalid-credential),
+        // try again assuming the loginId is a Hero's Alias.
+        if (emailError.code === 'auth/invalid-credential' || emailError.code === 'auth/user-not-found' || emailError.code === 'auth/invalid-email') {
             try {
-                 await attemptLogin(loginId, password);
-            } catch (emailError: any) {
-                // If the email login also fails, show a generic error.
-                throw emailError;
+                 const dummyEmail = `${loginId.toLowerCase().replace(/\s/g, '_')}@academy-heroes-mziuf.firebaseapp.com`;
+                 await attemptLogin(dummyEmail, password);
+            } catch (aliasError: any) {
+                // If the alias login also fails, show a generic error.
+                throw aliasError;
             }
         } else {
             // If the error was something else (e.g., network error), throw it.
-            throw aliasError;
+            throw emailError;
         }
       }
     } catch (error: any) {
@@ -62,6 +62,7 @@ export function LoginForm() {
           case 'auth/invalid-credential':
           case 'auth/user-not-found':
           case 'auth/wrong-password':
+          case 'auth/invalid-email':
             description = 'Invalid email/alias or password.';
             break;
           case 'auth/network-request-failed':

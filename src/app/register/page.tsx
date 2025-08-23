@@ -19,6 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { classData, type ClassType } from '@/lib/data';
 import { getGlobalSettings } from '@/ai/flows/manage-settings';
 import { createStudentDocuments } from '@/ai/flows/create-student';
@@ -84,7 +85,7 @@ export default function RegisterPage() {
 
     try {
       // Step 1: Create user in Firebase Auth on the client
-      const finalEmail = useEmail ? email : `${studentId}@academy-heroes-mziuf.firebaseapp.com`;
+      const finalEmail = useEmail ? email : `${studentId.toLowerCase().replace(/\s/g, '_')}@academy-heroes-mziuf.firebaseapp.com`;
       const finalStudentId = useEmail ? email : studentId; // Use email as identifier if provided
 
       const userCredential = await createUserWithEmailAndPassword(auth, finalEmail, password);
@@ -127,8 +128,6 @@ export default function RegisterPage() {
           case 'auth/weak-password':
             description = 'The password is too weak. Please choose a stronger password.';
             break;
-          default:
-            description = error.message;
         }
       } else {
         description = error.message;
@@ -204,12 +203,12 @@ export default function RegisterPage() {
                 {/* Left Column: Form Inputs */}
                 <div className="space-y-4">
                   <div className="flex items-center space-x-2">
-                    <Label htmlFor="signup-mode">Use Hero's Alias</Label>
-                    <Switch id="signup-mode" checked={!useEmail} onCheckedChange={(checked) => setUseEmail(!checked)} />
                     <Label htmlFor="signup-mode">Use Email</Label>
+                    <Switch id="signup-mode" checked={useEmail} onCheckedChange={(checked) => setUseEmail(checked)} />
+                    <Label htmlFor="signup-mode">Use Hero's Alias</Label>
                   </div>
 
-                  {useEmail ? (
+                  {!useEmail ? (
                     <div className="space-y-2 animate-in fade-in-50">
                         <Label htmlFor="email" className="flex items-center"><Mail className="w-4 h-4 mr-2" />Email Address</Label>
                         <Input id="email" placeholder="Your email address" type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading} />
@@ -218,6 +217,13 @@ export default function RegisterPage() {
                     <div className="space-y-2 animate-in fade-in-50">
                         <Label htmlFor="student-id" className="flex items-center"><KeyRound className="w-4 h-4 mr-2" />Hero's Alias (Username)</Label>
                         <Input id="student-id" placeholder="Choose a unique hero's alias" value={studentId} onChange={(e) => setStudentId(e.target.value)} disabled={isLoading} />
+                        <Alert variant="destructive" className="mt-2">
+                            <ShieldAlert className="h-4 w-4" />
+                            <AlertTitle>Important!</AlertTitle>
+                            <AlertDescription>
+                                If you use a Hero's Alias, you will NOT be able to reset your own password. Your teacher will have to reset it for you if you forget it.
+                            </AlertDescription>
+                        </Alert>
                     </div>
                   )}
 
