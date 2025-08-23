@@ -25,11 +25,11 @@ import { getGlobalSettings } from '@/ai/flows/manage-settings';
 import { createStudentDocuments } from '@/ai/flows/create-student';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { Switch } from '@/components/ui/switch';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 
 export default function RegisterPage() {
-  const [useEmail, setUseEmail] = useState(true);
+  const [signupMethod, setSignupMethod] = useState<'email' | 'alias'>('email');
   const [classCode, setClassCode] = useState('');
   const [studentId, setStudentId] = useState('');
   const [email, setEmail] = useState('');
@@ -65,7 +65,7 @@ export default function RegisterPage() {
 
 
   const handleSubmit = async () => {
-    if (!classCode || (!useEmail && !studentId) || (useEmail && !email) || !password || !studentName || !characterName || !selectedClass || !selectedAvatar) {
+    if (!classCode || (signupMethod === 'alias' && !studentId) || (signupMethod === 'email' && !email) || !password || !studentName || !characterName || !selectedClass || !selectedAvatar) {
       toast({
         variant: 'destructive',
         title: 'Missing Information',
@@ -85,8 +85,8 @@ export default function RegisterPage() {
 
     try {
       // Step 1: Create user in Firebase Auth on the client
-      const finalEmail = useEmail ? email : `${studentId.toLowerCase().replace(/\s/g, '_')}@academy-heroes-mziuf.firebaseapp.com`;
-      const finalStudentId = useEmail ? email : studentId; // Use email as identifier if provided
+      const finalEmail = signupMethod === 'email' ? email : `${studentId.toLowerCase().replace(/\s/g, '_')}@academy-heroes-mziuf.firebaseapp.com`;
+      const finalStudentId = signupMethod === 'email' ? email : studentId; // Use email as identifier if provided
 
       const userCredential = await createUserWithEmailAndPassword(auth, finalEmail, password);
       const user = userCredential.user;
@@ -120,7 +120,7 @@ export default function RegisterPage() {
       if (error.code) {
         switch(error.code) {
           case 'auth/email-already-in-use':
-            description = useEmail ? 'This email is already registered.' : 'This Hero\'s Alias is already registered. Please choose another.';
+            description = signupMethod === 'email' ? 'This email is already registered.' : 'This Hero\'s Alias is already registered. Please choose another.';
             break;
           case 'auth/invalid-email':
             description = 'The email address is not valid.';
@@ -202,13 +202,25 @@ export default function RegisterPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Left Column: Form Inputs */}
                 <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Label htmlFor="signup-mode">Use Hero's Alias</Label>
-                    <Switch id="signup-mode" checked={!useEmail} onCheckedChange={(checked) => setUseEmail(!checked)} />
-                    <Label htmlFor="signup-mode">Use Email</Label>
+                  <div className="space-y-2">
+                    <Label className="font-semibold">Sign-up Method</Label>
+                    <RadioGroup
+                        value={signupMethod}
+                        onValueChange={(value) => setSignupMethod(value as 'email' | 'alias')}
+                        className="flex space-x-4"
+                    >
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="email" id="signup-email" />
+                            <Label htmlFor="signup-email">Use Email</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="alias" id="signup-alias" />
+                            <Label htmlFor="signup-alias">Use Hero's Alias</Label>
+                        </div>
+                    </RadioGroup>
                   </div>
 
-                  {useEmail ? (
+                  {signupMethod === 'email' ? (
                     <div className="space-y-2 animate-in fade-in-50">
                         <Label htmlFor="email" className="flex items-center"><Mail className="w-4 h-4 mr-2" />Email Address</Label>
                         <Input id="email" placeholder="Your email address" type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading} />
