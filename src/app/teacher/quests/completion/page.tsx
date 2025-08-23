@@ -87,16 +87,25 @@ export default function ManageQuestCompletionPage() {
 
     const handleStudentToggle = async (studentUid: string, checked: boolean) => {
         if (!teacher) return;
-        const newOverrides = { ...studentOverrides, [studentUid]: checked };
+        
+        const originalOverrides = { ...studentOverrides };
+        const newOverrides = { ...studentOverrides };
+
+        if (checked) {
+            // If we are turning the override ON, we set it to true.
+            newOverrides[studentUid] = true;
+        } else {
+            // If we are turning it OFF, we remove it from the map.
+            delete newOverrides[studentUid];
+        }
+
         setStudentOverrides(newOverrides);
         setIsUpdating(true);
         const result = await updateQuestSettings(teacher.uid, { studentOverrides: newOverrides });
          if (!result.success) {
             toast({ variant: 'destructive', title: 'Error', description: result.error });
             // Revert on failure
-            const revertedOverrides = { ...studentOverrides };
-            delete revertedOverrides[studentUid];
-            setStudentOverrides(revertedOverrides);
+            setStudentOverrides(originalOverrides);
         }
         setIsUpdating(false);
     };
@@ -178,9 +187,7 @@ export default function ManageQuestCompletionPage() {
                             </CardHeader>
                             <CardContent className="space-y-3 max-h-96 overflow-y-auto">
                                 {students.map(student => {
-                                    const overrideValue = studentOverrides[student.uid];
-                                    const isUsingGlobal = overrideValue === undefined;
-                                    const effectiveValue = isUsingGlobal ? globalApproval : overrideValue;
+                                    const hasOverride = studentOverrides[student.uid] !== undefined;
                                     
                                     return (
                                         <div key={student.uid} className="flex items-center justify-between p-2 border rounded-md">
@@ -189,11 +196,11 @@ export default function ManageQuestCompletionPage() {
                                                 <p className="text-sm text-muted-foreground">{student.studentName}</p>
                                             </div>
                                             <div className="flex items-center space-x-2">
-                                                <span className={`text-xs font-semibold ${isUsingGlobal ? 'text-muted-foreground' : 'text-primary'}`}>
-                                                     {isUsingGlobal ? 'Standard' : 'Restricted'}
+                                                <span className={`text-xs font-semibold ${!hasOverride ? 'text-muted-foreground' : 'text-primary'}`}>
+                                                     {!hasOverride ? 'Standard' : 'Restricted'}
                                                 </span>
                                                 <Switch 
-                                                    checked={effectiveValue} 
+                                                    checked={hasOverride} 
                                                     onCheckedChange={(checked) => handleStudentToggle(student.uid, checked)}
                                                     disabled={isUpdating}
                                                 />
