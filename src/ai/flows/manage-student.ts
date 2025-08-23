@@ -163,7 +163,7 @@ export async function migrateStudentData(input: MigrateDataInput): Promise<Actio
     const auth = getAuth(getFirebaseAdminApp());
 
     try {
-        await runTransaction(db, async (transaction) => {
+        return await runTransaction(db, async (transaction) => {
             const oldStudentRef = doc(db, 'teachers', teacherUid, 'students', oldStudentUid);
             const newStudentRef = doc(db, 'teachers', teacherUid, 'students', newStudentUid);
 
@@ -224,7 +224,9 @@ export async function unarchiveStudent(input: UnarchiveStudentInput): Promise<Ac
 
         // Un-archive the Firestore document
         const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
-        await updateDoc(studentRef, { isArchived: false });
+        await updateDoc(studentRef, {
+            isArchived: false
+        });
         
         return { success: true, message: "Student has been unarchived and can now log in." };
 
