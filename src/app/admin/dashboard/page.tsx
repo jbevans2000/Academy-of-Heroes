@@ -24,8 +24,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { format } from 'date-fns';
@@ -37,6 +37,15 @@ interface Teacher {
     className: string;
     schoolName: string;
     studentCount: number;
+}
+
+interface Student {
+    uid: string;
+    studentId: string;
+    studentName: string;
+    characterName: string;
+    teacherName: string;
+    teacherId: string;
 }
 
 interface Feedback {
@@ -53,6 +62,7 @@ interface Feedback {
 export default function AdminDashboardPage() {
     const [user, setUser] = useState<User | null>(null);
     const [teachers, setTeachers] = useState<Teacher[]>([]);
+    const [allStudents, setAllStudents] = useState<Student[]>([]);
     const [feedback, setFeedback] = useState<Feedback[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
@@ -71,9 +81,7 @@ export default function AdminDashboardPage() {
 
                 if (adminSnap.exists()) {
                     setUser(currentUser);
-                    fetchTeachers();
-                    fetchSettings();
-                    fetchFeedback();
+                    fetchInitialData();
                 } else {
                     router.push('/teacher/dashboard');
                 }
@@ -86,31 +94,58 @@ export default function AdminDashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [router]);
 
-    const fetchTeachers = async () => {
+    const fetchInitialData = async () => {
         setIsLoading(true);
+        await Promise.all([
+            fetchTeachersAndStudents(),
+            fetchSettings(),
+            fetchFeedback()
+        ]);
+        setIsLoading(false);
+    };
+
+    const fetchTeachersAndStudents = async () => {
         try {
             const teachersSnapshot = await getDocs(collection(db, 'teachers'));
-            const teachersData = await Promise.all(teachersSnapshot.docs.map(async (teacherDoc) => {
+            const teachersData: Teacher[] = [];
+            const studentsData: Student[] = [];
+
+            for (const teacherDoc of teachersSnapshot.docs) {
+                const teacherInfo = teacherDoc.data();
                 const studentsSnapshot = await getDocs(collection(db, 'teachers', teacherDoc.id, 'students'));
-                const data = teacherDoc.data();
-                return {
+                
+                teachersData.push({
                     id: teacherDoc.id,
-                    name: data.name || '[No Name]',
-                    email: data.email || '[No Email]',
-                    className: data.className || '[No Class Name]',
-                    schoolName: data.schoolName || '[No School]',
+                    name: teacherInfo.name || '[No Name]',
+                    email: teacherInfo.email || '[No Email]',
+                    className: teacherInfo.className || '[No Class Name]',
+                    schoolName: teacherInfo.schoolName || '[No School]',
                     studentCount: studentsSnapshot.size,
-                };
-            }));
+                });
+
+                studentsSnapshot.forEach(studentDoc => {
+                    const studentInfo = studentDoc.data();
+                    studentsData.push({
+                        uid: studentDoc.id,
+                        studentId: studentInfo.studentId || '[No Alias]',
+                        studentName: studentInfo.studentName || '[No Name]',
+                        characterName: studentInfo.characterName || '[No Character]',
+                        teacherName: teacherInfo.name || '[No Teacher]',
+                        teacherId: teacherDoc.id,
+                    });
+                });
+            }
+            
             setTeachers(teachersData);
+            setAllStudents(studentsData);
+
              toast({
                 title: 'Data Refreshed',
                 description: 'The latest guild and student data has been loaded.',
             });
         } catch (error) {
-            console.error("Error fetching teachers:", error);
-        } finally {
-            setIsLoading(false);
+            console.error("Error fetching data:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not load teacher and student data.' });
         }
     };
     
@@ -233,9 +268,9 @@ export default function AdminDashboardPage() {
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
             <AdminHeader />
-            <main className="flex-1 p-4 md:p-6 lg:p-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <main className="flex-1 p-4 md:p-6 lg:p-8 grid gap-6 md:grid-cols-3 lg:grid-cols-4">
                  
-                 <div className="lg:col-span-2 space-y-6">
+                 <div className="lg:col-span-3 space-y-6">
                     <Card>
                         <CardHeader>
                             <CardTitle>All Guilds</CardTitle>
@@ -267,54 +302,39 @@ export default function AdminDashboardPage() {
                     </Card>
                     <Card>
                         <CardHeader>
-                            <CardTitle>Teacher Feedback</CardTitle>
-                            <CardDescription>Logs of all submitted bug reports and feature requests.</CardDescription>
+                            <CardTitle>All Students</CardTitle>
+                            <CardDescription>A complete list of every student account in the system.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            {feedback.length === 0 ? (
-                                <p className="text-muted-foreground">No feedback has been submitted yet.</p>
-                            ) : (
-                                <div className="space-y-4 max-h-[500px] overflow-y-auto">
-                                    {feedback.map(item => (
-                                        <div key={item.id} className="p-4 border rounded-lg">
-                                            <div className="flex justify-between items-start">
-                                                <div className="flex-grow">
-                                                    <div className="flex items-center gap-2 font-bold text-lg">
-                                                         {item.feedbackType === 'bug' ? <Bug className="h-5 w-5 text-destructive" /> : <Lightbulb className="h-5 w-5 text-yellow-500" />}
-                                                         <span>{item.feedbackType === 'bug' ? 'Bug Report' : 'Feature Request'}</span>
-                                                    </div>
-                                                    <p className="text-sm text-muted-foreground">From: Anonymous</p>
-                                                </div>
-                                                <div className="flex flex-col items-end gap-2">
-                                                    <p className="text-xs text-muted-foreground">{format(new Date(item.createdAt.seconds * 1000), 'PPP p')}</p>
-                                                    <div className="flex items-center space-x-2">
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setFeedbackToDelete(item.id)}>
-                                                            <Trash2 className="h-4 w-4 text-destructive" />
-                                                        </Button>
-                                                        <Checkbox
-                                                            id={`feedback-${item.id}`}
-                                                            checked={item.status === 'addressed'}
-                                                            onCheckedChange={() => handleFeedbackStatusChange(item.id, item.status)}
-                                                        />
-                                                        <label
-                                                            htmlFor={`feedback-${item.id}`}
-                                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                                        >
-                                                            Addressed
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <p className="mt-2 whitespace-pre-wrap">{item.message}</p>
-                                        </div>
+                           <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Student Name</TableHead>
+                                        <TableHead>Character Name</TableHead>
+                                        <TableHead>Login Alias</TableHead>
+                                        <TableHead>Guild / Teacher</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {allStudents.map(student => (
+                                        <TableRow key={student.uid}>
+                                            <TableCell>{student.studentName}</TableCell>
+                                            <TableCell>{student.characterName}</TableCell>
+                                            <TableCell className="font-mono">{student.studentId}</TableCell>
+                                            <TableCell>
+                                                 <Link href={`/teacher/dashboard?teacherId=${student.teacherId}`} className="underline hover:text-primary">
+                                                    {student.teacherName}
+                                                </Link>
+                                            </TableCell>
+                                        </TableRow>
                                     ))}
-                                </div>
-                            )}
+                                </TableBody>
+                            </Table>
                         </CardContent>
                     </Card>
                  </div>
 
-                <div className="space-y-6">
+                <div className="space-y-6 lg:col-span-1">
                     <Card>
                         <CardHeader>
                             <CardTitle>Global Settings</CardTitle>
@@ -328,19 +348,17 @@ export default function AdminDashboardPage() {
                                         {isRegistrationOpen ? 'ACTIVE' : 'DISABLED'}
                                     </p>
                                 </div>
-                                <Button onClick={handleToggleRegistration} disabled={isSettingsLoading} size="lg">
-                                    {isSettingsLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : isRegistrationOpen ? <ToggleRight className="mr-2 h-6 w-6"/> : <ToggleLeft className="mr-2 h-6 w-6"/>}
-                                    {isRegistrationOpen ? 'Deactivate' : 'Activate'}
+                                <Button onClick={handleToggleRegistration} disabled={isSettingsLoading} size="icon">
+                                    {isSettingsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : isRegistrationOpen ? <ToggleRight className="h-6 w-6"/> : <ToggleLeft className="h-6 w-6"/>}
                                 </Button>
                             </div>
                             <div className="flex items-center justify-between rounded-lg border p-4">
                                 <div>
                                     <h4 className="font-semibold">Refresh Data</h4>
-                                    <p className="text-sm text-muted-foreground">Reload all guild and student information.</p>
+                                    <p className="text-sm text-muted-foreground">Reload all guild and student info.</p>
                                 </div>
-                                <Button onClick={fetchTeachers} disabled={isLoading} size="lg">
-                                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4"/>}
-                                    Refresh
+                                <Button onClick={fetchTeachersAndStudents} disabled={isLoading} size="icon">
+                                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4"/>}
                                 </Button>
                             </div>
                         </CardContent>
@@ -348,21 +366,60 @@ export default function AdminDashboardPage() {
                      <Card>
                         <CardHeader>
                             <CardTitle>Beta Features</CardTitle>
-                            <CardDescription>Toggle experimental features for all users.</CardDescription>
+                            <CardDescription>Toggle experimental features.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="flex items-center justify-between rounded-lg border p-4">
                                 <div>
-                                    <h4 className="font-semibold">Teacher Feedback Panel</h4>
+                                    <h4 className="font-semibold">Feedback Panel</h4>
                                     <p className={cn("text-sm font-bold", isFeedbackPanelVisible ? 'text-green-600' : 'text-red-600')}>
                                         {isFeedbackPanelVisible ? 'ACTIVE' : 'INACTIVE'}
                                     </p>
                                 </div>
-                                 <Button onClick={handleToggleFeedbackPanel} disabled={isSettingsLoading} size="lg">
-                                    {isSettingsLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : isFeedbackPanelVisible ? <ToggleRight className="mr-2 h-6 w-6"/> : <ToggleLeft className="mr-2 h-6 w-6"/>}
-                                    {isFeedbackPanelVisible ? 'Deactivate' : 'Activate'}
+                                 <Button onClick={handleToggleFeedbackPanel} disabled={isSettingsLoading} size="icon">
+                                    {isSettingsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : isFeedbackPanelVisible ? <ToggleRight className="h-6 w-6"/> : <ToggleLeft className="h-6 w-6"/>}
                                 </Button>
                             </div>
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Teacher Feedback</CardTitle>
+                            <CardDescription>Bug reports and feature requests.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {feedback.length === 0 ? (
+                                <p className="text-muted-foreground">No feedback yet.</p>
+                            ) : (
+                                <div className="space-y-4 max-h-[400px] overflow-y-auto">
+                                    {feedback.map(item => (
+                                        <div key={item.id} className="p-3 border rounded-lg">
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex-grow">
+                                                    <div className="flex items-center gap-2 font-bold">
+                                                         {item.feedbackType === 'bug' ? <Bug className="h-4 w-4 text-destructive" /> : <Lightbulb className="h-4 w-4 text-yellow-500" />}
+                                                         <span>{item.feedbackType === 'bug' ? 'Bug' : 'Feature'}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col items-end gap-1">
+                                                    <p className="text-xs text-muted-foreground">{format(new Date(item.createdAt.seconds * 1000), 'PPp')}</p>
+                                                    <div className="flex items-center space-x-1">
+                                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setFeedbackToDelete(item.id)}>
+                                                            <Trash2 className="h-3 w-3 text-destructive" />
+                                                        </Button>
+                                                        <Checkbox
+                                                            id={`feedback-${item.id}`}
+                                                            checked={item.status === 'addressed'}
+                                                            onCheckedChange={() => handleFeedbackStatusChange(item.id, item.status)}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <p className="mt-1 text-sm">{item.message}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                     <AlertDialog open={!!feedbackToDelete} onOpenChange={(isOpen) => !isOpen && setFeedbackToDelete(null)}>
@@ -386,3 +443,5 @@ export default function AdminDashboardPage() {
         </div>
     );
 }
+
+    
