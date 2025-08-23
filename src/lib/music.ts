@@ -1,23 +1,27 @@
 
 export const royaltyFreeTracks = [
     {
-        name: "The Final Encounter",
-        url: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/battle-music%2Fthe-final-encounter-118970.mp3?alt=media&token=c8a3ab80-f2d4-4530-9a4f-561b0a880945",
+        name: "Battle Track 1",
+        url: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Battle%20Music%2FBattle%20Music%201.mp3?alt=media&token=46651347-59dc-4372-96c3-525c84d9ba99",
     },
     {
-        name: "Epic Battle",
-        url: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/battle-music%2Fepic-battle-music-6935.mp3?alt=media&token=b7f870a4-e91e-450f-a39c-8515c1e0024f",
+        name: "Battle Track 2",
+        url: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Battle%20Music%2FBattle%20Music%202.mp3?alt=media&token=79a1ad8e-d75b-4884-8952-cf116072cfa3",
     },
     {
-        name: "Action Trailer",
-        url: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/battle-music%2Findiana-jones-style-action-trailer-116662.mp3?alt=media&token=0b615174-8b6b-4e89-bdc0-502ac793d489",
+        name: "Battle Track 3",
+        url: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Battle%20Music%2FBattle%20Music%203.mp3?alt=media&token=fd2168f9-606c-44c8-8b85-78bf4c68a6ae",
     },
     {
-        name: "The Great Battle",
-        url: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/battle-music%2Fthe-great-battle-121528.mp3?alt=media&token=e1bd6b08-3162-4f38-a1e6-424a56c429e3",
+        name: "Battle Track 4",
+        url: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Battle%20Music%2FBattle%20Music%204.mp3?alt=media&token=7824e775-f65e-4b83-ba10-d713932051e6",
     },
     {
-        name: "The Last Stand",
-        url: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/battle-music%2Fthe-last-stand-122485.mp3?alt=media&token=6f5d812d-932d-456b-a25e-0498a4729f12",
+        name: "Battle Track 5",
+        url: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Battle%20Music%2FBattle%20Music%205.mp3?alt=media&token=fc8a9fa1-66d3-43aa-b925-acc83298c6a7",
+    },
+    {
+        name: "Battle Track 6",
+        url: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Battle%20Music%2FBattle%20Music%206.mp3?alt=media&token=55b49a49-4fef-46bb-994e-f5163c0347d5",
     }
 ];
