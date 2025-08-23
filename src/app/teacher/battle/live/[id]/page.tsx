@@ -171,7 +171,7 @@ function VolumeControl({ audioRef }: { audioRef: React.RefObject<HTMLAudioElemen
 
     return (
         <div className="fixed bottom-4 right-4 z-50 w-48 p-4 rounded-lg bg-black/50 backdrop-blur-sm text-white">
-            <p className="text-xs text-white/80 text-center mb-1">Volume</p>
+            <p className="text-xs text-center mb-1">Volume</p>
             <div className="flex items-center gap-2">
                 {getVolumeIcon()}
                 <Slider
@@ -287,7 +287,6 @@ export default function TeacherLiveBattlePage() {
             if (audio.src !== battle.musicUrl) {
                 audio.src = battle.musicUrl;
             }
-            audio.loop = true;
             audio.volume = 0; // Start muted
             audio.play().catch(e => console.error("Audio play failed:", e));
         } else {
@@ -1172,7 +1171,7 @@ export default function TeacherLiveBattlePage() {
     <div
         className="relative flex min-h-screen w-full flex-col"
     >
-        <audio ref={audioRef} />
+        <audio ref={audioRef} loop />
         <div
             className="absolute inset-0 -z-10 bg-black/50"
             style={{
