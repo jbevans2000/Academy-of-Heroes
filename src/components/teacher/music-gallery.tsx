@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -22,16 +22,33 @@ export function MusicGallery({ isOpen, onOpenChange, onMusicSelect }: MusicGalle
     const [playingUrl, setPlayingUrl] = useState<string | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
+    // Stop playing audio when the dialog is closed
+    useEffect(() => {
+        if (!isOpen && audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
+            setPlayingUrl(null);
+        }
+    }, [isOpen]);
+
     const handlePlayPause = (url: string) => {
-        if (audioRef.current) {
-            if (playingUrl === url) {
-                audioRef.current.pause();
-                setPlayingUrl(null);
-            } else {
-                audioRef.current.src = url;
-                audioRef.current.play();
-                setPlayingUrl(url);
+        // If another track is playing, stop it first
+        if (audioRef.current && playingUrl && playingUrl !== url) {
+            audioRef.current.pause();
+        }
+
+        // If the clicked track is the one currently playing, pause it
+        if (playingUrl === url && audioRef.current) {
+            audioRef.current.pause();
+            setPlayingUrl(null);
+        } else {
+            // Otherwise, play the new track
+            if (!audioRef.current || audioRef.current.src !== url) {
+                audioRef.current = new Audio(url);
+                audioRef.current.onended = () => setPlayingUrl(null);
             }
+            audioRef.current.play().catch(e => console.error("Audio play failed:", e));
+            setPlayingUrl(url);
         }
     };
     
@@ -47,15 +64,8 @@ export function MusicGallery({ isOpen, onOpenChange, onMusicSelect }: MusicGalle
     }
 
     return (
-        <Dialog open={isOpen} onOpenChange={(open) => {
-            if(!open && audioRef.current) {
-                audioRef.current.pause();
-                setPlayingUrl(null);
-            }
-            onOpenChange(open);
-        }}>
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-2xl">
-                 <audio ref={audioRef} onEnded={() => setPlayingUrl(null)} />
                 <DialogHeader>
                     <DialogTitle>Choose Battle Music</DialogTitle>
                     <DialogDescription>Select one of the default tracks for your battle.</DialogDescription>
