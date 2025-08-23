@@ -163,7 +163,7 @@ export async function migrateStudentData(input: MigrateDataInput): Promise<Actio
     const auth = getAuth(getFirebaseAdminApp());
 
     try {
-        return await runTransaction(db, async (transaction) => {
+        await runTransaction(db, async (transaction) => {
             const oldStudentRef = doc(db, 'teachers', teacherUid, 'students', oldStudentUid);
             const newStudentRef = doc(db, 'teachers', teacherUid, 'students', newStudentUid);
 
@@ -191,15 +191,14 @@ export async function migrateStudentData(input: MigrateDataInput): Promise<Actio
             };
             
             // Update the new account with the old account's progress data
-            // This merges the data, preserving the new account's identity fields
-            transaction.set(newStudentRef, dataToCopy, { merge: true });
+            transaction.update(newStudentRef, dataToCopy);
 
             // Mark the old account as archived
             transaction.update(oldStudentRef, { isArchived: true });
-        });
 
-        // After the transaction is successful, disable the old account's authentication
-        await auth.updateUser(oldStudentUid, { disabled: true });
+            // After the transaction is successful, disable the old account's authentication
+            await auth.updateUser(oldStudentUid, { disabled: true });
+        });
 
         return { success: true, message: 'Data migration successful!' };
 
