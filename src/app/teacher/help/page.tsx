@@ -10,7 +10,7 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction } from '@/components/ui/alert-dialog';
-import { ArrowLeft, BookOpen, Swords, Wrench, Star, UserPlus, LayoutDashboard, Copy, Gift } from 'lucide-react';
+import { ArrowLeft, BookOpen, Swords, Wrench, Star, UserPlus, LayoutDashboard, Copy, Gift, DatabaseZap } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
@@ -29,6 +29,7 @@ const helpTopics = [
     { id: 'quests', title: 'Quests & Chapters', icon: <BookOpen className="h-8 w-8 text-primary" />, description: 'Learn how to create and manage the story campaign.' },
     { id: 'battles', title: 'Boss Battles', icon: <Swords className="h-8 w-8 text-primary" />, description: 'Set up and run exciting, live boss battles.' },
     { id: 'tools', title: 'Classroom Tools', icon: <Wrench className="h-8 w-8 text-primary" />, description: 'Discover the suite of helpful classroom utilities.' },
+    { id: 'migration', title: 'Data Migration Tool', icon: <DatabaseZap className="h-8 w-8 text-primary" />, description: 'How to recover a student\'s progress if they lose their password.' },
 ];
 
 export default function TeacherHelpPage() {
@@ -210,6 +211,43 @@ export default function TeacherHelpPage() {
                                     <li><strong>Group Guilder:</strong> Randomly sorts your students into named groups or "guilds".</li>
                                     <li><strong>The Royal Scribe:</strong> An AI-powered generator for grade-specific writing prompts.</li>
                                 </ul>
+                            </div>
+                        </AlertDialogDescription>
+                    </>
+                );
+            case 'migration':
+                return (
+                    <>
+                        <AlertDialogTitle className="text-2xl">Using the Data Migration Tool</AlertDialogTitle>
+                         <AlertDialogDescription className="text-lg text-black space-y-4">
+                           <div>
+                                <p>The Data Migration tool is a powerful utility designed for a specific scenario: <strong>when a student using a "Hero's Alias" for login forgets their password.</strong> Since these accounts aren't tied to a real email, they cannot use the standard "Forgot Password" feature.</p>
+                                <div className="bg-destructive/10 border-l-4 border-destructive p-4 my-4 rounded-md">
+                                    <h4 className="font-bold text-destructive">WARNING:</h4>
+                                    <p>This process is irreversible. It will completely <strong>overwrite all game progress</strong> (Level, XP, Gold, inventory, etc.) on the NEW account with the data from the OLD account. The new account's login credentials and name will remain unchanged.</p>
+                                </div>
+                                <h4>When to Use This Tool:</h4>
+                                <ul className="list-disc list-inside">
+                                    <li>A student used the "Hero's Alias" signup method.</li>
+                                    <li>That student has forgotten their password and is locked out of their account.</li>
+                                    <li>You want to transfer their game progress to a fresh, new account.</li>
+                                </ul>
+                                <h4>Step 1: Instructions for the Student</h4>
+                                <p>The student must first create a brand new character:</p>
+                                <ol className="list-decimal list-inside">
+                                    <li>Go to the registration page.</li>
+                                    <li>Enter your Guild Code.</li>
+                                    <li>Fill out the form to create a new hero. They can use the same names, but must choose a <strong>new Hero's Alias and Password</strong> that they will remember.</li>
+                                    <li>They must wait for you to approve them.</li>
+                                </ol>
+                                <h4>Step 2: Instructions for the Teacher</h4>
+                                <ol className="list-decimal list-inside">
+                                    <li>First, approve the student's new account application from your dashboard's "Pending Approvals" dialog. The new, empty account must appear on your dashboard roster.</li>
+                                    <li>Navigate to Classroom &gt; Data Migration Tool.</li>
+                                    <li>From the first dropdown, select the student's <strong>OLD</strong> account (the one with all the progress).</li>
+                                    <li>From the second dropdown, select the student's <strong>NEW</strong>, empty account.</li>
+                                    <li>Click "Migrate Data" and confirm the action. The old account will be archived and disabled, and the new account will now have all the old progress.</li>
+                                </ol>
                             </div>
                         </AlertDialogDescription>
                     </>
