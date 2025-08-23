@@ -160,8 +160,7 @@ interface MigrateDataInput {
 
 export async function migrateStudentData(input: MigrateDataInput): Promise<ActionResponse> {
     const { teacherUid, oldStudentUid, newStudentUid } = input;
-    const auth = getAuth(getFirebaseAdminApp());
-
+    
     try {
         await runTransaction(db, async (transaction) => {
             const oldStudentRef = doc(db, 'teachers', teacherUid, 'students', oldStudentUid);
@@ -196,8 +195,6 @@ export async function migrateStudentData(input: MigrateDataInput): Promise<Actio
             // Mark the old account as archived
             transaction.update(oldStudentRef, { isArchived: true });
 
-            // After the transaction is successful, disable the old account's authentication
-            await auth.updateUser(oldStudentUid, { disabled: true });
         });
 
         return { success: true, message: 'Data migration successful!' };
@@ -215,13 +212,8 @@ interface UnarchiveStudentInput {
 
 export async function unarchiveStudent(input: UnarchiveStudentInput): Promise<ActionResponse> {
     const { teacherUid, studentUid } = input;
-    const auth = getAuth(getFirebaseAdminApp());
-
+    
     try {
-        // Re-enable the authentication account
-        await auth.updateUser(studentUid, { disabled: false });
-
-        // Un-archive the Firestore document
         const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
         await updateDoc(studentRef, {
             isArchived: false
