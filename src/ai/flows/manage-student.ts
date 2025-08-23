@@ -174,12 +174,27 @@ export async function migrateStudentData(input: MigrateDataInput): Promise<Actio
 
         const oldData = oldStudentSnap.data();
         
-        // Exclude properties that should not be copied
-        const { uid, email, studentId, ...dataToCopy } = oldData;
+        // Explicitly copy only the game progress data.
+        // Do NOT copy studentName, characterName, studentId, or email.
+        const dataToCopy = {
+            level: oldData.level,
+            xp: oldData.xp,
+            gold: oldData.gold,
+            hp: oldData.hp,
+            maxHp: oldData.maxHp,
+            mp: oldData.mp,
+            maxMp: oldData.maxMp,
+            questProgress: oldData.questProgress,
+            hubsCompleted: oldData.hubsCompleted,
+            inventory: oldData.inventory,
+            // We also copy the avatar and background so their look is preserved
+            avatarUrl: oldData.avatarUrl,
+            backgroundUrl: oldData.backgroundUrl,
+        };
         
         const batch = writeBatch(db);
 
-        // Update the new account with the old account's data
+        // Update the new account with the old account's progress data
         batch.update(newStudentRef, dataToCopy);
 
         // Mark the old account as archived and disabled
