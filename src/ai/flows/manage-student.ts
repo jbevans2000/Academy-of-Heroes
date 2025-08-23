@@ -10,7 +10,7 @@
  * - getStudentStatus: Fetches the enabled/disabled status of a student's account.
  * - clearGameLog: Deletes all entries from the game log.
  */
-import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch, getDoc, runTransaction } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirebaseAdminApp } from '@/lib/firebase-admin';
@@ -163,44 +163,42 @@ export async function migrateStudentData(input: MigrateDataInput): Promise<Actio
     const auth = getAuth(getFirebaseAdminApp());
 
     try {
-        const oldStudentRef = doc(db, 'teachers', teacherUid, 'students', oldStudentUid);
-        const newStudentRef = doc(db, 'teachers', teacherUid, 'students', newStudentUid);
+        await runTransaction(db, async (transaction) => {
+            const oldStudentRef = doc(db, 'teachers', teacherUid, 'students', oldStudentUid);
+            const newStudentRef = doc(db, 'teachers', teacherUid, 'students', newStudentUid);
 
-        const oldStudentSnap = await getDoc(oldStudentRef);
-        
-        if (!oldStudentSnap.exists()) {
-            return { success: false, error: 'The old student account could not be found.' };
-        }
+            const oldStudentSnap = await transaction.get(oldStudentRef);
+            
+            if (!oldStudentSnap.exists()) {
+                throw new Error('The old student account could not be found.');
+            }
 
-        const oldData = oldStudentSnap.data();
-        
-        // Explicitly copy only the game progress data with default fallbacks.
-        const dataToCopy = {
-            level: oldData.level || 1,
-            xp: oldData.xp || 0,
-            gold: oldData.gold || 0,
-            hp: oldData.hp || 1,
-            maxHp: oldData.maxHp || 1,
-            mp: oldData.mp || 0,
-            maxMp: oldData.maxMp || 0,
-            questProgress: oldData.questProgress || {},
-            hubsCompleted: oldData.hubsCompleted || 0,
-            inventory: oldData.inventory || {},
-            avatarUrl: oldData.avatarUrl || '',
-            backgroundUrl: oldData.backgroundUrl || '',
-        };
-        
-        const batch = writeBatch(db);
+            const oldData = oldStudentSnap.data();
+            
+            const dataToCopy = {
+                level: oldData.level || 1,
+                xp: oldData.xp || 0,
+                gold: oldData.gold || 0,
+                hp: oldData.hp || 1,
+                maxHp: oldData.maxHp || 1,
+                mp: oldData.mp || 0,
+                maxMp: oldData.maxMp || 0,
+                questProgress: oldData.questProgress || {},
+                hubsCompleted: oldData.hubsCompleted || 0,
+                inventory: oldData.inventory || {},
+                avatarUrl: oldData.avatarUrl || '',
+                backgroundUrl: oldData.backgroundUrl || '',
+            };
+            
+            // Update the new account with the old account's progress data
+            // This merges the data, preserving the new account's identity fields
+            transaction.set(newStudentRef, dataToCopy, { merge: true });
 
-        // Update the new account with the old account's progress data
-        batch.update(newStudentRef, dataToCopy);
+            // Mark the old account as archived
+            transaction.update(oldStudentRef, { isArchived: true });
+        });
 
-        // Mark the old account as archived and disabled
-        batch.update(oldStudentRef, { isArchived: true });
-        
-        await batch.commit();
-
-        // Disable the old user's authentication
+        // After the transaction is successful, disable the old account's authentication
         await auth.updateUser(oldStudentUid, { disabled: true });
 
         return { success: true, message: 'Data migration successful!' };
