@@ -24,7 +24,6 @@ import { getGlobalSettings } from '@/ai/flows/manage-settings';
 import { createStudentDocuments } from '@/ai/flows/create-student';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { generateName } from '@/ai/flows/name-generator';
 
 export default function RegisterPage() {
   const [classCode, setClassCode] = useState('');
@@ -144,18 +143,6 @@ export default function RegisterPage() {
     setSelectedClass(classValue);
     setSelectedAvatar(null);
   };
-  
-  const handleGenerateName = async (gender: 'Male' | 'Female' | 'Non-binary') => {
-    setIsGeneratingName(true);
-    try {
-      const name = await generateName({ gender });
-      setCharacterName(name);
-    } catch (error) {
-        toast({ variant: 'destructive', title: 'Could not generate name', description: 'The name generator failed. Please try again.'});
-    } finally {
-        setIsGeneratingName(false);
-    }
-  };
 
   const RegistrationClosedCard = () => (
     <Card className="w-full max-w-lg shadow-2xl bg-card/80 backdrop-blur-sm">
@@ -257,7 +244,7 @@ export default function RegisterPage() {
                     <Label htmlFor="character-name" className="flex items-center"><Star className="w-4 h-4 mr-2" />Character Name</Label>
                     <div className="flex gap-2">
                       <Input id="character-name" placeholder="Your hero's name" value={characterName} onChange={(e) => setCharacterName(e.target.value)} disabled={isLoading || isGeneratingName} />
-                       <Button variant="outline" size="icon" onClick={() => handleGenerateName('Non-binary')} disabled={isLoading || isGeneratingName}>
+                       <Button variant="outline" size="icon" disabled>
                             {isGeneratingName ? <Loader2 className="h-4 w-4 animate-spin" /> : <Star className="h-4 w-4" />}
                        </Button>
                     </div>

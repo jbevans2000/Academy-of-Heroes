@@ -1,42 +1,35 @@
 
 'use server';
 /**
- * @fileOverview A flow for generating random, fantasy-themed character names.
- *
- * - generateName - A function that calls the AI to generate a name.
- * - NameInput - The input type for the generateName function.
+ * @fileOverview An AI flow for generating character names.
+ * This file should use the Genkit AI library.
  */
-import '@/ai/genkit'; // Ensure Genkit is initialized
-import {ai} from '@/ai/genkit';
-import {z} from 'zod';
+import { ai } from '@/ai/genkit';
+import { z } from 'zod';
 
 const NameInputSchema = z.object({
-  gender: z.enum(['Male', 'Female', 'Non-binary']),
+  class: z.string().describe('The character class (e.g., Mage, Guardian, Healer)'),
 });
-export type NameInput = z.infer<typeof NameInputSchema>;
 
-export async function generateName(input: NameInput): Promise<string> {
-    const { gender } = input;
-    const isNonBinary = gender === 'Non-binary';
-    const randomSeed = Math.random();
+const NameOutputSchema = z.object({
+  name: z.string().describe('A single, creative character name.'),
+});
 
-    let genderInstruction = `The name should be appropriate for a ${gender} character.`;
-    if (isNonBinary) {
-        genderInstruction = `The name should be gender-neutral, not sounding distinctly male or female.`;
+const nameGenerationPrompt = ai.definePrompt({
+    name: 'nameGenerationPrompt',
+    input: { schema: NameInputSchema },
+    output: { schema: NameOutputSchema },
+    prompt: `Generate a single, cool, and creative fantasy character name suitable for a {{{class}}}. Ensure the name is unique and fits the fantasy genre. Do not provide more than one name.`,
+});
+
+
+export async function generateName(characterClass: string): Promise<string> {
+    try {
+        const { output } = await nameGenerationPrompt({ class: characterClass });
+        return output?.name || `Heroic ${characterClass}`;
+    } catch (error) {
+        console.error("Error generating name:", error);
+        // Provide a fallback name on error
+        return `Brave ${characterClass}`;
     }
-
-    const { text } = await ai.generate({
-        prompt: `You are an expert in fantasy world-building. 
-    
-Generate a single, cool-sounding, fantasy-style character name that includes a first name and a last name.
-
-${genderInstruction}
-
-Do not provide any explanation or surrounding text. Only provide the name itself.
-
-This is a unique request, identified by the number ${randomSeed}.
-`,
-    });
-
-    return text;
 }
