@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Loader2, KeyRound } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
-import { doc, getDoc, collection, query, where, getDocs, setDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 
 export function LoginForm() {
   const [studentId, setStudentId] = useState('');
@@ -38,49 +38,18 @@ export function LoginForm() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // New: Check for the fast-lookup document first.
       const studentMetaRef = doc(db, 'students', user.uid);
-      let studentMetaSnap = await getDoc(studentMetaRef);
-      let teacherUid: string | null = null;
+      const studentMetaSnap = await getDoc(studentMetaRef);
       
-      if (studentMetaSnap.exists()) {
-          teacherUid = studentMetaSnap.data().teacherUid;
-      } else {
-          // Fallback for existing students: Find the teacher UID the old way.
-          const teachersRef = collection(db, 'teachers');
-          const teacherSnapshot = await getDocs(teachersRef);
-          
-          for (const teacherDoc of teacherSnapshot.docs) {
-              const mainDocRef = doc(db, 'teachers', teacherDoc.id, 'students', user.uid);
-              const pendingDocRef = doc(db, 'teachers', teacherDoc.id, 'pendingStudents', user.uid);
-              const mainDocSnap = await getDoc(mainDocRef);
-              if (mainDocSnap.exists()) {
-                  teacherUid = teacherDoc.id;
-                  break;
-              }
-              const pendingDocSnap = await getDoc(pendingDocRef);
-               if (pendingDocSnap.exists()) {
-                  teacherUid = teacherDoc.id;
-                  break;
-              }
-          }
-
-          // If found, create the fast-lookup document for next time.
-          if (teacherUid) {
-              await setDoc(studentMetaRef, { teacherUid });
-          }
-      }
-
-      if (!teacherUid) {
+      if (!studentMetaSnap.exists()) {
           throw new Error("Your hero's record could not be found in any guild.");
       }
+      
+      const { teacherUid, approved } = studentMetaSnap.data();
 
-      // Check if student is pending or approved
-      const pendingStudentRef = doc(db, 'teachers', teacherUid, 'pendingStudents', user.uid);
-      const pendingStudentSnap = await getDoc(pendingStudentRef);
-      if (pendingStudentSnap.exists()) {
-        router.push('/awaiting-approval');
-        return;
+      if (!approved) {
+          router.push('/awaiting-approval');
+          return;
       }
       
       const studentSnap = await getDoc(doc(db, 'teachers', teacherUid, 'students', user.uid));

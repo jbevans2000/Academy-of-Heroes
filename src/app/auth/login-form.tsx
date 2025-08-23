@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Loader2, KeyRound } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, setDoc } from 'firebase/firestore';
 
 export function LoginForm() {
   const [studentId, setStudentId] = useState('');

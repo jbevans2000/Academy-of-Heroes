@@ -100,6 +100,7 @@ export async function createStudentAccount(input: RegistrationInput): Promise<Ac
     // 6. Create the global student metadata document for quick lookup
     await setDoc(doc(db, 'students', user.uid), {
       teacherUid: teacherUid,
+      approved: false, // Explicitly set approval status
     });
 
     return { success: true, message: 'Request sent successfully!' };
