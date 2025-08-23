@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -101,6 +101,7 @@ const ImageUploader = ({ label, imageUrl, onUploadSuccess, teacherUid, storagePa
 
 export default function NewQuestPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -168,6 +169,12 @@ export default function NewQuestPage() {
                 setTeacherWorldMapUrl(teacherSnap.data().worldMapUrl);
             }
 
+            // Check for hubId from query params
+            const preselectedHubId = searchParams.get('hubId');
+            if (preselectedHubId) {
+                setSelectedHubId(preselectedHubId);
+            }
+
         } catch (error) {
             console.error("Error fetching initial data: ", error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch initial quest data.' });
@@ -176,7 +183,7 @@ export default function NewQuestPage() {
         }
     };
     fetchInitialData();
-  }, [teacher, toast]);
+  }, [teacher, toast, searchParams]);
   
   const handleMapDrag = (e: React.MouseEvent<HTMLDivElement, MouseEvent>, type: 'hub' | 'chapter') => {
     const map = e.currentTarget;

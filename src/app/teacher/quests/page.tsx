@@ -32,6 +32,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { v4 as uuidv4 } from 'uuid';
 import { cn } from '@/lib/utils';
 import NextImage from 'next/image';
+import Link from 'next/link';
 
 export default function QuestsPage() {
   const router = useRouter();
@@ -265,9 +266,17 @@ export default function QuestsPage() {
                             const hubChapters = chapters.filter(c => c.hubId === hub.id).sort((a,b) => a.chapterNumber - b.chapterNumber);
                             return (
                                 <AccordionItem key={hub.id} value={hub.id}>
-                                    <AccordionTrigger className="text-xl hover:no-underline">
-                                        Hub: {hub.name}
-                                    </AccordionTrigger>
+                                    <div className="flex items-center w-full">
+                                        <AccordionTrigger className="text-xl hover:no-underline flex-grow">
+                                            Hub: {hub.name}
+                                        </AccordionTrigger>
+                                        <Link href={`/teacher/quests/new?hubId=${hub.id}`} passHref>
+                                            <Button variant="ghost" size="sm" className="mr-4" onClick={(e) => e.stopPropagation()}>
+                                                <PlusCircle className="mr-2 h-4 w-4" />
+                                                Write Chapter in this Hub
+                                            </Button>
+                                        </Link>
+                                    </div>
                                     <AccordionContent>
                                         {hubChapters.length > 0 ? (
                                             <ul className="space-y-2 pl-4">
