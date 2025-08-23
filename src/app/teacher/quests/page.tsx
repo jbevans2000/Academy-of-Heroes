@@ -270,12 +270,17 @@ export default function QuestsPage() {
                                         <AccordionTrigger className="text-xl hover:no-underline flex-grow">
                                             Hub: {hub.name}
                                         </AccordionTrigger>
-                                        <Link href={`/teacher/quests/new?hubId=${hub.id}`} passHref>
-                                            <Button variant="ghost" size="sm" className="mr-4" onClick={(e) => e.stopPropagation()}>
-                                                <PlusCircle className="mr-2 h-4 w-4" />
-                                                Write Chapter in this Hub
+                                        <div className="flex items-center gap-2 pr-4">
+                                            <Button variant="outline" size="sm" onClick={() => router.push(`/teacher/quests/hub/edit/${hub.id}`)}>
+                                                <Edit className="mr-2 h-4 w-4" /> Edit Hub
                                             </Button>
-                                        </Link>
+                                            <Link href={`/teacher/quests/new?hubId=${hub.id}`} passHref>
+                                                <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
+                                                    <PlusCircle className="mr-2 h-4 w-4" />
+                                                    Write Chapter in this Hub
+                                                </Button>
+                                            </Link>
+                                        </div>
                                     </div>
                                     <AccordionContent>
                                         {hubChapters.length > 0 ? (
