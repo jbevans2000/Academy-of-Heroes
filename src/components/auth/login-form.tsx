@@ -11,8 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Loader2, KeyRound } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
-import { doc, getDoc, getDocs, collection, query, where, writeBatch, serverTimestamp } from 'firebase/firestore';
-import { createStudentDocuments } from '@/ai/flows/create-student';
+import { doc, getDoc, getDocs, collection, query, where, writeBatch, serverTimestamp, setDoc } from 'firebase/firestore';
 
 export function LoginForm() {
   const [studentId, setStudentId] = useState('');
@@ -27,7 +26,7 @@ export function LoginForm() {
       toast({
         variant: 'destructive',
         title: 'Missing Fields',
-        description: 'Please enter your Hero\'s Alias and Password.',
+        description: "Please enter your Hero's Alias and Password.",
       });
       return;
     }
@@ -40,52 +39,49 @@ export function LoginForm() {
       const user = userCredential.user;
 
       const studentMetaRef = doc(db, 'students', user.uid);
-      const studentMetaSnap = await getDoc(studentMetaRef);
-      
-      if (!studentMetaSnap.exists()) {
-          // This case handles old accounts that were created before the /students collection existed.
-          // We will find their teacher and create the necessary pending docs.
-          toast({ title: 'Legacy Account Found', description: 'Re-linking your hero to the guild...' });
+      let studentMetaSnap = await getDoc(studentMetaRef);
+      let teacherUid = '';
+      let isApproved = false;
 
-          const teachersQuery = query(collection(db, 'teachers'));
-          const teachersSnapshot = await getDocs(teachersQuery);
-          let foundTeacherUid: string | null = null;
-          
-          for (const teacherDoc of teachersSnapshot.docs) {
-              const studentInTeacherRef = doc(db, 'teachers', teacherDoc.id, 'students', user.uid);
-              const studentInTeacherSnap = await getDoc(studentInTeacherRef);
-              if (studentInTeacherSnap.exists()) {
-                  foundTeacherUid = teacherDoc.id;
-                  const studentData = studentInTeacherSnap.data();
+      if (studentMetaSnap.exists()) {
+        teacherUid = studentMetaSnap.data().teacherUid;
+        isApproved = studentMetaSnap.data().approved;
+      } else {
+        // Legacy account or failed registration: The student meta doc doesn't exist.
+        // We need to find their teacher and create it for them.
+        toast({ title: 'Updating Account...', description: "Your hero's records are being updated to the new system." });
+        
+        const teachersQuery = query(collection(db, 'teachers'));
+        const teachersSnapshot = await getDocs(teachersQuery);
+        let foundTeacherUid: string | null = null;
+        
+        for (const teacherDoc of teachersSnapshot.docs) {
+            const studentInTeacherRef = doc(db, 'teachers', teacherDoc.id, 'students', user.uid);
+            const studentInTeacherSnap = await getDoc(studentInTeacherRef);
+            if (studentInTeacherSnap.exists()) {
+                foundTeacherUid = teacherDoc.id;
+                break;
+            }
+        }
 
-                  // Create the necessary records to put them back in the approval queue.
-                  await createStudentDocuments({
-                      classCode: teacherDoc.data().classCode, // We need a class code to find the teacher again
-                      userUid: user.uid,
-                      email: studentData.email,
-                      studentId: studentData.studentId,
-                      studentName: studentData.studentName,
-                      characterName: studentData.characterName,
-                      selectedClass: studentData.class,
-                      selectedAvatar: studentData.avatarUrl,
-                  });
-                  break;
-              }
-          }
-
-          if (foundTeacherUid) {
-              router.push('/awaiting-approval');
-              return;
-          } else {
+        if (foundTeacherUid) {
+            // Found the teacher, now create the missing global student doc
+            await setDoc(studentMetaRef, {
+                teacherUid: foundTeacherUid,
+                approved: true
+            });
+            teacherUid = foundTeacherUid;
+            isApproved = true;
+            toast({ title: 'Account Updated!', description: "Your hero is ready for adventure!" });
+        } else {
+             // If we can't find them in any teacher's roster, they are truly lost.
              throw new Error("Your hero's record could not be found in any guild.");
-          }
+        }
       }
-      
-      const { teacherUid, approved } = studentMetaSnap.data();
 
-      if (!approved) {
-          router.push('/awaiting-approval');
-          return;
+      if (!isApproved) {
+        router.push('/awaiting-approval');
+        return;
       }
       
       const studentSnap = await getDoc(doc(db, 'teachers', teacherUid, 'students', user.uid));
@@ -97,6 +93,9 @@ export function LoginForm() {
 
           router.push(`/dashboard${justApproved ? `?approved=true&className=${encodeURIComponent(className)}` : ''}`);
       } else {
+         // This case means they were approved in the global doc but their data doc doesn't exist in the teacher's subcollection.
+         // This points to a data integrity issue. The most user-friendly way to handle this is to send them back to the pending queue.
+         await setDoc(doc(db, 'students', user.uid), { teacherUid: teacherUid, approved: false });
          router.push('/awaiting-approval');
       }
 
