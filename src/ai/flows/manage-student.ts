@@ -226,3 +226,29 @@ export async function unarchiveStudent(input: UnarchiveStudentInput): Promise<Ac
         return { success: false, error: "An unexpected error occurred while unarchiving the student." };
     }
 }
+
+interface ArchiveStudentsInput {
+    teacherUid: string;
+    studentUids: string[];
+}
+
+export async function archiveStudents(input: ArchiveStudentsInput): Promise<ActionResponse> {
+    const { teacherUid, studentUids } = input;
+    if (!teacherUid || !studentUids || studentUids.length === 0) {
+        return { success: false, error: 'Invalid input provided.' };
+    }
+
+    try {
+        const batch = writeBatch(db);
+        studentUids.forEach(uid => {
+            const studentRef = doc(db, 'teachers', teacherUid, 'students', uid);
+            batch.update(studentRef, { isArchived: true });
+        });
+        await batch.commit();
+
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error archiving students:", error);
+        return { success: false, error: 'An unexpected error occurred while archiving the students.' };
+    }
+}

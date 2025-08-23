@@ -50,7 +50,7 @@ import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Cop
 import { calculateLevel, calculateHpGain, calculateMpGain, MAX_LEVEL } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { moderateStudent } from '@/ai/flows/manage-student';
+import { archiveStudents } from '@/ai/flows/manage-student';
 
 interface TeacherData {
     name: string;
@@ -68,10 +68,11 @@ export default function Dashboard() {
   const [xpAmount, setXpAmount] = useState<number | string>('');
   const [goldAmount, setGoldAmount] = useState<number | string>('');
   const [isAwarding, setIsAwarding] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
   const [isXpDialogOpen, setIsXpDialogOpen] = useState(false);
   const [isGoldDialogOpen, setIsGoldDialogOpen] = useState(false);
   const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false);
+  const [isArchiveConfirmOpen, setIsArchiveConfirmOpen] = useState(false);
   const [teacher, setTeacher] = useState<User | null>(null);
   const [teacherData, setTeacherData] = useState<TeacherData | null>(null);
   const router = useRouter();
@@ -327,6 +328,29 @@ export default function Dashboard() {
           setIsAwarding(false);
       }
   };
+
+  const handleArchiveStudents = async () => {
+    if (!teacher || selectedStudents.length === 0) return;
+    setIsArchiving(true);
+    try {
+      const result = await archiveStudents({
+        teacherUid: teacher.uid,
+        studentUids: selectedStudents
+      });
+
+      if (result.success) {
+        toast({ title: 'Students Archived', description: `${selectedStudents.length} student(s) have been archived.` });
+        setSelectedStudents([]);
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Archive Failed', description: error.message });
+    } finally {
+      setIsArchiving(false);
+      setIsArchiveConfirmOpen(false);
+    }
+  }
   
   const copyClassCode = () => {
     if (teacherData?.classCode) {
@@ -699,6 +723,28 @@ export default function Dashboard() {
             </DialogContent>
             </Dialog>
 
+             <AlertDialog open={isArchiveConfirmOpen} onOpenChange={setIsArchiveConfirmOpen}>
+                <AlertDialogTrigger asChild>
+                    <Button variant="destructive" disabled={selectedStudents.length === 0}>
+                        <Archive className="mr-2 h-4 w-4" /> Archive Selected
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Archive Selected Students?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will hide {selectedStudents.length} student(s) from the main dashboard. They will not be deleted and can be restored later from the "Archived Heroes" page. Are you sure?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleArchiveStudents} disabled={isArchiving} className="bg-destructive hover:bg-destructive/90">
+                             {isArchiving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Yes, Archive
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
         <StudentList 
             students={sortedStudents} 
