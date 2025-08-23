@@ -18,6 +18,17 @@ import type { Student } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
+import { getQuestSettings, requestChapterCompletion } from '@/ai/flows/manage-quests';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 
 export default function ChapterPage() {
@@ -37,6 +48,7 @@ export default function ChapterPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isCompleting, setIsCompleting] = useState(false);
     const [isUncompleting, setIsUncompleting] = useState(false);
+    const [showApprovalSentDialog, setShowApprovalSentDialog] = useState(false);
 
     const isPreviewMode = searchParams.get('preview') === 'true';
 
@@ -120,6 +132,36 @@ export default function ChapterPage() {
         setIsCompleting(true);
 
         try {
+             // 1. Check if approval is required
+            const questSettings = await getQuestSettings(teacherUid);
+            const isGlobalApprovalOn = questSettings.globalApprovalRequired;
+            const studentOverride = questSettings.studentOverrides?.[student.uid];
+            
+            let needsApproval = isGlobalApprovalOn;
+            if (studentOverride !== undefined) {
+                needsApproval = studentOverride; // Override takes precedence
+            }
+            
+            if (needsApproval) {
+                const result = await requestChapterCompletion({
+                    teacherUid,
+                    studentUid: student.uid,
+                    studentName: student.studentName,
+                    characterName: student.characterName,
+                    hubId: hub.id,
+                    chapterId: chapter.id,
+                    chapterNumber: chapter.chapterNumber,
+                    chapterTitle: chapter.title
+                });
+                if (result.success) {
+                    setShowApprovalSentDialog(true);
+                } else {
+                    throw new Error(result.error);
+                }
+                return; // Stop execution here, wait for teacher
+            }
+            
+            // 2. If no approval needed, proceed as before
             const studentRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
             
             const currentProgress = student.questProgress?.[hubId as string] || 0;
@@ -270,6 +312,21 @@ export default function ChapterPage() {
     const returnPath = isPreviewMode ? '/teacher/quests' : `/dashboard/map/${hubId}`;
 
     return (
+      <>
+        <AlertDialog open={showApprovalSentDialog} onOpenChange={setShowApprovalSentDialog}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Request Sent!</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Your request to advance has been sent to the Guild Leader for approval.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogAction onClick={() => router.push(`/dashboard/map/${hubId}`)}>Return to Map</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
         <div className="flex flex-col items-center justify-start bg-background p-2 md:p-4">
             <div className="w-full max-w-4xl space-y-4">
                 <Card className="shadow-2xl">
@@ -426,5 +483,6 @@ export default function ChapterPage() {
                  </div>
             </div>
         </div>
+      </>
     );
 }

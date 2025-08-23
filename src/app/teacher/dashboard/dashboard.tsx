@@ -608,6 +608,10 @@ export default function Dashboard() {
                         <Users className="mr-2 h-4 w-4" />
                         <span>Manage Companies</span>
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push('/teacher/quests/completion')}>
+                        <Check className="mr-2 h-4 w-4" />
+                        <span>Manage Quest Completion</span>
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/teacher/gamelog')}>
                         <BookOpen className="mr-2 h-4 w-4" />
                         <span>The Chronicler's Scroll</span>

@@ -1,4 +1,5 @@
 
+
 export interface QuestHub {
     id: string;
     name: string;
@@ -29,4 +30,17 @@ export interface Chapter {
     lessonAdditionalContent: string;
     
     coordinates: { x: number; y: number }; // Position on the hub map
+}
+
+export interface QuestCompletionRequest {
+    id: string;
+    teacherUid: string;
+    studentUid: string;
+    studentName: string;
+    characterName: string;
+    hubId: string;
+    chapterId: string;
+    chapterNumber: number;
+    chapterTitle: string;
+    requestedAt: any; // Firestore ServerTimestamp
 }

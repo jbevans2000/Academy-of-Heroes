@@ -35,6 +35,7 @@ export type Student = {
     companyId?: string;
     inBattle: boolean; 
     inventory?: { [boonId: string]: number }; // Map of boonId to quantity
+    questApprovalRequired?: boolean; // Student-specific override
 }
 
 export type PendingStudent = {
