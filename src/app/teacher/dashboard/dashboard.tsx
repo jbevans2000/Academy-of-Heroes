@@ -149,25 +149,25 @@ export default function Dashboard() {
 
 
   const sortedStudents = useMemo(() => {
-    const sorted = [...students];
+    const activeStudents = students.filter(s => !s.isArchived);
     switch(sortOrder) {
       case 'studentName':
-        sorted.sort((a, b) => a.studentName.localeCompare(b.studentName));
+        activeStudents.sort((a, b) => a.studentName.localeCompare(b.studentName));
         break;
       case 'characterName':
-        sorted.sort((a, b) => a.characterName.localeCompare(b.characterName));
+        activeStudents.sort((a, b) => a.characterName.localeCompare(b.characterName));
         break;
       case 'xp':
-        sorted.sort((a, b) => (b.xp || 0) - (a.xp || 0));
+        activeStudents.sort((a, b) => (b.xp || 0) - (a.xp || 0));
         break;
       case 'class':
         const classOrder: ClassType[] = ['Guardian', 'Healer', 'Mage'];
-        sorted.sort((a, b) => classOrder.indexOf(a.class) - classOrder.indexOf(b.class));
+        activeStudents.sort((a, b) => classOrder.indexOf(a.class) - classOrder.indexOf(b.class));
         break;
       default:
         break;
     }
-    return sorted;
+    return activeStudents;
   }, [students, sortOrder]);
 
   const handleToggleStudentSelection = (uid: string) => {
@@ -177,10 +177,10 @@ export default function Dashboard() {
   };
 
   const handleSelectAllToggle = () => {
-    if (selectedStudents.length === students.length) {
+    if (selectedStudents.length === sortedStudents.length) {
       setSelectedStudents([]);
     } else {
-      setSelectedStudents(students.map(s => s.uid));
+      setSelectedStudents(sortedStudents.map(s => s.uid));
     }
   };
 
@@ -779,5 +779,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
-    

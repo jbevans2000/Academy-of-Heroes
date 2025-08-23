@@ -36,6 +36,7 @@ export type Student = {
     inBattle: boolean; 
     inventory?: { [boonId: string]: number }; // Map of boonId to quantity
     questApprovalRequired?: boolean; // Student-specific override
+    isArchived?: boolean; // To hide accounts after data migration
 }
 
 export type PendingStudent = {

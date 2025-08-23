@@ -10,7 +10,7 @@
  * - getStudentStatus: Fetches the enabled/disabled status of a student's account.
  * - clearGameLog: Deletes all entries from the game log.
  */
-import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirebaseAdminApp } from '@/lib/firebase-admin';
@@ -149,4 +149,51 @@ export async function clearGameLog(input: ClearLogInput): Promise<ActionResponse
     console.error("Error in clearGameLog:", e);
     return { success: false, error: e.message || 'Failed to clear the game log.' };
   }
+}
+
+
+interface MigrateDataInput {
+    teacherUid: string;
+    oldStudentUid: string;
+    newStudentUid: string;
+}
+
+export async function migrateStudentData(input: MigrateDataInput): Promise<ActionResponse> {
+    const { teacherUid, oldStudentUid, newStudentUid } = input;
+    const auth = getAuth(getFirebaseAdminApp());
+
+    try {
+        const oldStudentRef = doc(db, 'teachers', teacherUid, 'students', oldStudentUid);
+        const newStudentRef = doc(db, 'teachers', teacherUid, 'students', newStudentUid);
+
+        const oldStudentSnap = await getDoc(oldStudentRef);
+        
+        if (!oldStudentSnap.exists()) {
+            return { success: false, error: 'The old student account could not be found.' };
+        }
+
+        const oldData = oldStudentSnap.data();
+        
+        // Exclude properties that should not be copied
+        const { uid, email, studentId, isArchived, ...dataToCopy } = oldData;
+        
+        const batch = writeBatch(db);
+
+        // Update the new account with the old account's data
+        batch.update(newStudentRef, dataToCopy);
+
+        // Mark the old account as archived and disabled
+        batch.update(oldStudentRef, { isArchived: true });
+        
+        await batch.commit();
+
+        // Disable the old user's authentication
+        await auth.updateUser(oldStudentUid, { disabled: true });
+
+        return { success: true, message: 'Data migration successful!' };
+
+    } catch (error: any) {
+        console.error("Error migrating student data:", error);
+        return { success: false, error: 'An unexpected error occurred during data migration.' };
+    }
 }
