@@ -19,47 +19,11 @@ interface MusicGalleryProps {
 
 export function MusicGallery({ isOpen, onOpenChange, onMusicSelect }: MusicGalleryProps) {
     const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
-    const [playingUrl, setPlayingUrl] = useState<string | null>(null);
-    const audioRef = useRef<HTMLAudioElement | null>(null);
-
-    // Stop playing audio when the dialog is closed
-    useEffect(() => {
-        if (!isOpen && audioRef.current) {
-            audioRef.current.pause();
-            audioRef.current = null;
-            setPlayingUrl(null);
-        }
-    }, [isOpen]);
-
-    const handlePlayPause = (url: string) => {
-        // If another track is playing, stop it first
-        if (audioRef.current && playingUrl && playingUrl !== url) {
-            audioRef.current.pause();
-        }
-
-        // If the clicked track is the one currently playing, pause it
-        if (playingUrl === url && audioRef.current) {
-            audioRef.current.pause();
-            setPlayingUrl(null);
-        } else {
-            // Otherwise, play the new track
-            if (!audioRef.current || audioRef.current.src !== url) {
-                audioRef.current = new Audio(url);
-                audioRef.current.onended = () => setPlayingUrl(null);
-            }
-            audioRef.current.play().catch(e => console.error("Audio play failed:", e));
-            setPlayingUrl(url);
-        }
-    };
     
     const handleConfirm = () => {
         if (selectedUrl) {
             onMusicSelect(selectedUrl);
             onOpenChange(false);
-            if(audioRef.current) {
-                audioRef.current.pause();
-                setPlayingUrl(null);
-            }
         }
     }
 
@@ -68,7 +32,7 @@ export function MusicGallery({ isOpen, onOpenChange, onMusicSelect }: MusicGalle
             <DialogContent className="max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>Choose Battle Music</DialogTitle>
-                    <DialogDescription>Select one of the default tracks for your battle.</DialogDescription>
+                    <DialogDescription>Select one of the default tracks for your battle. Note: Previews are currently unavailable.</DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="h-96 w-full rounded-md border p-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -82,18 +46,6 @@ export function MusicGallery({ isOpen, onOpenChange, onMusicSelect }: MusicGalle
                                     <h4 className="font-semibold">{track.name}</h4>
                                     {selectedUrl === track.url && <CheckCircle className="h-5 w-5 text-primary" />}
                                 </div>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="mt-2"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handlePlayPause(track.url);
-                                    }}
-                                >
-                                    {playingUrl === track.url ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
-                                    {playingUrl === track.url ? 'Pause' : 'Preview'}
-                                </Button>
                             </Card>
                         ))}
                     </div>
