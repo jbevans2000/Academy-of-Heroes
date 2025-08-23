@@ -71,7 +71,6 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
         contentEditable
         onInput={handleInput}
         className="prose prose-sm max-w-none p-3 min-h-[150px] outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-b-md"
-        dangerouslySetInnerHTML={{ __html: value }}
         />
     </div>
   );
