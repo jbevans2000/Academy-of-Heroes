@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getGlobalSettings, updateGlobalSettings } from '@/ai/flows/manage-settings';
 import { deleteFeedback } from '@/ai/flows/submit-feedback';
 import { moderateStudent } from '@/ai/flows/manage-student';
+import { deleteTeacher } from '@/ai/flows/manage-teacher';
 import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2 } from 'lucide-react';
 import {
   AlertDialog,
@@ -75,6 +76,10 @@ export default function AdminDashboardPage() {
     // State for deleting students
     const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
     const [isDeletingStudent, setIsDeletingStudent] = useState(false);
+    
+    // State for deleting teachers
+    const [teacherToDelete, setTeacherToDelete] = useState<Teacher | null>(null);
+    const [isDeletingTeacher, setIsDeletingTeacher] = useState(false);
 
     const router = useRouter();
     const { toast } = useToast();
@@ -275,6 +280,26 @@ export default function AdminDashboardPage() {
             setStudentToDelete(null);
         }
     }
+    
+    const handleDeleteTeacher = async () => {
+        if (!teacherToDelete) return;
+        setIsDeletingTeacher(true);
+        try {
+            const result = await deleteTeacher(teacherToDelete.id);
+            if (result.success) {
+                 toast({ title: "Teacher Deleted", description: `${teacherToDelete.name}'s guild has been removed from the system.`});
+                 // Refetch all data to update the UI correctly
+                 fetchInitialData();
+            } else {
+                 throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Deletion Failed', description: error.message || 'Could not delete the teacher.' });
+        } finally {
+            setIsDeletingTeacher(false);
+            setTeacherToDelete(null);
+        }
+    }
 
 
     if (isLoading || !user) {
@@ -303,25 +328,39 @@ export default function AdminDashboardPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle>All Guilds</CardTitle>
-                            <CardDescription>A list of all registered teachers and their guilds. Click a card to view that teacher's dashboard.</CardDescription>
+                            <CardDescription>A list of all registered teachers and their guilds. Click the guild name to view that teacher's dashboard.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                                {teachers.map((teacher) => (
-                                    <Link href={`/teacher/dashboard?teacherId=${teacher.id}`} key={teacher.id}>
-                                        <Card className="h-full hover:shadow-lg hover:border-primary transition-all">
-                                            <CardHeader>
-                                                <CardTitle>{teacher.className}</CardTitle>
-                                                <CardDescription>{teacher.name} - {teacher.schoolName}</CardDescription>
-                                            </CardHeader>
-                                            <CardContent>
-                                                <p className="font-semibold">{teacher.studentCount} student(s)</p>
-                                                <p className="text-sm text-muted-foreground">{teacher.email}</p>
-                                            </CardContent>
-                                        </Card>
-                                    </Link>
-                                ))}
-                            </div>
+                           <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Guild Name</TableHead>
+                                        <TableHead>Leader (Teacher)</TableHead>
+                                        <TableHead>School</TableHead>
+                                        <TableHead>Students</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {teachers.map((teacher) => (
+                                        <TableRow key={teacher.id}>
+                                            <TableCell>
+                                                <Link href={`/teacher/dashboard?teacherId=${teacher.id}`} className="font-semibold underline hover:text-primary">
+                                                    {teacher.className}
+                                                </Link>
+                                            </TableCell>
+                                            <TableCell>{teacher.name}</TableCell>
+                                            <TableCell>{teacher.schoolName}</TableCell>
+                                            <TableCell>{teacher.studentCount}</TableCell>
+                                            <TableCell className="text-right">
+                                                 <Button variant="destructive" size="sm" onClick={() => setTeacherToDelete(teacher)}>
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                           </Table>
                             {teachers.length === 0 && !isLoading && (
                                 <div className="text-center py-10">
                                     <p className="text-muted-foreground">No teachers have registered yet.</p>
@@ -485,6 +524,22 @@ export default function AdminDashboardPage() {
                                 <AlertDialogCancel disabled={isDeletingStudent}>Cancel</AlertDialogCancel>
                                 <AlertDialogAction onClick={handleDeleteStudent} disabled={isDeletingStudent} className="bg-destructive hover:bg-destructive/90">
                                     {isDeletingStudent ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Yes, Permanently Delete'}
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                     <AlertDialog open={!!teacherToDelete} onOpenChange={(isOpen) => !isOpen && setTeacherToDelete(null)}>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Teacher: {teacherToDelete?.name}?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                This will permanently delete the teacher's account and ALL associated data, including all their students, quests, and battles. This action is irreversible and cannot be undone.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel disabled={isDeletingTeacher}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteTeacher} disabled={isDeletingTeacher} className="bg-destructive hover:bg-destructive/90">
+                                    {isDeletingTeacher ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Yes, Permanently Delete Teacher'}
                                 </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
