@@ -203,12 +203,12 @@ export default function RegisterPage() {
                 {/* Left Column: Form Inputs */}
                 <div className="space-y-4">
                   <div className="flex items-center space-x-2">
-                    <Label htmlFor="signup-mode">Use Email</Label>
-                    <Switch id="signup-mode" checked={useEmail} onCheckedChange={(checked) => setUseEmail(checked)} />
                     <Label htmlFor="signup-mode">Use Hero's Alias</Label>
+                    <Switch id="signup-mode" checked={!useEmail} onCheckedChange={(checked) => setUseEmail(!checked)} />
+                    <Label htmlFor="signup-mode">Use Email</Label>
                   </div>
 
-                  {!useEmail ? (
+                  {useEmail ? (
                     <div className="space-y-2 animate-in fade-in-50">
                         <Label htmlFor="email" className="flex items-center"><Mail className="w-4 h-4 mr-2" />Email Address</Label>
                         <Input id="email" placeholder="Your email address" type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading} />
@@ -221,7 +221,7 @@ export default function RegisterPage() {
                             <ShieldAlert className="h-4 w-4" />
                             <AlertTitle>Important!</AlertTitle>
                             <AlertDescription>
-                                If you use a Hero's Alias, you will NOT be able to reset your own password. Your teacher will have to reset it for you if you forget it.
+                                If you use a Hero's Alias, you will NOT be able to reset your password! Make sure you keep it SAFE or you will have to make a new account!
                             </AlertDescription>
                         </Alert>
                     </div>
