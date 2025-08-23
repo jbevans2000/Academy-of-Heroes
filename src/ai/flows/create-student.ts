@@ -65,7 +65,7 @@ export async function createStudentAccount(input: RegistrationInput): Promise<Ac
 
   const email = `${input.studentId}@academy-heroes-mziuf.firebaseapp.com`;
   
-  const auth = getAuth();
+  const auth = getAuth(getFirebaseAdminApp());
 
   try {
     // 4. Create the user in Firebase Authentication

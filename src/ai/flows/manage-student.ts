@@ -56,7 +56,7 @@ export async function resetStudentPassword(input: ResetPasswordInput): Promise<A
     return { success: false, error: 'Password must be at least 6 characters long.' };
   }
   try {
-    const auth = getAuth();
+    const auth = getAuth(getFirebaseAdminApp());
     await auth.updateUser(input.studentUid, {
       password: input.newPassword,
     });
@@ -75,7 +75,7 @@ interface ModerateStudentInput {
 
 export async function moderateStudent(input: ModerateStudentInput): Promise<ActionResponse> {
   try {
-    const auth = getAuth();
+    const auth = getAuth(getFirebaseAdminApp());
     switch (input.action) {
       case 'ban':
         await auth.updateUser(input.studentUid, { disabled: true });
@@ -108,7 +108,7 @@ interface StudentStatusResponse {
 
 export async function getStudentStatus(input: StudentStatusInput): Promise<StudentStatusResponse> {
     try {
-        const auth = getAuth();
+        const auth = getAuth(getFirebaseAdminApp());
         const userRecord = await auth.getUser(input.studentUid);
         return { isBanned: userRecord.disabled };
     } catch (e: any) {
