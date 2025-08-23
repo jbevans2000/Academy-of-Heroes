@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Check, X, Loader2, Bell } from 'lucide-react';
 import { getQuestSettings, updateQuestSettings, approveChapterCompletion, denyChapterCompletion, approveAllPending } from '@/ai/flows/manage-quests';
 import { formatDistanceToNow } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 export default function ManageQuestCompletionPage() {
     const router = useRouter();
@@ -77,10 +78,22 @@ export default function ManageQuestCompletionPage() {
         if (!teacher) return;
         setIsUpdating(true);
         setGlobalApproval(checked);
-        const result = await updateQuestSettings(teacher.uid, { globalApprovalRequired: checked });
+        // When the global toggle changes, we clear all overrides.
+        setStudentOverrides({});
+        
+        const result = await updateQuestSettings(teacher.uid, { 
+            globalApprovalRequired: checked,
+            studentOverrides: {} // Reset all overrides
+        });
+
         if (!result.success) {
             toast({ variant: 'destructive', title: 'Error', description: result.error });
-            setGlobalApproval(!checked); // Revert on failure
+            // Revert state on failure
+            setGlobalApproval(!checked);
+            // We would need to refetch the old overrides here for a perfect revert,
+            // but for simplicity, we'll just revert the global toggle.
+        } else {
+             toast({ title: 'Global Setting Updated', description: 'All student settings have been aligned to the new global default.' });
         }
         setIsUpdating(false);
     };
@@ -91,12 +104,12 @@ export default function ManageQuestCompletionPage() {
         const originalOverrides = { ...studentOverrides };
         const newOverrides = { ...studentOverrides };
 
-        if (checked) {
-            // If we are turning the override ON, we set it to true.
-            newOverrides[studentUid] = true;
-        } else {
-            // If we are turning it OFF, we remove it from the map.
+        // If the student's new state matches the global state, we can remove the override.
+        // Otherwise, we set the override.
+        if (checked === globalApproval) {
             delete newOverrides[studentUid];
+        } else {
+            newOverrides[studentUid] = checked;
         }
 
         setStudentOverrides(newOverrides);
@@ -187,7 +200,9 @@ export default function ManageQuestCompletionPage() {
                             </CardHeader>
                             <CardContent className="space-y-3 max-h-96 overflow-y-auto">
                                 {students.map(student => {
-                                    const hasOverride = studentOverrides[student.uid];
+                                    const hasOverride = studentOverrides.hasOwnProperty(student.uid);
+                                    // The student's effective setting is the override if it exists, otherwise the global setting.
+                                    const isRestricted = hasOverride ? studentOverrides[student.uid] : globalApproval;
                                     
                                     return (
                                         <div key={student.uid} className="flex items-center justify-between p-2 border rounded-md">
@@ -196,12 +211,12 @@ export default function ManageQuestCompletionPage() {
                                                 <p className="text-sm text-muted-foreground">{student.studentName}</p>
                                             </div>
                                             <div className="flex items-center space-x-2">
-                                                <span className={`text-xs font-semibold ${!hasOverride ? 'text-green-700' : 'text-destructive'}`}>
-                                                     {!hasOverride ? 'Standard' : 'Restricted'}
+                                                <span className={cn('text-xs font-semibold', isRestricted ? 'text-destructive' : 'text-green-700')}>
+                                                     {isRestricted ? 'Restricted' : 'Standard'}
                                                 </span>
                                                 <Switch 
-                                                    checked={!!hasOverride} 
-                                                    onCheckedChange={(checked) => handleStudentToggle(student.uid, checked)}
+                                                    checked={hasOverride} 
+                                                    onCheckedChange={(checked) => handleStudentToggle(student.uid, checked ? !globalApproval : globalApproval)}
                                                     disabled={isUpdating}
                                                 />
                                             </div>

@@ -62,16 +62,9 @@ export async function updateQuestSettings(teacherUid: string, newSettings: Parti
     try {
         const teacherRef = doc(db, 'teachers', teacherUid);
         await setDoc(teacherRef, { questSettings: newSettings }, { merge: true });
-
-        // Update individual student documents if studentOverrides are being set
-        if (newSettings.studentOverrides !== undefined) {
-            const batch = writeBatch(db);
-            for (const [studentUid, approvalRequired] of Object.entries(newSettings.studentOverrides)) {
-                const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
-                batch.update(studentRef, { questApprovalRequired: approvalRequired });
-            }
-            await batch.commit();
-        }
+        
+        // This flow no longer needs to update individual student docs,
+        // as the override logic is handled client-side based on the main teacher doc.
 
         return { success: true, message: 'Quest settings updated.' };
     } catch (error: any) {
@@ -113,6 +106,8 @@ async function approveSingleRequest(batch: firebase.firestore.WriteBatch, teache
     const studentData = studentSnap.data() as Student;
     const currentProgress = studentData.questProgress?.[hubId] || 0;
 
+    // We only approve if this is the next sequential chapter.
+    // This prevents issues if a teacher accidentally approves an old request.
     if (chapterNumber === currentProgress + 1) {
         const newProgress = { ...studentData.questProgress, [hubId]: chapterNumber };
         batch.update(studentRef, { questProgress: newProgress });
