@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -48,20 +49,25 @@ export default function ChapterPage() {
 
                 if (studentMetaSnap.exists()) {
                     setTeacherUid(studentMetaSnap.data().teacherUid);
-                    setStudent(studentMetaSnap.data() as Student);
+                    // Fetch student data only if not in preview mode.
+                    if (!isPreviewMode) {
+                        const studentRef = doc(db, 'teachers', studentMetaSnap.data().teacherUid, 'students', currentUser.uid);
+                        const studentDocSnap = await getDoc(studentRef);
+                        if (studentDocSnap.exists()) {
+                            setStudent(studentDocSnap.data() as Student);
+                        }
+                    }
                 } else if (isPreviewMode) {
+                    // In preview mode, we need to find the teacher who owns this content.
+                    // This is a simplified approach. A more robust system might pass the teacherId in the URL.
+                    const chaptersQuery = query(collection(db, 'teachers'), where('__name__', '==', chapterId as string));
                     const teachersSnapshot = await getDocs(collection(db, 'teachers'));
-                    // In preview mode, we just need *a* teacher UID to fetch content, not necessarily the student's
-                    if (!teachersSnapshot.empty) {
-                        // This logic could be improved if we knew which teacher created the content.
-                        // For now, we'll try to find it. This is a simplification.
-                        for (const teacherDoc of teachersSnapshot.docs) {
-                            const chapterRef = doc(db, 'teachers', teacherDoc.id, 'chapters', chapterId as string);
-                            const chapterSnap = await getDoc(chapterRef);
-                            if (chapterSnap.exists()) {
-                                setTeacherUid(teacherDoc.id);
-                                break;
-                            }
+                    for (const teacherDoc of teachersSnapshot.docs) {
+                        const chapterRef = doc(db, 'teachers', teacherDoc.id, 'chapters', chapterId as string);
+                        const chapterSnap = await getDoc(chapterRef);
+                        if (chapterSnap.exists()) {
+                            setTeacherUid(teacherDoc.id);
+                            break;
                         }
                     }
                 } else {
@@ -97,7 +103,7 @@ export default function ChapterPage() {
 
                 } else {
                     toast({ title: "Not Found", description: "This chapter could not be found.", variant: 'destructive' });
-                    router.push(`/dashboard/map/${hubId}`);
+                    router.push(isPreviewMode ? '/teacher/quests' : `/dashboard/map/${hubId}`);
                 }
             } catch (error) {
                  toast({ title: "Error", description: "Failed to load chapter data.", variant: 'destructive' });
@@ -107,7 +113,7 @@ export default function ChapterPage() {
         };
 
         fetchChapterData();
-    }, [chapterId, hubId, router, toast, teacherUid]);
+    }, [chapterId, hubId, router, toast, teacherUid, isPreviewMode]);
 
     const handleMarkComplete = async () => {
         if (!user || !student || !chapter || !hub || !teacherUid) return;
@@ -261,6 +267,7 @@ export default function ChapterPage() {
     const isCurrentChapter = chapter.chapterNumber === lastCompletedChapterForHub + 1;
     const isCompletedChapter = chapter.chapterNumber <= lastCompletedChapterForHub;
 
+    const returnPath = isPreviewMode ? '/teacher/quests' : `/dashboard/map/${hubId}`;
 
     return (
         <div className="flex flex-col items-center justify-start bg-background p-2 md:p-4">
@@ -400,12 +407,12 @@ export default function ChapterPage() {
                      )}
                      <div className="flex justify-center gap-4">
                         <Button 
-                            onClick={() => router.push(`/dashboard/map/${hubId}`)} 
+                            onClick={() => router.push(returnPath)} 
                             variant="outline"
                             size="lg"
                         >
                             <ArrowLeft className="mr-2 h-5 w-5" />
-                            Return to Quest Map
+                            {isPreviewMode ? 'Return to Quest Archives' : 'Return to Quest Map'}
                         </Button>
                          <Button 
                             onClick={() => router.push('/dashboard')} 
