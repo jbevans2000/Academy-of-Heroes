@@ -19,15 +19,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { classData, type ClassType } from '@/lib/data';
 import { getGlobalSettings } from '@/ai/flows/manage-settings';
-import { createStudentAccount } from '@/ai/flows/create-student';
+import { createStudentDocuments } from '@/ai/flows/create-student';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { generateName } from '@/ai/flows/name-generator';
 
 export default function RegisterPage() {
   const [classCode, setClassCode] = useState('');
@@ -41,6 +38,7 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
+  const [isGeneratingName, setIsGeneratingName] = useState(false);
 
   const router = useRouter();
   const { toast } = useToast();
@@ -53,7 +51,6 @@ export default function RegisterPage() {
             setIsRegistrationOpen(settings.isRegistrationOpen);
         } catch (error) {
             console.error("Failed to check registration status:", error);
-            // Default to open if there's an error, to not block registration unintentionally
             setIsRegistrationOpen(true);
         } finally {
             setIsCheckingStatus(false);
@@ -72,13 +69,28 @@ export default function RegisterPage() {
       });
       return;
     }
+     if (password.length < 6) {
+      toast({
+        variant: 'destructive',
+        title: 'Password Too Short',
+        description: 'Your password must be at least 6 characters long.',
+      });
+      return;
+    }
     setIsLoading(true);
 
     try {
-      const result = await createStudentAccount({
+      // Step 1: Create user in Firebase Auth on the client
+      const email = `${studentId}@academy-heroes-mziuf.firebaseapp.com`;
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Step 2: Call server action to create Firestore documents
+      const result = await createStudentDocuments({
         classCode,
+        userUid: user.uid,
+        email: email,
         studentId,
-        password,
         studentName,
         characterName,
         selectedClass,
@@ -92,14 +104,35 @@ export default function RegisterPage() {
         });
         router.push('/awaiting-approval');
       } else {
-        throw new Error(result.error);
+        // This is a tricky state. The user exists in Auth but not Firestore.
+        // For simplicity, we'll ask them to contact the teacher. A more robust solution might try to clean up the user.
+        throw new Error(result.error || "Your account was created, but we couldn't add you to the guild. Please contact your teacher.");
       }
     } catch (error: any) {
       console.error(error);
+      let description = 'An unexpected error occurred. Please try again.';
+      if (error.code) {
+        switch(error.code) {
+          case 'auth/email-already-in-use':
+            description = 'This Hero\'s Alias is already registered for this guild. Please choose another.';
+            break;
+          case 'auth/invalid-email':
+            description = 'The Hero\'s Alias created an invalid email. Please use only letters and numbers.';
+            break;
+          case 'auth/weak-password':
+            description = 'The password is too weak. Please choose a stronger password.';
+            break;
+          default:
+            description = error.message;
+        }
+      } else {
+        description = error.message;
+      }
+
       toast({
         variant: 'destructive',
         title: 'Registration Failed',
-        description: error.message || 'An unexpected error occurred. Please try again.',
+        description: description,
       });
     } finally {
       setIsLoading(false);
@@ -112,6 +145,18 @@ export default function RegisterPage() {
     setSelectedAvatar(null);
   };
   
+  const handleGenerateName = async (gender: 'Male' | 'Female' | 'Non-binary') => {
+    setIsGeneratingName(true);
+    try {
+      const name = await generateName({ gender });
+      setCharacterName(name);
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Could not generate name', description: 'The name generator failed. Please try again.'});
+    } finally {
+        setIsGeneratingName(false);
+    }
+  };
+
   const RegistrationClosedCard = () => (
     <Card className="w-full max-w-lg shadow-2xl bg-card/80 backdrop-blur-sm">
         <CardHeader className="text-center">
@@ -210,20 +255,11 @@ export default function RegisterPage() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="character-name" className="flex items-center"><Star className="w-4 h-4 mr-2" />Character Name</Label>
-                    <Input id="character-name" placeholder="Your hero's name" value={characterName} onChange={(e) => setCharacterName(e.target.value)} disabled={isLoading} />
-                </div>
-                <div className="space-y-2">
-                    <Label>Need help with a name?</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                        <Button variant="outline" size="sm" disabled>
-                           Random Male
-                        </Button>
-                        <Button variant="outline" size="sm" disabled>
-                           Random Female
-                        </Button>
-                        <Button variant="outline" size="sm" disabled className="col-span-2">
-                           Random Non-binary
-                        </Button>
+                    <div className="flex gap-2">
+                      <Input id="character-name" placeholder="Your hero's name" value={characterName} onChange={(e) => setCharacterName(e.target.value)} disabled={isLoading || isGeneratingName} />
+                       <Button variant="outline" size="icon" onClick={() => handleGenerateName('Non-binary')} disabled={isLoading || isGeneratingName}>
+                            {isGeneratingName ? <Loader2 className="h-4 w-4 animate-spin" /> : <Star className="h-4 w-4" />}
+                       </Button>
                     </div>
                 </div>
                 </div>

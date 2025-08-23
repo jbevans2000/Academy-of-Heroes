@@ -1,24 +1,19 @@
 
 'use server';
 /**
- * @fileOverview A secure, server-side flow for handling new student registrations.
- * This flow centralizes the registration logic to ensure global settings
- * like registration locks are properly enforced.
+ * @fileOverview A secure, server-side flow for creating student documents in Firestore
+ * after they have already been created in Firebase Authentication on the client.
  */
-import { getFirebaseAdminApp } from '@/lib/firebase-admin';
-import { getAuth } from 'firebase-admin/auth';
 import { doc, setDoc, collection, query, where, getDocs, limit, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { classData, type ClassType } from '@/lib/data';
 import { getGlobalSettings } from '@/ai/flows/manage-settings';
 
-// Initialize the Firebase Admin App
-getFirebaseAdminApp();
-
 interface RegistrationInput {
   classCode: string;
+  userUid: string; // The UID from the successfully created user
+  email: string;
   studentId: string;
-  password:  string;
   studentName: string;
   characterName: string;
   selectedClass: ClassType;
@@ -45,46 +40,29 @@ async function getTeacherUidFromClassCode(code: string): Promise<string | null> 
 }
 
 
-export async function createStudentAccount(input: RegistrationInput): Promise<ActionResponse> {
+export async function createStudentDocuments(input: RegistrationInput): Promise<ActionResponse> {
   // 1. Check if registration is open globally (Authoritative Server Check)
   const settings = await getGlobalSettings();
   if (!settings.isRegistrationOpen) {
     return { success: false, error: 'New hero creation has been paused by the Grandmaster.' };
   }
 
-  // 2. Validate password length
-  if (input.password.length < 6) {
-      return { success: false, error: 'Password must be at least 6 characters long.' };
-  }
-
-  // 3. Find the teacher from the class code
+  // 2. Find the teacher from the class code
   const teacherUid = await getTeacherUidFromClassCode(input.classCode);
   if (!teacherUid) {
     return { success: false, error: 'The Guild Code you entered does not exist. Please check with your Guild Leader.' };
   }
-
-  const email = `${input.studentId}@academy-heroes-mziuf.firebaseapp.com`;
   
-  const auth = getAuth(getFirebaseAdminApp());
-
   try {
-    // 4. Create the user in Firebase Authentication
-    const userRecord = await auth.createUser({
-      email: email,
-      password: input.password,
-      displayName: input.characterName,
-    });
-    const user = userRecord;
-
     const classInfo = classData[input.selectedClass];
     const baseStats = classInfo.baseStats;
 
-    // 5. Create the pending student document in Firestore
-    await setDoc(doc(db, 'teachers', teacherUid, 'pendingStudents', user.uid), {
-      uid: user.uid,
+    // 3. Create the pending student document in Firestore
+    await setDoc(doc(db, 'teachers', teacherUid, 'pendingStudents', input.userUid), {
+      uid: input.userUid,
       teacherUid: teacherUid,
       studentId: input.studentId,
-      email: email,
+      email: input.email,
       studentName: input.studentName,
       characterName: input.characterName,
       class: input.selectedClass,
@@ -97,8 +75,8 @@ export async function createStudentAccount(input: RegistrationInput): Promise<Ac
       requestedAt: serverTimestamp(),
     });
 
-    // 6. Create the global student metadata document for quick lookup
-    await setDoc(doc(db, 'students', user.uid), {
+    // 4. Create the global student metadata document for quick lookup
+    await setDoc(doc(db, 'students', input.userUid), {
       teacherUid: teacherUid,
       approved: false, // Explicitly set approval status
     });
@@ -106,11 +84,9 @@ export async function createStudentAccount(input: RegistrationInput): Promise<Ac
     return { success: true, message: 'Request sent successfully!' };
 
   } catch (error: any) {
-    console.error("Error in createStudentAccount flow:", error);
-    let errorMessage = 'An unexpected error occurred.';
-    if (error.code === 'auth/email-already-exists') {
-        errorMessage = 'This Hero\'s Alias is already registered for this guild.';
-    } else if (error.code) {
+    console.error("Error in createStudentDocuments flow:", error);
+    let errorMessage = 'An unexpected error occurred while saving your hero\'s data.';
+    if (error.code) {
         errorMessage = error.message;
     }
     return { success: false, error: errorMessage };
