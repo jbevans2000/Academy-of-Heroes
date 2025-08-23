@@ -275,6 +275,9 @@ export default function QuestsPage() {
                                                     <li key={chapter.id} className="flex items-center justify-between p-3 rounded-md bg-secondary">
                                                         <span className="font-medium">Chapter {chapter.chapterNumber}: {chapter.title}</span>
                                                         <div className="flex items-center gap-2">
+                                                            <Button variant="outline" size="sm" onClick={() => router.push(`/dashboard/map/${hub.id}/${chapter.id}?preview=true`)}>
+                                                                <Eye className="mr-2 h-4 w-4" /> Preview
+                                                            </Button>
                                                             <Button variant="outline" size="sm" onClick={() => router.push(`/teacher/quests/edit/${chapter.id}`)}>
                                                                 <Edit className="mr-2 h-4 w-4" /> Edit
                                                             </Button>

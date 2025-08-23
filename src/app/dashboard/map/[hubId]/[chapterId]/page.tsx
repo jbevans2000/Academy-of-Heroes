@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { ArrowLeft, LayoutDashboard, Library, CheckCircle, Loader2, RotateCcw } from "lucide-react";
 import Image from 'next/image';
 import { Separator } from "@/components/ui/separator";
@@ -22,6 +22,7 @@ import { logGameEvent } from '@/lib/gamelog';
 export default function ChapterPage() {
     const router = useRouter();
     const params = useParams();
+    const searchParams = useSearchParams();
     const { toast } = useToast();
     const { hubId, chapterId } = params;
 
@@ -36,26 +37,42 @@ export default function ChapterPage() {
     const [isCompleting, setIsCompleting] = useState(false);
     const [isUncompleting, setIsUncompleting] = useState(false);
 
+    const isPreviewMode = searchParams.get('preview') === 'true';
+
      useEffect(() => {
         const authUnsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
                 setUser(currentUser);
-                const teachersSnapshot = await getDocs(collection(db, 'teachers'));
-                for (const teacherDoc of teachersSnapshot.docs) {
-                  const studentDocRef = doc(db, 'teachers', teacherDoc.id, 'students', currentUser.uid);
-                  const studentSnap = await getDoc(studentDocRef);
-                  if (studentSnap.exists()) {
-                    setTeacherUid(teacherDoc.id);
-                    setStudent(studentSnap.data() as Student);
-                    break;
-                  }
+                const studentMetaRef = doc(db, 'students', currentUser.uid);
+                const studentMetaSnap = await getDoc(studentMetaRef);
+
+                if (studentMetaSnap.exists()) {
+                    setTeacherUid(studentMetaSnap.data().teacherUid);
+                    setStudent(studentMetaSnap.data() as Student);
+                } else if (isPreviewMode) {
+                    const teachersSnapshot = await getDocs(collection(db, 'teachers'));
+                    // In preview mode, we just need *a* teacher UID to fetch content, not necessarily the student's
+                    if (!teachersSnapshot.empty) {
+                        // This logic could be improved if we knew which teacher created the content.
+                        // For now, we'll try to find it. This is a simplification.
+                        for (const teacherDoc of teachersSnapshot.docs) {
+                            const chapterRef = doc(db, 'teachers', teacherDoc.id, 'chapters', chapterId as string);
+                            const chapterSnap = await getDoc(chapterRef);
+                            if (chapterSnap.exists()) {
+                                setTeacherUid(teacherDoc.id);
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    router.push('/');
                 }
-            } else {
+            } else if (!isPreviewMode) {
                 router.push('/');
             }
         });
         return () => authUnsubscribe();
-    }, [router]);
+    }, [router, isPreviewMode, chapterId]);
 
     useEffect(() => {
         if (!chapterId || !hubId || !teacherUid) return;
@@ -200,7 +217,7 @@ export default function ChapterPage() {
         return `https://www.youtube.com/embed/${videoId}`;
     };
 
-    if (isLoading || !student) {
+    if (isLoading || (!student && !isPreviewMode)) {
         return (
              <div className="flex flex-col items-center justify-start bg-background p-2 md:p-4">
                 <div className="w-full max-w-4xl space-y-4">
@@ -226,7 +243,7 @@ export default function ChapterPage() {
         )
     }
 
-    if (student) {
+    if (student && !isPreviewMode) {
         const lastCompletedChapter = student.questProgress?.[hubId as string] || 0;
         const lastCompletedHub = student.hubsCompleted || 0;
         if(hub.hubOrder > lastCompletedHub + 1) {
@@ -360,7 +377,7 @@ export default function ChapterPage() {
                     </CardContent>
                 </Card>
                  <div className="flex justify-center flex-col items-center gap-4 py-4">
-                     {isCurrentChapter && (
+                     {isCurrentChapter && !isPreviewMode && (
                         <Button 
                             size="lg" 
                             onClick={handleMarkComplete}
@@ -370,7 +387,7 @@ export default function ChapterPage() {
                             Mark Quest as Complete
                         </Button>
                      )}
-                     {isCompletedChapter && (
+                     {isCompletedChapter && !isPreviewMode && (
                          <Button 
                             size="lg" 
                             variant="destructive"
@@ -390,7 +407,7 @@ export default function ChapterPage() {
                             <ArrowLeft className="mr-2 h-5 w-5" />
                             Return to Quest Map
                         </Button>
-                        <Button 
+                         <Button 
                             onClick={() => router.push('/dashboard')} 
                             variant="outline"
                             size="lg"
@@ -404,5 +421,3 @@ export default function ChapterPage() {
         </div>
     );
 }
-
-    
