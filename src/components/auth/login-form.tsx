@@ -11,7 +11,8 @@ import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Loader2, KeyRound } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, getDocs, collection, query, where, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { createStudentDocuments } from '@/ai/flows/create-student';
 
 export function LoginForm() {
   const [studentId, setStudentId] = useState('');
@@ -42,7 +43,42 @@ export function LoginForm() {
       const studentMetaSnap = await getDoc(studentMetaRef);
       
       if (!studentMetaSnap.exists()) {
-          throw new Error("Your hero's record could not be found in any guild.");
+          // This case handles old accounts that were created before the /students collection existed.
+          // We will find their teacher and create the necessary pending docs.
+          toast({ title: 'Legacy Account Found', description: 'Re-linking your hero to the guild...' });
+
+          const teachersQuery = query(collection(db, 'teachers'));
+          const teachersSnapshot = await getDocs(teachersQuery);
+          let foundTeacherUid: string | null = null;
+          
+          for (const teacherDoc of teachersSnapshot.docs) {
+              const studentInTeacherRef = doc(db, 'teachers', teacherDoc.id, 'students', user.uid);
+              const studentInTeacherSnap = await getDoc(studentInTeacherRef);
+              if (studentInTeacherSnap.exists()) {
+                  foundTeacherUid = teacherDoc.id;
+                  const studentData = studentInTeacherSnap.data();
+
+                  // Create the necessary records to put them back in the approval queue.
+                  await createStudentDocuments({
+                      classCode: teacherDoc.data().classCode, // We need a class code to find the teacher again
+                      userUid: user.uid,
+                      email: studentData.email,
+                      studentId: studentData.studentId,
+                      studentName: studentData.studentName,
+                      characterName: studentData.characterName,
+                      selectedClass: studentData.class,
+                      selectedAvatar: studentData.avatarUrl,
+                  });
+                  break;
+              }
+          }
+
+          if (foundTeacherUid) {
+              router.push('/awaiting-approval');
+              return;
+          } else {
+             throw new Error("Your hero's record could not be found in any guild.");
+          }
       }
       
       const { teacherUid, approved } = studentMetaSnap.data();
@@ -61,9 +97,6 @@ export function LoginForm() {
 
           router.push(`/dashboard${justApproved ? `?approved=true&className=${encodeURIComponent(className)}` : ''}`);
       } else {
-         // This case handles if the student is approved in meta but not yet in the students subcollection
-         // which can happen for a moment after teacher approval. We send them to await approval,
-         // but the dashboard page itself will handle final redirection once the document appears.
          router.push('/awaiting-approval');
       }
 
