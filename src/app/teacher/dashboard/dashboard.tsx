@@ -77,8 +77,6 @@ export default function Dashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [isDeleteStep1Open, setIsDeleteStep1Open] = useState(false);
-  const [isDeleteStep2Open, setIsDeleteStep2Open] = useState(false);
   const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
   
   const [sortOrder, setSortOrder] = useState<SortOrder>('studentName');
@@ -327,37 +325,6 @@ export default function Dashboard() {
           });
       } finally {
           setIsAwarding(false);
-      }
-  };
-
-  const handleDeleteStudents = async () => {
-      if (selectedStudents.length === 0 || !teacher) return;
-      setIsDeleting(true);
-
-      try {
-          const studentsToDelete = students.filter(s => selectedStudents.includes(s.uid));
-          for (const student of studentsToDelete) {
-             await moderateStudent({ teacherUid: teacher.uid, studentUid: student.uid, action: 'delete' });
-          }
-          
-          await logGameEvent(teacher.uid, 'GAMEMASTER', `Deleted ${selectedStudents.length} student(s) from the guild.`);
-          setSelectedStudents([]);
-          
-          toast({
-              title: 'Student(s) Removed',
-              description: `${selectedStudents.length} student(s) have been deleted from Firestore and Firebase Authentication.`,
-          });
-
-      } catch (error) {
-          console.error("Error deleting students:", error);
-          toast({
-              variant: 'destructive',
-              title: 'Deletion Failed',
-              description: 'Could not delete all selected students.',
-          });
-      } finally {
-          setIsDeleting(false);
-          setIsDeleteStep2Open(false);
       }
   };
   
@@ -731,51 +698,7 @@ export default function Dashboard() {
                 </DialogFooter>
             </DialogContent>
             </Dialog>
-            
-            <AlertDialog open={isDeleteStep1Open} onOpenChange={setIsDeleteStep1Open}>
-                <AlertDialogTrigger asChild>
-                    <Button variant="destructive" disabled={selectedStudents.length === 0} className="border-black border">
-                        <UserX className="mr-2 h-4 w-4" /> Delete Selected
-                    </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure? (Step 1 of 2)</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will permanently delete all character data (XP, Gold, Level, etc.) and the login account for the
-                            <span className="font-bold"> {selectedStudents.length} selected student(s)</span>.
-                            This action cannot be undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => {
-                            setIsDeleteStep1Open(false);
-                            setIsDeleteStep2Open(true);
-                        }}>
-                            Continue to Final Confirmation
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-            
-            <AlertDialog open={isDeleteStep2Open} onOpenChange={setIsDeleteStep2Open}>
-                 <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Final Confirmation (Step 2 of 2)</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This is your final warning. Deleting this data is permanent.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteStudents} disabled={isDeleting}>
-                            {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            Yes, Delete All Character Data
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+
         </div>
         <StudentList 
             students={sortedStudents} 
