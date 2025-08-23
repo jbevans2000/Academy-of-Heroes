@@ -170,7 +170,8 @@ function VolumeControl({ audioRef }: { audioRef: React.RefObject<HTMLAudioElemen
     };
 
     return (
-        <div className="fixed bottom-4 right-4 z-50 w-48 p-4 rounded-lg bg-black/50 backdrop-blur-sm">
+        <div className="fixed bottom-4 right-4 z-50 w-48 p-4 rounded-lg bg-black/50 backdrop-blur-sm text-white">
+            <p className="text-xs text-white/80 text-center mb-1">Volume</p>
             <div className="flex items-center gap-2">
                 {getVolumeIcon()}
                 <Slider
