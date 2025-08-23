@@ -6,19 +6,23 @@ import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Archive } from 'lucide-react';
+import { ArrowLeft, Archive, ArchiveRestore, Loader2 } from 'lucide-react';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
+import { unarchiveStudent } from '@/ai/flows/manage-student';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ArchivedHeroesPage() {
     const router = useRouter();
+    const { toast } = useToast();
     const [archivedStudents, setArchivedStudents] = useState<Student[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [teacher, setTeacher] = useState<User | null>(null);
+    const [isUnarchiving, setIsUnarchiving] = useState<string | null>(null);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -41,6 +45,24 @@ export default function ArchivedHeroesPage() {
         });
         return () => unsubscribe();
     }, [teacher]);
+    
+    const handleUnarchive = async (studentUid: string) => {
+        if (!teacher) return;
+        setIsUnarchiving(studentUid);
+        try {
+            const result = await unarchiveStudent({ teacherUid: teacher.uid, studentUid });
+            if (result.success) {
+                toast({ title: "Student Unarchived", description: "The student has been restored and can log in again."});
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to unarchive student.' });
+        } finally {
+            setIsUnarchiving(null);
+        }
+    }
+
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -80,6 +102,7 @@ export default function ArchivedHeroesPage() {
                                             <TableHead>Student Name</TableHead>
                                             <TableHead>Final Level</TableHead>
                                             <TableHead>Login Alias</TableHead>
+                                            <TableHead className="text-right">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -89,6 +112,21 @@ export default function ArchivedHeroesPage() {
                                                 <TableCell>{student.studentName}</TableCell>
                                                 <TableCell>{student.level}</TableCell>
                                                 <TableCell className="font-mono">{student.studentId}</TableCell>
+                                                <TableCell className="text-right">
+                                                    <Button 
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => handleUnarchive(student.uid)}
+                                                        disabled={isUnarchiving === student.uid}
+                                                    >
+                                                        {isUnarchiving === student.uid ? (
+                                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                        ) : (
+                                                            <ArchiveRestore className="mr-2 h-4 w-4" />
+                                                        )}
+                                                        Unarchive
+                                                    </Button>
+                                                </TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>

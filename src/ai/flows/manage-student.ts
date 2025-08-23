@@ -208,3 +208,28 @@ export async function migrateStudentData(input: MigrateDataInput): Promise<Actio
         return { success: false, error: 'An unexpected error occurred during data migration.' };
     }
 }
+
+interface UnarchiveStudentInput {
+  teacherUid: string;
+  studentUid: string;
+}
+
+export async function unarchiveStudent(input: UnarchiveStudentInput): Promise<ActionResponse> {
+    const { teacherUid, studentUid } = input;
+    const auth = getAuth(getFirebaseAdminApp());
+
+    try {
+        // Re-enable the authentication account
+        await auth.updateUser(studentUid, { disabled: false });
+
+        // Un-archive the Firestore document
+        const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
+        await updateDoc(studentRef, { isArchived: false });
+        
+        return { success: true, message: "Student has been unarchived and can now log in." };
+
+    } catch (error: any) {
+        console.error("Error unarchiving student:", error);
+        return { success: false, error: "An unexpected error occurred while unarchiving the student." };
+    }
+}
