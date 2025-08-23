@@ -24,7 +24,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { calculateLevel, calculateHpGain, calculateMpGain, calculateBaseMaxHp } from '@/lib/game-mechanics';
 import { Label } from '../ui/label';
-import { ManageStudentDialog } from './manage-student-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 interface EditableStatProps {
@@ -270,7 +269,6 @@ interface StudentCardProps {
 
 export function StudentCard({ student, isSelected, onSelect, setStudents, teacherUid }: StudentCardProps) {
   const avatarUrl = student.avatarUrl || 'https://placehold.co/100x100.png';
-  const [isManageOpen, setIsManageOpen] = useState(false);
   const [company, setCompany] = useState<Company | null>(null);
   
   const isOnline = student.onlineStatus?.status === 'online';
@@ -303,13 +301,6 @@ export function StudentCard({ student, isSelected, onSelect, setStudents, teache
 
   return (
     <>
-      <ManageStudentDialog 
-        isOpen={isManageOpen} 
-        onOpenChange={setIsManageOpen} 
-        student={student}
-        setStudents={setStudents}
-        teacherUid={teacherUid}
-      />
       <Dialog>
       <TooltipProvider>
         <Card className={cn("shadow-lg rounded-xl flex flex-col overflow-hidden transition-all duration-300 relative", isSelected ? "ring-2 ring-primary scale-105" : "hover:scale-105")}>
@@ -408,16 +399,12 @@ export function StudentCard({ student, isSelected, onSelect, setStudents, teache
                 />
                 </div>
             </CardContent>
-            <CardFooter className="p-2 bg-secondary/30 mt-auto grid grid-cols-2 gap-2">
+            <CardFooter className="p-2 bg-secondary/30 mt-auto grid grid-cols-1 gap-2">
                 <DialogTrigger asChild>
                 <Button className="w-full" variant="secondary">
                     View Details
                 </Button>
                 </DialogTrigger>
-                <Button className="w-full" variant="outline" onClick={() => setIsManageOpen(true)}>
-                    <Settings className="mr-2 h-4 w-4"/>
-                    Manage
-                </Button>
             </CardFooter>
            </div>
         </Card>
