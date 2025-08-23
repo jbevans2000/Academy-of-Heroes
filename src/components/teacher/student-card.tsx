@@ -22,7 +22,7 @@ import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { calculateLevel, calculateHpGain, calculateMpGain, calculateBaseMaxHp } from '@/lib/game-mechanics';
+import { calculateLevel, calculateHpGain, calculateMpGain, calculateBaseMaxHp, MAX_LEVEL, XP_FOR_MAX_LEVEL } from '@/lib/game-mechanics';
 import { Label } from '../ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
@@ -66,7 +66,7 @@ function EditableStat({ student, stat, icon, label, setStudents, teacherUid }: E
 
     const handleSave = async () => {
         setIsLoading(true);
-        const amount = Number(value);
+        let amount = Number(value);
         if (isNaN(amount) || amount < 0) {
             toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please enter a non-negative number.' });
             setValue(student[stat] ?? 0);
@@ -85,6 +85,18 @@ function EditableStat({ student, stat, icon, label, setStudents, teacherUid }: E
             
             if (stat === 'xp') {
                 const currentLevel = studentData.level || 1;
+                
+                if (currentLevel >= MAX_LEVEL && amount > studentData.xp) {
+                    toast({ title: 'Max Level Reached', description: `${student.characterName} is at the maximum level. XP cannot be increased.`});
+                    amount = studentData.xp; // Revert to old value
+                }
+                
+                // Cap the XP at the max level threshold
+                if (amount > XP_FOR_MAX_LEVEL) {
+                    amount = XP_FOR_MAX_LEVEL;
+                    toast({ title: 'XP Capped', description: `XP has been capped at the amount for Level ${MAX_LEVEL}.` });
+                }
+
                 updates.xp = amount;
                 const newLevel = calculateLevel(updates.xp);
 

@@ -47,7 +47,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School } from 'lucide-react';
-import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
+import { calculateLevel, calculateHpGain, calculateMpGain, MAX_LEVEL } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { moderateStudent } from '@/ai/flows/manage-student';
@@ -209,13 +209,20 @@ export default function Dashboard() {
           const batch = writeBatch(db);
           // Use the local state which is already up-to-date
           const studentsToUpdate = students.filter(s => selectedStudents.includes(s.uid));
+          let studentsAtMaxLevel = 0;
 
           for (const studentData of studentsToUpdate) {
+              const currentLevel = studentData.level || 1;
+
+              if (currentLevel >= MAX_LEVEL && amount > 0) {
+                  studentsAtMaxLevel++;
+                  continue; // Skip awarding positive XP to max-level students
+              }
+
               const studentRef = doc(db, 'teachers', teacher!.uid, 'students', studentData.uid);
               const currentXp = studentData.xp || 0;
               const newXp = Math.max(0, currentXp + amount);
               
-              const currentLevel = studentData.level || 1;
               const newLevel = calculateLevel(newXp);
               
               const updates: Partial<Student> = { xp: newXp };
@@ -236,14 +243,22 @@ export default function Dashboard() {
           }
           
           await batch.commit();
-          // Real-time listener will update the UI automatically
           
           await logGameEvent(teacher!.uid, 'GAMEMASTER', `Bestowed ${amount} XP to ${selectedStudents.length} student(s).`);
 
           toast({
               title: 'Experience Bestowed!',
-              description: `${amount} XP has been bestowed upon ${selectedStudents.length} student(s). Levels, HP, and MP have been updated where appropriate.`,
+              description: `${amount} XP has been bestowed upon ${selectedStudents.length - studentsAtMaxLevel} student(s). Levels, HP, and MP have been updated where appropriate.`,
           });
+
+          if (studentsAtMaxLevel > 0) {
+            toast({
+                variant: 'default',
+                title: 'Note',
+                description: `${studentsAtMaxLevel} student(s) are at the max level and did not receive XP.`,
+            });
+          }
+
           setSelectedStudents([]);
           setXpAmount('');
           setIsXpDialogOpen(false);

@@ -1,10 +1,16 @@
 
-
 import type { ClassType } from "./data";
+
+export const MAX_LEVEL = 30;
+// XP required to reach level 30 is 2900. Once a student has this, they are level 30.
+export const XP_FOR_MAX_LEVEL = (MAX_LEVEL - 1) * 100;
+
 
 export function calculateLevel(xp: number): number {
     if (xp < 0) return 1;
-    return Math.floor(xp / 100) + 1;
+    // Level is 1 + floor(xp / 100). So 0-99 xp is level 1.
+    const level = Math.floor(xp / 100) + 1;
+    return Math.min(level, MAX_LEVEL);
 }
 
 function rollDie(sides: number): number {
