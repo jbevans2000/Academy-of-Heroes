@@ -60,6 +60,7 @@ interface PowerLogEntry {
 
 interface LiveBattleState {
   battleId: string | null;
+  parentArchiveId?: string;
   status: 'WAITING' | 'IN_PROGRESS' | 'ROUND_ENDING' | 'SHOWING_RESULTS' | 'BATTLE_ENDED';
   currentQuestionIndex: number;
   timerEndsAt?: { seconds: number; nanoseconds: number; };
@@ -316,11 +317,6 @@ export default function LiveBattlePage() {
         if (docSnap.exists()) {
             const studentData = docSnap.data() as Student;
             setStudent(studentData);
-            
-            // This is the crucial check I removed. If the student is not "inBattle", redirect.
-            if (!studentData.inBattle) {
-                router.push('/dashboard');
-            }
         } else {
             router.push('/');
         }
@@ -357,8 +353,8 @@ export default function LiveBattlePage() {
         const currentBattleState = battleStateRef.current;
         
         // Redirect if battle has ended
-        if (newState.status === 'BATTLE_ENDED') {
-            router.push('/dashboard/songs-and-stories');
+        if (newState.status === 'BATTLE_ENDED' && newState.parentArchiveId) {
+            router.push(`/dashboard/songs-and-stories/${newState.parentArchiveId}`);
             return;
         }
 
