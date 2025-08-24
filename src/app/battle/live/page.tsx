@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 import { onSnapshot, doc, getDoc, setDoc, updateDoc, increment, arrayUnion, collection, query, getDocs, serverTimestamp } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
-import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Hourglass, VolumeX, Flame, Lightbulb, Skull, ScrollText, Volume1, Volume, Volume2 as VolumeIcon } from 'lucide-react';
+import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Hourglass, VolumeX, Flame, Lightbulb, Skull, ScrollText, Volume1, Volume, Volume2 as VolumeIcon, ChevronDown } from 'lucide-react';
 import { type Student } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
@@ -26,6 +26,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Slider } from '@/components/ui/slider';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 
 interface TargetedEvent {
     targetUid: string;
@@ -222,6 +227,7 @@ function VoteDialog({ voteState, userUid, teacherUid }: { voteState: VoteState |
 
 function PowerLog({ teacherUid }: { teacherUid: string }) {
     const [logEntries, setLogEntries] = useState<PowerLogEntry[]>([]);
+    const [isOpen, setIsOpen] = useState(true);
     const logEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -253,24 +259,38 @@ function PowerLog({ teacherUid }: { teacherUid: string }) {
     }, [logEntries])
     
     return (
-        <Card className="flex flex-col h-full bg-card/60 backdrop-blur-sm">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-black"><ScrollText/> Battle Log</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-grow overflow-hidden flex flex-col">
-                <div className="flex-grow overflow-y-auto pr-4 space-y-3">
-                    {logEntries.map(log => (
-                        <div key={log.id} className="text-sm text-black">
-                            <span className="font-bold">{log.casterName}</span>
-                            <span> used </span>
-                            <span className="font-semibold">{log.powerName}</span>
-                            <span>. </span> 
-                            <span className="italic">{log.description}</span>
+        <Card className="flex flex-col bg-card/60 backdrop-blur-sm">
+            <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+                <CollapsibleTrigger asChild>
+                    <div className="flex items-center justify-between p-4 cursor-pointer">
+                        <CardTitle className="flex items-center gap-2 text-black"><ScrollText/> Battle Log</CardTitle>
+                        <Button variant="ghost" size="sm" className="w-9 p-0">
+                            <ChevronDown className="h-4 w-4 transition-transform duration-200 data-[state=open]:rotate-180" />
+                            <span className="sr-only">Toggle</span>
+                        </Button>
+                    </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                    <CardContent className="flex-grow overflow-hidden flex flex-col max-h-48">
+                        <div className="flex-grow overflow-y-auto pr-4 space-y-3">
+                            {logEntries.length === 0 ? (
+                                <p className="text-sm text-center text-muted-foreground">No powers have been used yet.</p>
+                            ) : (
+                                logEntries.map(log => (
+                                    <div key={log.id} className="text-sm text-black">
+                                        <span className="font-bold">{log.casterName}</span>
+                                        <span> used </span>
+                                        <span className="font-semibold">{log.powerName}</span>
+                                        <span>. </span> 
+                                        <span className="italic">{log.description}</span>
+                                    </div>
+                                ))
+                            )}
+                            <div ref={logEndRef} />
                         </div>
-                    ))}
-                    <div ref={logEndRef} />
-                </div>
-            </CardContent>
+                    </CardContent>
+                </CollapsibleContent>
+            </Collapsible>
         </Card>
     )
 }
@@ -368,7 +388,6 @@ export default function LiveBattlePage() {
             
             // This is the crucial check I removed. If the student is not "inBattle", redirect.
             if (!studentData.inBattle) {
-                toast({ title: 'Battle Ended', description: 'The teacher has ended the battle session.' });
                 router.push('/dashboard');
             }
         } else {
