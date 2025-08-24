@@ -23,16 +23,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, CheckCircle, UserCheck } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 export default function ChangeAvatarPage() {
   const [student, setStudent] = useState<Student | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
-  const [isConfirming, setIsConfirming] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [avatarToConfirm, setAvatarToConfirm] = useState<string | null>(null);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -50,7 +50,6 @@ export default function ChangeAvatarPage() {
           if (studentSnap.exists()) {
             const studentData = { uid: studentSnap.id, ...studentSnap.data() } as Student;
             setStudent(studentData);
-            setSelectedAvatar(studentData.avatarUrl); // Set current avatar as selected by default
             setIsLoading(false);
           } else {
             router.push('/');
@@ -66,12 +65,14 @@ export default function ChangeAvatarPage() {
     return () => authUnsubscribe();
   }, [router]);
 
-  const handleSelectAvatar = (url: string) => {
-    setSelectedAvatar(url);
+  const handleAvatarClick = (url: string) => {
+    if (url === student?.avatarUrl) return; // Don't open dialog for the current avatar
+    setAvatarToConfirm(url);
+    setIsConfirming(true);
   };
 
   const handleConfirmSave = async () => {
-    if (!student || !selectedAvatar || selectedAvatar === student.avatarUrl) {
+    if (!student || !avatarToConfirm) {
         setIsConfirming(false);
         return;
     };
@@ -79,12 +80,12 @@ export default function ChangeAvatarPage() {
 
     try {
         const studentRef = doc(db, 'teachers', student.teacherUid, 'students', student.uid);
-        await updateDoc(studentRef, { avatarUrl: selectedAvatar });
+        await updateDoc(studentRef, { avatarUrl: avatarToConfirm });
         toast({
             title: 'Avatar Updated!',
             description: 'Your hero has a new look.',
         });
-        setStudent(prev => prev ? { ...prev, avatarUrl: selectedAvatar } : null);
+        setStudent(prev => prev ? { ...prev, avatarUrl: avatarToConfirm } : null);
         router.push('/dashboard');
     } catch (error) {
         toast({
@@ -96,6 +97,7 @@ export default function ChangeAvatarPage() {
     } finally {
         setIsSaving(false);
         setIsConfirming(false);
+        setAvatarToConfirm(null);
     }
   };
   
@@ -120,11 +122,16 @@ export default function ChangeAvatarPage() {
                         key={`${lvl}-${index}`} 
                         className={cn(
                             "p-2 border-4 rounded-lg cursor-pointer transition-all duration-300 hover:scale-110",
-                            selectedAvatar === url ? 'border-primary ring-4 ring-primary/50' : 'border-transparent hover:border-primary/50'
+                            student.avatarUrl === url ? 'border-primary ring-4 ring-primary/50' : 'border-transparent hover:border-primary/50'
                         )}
-                        onClick={() => handleSelectAvatar(url)}
+                        onClick={() => handleAvatarClick(url)}
                     >
                         <Image src={url} alt={`Avatar level ${lvl} - ${index + 1}`} width={200} height={200} className="w-full h-auto rounded-md object-cover" />
+                         {student.avatarUrl === url && (
+                            <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
+                                <UserCheck className="h-4 w-4" />
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>
@@ -152,17 +159,22 @@ export default function ChangeAvatarPage() {
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
         <AlertDialog open={isConfirming} onOpenChange={setIsConfirming}>
             <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Change Your Hero's Avatar?</AlertDialogTitle>
+                <AlertDialogHeader className="items-center">
+                    <AlertDialogTitle>Set this as your new Avatar?</AlertDialogTitle>
+                    <div className="relative w-64 h-64 my-4">
+                        {avatarToConfirm && (
+                            <Image src={avatarToConfirm} alt="Avatar to confirm" fill className="object-contain rounded-lg" />
+                        )}
+                    </div>
                     <AlertDialogDescription>
-                        This will set your new look. Are you ready to confirm this change?
+                       This will become your new look across the realm.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction onClick={handleConfirmSave} disabled={isSaving}>
                         {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                        Confirm
+                        Change Your Avatar Image
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
@@ -175,13 +187,6 @@ export default function ChangeAvatarPage() {
                      <Button variant="outline" onClick={() => router.push('/dashboard')}>
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Back to Dashboard
-                    </Button>
-                    <Button 
-                        size="lg" 
-                        onClick={() => setIsConfirming(true)} 
-                        disabled={selectedAvatar === student.avatarUrl}
-                    >
-                        Save New Avatar
                     </Button>
                 </div>
                 <Card>
