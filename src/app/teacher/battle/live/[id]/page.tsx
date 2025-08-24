@@ -339,6 +339,10 @@ export default function TeacherLiveBattlePage() {
 
         // Update the live battle doc to signal the end to clients
         await updateDoc(liveBattleRef, { status: 'BATTLE_ENDED' });
+        
+        // Update teacher doc with the ID of the battle to clean up
+        const teacherRef = doc(db, 'teachers', teacherUid);
+        await updateDoc(teacherRef, { pendingCleanupBattleId: 'active-battle' });
 
         const batch = writeBatch(db);
         const parentArchiveRef = doc(db, 'teachers', teacherUid, 'savedBattles', liveState.parentArchiveId);
@@ -485,23 +489,6 @@ export default function TeacherLiveBattlePage() {
         }
         
         await batch.commit();
-        
-        // Schedule deletion of the live battle document after a delay
-        setTimeout(async () => {
-            try {
-                const finalBatch = writeBatch(db);
-                const subcollections = ['responses', 'powerActivations', 'battleLog', 'messages'];
-                for (const sub of subcollections) {
-                    const subRef = collection(liveBattleRef, sub);
-                    const snapshot = await getDocs(subRef);
-                    snapshot.forEach(d => finalBatch.delete(d.ref));
-                }
-                finalBatch.delete(liveBattleRef);
-                await finalBatch.commit();
-            } catch (cleanupError) {
-                console.error("Error during delayed cleanup:", cleanupError);
-            }
-        }, 20000); // 20-second delay
 
         await logGameEvent(teacherUid, 'BOSS_BATTLE', `Battle '${battle.battleName}' ended.`);
     } catch (e) {
@@ -1478,3 +1465,4 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
+

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -56,6 +57,7 @@ interface TeacherData {
     name: string;
     className: string;
     classCode: string;
+    pendingCleanupBattleId?: string;
 }
 
 type SortOrder = 'studentName' | 'characterName' | 'xp' | 'class';
@@ -117,11 +119,18 @@ export default function Dashboard() {
 
     const teacherUid = teacher.uid;
     
-    // Fetch static teacher data once
+    // Fetch static teacher data once, but listen for changes to the cleanup flag
     const teacherRef = doc(db, 'teachers', teacherUid);
-    getDoc(teacherRef).then(teacherSnap => {
+    const unsubTeacher = onSnapshot(teacherRef, (teacherSnap) => {
         if (teacherSnap.exists()) {
-            setTeacherData(teacherSnap.data() as TeacherData);
+            const data = teacherSnap.data() as TeacherData;
+            setTeacherData(data);
+            if (data.pendingCleanupBattleId) {
+                // Wait 20 seconds then trigger cleanup
+                setTimeout(() => {
+                    handleClearAllBattleStatus(true); // Pass flag to indicate auto-cleanup
+                }, 20000);
+            }
         }
     });
 
@@ -141,6 +150,7 @@ export default function Dashboard() {
 
     // Cleanup listeners on unmount
     return () => {
+        unsubTeacher();
         studentsUnsubscribe();
         pendingUnsubscribe();
     };
@@ -409,9 +419,12 @@ export default function Dashboard() {
     }
   };
 
-  const handleClearAllBattleStatus = async () => {
+  const handleClearAllBattleStatus = async (isAutoCleanup = false) => {
     if (!teacher) return;
-    setIsAwarding(true); // Reuse the awarding loader state for the spinner
+    
+    if (!isAutoCleanup) {
+        setIsAwarding(true); // Reuse the awarding loader state for the spinner
+    }
 
     const batch = writeBatch(db);
     try {
@@ -439,14 +452,25 @@ export default function Dashboard() {
         }
         batch.delete(liveBattleRef);
 
+        // 3. Clear the cleanup flag from the teacher doc
+        const teacherRef = doc(db, 'teachers', teacher.uid);
+        batch.update(teacherRef, { pendingCleanupBattleId: null });
+
         await batch.commit();
-        toast({ title: 'Nuclear Reset Complete!', description: `Cleared active battle and reset ${studentCount} student(s).` });
+
+        if (!isAutoCleanup) {
+            toast({ title: 'Battle Status Reset!', description: `Cleared active battle and reset ${studentCount} student(s).` });
+        }
 
     } catch (error) {
         console.error("Error during nuclear battle reset:", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not perform the battle reset.' });
+        if (!isAutoCleanup) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not perform the battle reset.' });
+        }
     } finally {
-        setIsAwarding(false);
+        if (!isAutoCleanup) {
+            setIsAwarding(false);
+        }
     }
   };
 
@@ -633,7 +657,7 @@ export default function Dashboard() {
                         <span>Archived Heroes</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleClearAllBattleStatus} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                    <DropdownMenuItem onClick={() => handleClearAllBattleStatus(false)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
                         <ShieldAlert className="mr-2 h-4 w-4" />
                         <span>Clear All Battle Statuses</span>
                     </DropdownMenuItem>
@@ -773,3 +797,4 @@ export default function Dashboard() {
     </div>
   );
 }
+
