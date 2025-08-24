@@ -57,7 +57,9 @@ export async function createStudentDocuments(input: RegistrationInput): Promise<
     const classInfo = classData[input.selectedClass];
     const baseStats = classInfo.baseStats;
 
-    // 3. Create the pending student document in Firestore
+    // 3. Create the pending student document in Firestore.
+    // This document holds the student's full data while awaiting teacher approval.
+    // It resides in a sub-collection under the specific teacher.
     await setDoc(doc(db, 'teachers', teacherUid, 'pendingStudents', input.userUid), {
       uid: input.userUid,
       teacherUid: teacherUid,
@@ -75,10 +77,14 @@ export async function createStudentDocuments(input: RegistrationInput): Promise<
       requestedAt: serverTimestamp(),
     });
 
-    // 4. Create the global student metadata document for quick lookup
+    // 4. Create the global student metadata document for quick lookup.
+    // This is CRITICAL for the login flow. When a student authenticates, the application
+    // only knows their UID. It uses this top-level document to find out which teacher
+    // they belong to (`teacherUid`) and if they have been approved yet.
+    // This document must persist even after the student is approved.
     await setDoc(doc(db, 'students', input.userUid), {
       teacherUid: teacherUid,
-      approved: false, // Explicitly set approval status
+      approved: false, // This flag is checked on every login.
     });
 
     return { success: true, message: 'Request sent successfully!' };
