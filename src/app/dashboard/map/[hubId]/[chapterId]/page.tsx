@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -13,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { doc, getDoc, updateDoc, collection, getDocs, where, query } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import type { Chapter, QuestHub } from '@/lib/quests';
+import type { Chapter, QuestHub, QuizQuestion } from '@/lib/quests';
 import type { Student } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -29,6 +28,123 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { cn } from '@/lib/utils';
+import { Progress } from '@/components/ui/progress';
+import { Label } from '@/components/ui/label';
+
+const QuizComponent = ({ quiz, student, chapter, hub, teacherUid, onQuizComplete }: { 
+    quiz: NonNullable<Chapter['quiz']>, 
+    student: Student, 
+    chapter: Chapter,
+    hub: QuestHub,
+    teacherUid: string,
+    onQuizComplete: (score: number, answers: any[]) => void 
+}) => {
+    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+    const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+    const [answers, setAnswers] = useState<(number | null)[]>(new Array(quiz.questions.length).fill(null));
+    const [showResults, setShowResults] = useState(false);
+    const { toast } = useToast();
+
+    const handleAnswerSelect = (answerIndex: number) => {
+        setSelectedAnswer(answerIndex);
+    };
+
+    const handleNext = () => {
+        if (selectedAnswer === null) {
+            toast({ variant: 'destructive', title: 'No Answer Selected', description: 'Please choose an answer.' });
+            return;
+        }
+        
+        const newAnswers = [...answers];
+        newAnswers[currentQuestionIndex] = selectedAnswer;
+        setAnswers(newAnswers);
+        
+        setSelectedAnswer(null);
+        if (currentQuestionIndex < quiz.questions.length - 1) {
+            setCurrentQuestionIndex(prev => prev + 1);
+        } else {
+            // Last question, so show results
+            setShowResults(true);
+        }
+    };
+    
+    if (showResults) {
+        const correctAnswers = answers.filter((ans, i) => ans === quiz.questions[i].correctAnswerIndex).length;
+        const score = (correctAnswers / quiz.questions.length) * 100;
+        const passed = !quiz.settings.requirePassing || score >= quiz.settings.passingScore;
+
+        const detailedAnswers = answers.map((studentAnswerIndex, i) => {
+            const question = quiz.questions[i];
+            return {
+                question: question.text,
+                studentAnswer: studentAnswerIndex !== null ? question.answers[studentAnswerIndex] : 'No Answer',
+                correctAnswer: question.answers[question.correctAnswerIndex],
+                isCorrect: studentAnswerIndex === question.correctAnswerIndex,
+            };
+        });
+
+        return (
+            <Card className="mt-6 bg-secondary/50">
+                <CardHeader className="text-center">
+                    <CardTitle>Quiz Results</CardTitle>
+                </CardHeader>
+                <CardContent className="text-center space-y-4">
+                    <p className="text-4xl font-bold">You scored {correctAnswers} out of {quiz.questions.length}</p>
+                    <p className="text-2xl font-semibold">{score.toFixed(0)}%</p>
+                    {passed ? (
+                        <p className="text-green-600 font-bold">You have proven your knowledge!</p>
+                    ) : (
+                        <p className="text-destructive font-bold">You have not met the minimum score of {quiz.settings.passingScore}%.</p>
+                    )}
+                    <div className="flex justify-center gap-4">
+                        {passed && (
+                            <Button onClick={() => onQuizComplete(score, detailedAnswers)}>Mark Quest Complete</Button>
+                        )}
+                        <Button variant="outline" onClick={() => {
+                            setCurrentQuestionIndex(0);
+                            setAnswers(new Array(quiz.questions.length).fill(null));
+                            setShowResults(false);
+                        }}>
+                            Retake Quiz
+                        </Button>
+                         {!passed && !quiz.settings.requirePassing && (
+                            <Button variant="secondary" onClick={() => onQuizComplete(score, detailedAnswers)}>Continue Anyway</Button>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
+    
+    const currentQuestion = quiz.questions[currentQuestionIndex];
+
+    return (
+        <Card className="mt-6 bg-secondary/50">
+            <CardHeader>
+                <CardTitle className="text-center">Prove Your Knowledge!</CardTitle>
+                <Progress value={((currentQuestionIndex + 1) / quiz.questions.length) * 100} className="w-full mt-2" />
+            </CardHeader>
+            <CardContent>
+                <p className="font-bold text-lg mb-4">{currentQuestionIndex + 1}. {currentQuestion.text}</p>
+                <RadioGroup onValueChange={(value) => handleAnswerSelect(Number(value))} value={selectedAnswer?.toString()}>
+                    {currentQuestion.answers.map((answer, index) => (
+                        <div key={index} className="flex items-center space-x-2 p-3 rounded-md hover:bg-muted transition-colors">
+                            <RadioGroupItem value={index.toString()} id={`q${currentQuestionIndex}-a${index}`} />
+                            <Label htmlFor={`q${currentQuestionIndex}-a${index}`} className="flex-1 cursor-pointer">{answer}</Label>
+                        </div>
+                    ))}
+                </RadioGroup>
+                <div className="flex justify-end mt-4">
+                    <Button onClick={handleNext}>
+                        {currentQuestionIndex === quiz.questions.length - 1 ? 'Finish Quiz' : 'Next Question'}
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+    );
+};
 
 
 export default function ChapterPage() {
@@ -46,9 +162,10 @@ export default function ChapterPage() {
     const [totalChaptersInHub, setTotalChaptersInHub] = useState(0);
 
     const [isLoading, setIsLoading] = useState(true);
-    const [isCompleting, setIsCompleting] = useState(false);
+    const [isCompleting, setIsCompleting] = useState(isCompleting);
     const [isUncompleting, setIsUncompleting] = useState(false);
     const [showApprovalSentDialog, setShowApprovalSentDialog] = useState(false);
+    const [quizPassed, setQuizPassed] = useState(false);
 
     const isPreviewMode = searchParams.get('preview') === 'true';
 
@@ -101,7 +218,9 @@ export default function ChapterPage() {
                 const chapterDocRef = doc(db, 'teachers', teacherUid, 'chapters', chapterId as string);
                 const chapterSnap = await getDoc(chapterDocRef);
                 if (chapterSnap.exists()) {
-                    setChapter(chapterSnap.data() as Chapter);
+                    const chapterData = chapterSnap.data() as Chapter;
+                    setChapter(chapterData);
+                    if (!chapterData.quiz) setQuizPassed(true); // If no quiz, student can advance
 
                     const hubDocRef = doc(db, 'teachers', teacherUid, 'questHubs', hubId as string);
                     const hubSnap = await getDoc(hubDocRef);
@@ -127,8 +246,14 @@ export default function ChapterPage() {
         fetchChapterData();
     }, [chapterId, hubId, router, toast, teacherUid, isPreviewMode]);
 
-    const handleMarkComplete = async () => {
+    const handleMarkComplete = async (quizScore?: number, quizAnswers?: any[]) => {
         if (!user || !student || !chapter || !hub || !teacherUid) return;
+        
+        if (chapter.quiz && !quizPassed) {
+            toast({ variant: 'destructive', title: 'Quiz Required', description: 'You must prove your knowledge before continuing your quest!' });
+            return;
+        }
+
         setIsCompleting(true);
 
         try {
@@ -151,7 +276,9 @@ export default function ChapterPage() {
                     hubId: hub.id,
                     chapterId: chapter.id,
                     chapterNumber: chapter.chapterNumber,
-                    chapterTitle: chapter.title
+                    chapterTitle: chapter.title,
+                    quizScore,
+                    quizAnswers,
                 });
                 if (result.success) {
                     setShowApprovalSentDialog(true);
@@ -193,7 +320,7 @@ export default function ChapterPage() {
             // Update local student state to reflect immediate change
             setStudent(prev => prev ? ({ ...prev, ...updates }) : null);
 
-            await logGameEvent(teacherUid, 'CHAPTER', `${student.studentName} completed Chapter ${chapter.chapterNumber}: ${chapter.title}.`);
+            await logGameEvent(teacherUid, 'CHAPTER', `${student.characterName} completed Chapter ${chapter.chapterNumber}: ${chapter.title}.`);
 
             toast({ title: "Quest Complete!", description: `You have completed Chapter ${chapter.chapterNumber}: ${chapter.title}.` });
 
@@ -236,7 +363,7 @@ export default function ChapterPage() {
             
             setStudent(prev => prev ? ({ ...prev, ...updates }) : null);
 
-            await logGameEvent(teacherUid, 'CHAPTER', `${student.studentName} rolled back progress on Chapter ${chapter.chapterNumber}: ${chapter.title}.`);
+            await logGameEvent(teacherUid, 'CHAPTER', `${student.characterName} rolled back progress on Chapter ${chapter.chapterNumber}: ${chapter.title}.`);
 
             toast({ title: "Quest Progress Rolled Back", description: `Progress has been reset to Chapter ${newProgressValue}.` });
             router.push(`/dashboard/map/${hubId}`);
@@ -248,6 +375,11 @@ export default function ChapterPage() {
             setIsUncompleting(false);
         }
     };
+
+    const handleQuizCompletion = (score: number, answers: any[]) => {
+        setQuizPassed(true);
+        handleMarkComplete(score, answers);
+    }
 
 
     const getYouTubeEmbedUrl = (url: string) => {
@@ -436,15 +568,25 @@ export default function ChapterPage() {
                                         className="rounded-lg shadow-lg border">
                                     </iframe>
                                 </div></>}
+                                {chapter.quiz && isCurrentChapter && student && (
+                                    <QuizComponent 
+                                        quiz={chapter.quiz}
+                                        student={student}
+                                        chapter={chapter}
+                                        hub={hub}
+                                        teacherUid={teacherUid}
+                                        onQuizComplete={handleQuizCompletion}
+                                    />
+                                )}
                             </TabsContent>
                         </Tabs>
                     </CardContent>
                 </Card>
                  <div className="flex justify-center flex-col items-center gap-4 py-4">
-                     {isCurrentChapter && !isPreviewMode && (
+                     {isCurrentChapter && !isPreviewMode && !chapter.quiz && (
                         <Button 
                             size="lg" 
-                            onClick={handleMarkComplete}
+                            onClick={() => handleMarkComplete()}
                             disabled={isCompleting}
                         >
                             {isCompleting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CheckCircle className="mr-2 h-5 w-5" />}

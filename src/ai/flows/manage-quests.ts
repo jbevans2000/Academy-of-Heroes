@@ -5,6 +5,7 @@ import { doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs, writeBatch
 import { db } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import { logGameEvent } from '@/lib/gamelog';
+import firebase from 'firebase/compat/app';
 
 // --------- INTERFACES ---------
 
@@ -34,6 +35,8 @@ interface RequestChapterCompletionInput {
     chapterId: string;
     chapterNumber: number;
     chapterTitle: string;
+    quizScore?: number;
+    quizAnswers?: any[];
 }
 
 interface ApproveChapterCompletionInput {
