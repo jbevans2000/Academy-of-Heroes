@@ -10,6 +10,7 @@ export interface Power {
     type: PowerType;
     target?: 'ally' | 'fallen';
     targetCount?: number;
+    targetSelf?: boolean;
     // eligibilityCheck?: (caster: Student, target: Student) => boolean; // For more complex rules later
 }
 
@@ -51,19 +52,22 @@ export const classPowers: ClassPowers = {
       target: 'ally',
       targetCount: 1,
     },
-    {
+     {
       name: 'Elemental Fusion',
       description: 'You pour elemental knowledge into your ally’s attacks, tripling the effectiveness of their strikes. This triples the base damage for the round. (Max 2 uses per player / per battle. Max 6 uses globally).',
       level: 13,
       mpCost: 24,
       type: 'damage',
     },
-    {
-      name: 'Mage Shield',
-      description: 'Shield 3 players of your choice, making them immune to damage for 3 rounds.',
-      level: 11,
-      mpCost: 30,
+     {
+      name: 'Arcane Shield',
+      description: 'A barrier of arcane energy enfolds 3 allies of your choice for the next 3 rounds, protecting them from damage.',
+      level: 15,
+      mpCost: 24,
       type: 'support',
+      target: 'ally',
+      targetCount: 3,
+      targetSelf: true,
     },
     {
       name: 'Chaos Storm',

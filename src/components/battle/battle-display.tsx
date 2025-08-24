@@ -48,6 +48,7 @@ export function BattleDisplay({ students }: BattleDisplayProps) {
                              const isFallen = student.hp <= 0;
                              const hpPercentage = isFallen ? 0 : (student.hp / student.maxHp) * 100;
                              const mpPercentage = isFallen ? 0 : (student.mp / student.maxMp) * 100;
+                             const isShielded = student.shielded && student.shielded.roundsRemaining > 0;
 
                              return (
                                 <Tooltip key={student.uid} delayDuration={100}>
@@ -61,6 +62,7 @@ export function BattleDisplay({ students }: BattleDisplayProps) {
                                                 <div className="flex items-center gap-1.5">
                                                     {isFallen ? <Skull className="h-5 w-5 text-gray-500" /> : classIcons[student.class]}
                                                     <span>{student.characterName}</span>
+                                                    {isShielded && <Shield className="h-4 w-4 text-sky-400" />}
                                                 </div>
                                                 {isFallen && <span className="text-xs font-bold text-destructive">FALLEN</span>}
                                             </div>

@@ -80,8 +80,12 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
 
 
   const getEligibleTargets = (power: Power): Student[] => {
-    let potentialTargets = partyMembers.filter(s => s.uid !== student.uid);
+    let potentialTargets = partyMembers;
 
+    if (!power.targetSelf) {
+        potentialTargets = potentialTargets.filter(s => s.uid !== student.uid);
+    }
+    
     if (power.target === 'fallen') {
         potentialTargets = potentialTargets.filter(s => s.hp <= 0);
     } else {
@@ -101,6 +105,8 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
         potentialTargets = potentialTargets.filter(s => s.mp <= s.maxMp * 0.75);
     } else if (power.name === 'Psychic Flare') {
         potentialTargets = potentialTargets.filter(s => s.mp < s.maxMp * 0.5);
+    } else if (power.name === 'Arcane Shield') {
+        potentialTargets = potentialTargets.filter(s => !s.shielded || s.shielded.roundsRemaining <= 0);
     }
 
     return potentialTargets;
