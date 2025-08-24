@@ -53,9 +53,9 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Elemental Fusion',
-      description: 'Your party scores DOUBLE base damage for all correct answers. (Max 1 use per battle)',
-      level: 9,
-      mpCost: 25,
+      description: 'You pour elemental knowledge into your ally’s attacks, tripling the effectiveness of their strikes. This triples the base damage for the round. (Max 2 uses per player / per battle. Max 6 uses globally).',
+      level: 13,
+      mpCost: 24,
       type: 'damage',
     },
     {

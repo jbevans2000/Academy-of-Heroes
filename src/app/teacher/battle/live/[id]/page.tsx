@@ -67,6 +67,8 @@ interface LiveBattleState {
   cosmicDivinationUses?: number; // For Cosmic Divination
   voteState?: VoteState | null; // For Cosmic Divination
   sorcerersIntuitionUses?: { [key: string]: number }; // For Sorcerer's Intuition
+  elementalFusionCasts?: { [studentUid: string]: number };
+  globalElementalFusionCasts?: number;
 }
 
 interface PowerActivation {
@@ -503,6 +505,13 @@ export default function TeacherLiveBattlePage() {
                 sorcerersThisRound.add(studentUid);
             }
         }
+        
+        const elementalFusionCasters = new Set<string>();
+        for (const studentUid in liveState.powerUsersThisRound) {
+            if (liveState.powerUsersThisRound[studentUid].includes('Elemental Fusion')) {
+                elementalFusionCasters.add(studentUid);
+            }
+        }
 
         // Damage students who got it wrong OR didn't answer
         if (!isDivinationSkip) {
@@ -536,6 +545,13 @@ export default function TeacherLiveBattlePage() {
                 baseDamageFromAnswers++;
             }
         });
+
+        // Elemental Fusion damage calculation
+        if (elementalFusionCasters.size > 0) {
+            const fusionDamage = baseDamageFromAnswers * 3 * elementalFusionCasters.size;
+            powerDamage += fusionDamage;
+            powersUsedThisRound.push(`Elemental Fusion x${elementalFusionCasters.size} (${fusionDamage} dmg)`);
+        }
 
 
         if (!isDivinationSkip) {
@@ -958,19 +974,20 @@ export default function TeacherLiveBattlePage() {
 
                     // Final eligibility check before execution
                     if (targetData.mp >= targetData.maxMp * 0.5) {
-                        // Fizzle logic
                         batch.update(liveBattleRef, {
                             targetedEvent: {
                                 targetUid: activation.studentUid,
-                                message: `Your spell fizzled! ${targetData.characterName}'s magic was already potent enough.`
+                                message: `Your spell fizzled! ${targetData.characterName}'s magic was already potent enough. Your power was not consumed.`
                             }
                         });
-                        // Do NOT deduct MP or mark power as used. Return early from this handler.
+                        await batch.commit(); // Commit just the targeted event
+                        
+                        // Immediately clean up the handled activation without consuming resources
                         const activationDocRef = doc(db, `${liveBattleRef.path}/powerActivations`, activation.id!);
-                        await deleteDoc(activationDocRef); // Clean up the handled activation
-                        await batch.commit();
+                        await deleteDoc(activationDocRef); 
+                        
                         setTimeout(async () => { await updateDoc(liveBattleRef, { targetedEvent: null }); }, 5000);
-                        return;
+                        return; // Stop further execution for this power
                     }
 
                     batch.update(targetRef, { mp: targetData.maxMp });
@@ -986,6 +1003,32 @@ export default function TeacherLiveBattlePage() {
                         casterName: activation.studentName,
                         powerName: activation.powerName,
                         description: `Restored ${targetData.characterName} to full MP.`,
+                        timestamp: serverTimestamp()
+                    });
+                }
+            } else if (activation.powerName === 'Elemental Fusion') {
+                const personalCasts = battleData.elementalFusionCasts?.[activation.studentUid] || 0;
+                const globalCasts = battleData.globalElementalFusionCasts || 0;
+
+                if (personalCasts >= 2) {
+                     batch.update(liveBattleRef, { targetedEvent: { targetUid: activation.studentUid, message: "You have exhausted your connection to the elements. Choose a different power." } });
+                } else if (globalCasts >= 6) {
+                     batch.update(liveBattleRef, { targetedEvent: { targetUid: activation.studentUid, message: "The Elemental energies of the area have been drained! Choose a different power!" } });
+                } else {
+                    batch.update(liveBattleRef, {
+                        [`elementalFusionCasts.${activation.studentUid}`]: increment(1),
+                        globalElementalFusionCasts: increment(1),
+                        powerEventMessage: `${activation.studentName} has cast Elemental Fusion! Your party's attacks FLARE with Primordial Knowledge!`,
+                        targetedEvent: {
+                            targetUid: activation.studentUid,
+                            message: "You have cast Elemental Fusion! The attacks of your allies FLARE with Primordial Knowledge!"
+                        }
+                    });
+                    batch.set(doc(battleLogRef), {
+                        round: liveState.currentQuestionIndex + 1,
+                        casterName: activation.studentName,
+                        powerName: activation.powerName,
+                        description: `Tripled the party's base damage for the round.`,
                         timestamp: serverTimestamp()
                     });
                 }
@@ -1079,6 +1122,8 @@ export default function TeacherLiveBattlePage() {
         empoweredMageUids: [],
         cosmicDivinationUses: 0,
         sorcerersIntuitionUses: {},
+        elementalFusionCasts: {},
+        globalElementalFusionCasts: 0,
         voteState: null,
     });
     await logGameEvent(teacherUid, 'BOSS_BATTLE', `Round 1 of '${battle.battleName}' has started.`);

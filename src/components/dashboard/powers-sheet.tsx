@@ -24,6 +24,8 @@ interface LiveBattleState {
     empoweredMageUids?: string[];
     powerUsersThisRound?: { [key: string]: string[] };
     sorcerersIntuitionUses?: { [key: string]: number };
+    elementalFusionCasts?: { [studentUid: string]: number };
+    globalElementalFusionCasts?: number;
 }
 
 interface PowersSheetProps {
@@ -119,6 +121,19 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
                 description: 'The Psychic winds will no longer answer your call.',
                 duration: 5000,
             });
+            return;
+        }
+    }
+    
+    if (power.name === 'Elemental Fusion') {
+        const personalCasts = battleState.elementalFusionCasts?.[student.uid] || 0;
+        if (personalCasts >= 2) {
+            toast({ variant: 'destructive', title: 'Power Limit Reached', description: 'You have exhausted your connection to the elements. Choose a different power.' });
+            return;
+        }
+        const globalCasts = battleState.globalElementalFusionCasts || 0;
+        if (globalCasts >= 6) {
+            toast({ variant: 'destructive', title: 'Battle Limit Reached', description: 'The Elemental energies of the area have been drained! Choose a different power!' });
             return;
         }
     }
