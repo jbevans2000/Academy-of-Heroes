@@ -360,20 +360,23 @@ export default function LiveBattlePage() {
   useEffect(() => {
     if (!user || !teacherUid) return;
     
-    // Set up a real-time listener for the student's own document
     const studentDocRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
-    const unsubscribe = onSnapshot(studentDocRef, (docSnap) => {
+    const unsubscribeStudent = onSnapshot(studentDocRef, (docSnap) => {
         if (docSnap.exists()) {
             const studentData = docSnap.data() as Student;
-            const wasInBattle = studentRef.current?.inBattle;
-
             setStudent(studentData);
+            
+            // This is the crucial check I removed. If the student is not "inBattle", redirect.
+            if (!studentData.inBattle) {
+                toast({ title: 'Battle Ended', description: 'The teacher has ended the battle session.' });
+                router.push('/dashboard');
+            }
         } else {
             router.push('/');
         }
     });
 
-    return () => unsubscribe();
+    return () => unsubscribeStudent();
   }, [user, teacherUid, router]);
 
   useEffect(() => {
