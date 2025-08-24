@@ -947,7 +947,50 @@ export default function TeacherLiveBattlePage() {
                         timestamp: serverTimestamp()
                     });
                 }
+            } else if (activation.powerName === 'Psychic Flare') {
+                if (!activation.targets || activation.targets.length !== 1) return;
+                const targetUid = activation.targets[0];
+                const targetRef = doc(db, 'teachers', teacherUid!, 'students', targetUid);
+                const targetSnap = await getDoc(targetRef);
+
+                if (targetSnap.exists()) {
+                    const targetData = targetSnap.data() as Student;
+
+                    // Final eligibility check before execution
+                    if (targetData.mp >= targetData.maxMp * 0.5) {
+                        // Fizzle logic
+                        batch.update(liveBattleRef, {
+                            targetedEvent: {
+                                targetUid: activation.studentUid,
+                                message: `Your spell fizzled! ${targetData.characterName}'s magic was already potent enough.`
+                            }
+                        });
+                        // Do NOT deduct MP or mark power as used. Return early from this handler.
+                        const activationDocRef = doc(db, `${liveBattleRef.path}/powerActivations`, activation.id!);
+                        await deleteDoc(activationDocRef); // Clean up the handled activation
+                        await batch.commit();
+                        setTimeout(async () => { await updateDoc(liveBattleRef, { targetedEvent: null }); }, 5000);
+                        return;
+                    }
+
+                    batch.update(targetRef, { mp: targetData.maxMp });
+                    batch.update(liveBattleRef, {
+                        powerEventMessage: `${activation.studentName} casts Psychic Flare, restoring ${targetData.characterName}'s magic!`,
+                        targetedEvent: {
+                            targetUid: targetUid,
+                            message: `${activation.studentName} has restored your magic points to their maximum value!`
+                        }
+                    });
+                    batch.set(doc(battleLogRef), {
+                        round: liveState.currentQuestionIndex + 1,
+                        casterName: activation.studentName,
+                        powerName: activation.powerName,
+                        description: `Restored ${targetData.characterName} to full MP.`,
+                        timestamp: serverTimestamp()
+                    });
+                }
             }
+
 
             if (activation.powerName !== 'Sorcerer’s Intuition' || (battleData.sorcerersIntuitionUses?.[activation.studentUid] || 0) < 3) {
                 batch.update(studentRef, { mp: increment(-activation.powerMpCost) });
