@@ -233,6 +233,9 @@ export default function TeacherHelpPage() {
                                     <li>You want to transfer their game progress to a fresh, new account.</li>
                                 </ul>
                                 <h4>Step 1: Instructions for the Student</h4>
+                                <div className="bg-amber-100 border-l-4 border-amber-500 text-amber-900 p-4 my-2 rounded-md">
+                                    <p><strong>CRUCIAL:</strong> The student's new character <strong>MUST be the same class</strong> (Guardian, Healer, or Mage) as their old character. The tool will not allow migration between different classes!</p>
+                                </div>
                                 <p>The student must first create a brand new character:</p>
                                 <ol className="list-decimal list-inside">
                                     <li>Go to the registration page.</li>
