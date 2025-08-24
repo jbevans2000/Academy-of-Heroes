@@ -44,10 +44,12 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Psychic Flare',
-      description: 'A teammate of your choice replenishes ALL of their magic points.',
-      level: 7,
-      mpCost: 20,
+      description: 'You channel a beam of restorative arcane energies into an ally, restoring them to full magic points.',
+      level: 9,
+      mpCost: 18,
       type: 'support',
+      target: 'ally',
+      targetCount: 1,
     },
     {
       name: 'Elemental Fusion',

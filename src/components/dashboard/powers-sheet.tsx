@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -22,6 +23,7 @@ import { TargetingDialog } from '@/components/battle/targeting-dialog';
 interface LiveBattleState {
     empoweredMageUids?: string[];
     powerUsersThisRound?: { [key: string]: string[] };
+    sorcerersIntuitionUses?: { [key: string]: number };
 }
 
 interface PowersSheetProps {
@@ -76,12 +78,8 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
 
 
   const getEligibleTargets = (power: Power): Student[] => {
-    let potentialTargets = partyMembers;
+    let potentialTargets = partyMembers.filter(s => s.uid !== student.uid);
 
-    if (power.target !== 'ally' && student.class !== 'Healer') {
-        potentialTargets = potentialTargets.filter(s => s.uid !== student.uid);
-    }
-    
     if (power.target === 'fallen') {
         potentialTargets = potentialTargets.filter(s => s.hp <= 0);
     } else {
@@ -98,18 +96,33 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
             !(battleState?.empoweredMageUids || []).includes(p.uid)
         );
     } else if (power.name === 'Psionic Aura') {
-        potentialTargets = potentialTargets.filter(s => s.uid !== student.uid && s.mp <= s.maxMp * 0.75);
+        potentialTargets = potentialTargets.filter(s => s.mp <= s.maxMp * 0.75);
+    } else if (power.name === 'Psychic Flare') {
+        potentialTargets = potentialTargets.filter(s => s.mp < s.maxMp * 0.5);
     }
 
     return potentialTargets;
   }
 
   const handleUsePower = async (power: Power, targets?: string[]) => {
-    if (!isBattleView || !teacherUid || !battleId) {
+    if (!isBattleView || !teacherUid || !battleId || !battleState) {
         toast({ variant: 'destructive', title: 'Error', description: 'Powers can only be used inside a live battle.' });
         return;
     }
     
+    if (power.name === 'Sorcerer’s Intuition') {
+        const uses = battleState.sorcerersIntuitionUses?.[student.uid] || 0;
+        if (uses >= 3) {
+            toast({
+                variant: 'destructive',
+                title: 'Power Exhausted',
+                description: 'The Psychic winds will no longer answer your call.',
+                duration: 5000,
+            });
+            return;
+        }
+    }
+
     if (power.target && !targets) {
         const currentEligibleTargets = getEligibleTargets(power);
         if (currentEligibleTargets.length === 0) {
