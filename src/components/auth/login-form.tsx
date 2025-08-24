@@ -101,25 +101,18 @@ export function LoginForm() {
         throw new Error("Your hero's record could not be found in any guild.");
       }
 
-      if (!isApproved) {
-        router.push('/awaiting-approval');
-        return;
-      }
-      
       const studentSnap = await getDoc(doc(db, 'teachers', teacherUid, 'students', user.uid));
       if (studentSnap.exists()) {
           const studentData = studentSnap.data();
 
           if (studentData.isArchived) {
-              await signOut(auth);
-              toast({
-                  variant: 'destructive',
-                  title: 'Account Archived',
-                  description: 'This account has been archived and can no longer be accessed. Please contact your teacher.',
-                  duration: 8000,
-              });
-              router.push('/login');
+              router.push('/account-archived');
               return;
+          }
+
+          if (!isApproved) {
+            router.push('/awaiting-approval');
+            return;
           }
 
           await logGameEvent(teacherUid, 'ACCOUNT', `${studentSnap.data().characterName} logged in.`);
@@ -129,6 +122,8 @@ export function LoginForm() {
 
           router.push(`/dashboard${justApproved ? `?approved=true&className=${encodeURIComponent(className)}` : ''}`);
       } else {
+         // This case handles when a student is approved but their document isn't created yet,
+         // OR if the student is unapproved.
          await setDoc(doc(db, 'students', user.uid), { teacherUid: teacherUid, approved: false });
          router.push('/awaiting-approval');
       }
