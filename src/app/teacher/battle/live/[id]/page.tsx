@@ -19,6 +19,7 @@ import { calculateLevel, calculateHpGain, calculateMpGain, calculateBaseMaxHp } 
 import type { Student } from '@/lib/data';
 import { logGameEvent } from '@/lib/gamelog';
 import { BattleChatBox } from '@/components/battle/chat-box';
+import { BattleDisplay } from '@/components/battle/battle-display';
 import { useToast } from '@/hooks/use-toast';
 import { classPowers } from '@/lib/powers';
 import { Slider } from '@/components/ui/slider';
@@ -204,7 +205,6 @@ export default function TeacherLiveBattlePage() {
   const [user, setUser] = useState<User | null>(null);
   const [teacherData, setTeacherData] = useState<TeacherData | null>(null);
   const [teacherUid, setTeacherUid] = useState<string | null>(null);
-  const [fallenStudentNames, setFallenStudentNames] = useState<string[]>([]);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [redirectId, setRedirectId] = useState<string | null>(null);
   
@@ -238,6 +238,8 @@ export default function TeacherLiveBattlePage() {
     }
     fetchStudents();
   }, [teacherUid]);
+
+  const activeParticipants = allStudents.filter(s => s.inBattle);
 
   // Fetch the static battle definition once
   useEffect(() => {
@@ -1082,24 +1084,6 @@ export default function TeacherLiveBattlePage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveState?.status, liveState?.timerEndsAt]);
 
-  // Effect to resolve fallen UIDs to names
-  useEffect(() => {
-    if (!teacherUid || !liveState?.fallenPlayerUids || liveState.fallenPlayerUids.length === 0) {
-        setFallenStudentNames([]);
-        return;
-    }
-    const fetchNames = async () => {
-        const names = await Promise.all(
-            liveState.fallenPlayerUids!.map(async (uid) => {
-                const studentRef = doc(db, 'teachers', teacherUid, 'students', uid);
-                const studentSnap = await getDoc(studentRef);
-                return studentSnap.exists() ? studentSnap.data().characterName : 'Unknown Hero';
-            })
-        );
-        setFallenStudentNames(names);
-    }
-    fetchNames();
-  }, [liveState?.fallenPlayerUids, teacherUid]);
 
   // Effect to handle safe redirection after battle ends
   useEffect(() => {
@@ -1386,27 +1370,13 @@ export default function TeacherLiveBattlePage() {
                 </Card>
             </div>
              <div className="lg:col-span-1 space-y-6">
+                <BattleDisplay students={activeParticipants} />
                 <BattleChatBox
                     isTeacher={true}
                     userName={"The Wise One"}
                     teacherUid={teacherUid || ''}
                     battleId={'active-battle'}
                 />
-                {(liveState.fallenPlayerUids && liveState.fallenPlayerUids.length > 0) && (
-                     <Card className="bg-card/60 backdrop-blur-sm">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><Skull className="text-destructive"/> Fallen Heroes</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-muted-foreground">A healer must use 'Enduring Spirit' to revive them.</p>
-                            <ul className="mt-2 space-y-1">
-                                {fallenStudentNames.map((name, index) => (
-                                    <li key={index} className="font-semibold">{name}</li>
-                                ))}
-                            </ul>
-                        </CardContent>
-                    </Card>
-                )}
             </div>
         </div>
       </main>

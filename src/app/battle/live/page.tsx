@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { PowersSheet } from '@/components/dashboard/powers-sheet';
 import { BattleChatBox } from '@/components/battle/chat-box';
+import { BattleDisplay } from '@/components/battle/battle-display';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -378,16 +379,17 @@ export default function LiveBattlePage() {
   useEffect(() => {
     if (!teacherUid) return;
 
-    // Fetch all students only once when the teacher UID is known
-    const fetchAllStudents = async () => {
-        const liveBattleDoc = await getDoc(doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle'));
-        if (!liveBattleDoc.exists() || liveBattleDoc.data().status === 'WAITING') return;
+    // Fetch all students in real-time
+    const allStudentsQuery = query(collection(db, 'teachers', teacherUid, 'students'));
+    const unsubscribeStudents = onSnapshot(allStudentsQuery, (snapshot) => {
+        const studentsData = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
+        setAllStudents(studentsData);
+    });
 
-        const allStudentsSnap = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
-        setAllStudents(allStudentsSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student)));
-    };
-    fetchAllStudents();
+    return () => unsubscribeStudents();
   }, [teacherUid]);
+
+  const activeParticipants = allStudents.filter(s => s.inBattle);
 
   useEffect(() => {
     if (!teacherUid || !user) {
@@ -742,21 +744,7 @@ export default function LiveBattlePage() {
                     </Card>
                 </div>
                 <div className="lg:col-span-1 flex flex-col gap-6">
-                    {(battleState.fallenPlayerUids && battleState.fallenPlayerUids.length > 0) && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-black"><Skull className="text-destructive"/> Fallen Heroes</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <ul className="mt-2 space-y-1">
-                                    {allStudents
-                                        .filter(s => battleState.fallenPlayerUids?.includes(s.uid))
-                                        .map(s => <li key={s.uid} className="font-semibold text-black">{s.characterName}</li>)
-                                    }
-                                </ul>
-                            </CardContent>
-                        </Card>
-                    )}
+                    <BattleDisplay students={activeParticipants} />
                     {battleState.battleId && <PowerLog teacherUid={teacherUid} />}
                     <BattleChatBox 
                         isTeacher={false}
