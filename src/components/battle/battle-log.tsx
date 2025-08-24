@@ -21,7 +21,7 @@ interface PowerLogEntry {
   timestamp: {
     seconds: number;
     nanoseconds: number;
-  }
+  } | null;
 }
 
 export function BattleLog({ teacherUid }: { teacherUid: string }) {
@@ -44,8 +44,13 @@ export function BattleLog({ teacherUid }: { teacherUid: string }) {
                 snapshot.forEach(doc => {
                     entries.push({ id: doc.id, ...doc.data() } as PowerLogEntry);
                 });
-                entries.sort((a, b) => a.timestamp.seconds - b.timestamp.seconds);
-                setLogEntries(entries);
+                
+                // Filter out entries with null timestamps before sorting
+                const sortedEntries = entries
+                    .filter(entry => entry.timestamp)
+                    .sort((a, b) => a.timestamp!.seconds - b.timestamp!.seconds);
+
+                setLogEntries(sortedEntries);
             });
              return () => unsubscribeLog();
         });
