@@ -119,7 +119,7 @@ export default function ChangeAvatarPage() {
                     <div 
                         key={`${lvl}-${index}`} 
                         className={cn(
-                            "p-2 border-4 rounded-lg cursor-pointer transition-all",
+                            "p-2 border-4 rounded-lg cursor-pointer transition-all duration-300 hover:scale-110",
                             selectedAvatar === url ? 'border-primary ring-4 ring-primary/50' : 'border-transparent hover:border-primary/50'
                         )}
                         onClick={() => handleSelectAvatar(url)}
