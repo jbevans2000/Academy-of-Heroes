@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { PowersSheet } from '@/components/dashboard/powers-sheet';
 import { BattleChatBox } from '@/components/battle/chat-box';
 import { BattleDisplay } from '@/components/battle/battle-display';
+import { BattleLog } from '@/components/battle/battle-log';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -223,76 +224,6 @@ function VoteDialog({ voteState, userUid, teacherUid }: { voteState: VoteState |
             </Card>
         </div>
     );
-}
-
-function PowerLog({ teacherUid }: { teacherUid: string }) {
-    const [logEntries, setLogEntries] = useState<PowerLogEntry[]>([]);
-    const [isOpen, setIsOpen] = useState(true);
-    const logEndRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (!teacherUid) return;
-        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
-        const unsubscribeLive = onSnapshot(liveBattleRef, (docSnap) => {
-            if (!docSnap.exists() || docSnap.data().status === 'WAITING') {
-                setLogEntries([]);
-                return;
-            }
-            const logRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
-            const q = query(logRef);
-            const unsubscribeLog = onSnapshot(q, (snapshot) => {
-                const entries: PowerLogEntry[] = [];
-                snapshot.forEach(doc => {
-                    entries.push({ id: doc.id, ...doc.data() } as PowerLogEntry);
-                });
-                entries.sort((a, b) => a.timestamp.seconds - b.timestamp.seconds);
-                setLogEntries(entries);
-            });
-             return () => unsubscribeLog();
-        });
-
-        return () => unsubscribeLive();
-    }, [teacherUid]);
-
-    useEffect(() => {
-        logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [logEntries])
-    
-    return (
-        <Card className="flex flex-col bg-card/60 backdrop-blur-sm">
-            <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-                <CollapsibleTrigger asChild>
-                    <div className="flex items-center justify-between p-4 cursor-pointer">
-                        <CardTitle className="flex items-center gap-2 text-black"><ScrollText/> Battle Log</CardTitle>
-                        <Button variant="ghost" size="sm" className="w-9 p-0">
-                            <ChevronDown className="h-4 w-4 transition-transform duration-200 data-[state=open]:rotate-180" />
-                            <span className="sr-only">Toggle</span>
-                        </Button>
-                    </div>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                    <CardContent className="flex-grow overflow-hidden flex flex-col max-h-48">
-                        <div className="flex-grow overflow-y-auto pr-4 space-y-3">
-                            {logEntries.length === 0 ? (
-                                <p className="text-sm text-center text-muted-foreground">No powers have been used yet.</p>
-                            ) : (
-                                logEntries.map(log => (
-                                    <div key={log.id} className="text-sm text-black">
-                                        <span className="font-bold">{log.casterName}</span>
-                                        <span> used </span>
-                                        <span className="font-semibold">{log.powerName}</span>
-                                        <span>. </span> 
-                                        <span className="italic">{log.description}</span>
-                                    </div>
-                                ))
-                            )}
-                            <div ref={logEndRef} />
-                        </div>
-                    </CardContent>
-                </CollapsibleContent>
-            </Collapsible>
-        </Card>
-    )
 }
 
 function VolumeControl({ audioRef }: { audioRef: React.RefObject<HTMLAudioElement> }) {
@@ -767,7 +698,7 @@ export default function LiveBattlePage() {
                 </div>
                 <div className="lg:col-span-1 flex flex-col gap-6">
                     <BattleDisplay students={activeParticipants} />
-                    {battleState.battleId && <PowerLog teacherUid={teacherUid} />}
+                    {battleState.battleId && <BattleLog teacherUid={teacherUid} />}
                     <BattleChatBox 
                         isTeacher={false}
                         userName={student.characterName}

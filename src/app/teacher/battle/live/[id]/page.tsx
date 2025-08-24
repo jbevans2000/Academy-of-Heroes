@@ -20,6 +20,7 @@ import type { Student } from '@/lib/data';
 import { logGameEvent } from '@/lib/gamelog';
 import { BattleChatBox } from '@/components/battle/chat-box';
 import { BattleDisplay } from '@/components/battle/battle-display';
+import { BattleLog } from '@/components/battle/battle-log';
 import { useToast } from '@/hooks/use-toast';
 import { classPowers } from '@/lib/powers';
 import { Slider } from '@/components/ui/slider';
@@ -1371,6 +1372,7 @@ export default function TeacherLiveBattlePage() {
             </div>
              <div className="lg:col-span-1 space-y-6">
                 <BattleDisplay students={activeParticipants} />
+                {liveState.battleId && <BattleLog teacherUid={teacherUid} />}
                 <BattleChatBox
                     isTeacher={true}
                     userName={"The Wise One"}
