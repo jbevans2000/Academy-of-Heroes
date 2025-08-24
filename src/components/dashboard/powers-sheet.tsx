@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -90,8 +91,14 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
     if (!power.targetSelf) {
         potentialTargets = potentialTargets.filter(s => s.uid !== student.uid);
     }
-    
-    if (power.name === 'Lesser Heal') {
+
+    if (power.name === 'Guard') {
+      potentialTargets = potentialTargets.filter(s => 
+          (s.class === 'Mage' || s.class === 'Healer') &&
+          (!s.shielded || s.shielded.roundsRemaining <= 0) &&
+          !s.guardedBy
+      );
+    } else if (power.name === 'Lesser Heal') {
       potentialTargets = potentialTargets.filter(s => s.hp < s.maxHp);
     } else if (power.name === 'Focused Restoration') {
         potentialTargets = potentialTargets.filter(s => s.hp <= s.maxHp * 0.5);
@@ -269,4 +276,3 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
     </>
   );
 }
-

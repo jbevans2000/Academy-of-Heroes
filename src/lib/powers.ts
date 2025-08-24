@@ -89,10 +89,12 @@ export const classPowers: ClassPowers = {
   Guardian: [
     {
       name: 'Guard',
-      description: 'Shield 3 players this round, redirecting a portion of the damage to themselves.',
+      description: 'Shield 3 of your allied Mages or Healers from harm this round by redirecting their damage to yourself if they answer incorrectly.',
       level: 1,
-      mpCost: 8,
+      mpCost: 2,
       type: 'support',
+      target: 'ally',
+      targetCount: 3,
     },
     {
       name: 'Intercept',

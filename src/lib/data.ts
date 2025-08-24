@@ -41,6 +41,7 @@ export type Student = {
         roundsRemaining: number;
         casterName: string;
     };
+    guardedBy?: string | null; // UID of the Guardian protecting this student
 }
 
 export type PendingStudent = {
