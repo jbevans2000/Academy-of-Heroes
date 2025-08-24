@@ -71,6 +71,7 @@ interface LiveBattleState {
   sorcerersIntuitionUses?: { [key: string]: number }; // For Sorcerer's Intuition
   elementalFusionCasts?: { [studentUid: string]: number };
   globalElementalFusionCasts?: number;
+  shielded?: { [uid: string]: { roundsRemaining: number; casterName: string; } }; // uid -> shield info
 }
 
 interface PowerActivation {
@@ -389,9 +390,20 @@ export default function TeacherLiveBattlePage() {
             }
         });
         
+        const currentlyFallenUids = finalLiveState.fallenPlayerUids || [];
+
         // 3. Calculate final rewards for each participant
         for (const uid of participantUids) {
             const studentRewards = rewardsByStudent[uid];
+            
+            // If the student is in the fallen list at the end, they get 0 rewards.
+            if (currentlyFallenUids.includes(uid)) {
+                studentRewards.xpGained = 0;
+                studentRewards.goldGained = 0;
+                studentRewards.breakdown = { hadFullParticipation: false, totalDamageDealt };
+                continue; // Skip to next student
+            }
+            
             const xpFromAnswers = studentRewards.correctAnswers * 5;
             const goldFromAnswers = studentRewards.correctAnswers * 10;
             
@@ -434,15 +446,17 @@ export default function TeacherLiveBattlePage() {
             totalPowerDamage: finalLiveState.totalPowerDamage || 0,
         });
 
-        // Award XP/Gold and clear inBattle status
+        // Clear inBattle status for all students and award XP/Gold if not fallen
         const studentDocs = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
         for (const studentDoc of studentDocs.docs) {
              const studentRef = doc(db, 'teachers', teacherUid, 'students', studentDoc.id);
              const studentData = studentDoc.data() as Student;
              const rewards = rewardsByStudent[studentDoc.id];
-             const updates: any = { inBattle: false };
+             
+             // Only clear battle status for those who were in it
+             const updates: any = studentData.inBattle ? { inBattle: false, shielded: deleteDoc } : {};
 
-             if (rewards) {
+             if (rewards && !currentlyFallenUids.includes(studentDoc.id)) {
                  const currentXp = studentData.xp || 0;
                  const newXp = currentXp + rewards.xpGained;
                  const currentLevel = studentData.level || 1;
@@ -493,6 +507,21 @@ export default function TeacherLiveBattlePage() {
 
         const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
         const batch = writeBatch(db);
+        
+        const currentLiveSnap = await getDoc(liveBattleRef);
+        if (!currentLiveSnap.exists()) return;
+        const currentLiveState = currentLiveSnap.data() as LiveBattleState;
+        
+        // Decrement shield timers at the start of result calculation
+        const currentShields = currentLiveState.shielded || {};
+        const newShields: { [uid: string]: { roundsRemaining: number; casterName: string; } } = {};
+        for (const uid in currentShields) {
+            const shield = currentShields[uid];
+            if (shield.roundsRemaining > 1) {
+                newShields[uid] = { ...shield, roundsRemaining: shield.roundsRemaining - 1 };
+            }
+        }
+        batch.update(liveBattleRef, { shielded: newShields });
 
         const studentMap = new Map(allStudents.map(doc => [doc.uid, doc]));
         const newlyFallenUids: string[] = [];
@@ -523,9 +552,12 @@ export default function TeacherLiveBattlePage() {
 
             if (damageOnIncorrect > 0) {
                  for (const student of studentsInBattle) {
-                     // Find their response, if any
+                     // If the student is shielded, skip damage.
+                     if (currentShields[student.uid]?.roundsRemaining > 0) {
+                         continue;
+                     }
+                     
                      const response = roundResults.find(r => r.studentUid === student.uid);
-                     // If they didn't answer, or they answered incorrectly, they take damage
                      if (!response || !response.isCorrect) {
                          const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
                          const newHp = Math.max(0, student.hp - damageOnIncorrect);
@@ -584,10 +616,6 @@ export default function TeacherLiveBattlePage() {
         }
 
         const totalDamageThisRound = baseDamageFromAnswers + powerDamage;
-
-        const currentLiveSnap = await getDoc(liveBattleRef);
-        if (!currentLiveSnap.exists()) return;
-        const currentLiveState = currentLiveSnap.data() as LiveBattleState;
 
         const updatePayload: Partial<LiveBattleState> = {
             status: 'SHOWING_RESULTS',
@@ -1035,6 +1063,28 @@ export default function TeacherLiveBattlePage() {
                         timestamp: serverTimestamp()
                     });
                 }
+            } else if (activation.powerName === 'Arcane Shield') {
+                if (!activation.targets || activation.targets.length === 0) return;
+                 const targetNames: string[] = [];
+                 for (const targetUid of activation.targets) {
+                    const targetData = allStudents.find(s => s.uid === targetUid);
+                    if (targetData) {
+                       targetNames.push(targetData.characterName);
+                       batch.update(liveBattleRef, {
+                           [`shielded.${targetUid}`]: { roundsRemaining: 3, casterName: activation.studentName }
+                       });
+                    }
+                 }
+                 batch.update(liveBattleRef, {
+                    powerEventMessage: `${activation.studentName} casts Arcane Shield on ${targetNames.join(', ')}!`,
+                 });
+                 batch.set(doc(battleLogRef), {
+                    round: liveState.currentQuestionIndex + 1,
+                    casterName: activation.studentName,
+                    powerName: activation.powerName,
+                    description: `Shielded ${targetNames.join(', ')} for 3 rounds.`,
+                    timestamp: serverTimestamp()
+                });
             }
 
 
@@ -1096,6 +1146,11 @@ export default function TeacherLiveBattlePage() {
 
   const handleStartFirstQuestion = async () => {
     if(!teacherUid || !battle) return;
+
+    const initiallyFallenUids = allStudents
+        .filter(s => s.inBattle && s.hp <= 0)
+        .map(s => s.uid);
+
     const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
     await updateDoc(liveBattleRef, {
         status: 'IN_PROGRESS',
@@ -1103,13 +1158,14 @@ export default function TeacherLiveBattlePage() {
         totalDamage: 0,
         totalBaseDamage: 0,
         totalPowerDamage: 0,
-        fallenPlayerUids: [],
+        fallenPlayerUids: initiallyFallenUids,
         empoweredMageUids: [],
         cosmicDivinationUses: 0,
         sorcerersIntuitionUses: {},
         elementalFusionCasts: {},
         globalElementalFusionCasts: 0,
         voteState: null,
+        shielded: {},
     });
     await logGameEvent(teacherUid, 'BOSS_BATTLE', `Round 1 of '${battle.battleName}' has started.`);
   };
