@@ -34,6 +34,7 @@ export default function RegisterPage() {
   const [studentId, setStudentId] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [studentName, setStudentName] = useState('');
   const [characterName, setCharacterName] = useState('');
@@ -65,7 +66,7 @@ export default function RegisterPage() {
 
 
   const handleSubmit = async () => {
-    if (!classCode || (signupMethod === 'alias' && !studentId) || (signupMethod === 'email' && !email) || !password || !studentName || !characterName || !selectedClass || !selectedAvatar) {
+    if (!classCode || (signupMethod === 'alias' && !studentId) || (signupMethod === 'email' && !email) || !password || !confirmPassword || !studentName || !characterName || !selectedClass || !selectedAvatar) {
       toast({
         variant: 'destructive',
         title: 'Missing Information',
@@ -78,6 +79,14 @@ export default function RegisterPage() {
         variant: 'destructive',
         title: 'Password Too Short',
         description: 'Your password must be at least 6 characters long.',
+      });
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast({
+        variant: 'destructive',
+        title: 'Passwords Do Not Match',
+        description: 'Please ensure both password fields are identical.',
       });
       return;
     }
@@ -240,7 +249,7 @@ export default function RegisterPage() {
                   )}
 
                 <div className="space-y-2">
-                    <Label htmlFor="password" className="flex items-center"><Eye className="w-4 h-4 mr-2" />Password</Label>
+                    <Label htmlFor="password" className="flex items-center"><KeyRound className="w-4 h-4 mr-2" />Password</Label>
                     <div className="relative">
                     <Input
                         id="password"
@@ -260,6 +269,17 @@ export default function RegisterPage() {
                         {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
                     </div>
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="confirm-password" className="flex items-center"><KeyRound className="w-4 h-4 mr-2" />Confirm Password</Label>
+                    <Input
+                        id="confirm-password"
+                        type="password"
+                        placeholder="Confirm your password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        disabled={isLoading}
+                    />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="student-name" className="flex items-center"><User className="w-4 h-4 mr-2" />Your Mortal Name</Label>

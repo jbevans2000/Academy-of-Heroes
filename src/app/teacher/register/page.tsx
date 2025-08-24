@@ -35,6 +35,7 @@ export default function TeacherRegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [schoolName, setSchoolName] = useState('');
   const [className, setClassName] = useState('');
@@ -65,8 +66,12 @@ export default function TeacherRegisterPage() {
   
   const handleNextStep = () => {
     // Add validation before proceeding
-    if (step === 1 && (!name || !email || !password)) {
-        toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill in your name, email, and password.' });
+    if (step === 1 && (!name || !email || !password || !confirmPassword)) {
+        toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill in your name, email, and both password fields.' });
+        return;
+    }
+    if (password !== confirmPassword) {
+        toast({ variant: 'destructive', title: 'Passwords Do Not Match', description: 'Please ensure your passwords match.' });
         return;
     }
      if (step === 2 && (!schoolName || !className)) {
@@ -234,6 +239,10 @@ export default function TeacherRegisterPage() {
                             <div className="space-y-2">
                                 <Label htmlFor="password"><KeyRound className="inline-block mr-2" />Password</Label>
                                 <Input id="password" type="password" placeholder="Choose a secure password (at least 6 characters)" value={password} onChange={(e) => setPassword(e.target.value)} />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="confirm-password"><KeyRound className="inline-block mr-2" />Confirm Password</Label>
+                                <Input id="confirm-password" type="password" placeholder="Confirm your password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="phone"><Phone className="inline-block mr-2" />Phone Number (Optional)</Label>
