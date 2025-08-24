@@ -50,10 +50,13 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
 
   const handleImage = () => {
     const url = prompt('Enter the image URL:');
-    if (url) {
-      const imgTag = `<img src="${url}" alt="user image" style="max-width: 100%; height: auto; border-radius: 8px;" />`;
-      execCommand('insertHTML', imgTag);
-    }
+    if (!url) return;
+
+    const width = prompt('Enter the image width in pixels (e.g., 400). Leave blank for default.', '100%');
+    const widthStyle = width ? `width: ${/^\d+$/.test(width) ? `${width}px` : width}; max-width: 100%;` : 'max-width: 100%;';
+    
+    const imgTag = `<img src="${url}" alt="user image" style="${widthStyle} height: auto; border-radius: 8px;" />`;
+    execCommand('insertHTML', imgTag);
   };
 
   return (
