@@ -121,7 +121,7 @@ export default function ChangeAvatarPage() {
                     <div 
                         key={`${lvl}-${index}`} 
                         className={cn(
-                            "p-2 border-4 rounded-lg cursor-pointer transition-all duration-300 hover:scale-110",
+                            "relative p-2 border-4 rounded-lg cursor-pointer transition-all duration-300 hover:scale-110",
                             student.avatarUrl === url ? 'border-primary ring-4 ring-primary/50' : 'border-transparent hover:border-primary/50'
                         )}
                         onClick={() => handleAvatarClick(url)}
@@ -158,10 +158,10 @@ export default function ChangeAvatarPage() {
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
         <AlertDialog open={isConfirming} onOpenChange={setIsConfirming}>
-            <AlertDialogContent>
+            <AlertDialogContent className="max-w-2xl">
                 <AlertDialogHeader className="items-center">
                     <AlertDialogTitle>Set this as your new Avatar?</AlertDialogTitle>
-                    <div className="relative w-96 h-96 my-4">
+                    <div className="relative w-[500px] h-[500px] my-4">
                         {avatarToConfirm && (
                             <Image src={avatarToConfirm} alt="Avatar to confirm" fill className="object-contain rounded-lg" />
                         )}
