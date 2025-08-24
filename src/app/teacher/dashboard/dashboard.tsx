@@ -411,24 +411,40 @@ export default function Dashboard() {
 
   const handleClearAllBattleStatus = async () => {
     if (!teacher) return;
-    setIsAwarding(true); // Reuse the awarding loader state
-    try {
-        const q = query(collection(db, 'teachers', teacher.uid, 'students'), where('inBattle', '==', true));
-        const studentsInBattle = await getDocs(q);
+    setIsAwarding(true); // Reuse the awarding loader state for the spinner
 
-        if (studentsInBattle.empty) {
-            toast({ title: 'All Clear', description: 'No students had a lingering battle status.' });
-            return;
+    const batch = writeBatch(db);
+    try {
+        // 1. Clear student `inBattle` flags
+        const studentsInBattleQuery = query(collection(db, 'teachers', teacher.uid, 'students'), where('inBattle', '==', true));
+        const studentsInBattleSnapshot = await getDocs(studentsInBattleQuery);
+        let studentCount = 0;
+        if (!studentsInBattleSnapshot.empty) {
+            studentsInBattleSnapshot.forEach(doc => {
+                batch.update(doc.ref, { inBattle: false });
+                studentCount++;
+            });
         }
 
-        const batch = writeBatch(db);
-        studentsInBattle.forEach(doc => {
-            batch.update(doc.ref, { inBattle: false });
-        });
+        // 2. Delete the `active-battle` document and its subcollections
+        const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
+        const subcollectionsToDelete = ['responses', 'powerActivations', 'battleLog', 'messages'];
+        
+        for (const subcollection of subcollectionsToDelete) {
+            const subcollectionRef = collection(liveBattleRef, subcollection);
+            const snapshot = await getDocs(subcollectionRef);
+            if (!snapshot.empty) {
+                snapshot.forEach(doc => batch.delete(doc.ref));
+            }
+        }
+        batch.delete(liveBattleRef);
+
         await batch.commit();
-        toast({ title: 'Battle Statuses Cleared', description: `${studentsInBattle.size} student(s) have been removed from battle.` });
+        toast({ title: 'Nuclear Reset Complete!', description: `Cleared active battle and reset ${studentCount} student(s).` });
+
     } catch (error) {
-         toast({ variant: 'destructive', title: 'Error', description: 'Could not clear battle statuses.' });
+        console.error("Error during nuclear battle reset:", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not perform the battle reset.' });
     } finally {
         setIsAwarding(false);
     }
