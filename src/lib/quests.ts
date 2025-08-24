@@ -1,4 +1,18 @@
 
+export interface QuizQuestion {
+    id: string;
+    text: string;
+    answers: string[];
+    correctAnswerIndex: number;
+}
+
+export interface Quiz {
+    questions: QuizQuestion[];
+    settings: {
+        requirePassing: boolean;
+        passingScore: number; // Percentage
+    };
+}
 
 export interface QuestHub {
     id: string;
@@ -30,6 +44,7 @@ export interface Chapter {
     lessonAdditionalContent: string;
     
     coordinates: { x: number; y: number }; // Position on the hub map
+    quiz?: Quiz;
 }
 
 export interface QuestCompletionRequest {
@@ -43,4 +58,6 @@ export interface QuestCompletionRequest {
     chapterNumber: number;
     chapterTitle: string;
     requestedAt: any; // Firestore ServerTimestamp
+    quizScore?: number;
+    quizAnswers?: { question: string; studentAnswer: string; correctAnswer: string; isCorrect: boolean }[];
 }

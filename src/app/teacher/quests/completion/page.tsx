@@ -20,6 +20,7 @@ import { ArrowLeft, Check, X, Loader2, Bell } from 'lucide-react';
 import { getQuestSettings, updateQuestSettings, approveChapterCompletion, denyChapterCompletion, approveAllPending } from '@/ai/flows/manage-quests';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 export default function ManageQuestCompletionPage() {
     const router = useRouter();
@@ -247,6 +248,7 @@ export default function ManageQuestCompletionPage() {
                                                 <p className="font-bold">{req.characterName}</p>
                                                 <p className="text-sm">wants to complete: <span className="font-semibold">{req.chapterTitle}</span></p>
                                                 <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(req.requestedAt.seconds * 1000), { addSuffix: true })}</p>
+                                                 {req.quizScore !== undefined && <p className="text-sm font-semibold">Quiz Score: {req.quizScore}%</p>}
                                             </div>
                                             <div className="flex gap-2">
                                                 <Button size="icon" variant="destructive" onClick={() => handleRequest(req.id, false)} disabled={!!isProcessing}>
@@ -257,6 +259,24 @@ export default function ManageQuestCompletionPage() {
                                                 </Button>
                                             </div>
                                         </div>
+                                        {req.quizAnswers && (
+                                            <Accordion type="single" collapsible className="w-full mt-2">
+                                                <AccordionItem value="item-1">
+                                                    <AccordionTrigger className="text-sm">View Quiz Answers</AccordionTrigger>
+                                                    <AccordionContent>
+                                                        <ul className="space-y-2 text-xs">
+                                                            {req.quizAnswers.map((answer, i) => (
+                                                                <li key={i} className={cn("p-2 rounded-md", answer.isCorrect ? "bg-green-100 dark:bg-green-900/30" : "bg-red-100 dark:bg-red-900/30")}>
+                                                                    <p className="font-bold">{answer.question}</p>
+                                                                    <p>Student answered: <span className="font-semibold">{answer.studentAnswer}</span></p>
+                                                                    {!answer.isCorrect && <p>Correct answer: <span className="font-semibold">{answer.correctAnswer}</span></p>}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </AccordionContent>
+                                                </AccordionItem>
+                                            </Accordion>
+                                        )}
                                     </div>
                                 ))}
                                 </div>
