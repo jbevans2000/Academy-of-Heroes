@@ -1,4 +1,5 @@
 
+
 export type PowerType = 'damage' | 'support' | 'healing' | 'utility';
 
 export interface Power {
@@ -36,7 +37,7 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Sorcerer’s Intuition',
-      description: 'You wall upon the psychic winds to enhance your knowledge and bolster your attack.',
+      description: 'You call upon the psychic winds to enhance your knowledge. Your answer will deal base damage this round, even if it is incorrect. You can only use this power 3 times per battle.',
       level: 5,
       mpCost: 10,
       type: 'utility',

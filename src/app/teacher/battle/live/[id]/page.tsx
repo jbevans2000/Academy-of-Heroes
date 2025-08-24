@@ -492,51 +492,51 @@ export default function TeacherLiveBattlePage() {
         const studentMap = new Map(allStudents.map(doc => [doc.uid, doc]));
         const newlyFallenUids: string[] = [];
         
-        // --- FIX STARTS HERE: Identify students in battle and apply damage ---
-        // Get all students marked as currently being in the battle.
         const studentsInBattle = allStudents.filter(s => s.inBattle);
         const studentsWhoAnswered = new Set(roundResults.map(res => res.studentUid));
 
         const studentsToDamage: Student[] = [];
-
-        // 1. Add students who answered incorrectly
-        roundResults.forEach(res => {
-            if (!res.isCorrect) {
-                const student = studentMap.get(res.studentUid);
-                if (student) studentsToDamage.push(student);
+        
+        const sorcerersThisRound = new Set<string>();
+        for (const studentUid in liveState.powerUsersThisRound) {
+            if (liveState.powerUsersThisRound[studentUid].includes('Sorcerer’s Intuition')) {
+                sorcerersThisRound.add(studentUid);
             }
-        });
+        }
 
-        // 2. Add students in the battle who did NOT answer
-        studentsInBattle.forEach(student => {
-            if (!studentsWhoAnswered.has(student.uid)) {
-                studentsToDamage.push(student);
-            }
-        });
-
-        // 3. Apply damage to the combined list of students
+        // Damage students who got it wrong OR didn't answer
         if (!isDivinationSkip) {
             const currentQuestion = battle.questions[liveState.currentQuestionIndex];
             const damageOnIncorrect = currentQuestion.damage || 0;
 
             if (damageOnIncorrect > 0) {
-                 for (const student of studentsToDamage) {
-                    const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
-                    const newHp = Math.max(0, student.hp - damageOnIncorrect);
-                    batch.update(studentRef, { hp: newHp });
-                    if (newHp === 0 && !liveState.fallenPlayerUids?.includes(student.uid)) {
-                        newlyFallenUids.push(student.uid);
-                    }
-                }
+                 for (const student of studentsInBattle) {
+                     // Find their response, if any
+                     const response = roundResults.find(r => r.studentUid === student.uid);
+                     // If they didn't answer, or they answered incorrectly, they take damage
+                     if (!response || !response.isCorrect) {
+                         const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
+                         const newHp = Math.max(0, student.hp - damageOnIncorrect);
+                         batch.update(studentRef, { hp: newHp });
+                         if (newHp === 0 && !liveState.fallenPlayerUids?.includes(student.uid)) {
+                             newlyFallenUids.push(student.uid);
+                         }
+                     }
+                 }
             }
         }
-        // --- FIX ENDS HERE ---
 
         let powerDamage = isDivinationSkip ? (liveState.lastRoundPowerDamage || 0) : 0;
         const powersUsedThisRound: string[] = isDivinationSkip ? (liveState.lastRoundPowersUsed || []) : [];
         const battleLogRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
         
-        let baseDamageFromPowers = 0;
+        let baseDamageFromAnswers = 0;
+        roundResults.forEach(res => {
+            if (res.isCorrect || sorcerersThisRound.has(res.studentUid)) {
+                baseDamageFromAnswers++;
+            }
+        });
+
 
         if (!isDivinationSkip) {
             for (const power of liveState.queuedPowers || []) {
@@ -562,21 +562,9 @@ export default function TeacherLiveBattlePage() {
                     });
                 }
             }
-            
-            // Check for Sorcerer's Intuition uses this round
-            for (const studentUid in liveState.powerUsersThisRound) {
-                if (liveState.powerUsersThisRound[studentUid].includes('Sorcerer’s Intuition')) {
-                    const caster = studentMap.get(studentUid);
-                    if (caster) {
-                        baseDamageFromPowers += Math.ceil((caster.level || 1) * 0.5);
-                    }
-                }
-            }
         }
 
-        const baseDamageFromAnswers = roundResults.filter(r => r.isCorrect).length;
-        const totalBaseDamage = baseDamageFromAnswers + baseDamageFromPowers;
-        const totalDamageThisRound = totalBaseDamage + powerDamage;
+        const totalDamageThisRound = baseDamageFromAnswers + powerDamage;
 
         const currentLiveSnap = await getDoc(liveBattleRef);
         if (!currentLiveSnap.exists()) return;
@@ -586,11 +574,11 @@ export default function TeacherLiveBattlePage() {
             status: 'SHOWING_RESULTS',
             timerEndsAt: null,
             lastRoundDamage: totalDamageThisRound,
-            lastRoundBaseDamage: totalBaseDamage,
+            lastRoundBaseDamage: baseDamageFromAnswers,
             lastRoundPowerDamage: powerDamage,
             lastRoundPowersUsed: powersUsedThisRound,
             totalDamage: (currentLiveState.totalDamage || 0) + totalDamageThisRound,
-            totalBaseDamage: (currentLiveState.totalBaseDamage || 0) + totalBaseDamage,
+            totalBaseDamage: (currentLiveState.totalBaseDamage || 0) + baseDamageFromAnswers,
             totalPowerDamage: (currentLiveState.totalPowerDamage || 0) + powerDamage,
             voteState: null,
         };
@@ -943,10 +931,8 @@ export default function TeacherLiveBattlePage() {
                         }
                     });
                 } else {
-                     const damage = Math.ceil((studentData.level || 1) * 0.5);
                      batch.update(liveBattleRef, {
                         [`sorcerersIntuitionUses.${activation.studentUid}`]: increment(1),
-                        totalBaseDamage: increment(damage),
                         powerEventMessage: `${activation.studentName} used Sorcerer's Intuition!`,
                          targetedEvent: {
                             targetUid: activation.studentUid,
@@ -957,7 +943,7 @@ export default function TeacherLiveBattlePage() {
                         round: liveState.currentQuestionIndex + 1,
                         casterName: activation.studentName,
                         powerName: activation.powerName,
-                        description: `Guaranteed ${damage} base damage.`,
+                        description: `Guaranteed base damage.`,
                         timestamp: serverTimestamp()
                     });
                 }
