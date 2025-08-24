@@ -161,7 +161,7 @@ export default function ChangeAvatarPage() {
             <AlertDialogContent>
                 <AlertDialogHeader className="items-center">
                     <AlertDialogTitle>Set this as your new Avatar?</AlertDialogTitle>
-                    <div className="relative w-64 h-64 my-4">
+                    <div className="relative w-96 h-96 my-4">
                         {avatarToConfirm && (
                             <Image src={avatarToConfirm} alt="Avatar to confirm" fill className="object-contain rounded-lg" />
                         )}
