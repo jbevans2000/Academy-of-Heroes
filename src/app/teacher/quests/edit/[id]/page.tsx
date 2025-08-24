@@ -222,7 +222,12 @@ export default function EditQuestPage() {
   }
   
     const handleQuizChange = (field: keyof Quiz, value: any) => {
-        setChapter(prev => prev ? ({ ...prev, quiz: { ...prev.quiz, ...{ questions: [], settings: { requirePassing: true, passingScore: 80 } }, [field]: value } as Quiz }) : null);
+        setChapter(prev => {
+            if (!prev) return null;
+            const currentQuiz = prev.quiz || { questions: [], settings: { requirePassing: true, passingScore: 80 } };
+            const updatedQuiz = { ...currentQuiz, [field]: value };
+            return { ...prev, quiz: updatedQuiz as Quiz };
+        });
     };
 
     const handleQuizQuestionChange = (id: string, text: string) => {
@@ -447,13 +452,13 @@ export default function EditQuestPage() {
                         <h3 className="text-xl font-semibold">Quiz Editor</h3>
                         <div className="p-4 border rounded-md space-y-4">
                            <div className="flex items-center space-x-2">
-                                <Switch id="require-passing" checked={chapter.quiz?.settings?.requirePassing ?? true} onCheckedChange={checked => handleQuizChange('settings', { ...chapter.quiz?.settings, requirePassing: checked })} />
+                                <Switch id="require-passing" checked={chapter.quiz?.settings?.requirePassing ?? true} onCheckedChange={checked => handleQuizChange('settings', { ...(chapter.quiz?.settings || { requirePassing: true, passingScore: 80 }), requirePassing: checked })} />
                                 <Label htmlFor="require-passing">Require Minimum Score to Advance</Label>
                             </div>
                             {(chapter.quiz?.settings?.requirePassing ?? true) && (
                                 <div className="space-y-2 animate-in fade-in-50">
                                     <Label htmlFor="passing-score">Passing Score (%)</Label>
-                                    <Input id="passing-score" type="number" min="0" max="100" value={chapter.quiz?.settings?.passingScore ?? 80} onChange={(e) => handleQuizChange('settings', { ...chapter.quiz?.settings, passingScore: Number(e.target.value)})} />
+                                    <Input id="passing-score" type="number" min="0" max="100" value={chapter.quiz?.settings?.passingScore ?? 80} onChange={(e) => handleQuizChange('settings', { ...(chapter.quiz?.settings || { requirePassing: true, passingScore: 80 }), passingScore: Number(e.target.value)})} />
                                 </div>
                             )}
                         </div>
