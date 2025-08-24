@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -82,14 +80,15 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
   const getEligibleTargets = (power: Power): Student[] => {
     let potentialTargets = partyMembers;
 
-    if (!power.targetSelf) {
-        potentialTargets = potentialTargets.filter(s => s.uid !== student.uid);
-    }
-    
+    // Rule: Fallen players can ONLY be targeted by powers specifically for 'fallen' targets.
     if (power.target === 'fallen') {
         potentialTargets = potentialTargets.filter(s => s.hp <= 0);
     } else {
         potentialTargets = potentialTargets.filter(s => s.hp > 0);
+    }
+
+    if (!power.targetSelf) {
+        potentialTargets = potentialTargets.filter(s => s.uid !== student.uid);
     }
     
     if (power.name === 'Lesser Heal') {
@@ -270,3 +269,4 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
     </>
   );
 }
+
