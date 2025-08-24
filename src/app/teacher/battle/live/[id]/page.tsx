@@ -484,6 +484,8 @@ export default function TeacherLiveBattlePage() {
              }
         }
         
+        await batch.commit();
+        
         // Schedule deletion of the live battle document after a delay
         setTimeout(async () => {
             try {
@@ -499,9 +501,7 @@ export default function TeacherLiveBattlePage() {
             } catch (cleanupError) {
                 console.error("Error during delayed cleanup:", cleanupError);
             }
-        }, 10000);
-
-        await batch.commit();
+        }, 20000); // 20-second delay
 
         await logGameEvent(teacherUid, 'BOSS_BATTLE', `Battle '${battle.battleName}' ended.`);
     } catch (e) {
