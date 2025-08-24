@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Loader2, Save, Sparkles, Upload, X, Library } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Sparkles, Upload, X, Library, Trash2, PlusCircle } from 'lucide-react';
 import { doc, setDoc, addDoc, collection, getDocs, serverTimestamp, query, orderBy, where, getDoc, updateDoc } from 'firebase/firestore';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { QuestHub, Chapter } from '@/lib/quests';
+import { QuestHub, Chapter, QuizQuestion, Quiz } from '@/lib/quests';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -33,6 +33,8 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { cn } from '@/lib/utils';
 import { MapGallery } from '@/components/teacher/map-gallery';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Switch } from '@/components/ui/switch';
 
 // A reusable component for the image upload fields
 const ImageUploader = ({ label, imageUrl, onUploadSuccess, teacherUid, storagePath, onGalleryOpen }: {
@@ -148,6 +150,12 @@ function NewQuestForm() {
   const [lessonAdditionalContent, setLessonAdditionalContent] = useState('');
   
   const [chapterCoordinates, setChapterCoordinates] = useState({ x: 50, y: 50 });
+  
+  // State for the Quiz
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+  const [requirePassing, setRequirePassing] = useState(true);
+  const [passingScore, setPassingScore] = useState(80);
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -239,6 +247,23 @@ function NewQuestForm() {
   const selectedHub = hubs.find(h => h.id === selectedHubId);
   const hubMapUrl = selectedHub ? selectedHub.worldMapUrl : newHubMapUrl;
 
+    const handleAddQuizQuestion = () => {
+        setQuizQuestions(prev => [...prev, { id: uuidv4(), text: '', answers: ['', '', '', ''], correctAnswerIndex: 0 }]);
+    };
+    const handleQuizQuestionChange = (id: string, text: string) => {
+        setQuizQuestions(prev => prev.map(q => q.id === id ? { ...q, text } : q));
+    };
+    const handleQuizAnswerChange = (qId: string, aIndex: number, text: string) => {
+        setQuizQuestions(prev => prev.map(q => q.id === qId ? { ...q, answers: q.answers.map((a, i) => i === aIndex ? text : a) } : q));
+    };
+    const handleCorrectQuizAnswerChange = (qId: string, aIndex: number) => {
+        setQuizQuestions(prev => prev.map(q => q.id === qId ? { ...q, correctAnswerIndex: aIndex } : q));
+    };
+    const handleRemoveQuizQuestion = (id: string) => {
+        setQuizQuestions(prev => prev.filter(q => q.id !== id));
+    };
+
+
   const validateInputs = () => {
     if (isHubOnlyMode) {
          if (!newHubName || !newHubMapUrl) {
@@ -289,11 +314,10 @@ function NewQuestForm() {
             }
         }
 
-        // Create the new chapter
-        await addDoc(collection(db, 'teachers', teacher.uid, 'chapters'), {
+        const chapterData: Partial<Chapter> = {
             hubId: finalHubId,
             title: chapterTitle,
-            chapterNumber: chapterNumber,
+            chapterNumber: Number(chapterNumber),
             storyContent,
             mainImageUrl,
             videoUrl,
@@ -308,7 +332,20 @@ function NewQuestForm() {
             lessonDecorativeImageUrl2,
             coordinates: chapterCoordinates,
             createdAt: serverTimestamp(),
-        });
+        };
+
+        if (quizQuestions.length > 0) {
+            chapterData.quiz = {
+                questions: quizQuestions,
+                settings: {
+                    requirePassing,
+                    passingScore
+                }
+            };
+        }
+
+        // Create the new chapter
+        await addDoc(collection(db, 'teachers', teacher.uid, 'chapters'), chapterData);
         
         toast({
             title: 'Quest Created!',
@@ -446,9 +483,10 @@ function NewQuestForm() {
                           </Button>
                       </div>
                       <Tabs defaultValue="story" className="w-full">
-                      <TabsList className="grid w-full grid-cols-2">
+                      <TabsList className="grid w-full grid-cols-3">
                           <TabsTrigger value="story">Story</TabsTrigger>
                           <TabsTrigger value="lesson">Lesson</TabsTrigger>
+                          <TabsTrigger value="quiz">Quiz</TabsTrigger>
                       </TabsList>
                       <TabsContent value="story" className="mt-6 space-y-4">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -535,6 +573,43 @@ function NewQuestForm() {
                               <Label htmlFor="lesson-video-url">Lesson YouTube Video URL</Label>
                               <Input id="lesson-video-url" placeholder="https://youtube.com/watch?v=..." value={lessonVideoUrl} onChange={e => setLessonVideoUrl(e.target.value)} disabled={isSaving} />
                           </div>
+                      </TabsContent>
+                      <TabsContent value="quiz" className="mt-6 space-y-6">
+                            <h3 className="text-xl font-semibold">Quiz Editor</h3>
+                            <div className="p-4 border rounded-md space-y-4">
+                               <div className="flex items-center space-x-2">
+                                    <Switch id="require-passing" checked={requirePassing} onCheckedChange={setRequirePassing} />
+                                    <Label htmlFor="require-passing">Require Minimum Score to Advance</Label>
+                                </div>
+                                {requirePassing && (
+                                    <div className="space-y-2 animate-in fade-in-50">
+                                        <Label htmlFor="passing-score">Passing Score (%)</Label>
+                                        <Input id="passing-score" type="number" min="0" max="100" value={passingScore} onChange={(e) => setPassingScore(Number(e.target.value))} />
+                                    </div>
+                                )}
+                            </div>
+                            {quizQuestions.map((q, qIndex) => (
+                                <Card key={q.id} className="p-4 bg-secondary/50">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <Label className="font-semibold">Question {qIndex + 1}</Label>
+                                        <Button variant="ghost" size="icon" onClick={() => handleRemoveQuizQuestion(q.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Input placeholder="Question text" value={q.text} onChange={e => handleQuizQuestionChange(q.id, e.target.value)} />
+                                        <RadioGroup value={q.correctAnswerIndex.toString()} onValueChange={value => handleCorrectQuizAnswerChange(q.id, Number(value))}>
+                                            {q.answers.map((ans, aIndex) => (
+                                                <div key={aIndex} className="flex items-center gap-2">
+                                                    <RadioGroupItem value={aIndex.toString()} id={`q${q.id}-a${aIndex}`} />
+                                                    <Input placeholder={`Answer ${aIndex + 1}`} value={ans} onChange={e => handleQuizAnswerChange(q.id, aIndex, e.target.value)} />
+                                                </div>
+                                            ))}
+                                        </RadioGroup>
+                                    </div>
+                                </Card>
+                            ))}
+                            <Button variant="outline" onClick={handleAddQuizQuestion}>
+                                <PlusCircle className="mr-2 h-4 w-4" /> Add Question
+                            </Button>
                       </TabsContent>
                       </Tabs>
                   </div>

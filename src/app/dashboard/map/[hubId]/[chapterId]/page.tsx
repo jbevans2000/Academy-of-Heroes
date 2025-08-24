@@ -162,7 +162,7 @@ export default function ChapterPage() {
     const [totalChaptersInHub, setTotalChaptersInHub] = useState(0);
 
     const [isLoading, setIsLoading] = useState(true);
-    const [isCompleting, setIsCompleting] = useState(isCompleting);
+    const [isCompleting, setIsCompleting] = useState(false);
     const [isUncompleting, setIsUncompleting] = useState(false);
     const [showApprovalSentDialog, setShowApprovalSentDialog] = useState(false);
     const [quizPassed, setQuizPassed] = useState(false);

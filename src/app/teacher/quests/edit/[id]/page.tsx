@@ -6,7 +6,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Loader2, Save, Sparkles, Upload, X } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Sparkles, Upload, X, Library, Trash2, PlusCircle } from 'lucide-react';
 import { doc, getDoc, setDoc, collection, getDocs, serverTimestamp, query, orderBy, where, updateDoc } from 'firebase/firestore';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { QuestHub, Chapter } from '@/lib/quests';
+import { QuestHub, Chapter, QuizQuestion, Quiz } from '@/lib/quests';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,6 +32,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { v4 as uuidv4 } from 'uuid';
 import { cn } from '@/lib/utils';
+import { MusicGallery } from '@/components/teacher/music-gallery';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Switch } from '@/components/ui/switch';
 
 // A reusable component for the image upload fields
 const ImageUploader = ({ label, imageUrl, onUploadSuccess, teacherUid, storagePath }: {
@@ -217,6 +220,36 @@ export default function EditQuestPage() {
   const handleFieldChange = (field: keyof Chapter, value: any) => {
       setChapter(prev => prev ? ({ ...prev, [field]: value }) : null);
   }
+  
+    const handleQuizChange = (field: keyof Quiz, value: any) => {
+        setChapter(prev => prev ? ({ ...prev, quiz: { ...prev.quiz, ...{ questions: [], settings: { requirePassing: true, passingScore: 80 } }, [field]: value } as Quiz }) : null);
+    };
+
+    const handleQuizQuestionChange = (id: string, text: string) => {
+        const updatedQuestions = chapter?.quiz?.questions.map(q => q.id === id ? { ...q, text } : q) || [];
+        handleQuizChange('questions', updatedQuestions);
+    };
+
+    const handleQuizAnswerChange = (qId: string, aIndex: number, text: string) => {
+        const updatedQuestions = chapter?.quiz?.questions.map(q => q.id === qId ? { ...q, answers: q.answers.map((a, i) => i === aIndex ? text : a) } : q) || [];
+        handleQuizChange('questions', updatedQuestions);
+    };
+
+    const handleCorrectQuizAnswerChange = (qId: string, aIndex: number) => {
+        const updatedQuestions = chapter?.quiz?.questions.map(q => q.id === qId ? { ...q, correctAnswerIndex: aIndex } : q) || [];
+        handleQuizChange('questions', updatedQuestions);
+    };
+    
+    const handleAddQuizQuestion = () => {
+        const newQuestion: QuizQuestion = { id: uuidv4(), text: '', answers: ['', '', '', ''], correctAnswerIndex: 0 };
+        const updatedQuestions = [...(chapter?.quiz?.questions || []), newQuestion];
+        handleQuizChange('questions', updatedQuestions);
+    };
+
+    const handleRemoveQuizQuestion = (id: string) => {
+        const updatedQuestions = chapter?.quiz?.questions.filter(q => q.id !== id) || [];
+        handleQuizChange('questions', updatedQuestions);
+    };
 
   const validateInputs = () => {
     if (!selectedHubId) {
@@ -315,9 +348,10 @@ export default function EditQuestPage() {
                     </Button>
                 </div>
                 <Tabs defaultValue="story" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
+                    <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="story">Story</TabsTrigger>
                         <TabsTrigger value="lesson">Lesson</TabsTrigger>
+                         <TabsTrigger value="quiz">Quiz</TabsTrigger>
                     </TabsList>
                     <TabsContent value="story" className="mt-6 space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -408,6 +442,43 @@ export default function EditQuestPage() {
                             <Label htmlFor="lesson-video-url">Lesson YouTube Video URL</Label>
                             <Input id="lesson-video-url" placeholder="https://youtube.com/watch?v=..." value={chapter.lessonVideoUrl || ''} onChange={e => handleFieldChange('lessonVideoUrl', e.target.value)} disabled={isSaving} />
                         </div>
+                    </TabsContent>
+                    <TabsContent value="quiz" className="mt-6 space-y-6">
+                        <h3 className="text-xl font-semibold">Quiz Editor</h3>
+                        <div className="p-4 border rounded-md space-y-4">
+                           <div className="flex items-center space-x-2">
+                                <Switch id="require-passing" checked={chapter.quiz?.settings?.requirePassing ?? true} onCheckedChange={checked => handleQuizChange('settings', { ...chapter.quiz?.settings, requirePassing: checked })} />
+                                <Label htmlFor="require-passing">Require Minimum Score to Advance</Label>
+                            </div>
+                            {(chapter.quiz?.settings?.requirePassing ?? true) && (
+                                <div className="space-y-2 animate-in fade-in-50">
+                                    <Label htmlFor="passing-score">Passing Score (%)</Label>
+                                    <Input id="passing-score" type="number" min="0" max="100" value={chapter.quiz?.settings?.passingScore ?? 80} onChange={(e) => handleQuizChange('settings', { ...chapter.quiz?.settings, passingScore: Number(e.target.value)})} />
+                                </div>
+                            )}
+                        </div>
+                        {(chapter.quiz?.questions || []).map((q, qIndex) => (
+                            <Card key={q.id} className="p-4 bg-secondary/50">
+                                <div className="flex justify-between items-center mb-2">
+                                    <Label className="font-semibold">Question {qIndex + 1}</Label>
+                                    <Button variant="ghost" size="icon" onClick={() => handleRemoveQuizQuestion(q.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                </div>
+                                <div className="space-y-2">
+                                    <Input placeholder="Question text" value={q.text} onChange={e => handleQuizQuestionChange(q.id, e.target.value)} />
+                                    <RadioGroup value={q.correctAnswerIndex.toString()} onValueChange={value => handleCorrectQuizAnswerChange(q.id, Number(value))}>
+                                        {q.answers.map((ans, aIndex) => (
+                                            <div key={aIndex} className="flex items-center gap-2">
+                                                <RadioGroupItem value={aIndex.toString()} id={`q${q.id}-a${aIndex}`} />
+                                                <Input placeholder={`Answer ${aIndex + 1}`} value={ans} onChange={e => handleQuizAnswerChange(q.id, aIndex, e.target.value)} />
+                                            </div>
+                                        ))}
+                                    </RadioGroup>
+                                </div>
+                            </Card>
+                        ))}
+                        <Button variant="outline" onClick={handleAddQuizQuestion}>
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add Question
+                        </Button>
                     </TabsContent>
                 </Tabs>
               </div>
