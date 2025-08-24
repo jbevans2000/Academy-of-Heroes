@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -108,6 +108,20 @@ export function LoginForm() {
       
       const studentSnap = await getDoc(doc(db, 'teachers', teacherUid, 'students', user.uid));
       if (studentSnap.exists()) {
+          const studentData = studentSnap.data();
+
+          if (studentData.isArchived) {
+              await signOut(auth);
+              toast({
+                  variant: 'destructive',
+                  title: 'Account Archived',
+                  description: 'This account has been archived and can no longer be accessed. Please contact your teacher.',
+                  duration: 8000,
+              });
+              router.push('/login');
+              return;
+          }
+
           await logGameEvent(teacherUid, 'ACCOUNT', `${studentSnap.data().characterName} logged in.`);
           const justApproved = studentSnap.data().isNewlyApproved ?? false;
           const teacherData = await getDoc(doc(db, 'teachers', teacherUid));
