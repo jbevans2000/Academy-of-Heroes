@@ -167,13 +167,23 @@ export async function migrateStudentData(input: MigrateDataInput): Promise<Actio
             const newStudentRef = doc(db, 'teachers', teacherUid, 'students', newStudentUid);
 
             const oldStudentSnap = await transaction.get(oldStudentRef);
+            const newStudentSnap = await transaction.get(newStudentRef);
             
             if (!oldStudentSnap.exists()) {
                 throw new Error('The old student account could not be found.');
             }
+             if (!newStudentSnap.exists()) {
+                throw new Error('The new student account could not be found.');
+            }
 
             const oldData = oldStudentSnap.data();
+            const newData = newStudentSnap.data();
             
+            // Safety Check: Ensure classes match before migrating data.
+            if (oldData.class !== newData.class) {
+                throw new Error(`Class mismatch: Old account is a ${oldData.class}, new account is a ${newData.class}. Please have the student create a new account with the correct class.`);
+            }
+
             const dataToCopy = {
                 level: oldData.level || 1,
                 xp: oldData.xp || 0,
@@ -201,7 +211,7 @@ export async function migrateStudentData(input: MigrateDataInput): Promise<Actio
 
     } catch (error: any) {
         console.error("Error migrating student data:", error);
-        return { success: false, error: 'An unexpected error occurred during data migration.' };
+        return { success: false, error: error.message || 'An unexpected error occurred during data migration.' };
     }
 }
 
