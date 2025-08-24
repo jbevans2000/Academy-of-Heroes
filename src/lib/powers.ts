@@ -34,6 +34,7 @@ export const classPowers: ClassPowers = {
       mpCost: 4,
       type: 'support',
       target: 'ally',
+      targetSelf: false,
       targetCount: 2,
     },
     {
@@ -45,11 +46,12 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Psychic Flare',
-      description: 'You channel a beam of restorative arcane energies into an ally, restoring them to full magic points.',
+      description: 'You channel a beam of restorative arcane energies into an ally, restoring them to full magic points. Target must be below 50% MP.',
       level: 9,
       mpCost: 18,
       type: 'support',
       target: 'ally',
+      targetSelf: false,
       targetCount: 1,
     },
      {
@@ -71,9 +73,9 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Chaos Storm',
-      description: 'Deals a massive 3d20 + your Level in damage. (Max 1 use per battle)',
-      level: 13,
-      mpCost: 40,
+      description: 'You send a swirling storm of primordial chaos energy to smite your foe, dealing a high amount of damage.',
+      level: 17,
+      mpCost: 28,
       type: 'damage',
     },
     {
@@ -158,6 +160,7 @@ export const classPowers: ClassPowers = {
       type: 'healing',
       target: 'ally',
       targetCount: 2,
+      targetSelf: true,
     },
     {
       name: 'Solar Empowerment',
@@ -184,6 +187,7 @@ export const classPowers: ClassPowers = {
       mpCost: 12,
       type: 'healing',
       target: 'ally',
+      targetSelf: true,
       targetCount: 1,
     },
     {

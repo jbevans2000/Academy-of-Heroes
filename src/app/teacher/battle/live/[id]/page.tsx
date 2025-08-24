@@ -28,7 +28,7 @@ import { Slider } from '@/components/ui/slider';
 
 interface QueuedPower {
     casterUid: string;
-    powerName: 'Wildfire';
+    powerName: 'Wildfire' | 'Chaos Storm';
     damage: number;
 }
 
@@ -72,6 +72,7 @@ interface LiveBattleState {
   elementalFusionCasts?: { [studentUid: string]: number };
   globalElementalFusionCasts?: number;
   shielded?: { [uid: string]: { roundsRemaining: number; casterName: string; } }; // uid -> shield info
+  chaosStormCasts?: { [studentUid: string]: number }; // For Chaos Storm
 }
 
 interface PowerActivation {
@@ -451,11 +452,16 @@ export default function TeacherLiveBattlePage() {
         for (const studentDoc of studentDocs.docs) {
              const studentRef = doc(db, 'teachers', teacherUid, 'students', studentDoc.id);
              const studentData = studentDoc.data() as Student;
-             const rewards = rewardsByStudent[studentDoc.id];
              
-             // Only clear battle status for those who were in it
-             const updates: any = studentData.inBattle ? { inBattle: false, shielded: deleteDoc } : {};
+             // Base updates for all students who were in battle
+             const updates: any = {};
+             if (studentData.inBattle) {
+                updates.inBattle = false;
+                updates.shielded = deleteDoc();
+             }
 
+             // Apply rewards only to those who participated and were NOT fallen at the end
+             const rewards = rewardsByStudent[studentDoc.id];
              if (rewards && !currentlyFallenUids.includes(studentDoc.id)) {
                  const currentXp = studentData.xp || 0;
                  const newXp = currentXp + rewards.xpGained;
@@ -471,7 +477,11 @@ export default function TeacherLiveBattlePage() {
                     updates.maxMp = calculateBaseMaxHp(studentData.class, newLevel, 'mp');
                  }
              }
-             batch.update(studentRef, updates);
+             
+             // Only write if there are updates to be made
+             if (Object.keys(updates).length > 0) {
+                batch.update(studentRef, updates);
+             }
         }
         
         // Schedule deletion of the live battle document after a delay
@@ -592,13 +602,14 @@ export default function TeacherLiveBattlePage() {
         if (!isDivinationSkip) {
             for (const power of liveState.queuedPowers || []) {
                 const casterResponse = roundResults.find(res => res.studentUid === power.casterUid);
+                const casterName = casterResponse?.studentName || studentMap.get(power.casterUid)?.characterName || 'Unknown Hero';
 
                 if (casterResponse?.isCorrect) {
                     powerDamage += power.damage;
                     powersUsedThisRound.push(`${power.powerName} (${power.damage} dmg)`);
                     batch.set(doc(battleLogRef), {
                         round: liveState.currentQuestionIndex + 1,
-                        casterName: casterResponse.studentName,
+                        casterName: casterName,
                         powerName: power.powerName,
                         description: `Dealt ${power.damage} damage.`,
                         timestamp: serverTimestamp()
@@ -606,7 +617,7 @@ export default function TeacherLiveBattlePage() {
                 } else {
                     batch.set(doc(battleLogRef), {
                         round: liveState.currentQuestionIndex + 1,
-                        casterName: casterResponse?.studentName || studentMap.get(power.casterUid)?.characterName || 'Unknown Mage',
+                        casterName: casterName,
                         powerName: power.powerName,
                         description: 'Fizzled due to incorrect answer.',
                         timestamp: serverTimestamp()
@@ -746,6 +757,30 @@ export default function TeacherLiveBattlePage() {
                     queuedPowers: arrayUnion(newQueuedPower),
                     powerEventMessage: `${activation.studentName} has cast Wildfire! Their foe will receive ${damage} points of damage if their spell strikes true!`
                 });
+            } else if (activation.powerName === 'Chaos Storm') {
+                const casts = battleData.chaosStormCasts?.[activation.studentUid] || 0;
+                if (casts >= 2) {
+                    batch.update(liveBattleRef, { targetedEvent: { targetUid: activation.studentUid, message: "You are too exhausted to control the forces of Chaos! Choose another power!" } });
+                } else {
+                    let totalDamage = 0;
+                    for (let i = 0; i < 10; i++) {
+                        totalDamage += Math.floor(Math.random() * 6) + 1;
+                    }
+                    totalDamage += studentData.level || 1;
+
+                    const newQueuedPower: QueuedPower = {
+                        casterUid: activation.studentUid,
+                        powerName: 'Chaos Storm',
+                        damage: totalDamage,
+                    };
+                    
+                    batch.update(liveBattleRef, {
+                        queuedPowers: arrayUnion(newQueuedPower),
+                        [`chaosStormCasts.${activation.studentUid}`]: increment(1),
+                        powerEventMessage: `${activation.studentName} has summoned a storm of pure chaos to smite the Enemy!`,
+                        targetedEvent: { targetUid: activation.studentUid, message: `You have summoned a storm of pure chaos to smite the Enemy for ${totalDamage} damage!` },
+                    });
+                }
             } else if (activation.powerName === 'Enduring Spirit') {
                 if (!activation.targets || activation.targets.length === 0) return;
                 const targetUid = activation.targets[0];
@@ -1166,6 +1201,7 @@ export default function TeacherLiveBattlePage() {
         globalElementalFusionCasts: 0,
         voteState: null,
         shielded: {},
+        chaosStormCasts: {},
     });
     await logGameEvent(teacherUid, 'BOSS_BATTLE', `Round 1 of '${battle.battleName}' has started.`);
   };
