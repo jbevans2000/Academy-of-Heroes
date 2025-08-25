@@ -124,16 +124,16 @@ export const classPowers: ClassPowers = {
     {
       name: 'Arcane Redirect',
       description: 'Empower a chosen number of allied Mages, doubling the damage of their Wildfire spells this round. Costs 15 MP per empowered Mage.',
-      level: 11,
+      level: 9,
       mpCost: 15, // Note: This is a base cost per target
       type: 'support',
       isMultiStep: true,
     },
     {
       name: 'Zen Shield',
-      description: 'Shields the entire team from one instance of damage from the boss.',
-      level: 11,
-      mpCost: 25,
+      description: 'You enter a state of perfect focus, creating a global shield that protects every active member of your party from all damage for one round. (Max 1 use per battle)',
+      level: 15,
+      mpCost: 30,
       type: 'support',
     },
     {

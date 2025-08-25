@@ -75,6 +75,7 @@ interface LiveBattleState {
   chaosStormCasts?: { [studentUid: string]: number }; // For Chaos Storm
   intercepting?: { [casterUid: string]: string }; // casterUid -> targetUid
   damageShields?: { [uid: string]: number };
+  zenShieldCasts?: { [studentUid: string]: number }; // For Zen Shield
 }
 
 interface PowerActivation {
@@ -1245,6 +1246,29 @@ export default function TeacherLiveBattlePage() {
                         targetedEvent: { targetUid: activation.studentUid, message: "There are no allies to protect, so you channel additional power into your strike!" },
                     });
                 }
+            } else if (activation.powerName === 'Zen Shield') {
+                const casts = battleData.zenShieldCasts?.[activation.studentUid] || 0;
+                if (casts >= 1) {
+                    batch.update(liveBattleRef, { targetedEvent: { targetUid: activation.studentUid, message: "You have already achieved Zen this battle. The power cannot be used again." } });
+                } else {
+                    const activePlayers = allStudents.filter(s => s.hp > 0);
+                    const updates: { [key: string]: any } = {
+                        [`zenShieldCasts.${activation.studentUid}`]: increment(1),
+                        powerEventMessage: `${activation.studentName} achieves perfect focus, creating a Zen Shield around the entire party!`,
+                        targetedEvent: { targetUid: activation.studentUid, message: "You create a shield of pure focus around your allies, protecting them from harm." }
+                    };
+                    activePlayers.forEach(player => {
+                        updates[`shielded.${player.uid}`] = { roundsRemaining: 1, casterName: activation.studentName };
+                    });
+                    batch.update(liveBattleRef, updates);
+                    batch.set(doc(battleLogRef), {
+                        round: liveState.currentQuestionIndex + 1,
+                        casterName: activation.studentName,
+                        powerName: activation.powerName,
+                        description: `Shielded all active party members for 1 round.`,
+                        timestamp: serverTimestamp()
+                    });
+                }
             }
 
 
@@ -1328,6 +1352,7 @@ export default function TeacherLiveBattlePage() {
         shielded: {},
         chaosStormCasts: {},
         intercepting: {},
+        zenShieldCasts: {},
     });
     await logGameEvent(teacherUid, 'BOSS_BATTLE', `Round 1 of '${battle.battleName}' has started.`);
   };
