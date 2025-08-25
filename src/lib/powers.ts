@@ -11,6 +11,7 @@ export interface Power {
     target?: 'ally' | 'fallen';
     targetCount?: number;
     targetSelf?: boolean;
+    isMultiStep?: boolean;
     // eligibilityCheck?: (caster: Student, target: Student) => boolean; // For more complex rules later
 }
 
@@ -106,10 +107,12 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Absorb',
-      description: 'Soak an amount of damage for the party that is TRIPLE your current level.',
+      description: 'Throw yourself in front of the enemy, protecting your most wounded allies by absorbing a chosen amount of damage.',
       level: 5,
-      mpCost: 15,
+      mpCost: 10,
       type: 'support',
+      isMultiStep: true,
+      target: 'ally',
     },
     {
       name: 'Berserker Strike',

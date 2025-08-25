@@ -42,6 +42,7 @@ export type Student = {
         casterName: string;
     };
     guardedBy?: string | null; // UID of the Guardian protecting this student
+    damageShield?: number; // For Absorb power
 }
 
 export type PendingStudent = {
