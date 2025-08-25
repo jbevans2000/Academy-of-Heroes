@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -26,6 +27,7 @@ interface LiveBattleState {
     elementalFusionCasts?: { [studentUid: string]: number };
     globalElementalFusionCasts?: number;
     inspiringStrikeCasts?: { [studentUid: string]: number };
+    immuneToRevival?: string[];
 }
 
 interface PowersSheetProps {
@@ -81,10 +83,11 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
 
   const getEligibleTargets = (power: Power): Student[] => {
     let potentialTargets = partyMembers;
+    const immuneUids = battleState?.immuneToRevival || [];
 
     // Rule: Fallen players can ONLY be targeted by powers specifically for 'fallen' targets.
     if (power.target === 'fallen') {
-        potentialTargets = potentialTargets.filter(s => s.hp <= 0);
+        potentialTargets = potentialTargets.filter(s => s.hp <= 0 && !immuneUids.includes(s.uid));
     } else {
         potentialTargets = potentialTargets.filter(s => s.hp > 0);
     }

@@ -122,12 +122,12 @@ export const classPowers: ClassPowers = {
       type: 'damage',
     },
     {
-      name: 'Arcane Redirect',
-      description: 'Empower a chosen number of allied Mages, doubling the damage of their Wildfire spells this round. Costs 15 MP per empowered Mage.',
-      level: 11,
-      mpCost: 15, // Note: This is a base cost per target
-      type: 'support',
-      isMultiStep: true,
+        name: 'Arcane Redirect',
+        description: 'Empower a chosen number of allied Mages, doubling the damage of their Wildfire spells this round. Costs 15 MP per empowered Mage.',
+        level: 9,
+        mpCost: 15,
+        type: 'support',
+        isMultiStep: true,
     },
     {
       name: 'Zen Shield',
@@ -144,8 +144,8 @@ export const classPowers: ClassPowers = {
       type: 'damage',
     },
     {
-      name: 'Sacrifice',
-      description: 'Your HP drops to 0, but all allies receive a 50% XP bonus for the battle.',
+      name: 'Martial Sacrifice',
+      description: 'You make the ultimate sacrifice. Your HP and MP drop to zero and you cannot be revived this battle. You unleash a final, devastating blow, extend the duration of all allied shields by one round, and grant your party a 25% bonus to all XP and Gold earned. You will forfeit all personal rewards from this battle.',
       level: 15,
       mpCost: 5,
       type: 'utility',
