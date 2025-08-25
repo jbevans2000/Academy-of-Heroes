@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -119,7 +118,7 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
     return potentialTargets;
   }
 
-  const handleUsePower = async (power: Power, targets?: string[]) => {
+  const handleUsePower = async (power: Power, targets?: string[], inputValue?: number) => {
     if (!isBattleView || !teacherUid || !battleId || !battleState) {
         toast({ variant: 'destructive', title: 'Error', description: 'Powers can only be used inside a live battle.' });
         return;
@@ -151,9 +150,9 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
         }
     }
 
-    if (power.target && !targets) {
+    if ((power.target || power.isMultiStep) && !targets) {
         const currentEligibleTargets = getEligibleTargets(power);
-        if (currentEligibleTargets.length === 0) {
+        if (power.target && currentEligibleTargets.length === 0) {
             toast({
                 title: 'No Eligible Targets',
                 description: `There are no available targets for ${power.name} right now.`,
@@ -174,8 +173,9 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
             studentUid: student.uid,
             studentName: student.characterName,
             powerName: power.name,
-            powerMpCost: power.mpCost,
+            powerMpCost: power.name === 'Arcane Redirect' ? (inputValue || 0) * 15 : power.mpCost,
             targets: targets || [],
+            inputValue: inputValue,
             timestamp: serverTimestamp(),
         });
         
@@ -234,10 +234,7 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
                               )}
                           </div>
                           <div className="flex justify-between items-end mt-2">
-                              <p className={cn(
-                                  "font-semibold text-sm",
-                                  isUnlocked && hasEnoughMp ? "text-blue-400" : "text-gray-400"
-                              )}>
+                              <p className="font-semibold text-sm text-black">
                                   MP Cost: {power.mpCost}
                               </p>
                               <p className={cn(
@@ -269,7 +266,7 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
               power={selectedPower}
               students={partyMembers}
               caster={student}
-              onConfirm={(targets) => handleUsePower(selectedPower, targets)}
+              onConfirm={handleUsePower}
               battleState={battleState}
               eligibleTargets={eligibleTargets}
           />
