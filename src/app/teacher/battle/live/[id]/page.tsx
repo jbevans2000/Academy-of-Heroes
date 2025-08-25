@@ -76,6 +76,7 @@ interface LiveBattleState {
   intercepting?: { [casterUid: string]: string }; // casterUid -> targetUid
   damageShields?: { [uid: string]: number };
   zenShieldCasts?: { [studentUid: string]: number }; // For Zen Shield
+  inspiringStrikeCasts?: { [studentUid: string]: number };
 }
 
 interface PowerActivation {
@@ -653,11 +654,25 @@ export default function TeacherLiveBattlePage() {
             }
         });
 
-        // Elemental Fusion damage calculation
-        if (elementalFusionCasters.size > 0) {
-            const fusionDamage = baseDamageFromAnswers * 3 * elementalFusionCasters.size;
-            powerDamage += fusionDamage;
-            powersUsedThisRound.push(`Elemental Fusion x${elementalFusionCasters.size} (${fusionDamage} dmg)`);
+        const inspiringStrikeCasters = new Set<string>();
+        if(currentLiveState.powerUsersThisRound) {
+            for (const studentUid in currentLiveState.powerUsersThisRound) {
+                if (currentLiveState.powerUsersThisRound[studentUid].includes('Inspiring Strike')) {
+                    inspiringStrikeCasters.add(studentUid);
+                }
+            }
+        }
+        
+        // Elemental Fusion & Inspiring Strike damage calculation
+        let multiplier = 1;
+        if (elementalFusionCasters.size > 0) multiplier = 3;
+        if (inspiringStrikeCasters.size > 0) multiplier = 3;
+
+        if (multiplier > 1) {
+            const extraDamage = baseDamageFromAnswers * (multiplier - 1);
+            powerDamage += extraDamage;
+            if (elementalFusionCasters.size > 0) powersUsedThisRound.push(`Elemental Fusion`);
+            if (inspiringStrikeCasters.size > 0) powersUsedThisRound.push(`Inspiring Strike`);
         }
 
 
@@ -1180,6 +1195,27 @@ export default function TeacherLiveBattlePage() {
                         timestamp: serverTimestamp()
                     });
                 }
+            } else if (activation.powerName === 'Inspiring Strike') {
+                const casts = battleData.inspiringStrikeCasts?.[activation.studentUid] || 0;
+                if (casts >= 2) {
+                     batch.update(liveBattleRef, { targetedEvent: { targetUid: activation.studentUid, message: "Your voice is hoarse! You cannot inspire again this battle." } });
+                } else {
+                    batch.update(liveBattleRef, {
+                        [`inspiringStrikeCasts.${activation.studentUid}`]: increment(1),
+                        powerEventMessage: `${activation.studentName} bellows an inspiring war cry! The party's attacks are strengthened threefold!`,
+                        targetedEvent: {
+                            targetUid: activation.studentUid,
+                            message: "Your inspiring shout fills your allies with courage, tripling the power of their attacks!"
+                        }
+                    });
+                    batch.set(doc(battleLogRef), {
+                        round: liveState.currentQuestionIndex + 1,
+                        casterName: activation.studentName,
+                        powerName: activation.powerName,
+                        description: `Tripled the party's base damage for the round.`,
+                        timestamp: serverTimestamp()
+                    });
+                }
             } else if (activation.powerName === 'Arcane Shield') {
                 if (!activation.targets || activation.targets.length === 0) return;
                  const targetNames: string[] = [];
@@ -1348,6 +1384,7 @@ export default function TeacherLiveBattlePage() {
         sorcerersIntuitionUses: {},
         elementalFusionCasts: {},
         globalElementalFusionCasts: 0,
+        inspiringStrikeCasts: {},
         voteState: null,
         shielded: {},
         chaosStormCasts: {},

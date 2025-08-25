@@ -25,6 +25,7 @@ interface LiveBattleState {
     sorcerersIntuitionUses?: { [key: string]: number };
     elementalFusionCasts?: { [studentUid: string]: number };
     globalElementalFusionCasts?: number;
+    inspiringStrikeCasts?: { [studentUid: string]: number };
 }
 
 interface PowersSheetProps {
@@ -146,6 +147,14 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
         const globalCasts = battleState.globalElementalFusionCasts || 0;
         if (globalCasts >= 6) {
             toast({ variant: 'destructive', title: 'Battle Limit Reached', description: 'The Elemental energies of the area have been drained! Choose a different power!' });
+            return;
+        }
+    }
+    
+    if (power.name === 'Inspiring Strike') {
+        const uses = battleState.inspiringStrikeCasts?.[student.uid] || 0;
+        if (uses >= 2) {
+             toast({ variant: 'destructive', title: 'Power Limit Reached', description: 'Your voice is hoarse! You cannot inspire again this battle.' });
             return;
         }
     }

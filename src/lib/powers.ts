@@ -124,7 +124,7 @@ export const classPowers: ClassPowers = {
     {
       name: 'Arcane Redirect',
       description: 'Empower a chosen number of allied Mages, doubling the damage of their Wildfire spells this round. Costs 15 MP per empowered Mage.',
-      level: 9,
+      level: 11,
       mpCost: 15, // Note: This is a base cost per target
       type: 'support',
       isMultiStep: true,
@@ -138,9 +138,9 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Inspiring Strike',
-      description: 'Inspires allies, causing TRIPLE base damage for the party on a hit. (1 use per battle)',
-      level: 13,
-      mpCost: 30,
+      description: 'You let out a mighty war cry, inspiring your allies to fight with renewed vigor. The party\'s Base Damage from correct answers is tripled for this round. (Max 2 uses per battle)',
+      level: 17,
+      mpCost: 35,
       type: 'damage',
     },
     {
@@ -213,7 +213,7 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Divine Sacrifice',
-      description: 'Your HP falls to 0, but all players gain +5 Max HP, restore 10 HP, and get a 25% XP boost.',
+      description: 'Your HP falls to 0, but all players gain +5 Max HP, restore 10 HP, and get a 25% XP bonus.',
       level: 15,
       mpCost: 5,
       type: 'utility',
