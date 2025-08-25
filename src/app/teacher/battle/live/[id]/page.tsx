@@ -28,7 +28,7 @@ import { Slider } from '@/components/ui/slider';
 
 interface QueuedPower {
     casterUid: string;
-    powerName: 'Wildfire' | 'Chaos Storm' | 'Berserker Strike';
+    powerName: 'Wildfire' | 'Chaos Storm' | 'Berserker Strike' | 'Martial Sacrifice';
     damage: number;
 }
 
@@ -77,6 +77,8 @@ interface LiveBattleState {
   damageShields?: { [uid: string]: number };
   zenShieldCasts?: { [studentUid: string]: number }; // For Zen Shield
   inspiringStrikeCasts?: { [studentUid: string]: number };
+  immuneToRevival?: string[]; // For Martial Sacrifice
+  martialSacrificeCasterUid?: string | null; // Tracks if the power has been used
 }
 
 interface PowerActivation {
@@ -361,6 +363,9 @@ export default function TeacherLiveBattlePage() {
         const participationCount: { [uid: string]: number } = {};
         const powerUsageCount: { [uid: string]: number } = {};
         const participantUids = new Set<string>();
+        
+        const wasSacrificeUsed = !!finalLiveState.martialSacrificeCasterUid;
+        const sacrificedPlayerUid = finalLiveState.martialSacrificeCasterUid;
 
         // 1. Tally correct answers and participation from archived rounds
         roundsSnap.docs.forEach(roundDoc => {
@@ -398,8 +403,8 @@ export default function TeacherLiveBattlePage() {
         for (const uid of participantUids) {
             const studentRewards = rewardsByStudent[uid];
             
-            // If the student is in the fallen list at the end, they get 0 rewards.
-            if (currentlyFallenUids.includes(uid)) {
+            // If the student is the one who sacrificed OR is in the fallen list at the end, they get 0 rewards.
+            if (uid === sacrificedPlayerUid || currentlyFallenUids.includes(uid)) {
                 studentRewards.xpGained = 0;
                 studentRewards.goldGained = 0;
                 studentRewards.breakdown = { hadFullParticipation: false, totalDamageDealt };
@@ -427,6 +432,12 @@ export default function TeacherLiveBattlePage() {
             studentRewards.xpGained = xpFromAnswers + xpFromPowers + xpFromParticipation + xpFromDamageShare;
             studentRewards.goldGained = goldFromAnswers + goldFromPowers + goldFromParticipation;
             
+            // Apply sacrifice bonus if applicable
+            if (wasSacrificeUsed) {
+                studentRewards.xpGained = Math.ceil(studentRewards.xpGained * 1.25);
+                studentRewards.goldGained = Math.ceil(studentRewards.goldGained * 1.25);
+            }
+            
             // Store the breakdown for the student summary page
             studentRewards.breakdown = {
                 xpFromAnswers, goldFromAnswers,
@@ -435,6 +446,7 @@ export default function TeacherLiveBattlePage() {
                 xpFromDamageShare,
                 hadFullParticipation: hasFullParticipation,
                 totalDamageDealt,
+                sacrificeBonus: wasSacrificeUsed,
             };
         }
 
@@ -446,14 +458,15 @@ export default function TeacherLiveBattlePage() {
             totalDamage: finalLiveState.totalDamage || 0,
             totalBaseDamage: finalLiveState.totalBaseDamage || 0,
             totalPowerDamage: finalLiveState.totalPowerDamage || 0,
+            martialSacrificeCasterUid: sacrificedPlayerUid || null,
         });
 
-        // Award XP/Gold if not fallen. Note: inBattle status is now cleared manually.
+        // Award XP/Gold if not fallen/sacrificed.
         const studentDocs = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
         for (const studentDoc of studentDocs.docs) {
              const studentData = studentDoc.data() as Student;
              const rewards = rewardsByStudent[studentDoc.id];
-             if (rewards && !currentlyFallenUids.includes(studentDoc.id)) {
+             if (rewards && !currentlyFallenUids.includes(studentDoc.id) && studentDoc.id !== sacrificedPlayerUid) {
                  const studentRef = doc(db, 'teachers', teacherUid, 'students', studentDoc.id);
                  const currentXp = studentData.xp || 0;
                  const newXp = currentXp + rewards.xpGained;
@@ -499,13 +512,24 @@ export default function TeacherLiveBattlePage() {
         if (!currentLiveSnap.exists()) return;
         const currentLiveState = currentLiveSnap.data() as LiveBattleState;
         
-        // Decrement shield timers and clear guard status at the start of result calculation
+        // --- PRE-CALCULATION PHASE ---
+        let sacrificeThisRound = false;
+
+        // Decrement shield timers at the start of result calculation
         const currentShields = currentLiveState.shielded || {};
         const newShields: { [uid: string]: { roundsRemaining: number; casterName: string; } } = {};
         for (const uid in currentShields) {
             const shield = currentShields[uid];
             if (shield.roundsRemaining > 1) {
                 newShields[uid] = { ...shield, roundsRemaining: shield.roundsRemaining - 1 };
+            }
+        }
+        
+        // If Martial Sacrifice was used, extend all newly active shields
+        if (currentLiveState.martialSacrificeCasterUid && !currentLiveState.powerEventMessage?.includes("has already sacrificed")) {
+            sacrificeThisRound = true;
+            for (const uid in newShields) {
+                newShields[uid].roundsRemaining += 1;
             }
         }
         batch.update(liveBattleRef, { shielded: newShields });
@@ -609,7 +633,7 @@ export default function TeacherLiveBattlePage() {
                      
                      // Apply damage if not shielded/guarded
                      if (totalDamageToStudent > 0) {
-                        const isShielded = currentShields[student.uid]?.roundsRemaining > 0;
+                        const isShielded = newShields[student.uid]?.roundsRemaining > 0;
                         const isGuarded = !!student.guardedBy; // Check the student's guardedBy field
 
                         if (!isShielded && !isGuarded) {
@@ -634,7 +658,7 @@ export default function TeacherLiveBattlePage() {
                  for (const guardianUid in redirectedDamageForGuardians) {
                      const guardian = studentMap.get(guardianUid);
                      if(guardian) {
-                        const isShielded = currentShields[guardian.uid]?.roundsRemaining > 0;
+                        const isShielded = newShields[guardian.uid]?.roundsRemaining > 0;
                         if (!isShielded) {
                             const guardianRef = doc(db, 'teachers', teacherUid, 'students', guardian.uid);
                             const newHp = Math.max(0, guardian.hp - redirectedDamageForGuardians[guardianUid]);
@@ -680,8 +704,10 @@ export default function TeacherLiveBattlePage() {
             for (const power of liveState.queuedPowers || []) {
                 const casterResponse = finalRoundResponses.find(res => res.studentUid === power.casterUid);
                 const casterName = casterResponse?.characterName || studentMap.get(power.casterUid)?.characterName || 'Unknown Hero';
+                
+                let shouldApplyDamage = power.powerName === 'Martial Sacrifice' || casterResponse?.isCorrect;
 
-                if (casterResponse?.isCorrect) {
+                if (shouldApplyDamage) {
                     powerDamage += power.damage;
                     powersUsedThisRound.push(`${power.powerName} (${power.damage} dmg)`);
                     batch.set(doc(battleLogRef), {
@@ -792,7 +818,26 @@ export default function TeacherLiveBattlePage() {
 
             const batch = writeBatch(db);
 
-            if (activation.powerName === 'Nature’s Guidance') {
+            if (activation.powerName === 'Martial Sacrifice') {
+                if (battleData.martialSacrificeCasterUid) {
+                     batch.update(liveBattleRef, { targetedEvent: { targetUid: activation.studentUid, message: `${students.find(s => s.uid === battleData.martialSacrificeCasterUid)?.characterName || 'A hero'} has already sacrificed themself for the glory of the group! Don't let it be in vain!` } });
+                } else {
+                    const roll1 = Math.floor(Math.random() * 20) + 1;
+                    const roll2 = Math.floor(Math.random() * 20) + 1;
+                    const damage = roll1 + roll2 + (studentData.level || 1);
+                    const newQueuedPower: QueuedPower = { casterUid: activation.studentUid, powerName: 'Martial Sacrifice', damage: damage };
+                    
+                    batch.update(liveBattleRef, {
+                        queuedPowers: arrayUnion(newQueuedPower),
+                        martialSacrificeCasterUid: activation.studentUid,
+                        immuneToRevival: arrayUnion(activation.studentUid),
+                        fallenPlayerUids: arrayUnion(activation.studentUid),
+                        powerEventMessage: `${activation.studentName} has made the ultimate sacrifice!`,
+                        targetedEvent: { targetUid: activation.studentUid, message: "You brace yourself for the ultimate sacrifice. Your vision fades as you pour your life force into a final, heroic strike for the sake of your allies!"}
+                    });
+                    batch.update(studentRef, { hp: 0, mp: 0 });
+                }
+            } else if (activation.powerName === 'Nature’s Guidance') {
                 const currentQuestion = battle!.questions[battleData!.currentQuestionIndex];
 
                 const incorrectAnswerIndices = currentQuestion.answers
@@ -884,7 +929,7 @@ export default function TeacherLiveBattlePage() {
                 const targetRef = doc(db, 'teachers', teacherUid!, 'students', targetUid);
                 const targetSnap = await getDoc(targetRef);
 
-                if (targetSnap.exists() && targetSnap.data().hp <= 0) {
+                if (targetSnap.exists() && targetSnap.data().hp <= 0 && !(battleData.immuneToRevival || []).includes(targetUid)) {
                     const targetData = targetSnap.data() as Student;
                     const healAmount = Math.ceil(targetData.maxHp * 0.1);
                     batch.update(targetRef, { hp: healAmount });
@@ -904,8 +949,12 @@ export default function TeacherLiveBattlePage() {
                         description: `Revived ${targetData.characterName}.`,
                         timestamp: serverTimestamp()
                     });
-                } else if (targetSnap.exists() && targetSnap.data().hp > 0) {
-                    const targetedEvent: TargetedEvent = { targetUid: activation.studentUid, message: `${targetSnap.data().characterName} has already been restored! Choose another power.` };
+                } else if (targetSnap.exists()) {
+                    const message = (battleData.immuneToRevival || []).includes(targetUid)
+                        ? "This hero's sacrifice is absolute. They cannot be revived."
+                        : `${targetSnap.data().characterName} has already been restored! Choose another power.`;
+                    
+                    const targetedEvent: TargetedEvent = { targetUid: activation.studentUid, message: message };
                     await updateDoc(liveBattleRef, { targetedEvent: targetedEvent });
                     setTimeout(() => updateDoc(liveBattleRef, { targetedEvent: null }), 5000);
                     return;
@@ -1390,6 +1439,8 @@ export default function TeacherLiveBattlePage() {
         chaosStormCasts: {},
         intercepting: {},
         zenShieldCasts: {},
+        immuneToRevival: [],
+        martialSacrificeCasterUid: null,
     });
     await logGameEvent(teacherUid, 'BOSS_BATTLE', `Round 1 of '${battle.battleName}' has started.`);
   };
