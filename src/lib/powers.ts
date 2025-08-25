@@ -1,5 +1,4 @@
 
-
 export type PowerType = 'damage' | 'support' | 'healing' | 'utility';
 
 export interface Power {
@@ -138,7 +137,7 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Inspiring Strike',
-      description: 'You let out a mighty war cry, inspiring your allies to fight with renewed vigor. The party\'s Base Damage from correct answers is tripled for this round. (Max 2 uses per Guardian per battle)',
+      description: "You let out a mighty war cry, inspiring your allies to fight with renewed vigor. The party's Base Damage from correct answers is tripled for this round. (Max 2 uses per Guardian per battle)",
       level: 17,
       mpCost: 35,
       type: 'damage',
