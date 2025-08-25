@@ -105,6 +105,7 @@ const QuizComponent = ({ quiz, student, chapter, hub, teacherUid, onQuizComplete
                         <Button variant="outline" onClick={() => {
                             setCurrentQuestionIndex(0);
                             setAnswers(new Array(quiz.questions.length).fill(null));
+                            setSelectedAnswer(null);
                             setShowResults(false);
                         }}>
                             Retake Quiz
@@ -246,10 +247,10 @@ export default function ChapterPage() {
         fetchChapterData();
     }, [chapterId, hubId, router, toast, teacherUid, isPreviewMode]);
 
-    const handleMarkComplete = async (quizScore?: number, quizAnswers?: any[]) => {
+    const handleMarkComplete = async (quizScore?: number, quizAnswers?: any[], isQuizJustCompleted = false) => {
         if (!user || !student || !chapter || !hub || !teacherUid) return;
         
-        if (chapter.quiz && !quizPassed) {
+        if (chapter.quiz && !quizPassed && !isQuizJustCompleted) {
             toast({ variant: 'destructive', title: 'Quiz Required', description: 'You must prove your knowledge before continuing your quest!' });
             return;
         }
@@ -378,7 +379,7 @@ export default function ChapterPage() {
 
     const handleQuizCompletion = (score: number, answers: any[]) => {
         setQuizPassed(true);
-        handleMarkComplete(score, answers);
+        handleMarkComplete(score, answers, true);
     }
 
 
@@ -626,5 +627,5 @@ export default function ChapterPage() {
             </div>
         </div>
       </>
-    );
-}
+    
+    
