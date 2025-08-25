@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -28,6 +29,7 @@ import { logGameEvent } from '@/lib/gamelog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { downloadCsv } from '@/lib/utils';
 import type { Student } from '@/lib/data';
+import { cleanupLiveBattle } from '@/ai/flows/manage-battles';
 
 interface Question {
   questionText: string;
@@ -155,33 +157,21 @@ export default function TeacherBattleSummaryPage() {
     setIsCleaning(true);
 
     try {
-        const summaryRef = doc(db, 'teachers', teacher.uid, 'savedBattles', savedBattleId);
+        await cleanupLiveBattle(teacher.uid);
         
-        // Delete subcollections first
-        const roundsRef = collection(summaryRef, 'rounds');
-        const roundsSnap = await getDocs(roundsRef);
-        const batch = writeBatch(db);
-        roundsSnap.forEach(doc => batch.delete(doc.ref));
-        await batch.commit();
-        
-        // Then delete the main document
-        await deleteDoc(summaryRef);
-        
-        await logGameEvent(teacher.uid, 'GAMEMASTER', `Cleared battle archive: ${summary?.battleName || savedBattleId}`);
-
         toast({
-            title: 'Battle Archive Cleared!',
-            description: 'The archived data for this battle has been removed.',
+            title: 'Battlefield Cleared!',
+            description: 'The temporary battle data has been removed.',
         });
 
-        router.push('/teacher/battles/summary');
+        router.push('/teacher/dashboard');
 
     } catch (error) {
-        console.error("Error cleaning up battle summary:", error);
+        console.error("Error cleaning up battle:", error);
         toast({
             variant: 'destructive',
             title: 'Cleanup Failed',
-            description: 'There was an error deleting the battle archive. Please try again.',
+            description: 'There was an error clearing the battlefield. Please try the manual reset button on the dashboard.',
         });
     } finally {
         setIsCleaning(false);
@@ -277,29 +267,10 @@ export default function TeacherBattleSummaryPage() {
                                 <CardDescription>This battle session for "{summary.battleName}" ended before any rounds were completed, so no detailed report is available.</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="destructive" disabled={isCleaning}>
-                                            {isCleaning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                                            Clear This Archive
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Clear This Battle Archive?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                            This will permanently delete this battle's saved data. This action cannot be undone.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={handleCleanupBattle} disabled={isCleaning}>
-                                                {isCleaning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                Confirm & Clear
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
+                                <Button variant="destructive" onClick={handleCleanupBattle} disabled={isCleaning}>
+                                    {isCleaning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                                    Clear the Battlefield and Return to Dashboard
+                                </Button>
                             </CardContent>
                         </Card>
                     </div>
@@ -381,29 +352,6 @@ export default function TeacherBattleSummaryPage() {
                     <Download className="mr-2 h-4 w-4" />
                     Download Full Report
                 </Button>
-                 <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="destructive" disabled={isCleaning}>
-                            {isCleaning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                            Clear This Archive
-                        </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Clear This Battle Archive?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                               This will permanently delete this battle's saved data. This action cannot be undone.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleCleanupBattle} disabled={isCleaning}>
-                                {isCleaning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Confirm & Clear
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
             </div>
           </div>
          
@@ -524,11 +472,14 @@ export default function TeacherBattleSummaryPage() {
                     </Card>
                 )}
             </div>
+             <div className="text-center pt-8">
+                <Button size="lg" variant="destructive" onClick={handleCleanupBattle} disabled={isCleaning}>
+                     {isCleaning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                     Clear the Battlefield and Return to Dashboard
+                </Button>
+            </div>
         </div>
       </main>
     </div>
   );
 }
-
-
-

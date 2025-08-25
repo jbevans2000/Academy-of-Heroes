@@ -336,14 +336,6 @@ export default function TeacherLiveBattlePage() {
 
     try {
         const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
-
-        // Update the live battle doc to signal the end to clients
-        await updateDoc(liveBattleRef, { status: 'BATTLE_ENDED' });
-        
-        // Update teacher doc with the ID of the battle to clean up
-        const teacherRef = doc(db, 'teachers', teacherUid);
-        await updateDoc(teacherRef, { pendingCleanupBattleId: 'active-battle' });
-
         const batch = writeBatch(db);
         const parentArchiveRef = doc(db, 'teachers', teacherUid, 'savedBattles', liveState.parentArchiveId);
         
@@ -451,46 +443,39 @@ export default function TeacherLiveBattlePage() {
             totalPowerDamage: finalLiveState.totalPowerDamage || 0,
         });
 
-        // Clear inBattle status for all students and award XP/Gold if not fallen
+        // Award XP/Gold if not fallen. Note: inBattle status is now cleared manually.
         const studentDocs = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
         for (const studentDoc of studentDocs.docs) {
-             const studentRef = doc(db, 'teachers', teacherUid, 'students', studentDoc.id);
              const studentData = studentDoc.data() as Student;
-             
-             // Base updates for all students who were in battle
-             const updates: any = {};
-             if (studentData.inBattle) {
-                updates.inBattle = false;
-                updates.shielded = deleteDoc();
-             }
-
-             // Apply rewards only to those who participated and were NOT fallen at the end
              const rewards = rewardsByStudent[studentDoc.id];
              if (rewards && !currentlyFallenUids.includes(studentDoc.id)) {
+                 const studentRef = doc(db, 'teachers', teacherUid, 'students', studentDoc.id);
                  const currentXp = studentData.xp || 0;
                  const newXp = currentXp + rewards.xpGained;
                  const currentLevel = studentData.level || 1;
                  const newLevel = calculateLevel(newXp);
                  
-                 updates.xp = newXp;
-                 updates.gold = (studentData.gold || 0) + rewards.goldGained;
+                 const updates: any = {
+                    xp: newXp,
+                    gold: (studentData.gold || 0) + rewards.goldGained,
+                 };
 
                  if (newLevel > currentLevel) {
                     updates.level = newLevel;
                     updates.maxHp = calculateBaseMaxHp(studentData.class, newLevel, 'hp');
                     updates.maxMp = calculateBaseMaxHp(studentData.class, newLevel, 'mp');
                  }
-             }
-             
-             // Only write if there are updates to be made
-             if (Object.keys(updates).length > 0) {
-                batch.update(studentRef, updates);
+                 
+                 batch.update(studentRef, updates);
              }
         }
         
         await batch.commit();
 
+        await updateDoc(liveBattleRef, { status: 'BATTLE_ENDED' });
+
         await logGameEvent(teacherUid, 'BOSS_BATTLE', `Battle '${battle.battleName}' ended.`);
+        router.push(`/teacher/battle/summary/${liveState.parentArchiveId}`);
     } catch (e) {
         console.error("Error ending battle:", e);
         toast({ variant: 'destructive', title: 'Error', description: 'Failed to end battle and aggregate results.' });
@@ -1465,4 +1450,3 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
-
