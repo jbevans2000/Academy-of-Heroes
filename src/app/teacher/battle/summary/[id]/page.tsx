@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -267,7 +266,7 @@ export default function TeacherBattleSummaryPage() {
                                 <CardDescription>This battle session for "{summary.battleName}" ended before any rounds were completed, so no detailed report is available.</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <Button variant="destructive" onClick={handleCleanupBattle} disabled={isCleaning}>
+                                <Button className="text-xl py-8 px-10" variant="destructive" onClick={handleCleanupBattle} disabled={isCleaning}>
                                     {isCleaning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
                                     Clear the Battlefield and Return to Dashboard
                                 </Button>
@@ -473,7 +472,7 @@ export default function TeacherBattleSummaryPage() {
                 )}
             </div>
              <div className="text-center pt-8">
-                <Button size="lg" variant="destructive" onClick={handleCleanupBattle} disabled={isCleaning}>
+                <Button className="text-xl py-8 px-10" variant="destructive" onClick={handleCleanupBattle} disabled={isCleaning}>
                      {isCleaning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
                      Clear the Battlefield and Return to Dashboard
                 </Button>
