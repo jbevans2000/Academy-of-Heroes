@@ -80,9 +80,9 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Arcane Sacrifice',
-      description: 'Your HP falls to zero, but all other players have their power slots restored and gain a 25% XP bonus.',
-      level: 15,
-      mpCost: 5,
+      description: 'You become a conduit for raw magic, sacrificing your life force. Your HP and MP drop to zero and you cannot be revived. All other living allies gain +5 Max MP and restore 15 MP. The party receives a 25% XP bonus for the battle, but you forfeit all rewards. (Max 1 use per battle, entire party)',
+      level: 20,
+      mpCost: 0,
       type: 'utility',
     },
   ],
@@ -144,7 +144,7 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Martial Sacrifice',
-      description: 'You make the ultimate sacrifice. Your HP and MP drop to zero and you cannot be revived this battle. You unleash a final, devastating blow (2d20 + Level), extend the duration of all allied shields by one round, and grant your party a 25% bonus to all XP and Gold earned. You will forfeit all personal rewards from this battle. (Max 1 use per battle, entire party)',
+      description: 'You make the ultimate sacrifice. Your HP and MP drop to zero and you cannot be revived this battle. You unleash a final, devastating blow, extend the duration of all allied shields by one round, and grant your party a 25% bonus to all XP and Gold earned. You will forfeit all personal rewards from this battle. (Max 1 use per battle, entire party)',
       level: 20,
       mpCost: 0,
       type: 'utility',

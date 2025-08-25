@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -10,7 +11,7 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Sparkles, ScrollText, Trash2, Loader2, Swords, Shield, Skull, Download } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Sparkles, ScrollText, Trash2, Loader2, Swords, Shield, Skull, Download, UserCheck } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -58,17 +59,41 @@ interface RoundSnapshot {
   }[];
 }
 
+interface RewardBreakdown {
+    xpFromAnswers: number;
+    goldFromAnswers: number;
+    xpFromPowers: number;
+    goldFromPowers: number;
+    xpFromParticipation: number;
+    goldFromParticipation: number;
+    xpFromDamageShare: number;
+    hadFullParticipation: boolean;
+    totalDamageDealt: number;
+    martialSacrificeBonus: boolean;
+    arcaneSacrificeBonus: boolean;
+}
+
+
 interface SavedBattle {
-  id: string;
-  battleId: string; 
-  battleName: string;
-  questions: Question[]; 
-  powerLog?: PowerLogEntry[];
-  fallenAtEnd?: string[];
-  status: 'WAITING' | 'BATTLE_ENDED';
-  totalDamage?: number;
-  totalBaseDamage?: number;
-  totalPowerDamage?: number;
+    id: string;
+    battleId: string; 
+    battleName: string;
+    questions: Question[]; 
+    powerLog?: PowerLogEntry[];
+    fallenAtEnd?: string[];
+    status: 'WAITING' | 'BATTLE_ENDED';
+    totalDamage?: number;
+    totalBaseDamage?: number;
+    totalPowerDamage?: number;
+    rewardsByStudent?: {
+        [uid: string]: {
+            xpGained: number;
+            goldGained: number;
+            breakdown: RewardBreakdown;
+        }
+    };
+    martialSacrificeCasterUid?: string | null;
+    arcaneSacrificeCasterUid?: string | null;
 }
 
 interface ParticipantStats {
@@ -168,12 +193,12 @@ export default function TeacherBattleSummaryPage() {
 
         router.push('/teacher/dashboard');
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error cleaning up battle:", error);
         toast({
             variant: 'destructive',
             title: 'Cleanup Failed',
-            description: 'There was an error clearing the battlefield. Please try the manual reset button on the dashboard.',
+            description: error.message || 'There was an error clearing the battlefield. Please try again.',
         });
     } finally {
         setIsCleaning(false);

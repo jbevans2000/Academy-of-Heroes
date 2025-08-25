@@ -29,6 +29,7 @@ interface LiveBattleState {
     inspiringStrikeCasts?: { [studentUid: string]: number };
     immuneToRevival?: string[];
     martialSacrificeCasterUid?: string;
+    arcaneSacrificeCasterUid?: string;
 }
 
 interface PowersSheetProps {
@@ -172,6 +173,15 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
         return;
     }
 
+    if(power.name === 'Arcane Sacrifice' && battleState.arcaneSacrificeCasterUid) {
+        toast({
+            variant: 'destructive',
+            title: 'Sacrifice Already Made',
+            description: 'A Mage has already made the ultimate sacrifice this battle.',
+        });
+        return;
+    }
+
     if ((power.target || power.isMultiStep) && !targets) {
         const currentEligibleTargets = getEligibleTargets(power);
         if (power.target && currentEligibleTargets.length === 0) {
@@ -246,7 +256,7 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
                       >
                           <div className="flex justify-between items-start gap-4">
                               <div className="flex-grow">
-                                  <h3 className={cn("text-lg font-bold", isUnlocked ? "text-white" : "text-black")}>{power.name}</h3>
+                                  <h3 className={cn("text-lg font-bold", !isUnlocked && 'text-black')}>{power.name}</h3>
                                   <p className={cn("text-sm", isUnlocked ? "text-white/80" : "text-black")}>{power.description}</p>
                               </div>
                               {isBattleView && (
@@ -258,7 +268,7 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
                           <div className="flex justify-between items-end mt-2">
                               <p className={cn(
                                   "font-semibold text-sm",
-                                  isUnlocked && hasEnoughMp ? "text-blue-400" : !isUnlocked ? 'text-black' : "text-gray-400"
+                                  isUnlocked && hasEnoughMp ? "text-blue-400" : !isUnlocked ? "text-black" : "text-gray-400"
                               )}>
                                   MP Cost: {power.mpCost}
                               </p>

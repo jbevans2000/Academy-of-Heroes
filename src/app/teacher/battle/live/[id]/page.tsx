@@ -79,6 +79,7 @@ interface LiveBattleState {
   inspiringStrikeCasts?: { [studentUid: string]: number };
   immuneToRevival?: string[]; // For Martial Sacrifice
   martialSacrificeCasterUid?: string | null; // Tracks if the power has been used
+  arcaneSacrificeCasterUid?: string | null; // Tracks if the power has been used
 }
 
 interface PowerActivation {
@@ -364,8 +365,9 @@ export default function TeacherLiveBattlePage() {
         const powerUsageCount: { [uid: string]: number } = {};
         const participantUids = new Set<string>();
         
-        const wasSacrificeUsed = !!finalLiveState.martialSacrificeCasterUid;
-        const sacrificedPlayerUid = finalLiveState.martialSacrificeCasterUid;
+        const wasMartialSacrificeUsed = !!finalLiveState.martialSacrificeCasterUid;
+        const wasArcaneSacrificeUsed = !!finalLiveState.arcaneSacrificeCasterUid;
+        const sacrificedPlayerUids = [finalLiveState.martialSacrificeCasterUid, finalLiveState.arcaneSacrificeCasterUid].filter(Boolean) as string[];
 
         // 1. Tally correct answers and participation from archived rounds
         roundsSnap.docs.forEach(roundDoc => {
@@ -404,7 +406,7 @@ export default function TeacherLiveBattlePage() {
             const studentRewards = rewardsByStudent[uid];
             
             // If the student is the one who sacrificed OR is in the fallen list at the end, they get 0 rewards.
-            if (uid === sacrificedPlayerUid || currentlyFallenUids.includes(uid)) {
+            if (sacrificedPlayerUids.includes(uid) || currentlyFallenUids.includes(uid)) {
                 studentRewards.xpGained = 0;
                 studentRewards.goldGained = 0;
                 studentRewards.breakdown = { hadFullParticipation: false, totalDamageDealt };
@@ -429,14 +431,23 @@ export default function TeacherLiveBattlePage() {
                 xpFromDamageShare = Math.floor(totalDamageDealt * 0.25);
             }
             
-            studentRewards.xpGained = xpFromAnswers + xpFromPowers + xpFromParticipation + xpFromDamageShare;
-            studentRewards.goldGained = goldFromAnswers + goldFromPowers + goldFromParticipation;
+            const baseTotalXp = xpFromAnswers + xpFromPowers + xpFromParticipation + xpFromDamageShare;
+            const baseTotalGold = goldFromAnswers + goldFromPowers + goldFromParticipation;
+
+            let finalXp = baseTotalXp;
+            let finalGold = baseTotalGold;
             
-            // Apply sacrifice bonus if applicable
-            if (wasSacrificeUsed) {
-                studentRewards.xpGained = Math.ceil(studentRewards.xpGained * 1.25);
-                studentRewards.goldGained = Math.ceil(studentRewards.goldGained * 1.25);
+            // Apply sacrifice bonuses additively
+            if (wasMartialSacrificeUsed) {
+                finalXp += Math.ceil(baseTotalXp * 0.25);
+                finalGold += Math.ceil(baseTotalGold * 0.25);
             }
+            if (wasArcaneSacrificeUsed) {
+                 finalXp += Math.ceil(baseTotalXp * 0.25);
+            }
+            
+            studentRewards.xpGained = finalXp;
+            studentRewards.goldGained = finalGold;
             
             // Store the breakdown for the student summary page
             studentRewards.breakdown = {
@@ -446,7 +457,8 @@ export default function TeacherLiveBattlePage() {
                 xpFromDamageShare,
                 hadFullParticipation: hasFullParticipation,
                 totalDamageDealt,
-                sacrificeBonus: wasSacrificeUsed,
+                martialSacrificeBonus: wasMartialSacrificeUsed,
+                arcaneSacrificeBonus: wasArcaneSacrificeUsed,
             };
         }
 
@@ -458,7 +470,8 @@ export default function TeacherLiveBattlePage() {
             totalDamage: finalLiveState.totalDamage || 0,
             totalBaseDamage: finalLiveState.totalBaseDamage || 0,
             totalPowerDamage: finalLiveState.totalPowerDamage || 0,
-            martialSacrificeCasterUid: sacrificedPlayerUid || null,
+            martialSacrificeCasterUid: finalLiveState.martialSacrificeCasterUid || null,
+            arcaneSacrificeCasterUid: finalLiveState.arcaneSacrificeCasterUid || null,
         });
 
         // Award XP/Gold if not fallen/sacrificed.
@@ -466,7 +479,7 @@ export default function TeacherLiveBattlePage() {
         for (const studentDoc of studentDocs.docs) {
              const studentData = studentDoc.data() as Student;
              const rewards = rewardsByStudent[studentDoc.id];
-             if (rewards && !currentlyFallenUids.includes(studentDoc.id) && studentDoc.id !== sacrificedPlayerUid) {
+             if (rewards && !currentlyFallenUids.includes(studentDoc.id) && !sacrificedPlayerUids.includes(studentDoc.id)) {
                  const studentRef = doc(db, 'teachers', teacherUid, 'students', studentDoc.id);
                  const currentXp = studentData.xp || 0;
                  const newXp = currentXp + rewards.xpGained;
@@ -820,7 +833,7 @@ export default function TeacherLiveBattlePage() {
 
             if (activation.powerName === 'Martial Sacrifice') {
                 if (battleData.martialSacrificeCasterUid) {
-                     batch.update(liveBattleRef, { targetedEvent: { targetUid: activation.studentUid, message: `${students.find(s => s.uid === battleData.martialSacrificeCasterUid)?.characterName || 'A hero'} has already sacrificed themself for the glory of the group! Don't let it be in vain!` } });
+                     batch.update(liveBattleRef, { targetedEvent: { targetUid: activation.studentUid, message: `${allStudents.find(s => s.uid === battleData.martialSacrificeCasterUid)?.characterName || 'A hero'} has already sacrificed themself for the glory of the group! Don't let it be in vain!` } });
                 } else {
                     const roll1 = Math.floor(Math.random() * 20) + 1;
                     const roll2 = Math.floor(Math.random() * 20) + 1;
@@ -834,6 +847,28 @@ export default function TeacherLiveBattlePage() {
                         fallenPlayerUids: arrayUnion(activation.studentUid),
                         powerEventMessage: `${activation.studentName} has made the ultimate sacrifice!`,
                         targetedEvent: { targetUid: activation.studentUid, message: "You brace yourself for the ultimate sacrifice. Your vision fades as you pour your life force into a final, heroic strike for the sake of your allies!"}
+                    });
+                    batch.update(studentRef, { hp: 0, mp: 0 });
+                }
+            } else if (activation.powerName === 'Arcane Sacrifice') {
+                if (battleData.arcaneSacrificeCasterUid) {
+                    batch.update(liveBattleRef, { targetedEvent: { targetUid: activation.studentUid, message: `${allStudents.find(s => s.uid === battleData.arcaneSacrificeCasterUid)?.characterName || 'A mage'} has already sacrificed themself for the glory of the group! Don't let their sacrifice be in vain!` } });
+                } else {
+                    // Apply buff to all LIVING students
+                    const livingStudents = allStudents.filter(s => s.inBattle && s.hp > 0 && s.uid !== activation.studentUid);
+                    for (const student of livingStudents) {
+                        const targetRef = doc(db, 'teachers', teacherUid!, 'students', student.uid);
+                        const newMaxMp = student.maxMp + 5;
+                        const newMp = Math.min(newMaxMp, student.mp + 15);
+                        batch.update(targetRef, { maxMp: newMaxMp, mp: newMp });
+                    }
+
+                    batch.update(liveBattleRef, {
+                        arcaneSacrificeCasterUid: activation.studentUid,
+                        immuneToRevival: arrayUnion(activation.studentUid),
+                        fallenPlayerUids: arrayUnion(activation.studentUid),
+                        powerEventMessage: `${activation.studentName} has sacrificed their life force, unleashing a wave of raw magical power that empowers the party!`,
+                        targetedEvent: { targetUid: activation.studentUid, message: "You pull upon the leylines, letting an overwhelming surge of arcane energy flow through you and into your allies before your vision fades to black."}
                     });
                     batch.update(studentRef, { hp: 0, mp: 0 });
                 }
@@ -1441,6 +1476,7 @@ export default function TeacherLiveBattlePage() {
         zenShieldCasts: {},
         immuneToRevival: [],
         martialSacrificeCasterUid: null,
+        arcaneSacrificeCasterUid: null,
     });
     await logGameEvent(teacherUid, 'BOSS_BATTLE', `Round 1 of '${battle.battleName}' has started.`);
   };
