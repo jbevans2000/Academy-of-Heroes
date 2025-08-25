@@ -123,10 +123,11 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Arcane Redirect',
-      description: 'Causes all damage done by Wildfires to be tripled this round.',
-      level: 9,
-      mpCost: 20,
+      description: 'Empower a chosen number of allied Mages, doubling the damage of their Wildfire spells this round. Costs 15 MP per empowered Mage.',
+      level: 11,
+      mpCost: 15, // Note: This is a base cost per target
       type: 'support',
+      isMultiStep: true,
     },
     {
       name: 'Zen Shield',

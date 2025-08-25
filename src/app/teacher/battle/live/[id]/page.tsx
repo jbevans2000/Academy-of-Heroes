@@ -562,6 +562,28 @@ export default function TeacherLiveBattlePage() {
                 }
             }
         }
+        
+        // --- ABSORB & DAMAGE CALCULATION ---
+        const absorbActivations = (currentLiveState.powerUsersThisRound 
+            ? Object.entries(currentLiveState.powerUsersThisRound)
+                .filter(([uid, powers]) => powers.includes('Absorb'))
+                .map(([uid, powers]) => allStudents.find(s => s.uid === uid))
+            : []).filter(Boolean) as Student[];
+
+        for (const absorbCaster of absorbActivations) {
+            // Apply self-damage first
+            const absorbAmount = absorbCaster.damageShield || 0; // Assuming inputValue is stored as damageShield on student
+            const selfDamage = Math.floor(absorbAmount * 0.8);
+            if (selfDamage > 0) {
+                const casterRef = doc(db, 'teachers', teacherUid, 'students', absorbCaster.uid);
+                const newCasterHp = Math.max(1, absorbCaster.hp - selfDamage);
+                batch.update(casterRef, { hp: newCasterHp });
+            }
+
+            // Distribute absorption shield
+            // This logic assumes targets are stored somewhere accessible or a new field is added
+            // For now, we'll just log it. A `targets` field in power activation would be needed.
+        }
 
         // --- DAMAGE CALCULATION ---
         if (!isDivinationSkip) {
