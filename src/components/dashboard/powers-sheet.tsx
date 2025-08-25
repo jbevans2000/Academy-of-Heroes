@@ -28,6 +28,7 @@ interface LiveBattleState {
     globalElementalFusionCasts?: number;
     inspiringStrikeCasts?: { [studentUid: string]: number };
     immuneToRevival?: string[];
+    martialSacrificeCasterUid?: string;
 }
 
 interface PowersSheetProps {
@@ -162,6 +163,15 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
         }
     }
 
+    if(power.name === 'Martial Sacrifice' && battleState.martialSacrificeCasterUid) {
+        toast({
+            variant: 'destructive',
+            title: 'Sacrifice Already Made',
+            description: 'A Guardian has already made the ultimate sacrifice this battle.',
+        });
+        return;
+    }
+
     if ((power.target || power.isMultiStep) && !targets) {
         const currentEligibleTargets = getEligibleTargets(power);
         if (power.target && currentEligibleTargets.length === 0) {
@@ -231,13 +241,13 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
                           key={index}
                           className={cn(
                               "p-4 rounded-lg border-2 transition-all",
-                              isUnlocked ? powerTypeStyles[power.type] : "border-muted/30 bg-muted/20 text-muted-foreground"
+                              isUnlocked ? powerTypeStyles[power.type] : "border-muted/30 bg-muted/20 text-black"
                           )}
                       >
                           <div className="flex justify-between items-start gap-4">
                               <div className="flex-grow">
-                                  <h3 className={cn("text-lg font-bold", isUnlocked ? "text-white" : "")}>{power.name}</h3>
-                                  <p className={cn("text-sm", isUnlocked ? "text-white/80" : "")}>{power.description}</p>
+                                  <h3 className={cn("text-lg font-bold", isUnlocked ? "text-white" : "text-black")}>{power.name}</h3>
+                                  <p className={cn("text-sm", isUnlocked ? "text-white/80" : "text-black")}>{power.description}</p>
                               </div>
                               {isBattleView && (
                                   <Button size="sm" disabled={!canUsePower} variant={isUnlocked ? 'secondary' : 'ghost'} onClick={() => handleUsePower(power)}>
@@ -246,7 +256,10 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
                               )}
                           </div>
                           <div className="flex justify-between items-end mt-2">
-                              <p className="font-semibold text-sm text-black">
+                              <p className={cn(
+                                  "font-semibold text-sm",
+                                  isUnlocked && hasEnoughMp ? "text-blue-400" : !isUnlocked ? 'text-black' : "text-gray-400"
+                              )}>
                                   MP Cost: {power.mpCost}
                               </p>
                               <p className={cn(
