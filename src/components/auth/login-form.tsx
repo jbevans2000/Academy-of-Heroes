@@ -27,7 +27,7 @@ export function LoginForm() {
       toast({
         variant: 'destructive',
         title: 'Missing Fields',
-        description: "Please enter your email or Hero's Alias and Password.",
+        description: "Please enter your email or Username and Password.",
       });
       return;
     }
@@ -40,7 +40,7 @@ export function LoginForm() {
         await attemptLogin(loginId, password);
       } catch (emailError: any) {
         // If the email login fails (likely with user-not-found or invalid-credential),
-        // try again assuming the loginId is a Hero's Alias.
+        // try again assuming the loginId is a Username.
         if (emailError.code === 'auth/invalid-credential' || emailError.code === 'auth/user-not-found' || emailError.code === 'auth/invalid-email') {
             try {
                  const dummyEmail = `${loginId.toLowerCase().replace(/\s/g, '_')}@academy-heroes-mziuf.firebaseapp.com`;
@@ -63,7 +63,7 @@ export function LoginForm() {
           case 'auth/user-not-found':
           case 'auth/wrong-password':
           case 'auth/invalid-email':
-            description = 'Invalid email/alias or password.';
+            description = 'Invalid email/username or password.';
             break;
           case 'auth/network-request-failed':
             description = 'Network error. Please check your connection.';
@@ -132,11 +132,11 @@ export function LoginForm() {
   return (
     <div className="space-y-4 rounded-lg bg-background/50 p-4 border">
         <div className="space-y-2">
-            <Label htmlFor="login-id"><KeyRound className="inline-block mr-2 h-4 w-4" />Email or Hero's Alias</Label>
+            <Label htmlFor="login-id"><KeyRound className="inline-block mr-2 h-4 w-4" />Email or Username</Label>
             <Input
                 id="login-id"
                 type="text"
-                placeholder="Enter your email or alias"
+                placeholder="Enter your email or username"
                 required
                 value={loginId}
                 onChange={(e) => setLoginId(e.target.value)}

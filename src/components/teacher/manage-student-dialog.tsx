@@ -116,9 +116,9 @@ export function ManageStudentDialog({ isOpen, onOpenChange, student, setStudents
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="alias">Hero's Alias (Login)</Label>
+                  <Label htmlFor="alias">Username (Login)</Label>
                   <Input id="alias" value={student.studentId} disabled />
-                  <p className="text-xs text-muted-foreground">The Hero's Alias cannot be changed after creation.</p>
+                  <p className="text-xs text-muted-foreground">The Username cannot be changed after creation.</p>
                 </div>
                 <DialogFooter>
                   <Button onClick={handleUpdateDetails} disabled={isSavingDetails}>

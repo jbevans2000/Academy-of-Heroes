@@ -129,7 +129,7 @@ export default function RegisterPage() {
       if (error.code) {
         switch(error.code) {
           case 'auth/email-already-in-use':
-            description = signupMethod === 'email' ? 'This email is already registered.' : 'This Hero\'s Alias is already registered. Please choose another.';
+            description = signupMethod === 'email' ? 'This email is already registered.' : 'This username is already registered. Please choose another.';
             break;
           case 'auth/invalid-email':
             description = 'The email address is not valid.';
@@ -224,7 +224,7 @@ export default function RegisterPage() {
                         </div>
                         <div className="flex items-center space-x-2">
                             <RadioGroupItem value="alias" id="signup-alias" />
-                            <Label htmlFor="signup-alias">Use Hero's Alias</Label>
+                            <Label htmlFor="signup-alias">Use Username</Label>
                         </div>
                     </RadioGroup>
                   </div>
@@ -236,13 +236,13 @@ export default function RegisterPage() {
                     </div>
                   ) : (
                     <div className="space-y-2 animate-in fade-in-50">
-                        <Label htmlFor="student-id" className="flex items-center"><KeyRound className="w-4 h-4 mr-2" />Hero's Alias (Username)</Label>
-                        <Input id="student-id" placeholder="Choose a unique hero's alias" value={studentId} onChange={(e) => setStudentId(e.target.value)} disabled={isLoading} />
+                        <Label htmlFor="student-id" className="flex items-center"><KeyRound className="w-4 h-4 mr-2" />Username</Label>
+                        <Input id="student-id" placeholder="Choose a unique username" value={studentId} onChange={(e) => setStudentId(e.target.value)} disabled={isLoading} />
                         <Alert variant="destructive" className="mt-2">
                             <ShieldAlert className="h-4 w-4" />
                             <AlertTitle>Important!</AlertTitle>
                             <AlertDescription>
-                                If you use a Hero's Alias, you will NOT be able to reset your password! Make sure you keep it SAFE or you will have to make a new account!
+                                If you use a Username, you will NOT be able to reset your password! Make sure you keep it SAFE or you will have to make a new account!
                             </AlertDescription>
                         </Alert>
                     </div>
@@ -282,7 +282,7 @@ export default function RegisterPage() {
                     />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="student-name" className="flex items-center"><User className="w-4 h-4 mr-2" />Your Mortal Name</Label>
+                    <Label htmlFor="student-name" className="flex items-center"><User className="w-4 h-4 mr-2" />Student Name</Label>
                     <Input id="student-name" placeholder="Your real name" value={studentName} onChange={(e) => setStudentName(e.target.value)} disabled={isLoading} />
                 </div>
                  <div className="space-y-2">

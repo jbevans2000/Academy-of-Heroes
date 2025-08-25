@@ -96,7 +96,7 @@ export default function ForgotPasswordPage() {
                     </Button>
                 </CardContent>
                  <CardFooter className="flex-col gap-4">
-                    <p className="text-xs text-muted-foreground">If you signed up with a Hero's Alias, your teacher must reset your password for you from their dashboard.</p>
+                    <p className="text-xs text-muted-foreground">If you signed up with a Username, your teacher must reset your password for you from their dashboard.</p>
                     <Button variant="outline" className="w-full" asChild>
                         <Link href="/login">
                             <ArrowLeft className="mr-2 h-4 w-4" />
