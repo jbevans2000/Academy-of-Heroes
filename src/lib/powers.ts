@@ -99,9 +99,9 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Intercept',
-      description: 'Answer a question on a teammate\'s behalf. A correct answer deals 5 base damage to the boss.',
-      level: 3,
-      mpCost: 10,
+      description: "Answer a question on a random teammate's behalf. If you are correct, you deal 5 additional base damage and your ally is considered correct. If you are wrong, you take their damage for them.",
+      level: 2,
+      mpCost: 4,
       type: 'damage',
     },
     {

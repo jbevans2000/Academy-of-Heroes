@@ -73,6 +73,7 @@ interface LiveBattleState {
   globalElementalFusionCasts?: number;
   shielded?: { [uid: string]: { roundsRemaining: number; casterName: string; } }; // uid -> shield info
   chaosStormCasts?: { [studentUid: string]: number }; // For Chaos Storm
+  intercepting?: { [casterUid: string]: string }; // casterUid -> targetUid
 }
 
 interface PowerActivation {
@@ -494,7 +495,7 @@ export default function TeacherLiveBattlePage() {
         if (!currentLiveSnap.exists()) return;
         const currentLiveState = currentLiveSnap.data() as LiveBattleState;
         
-        // Decrement shield timers at the start of result calculation
+        // Decrement shield timers and clear guard status at the start of result calculation
         const currentShields = currentLiveState.shielded || {};
         const newShields: { [uid: string]: { roundsRemaining: number; casterName: string; } } = {};
         for (const uid in currentShields) {
@@ -509,10 +510,8 @@ export default function TeacherLiveBattlePage() {
         const newlyFallenUids: string[] = [];
         
         const studentsInBattle = allStudents.filter(s => s.inBattle);
-        const studentsWhoAnswered = new Set(roundResults.map(res => res.studentUid));
+        const roundResponses = (await getDoc(doc(liveBattleRef, `responses/${liveState.currentQuestionIndex}`))).data()?.responses || [];
 
-        const studentsToDamage: Student[] = [];
-        
         const sorcerersThisRound = new Set<string>();
         for (const studentUid in liveState.powerUsersThisRound) {
             if (liveState.powerUsersThisRound[studentUid].includes('Sorcerer’s Intuition')) {
@@ -526,38 +525,104 @@ export default function TeacherLiveBattlePage() {
                 elementalFusionCasters.add(studentUid);
             }
         }
+        
+        let powerDamage = isDivinationSkip ? (liveState.lastRoundPowerDamage || 0) : 0;
+        const powersUsedThisRound: string[] = isDivinationSkip ? (liveState.lastRoundPowersUsed || []) : [];
+        const battleLogRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
+        
+        let baseDamageFromAnswers = 0;
+        let finalRoundResponses = [...roundResponses];
 
-        // Damage students who got it wrong OR didn't answer
+        // --- INTERCEPT LOGIC ---
+        const interceptors = currentLiveState.intercepting || {};
+        let redirectedDamageForGuardians: { [uid: string]: number } = {};
+
+        for (const interceptorUid in interceptors) {
+            const targetUid = interceptors[interceptorUid];
+            const interceptorResponse = roundResponses.find(r => r.studentUid === interceptorUid);
+            const targetResponse = roundResponses.find(r => r.studentUid === targetUid);
+            const currentQuestion = battle.questions[liveState.currentQuestionIndex];
+
+            if (interceptorResponse?.isCorrect) {
+                powerDamage += 5; // Intercept bonus damage
+                if (targetResponse && !targetResponse.isCorrect) {
+                    // Flip target's answer to correct
+                    finalRoundResponses = finalRoundResponses.map(res => 
+                        res.studentUid === targetUid ? { ...res, isCorrect: true } : res
+                    );
+                }
+            } else { // Interceptor is wrong
+                if (targetResponse && !targetResponse.isCorrect) {
+                    // Redirect damage from target to Guardian
+                    const damageToRedirect = currentQuestion.damage || 0;
+                    if (!redirectedDamageForGuardians[interceptorUid]) redirectedDamageForGuardians[interceptorUid] = 0;
+                    redirectedDamageForGuardians[interceptorUid] += damageToRedirect;
+                }
+            }
+        }
+
+        // --- DAMAGE CALCULATION ---
         if (!isDivinationSkip) {
             const currentQuestion = battle.questions[liveState.currentQuestionIndex];
             const damageOnIncorrect = currentQuestion.damage || 0;
 
             if (damageOnIncorrect > 0) {
                  for (const student of studentsInBattle) {
-                     // If the student is shielded, skip damage.
-                     if (currentShields[student.uid]?.roundsRemaining > 0) {
-                         continue;
+                     let totalDamageToStudent = 0;
+                     const studentResponse = finalRoundResponses.find(r => r.studentUid === student.uid);
+
+                     // Damage for own incorrect answer
+                     if (!studentResponse || !studentResponse.isCorrect) {
+                        totalDamageToStudent += damageOnIncorrect;
+                     }
+
+                     // Add redirected damage if they are a Guardian
+                     if(redirectedDamageForGuardians[student.uid]) {
+                         totalDamageToStudent += redirectedDamageForGuardians[student.uid];
                      }
                      
-                     const response = roundResults.find(r => r.studentUid === student.uid);
-                     if (!response || !response.isCorrect) {
-                         const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
-                         const newHp = Math.max(0, student.hp - damageOnIncorrect);
-                         batch.update(studentRef, { hp: newHp });
-                         if (newHp === 0 && !liveState.fallenPlayerUids?.includes(student.uid)) {
-                             newlyFallenUids.push(student.uid);
-                         }
+                     // Apply damage if not shielded/guarded
+                     if (totalDamageToStudent > 0) {
+                        const isShielded = currentShields[student.uid]?.roundsRemaining > 0;
+                        const isGuarded = !!student.guardedBy; // Check the student's guardedBy field
+
+                        if (!isShielded && !isGuarded) {
+                            const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
+                            const newHp = Math.max(0, student.hp - totalDamageToStudent);
+                            batch.update(studentRef, { hp: newHp });
+                            if (newHp === 0 && !liveState.fallenPlayerUids?.includes(student.uid)) {
+                                newlyFallenUids.push(student.uid);
+                            }
+                        } else if(isGuarded) {
+                            // Damage redirection for Guard power
+                            const guardianUid = student.guardedBy;
+                            if (guardianUid) {
+                                if(!redirectedDamageForGuardians[guardianUid]) redirectedDamageForGuardians[guardianUid] = 0;
+                                redirectedDamageForGuardians[guardianUid] += totalDamageToStudent;
+                            }
+                        }
+                     }
+                 }
+
+                 // Final pass to apply all collected redirected damage to Guardians
+                 for (const guardianUid in redirectedDamageForGuardians) {
+                     const guardian = studentMap.get(guardianUid);
+                     if(guardian) {
+                        const isShielded = currentShields[guardian.uid]?.roundsRemaining > 0;
+                        if (!isShielded) {
+                            const guardianRef = doc(db, 'teachers', teacherUid, 'students', guardian.uid);
+                            const newHp = Math.max(0, guardian.hp - redirectedDamageForGuardians[guardianUid]);
+                            batch.update(guardianRef, { hp: newHp });
+                            if (newHp === 0 && !liveState.fallenPlayerUids?.includes(guardian.uid)) {
+                                newlyFallenUids.push(guardian.uid);
+                            }
+                        }
                      }
                  }
             }
         }
-
-        let powerDamage = isDivinationSkip ? (liveState.lastRoundPowerDamage || 0) : 0;
-        const powersUsedThisRound: string[] = isDivinationSkip ? (liveState.lastRoundPowersUsed || []) : [];
-        const battleLogRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
         
-        let baseDamageFromAnswers = 0;
-        roundResults.forEach(res => {
+        finalRoundResponses.forEach(res => {
             if (res.isCorrect || sorcerersThisRound.has(res.studentUid)) {
                 baseDamageFromAnswers++;
             }
@@ -573,8 +638,8 @@ export default function TeacherLiveBattlePage() {
 
         if (!isDivinationSkip) {
             for (const power of liveState.queuedPowers || []) {
-                const casterResponse = roundResults.find(res => res.studentUid === power.casterUid);
-                const casterName = casterResponse?.studentName || studentMap.get(power.casterUid)?.characterName || 'Unknown Hero';
+                const casterResponse = finalRoundResponses.find(res => res.studentUid === power.casterUid);
+                const casterName = casterResponse?.characterName || studentMap.get(power.casterUid)?.characterName || 'Unknown Hero';
 
                 if (casterResponse?.isCorrect) {
                     powerDamage += power.damage;
@@ -622,12 +687,9 @@ export default function TeacherLiveBattlePage() {
 
         const updatedLiveSnap = await getDoc(liveBattleRef);
         if (updatedLiveSnap.exists() && liveState.parentArchiveId) {
-             const roundDoc = await getDoc(doc(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${liveState.currentQuestionIndex}`));
-             const roundData = roundDoc.exists() ? roundDoc.data() : { responses: [] };
-
              const stateToSave = {
                 ...updatedLiveSnap.data(),
-                responses: roundData.responses
+                responses: finalRoundResponses
              };
 
             const archiveRoundRef = doc(db, 'teachers', teacherUid, 'savedBattles', liveState.parentArchiveId, 'rounds', String(liveState.currentQuestionIndex));
@@ -1092,6 +1154,50 @@ export default function TeacherLiveBattlePage() {
                     description: `Shielded ${targetNames.join(', ')} for 3 rounds.`,
                     timestamp: serverTimestamp()
                 });
+            } else if (activation.powerName === 'Guard') {
+                if (!activation.targets || activation.targets.length === 0) return;
+                 const targetNames: string[] = [];
+                 for (const targetUid of activation.targets) {
+                    const targetRef = doc(db, 'teachers', teacherUid!, 'students', targetUid);
+                    const targetDoc = await getDoc(targetRef);
+                    if (targetDoc.exists()) {
+                        targetNames.push(targetDoc.data().characterName);
+                        batch.update(targetRef, { guardedBy: activation.studentUid });
+                    }
+                 }
+                 batch.update(liveBattleRef, {
+                    powerEventMessage: `${activation.studentName} casts Guard, protecting ${targetNames.join(', ')}!`,
+                 });
+                 batch.set(doc(battleLogRef), {
+                    round: liveState.currentQuestionIndex + 1,
+                    casterName: activation.studentName,
+                    powerName: activation.powerName,
+                    description: `Protected ${targetNames.join(', ')}.`,
+                    timestamp: serverTimestamp()
+                });
+            } else if (activation.powerName === 'Intercept') {
+                const eligibleTargets = allStudents.filter(s => s.uid !== activation.studentUid && !s.guardedBy && (!s.shielded || s.shielded.roundsRemaining <= 0));
+                
+                if (eligibleTargets.length > 0) {
+                    const target = eligibleTargets[Math.floor(Math.random() * eligibleTargets.length)];
+                    batch.update(liveBattleRef, {
+                        [`intercepting.${activation.studentUid}`]: target.uid,
+                        powerEventMessage: `${activation.studentName} is intercepting the attack on ${target.characterName}!`,
+                        targetedEvent: { targetUid: target.uid, message: `${activation.studentName} is assisting you in your attack!` },
+                    });
+                     batch.set(doc(battleLogRef), {
+                        round: liveState.currentQuestionIndex + 1,
+                        casterName: activation.studentName,
+                        powerName: activation.powerName,
+                        description: `Intercepted for ${target.characterName}.`,
+                        timestamp: serverTimestamp()
+                    });
+                } else {
+                    batch.update(liveBattleRef, {
+                        powerEventMessage: `${activation.studentName} finds no allies to protect and channels additional power into their strike!`,
+                        targetedEvent: { targetUid: activation.studentUid, message: "There are no allies to protect, so you channel additional power into your strike!" },
+                    });
+                }
             }
 
 
@@ -1174,6 +1280,7 @@ export default function TeacherLiveBattlePage() {
         voteState: null,
         shielded: {},
         chaosStormCasts: {},
+        intercepting: {},
     });
     await logGameEvent(teacherUid, 'BOSS_BATTLE', `Round 1 of '${battle.battleName}' has started.`);
   };
@@ -1206,6 +1313,15 @@ export default function TeacherLiveBattlePage() {
     try {
         const batch = writeBatch(db);
 
+        // Reset guardedBy status for all students
+        const studentCollectionRef = collection(db, 'teachers', teacherUid, 'students');
+        const studentsSnapshot = await getDocs(studentCollectionRef);
+        studentsSnapshot.forEach(studentDoc => {
+            if (studentDoc.data().guardedBy) {
+                batch.update(studentDoc.ref, { guardedBy: null });
+            }
+        });
+        
         const prevRoundDocRef = doc(db, 'teachers', teacherUid, `liveBattles/active-battle/responses/${liveState.currentQuestionIndex}`);
         batch.delete(prevRoundDocRef);
 
@@ -1224,6 +1340,7 @@ export default function TeacherLiveBattlePage() {
             targetedEvent: null,
             powerUsersThisRound: {},
             queuedPowers: [],
+            intercepting: {},
         });
 
         await batch.commit();
