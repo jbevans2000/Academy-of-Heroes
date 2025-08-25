@@ -11,7 +11,7 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Sparkles, ScrollText, Trash2, Loader2, Swords, Shield, Skull, Download, UserCheck } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Sparkles, ScrollText, Trash2, Loader2, Swords, Shield, Skull, Download, UserCheck, Heart, Wand2 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -71,6 +71,7 @@ interface RewardBreakdown {
     totalDamageDealt: number;
     martialSacrificeBonus: boolean;
     arcaneSacrificeBonus: boolean;
+    divineSacrificeBonus: boolean;
 }
 
 
@@ -94,6 +95,7 @@ interface SavedBattle {
     };
     martialSacrificeCasterUid?: string | null;
     arcaneSacrificeCasterUid?: string | null;
+    divineSacrificeCasterUid?: string | null;
 }
 
 interface ParticipantStats {
@@ -305,18 +307,24 @@ export default function TeacherBattleSummaryPage() {
             </div>
         );
     }
-
-  const battleLogByRound: { [round: number]: PowerLogEntry[] } = {};
-  if (summary.powerLog) {
-      summary.powerLog.forEach(log => {
-          const roundKey = log.round - 1; // Align with 0-based index of rounds
-          if (!battleLogByRound[roundKey]) {
-              battleLogByRound[roundKey] = [];
-          }
-          battleLogByRound[roundKey].push(log);
-      });
-  }
   
+  const getSacrificeMessage = () => {
+    if (summary.martialSacrificeCasterUid) {
+      const name = allStudents.find(s => s.uid === summary.martialSacrificeCasterUid)?.characterName || 'A brave Guardian';
+      return { text: `This victory was secured through the noble sacrifice of ${name}!`, icon: <Shield className="h-6 w-6 text-amber-500" /> };
+    }
+    if (summary.arcaneSacrificeCasterUid) {
+      const name = allStudents.find(s => s.uid === summary.arcaneSacrificeCasterUid)?.characterName || 'A powerful Mage';
+      return { text: `The party was empowered by the arcane sacrifice of ${name}!`, icon: <Wand2 className="h-6 w-6 text-blue-500" /> };
+    }
+    if (summary.divineSacrificeCasterUid) {
+      const name = allStudents.find(s => s.uid === summary.divineSacrificeCasterUid)?.characterName || 'A selfless Healer';
+      return { text: `This victory was made possible by the selfless sacrifice of ${name}, who gave their all for the party.`, icon: <Heart className="h-6 w-6 text-green-500" /> };
+    }
+    return null;
+  }
+
+  const sacrificeMessage = getSacrificeMessage();
   const fallenHeroNames = (summary.fallenAtEnd || [])
   .map(uid => {
       const student = allStudents.find(s => s.uid === uid);
@@ -381,6 +389,11 @@ export default function TeacherBattleSummaryPage() {
               <CardDescription>A complete report of the battle session.</CardDescription>
             </CardHeader>
           </Card>
+          {sacrificeMessage && (
+                <div className="p-4 rounded-md bg-yellow-100 dark:bg-yellow-900 border border-yellow-300 dark:border-yellow-700 text-yellow-800 dark:text-yellow-200 flex items-center justify-center gap-4 text-lg font-semibold">
+                    {sacrificeMessage.icon} {sacrificeMessage.text}
+                </div>
+            )}
            <Card>
                 <CardHeader>
                     <CardTitle>Overall Battle Totals</CardTitle>
@@ -416,7 +429,6 @@ export default function TeacherBattleSummaryPage() {
                             if (!question) return null;
                             const correctCount = roundData.responses.filter(r => r.isCorrect).length;
                             const incorrectCount = roundData.responses.length - correctCount;
-                            const roundLog = battleLogByRound[roundData.currentQuestionIndex] || [];
                             const totalRoundDamage = roundData.lastRoundDamage || 0;
 
                             return (
@@ -448,18 +460,6 @@ export default function TeacherBattleSummaryPage() {
                                                 </li>
                                             ))}
                                         </ul>
-                                        {(roundLog.length > 0) && (
-                                            <div className="mt-2 p-2 bg-blue-900/10 rounded-md">
-                                                <h4 className="font-semibold text-sm flex items-center gap-2"><ScrollText className="w-4 h-4"/> Powers Used This Round:</h4>
-                                                <ul className="text-xs text-muted-foreground list-disc list-inside mt-1 space-y-1">
-                                                    {roundLog.map((log, index) => (
-                                                        <li key={index}>
-                                                          <span className="font-bold">{log.casterName}</span> used <span className="font-semibold text-primary">{log.powerName}</span>.
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        )}
                                     </AccordionContent>
                                 </AccordionItem>
                             )

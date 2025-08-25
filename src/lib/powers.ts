@@ -212,9 +212,9 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Divine Sacrifice',
-      description: 'Your HP falls to 0, but all players gain +5 Max HP, restore 10 HP, and get a 25% XP bonus.',
-      level: 15,
-      mpCost: 5,
+      description: 'You become a font of life, sacrificing your own essence. Your HP and MP drop to zero and you cannot be revived. All other living allies gain +5 Max HP, restore 15 HP, and receive a 25% XP bonus for the battle. You forfeit all personal rewards. (Max 1 use per battle, entire party)',
+      level: 20,
+      mpCost: 0,
       type: 'utility',
     },
   ],
