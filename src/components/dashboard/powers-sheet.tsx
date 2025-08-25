@@ -225,15 +225,21 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
     setIsCasting(power.name);
     try {
         const powerActivationsRef = collection(db, 'teachers', teacherUid, `liveBattles/${battleId}/powerActivations`);
-        await addDoc(powerActivationsRef, {
+        
+        const payload: any = {
             studentUid: student.uid,
             studentName: student.characterName,
             powerName: power.name,
             powerMpCost: power.name === 'Arcane Redirect' ? (inputValue || 0) * 15 : power.mpCost,
             targets: targets || [],
-            inputValue: inputValue,
             timestamp: serverTimestamp(),
-        });
+        };
+
+        if (inputValue) {
+            payload.inputValue = inputValue;
+        }
+        
+        await addDoc(powerActivationsRef, payload);
         
         onOpenChange(false);
 
