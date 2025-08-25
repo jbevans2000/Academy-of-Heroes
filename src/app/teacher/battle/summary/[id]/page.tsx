@@ -66,6 +66,9 @@ interface SavedBattle {
   powerLog?: PowerLogEntry[];
   fallenAtEnd?: string[];
   status: 'WAITING' | 'BATTLE_ENDED';
+  totalDamage?: number;
+  totalBaseDamage?: number;
+  totalPowerDamage?: number;
 }
 
 interface ParticipantStats {
@@ -278,13 +281,6 @@ export default function TeacherBattleSummaryPage() {
         );
     }
 
-  const { totalDamage, totalBaseDamage, totalPowerDamage } = allRounds.reduce((acc, round) => {
-    acc.totalDamage += round.lastRoundDamage || 0;
-    acc.totalBaseDamage += round.lastRoundBaseDamage || 0;
-    acc.totalPowerDamage += round.lastRoundPowerDamage || 0;
-    return acc;
-  }, { totalDamage: 0, totalBaseDamage: 0, totalPowerDamage: 0 });
-
   const battleLogByRound: { [round: number]: PowerLogEntry[] } = {};
   if (summary.powerLog) {
       summary.powerLog.forEach(log => {
@@ -362,6 +358,29 @@ export default function TeacherBattleSummaryPage() {
           </Card>
            <Card>
                 <CardHeader>
+                    <CardTitle>Overall Battle Totals</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-wrap justify-around items-center text-center gap-6">
+                     <div className="flex flex-col items-center gap-2 p-2">
+                        <Shield className="h-8 w-8 text-blue-500" />
+                        <p className="text-2xl font-bold">{summary.totalBaseDamage ?? 0}</p>
+                        <p className="text-sm font-medium">Base Damage</p>
+                    </div>
+                     <div className="flex flex-col items-center gap-2 p-2">
+                        <Sparkles className="h-8 w-8 text-purple-500" />
+                        <p className="text-2xl font-bold">{summary.totalPowerDamage ?? 0}</p>
+                        <p className="text-sm font-medium">Power Damage</p>
+                    </div>
+                     <div className="flex flex-col items-center gap-2 p-2">
+                        <HeartCrack className="h-8 w-8 text-red-600" />
+                        <p className="text-3xl font-extrabold">{summary.totalDamage ?? 0}</p>
+                        <p className="text-sm font-medium">Total Damage Dealt</p>
+                    </div>
+                </CardContent>
+            </Card>
+            
+            <Card>
+                 <CardHeader>
                     <CardTitle>Round-by-Round Breakdown</CardTitle>
                 </CardHeader>
                 <CardContent>
