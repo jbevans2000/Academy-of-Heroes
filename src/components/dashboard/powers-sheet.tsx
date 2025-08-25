@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -10,6 +9,17 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 import { Button } from "@/components/ui/button";
 import type { Student } from "@/lib/data";
 import { classPowers, type Power, type PowerType } from "@/lib/powers";
@@ -30,6 +40,7 @@ interface LiveBattleState {
     immuneToRevival?: string[];
     martialSacrificeCasterUid?: string;
     arcaneSacrificeCasterUid?: string;
+    divineSacrificeCasterUid?: string;
 }
 
 interface PowersSheetProps {
@@ -65,6 +76,10 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
   const [selectedPower, setSelectedPower] = useState<Power | null>(null);
   const [partyMembers, setPartyMembers] = useState<Student[]>([]);
   const [eligibleTargets, setEligibleTargets] = useState<Student[]>([]);
+
+  // State for Sacrifice Confirmation
+  const [isConfirmingSacrifice, setIsConfirmingSacrifice] = useState(false);
+  const [powerToConfirm, setPowerToConfirm] = useState<Power | null>(null);
 
 
   useEffect(() => {
@@ -123,9 +138,9 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
 
     return potentialTargets;
   }
-
-  const handleUsePower = async (power: Power, targets?: string[], inputValue?: number) => {
-    if (!isBattleView || !teacherUid || !battleId || !battleState) {
+  
+  const proceedWithPower = async (power: Power, targets?: string[], inputValue?: number) => {
+      if (!isBattleView || !teacherUid || !battleId || !battleState) {
         toast({ variant: 'destructive', title: 'Error', description: 'Powers can only be used inside a live battle.' });
         return;
     }
@@ -181,6 +196,15 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
         });
         return;
     }
+    
+    if(power.name === 'Divine Sacrifice' && battleState.divineSacrificeCasterUid) {
+        toast({
+            variant: 'destructive',
+            title: 'Sacrifice Already Made',
+            description: 'A Healer has already made the ultimate sacrifice this battle.',
+        });
+        return;
+    }
 
     if ((power.target || power.isMultiStep) && !targets) {
         const currentEligibleTargets = getEligibleTargets(power);
@@ -223,10 +247,49 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
     }
   }
 
+  const handleUsePower = async (power: Power, targets?: string[], inputValue?: number) => {
+    const sacrificePowers = ["Martial Sacrifice", "Arcane Sacrifice", "Divine Sacrifice"];
+    if (sacrificePowers.includes(power.name)) {
+        setPowerToConfirm(power);
+        setIsConfirmingSacrifice(true);
+    } else {
+        proceedWithPower(power, targets, inputValue);
+    }
+  };
+
   const hasUsedPowerThisRound = battleState?.powerUsersThisRound?.[student.uid]?.length > 0;
 
   return (
     <>
+      <AlertDialog open={isConfirmingSacrifice} onOpenChange={setIsConfirmingSacrifice}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure you want to make the ultimate sacrifice?</AlertDialogTitle>
+                <AlertDialogDescription className="space-y-2">
+                    <p>This action cannot be undone and will have major consequences:</p>
+                    <ul className="list-disc list-inside font-semibold">
+                        <li>Your HP and MP will drop to 0 for the rest of the battle.</li>
+                        <li className="text-destructive">You CANNOT be revived during this battle.</li>
+                        <li>You will forfeit all personal XP and Gold rewards.</li>
+                    </ul>
+                     <p>In return, your party will gain a significant bonus. Do you wish to proceed?</p>
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                    onClick={() => {
+                        if(powerToConfirm) proceedWithPower(powerToConfirm);
+                        setIsConfirmingSacrifice(false);
+                    }}
+                    className="bg-destructive hover:bg-destructive/90"
+                >
+                    Confirm & Sacrifice
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Sheet open={isOpen} onOpenChange={onOpenChange}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader>
