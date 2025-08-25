@@ -370,7 +370,7 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
               power={selectedPower}
               students={partyMembers}
               caster={student}
-              onConfirm={handleUsePower}
+              onConfirm={(targets, inputValue) => handleUsePower(selectedPower, targets, inputValue)}
               battleState={battleState}
               eligibleTargets={eligibleTargets}
           />
