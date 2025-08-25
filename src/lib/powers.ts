@@ -116,7 +116,7 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Berserker Strike',
-      description: 'Roll 1d20. On 11+, deal that much damage + your level. On 1-10, you take 5 damage.',
+      description: 'Roll 1d20. On 6+, deal that much damage + your level. On 1-5, you take damage equal to your level. This damage cannot be blocked.',
       level: 7,
       mpCost: 18,
       type: 'damage',

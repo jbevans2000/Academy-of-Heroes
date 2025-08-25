@@ -28,7 +28,7 @@ import { Slider } from '@/components/ui/slider';
 
 interface QueuedPower {
     casterUid: string;
-    powerName: 'Wildfire' | 'Chaos Storm';
+    powerName: 'Wildfire' | 'Chaos Storm' | 'Berserker Strike';
     damage: number;
 }
 
@@ -74,6 +74,7 @@ interface LiveBattleState {
   shielded?: { [uid: string]: { roundsRemaining: number; casterName: string; } }; // uid -> shield info
   chaosStormCasts?: { [studentUid: string]: number }; // For Chaos Storm
   intercepting?: { [casterUid: string]: string }; // casterUid -> targetUid
+  damageShields?: { [uid: string]: number };
 }
 
 interface PowerActivation {
@@ -84,6 +85,7 @@ interface PowerActivation {
     powerMpCost: number;
     targets: string[];
     timestamp: any;
+    inputValue?: number;
 }
 
 
@@ -791,6 +793,29 @@ export default function TeacherLiveBattlePage() {
                     queuedPowers: arrayUnion(newQueuedPower),
                     powerEventMessage: `${activation.studentName} has cast Wildfire! Their foe will receive ${damage} points of damage if their spell strikes true!`
                 });
+            } else if (activation.powerName === 'Berserker Strike') {
+                const roll = Math.floor(Math.random() * 20) + 1;
+                if (roll >= 6) {
+                    const damage = roll + (studentData.level || 1);
+                    const newQueuedPower: QueuedPower = { casterUid: activation.studentUid, powerName: 'Berserker Strike', damage: damage };
+                    batch.update(liveBattleRef, {
+                        queuedPowers: arrayUnion(newQueuedPower),
+                        powerEventMessage: `${activation.studentName} flies into a berserker rage!`,
+                        targetedEvent: { targetUid: activation.studentUid, message: `You charge into the fray in a berserker rage, and strike the enemy for ${damage} damage!` }
+                    });
+                     batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: activation.studentName, powerName: activation.powerName, description: `Dealt ${damage} damage.`, timestamp: serverTimestamp() });
+                } else {
+                    const selfDamage = studentData.level || 1;
+                    const newHp = Math.max(0, studentData.hp - selfDamage);
+                    batch.update(studentRef, { hp: newHp });
+                    if (newHp === 0 && !(battleData.fallenPlayerUids || []).includes(activation.studentUid)) {
+                        batch.update(liveBattleRef, { fallenPlayerUids: arrayUnion(activation.studentUid) });
+                    }
+                    batch.update(liveBattleRef, {
+                        targetedEvent: { targetUid: activation.studentUid, message: `You charge in to the fray with reckless abandon and pay the price, taking ${selfDamage} damage from the enemy!` }
+                    });
+                     batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: activation.studentName, powerName: activation.powerName, description: `Took ${selfDamage} self-inflicted damage.`, timestamp: serverTimestamp() });
+                }
             } else if (activation.powerName === 'Chaos Storm') {
                 const casts = battleData.chaosStormCasts?.[activation.studentUid] || 0;
                 if (casts >= 2) {
