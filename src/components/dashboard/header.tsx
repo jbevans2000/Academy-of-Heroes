@@ -1,11 +1,13 @@
 
 'use client';
 
-import { Sword, LogOut, LifeBuoy } from "lucide-react";
+import { useState, useEffect } from 'react';
+import { Sword, LogOut, LifeBuoy, Bug, Lightbulb } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { auth } from "@/lib/firebase";
-import { signOut } from "firebase/auth";
+import { auth, db } from "@/lib/firebase";
+import { signOut, onAuthStateChanged, type User } from "firebase/auth";
+import { doc, onSnapshot } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
 interface DashboardHeaderProps {
@@ -14,6 +16,18 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ characterName = 'Account' }: DashboardHeaderProps) {
   const router = useRouter();
+  const [isFeedbackPanelVisible, setIsFeedbackPanelVisible] = useState(false);
+
+  useEffect(() => {
+    const settingsRef = doc(db, 'settings', 'global');
+    const unsubscribeSettings = onSnapshot(settingsRef, (docSnap) => {
+        if (docSnap.exists()) {
+            setIsFeedbackPanelVisible(docSnap.data().isFeedbackPanelVisible || false);
+        }
+    });
+
+    return () => unsubscribeSettings();
+  }, []);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -27,6 +41,16 @@ export function DashboardHeader({ characterName = 'Account' }: DashboardHeaderPr
         <span className="text-xl">The Academy of Heroes</span>
       </Link>
       <div className="ml-auto flex items-center gap-4">
+          {isFeedbackPanelVisible && (
+            <div className="flex items-center gap-2">
+                 <Button variant="outline" size="sm" onClick={() => router.push('/teacher/feedback?type=bug')}>
+                    <Bug className="mr-2 h-4 w-4" /> Report a Bug
+                </Button>
+                 <Button variant="outline" size="sm" onClick={() => router.push('/teacher/feedback?type=feature')}>
+                    <Lightbulb className="mr-2 h-4 w-4" /> Request a Feature
+                </Button>
+            </div>
+        )}
           <Link href="/dashboard/help" passHref>
             <Button variant="outline">
                 <LifeBuoy className="mr-2 h-5 w-5" />
