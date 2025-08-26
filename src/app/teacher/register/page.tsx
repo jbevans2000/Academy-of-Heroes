@@ -50,6 +50,8 @@ export default function TeacherRegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
+  const [isBetaFeaturesActive, setIsBetaFeaturesActive] = useState(false);
+  const maxSteps = isBetaFeaturesActive ? 3 : 2;
 
   const router = useRouter();
   const { toast } = useToast();
@@ -60,6 +62,7 @@ export default function TeacherRegisterPage() {
         try {
             const settings = await getGlobalSettings();
             setIsRegistrationOpen(settings.isRegistrationOpen);
+            setIsBetaFeaturesActive(settings.isFeedbackPanelVisible || false);
         } catch (error) {
             console.error("Failed to check registration status:", error);
             // Default to open if there's an error, to not block registration unintentionally
@@ -93,8 +96,8 @@ export default function TeacherRegisterPage() {
   }
 
   const handleSubmit = async () => {
-    // Final NDA Check
-    if (ndaSignature.trim() !== name.trim() || !ndaAgreed) {
+    // Final NDA Check if beta features are active
+    if (isBetaFeaturesActive && (ndaSignature.trim() !== name.trim() || !ndaAgreed)) {
         toast({ variant: 'destructive', title: 'Agreement Required', description: 'You must type your full name exactly as entered in Step 1 and check the box to agree to the NDA.' });
         return;
     }
@@ -233,9 +236,11 @@ export default function TeacherRegisterPage() {
                         </div>
                         <div className="flex items-center">
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>2</div>
-                            <div className={`w-16 h-1 ${step > 2 ? 'bg-primary' : 'bg-muted'}`}></div>
+                             {isBetaFeaturesActive && <div className={`w-16 h-1 ${step > 2 ? 'bg-primary' : 'bg-muted'}`}></div>}
                         </div>
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 3 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>3</div>
+                        {isBetaFeaturesActive && (
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 3 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>3</div>
+                        )}
                     </div>
 
                     {/* Step 1: Account Info */}
@@ -285,7 +290,7 @@ export default function TeacherRegisterPage() {
                     )}
 
                     {/* Step 3: NDA */}
-                    {step === 3 && (
+                    {step === 3 && isBetaFeaturesActive && (
                          <div className="space-y-4 animate-in fade-in-50">
                             <h3 className="text-xl font-semibold text-center">Step 3: Beta Tester Agreement</h3>
                             <Card className="border-primary">
@@ -356,12 +361,12 @@ export default function TeacherRegisterPage() {
                         {step > 1 ? (
                             <Button variant="outline" onClick={handlePrevStep} disabled={isLoading}>Previous</Button>
                         ) : <div />}
-                        {step < 3 ? (
+                        {step < maxSteps ? (
                             <Button onClick={handleNextStep} disabled={isLoading}>Next</Button>
                         ) : (
-                             <Button onClick={handleSubmit} disabled={isLoading || !ndaAgreed || name.trim() !== ndaSignature.trim()}>
+                             <Button onClick={handleSubmit} disabled={isLoading || (isBetaFeaturesActive && (!ndaAgreed || name.trim() !== ndaSignature.trim()))}>
                                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} 
-                                Agree & Complete Registration
+                                {isBetaFeaturesActive ? 'Agree & Complete Registration' : 'Complete Registration'}
                             </Button>
                         )}
                     </div>
