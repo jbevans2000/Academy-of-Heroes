@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, User, KeyRound, School, Briefcase, Phone, Check, Star, ArrowLeft, ShieldAlert } from 'lucide-react';
+import { Loader2, User, KeyRound, School, Briefcase, Phone, Check, Star, ArrowLeft, ShieldAlert, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
@@ -38,6 +38,7 @@ export default function TeacherRegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [schoolName, setSchoolName] = useState('');
+  const [address, setAddress] = useState('');
   const [className, setClassName] = useState('');
 
   const [isLoading, setIsLoading] = useState(false);
@@ -66,16 +67,16 @@ export default function TeacherRegisterPage() {
   
   const handleNextStep = () => {
     // Add validation before proceeding
-    if (step === 1 && (!name || !email || !password || !confirmPassword)) {
-        toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill in your name, email, and both password fields.' });
+    if (step === 1 && (!name || !email || !password || !confirmPassword || !phoneNumber)) {
+        toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill in your name, email, phone number, and both password fields.' });
         return;
     }
     if (password !== confirmPassword) {
         toast({ variant: 'destructive', title: 'Passwords Do Not Match', description: 'Please ensure your passwords match.' });
         return;
     }
-     if (step === 2 && (!schoolName || !className)) {
-        toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill in your school and guild name.' });
+     if (step === 2 && (!schoolName || !className || !address)) {
+        toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill in your school, address, and guild name.' });
         return;
     }
     setStep(s => s + 1);
@@ -111,14 +112,12 @@ export default function TeacherRegisterPage() {
             uid: user.uid,
             name: name,
             email: email,
+            phoneNumber: phoneNumber,
             schoolName: schoolName,
+            address: address,
             className: className,
             classCode: classCode, // Save the generated class code
         };
-
-        if (phoneNumber) {
-            teacherData.phoneNumber = phoneNumber;
-        }
 
         const teacherRef = doc(db, "teachers", user.uid);
         await setDoc(teacherRef, teacherData);
@@ -248,8 +247,8 @@ export default function TeacherRegisterPage() {
                                 <Input id="confirm-password" type="password" placeholder="Confirm your password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="phone"><Phone className="inline-block mr-2" />Phone Number (Optional)</Label>
-                                <Input id="phone" type="tel" placeholder="For optional two-factor authentication" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
+                                <Label htmlFor="phone"><Phone className="inline-block mr-2" />Phone Number</Label>
+                                <Input id="phone" type="tel" placeholder="For account verification" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
                             </div>
                         </div>
                     )}
@@ -261,6 +260,10 @@ export default function TeacherRegisterPage() {
                             <div className="space-y-2">
                                 <Label htmlFor="school-name"><School className="inline-block mr-2" />School Name</Label>
                                 <Input id="school-name" placeholder="e.g., Luminaria High" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="address"><MapPin className="inline-block mr-2" />School Address</Label>
+                                <Input id="address" placeholder="e.g., 123 Hero Lane, Townsville" value={address} onChange={(e) => setAddress(e.target.value)} />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="class-name"><Briefcase className="inline-block mr-2" />Guild Name</Label>
