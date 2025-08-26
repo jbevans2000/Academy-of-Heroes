@@ -35,7 +35,16 @@ export const avatarData: ClassAvatarData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%202%20(7).jpg?alt=media&token=49f51e35-0464-4455-a3f0-a1319c17bb15',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%202%20(8).jpg?alt=media&token=7cfb168d-b386-4ae5-a6f2-182a4bc263c3'
     ],
-    3: generatePlaceholders(8, 'fantasy paladin'),
+    3: [
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%203%20(5).jpg?alt=media&token=dd9da982-6490-470a-a052-09f13562bf79',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%203%20(3).jpg?alt=media&token=f3c15a0f-6e6d-488e-b1e3-4616ea3f0889',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%203%20(8).jpg?alt=media&token=52509232-13ff-43f5-9520-3ad0b2385f99',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%203%20(1).jpg?alt=media&token=7113fdd9-e452-4316-b071-fbdb5334812f',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%203%20(2).jpg?alt=media&token=00a6e56a-1380-4600-bc1b-31aaabf3494f',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%203%20(6).jpg?alt=media&token=a8705fe6-9248-4aa9-a68e-586bb2866bd1',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%203%20(4).jpg?alt=media&token=b64aeb33-9ece-4ed5-8d30-e096b2a79a97',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%203%20(7).jpg?alt=media&token=824b046a-7165-42bc-b813-a17f25cc7776'
+    ],
     4: generatePlaceholders(8, 'holy warrior'),
     5: generatePlaceholders(8, 'epic knight'),
     6: generatePlaceholders(8, 'golden knight'),
