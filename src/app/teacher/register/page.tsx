@@ -8,13 +8,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, User, KeyRound, School, Briefcase, Phone, Check, Star, ArrowLeft, ShieldAlert, MapPin } from 'lucide-react';
+import { Loader2, User, KeyRound, School, Briefcase, Phone, Check, Star, ArrowLeft, ShieldAlert, MapPin, Gavel } from 'lucide-react';
 import Link from 'next/link';
 import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { doc, setDoc, collection, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { getGlobalSettings } from '@/ai/flows/manage-settings';
 import { populateDefaultBoons } from '@/ai/flows/manage-boons';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Checkbox } from '@/components/ui/checkbox';
 
 
 // Function to generate a random, easy-to-read class code
@@ -40,6 +42,10 @@ export default function TeacherRegisterPage() {
   const [schoolName, setSchoolName] = useState('');
   const [address, setAddress] = useState('');
   const [className, setClassName] = useState('');
+
+  // NDA State
+  const [ndaSignature, setNdaSignature] = useState('');
+  const [ndaAgreed, setNdaAgreed] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
@@ -87,6 +93,12 @@ export default function TeacherRegisterPage() {
   }
 
   const handleSubmit = async () => {
+    // Final NDA Check
+    if (ndaSignature.trim() !== name.trim() || !ndaAgreed) {
+        toast({ variant: 'destructive', title: 'Agreement Required', description: 'You must type your full name exactly as entered in Step 1 and check the box to agree to the NDA.' });
+        return;
+    }
+    
     // Authoritative check on submission
     const settings = await getGlobalSettings();
     if (!settings.isRegistrationOpen) {
@@ -272,53 +284,69 @@ export default function TeacherRegisterPage() {
                         </div>
                     )}
 
-                    {/* Step 3: Billing Placeholder */}
+                    {/* Step 3: NDA */}
                     {step === 3 && (
-                        <div className="space-y-4 animate-in fade-in-50">
-                            <h3 className="text-xl font-semibold text-center">Step 3: Choose Your Plan</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {/* Free Plan */}
-                                <Card className="p-4 flex flex-col text-center">
-                                    <CardHeader>
-                                        <CardTitle>Free Plan</CardTitle>
-                                        <CardDescription>$0 / month</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="flex-grow">
-                                        <ul className="space-y-2 text-sm text-muted-foreground text-left">
-                                            <li className="flex items-center"><Check className="w-4 h-4 mr-2 text-green-500" />Up to 30 students</li>
-                                            <li className="flex items-center"><Check className="w-4 h-4 mr-2 text-green-500" />Basic questing</li>
-                                            <li className="flex items-center"><Check className="w-4 h-4 mr-2 text-green-500" />Basic tools</li>
+                         <div className="space-y-4 animate-in fade-in-50">
+                            <h3 className="text-xl font-semibold text-center">Step 3: Beta Tester Agreement</h3>
+                            <Card className="border-primary">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2"><Gavel/> Beta Test Non-Disclosure Agreement (NDA)</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <ScrollArea className="h-64 w-full rounded-md border p-4 prose prose-sm max-w-none">
+                                        <p>This Agreement is entered into as of the date signed below between Jason Evans (“Developer”), creator of Academy of Heroes (formerly “ClassCraft”), and the undersigned Beta Tester (“Tester”).</p>
+                                        <h3>1. Purpose</h3>
+                                        <p>Developer is providing Tester with early access to the Academy of Heroes app, including its stories, graphics, branding, game mechanics, lesson integration features, and related materials (“Confidential Information”), solely for the purpose of testing in their own classroom and providing feedback.</p>
+                                        <h3>2. Confidentiality & Permitted Use</h3>
+                                        <p>Tester agrees:</p>
+                                        <ul>
+                                            <li>Tester may use the app with their own students in the normal course of classroom instruction during the beta period.</li>
+                                            <li>Tester may not share, copy, disclose, or distribute the app, its code, scripts, artwork, text, logos, lesson structures, or design concepts outside of their own classroom.</li>
+                                            <li>Tester may not grant access to other teachers, schools, or third parties without Developer’s written permission.</li>
+                                            <li>Tester may not reverse-engineer, decompile, or attempt to replicate the app or its underlying systems.</li>
+                                            <li>Except for permitted classroom use, Tester will keep all feedback, gameplay, screenshots, and discussions about the app private unless given written permission by Developer.</li>
                                         </ul>
-                                    </CardContent>
-                                    <CardFooter>
-                                        <Button variant="outline" className="w-full" onClick={handleSubmit} disabled={isLoading}>
-                                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Select Free Plan
-                                        </Button>
-                                    </CardFooter>
-                                </Card>
-                                {/* Premium Plan */}
-                                <Card className="p-4 flex flex-col text-center border-primary border-2 relative">
-                                    <div className="absolute top-0 -translate-y-1/2 w-full">
-                                        <div className="mx-auto bg-primary text-primary-foreground text-sm font-bold px-3 py-1 rounded-full w-fit">Most Popular</div>
-                                    </div>
-                                    <CardHeader>
-                                        <CardTitle>Premium Plan</CardTitle>
-                                        <CardDescription>$12 / month</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="flex-grow">
-                                        <ul className="space-y-2 text-sm text-muted-foreground text-left">
-                                            <li className="flex items-center"><Star className="w-4 h-4 mr-2 text-yellow-500" />Unlimited students</li>
-                                            <li className="flex items-center"><Star className="w-4 h-4 mr-2 text-yellow-500" />Advanced customization</li>
-                                            <li className="flex items-center"><Star className="w-4 h-4 mr-2 text-yellow-500" />All classroom tools</li>
-                                            <li className="flex items-center"><Star className="w-4 h-4 mr-2 text-yellow-500" />Priority support</li>
+                                        <h3>3. Intellectual Property</h3>
+                                        <p>Tester acknowledges that:</p>
+                                        <ul>
+                                            <li>Academy of Heroes is the sole property of Developer.</li>
+                                            <li>All trademarks, copyrighted materials (including storyline, lesson design, characters, artwork, rewards, and mechanics), and proprietary scripts remain with Developer.</li>
+                                            <li>Participation in the beta gives Tester no ownership, license, or rights beyond personal use for testing in their classroom.</li>
                                         </ul>
-                                    </CardContent>
-                                    <CardFooter>
-                                        <Button className="w-full" onClick={handleSubmit} disabled={isLoading}>
-                                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Select Premium Plan
-                                        </Button>
-                                    </CardFooter>
-                                </Card>
+                                        <h3>4. Tester-Created Content</h3>
+                                        <p>During beta, Tester may create quests, boss battles, rewards, or other custom content (“Tester Content”).</p>
+                                        <p>Tester acknowledges that all Tester Content exists only within the beta testing environment and may be modified or removed by Developer at any time.</p>
+                                        <p>At the end of the beta period, all Tester Content and all beta tester accounts may be permanently removed, at Developer’s discretion.</p>
+                                        <p>Developer will provide notice before such removal occurs.</p>
+                                        <p>Tester has no ownership or continuing rights to Tester Content once the beta period ends.</p>
+                                        <h3>5. Feedback</h3>
+                                        <p>Any feedback, suggestions, or ideas provided by Tester may be used by Developer freely to improve the app. Tester does not acquire any rights to compensation or ownership from their feedback.</p>
+                                        <h3>6. Term & Termination</h3>
+                                        <p>This NDA begins upon Tester’s signature and remains in effect until the public release of the app or until Developer provides written release.</p>
+                                        <p>Developer may revoke Tester’s access at any time and require destruction of all related materials.</p>
+                                        <h3>7. Remedies</h3>
+                                        <p>Tester understands that breach of this NDA may cause harm to Developer, and Developer reserves the right to pursue legal or equitable remedies, including injunctive relief.</p>
+                                        <h3>8. General</h3>
+                                        <p>This Agreement is governed by the laws of the State of Nevada, USA.</p>
+                                        <p>If any provision is found invalid, the remainder remains in effect.</p>
+                                        <p>This Agreement represents the full understanding between the parties.</p>
+                                    </ScrollArea>
+                                </CardContent>
+                            </Card>
+                             <div className="space-y-4 pt-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="nda-signature">Type Your Full Name to Agree</Label>
+                                    <Input id="nda-signature" placeholder={name || "Your Full Name"} value={ndaSignature} onChange={(e) => setNdaSignature(e.target.value)} />
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <Checkbox id="nda-agree" checked={ndaAgreed} onCheckedChange={(checked) => setNdaAgreed(!!checked)} />
+                                    <label
+                                        htmlFor="nda-agree"
+                                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                    >
+                                        I have read and agree to the Beta Tester NDA.
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -328,8 +356,13 @@ export default function TeacherRegisterPage() {
                         {step > 1 ? (
                             <Button variant="outline" onClick={handlePrevStep} disabled={isLoading}>Previous</Button>
                         ) : <div />}
-                        {step < 3 && (
+                        {step < 3 ? (
                             <Button onClick={handleNextStep} disabled={isLoading}>Next</Button>
+                        ) : (
+                             <Button onClick={handleSubmit} disabled={isLoading || !ndaAgreed || name.trim() !== ndaSignature.trim()}>
+                                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} 
+                                Agree & Complete Registration
+                            </Button>
                         )}
                     </div>
                     <div className="text-center text-sm text-muted-foreground">
