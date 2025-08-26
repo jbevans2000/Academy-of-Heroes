@@ -112,9 +112,9 @@ export default function StudentHelpPage() {
                                     </AccordionContent>
                                 </AccordionItem>
                                 <AccordionItem value="h-6">
-                                    <AccordionTrigger>Cosmic Divination (Lvl 10, 15 MP)</AccordionTrigger>
+                                    <AccordionTrigger>Divine Judgment (Lvl 10, 15 MP)</AccordionTrigger>
                                     <AccordionContent className="prose prose-sm max-w-none">
-                                        <p>Peer into the future, allowing the team to vote on skipping the current question. If the vote passes, the round ends immediately. This power deals damage equal to your Level regardless of the vote outcome. It can only be used twice per battle by the entire party.</p>
+                                        <p>Channel the party's collective will. A vote is called to either empower the party with a temporary HP boost or unleash divine energy on the boss. The effect triggers at the end of the round.</p>
                                     </AccordionContent>
                                 </AccordionItem>
                                 <AccordionItem value="h-7">
