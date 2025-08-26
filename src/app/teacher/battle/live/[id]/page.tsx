@@ -1371,7 +1371,7 @@ export default function TeacherLiveBattlePage() {
                     timestamp: serverTimestamp()
                 });
             } else if (activation.powerName === 'Intercept') {
-                const eligibleTargets = allStudents.filter(s => s.uid !== activation.studentUid && !s.guardedBy && (!s.shielded || s.shielded.roundsRemaining <= 0));
+                const eligibleTargets = allStudents.filter(s => s.inBattle && s.uid !== activation.studentUid && !s.guardedBy && (!s.shielded || s.shielded.roundsRemaining <= 0));
                 
                 if (eligibleTargets.length > 0) {
                     const target = eligibleTargets[Math.floor(Math.random() * eligibleTargets.length)];
