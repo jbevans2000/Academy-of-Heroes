@@ -83,7 +83,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
               <AlertDialogHeader>
                   <AlertDialogTitle>You are a Freelance Hero!</AlertDialogTitle>
                   <AlertDialogDescription>
-                      You are not currently a member of a company. Your teacher can assign you to one from their dashboard.
+                      You are not currently a member of a company. Check with your Guild Leader to add you to the Company Register if you need to join a Company!
                   </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
