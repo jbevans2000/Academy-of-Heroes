@@ -6,7 +6,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { collection, doc, getDoc, onSnapshot, writeBatch, deleteDoc, getDocs, query, where, updateDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
-import type { Student, PendingStudent, ClassType } from '@/lib/data';
+import type { Student, PendingStudent, ClassType, Company } from '@/lib/data';
 import { TeacherHeader } from "@/components/teacher/teacher-header";
 import { StudentList } from "@/components/teacher/student-list";
 import { Skeleton } from '@/components/ui/skeleton';
@@ -47,7 +47,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive } from 'lucide-react';
+import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain, MAX_LEVEL } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -60,11 +60,12 @@ interface TeacherData {
     pendingCleanupBattleId?: string;
 }
 
-type SortOrder = 'studentName' | 'characterName' | 'xp' | 'class';
+type SortOrder = 'studentName' | 'characterName' | 'xp' | 'class' | 'company';
 
 export default function Dashboard() {
   const [students, setStudents] = useState<Student[]>([]);
   const [pendingStudents, setPendingStudents] = useState<PendingStudent[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [xpAmount, setXpAmount] = useState<number | string>('');
@@ -147,12 +148,21 @@ export default function Dashboard() {
     const pendingUnsubscribe = onSnapshot(pendingStudentsQuery, (snapshot) => {
         setPendingStudents(snapshot.docs.map(doc => ({ ...doc.data() } as PendingStudent)));
     });
+    
+    // Set up real-time listener for companies
+    const companiesQuery = collection(db, 'teachers', teacherUid, 'companies');
+    const companiesUnsubscribe = onSnapshot(companiesQuery, (snapshot) => {
+        const companiesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
+        setCompanies(companiesData.sort((a,b) => a.name.localeCompare(b.name)));
+    });
+
 
     // Cleanup listeners on unmount
     return () => {
         unsubTeacher();
         studentsUnsubscribe();
         pendingUnsubscribe();
+        companiesUnsubscribe();
     };
   }, [teacher]);
 
@@ -161,23 +171,47 @@ export default function Dashboard() {
     const activeStudents = students.filter(s => !s.isArchived);
     switch(sortOrder) {
       case 'studentName':
-        activeStudents.sort((a, b) => a.studentName.localeCompare(b.studentName));
-        break;
+        return { type: 'flat', data: [...activeStudents].sort((a, b) => a.studentName.localeCompare(b.studentName)) };
       case 'characterName':
-        activeStudents.sort((a, b) => a.characterName.localeCompare(b.characterName));
-        break;
+        return { type: 'flat', data: [...activeStudents].sort((a, b) => a.characterName.localeCompare(b.characterName)) };
       case 'xp':
-        activeStudents.sort((a, b) => (b.xp || 0) - (a.xp || 0));
-        break;
+        return { type: 'flat', data: [...activeStudents].sort((a, b) => (b.xp || 0) - (a.xp || 0)) };
       case 'class':
         const classOrder: ClassType[] = ['Guardian', 'Healer', 'Mage'];
-        activeStudents.sort((a, b) => classOrder.indexOf(a.class) - classOrder.indexOf(b.class));
-        break;
+        return { type: 'flat', data: [...activeStudents].sort((a, b) => classOrder.indexOf(a.class) - classOrder.indexOf(b.class)) };
+      case 'company':
+        const grouped: { [companyId: string]: Student[] } = {};
+        const freelancers: Student[] = [];
+
+        activeStudents.forEach(student => {
+            if (student.companyId && companies.find(c => c.id === student.companyId)) {
+                if (!grouped[student.companyId]) {
+                    grouped[student.companyId] = [];
+                }
+                grouped[student.companyId].push(student);
+            } else {
+                freelancers.push(student);
+            }
+        });
+        
+        // Sort students within each company
+        for (const companyId in grouped) {
+            grouped[companyId].sort((a, b) => a.characterName.localeCompare(b.characterName));
+        }
+        
+        // Sort freelancers
+        freelancers.sort((a, b) => a.characterName.localeCompare(b.characterName));
+
+        // Create a sorted list of company IDs based on company names
+        const sortedCompanyIds = companies
+            .filter(c => grouped[c.id]) // Only include companies that have members
+            .map(c => c.id);
+
+        return { type: 'grouped', data: grouped, freelancers, companyOrder: sortedCompanyIds };
       default:
-        break;
+        return { type: 'flat', data: activeStudents };
     }
-    return activeStudents;
-  }, [students, sortOrder]);
+  }, [students, sortOrder, companies]);
 
   const handleToggleStudentSelection = (uid: string) => {
     setSelectedStudents(prev =>
@@ -186,10 +220,11 @@ export default function Dashboard() {
   };
 
   const handleSelectAllToggle = () => {
-    if (selectedStudents.length === sortedStudents.length) {
+     const allSortedUids = students.filter(s => !s.isArchived).map(s => s.uid);
+    if (selectedStudents.length === allSortedUids.length) {
       setSelectedStudents([]);
     } else {
-      setSelectedStudents(sortedStudents.map(s => s.uid));
+      setSelectedStudents(allSortedUids);
     }
   };
 
@@ -587,7 +622,7 @@ export default function Dashboard() {
             variant="outline"
             className="text-black border-black"
             >
-            {selectedStudents.length === students.length ? 'Deselect All' : 'Select All'}
+            {selectedStudents.length === students.filter(s => !s.isArchived).length ? 'Deselect All' : 'Select All'}
             </Button>
             
             <DropdownMenu>
@@ -675,6 +710,7 @@ export default function Dashboard() {
                             <DropdownMenuRadioItem value="characterName">Character Name</DropdownMenuRadioItem>
                             <DropdownMenuRadioItem value="xp">Experience</DropdownMenuRadioItem>
                             <DropdownMenuRadioItem value="class">Class</DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="company">Company</DropdownMenuRadioItem>
                         </DropdownMenuRadioGroup>
                       </DropdownMenuSubContent>
                     </DropdownMenuSub>
@@ -786,13 +822,48 @@ export default function Dashboard() {
                 </AlertDialogContent>
             </AlertDialog>
         </div>
-        <StudentList 
-            students={sortedStudents} 
-            selectedStudents={selectedStudents}
-            onSelectStudent={handleToggleStudentSelection}
-            setStudents={setStudents}
-            teacherUid={teacher.uid}
-        />
+        {sortOrder === 'company' && sortedStudents.type === 'grouped' ? (
+             <div className="space-y-6">
+                {sortedStudents.companyOrder.map(companyId => {
+                    const company = companies.find(c => c.id === companyId);
+                    const members = sortedStudents.data[companyId] || [];
+                    return (
+                        <div key={companyId}>
+                            <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
+                                <Briefcase /> {company?.name}
+                            </h2>
+                            <StudentList
+                                students={members}
+                                selectedStudents={selectedStudents}
+                                onSelectStudent={handleToggleStudentSelection}
+                                setStudents={setStudents}
+                                teacherUid={teacher.uid}
+                            />
+                        </div>
+                    )
+                })}
+                {sortedStudents.freelancers.length > 0 && (
+                    <div>
+                        <h2 className="text-2xl font-bold mb-2">Freelancers</h2>
+                        <StudentList
+                            students={sortedStudents.freelancers}
+                            selectedStudents={selectedStudents}
+                            onSelectStudent={handleToggleStudentSelection}
+                            setStudents={setStudents}
+                            teacherUid={teacher.uid}
+                        />
+                    </div>
+                )}
+            </div>
+        ) : sortedStudents.type === 'flat' ? (
+            <StudentList 
+                students={sortedStudents.data} 
+                selectedStudents={selectedStudents}
+                onSelectStudent={handleToggleStudentSelection}
+                setStudents={setStudents}
+                teacherUid={teacher.uid}
+            />
+        ) : null}
       </main>
     </div>
   );
