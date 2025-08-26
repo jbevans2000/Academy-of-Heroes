@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -27,7 +28,6 @@ interface PowerLogEntry {
 export function BattleLog({ teacherUid }: { teacherUid: string }) {
     const [logEntries, setLogEntries] = useState<PowerLogEntry[]>([]);
     const [isOpen, setIsOpen] = useState(true);
-    const logEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (!teacherUid) return;
@@ -58,10 +58,6 @@ export function BattleLog({ teacherUid }: { teacherUid: string }) {
         return () => unsubscribeLive();
     }, [teacherUid]);
 
-    useEffect(() => {
-        logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [logEntries])
-    
     const titleColor = logEntries.length > 0 ? 'text-black' : '';
 
     return (
@@ -92,7 +88,6 @@ export function BattleLog({ teacherUid }: { teacherUid: string }) {
                                     </div>
                                 ))
                             )}
-                            <div ref={logEndRef} />
                         </div>
                     </CardContent>
                 </CollapsibleContent>
