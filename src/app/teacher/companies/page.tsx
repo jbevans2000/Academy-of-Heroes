@@ -55,7 +55,7 @@ const CompanyCard = ({ company, students, onEdit, onDelete, onDrop, onRemoveStud
                 {students.length > 0 ? students.map(student => (
                     <div key={student.uid} className="flex items-center justify-between p-2 bg-secondary rounded-md">
                         <span className="font-medium">{student.characterName}</span>
-                         <Button variant="ghost" size="icon" onClick={() => onRemoveStudent(student.uid)}><Trash2 className="h-4 w-4" /></Button>
+                         <Button variant="ghost" size="icon" onClick={() => onRemoveStudent(student.uid)}><X className="h-4 w-4" /></Button>
                     </div>
                 )) : <p className="text-muted-foreground text-sm">Drag students here to assign them.</p>}
             </CardContent>

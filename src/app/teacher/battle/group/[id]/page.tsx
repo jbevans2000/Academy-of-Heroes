@@ -1,18 +1,22 @@
+
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { doc, getDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { useState, useEffect, useMemo } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { doc, getDoc, addDoc, collection, serverTimestamp, getDocs, writeBatch } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Swords, CheckCircle, XCircle, Trophy, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, Swords, CheckCircle, XCircle, Trophy, Loader2, Save, Users, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
+import type { Student, Company } from '@/lib/data';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 interface Question {
   questionText: string;
@@ -26,22 +30,57 @@ interface Battle {
   questions: Question[];
 }
 
+interface BattleResult {
+    questionIndex: number;
+    isCorrect: boolean;
+    participants: string[]; // UIDs of students who got it right
+}
+
+// Fisher-Yates shuffle algorithm
+const shuffleArray = <T,>(array: T[]): T[] => {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+};
+
+
 export default function GroupBattlePage() {
     const router = useRouter();
     const params = useParams();
+    const searchParams = useSearchParams();
     const battleId = params.id as string;
     const { toast } = useToast();
 
     const [battle, setBattle] = useState<Battle | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [teacher, setTeacher] = useState<User | null>(null);
-    
+    const [allStudents, setAllStudents] = useState<Student[]>([]);
+    const [allCompanies, setAllCompanies] = useState<Company[]>([]);
+
     // Game State
+    const [gameState, setGameState] = useState<'setup' | 'battle' | 'finished'>('setup');
+    const [presentStudentUids, setPresentStudentUids] = useState<string[]>([]);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [selectedAnswerIndex, setSelectedAnswerIndex] = useState<number | null>(null);
     const [isSubmitted, setIsSubmitted] = useState(false);
-    const [score, setScore] = useState(0);
+    const [battleResults, setBattleResults] = useState<BattleResult[]>([]);
     const [isSaving, setIsSaving] = useState(false);
+
+    // Mode-specific state
+    const mode = searchParams.get('mode') || 'guild';
+    const xpPerAnswer = Number(searchParams.get('xp') || 0);
+    const goldPerAnswer = Number(searchParams.get('gold') || 0);
+    const xpParticipation = Number(searchParams.get('xpParticipation') || 0);
+    const goldParticipation = Number(searchParams.get('goldParticipation') || 0);
+
+    const [companyRotation, setCompanyRotation] = useState<Company[]>([]);
+    const [individualRotation, setIndividualRotation] = useState<Student[]>([]);
+    
+    const presentStudents = useMemo(() => allStudents.filter(s => presentStudentUids.includes(s.uid)), [allStudents, presentStudentUids]);
+
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -67,6 +106,13 @@ export default function GroupBattlePage() {
                     toast({ variant: 'destructive', title: 'Error', description: 'Battle not found.' });
                     router.push('/teacher/battles');
                 }
+
+                const studentsSnapshot = await getDocs(collection(db, 'teachers', teacher.uid, 'students'));
+                setAllStudents(studentsSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student)));
+
+                 const companiesSnapshot = await getDocs(collection(db, 'teachers', teacher.uid, 'companies'));
+                setAllCompanies(companiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company)));
+
             } catch (error) {
                 console.error("Error fetching battle data:", error);
                 toast({ variant: 'destructive', title: 'Error', description: 'Could not load the battle.' });
@@ -76,26 +122,83 @@ export default function GroupBattlePage() {
         };
         fetchBattleData();
     }, [battleId, teacher, router, toast]);
+    
+    const handleStartBattle = () => {
+        if (mode === 'company') {
+            const companiesWithPresentMembers = allCompanies.filter(c => 
+                presentStudents.some(s => s.companyId === c.id)
+            );
+            setCompanyRotation(shuffleArray(companiesWithPresentMembers));
+        }
+        if (mode === 'individual') {
+            setIndividualRotation(shuffleArray(presentStudents));
+        }
+        setGameState('battle');
+    };
+
 
     const handleSubmitAnswer = () => {
-        if (selectedAnswerIndex === null) return;
-        const isCorrect = selectedAnswerIndex === battle!.questions[currentQuestionIndex].correctAnswerIndex;
-        if (isCorrect) {
-            setScore(prev => prev + 1);
+        if (selectedAnswerIndex === null || !battle) return;
+        const isCorrect = selectedAnswerIndex === battle.questions[currentQuestionIndex].correctAnswerIndex;
+        
+        let participants: string[] = [];
+
+        if(isCorrect) {
+            if (mode === 'guild') {
+                participants = presentStudentUids;
+            } else if (mode === 'company') {
+                const currentCompany = companyRotation[currentQuestionIndex % companyRotation.length];
+                participants = presentStudents.filter(s => s.companyId === currentCompany.id).map(s => s.uid);
+            } else if (mode === 'individual') {
+                const currentStudent = individualRotation[currentQuestionIndex % individualRotation.length];
+                participants = [currentStudent.uid];
+            }
         }
+        
+        setBattleResults(prev => [...prev, { questionIndex: currentQuestionIndex, isCorrect, participants }]);
         setIsSubmitted(true);
     };
 
     const handleNextQuestion = () => {
         setIsSubmitted(false);
         setSelectedAnswerIndex(null);
-        setCurrentQuestionIndex(prev => prev + 1);
+        if (currentQuestionIndex >= battle!.questions.length - 1) {
+            setGameState('finished');
+        } else {
+            setCurrentQuestionIndex(prev => prev + 1);
+        }
     };
     
     const handleSaveSummary = async () => {
         if (!teacher || !battle) return;
         setIsSaving(true);
+        
+        const batch = writeBatch(db);
+        const correctAnswersByStudent: { [uid: string]: number } = {};
+
+        battleResults.forEach(result => {
+            if (result.isCorrect) {
+                result.participants.forEach(uid => {
+                    if (!correctAnswersByStudent[uid]) correctAnswersByStudent[uid] = 0;
+                    correctAnswersByStudent[uid]++;
+                });
+            }
+        });
+
+        presentStudents.forEach(student => {
+            const studentRef = doc(db, 'teachers', teacher.uid, 'students', student.uid);
+            const correctCount = correctAnswersByStudent[student.uid] || 0;
+            const xpToAdd = (correctCount * xpPerAnswer) + xpParticipation;
+            const goldToAdd = (correctCount * goldPerAnswer) + goldParticipation;
+
+            if(xpToAdd > 0) batch.update(studentRef, { xp: (student.xp || 0) + xpToAdd });
+            if(goldToAdd > 0) batch.update(studentRef, { gold: (student.gold || 0) + goldToAdd });
+        });
+
         try {
+            await batch.commit();
+
+            const score = battleResults.filter(r => r.isCorrect).length;
             const summaryRef = collection(db, 'teachers', teacher.uid, 'groupBattleSummaries');
             await addDoc(summaryRef, {
                 battleName: battle.battleName,
@@ -104,18 +207,26 @@ export default function GroupBattlePage() {
                 totalQuestions: battle.questions.length,
                 completedAt: serverTimestamp(),
             });
+
             await logGameEvent(teacher.uid, 'BOSS_BATTLE', `Group Battle "${battle.battleName}" completed with a score of ${score}/${battle.questions.length}.`);
-            toast({ title: 'Summary Saved!', description: 'The group battle summary has been saved to the archives.' });
+            toast({ title: 'Summary Saved & Rewards Bestowed!', description: 'Student XP and Gold have been updated.' });
             router.push('/teacher/battles/summary');
+
         } catch (error) {
-            console.error("Error saving summary:", error);
-            toast({ variant: 'destructive', title: 'Save Failed', description: 'Could not save the battle summary.' });
+            console.error("Error saving summary and rewards:", error);
+            toast({ variant: 'destructive', title: 'Save Failed', description: 'Could not save the battle summary or bestow rewards.' });
         } finally {
             setIsSaving(false);
         }
     };
+    
+    const handleToggleStudentPresence = (uid: string) => {
+        setPresentStudentUids(prev => 
+            prev.includes(uid) ? prev.filter(id => id !== uid) : [...prev, uid]
+        );
+    };
 
-    if (isLoading || !battle) {
+    if (isLoading || !battle || !teacher) {
         return (
             <div className="flex h-screen items-center justify-center bg-gray-900">
                  <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -123,9 +234,47 @@ export default function GroupBattlePage() {
         )
     }
     
-    const isLastQuestion = currentQuestionIndex === battle.questions.length - 1;
-    const isBattleFinished = currentQuestionIndex >= battle.questions.length;
+    if (gameState === 'setup') {
+        return (
+            <div className="flex min-h-screen w-full flex-col items-center justify-center p-4 bg-muted/40">
+                <Card className="w-full max-w-lg">
+                    <CardHeader>
+                        <CardTitle>Mark Heroes who are Absent Today!</CardTitle>
+                        <CardDescription>Uncheck any students who are not present. They will be excluded from participation and rewards.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="max-h-[50vh] overflow-y-auto space-y-2">
+                        {allStudents.map(student => (
+                            <div key={student.uid} className="flex items-center space-x-2 p-2 rounded-md border">
+                                <Checkbox
+                                    id={`student-${student.uid}`}
+                                    checked={!presentStudentUids.includes(student.uid)}
+                                    onCheckedChange={(checked) => handleToggleStudentPresence(student.uid)}
+                                />
+                                <Label htmlFor={`student-${student.uid}`} className="flex-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                    {student.characterName} ({student.studentName})
+                                </Label>
+                            </div>
+                        ))}
+                    </CardContent>
+                    <CardFooter>
+                        <Button className="w-full" onClick={handleStartBattle}>Begin Battle</Button>
+                    </CardFooter>
+                </Card>
+            </div>
+        );
+    }
+    
+    const isBattleFinished = gameState === 'finished';
     const currentQuestion = battle.questions[currentQuestionIndex];
+    let activeParticipantDisplay: React.ReactNode = null;
+    
+    if (mode === 'company' && companyRotation.length > 0) {
+        const currentCompany = companyRotation[currentQuestionIndex % companyRotation.length];
+        activeParticipantDisplay = <h3 className="text-2xl font-bold flex items-center gap-2"><Users className="h-6 w-6"/> Company: {currentCompany.name}</h3>;
+    } else if (mode === 'individual' && individualRotation.length > 0) {
+        const currentStudent = individualRotation[currentQuestionIndex % individualRotation.length];
+        activeParticipantDisplay = <h3 className="text-2xl font-bold flex items-center gap-2"><Shield className="h-6 w-6"/> Hero: {currentStudent.characterName}</h3>;
+    }
 
     return (
         <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-gray-900 p-4">
@@ -152,13 +301,13 @@ export default function GroupBattlePage() {
                             <CardDescription className="text-lg">Your guild fought valiantly against {battle.battleName}.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-6xl font-bold">{score} / {battle.questions.length}</p>
+                            <p className="text-6xl font-bold">{battleResults.filter(r=>r.isCorrect).length} / {battle.questions.length}</p>
                             <p className="text-muted-foreground">Correct Answers</p>
                         </CardContent>
                         <CardFooter className="flex-col gap-4">
                             <Button size="lg" onClick={handleSaveSummary} disabled={isSaving}>
                                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                                Save to Archives
+                                Save to Archives & Bestow Rewards
                             </Button>
                             <Button variant="link" onClick={() => router.push('/teacher/battles')}>
                                 Exit Without Saving
@@ -168,7 +317,7 @@ export default function GroupBattlePage() {
                 ) : (
                     <Card className="shadow-2xl bg-card/80 backdrop-blur-sm">
                         <CardHeader className="text-center">
-                            <Swords className="h-12 w-12 mx-auto text-primary" />
+                            {activeParticipantDisplay || <Swords className="h-12 w-12 mx-auto text-primary" />}
                             <CardTitle className="text-2xl font-semibold">Question {currentQuestionIndex + 1} / {battle.questions.length}</CardTitle>
                             <CardTitle className="text-4xl font-bold">{currentQuestion.questionText}</CardTitle>
                         </CardHeader>
@@ -188,7 +337,7 @@ export default function GroupBattlePage() {
                                         </>
                                     )}
                                      <Button size="lg" className="mt-8" onClick={handleNextQuestion}>
-                                        {isLastQuestion ? 'View Summary' : 'Next Question'}
+                                        {currentQuestionIndex === battle.questions.length - 1 ? 'View Summary' : 'Next Question'}
                                     </Button>
                                 </div>
                             ) : (

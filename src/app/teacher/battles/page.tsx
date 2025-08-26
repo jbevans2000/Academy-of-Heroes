@@ -7,8 +7,8 @@ import { collection, getDocs, doc, writeBatch, deleteDoc, setDoc, onSnapshot, qu
 import { db, auth } from '@/lib/firebase';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Eye, Loader2, LayoutDashboard, Edit, Trash2, BookHeart, Users, User } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { PlusCircle, Eye, Loader2, LayoutDashboard, Edit, Trash2, BookHeart, Users, User, Star, Coins } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -22,9 +22,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { Dialog, DialogHeader, DialogFooter, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
-import { format } from 'date-fns';
 
 interface BossBattle {
   id: string;
@@ -36,7 +39,16 @@ export default function BossBattlesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [startingBattleId, setStartingBattleId] = useState<string | null>(null);
   const [selectedBattleForStart, setSelectedBattleForStart] = useState<BossBattle | null>(null);
-  const [isStartBattleDialogOpen, setIsStartBattleDialogOpen] = useState(false);
+  
+  // State for the dialog flow
+  const [isModeDialogOpen, setIsModeDialogOpen] = useState(false);
+  const [isRewardDialogOpen, setIsRewardDialogOpen] = useState(false);
+  const [deploymentMode, setDeploymentMode] = useState<'guild' | 'company' | 'individual' | null>(null);
+  const [xpPerAnswer, setXpPerAnswer] = useState<number | string>('');
+  const [goldPerAnswer, setGoldPerAnswer] = useState<number | string>('');
+  const [xpParticipation, setXpParticipation] = useState<number | string>('');
+  const [goldParticipation, setGoldParticipation] = useState<number | string>('');
+
   const router = useRouter();
   const { toast } = useToast();
   const [teacher, setTeacher] = useState<FirebaseUser | null>(null);
@@ -75,7 +87,7 @@ export default function BossBattlesPage() {
 
   }, [teacher, toast]);
 
-  const handleStartBattle = async (battle: BossBattle) => {
+  const handleStartIndividualBattle = async (battle: BossBattle) => {
     if (!teacher) return;
     setStartingBattleId(battle.id);
     try {
@@ -134,13 +146,26 @@ export default function BossBattlesPage() {
         });
     } finally {
         setStartingBattleId(null);
-        setIsStartBattleDialogOpen(false);
+        setIsModeDialogOpen(false);
     }
   };
 
-  const handleStartGroupBattle = (battleId: string) => {
-    router.push(`/teacher/battle/group/${battleId}`);
-    setIsStartBattleDialogOpen(false);
+  const handleStartGroupBattleFlow = (mode: 'guild' | 'company' | 'individual') => {
+    setDeploymentMode(mode);
+    setIsModeDialogOpen(false);
+    setIsRewardDialogOpen(true);
+  };
+  
+  const handleFinalizeGroupBattleSetup = (withRewards: boolean) => {
+      const params = new URLSearchParams();
+      params.append('mode', deploymentMode!);
+      if (withRewards) {
+          params.append('xp', String(xpPerAnswer || 0));
+          params.append('gold', String(goldPerAnswer || 0));
+          params.append('xpParticipation', String(xpParticipation || 0));
+          params.append('goldParticipation', String(goldParticipation || 0));
+      }
+      router.push(`/teacher/battle/group/${selectedBattleForStart!.id}?${params.toString()}`);
   }
 
   const handleDeleteBattle = async (battleId: string) => {
@@ -167,28 +192,19 @@ export default function BossBattlesPage() {
   const navigateToCreate = () => {
     router.push('/teacher/battles/new');
   };
-  
-  const navigateToDashboard = () => {
-    router.push('/teacher/dashboard');
-  };
 
   return (
     <div className="relative flex min-h-screen w-full flex-col">
-        <AlertDialog open={isStartBattleDialogOpen} onOpenChange={setIsStartBattleDialogOpen}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Choose Battle Mode for "{selectedBattleForStart?.battleName}"</AlertDialogTitle>
-                    <AlertDialogDescription>
+        <Dialog open={isModeDialogOpen} onOpenChange={setIsModeDialogOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Choose Battle Mode for "{selectedBattleForStart?.battleName}"</DialogTitle>
+                    <DialogDescription>
                         How would you like to run this battle?
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
+                    </DialogDescription>
+                </DialogHeader>
                 <div className="grid grid-cols-2 gap-4 py-4">
-                    <Button variant="outline" className="h-24 flex-col gap-2 p-2" onClick={() => handleStartGroupBattle(selectedBattleForStart!.id)}>
-                        <Users className="h-8 w-8 text-primary"/>
-                        <span className="font-semibold text-black">Group Battle</span>
-                        <span className="text-xs text-black whitespace-normal">Teacher-led on a single screen.</span>
-                    </Button>
-                     <Button variant="outline" className="h-24 flex-col gap-2 p-2" onClick={() => handleStartBattle(selectedBattleForStart!)}>
+                    <Button variant="outline" className="h-32 flex-col gap-2 p-2" onClick={() => handleStartIndividualBattle(selectedBattleForStart!)}>
                         {startingBattleId === selectedBattleForStart?.id ? (
                             <Loader2 className="h-8 w-8 animate-spin" />
                         ) : (
@@ -197,12 +213,47 @@ export default function BossBattlesPage() {
                         <span className="font-semibold text-black">Individual Battle</span>
                         <span className="text-xs text-black whitespace-normal">Students play on their own devices.</span>
                     </Button>
+                     <Button variant="outline" className="h-32 flex-col gap-2 p-2" onClick={() => handleStartGroupBattleFlow('guild')}>
+                        <Users className="h-8 w-8 text-primary"/>
+                        <span className="font-semibold text-black">Group Battle</span>
+                        <span className="text-xs text-black whitespace-normal">Teacher-led on a single screen.</span>
+                    </Button>
                 </div>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+            </DialogContent>
+        </Dialog>
+        
+        <Dialog open={isRewardDialogOpen} onOpenChange={setIsRewardDialogOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Configure Battle Rewards</DialogTitle>
+                    <DialogDescription>
+                        Optionally set rewards for this battle session. These are not saved to the template.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                    <div className="space-y-2 p-4 border rounded-md">
+                        <Label className="font-semibold">Per Correct Answer</Label>
+                        <p className="text-sm text-muted-foreground">Awarded to the participant(s) for each correct answer.</p>
+                        <div className="flex gap-4">
+                            <Input type="number" placeholder="XP Amount" value={xpPerAnswer} onChange={e => setXpPerAnswer(e.target.value)} />
+                            <Input type="number" placeholder="Gold Amount" value={goldPerAnswer} onChange={e => setGoldPerAnswer(e.target.value)} />
+                        </div>
+                    </div>
+                     <div className="space-y-2 p-4 border rounded-md">
+                        <Label className="font-semibold">Participation Bonus</Label>
+                        <p className="text-sm text-muted-foreground">Awarded to all present students at the end of the battle, regardless of performance.</p>
+                        <div className="flex gap-4">
+                            <Input type="number" placeholder="XP Amount" value={xpParticipation} onChange={e => setXpParticipation(e.target.value)} />
+                            <Input type="number" placeholder="Gold Amount" value={goldParticipation} onChange={e => setGoldParticipation(e.target.value)} />
+                        </div>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="secondary" onClick={() => handleFinalizeGroupBattleSetup(false)}>Training Battle (No Rewards)</Button>
+                    <Button onClick={() => handleFinalizeGroupBattleSetup(true)}>Set Rewards & Continue</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
 
         <div 
             className="absolute inset-0 -z-10"
@@ -257,7 +308,7 @@ export default function BossBattlesPage() {
                             className="w-full" 
                             onClick={() => {
                                 setSelectedBattleForStart(battle);
-                                setIsStartBattleDialogOpen(true);
+                                setIsModeDialogOpen(true);
                             }}
                             disabled={!!startingBattleId}
                         >
