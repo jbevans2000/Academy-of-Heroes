@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, User, KeyRound, School, Briefcase, Phone, Check, Star, ArrowLeft, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { doc, setDoc, collection, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { getGlobalSettings } from '@/ai/flows/manage-settings';
@@ -136,12 +136,15 @@ export default function TeacherRegisterPage() {
             coordinates: { x: 50, y: 50 },
             createdAt: serverTimestamp(),
         });
+        
+        // Send verification email
+        await sendEmailVerification(user);
 
         toast({
-            title: 'Registration Successful!',
-            description: "Welcome! Your account has been created.",
+            title: 'Registration Almost Complete!',
+            description: "We've sent a verification link to your email address.",
         });
-        router.push('/teacher/dashboard?new=true');
+        router.push('/teacher/verify-email');
 
     } catch (error: any) {
         console.error("Error creating teacher account:", error);
