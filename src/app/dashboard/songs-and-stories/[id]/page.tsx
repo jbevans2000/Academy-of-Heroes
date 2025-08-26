@@ -163,9 +163,9 @@ export default function BattleSummaryDetailPage() {
             style={{ backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-a832e841-3a85-4ec7-91a5-3a2168391745.jpg?alt=media&token=c5608d4b-d703-455b-8664-32b7194f4a38')`}}
         >
              <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
-                <Button variant="outline" onClick={() => router.push('/dashboard/songs-and-stories')}>
+                <Button variant="outline" onClick={() => router.push('/dashboard')}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to All Battle Reports
+                    Back to Dashboard
                 </Button>
             </header>
              <main className="flex-1 p-4 md:p-6 lg:p-8 flex items-center justify-center">
