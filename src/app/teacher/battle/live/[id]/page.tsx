@@ -40,8 +40,8 @@ interface TargetedEvent {
 interface VoteState {
     isActive: boolean;
     casterName: string;
-    votesFor: string[];
-    votesAgainst: string[];
+    votesFor: string[]; // Votes for "Empower Party"
+    votesAgainst: string[]; // Votes for "Damage Boss"
     endsAt: { seconds: number; nanoseconds: number; };
     totalVoters: number;
 }
@@ -66,8 +66,9 @@ interface LiveBattleState {
   queuedPowers?: QueuedPower[];
   fallenPlayerUids?: string[];
   empoweredMageUids?: string[]; // For Solar Empowerment
-  cosmicDivinationUses?: number; // For Cosmic Divination
-  voteState?: VoteState | null; // For Cosmic Divination
+  cosmicDivinationUses?: number; // For Cosmic Divination (old)
+  divineJudgmentUses?: number; // For Divine Judgment
+  voteState?: VoteState | null; 
   sorcerersIntuitionUses?: { [key: string]: number }; // For Sorcerer's Intuition
   elementalFusionCasts?: { [studentUid: string]: number };
   globalElementalFusionCasts?: number;
@@ -796,7 +797,7 @@ export default function TeacherLiveBattlePage() {
         }
     };
 
-    // Effect for Cosmic Divination vote resolution
+    // Effect for Divine Judgment vote resolution
     useEffect(() => {
         if (!liveState?.voteState?.isActive || !liveState?.voteState?.endsAt || !teacherUid) return;
 
@@ -809,24 +810,70 @@ export default function TeacherLiveBattlePage() {
             const battleSnap = await getDoc(liveBattleRef);
             if (!battleSnap.exists()) return;
             const currentVoteState = battleSnap.data().voteState as VoteState;
+            const caster = allStudents.find(s => s.characterName === currentVoteState.casterName);
 
-            const votePassed = currentVoteState.votesFor.length > (currentVoteState.totalVoters / 2);
+            let empowerVotes = currentVoteState.votesFor.length;
+            let damageVotes = currentVoteState.votesAgainst.length;
+            let outcome: 'empower' | 'damage';
 
-            if (votePassed) {
-                await calculateAndSetResults({ isDivinationSkip: true });
+            if (empowerVotes > damageVotes) {
+                outcome = 'empower';
+            } else if (damageVotes > empowerVotes) {
+                outcome = 'damage';
             } else {
-                await updateDoc(liveBattleRef, {
-                    voteState: null,
-                    powerEventMessage: "The party is divided! The attempt to skip time fails."
-                });
-                setTimeout(() => updateDoc(liveBattleRef, { powerEventMessage: '' }), 5000);
+                outcome = Math.random() < 0.5 ? 'empower' : 'damage'; // Random on tie
             }
+
+            const batch = writeBatch(db);
+            const battleLogRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
+
+            if (outcome === 'empower') {
+                 const buffAmount = Math.ceil((caster?.level || 1) * 0.25);
+                 const livingStudents = allStudents.filter(s => s.inBattle && s.hp > 0);
+                 livingStudents.forEach(student => {
+                     const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
+                     batch.update(studentRef, {
+                         maxHp: increment(buffAmount),
+                         hp: increment(buffAmount)
+                     });
+                 });
+                 batch.update(liveBattleRef, { 
+                     powerEventMessage: `Divine Judgment: The party chose to empower! All heroes gain +${buffAmount} HP!`,
+                     voteState: null 
+                 });
+                  batch.set(doc(battleLogRef), {
+                    round: liveState.currentQuestionIndex + 1,
+                    casterName: caster?.characterName || 'A Healer',
+                    powerName: 'Divine Judgment (Empower)',
+                    description: `Empowered party for +${buffAmount} HP.`,
+                    timestamp: serverTimestamp()
+                });
+            } else { // Damage
+                let totalDamage = 0;
+                for (let i = 0; i < 4; i++) totalDamage += Math.floor(Math.random() * 20) + 1;
+                totalDamage += (caster?.level || 1);
+                
+                batch.update(liveBattleRef, { 
+                    totalPowerDamage: increment(totalDamage),
+                    powerEventMessage: `Divine Judgment: The party chose to attack! The boss takes ${totalDamage} divine damage!`,
+                    voteState: null 
+                });
+                batch.set(doc(battleLogRef), {
+                    round: liveState.currentQuestionIndex + 1,
+                    casterName: caster?.characterName || 'A Healer',
+                    powerName: 'Divine Judgment (Damage)',
+                    description: `Dealt ${totalDamage} damage to the boss.`,
+                    timestamp: serverTimestamp()
+                });
+            }
+            await batch.commit();
+            setTimeout(() => updateDoc(liveBattleRef, { powerEventMessage: '' }), 5000);
 
         }, timeUntilExpiry > 0 ? timeUntilExpiry : 0);
 
         return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [liveState?.voteState, teacherUid]);
+    }, [liveState?.voteState, teacherUid, allStudents]);
 
     // Power Activation Listener
     useEffect(() => {
@@ -1162,39 +1209,22 @@ export default function TeacherLiveBattlePage() {
                     description: `Empowered ${targetNames.join(', ')}.`,
                     timestamp: serverTimestamp()
                 });
-            } else if (activation.powerName === 'Cosmic Divination') {
-                 if (battleData.status === 'ROUND_ENDING') return;
-                 if ((battleData.cosmicDivinationUses || 0) >= 2) {
-                     const targetedEvent: TargetedEvent = { targetUid: activation.studentUid, message: "Due to time sickness, you may not use this power again!" };
-                     await updateDoc(liveBattleRef, { targetedEvent: targetedEvent });
-                     setTimeout(() => updateDoc(liveBattleRef, { targetedEvent: null }), 5000);
-                     return;
-                 }
+            } else if (activation.powerName === 'Divine Judgment') {
+                if (battleData.status === 'ROUND_ENDING') return;
 
-                const activePlayersCount = allStudents.filter(s => s.hp > 0).length;
-
-                const voteEndsAt = new Date(Date.now() + 10000);
+                const activePlayersCount = allStudents.filter(s => s.inBattle && s.hp > 0).length;
+                const voteEndsAt = new Date(Date.now() + 15000); // 15 second vote
 
                 batch.update(liveBattleRef, {
-                    cosmicDivinationUses: arrayUnion(1),
-                    totalPowerDamage: arrayUnion(studentData.level),
-                    lastRoundPowerDamage: arrayUnion(studentData.level),
-                    lastRoundPowersUsed: arrayUnion(`Cosmic Divination (${studentData.level} dmg)`),
                     voteState: {
                         isActive: true,
                         casterName: activation.studentName,
-                        votesFor: [activation.studentUid], // Caster auto-votes yes
-                        votesAgainst: [],
+                        votesFor: [], // Empower
+                        votesAgainst: [], // Damage
                         endsAt: voteEndsAt,
                         totalVoters: activePlayersCount,
-                    }
-                });
-                batch.set(doc(battleLogRef), {
-                    round: liveState.currentQuestionIndex + 1,
-                    casterName: activation.studentName,
-                    powerName: activation.powerName,
-                    description: `Dealt ${studentData.level} damage and initiated a vote.`,
-                    timestamp: serverTimestamp()
+                    },
+                    powerEventMessage: `${activation.studentName} calls for a Divine Judgment! The party must vote!`
                 });
             } else if (activation.powerName === 'Regeneration Field') {
                 const healAmount = Math.ceil((studentData.level || 1) * 0.25);
@@ -1536,6 +1566,7 @@ export default function TeacherLiveBattlePage() {
         fallenPlayerUids: initiallyFallenUids,
         empoweredMageUids: [],
         cosmicDivinationUses: 0,
+        divineJudgmentUses: 0,
         sorcerersIntuitionUses: {},
         elementalFusionCasts: {},
         globalElementalFusionCasts: 0,
@@ -1837,4 +1868,3 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
-

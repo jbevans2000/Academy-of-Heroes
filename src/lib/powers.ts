@@ -198,8 +198,8 @@ export const classPowers: ClassPowers = {
       targetCount: 1,
     },
     {
-      name: 'Cosmic Divination',
-      description: 'Peer into the future, allowing the team to vote on skipping the current question. Deals damage equal to your level regardless of the vote. (Max 2 uses per battle)',
+      name: 'Divine Judgment',
+      description: "Channel the party's collective will. A vote is called to either empower the party with a temporary HP boost or unleash divine energy on the boss. The effect triggers at the end of the round.",
       level: 10,
       mpCost: 15,
       type: 'utility',
