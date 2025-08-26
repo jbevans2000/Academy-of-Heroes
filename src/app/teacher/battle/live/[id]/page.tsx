@@ -566,13 +566,6 @@ export default function TeacherLiveBattlePage() {
             }
         }
         
-        const elementalFusionCasters = new Set<string>();
-        for (const studentUid in liveState.powerUsersThisRound) {
-            if (liveState.powerUsersThisRound[studentUid].includes('Elemental Fusion')) {
-                elementalFusionCasters.add(studentUid);
-            }
-        }
-        
         let powerDamage = isDivinationSkip ? (liveState.lastRoundPowerDamage || 0) : 0;
         const powersUsedThisRound: string[] = isDivinationSkip ? (liveState.lastRoundPowersUsed || []) : [];
         const battleLogRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
@@ -709,6 +702,15 @@ export default function TeacherLiveBattlePage() {
             }
         });
 
+        // Elemental Fusion & Inspiring Strike damage calculation
+        const elementalFusionCasters = new Set<string>();
+        if(currentLiveState.powerUsersThisRound) {
+            for (const studentUid in currentLiveState.powerUsersThisRound) {
+                if (currentLiveState.powerUsersThisRound[studentUid].includes('Elemental Fusion')) {
+                    elementalFusionCasters.add(studentUid);
+                }
+            }
+        }
         const inspiringStrikeCasters = new Set<string>();
         if(currentLiveState.powerUsersThisRound) {
             for (const studentUid in currentLiveState.powerUsersThisRound) {
@@ -718,16 +720,15 @@ export default function TeacherLiveBattlePage() {
             }
         }
         
-        // Elemental Fusion & Inspiring Strike damage calculation
-        let multiplier = 1;
-        if (elementalFusionCasters.size > 0) multiplier = 3;
-        if (inspiringStrikeCasters.size > 0) multiplier = 3;
-
-        if (multiplier > 1) {
-            const extraDamage = baseDamageFromAnswers * (multiplier - 1);
-            powerDamage += extraDamage;
-            if (elementalFusionCasters.size > 0) powersUsedThisRound.push(`Elemental Fusion`);
-            if (inspiringStrikeCasters.size > 0) powersUsedThisRound.push(`Inspiring Strike`);
+        if (elementalFusionCasters.size > 0) {
+            const bonusDamage = baseDamageFromAnswers * 2;
+            powerDamage += bonusDamage;
+            powersUsedThisRound.push(`Elemental Fusion (+${bonusDamage} dmg)`);
+        }
+        if (inspiringStrikeCasters.size > 0) {
+            const bonusDamage = baseDamageFromAnswers * 2;
+            powerDamage += bonusDamage;
+            powersUsedThisRound.push(`Inspiring Strike (+${bonusDamage} dmg)`);
         }
 
 
@@ -1836,3 +1837,4 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
+
