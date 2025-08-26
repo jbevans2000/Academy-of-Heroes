@@ -609,26 +609,7 @@ export default function TeacherLiveBattlePage() {
         }
         
         // --- ABSORB & DAMAGE CALCULATION ---
-        const absorbActivations = (currentLiveState.powerUsersThisRound 
-            ? Object.entries(currentLiveState.powerUsersThisRound)
-                .filter(([uid, powers]) => powers.includes('Absorb'))
-                .map(([uid, powers]) => allStudents.find(s => s.uid === uid))
-            : []).filter(Boolean) as Student[];
-
-        for (const absorbCaster of absorbActivations) {
-            // Apply self-damage first
-            const absorbAmount = absorbCaster.damageShield || 0; // Assuming inputValue is stored as damageShield on student
-            const selfDamage = Math.floor(absorbAmount * 0.8);
-            if (selfDamage > 0) {
-                const casterRef = doc(db, 'teachers', teacherUid, 'students', absorbCaster.uid);
-                const newCasterHp = Math.max(1, absorbCaster.hp - selfDamage);
-                batch.update(casterRef, { hp: newCasterHp });
-            }
-
-            // Distribute absorption shield
-            // This logic assumes targets are stored somewhere accessible or a new field is added
-            // For now, we'll just log it. A `targets` field in power activation would be needed.
-        }
+        const studentDamageShields = { ...(currentLiveState.damageShields || {}) };
 
         // --- DAMAGE CALCULATION ---
         if (!isDivinationSkip) {
@@ -656,11 +637,27 @@ export default function TeacherLiveBattlePage() {
                         const isGuarded = !!student.guardedBy; // Check the student's guardedBy field
 
                         if (!isShielded && !isGuarded) {
-                            const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
-                            const newHp = Math.max(0, student.hp - totalDamageToStudent);
-                            batch.update(studentRef, { hp: newHp });
-                            if (newHp === 0 && !liveState.fallenPlayerUids?.includes(student.uid)) {
-                                newlyFallenUids.push(student.uid);
+                            let damageToApply = totalDamageToStudent;
+                            
+                            // Check for Absorb shields
+                            if (studentDamageShields[student.uid] && studentDamageShields[student.uid] > 0) {
+                                const shieldAmount = studentDamageShields[student.uid];
+                                if (damageToApply <= shieldAmount) {
+                                    studentDamageShields[student.uid] -= damageToApply;
+                                    damageToApply = 0;
+                                } else {
+                                    damageToApply -= shieldAmount;
+                                    delete studentDamageShields[student.uid];
+                                }
+                            }
+
+                            if (damageToApply > 0) {
+                                const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
+                                const newHp = Math.max(0, student.hp - damageToApply);
+                                batch.update(studentRef, { hp: newHp });
+                                if (newHp === 0 && !liveState.fallenPlayerUids?.includes(student.uid)) {
+                                    newlyFallenUids.push(student.uid);
+                                }
                             }
                         } else if(isGuarded) {
                             // Damage redirection for Guard power
@@ -679,11 +676,26 @@ export default function TeacherLiveBattlePage() {
                      if(guardian) {
                         const isShielded = newShields[guardian.uid]?.roundsRemaining > 0;
                         if (!isShielded) {
-                            const guardianRef = doc(db, 'teachers', teacherUid, 'students', guardian.uid);
-                            const newHp = Math.max(0, guardian.hp - redirectedDamageForGuardians[guardianUid]);
-                            batch.update(guardianRef, { hp: newHp });
-                            if (newHp === 0 && !liveState.fallenPlayerUids?.includes(guardian.uid)) {
-                                newlyFallenUids.push(guardian.uid);
+                            let damageToApply = redirectedDamageForGuardians[guardianUid];
+                            // Check for Absorb shields on the Guardian
+                            if (studentDamageShields[guardian.uid] && studentDamageShields[guardian.uid] > 0) {
+                                const shieldAmount = studentDamageShields[guardian.uid];
+                                if (damageToApply <= shieldAmount) {
+                                    studentDamageShields[guardian.uid] -= damageToApply;
+                                    damageToApply = 0;
+                                } else {
+                                    damageToApply -= shieldAmount;
+                                    delete studentDamageShields[guardian.uid];
+                                }
+                            }
+
+                            if (damageToApply > 0) {
+                                const guardianRef = doc(db, 'teachers', teacherUid, 'students', guardian.uid);
+                                const newHp = Math.max(0, guardian.hp - damageToApply);
+                                batch.update(guardianRef, { hp: newHp });
+                                if (newHp === 0 && !liveState.fallenPlayerUids?.includes(guardian.uid)) {
+                                    newlyFallenUids.push(guardian.uid);
+                                }
                             }
                         }
                      }
@@ -761,6 +773,7 @@ export default function TeacherLiveBattlePage() {
             totalBaseDamage: (currentLiveState.totalBaseDamage || 0) + baseDamageFromAnswers,
             totalPowerDamage: (currentLiveState.totalPowerDamage || 0) + powerDamage,
             voteState: null,
+            damageShields: studentDamageShields,
         };
 
         if (newlyFallenUids.length > 0) {
@@ -837,7 +850,37 @@ export default function TeacherLiveBattlePage() {
 
             const batch = writeBatch(db);
 
-            if (activation.powerName === 'Martial Sacrifice') {
+            if (activation.powerName === 'Absorb') {
+                if (!activation.targets || activation.targets.length === 0 || !activation.inputValue) return;
+                const absorbAmount = activation.inputValue;
+                const selfDamage = Math.floor(absorbAmount * 0.8);
+                
+                // Deal self-damage
+                if (selfDamage > 0) {
+                    const newHp = Math.max(0, studentData.hp - selfDamage);
+                    batch.update(studentRef, { hp: newHp });
+                     if (newHp === 0 && !(battleData.fallenPlayerUids || []).includes(activation.studentUid)) {
+                        batch.update(liveBattleRef, { fallenPlayerUids: arrayUnion(activation.studentUid) });
+                    }
+                }
+                
+                // Distribute shield
+                const damagePerTarget = Math.floor(absorbAmount / activation.targets.length);
+                const updates: { [key: string]: any } = {};
+                for (const targetUid of activation.targets) {
+                    updates[`damageShields.${targetUid}`] = increment(damagePerTarget);
+                }
+                
+                batch.update(liveBattleRef, updates);
+                
+                batch.set(doc(battleLogRef), {
+                    round: liveState.currentQuestionIndex + 1,
+                    casterName: activation.studentName,
+                    powerName: activation.powerName,
+                    description: `Absorbed up to ${absorbAmount} damage for ${activation.targets.length} allies, taking ${selfDamage} damage.`,
+                    timestamp: serverTimestamp()
+                });
+            } else if (activation.powerName === 'Martial Sacrifice') {
                 if (battleData.martialSacrificeCasterUid) {
                      batch.update(liveBattleRef, { targetedEvent: { targetUid: activation.studentUid, message: `${allStudents.find(s => s.uid === battleData.martialSacrificeCasterUid)?.characterName || 'A hero'} has already sacrificed themself for the glory of the group! Don't let it be in vain!` } });
                 } else {
@@ -1498,6 +1541,7 @@ export default function TeacherLiveBattlePage() {
         inspiringStrikeCasts: {},
         voteState: null,
         shielded: {},
+        damageShields: {},
         chaosStormCasts: {},
         intercepting: {},
         zenShieldCasts: {},
@@ -1565,6 +1609,7 @@ export default function TeacherLiveBattlePage() {
             powerUsersThisRound: {},
             queuedPowers: [],
             intercepting: {},
+            damageShields: {},
         });
 
         await batch.commit();
