@@ -37,10 +37,9 @@ export function CompanyDisplay({ isOpen, onOpenChange, members }: CompanyDisplay
                      <Table>
                         <TableHeader>
                             <TableRow>
+                                <TableHead>Student Name</TableHead>
                                 <TableHead>Class</TableHead>
                                 <TableHead>Level</TableHead>
-                                <TableHead>Student Name</TableHead>
-                                <TableHead>Character Name</TableHead>
                                 <TableHead>HP</TableHead>
                                 <TableHead>MP</TableHead>
                                 <TableHead>Gold</TableHead>
@@ -49,10 +48,9 @@ export function CompanyDisplay({ isOpen, onOpenChange, members }: CompanyDisplay
                         <TableBody>
                             {members.map(member => (
                                 <TableRow key={member.uid}>
+                                    <TableCell>{member.studentName}</TableCell>
                                     <TableCell>{member.class}</TableCell>
                                     <TableCell>{member.level}</TableCell>
-                                    <TableCell>{member.studentName}</TableCell>
-                                    <TableCell>{member.characterName}</TableCell>
                                     <TableCell>{member.hp} / {member.maxHp}</TableCell>
                                     <TableCell>{member.mp} / {member.maxMp}</TableCell>
                                     <TableCell>{member.gold.toLocaleString()}</TableCell>
