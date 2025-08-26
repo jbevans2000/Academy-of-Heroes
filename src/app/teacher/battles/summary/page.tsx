@@ -174,10 +174,16 @@ export default function BattleSummariesPage() {
   }
 
   return (
-    <div 
-      className="flex flex-col min-h-screen bg-cover bg-center"
-      style={{ backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-a832e841-3a85-4ec7-91a5-3a2168391745.jpg?alt=media&token=c5608d4b-d703-455b-8664-32b7194f4a38')`}}
-    >
+    <div className="relative flex flex-col min-h-screen">
+      <div 
+        className="absolute inset-0 -z-10"
+        style={{
+          backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FArchives.jpg?alt=media&token=1bbfbdcd-fb4a-4139-9a8d-44603c19a86c')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          opacity: 0.2,
+        }}
+      />
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="max-w-4xl mx-auto space-y-6">
