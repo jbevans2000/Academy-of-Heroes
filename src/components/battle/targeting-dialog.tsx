@@ -72,18 +72,21 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
   }, [isOpen, power.isMultiStep]);
 
   const handleSelectStudent = (uid: string) => {
+    const isAbsorb = power.name === 'Absorb';
     const targetCount = power.targetCount || 1;
+
     setSelectedUids(prev => {
       if (prev.includes(uid)) {
         return prev.filter(id => id !== uid);
       }
-      if (prev.length < targetCount) {
+      if (isAbsorb || prev.length < targetCount) {
         return [...prev, uid];
       }
       toast({ title: `You can only select ${targetCount} target(s).`, description: 'Deselect a player to choose another.' });
       return prev;
     });
   };
+
 
   const handleLetFateDecide = () => {
     setIsFateDeciding(true);
@@ -103,18 +106,22 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
   const handleConfirmClick = () => {
     // For non-input powers or after input has been given
     if (power.target) {
+        const isAbsorb = power.name === 'Absorb';
         const targetCount = power.targetCount || 1;
         const canSelectMax = eligibleTargets.length >= targetCount;
-        const isSelectionComplete = canSelectMax 
-            ? selectedUids.length === targetCount 
-            : selectedUids.length > 0 && selectedUids.length <= eligibleTargets.length;
+        
+        const isSelectionComplete = isAbsorb
+            ? selectedUids.length > 0
+            : (canSelectMax 
+                ? selectedUids.length === targetCount 
+                : selectedUids.length > 0 && selectedUids.length <= eligibleTargets.length);
         
         if (!isSelectionComplete) {
-             toast({ title: 'Invalid Selection', description: `Please select up to ${Math.min(targetCount, eligibleTargets.length)} players.`});
+             toast({ title: 'Invalid Selection', description: isAbsorb ? `Please select at least one player.` : `Please select up to ${Math.min(targetCount, eligibleTargets.length)} players.`});
              return;
         }
 
-        if (!canSelectMax && selectedUids.length > 0) {
+        if (!canSelectMax && !isAbsorb && selectedUids.length > 0) {
             setIsConfirming(true); // Show confirmation for casting with fewer targets
         } else {
             onConfirm(selectedUids, Number(inputValue) || undefined);
@@ -187,12 +194,15 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
     }
 
   const renderStep2 = () => {
+      const isAbsorb = power.name === 'Absorb';
       const targetCount = power.targetCount || 1;
       const canSelectMax = eligibleTargets.length >= targetCount;
       const isSelectionComplete = power.target
-          ? (canSelectMax 
-              ? selectedUids.length === targetCount 
-              : selectedUids.length > 0 && selectedUids.length <= eligibleTargets.length)
+          ? isAbsorb
+              ? selectedUids.length > 0
+              : (canSelectMax 
+                  ? selectedUids.length === targetCount 
+                  : selectedUids.length > 0 && selectedUids.length <= eligibleTargets.length)
           : true;
 
       return (
@@ -200,7 +210,7 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
             <DialogHeader>
                 <DialogTitle>Select Target(s) for {power.name}</DialogTitle>
                 <DialogDescription>
-                    {power.targetCount ? `Choose up to ${targetCount} player(s) to affect with this power.` : 'Choose players to affect with this power.'}
+                    {isAbsorb ? 'Choose allies to protect with your shield.' : (power.targetCount ? `Choose up to ${targetCount} player(s) to affect with this power.` : 'Choose players to affect with this power.')}
                 </DialogDescription>
             </DialogHeader>
             <ScrollArea className="h-72 w-full rounded-md border p-4">
@@ -230,7 +240,7 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
                     </Button>
                 )}
                 <Button type="button" onClick={handleConfirmClick} disabled={!isSelectionComplete}>
-                    Confirm Selection ({selectedUids.length}/{canSelectMax ? targetCount : eligibleTargets.length})
+                    Confirm Selection ({selectedUids.length}/{isAbsorb ? '∞' : (canSelectMax ? targetCount : eligibleTargets.length)})
                 </Button>
             </DialogFooter>
         </>

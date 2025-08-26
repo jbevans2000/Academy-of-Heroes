@@ -112,6 +112,7 @@ export const classPowers: ClassPowers = {
       type: 'support',
       isMultiStep: true,
       target: 'ally',
+      targetSelf: false,
     },
     {
       name: 'Berserker Strike',
