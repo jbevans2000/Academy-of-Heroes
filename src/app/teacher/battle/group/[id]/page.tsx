@@ -62,7 +62,7 @@ export default function GroupBattlePage() {
 
     // Game State
     const [gameState, setGameState] = useState<'setup' | 'battle' | 'finished'>('setup');
-    const [presentStudentUids, setPresentStudentUids] = useState<string[]>([]);
+    const [absentStudentUids, setAbsentStudentUids] = useState<string[]>([]);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [selectedAnswerIndex, setSelectedAnswerIndex] = useState<number | null>(null);
     const [isSubmitted, setIsSubmitted] = useState(false);
@@ -79,7 +79,7 @@ export default function GroupBattlePage() {
     const [companyRotation, setCompanyRotation] = useState<Company[]>([]);
     const [individualRotation, setIndividualRotation] = useState<Student[]>([]);
     
-    const presentStudents = useMemo(() => allStudents.filter(s => presentStudentUids.includes(s.uid)), [allStudents, presentStudentUids]);
+    const presentStudents = useMemo(() => allStudents.filter(s => !absentStudentUids.includes(s.uid)), [allStudents, absentStudentUids]);
 
 
     useEffect(() => {
@@ -128,9 +128,17 @@ export default function GroupBattlePage() {
             const companiesWithPresentMembers = allCompanies.filter(c => 
                 presentStudents.some(s => s.companyId === c.id)
             );
+            if (companiesWithPresentMembers.length === 0) {
+                toast({ variant: 'destructive', title: 'No Companies Present', description: 'There are no companies with members marked as present.'});
+                return;
+            }
             setCompanyRotation(shuffleArray(companiesWithPresentMembers));
         }
         if (mode === 'individual') {
+            if (presentStudents.length === 0) {
+                toast({ variant: 'destructive', title: 'No Heroes Present', description: 'No students were marked as present for this battle.'});
+                return;
+            }
             setIndividualRotation(shuffleArray(presentStudents));
         }
         setGameState('battle');
@@ -145,7 +153,7 @@ export default function GroupBattlePage() {
 
         if(isCorrect) {
             if (mode === 'guild') {
-                participants = presentStudentUids;
+                participants = presentStudents.map(s => s.uid);
             } else if (mode === 'company') {
                 const currentCompany = companyRotation[currentQuestionIndex % companyRotation.length];
                 participants = presentStudents.filter(s => s.companyId === currentCompany.id).map(s => s.uid);
@@ -162,6 +170,11 @@ export default function GroupBattlePage() {
     const handleNextQuestion = () => {
         setIsSubmitted(false);
         setSelectedAnswerIndex(null);
+        
+        if (mode === 'individual' && currentQuestionIndex >= presentStudents.length - 1) {
+            setIndividualRotation(shuffleArray(presentStudents));
+        }
+
         if (currentQuestionIndex >= battle!.questions.length - 1) {
             setGameState('finished');
         } else {
@@ -220,8 +233,8 @@ export default function GroupBattlePage() {
         }
     };
     
-    const handleToggleStudentPresence = (uid: string) => {
-        setPresentStudentUids(prev => 
+    const handleToggleStudentAbsence = (uid: string) => {
+        setAbsentStudentUids(prev => 
             prev.includes(uid) ? prev.filter(id => id !== uid) : [...prev, uid]
         );
     };
@@ -240,15 +253,15 @@ export default function GroupBattlePage() {
                 <Card className="w-full max-w-lg">
                     <CardHeader>
                         <CardTitle>Mark Heroes who are Absent Today!</CardTitle>
-                        <CardDescription>Uncheck any students who are not present. They will be excluded from participation and rewards.</CardDescription>
+                        <CardDescription>Check the box next to any students who are not present. They will be excluded from participation and rewards.</CardDescription>
                     </CardHeader>
                     <CardContent className="max-h-[50vh] overflow-y-auto space-y-2">
                         {allStudents.map(student => (
                             <div key={student.uid} className="flex items-center space-x-2 p-2 rounded-md border">
                                 <Checkbox
                                     id={`student-${student.uid}`}
-                                    checked={!presentStudentUids.includes(student.uid)}
-                                    onCheckedChange={(checked) => handleToggleStudentPresence(student.uid)}
+                                    checked={absentStudentUids.includes(student.uid)}
+                                    onCheckedChange={() => handleToggleStudentAbsence(student.uid)}
                                 />
                                 <Label htmlFor={`student-${student.uid}`} className="flex-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                                     {student.characterName} ({student.studentName})
@@ -257,7 +270,7 @@ export default function GroupBattlePage() {
                         ))}
                     </CardContent>
                     <CardFooter>
-                        <Button className="w-full" onClick={handleStartBattle}>Begin Battle</Button>
+                        <Button className="w-full" onClick={handleStartBattle}>Begin Battle ({presentStudents.length} Present)</Button>
                     </CardFooter>
                 </Card>
             </div>
@@ -327,13 +340,13 @@ export default function GroupBattlePage() {
                                     {selectedAnswerIndex === currentQuestion.correctAnswerIndex ? (
                                         <>
                                             <CheckCircle className="h-24 w-24 mx-auto text-green-400" />
-                                            <p className="text-5xl font-bold mt-4 text-green-600">Your strike has landed!</p>
+                                            <p className="text-5xl font-bold mt-4 text-green-300">Correct!</p>
                                         </>
                                     ) : (
                                         <>
                                             <XCircle className="h-24 w-24 mx-auto text-red-400" />
-                                            <p className="text-5xl font-bold mt-4 text-red-300">Your strike has missed!</p>
-                                            <p className="text-xl mt-2">The correct answer was: <span className="font-bold">{currentQuestion.answers[currentQuestion.correctAnswerIndex]}</span></p>
+                                            <p className="text-5xl font-bold mt-4 text-red-300">Incorrect!</p>
+                                            <p className="text-xl mt-2 text-white">The correct answer was: <span className="font-bold">{currentQuestion.answers[currentQuestion.correctAnswerIndex]}</span></p>
                                         </>
                                     )}
                                      <Button size="lg" className="mt-8" onClick={handleNextQuestion}>

@@ -42,6 +42,7 @@ export default function BossBattlesPage() {
   
   // State for the dialog flow
   const [isModeDialogOpen, setIsModeDialogOpen] = useState(false);
+  const [isDeploymentDialogOpen, setIsDeploymentDialogOpen] = useState(false);
   const [isRewardDialogOpen, setIsRewardDialogOpen] = useState(false);
   const [deploymentMode, setDeploymentMode] = useState<'guild' | 'company' | 'individual' | null>(null);
   const [xpPerAnswer, setXpPerAnswer] = useState<number | string>('');
@@ -152,7 +153,7 @@ export default function BossBattlesPage() {
 
   const handleStartGroupBattleFlow = (mode: 'guild' | 'company' | 'individual') => {
     setDeploymentMode(mode);
-    setIsModeDialogOpen(false);
+    setIsDeploymentDialogOpen(false);
     setIsRewardDialogOpen(true);
   };
   
@@ -195,45 +196,54 @@ export default function BossBattlesPage() {
 
   return (
     <div className="relative flex min-h-screen w-full flex-col">
+        {/* Main Mode Dialog */}
         <Dialog open={isModeDialogOpen} onOpenChange={setIsModeDialogOpen}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Choose Battle Mode for "{selectedBattleForStart?.battleName}"</DialogTitle>
-                    <DialogDescription>
-                        How would you like to run this battle?
-                    </DialogDescription>
+                    <DialogTitle>Choose Battle Type for "{selectedBattleForStart?.battleName}"</DialogTitle>
+                    <DialogDescription>How would you like to run this battle?</DialogDescription>
                 </DialogHeader>
                 <div className="grid grid-cols-2 gap-4 py-4">
                     <Button variant="outline" className="h-32 flex-col gap-2 p-2" onClick={() => handleStartIndividualBattle(selectedBattleForStart!)}>
-                        {startingBattleId === selectedBattleForStart?.id ? (
-                            <Loader2 className="h-8 w-8 animate-spin" />
-                        ) : (
-                            <User className="h-8 w-8 text-primary"/>
-                        )}
-                        <span className="font-semibold text-black">Individual Battle</span>
-                        <span className="text-xs text-black whitespace-normal">Students play on their own devices.</span>
+                        {startingBattleId === selectedBattleForStart?.id ? <Loader2 className="h-8 w-8 animate-spin" /> : <User className="h-8 w-8 text-primary"/>}
+                        <span className="font-semibold">Individual Battle (Live)</span>
+                        <span className="text-xs text-muted-foreground whitespace-normal">Students play on their own devices.</span>
                     </Button>
-                     <Button variant="outline" className="h-32 flex-col gap-2 p-2" onClick={() => handleStartGroupBattleFlow('guild')}>
+                    <Button variant="outline" className="h-32 flex-col gap-2 p-2" onClick={() => { setIsModeDialogOpen(false); setIsDeploymentDialogOpen(true); }}>
                         <Users className="h-8 w-8 text-primary"/>
-                        <span className="font-semibold text-black">Group Battle</span>
-                        <span className="text-xs text-black whitespace-normal">Teacher-led on a single screen.</span>
+                        <span className="font-semibold">Group Battle</span>
+                        <span className="text-xs text-muted-foreground whitespace-normal">Teacher-led on a single screen.</span>
                     </Button>
                 </div>
             </DialogContent>
         </Dialog>
-        
+
+        {/* Group Battle Deployment Dialog */}
+        <Dialog open={isDeploymentDialogOpen} onOpenChange={setIsDeploymentDialogOpen}>
+             <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Choose Group Battle Mode</DialogTitle>
+                    <DialogDescription>Select how participants will be chosen for each question.</DialogDescription>
+                </DialogHeader>
+                <div className="flex flex-col gap-4 py-4">
+                    <Button variant="outline" className="h-20" onClick={() => handleStartGroupBattleFlow('guild')}>Deploy Entire Guild</Button>
+                    <Button variant="outline" className="h-20" onClick={() => handleStartGroupBattleFlow('company')}>Deploy Companies</Button>
+                    <Button variant="outline" className="h-20" onClick={() => handleStartGroupBattleFlow('individual')}>Deploy Individual Heroes</Button>
+                </div>
+            </DialogContent>
+        </Dialog>
+
+        {/* Reward Configuration Dialog */}
         <Dialog open={isRewardDialogOpen} onOpenChange={setIsRewardDialogOpen}>
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Configure Battle Rewards</DialogTitle>
-                    <DialogDescription>
-                        Optionally set rewards for this battle session. These are not saved to the template.
-                    </DialogDescription>
+                    <DialogDescription>Optionally set rewards for this battle session. These are not saved to the template.</DialogDescription>
                 </DialogHeader>
                 <div className="py-4 space-y-4">
                     <div className="space-y-2 p-4 border rounded-md">
                         <Label className="font-semibold">Per Correct Answer</Label>
-                        <p className="text-sm text-muted-foreground">Awarded to the participant(s) for each correct answer.</p>
+                        <p className="text-sm text-muted-foreground">Awarded to the participant(s) for each correct answer they provide.</p>
                         <div className="flex gap-4">
                             <Input type="number" placeholder="XP Amount" value={xpPerAnswer} onChange={e => setXpPerAnswer(e.target.value)} />
                             <Input type="number" placeholder="Gold Amount" value={goldPerAnswer} onChange={e => setGoldPerAnswer(e.target.value)} />
