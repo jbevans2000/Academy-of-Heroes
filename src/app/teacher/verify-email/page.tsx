@@ -24,15 +24,15 @@ export default function VerifyEmailPage() {
                      <div className="flex justify-center mb-4">
                         <MailCheck className="h-16 w-16 text-primary" />
                     </div>
-                    <CardTitle className="text-3xl font-headline">Verify Your Email Address</CardTitle>
-                    <CardDescription>One final step to forge your new account!</CardDescription>
+                    <CardTitle className="text-3xl font-headline">A Message from the Academy!</CardTitle>
+                    <CardDescription>Your request to form a guild has been received. One final step remains!</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <p className="text-lg">
-                        We have sent a verification link to your email address. Please check your inbox (and your spam folder, just in case) and click the link to complete your registration.
+                        A raven has been dispatched to your email address carrying a scroll of verification. Please check your inbox (and the raven's roost, or spam folder) and click the link upon the scroll to finalize your registration.
                     </p>
                     <p className="text-muted-foreground">
-                        Once you have verified your email, you can log in to your new Guild Leader account.
+                        Once your email has been verified, you may enter the Guild Leader's Podium and begin your journey.
                     </p>
                 </CardContent>
                 <CardFooter>
