@@ -197,6 +197,8 @@ export default function GroupBattlePage() {
                 });
             }
         });
+        
+        const presentUids = presentStudents.map(s => s.uid);
 
         presentStudents.forEach(student => {
             const studentRef = doc(db, 'teachers', teacher.uid, 'students', student.uid);
@@ -209,21 +211,26 @@ export default function GroupBattlePage() {
         });
 
         try {
-            await batch.commit();
-
-            const score = battleResults.filter(r => r.isCorrect).length;
             const summaryRef = collection(db, 'teachers', teacher.uid, 'groupBattleSummaries');
-            await addDoc(summaryRef, {
+            const newSummaryDoc = await addDoc(summaryRef, {
                 battleName: battle.battleName,
                 battleId: battleId,
-                score: score,
+                score: battleResults.filter(r => r.isCorrect).length,
                 totalQuestions: battle.questions.length,
+                mode: mode,
+                xpPerAnswer,
+                goldPerAnswer,
+                xpParticipation,
+                goldParticipation,
+                results: battleResults,
+                presentStudentUids: presentUids,
                 completedAt: serverTimestamp(),
             });
 
-            await logGameEvent(teacher.uid, 'BOSS_BATTLE', `Group Battle "${battle.battleName}" completed with a score of ${score}/${battle.questions.length}.`);
+            await batch.commit();
+            await logGameEvent(teacher.uid, 'BOSS_BATTLE', `Group Battle "${battle.battleName}" completed.`);
             toast({ title: 'Summary Saved & Rewards Bestowed!', description: 'Student XP and Gold have been updated.' });
-            router.push('/teacher/battles/summary');
+            router.push(`/teacher/battle/group-summary/${newSummaryDoc.id}`);
 
         } catch (error) {
             console.error("Error saving summary and rewards:", error);

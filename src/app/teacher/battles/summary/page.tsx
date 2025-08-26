@@ -266,17 +266,19 @@ export default function BattleSummariesPage() {
                             </div>
                         ) : (
                            groupSummaries.map(summary => (
-                                <div key={summary.id} className="block border p-4 rounded-lg">
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <h3 className="font-semibold text-lg">{summary.battleName}</h3>
-                                            <p className="font-bold text-xl">Score: {summary.score} / {summary.totalQuestions}</p>
+                                <Link key={summary.id} href={`/teacher/battle/group-summary/${summary.id}`} passHref>
+                                    <div className="block border p-4 rounded-lg hover:bg-primary/10 transition-colors cursor-pointer">
+                                        <div className="flex justify-between items-center">
+                                            <div>
+                                                <h3 className="font-semibold text-lg">{summary.battleName}</h3>
+                                                <p className="font-bold text-xl">Score: {summary.score} / {summary.totalQuestions}</p>
+                                            </div>
+                                            <p className="text-sm text-muted-foreground">
+                                                {summary.completedAt ? format(new Date(summary.completedAt.seconds * 1000), 'PPPp') : 'Date unknown'}
+                                            </p>
                                         </div>
-                                        <p className="text-sm text-muted-foreground">
-                                            {summary.completedAt ? format(new Date(summary.completedAt.seconds * 1000), 'PPPp') : 'Date unknown'}
-                                        </p>
                                     </div>
-                                </div>
+                                </Link>
                             ))
                         )}
                     </TabsContent>
@@ -288,5 +290,3 @@ export default function BattleSummariesPage() {
     </div>
   );
 }
-
-    
