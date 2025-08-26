@@ -61,7 +61,7 @@ export default function GroupBattlePage() {
     const [allCompanies, setAllCompanies] = useState<Company[]>([]);
 
     // Game State
-    const [gameState, setGameState<'setup' | 'battle' | 'finished'>('setup');
+    const [gameState, setGameState] = useState<'setup' | 'battle' | 'finished'>('setup');
     const [absentStudentUids, setAbsentStudentUids] = useState<string[]>([]);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [selectedAnswerIndex, setSelectedAnswerIndex] = useState<number | null>(null);
@@ -385,5 +385,3 @@ export default function GroupBattlePage() {
         </div>
     )
 }
-
-    
