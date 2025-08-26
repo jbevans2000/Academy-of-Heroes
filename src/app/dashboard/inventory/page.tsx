@@ -29,7 +29,7 @@ import {
 
 const InventoryBoonCard = ({ boon, quantity, onUse }: { boon: Boon; quantity: number; onUse: (boonId: string) => void; }) => {
     const [isUsing, setIsUsing] = useState(false);
-    const [isStudentMessageOpen, setIsStudentMessageOpen] = useState(false);
+    const [isConfirmingUse, setIsConfirmingUse] = useState(false);
 
     const handleUse = async () => {
         setIsUsing(true);
@@ -40,26 +40,22 @@ const InventoryBoonCard = ({ boon, quantity, onUse }: { boon: Boon; quantity: nu
     };
 
     const handleActivateBoon = () => {
-        if (boon.studentMessage) {
-            setIsStudentMessageOpen(true);
-        } else {
-            handleUse();
-        }
+        setIsConfirmingUse(true);
     };
     
     return (
         <>
-        <AlertDialog open={isStudentMessageOpen} onOpenChange={setIsStudentMessageOpen}>
+        <AlertDialog open={isConfirmingUse} onOpenChange={setIsConfirmingUse}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>{boon.name}</AlertDialogTitle>
+                    <AlertDialogTitle>Use "{boon.name}"?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        {boon.studentMessage}
+                        {boon.studentMessage || "Check with your Guild Leader to redeem this reward!"}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogAction onClick={() => {
-                        setIsStudentMessageOpen(false);
+                        setIsConfirmingUse(false);
                         handleUse();
                     }}>
                         Use Reward
