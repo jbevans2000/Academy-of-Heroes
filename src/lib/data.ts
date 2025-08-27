@@ -8,6 +8,15 @@ export type Company = {
     logoUrl?: string;
 }
 
+export interface Message {
+  id: string;
+  text: string;
+  sender: 'teacher' | 'student';
+  timestamp: any; // Firestore ServerTimestamp
+  isRead: boolean;
+}
+
+
 export type Student = {
     uid: string;
     teacherUid: string;
@@ -45,6 +54,7 @@ export type Student = {
     guardedBy?: string | null; // UID of the Guardian protecting this student
     damageShield?: number; // For Absorb power
     isHidden?: boolean; // To temporarily hide from teacher dashboard
+    hasUnreadMessages?: boolean; // Denormalized field for quick UI updates
 }
 
 export type PendingStudent = {
