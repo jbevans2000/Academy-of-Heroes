@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 import { onSnapshot, doc, getDoc, setDoc, updateDoc, increment, arrayUnion, collection, query, getDocs, serverTimestamp } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
-import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Hourglass, VolumeX, Flame, Lightbulb, Skull, ScrollText, Volume1, Volume, Volume2 as VolumeIcon, ChevronDown } from 'lucide-react';
+import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Hourglass, VolumeX, Flame, Lightbulb, Skull, ScrollText, Volume1, Volume, Volume2 as VolumeIcon, ChevronDown, Info } from 'lucide-react';
 import { type Student } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
@@ -32,9 +32,16 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
+import { Separator } from '@/components/ui/separator';
+
 
 interface TargetedEvent {
     targetUid: string;
+    message: string;
+}
+
+interface RoundEvent {
+    studentUid: string;
     message: string;
 }
 
@@ -69,9 +76,10 @@ interface LiveBattleState {
   removedAnswerIndices?: number[]; // For Nature's Guidance
   powerEventMessage?: string; // For displaying power usage feedback
   targetedEvent?: TargetedEvent | null; // For targeted messages like revivals
+  roundEvents?: RoundEvent[]; // For personalized end-of-round messages
   fallenPlayerUids?: string[]; // New: List of fallen players
   powerUsersThisRound?: { [key: string]: string[] }; // For one power per round rule
-  voteState?: VoteState | null; // For Cosmic Divination
+  voteState?: VoteState | null; // For Divine Judgment
 }
 
 interface Question {
@@ -712,6 +720,8 @@ export default function LiveBattlePage() {
   if (battleState.status === 'SHOWING_RESULTS' && battle) {
       const lastQuestion = battle.questions[battleState.currentQuestionIndex];
       const correctAnswerText = lastQuestion.answers[lastQuestion.correctAnswerIndex];
+      const myPersonalEvents = battleState.roundEvents?.filter(e => e.studentUid === user.uid) || [];
+
 
       return (
         <div className="relative flex min-h-screen flex-col items-center justify-center p-4 bg-gray-900">
@@ -757,6 +767,18 @@ export default function LiveBattlePage() {
                             <p className="text-2xl font-bold">{correctAnswerText}</p>
                         </div>
                         
+                        {myPersonalEvents.length > 0 && (
+                            <div className="p-4 rounded-md bg-blue-900/70 border border-blue-700 text-blue-200 text-left">
+                                <h4 className="font-bold text-center mb-2 flex items-center justify-center gap-2"><Info className="h-5 w-5"/>Round Events</h4>
+                                <Separator className="bg-blue-600 mb-2"/>
+                                <ul className="space-y-1 list-disc list-inside">
+                                    {myPersonalEvents.map((event, index) => (
+                                        <li key={index}>{event.message}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
                         {battleState.lastRoundDamage !== undefined && battleState.lastRoundDamage > 0 && (
                             <div className="p-4 rounded-md bg-sky-900/70 border border-sky-700 text-sky-200 flex items-center justify-center gap-4">
                                 <Swords className="h-10 w-10 text-sky-400" />

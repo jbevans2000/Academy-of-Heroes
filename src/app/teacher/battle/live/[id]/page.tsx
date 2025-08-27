@@ -37,6 +37,11 @@ interface TargetedEvent {
     message: string;
 }
 
+interface RoundEvent {
+    studentUid: string;
+    message: string;
+}
+
 interface VoteState {
     isActive: boolean;
     casterName: string;
@@ -62,6 +67,7 @@ interface LiveBattleState {
   removedAnswerIndices?: number[];
   powerEventMessage?: string;
   targetedEvent?: TargetedEvent | null;
+  roundEvents?: RoundEvent[];
   powerUsersThisRound?: { [key: string]: string[] }; // { studentUid: [powerName, ...] }
   queuedPowers?: QueuedPower[];
   fallenPlayerUids?: string[];
@@ -534,6 +540,7 @@ export default function TeacherLiveBattlePage() {
         
         // --- PRE-CALCULATION PHASE ---
         let sacrificeThisRound = false;
+        const roundEvents: RoundEvent[] = [];
 
         // Decrement shield timers at the start of result calculation
         const currentShields = currentLiveState.shielded || {};
@@ -583,6 +590,12 @@ export default function TeacherLiveBattlePage() {
             const targetResponse = roundResponses.find(r => r.studentUid === targetUid);
             const currentQuestion = battle.questions[liveState.currentQuestionIndex];
 
+            const interceptorName = studentMap.get(interceptorUid)?.characterName || 'A Guardian';
+            const targetName = studentMap.get(targetUid)?.characterName || 'an ally';
+            roundEvents.push({ studentUid: interceptorUid, message: `You bravely intercepted the attack for ${targetName}!` });
+            roundEvents.push({ studentUid: targetUid, message: `${interceptorName} bravely intercepted the attack for you!` });
+
+
             if (interceptorResponse?.isCorrect) {
                 powerDamage += 5; // Intercept bonus damage
                 if (targetResponse && !targetResponse.isCorrect) {
@@ -627,6 +640,7 @@ export default function TeacherLiveBattlePage() {
                      // Apply damage if not shielded/guarded
                      if (totalDamageToStudent > 0) {
                         const isShielded = newShields[student.uid]?.roundsRemaining > 0;
+                        const casterName = newShields[student.uid]?.casterName || "An ally";
                         const isGuarded = !!student.guardedBy; // Check the student's guardedBy field
 
                         if (!isShielded && !isGuarded) {
@@ -635,6 +649,7 @@ export default function TeacherLiveBattlePage() {
                             // Check for Absorb shields
                             if (studentDamageShields[student.uid] && studentDamageShields[student.uid] > 0) {
                                 const shieldAmount = studentDamageShields[student.uid];
+                                roundEvents.push({ studentUid: student.uid, message: `Your Absorb shield negated some damage!` });
                                 if (damageToApply <= shieldAmount) {
                                     studentDamageShields[student.uid] -= damageToApply;
                                     damageToApply = 0;
@@ -655,10 +670,15 @@ export default function TeacherLiveBattlePage() {
                         } else if(isGuarded) {
                             // Damage redirection for Guard power
                             const guardianUid = student.guardedBy;
+                            const guardianName = studentMap.get(guardianUid || '')?.characterName || 'A Guardian';
+                            roundEvents.push({ studentUid: student.uid, message: `You were protected by ${guardianName}'s Guard!` });
                             if (guardianUid) {
+                                roundEvents.push({ studentUid: guardianUid, message: `Your Guard protected ${student.characterName}!` });
                                 if(!redirectedDamageForGuardians[guardianUid]) redirectedDamageForGuardians[guardianUid] = 0;
                                 redirectedDamageForGuardians[guardianUid] += totalDamageToStudent;
                             }
+                        } else if (isShielded) {
+                            roundEvents.push({ studentUid: student.uid, message: `Your shield from ${casterName} absorbed all damage!` });
                         }
                      }
                  }
@@ -775,6 +795,7 @@ export default function TeacherLiveBattlePage() {
             totalPowerDamage: (currentLiveState.totalPowerDamage || 0) + powerDamage,
             voteState: null,
             damageShields: studentDamageShields,
+            roundEvents: roundEvents
         };
 
         if (newlyFallenUids.length > 0) {
@@ -1648,6 +1669,7 @@ export default function TeacherLiveBattlePage() {
             targetedEvent: null,
             powerUsersThisRound: {},
             queuedPowers: [],
+            roundEvents: [],
             intercepting: {},
             damageShields: {},
         });
