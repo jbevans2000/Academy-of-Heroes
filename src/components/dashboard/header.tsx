@@ -27,7 +27,17 @@ export function DashboardHeader({ characterName = 'Account' }: DashboardHeaderPr
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });
-    return () => unsubscribeAuth();
+     const settingsRef = doc(db, 'settings', 'global');
+    const unsubscribeSettings = onSnapshot(settingsRef, (docSnap) => {
+        if (docSnap.exists()) {
+            setIsFeedbackPanelVisible(docSnap.data().isFeedbackPanelVisible || false);
+        }
+    });
+
+    return () => {
+        unsubscribeAuth();
+        unsubscribeSettings();
+    }
   }, []);
 
   useEffect(() => {
@@ -68,6 +78,16 @@ export function DashboardHeader({ characterName = 'Account' }: DashboardHeaderPr
         <span className="text-xl">The Academy of Heroes</span>
       </Link>
       <div className="ml-auto flex items-center gap-4">
+        {isFeedbackPanelVisible && (
+            <>
+                 <Button variant="outline" size="sm" onClick={() => router.push('/teacher/feedback?type=bug&from=student')}>
+                    <Bug className="mr-2 h-4 w-4" /> Report a Bug
+                </Button>
+                 <Button variant="outline" size="sm" onClick={() => router.push('/teacher/feedback?type=feature&from=student')}>
+                    <Lightbulb className="mr-2 h-4 w-4" /> Request a Feature
+                </Button>
+            </>
+        )}
         <Button variant="outline" onClick={() => setIsMessageDialogOpen(true)}>
             <Mail className="mr-2 h-5 w-5" />
             Contact Guild Leader

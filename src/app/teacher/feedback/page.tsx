@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { ArrowLeft, Loader2, Send, Bug, Lightbulb } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { submitFeedback } from '@/ai/flows/submit-feedback';
+import { DashboardHeader } from '@/components/dashboard/header';
 
 function FeedbackFormComponent() {
     const router = useRouter();
@@ -21,24 +22,25 @@ function FeedbackFormComponent() {
     const { toast } = useToast();
     
     const feedbackType = searchParams.get('type') === 'feature' ? 'feature' : 'bug';
+    const from = searchParams.get('from') || 'teacher';
 
-    const [teacher, setTeacher] = useState<User | null>(null);
+    const [user, setUser] = useState<User | null>(null);
     const [message, setMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (user) {
-                setTeacher(user);
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            if (currentUser) {
+                setUser(currentUser);
             } else {
-                router.push('/teacher/login');
+                router.push('/');
             }
         });
         return () => unsubscribe();
     }, [router]);
     
     const handleSubmit = async () => {
-        if (!teacher || !message.trim()) {
+        if (!user || !message.trim()) {
             toast({ variant: 'destructive', title: 'Error', description: 'Message cannot be empty.' });
             return;
         }
@@ -47,7 +49,7 @@ function FeedbackFormComponent() {
             const result = await submitFeedback({ feedbackType, message });
             if (result.success) {
                 toast({ title: 'Feedback Sent!', description: 'Thank you for helping us improve The Academy of Heroes.' });
-                router.push('/teacher/dashboard');
+                router.push(from === 'student' ? '/dashboard' : '/teacher/dashboard');
             } else {
                 throw new Error(result.error);
             }
@@ -72,14 +74,15 @@ function FeedbackFormComponent() {
     }
 
     const details = pageDetails[feedbackType];
+    const returnPath = from === 'student' ? '/dashboard' : '/teacher/dashboard';
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
-            <TeacherHeader />
+            {from === 'teacher' ? <TeacherHeader /> : <DashboardHeader />}
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="max-w-2xl mx-auto space-y-6">
-                    <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Podium
+                    <Button variant="outline" onClick={() => router.push(returnPath)}>
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
                     </Button>
 
                     <Card>
