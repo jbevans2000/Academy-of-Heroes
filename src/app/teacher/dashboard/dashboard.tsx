@@ -92,6 +92,7 @@ export default function Dashboard() {
   
   // New state for single student messaging
   const [isMessageCenterOpen, setIsMessageCenterOpen] = useState(false);
+  const [isConversationViewOpen, setIsConversationViewOpen] = useState(false);
   const [studentToMessage, setStudentToMessage] = useState<Student | null>(null);
   
   useEffect(() => {
@@ -519,11 +520,11 @@ export default function Dashboard() {
   const handleOpenMessageCenter = (student?: Student) => {
     if (student) {
         setStudentToMessage(student);
-        setSelectedStudents([student.uid]);
+        setIsConversationViewOpen(true);
     } else {
         setStudentToMessage(null);
+        setIsMessageCenterOpen(true);
     }
-    setIsMessageCenterOpen(true);
   };
 
 
@@ -843,9 +844,11 @@ export default function Dashboard() {
                 teacher={teacher} 
                 students={students} 
                 selectedStudentUids={selectedStudents}
-                isBulkMessageOpen={isMessageCenterOpen}
-                onBulkMessageOpenChange={setIsMessageCenterOpen}
-                initialStudentToMessage={studentToMessage}
+                isMessageOpen={isMessageCenterOpen}
+                onMessageOpenChange={setIsMessageCenterOpen}
+                isConversationViewOpen={isConversationViewOpen}
+                onConversationViewOpenChange={setIsConversationViewOpen}
+                studentToMessage={studentToMessage}
             />
             <div className="flex items-center space-x-2">
                 <Switch id="show-hidden" checked={showHidden} onCheckedChange={setShowHidden} />
@@ -904,3 +907,4 @@ export default function Dashboard() {
     </div>
   );
 }
+
