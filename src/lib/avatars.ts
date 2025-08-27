@@ -46,14 +46,14 @@ export const avatarData: ClassAvatarData = {
         'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%203%20(7).jpg?alt=media&token=824b046a-7165-42bc-b813-a17f25cc7776'
     ],
     4: [
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%204%20(1).jpg?alt=media&token=2fcfcb0e-e7f7-41a9-a466-ae8205d22cf2',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%204%20(2).jpg?alt=media&token=41a7af27-991b-4981-a6b8-c2f329b897c3',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%204%20(3).jpg?alt=media&token=3768ef4e-374d-482f-8602-d39c0e4fd904',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%204%20(4).jpg?alt=media&token=ec1a7ba4-0fda-463b-bf79-54d003a4a896',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%204%20(5).jpg?alt=media&token=e8c8b98b-c2c5-4d16-b54d-7a3fa5a06a2a',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%204%20(6).jpg?alt=media&token=9fbf6621-babd-40f0-bd9b-1e7be66133f7',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%204%20(7).jpg?alt=media&token=13b3224b-8703-442a-ba62-51897013cb29',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%204%20(8).jpg?alt=media&token=09dfa16c-6cf7-4bbe-bd08-2032120988c1'
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%204%20(1).jpg?alt=media&token=2fcfcb0e-e7f7-41a9-a466-ae8205d22cf2',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%204%20(2).jpg?alt=media&token=41a7af27-991b-4981-a6b8-c2f329b897c3',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%204%20(3).jpg?alt=media&token=3768ef4e-374d-482f-8602-d39c0e4fd904',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%204%20(4).jpg?alt=media&token=ec1a7ba4-0fda-463b-bf79-54d003a4a896',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%204%20(5).jpg?alt=media&token=e8c8b98b-c2c5-4d16-b54d-7a3fa5a06a2a',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%204%20(6).jpg?alt=media&token=9fbf6621-babd-40f0-bd9b-1e7be66133f7',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%204%20(7).jpg?alt=media&token=13b3224b-8703-442a-ba62-51897013cb29',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%204%20(8).jpg?alt=media&token=09dfa16c-6cf7-4bbe-bd08-2032120988c1'
     ],
     5: [
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%205%20(1).jpg?alt=media&token=ba3cfec4-10f9-4a96-8f5d-990a67180d77',
@@ -65,7 +65,16 @@ export const avatarData: ClassAvatarData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%205%20(7).jpg?alt=media&token=3a66dc62-7c79-4443-b76a-48b6d5321393',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%205%20(8).jpg?alt=media&token=86e3099a-d378-4dc6-9e65-2523d4f9b120'
     ],
-    6: generatePlaceholders(8, 'golden knight'),
+    6: [
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(1).png?alt=media&token=bee3fcf6-814b-4b83-a2f3-933944a56be0',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(2).png?alt=media&token=df808f43-65a8-458d-8407-a9e79c52c057',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(3).png?alt=media&token=8baddac0-ccf3-47c0-9a20-845c7ba4de26',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(4).png?alt=media&token=563dedcd-3c22-4c05-970f-8506449ec25b',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(5).png?alt=media&token=4b4dffe7-e4d1-4eac-8888-57aa6751ff9b',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(6).png?alt=media&token=14750532-ab4a-4ee1-bfa2-9ed4f5c27c10',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(7).png?alt=media&token=f334879d-cfb7-4026-8c68-f823f57228cf',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(8).png?alt=media&token=b74c725b-927f-4dc6-9523-c42035015063'
+    ],
     7: generatePlaceholders(8, 'dragon knight'),
     8: generatePlaceholders(8, 'royal guard'),
     9: generatePlaceholders(8, 'templar knight'),
