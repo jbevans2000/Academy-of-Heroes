@@ -53,7 +53,7 @@ export default function RegisterPage() {
         setIsCheckingStatus(true);
         try {
             const settings = await getGlobalSettings();
-            setIsRegistrationOpen(settings.isRegistrationOpen);
+            setIsRegistrationOpen(settings.isStudentRegistrationOpen);
         } catch (error) {
             console.error("Failed to check registration status:", error);
             setIsRegistrationOpen(true);

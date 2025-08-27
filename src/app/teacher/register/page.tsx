@@ -61,7 +61,7 @@ export default function TeacherRegisterPage() {
         setIsCheckingStatus(true);
         try {
             const settings = await getGlobalSettings();
-            setIsRegistrationOpen(settings.isRegistrationOpen);
+            setIsRegistrationOpen(settings.isTeacherRegistrationOpen);
             setIsBetaFeaturesActive(settings.isFeedbackPanelVisible || false);
         } catch (error) {
             console.error("Failed to check registration status:", error);
@@ -104,7 +104,7 @@ export default function TeacherRegisterPage() {
     
     // Authoritative check on submission
     const settings = await getGlobalSettings();
-    if (!settings.isRegistrationOpen) {
+    if (!settings.isTeacherRegistrationOpen) {
         toast({
             variant: 'destructive',
             title: 'Registration Closed',

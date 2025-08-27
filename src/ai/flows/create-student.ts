@@ -43,7 +43,7 @@ async function getTeacherUidFromClassCode(code: string): Promise<string | null> 
 export async function createStudentDocuments(input: RegistrationInput): Promise<ActionResponse> {
   // 1. Check if registration is open globally (Authoritative Server Check)
   const settings = await getGlobalSettings();
-  if (!settings.isRegistrationOpen) {
+  if (!settings.isStudentRegistrationOpen) {
     return { success: false, error: 'New hero creation has been paused by the Grandmaster.' };
   }
 

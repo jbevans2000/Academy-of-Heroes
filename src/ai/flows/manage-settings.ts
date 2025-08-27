@@ -8,7 +8,8 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 interface Settings {
-    isRegistrationOpen: boolean;
+    isStudentRegistrationOpen: boolean;
+    isTeacherRegistrationOpen: boolean;
     isFeedbackPanelVisible?: boolean;
 }
 
@@ -25,16 +26,17 @@ export async function getGlobalSettings(): Promise<Settings> {
             const data = docSnap.data();
             // Provide default for new setting if it doesn't exist
             return {
-                isRegistrationOpen: data.isRegistrationOpen ?? true,
+                isStudentRegistrationOpen: data.isStudentRegistrationOpen ?? data.isRegistrationOpen ?? true, // Fallback for old setting
+                isTeacherRegistrationOpen: data.isTeacherRegistrationOpen ?? true,
                 isFeedbackPanelVisible: data.isFeedbackPanelVisible ?? false,
             };
         }
         // Default to registration being open if the document doesn't exist
-        return { isRegistrationOpen: true, isFeedbackPanelVisible: false };
+        return { isStudentRegistrationOpen: true, isTeacherRegistrationOpen: true, isFeedbackPanelVisible: false };
     } catch (error) {
         console.error("Error fetching global settings:", error);
         // Fail-safe default
-        return { isRegistrationOpen: true, isFeedbackPanelVisible: false };
+        return { isStudentRegistrationOpen: true, isTeacherRegistrationOpen: true, isFeedbackPanelVisible: false };
     }
 }
 

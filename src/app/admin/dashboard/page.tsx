@@ -67,7 +67,8 @@ export default function AdminDashboardPage() {
     const [allStudents, setAllStudents] = useState<Student[]>([]);
     const [feedback, setFeedback] = useState<Feedback[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
+    const [isStudentRegistrationOpen, setIsStudentRegistrationOpen] = useState(true);
+    const [isTeacherRegistrationOpen, setIsTeacherRegistrationOpen] = useState(true);
     const [isFeedbackPanelVisible, setIsFeedbackPanelVisible] = useState(false);
     const [isSettingsLoading, setIsSettingsLoading] = useState(true);
     const [feedbackToDelete, setFeedbackToDelete] = useState<string | null>(null);
@@ -176,7 +177,8 @@ export default function AdminDashboardPage() {
         setIsSettingsLoading(true);
         try {
             const settings = await getGlobalSettings();
-            setIsRegistrationOpen(settings.isRegistrationOpen);
+            setIsStudentRegistrationOpen(settings.isStudentRegistrationOpen);
+            setIsTeacherRegistrationOpen(settings.isTeacherRegistrationOpen);
             setIsFeedbackPanelVisible(settings.isFeedbackPanelVisible || false);
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not load global settings.' });
@@ -185,16 +187,37 @@ export default function AdminDashboardPage() {
         }
     };
     
-    const handleToggleRegistration = async () => {
+    const handleToggleStudentRegistration = async () => {
         setIsSettingsLoading(true);
         try {
-            const newStatus = !isRegistrationOpen;
-            const result = await updateGlobalSettings({ isRegistrationOpen: newStatus });
+            const newStatus = !isStudentRegistrationOpen;
+            const result = await updateGlobalSettings({ isStudentRegistrationOpen: newStatus });
             if (result.success) {
-                setIsRegistrationOpen(newStatus);
+                setIsStudentRegistrationOpen(newStatus);
                 toast({
                     title: 'Settings Updated',
-                    description: `New account registration is now ${newStatus ? 'ENABLED' : 'DISABLED'}.`
+                    description: `Student account registration is now ${newStatus ? 'ENABLED' : 'DISABLED'}.`
+                });
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
+        } finally {
+            setIsSettingsLoading(false);
+        }
+    }
+
+    const handleToggleTeacherRegistration = async () => {
+        setIsSettingsLoading(true);
+        try {
+            const newStatus = !isTeacherRegistrationOpen;
+            const result = await updateGlobalSettings({ isTeacherRegistrationOpen: newStatus });
+            if (result.success) {
+                setIsTeacherRegistrationOpen(newStatus);
+                toast({
+                    title: 'Settings Updated',
+                    description: `Teacher account registration is now ${newStatus ? 'ENABLED' : 'DISABLED'}.`
                 });
             } else {
                 throw new Error(result.error);
@@ -421,13 +444,24 @@ export default function AdminDashboardPage() {
                         <CardContent className="space-y-4">
                             <div className="flex items-center justify-between rounded-lg border p-4">
                                 <div>
-                                    <h4 className="font-semibold">Account Registration</h4>
-                                    <p className={cn("text-sm font-bold", isRegistrationOpen ? 'text-green-600' : 'text-red-600')}>
-                                        {isRegistrationOpen ? 'ACTIVE' : 'DISABLED'}
+                                    <h4 className="font-semibold">Student Registration</h4>
+                                    <p className={cn("text-sm font-bold", isStudentRegistrationOpen ? 'text-green-600' : 'text-red-600')}>
+                                        {isStudentRegistrationOpen ? 'ACTIVE' : 'DISABLED'}
                                     </p>
                                 </div>
-                                <Button onClick={handleToggleRegistration} disabled={isSettingsLoading} size="icon">
-                                    {isSettingsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : isRegistrationOpen ? <ToggleRight className="h-6 w-6"/> : <ToggleLeft className="h-6 w-6"/>}
+                                <Button onClick={handleToggleStudentRegistration} disabled={isSettingsLoading} size="icon">
+                                    {isSettingsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : isStudentRegistrationOpen ? <ToggleRight className="h-6 w-6"/> : <ToggleLeft className="h-6 w-6"/>}
+                                </Button>
+                            </div>
+                            <div className="flex items-center justify-between rounded-lg border p-4">
+                                <div>
+                                    <h4 className="font-semibold">Teacher Registration</h4>
+                                    <p className={cn("text-sm font-bold", isTeacherRegistrationOpen ? 'text-green-600' : 'text-red-600')}>
+                                        {isTeacherRegistrationOpen ? 'ACTIVE' : 'DISABLED'}
+                                    </p>
+                                </div>
+                                <Button onClick={handleToggleTeacherRegistration} disabled={isSettingsLoading} size="icon">
+                                    {isSettingsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : isTeacherRegistrationOpen ? <ToggleRight className="h-6 w-6"/> : <ToggleLeft className="h-6 w-6"/>}
                                 </Button>
                             </div>
                             <div className="flex items-center justify-between rounded-lg border p-4">
