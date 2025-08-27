@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -67,12 +68,6 @@ export function TeacherMessageCenter({
         }
     }, [initialStudentToMessage, onBulkMessageOpenChange]);
 
-    const unreadMessagesByStudent = students.reduce((acc, student) => {
-        if (student.hasUnreadMessages) {
-            acc[student.uid] = true;
-        }
-        return acc;
-    }, {} as { [uid: string]: boolean });
 
     useEffect(() => {
         if (isConversationViewOpen && currentThreadStudent && teacher) {
@@ -116,10 +111,6 @@ export function TeacherMessageCenter({
         }
     };
     
-    const handleViewConversation = (student: Student) => {
-        setCurrentThreadStudent(student);
-        setIsConversationViewOpen(true);
-    }
     
     const getRecipientDescription = () => {
         if (initialStudentToMessage) {
@@ -191,26 +182,6 @@ export function TeacherMessageCenter({
                     </div>
                 </DialogContent>
             </Dialog>
-            
-            <Select onValueChange={(uid) => {
-                const student = students.find(s => s.uid === uid);
-                if (student) handleViewConversation(student);
-            }}>
-                <SelectTrigger className="w-[280px] text-black border-black">
-                    <SelectValue placeholder="View Student Message Thread" />
-                </SelectTrigger>
-                <SelectContent>
-                     {students.map(student => (
-                        <SelectItem key={student.uid} value={student.uid}>
-                            <div className="flex items-center gap-2">
-                                {unreadMessagesByStudent[student.uid] && <span className="h-2 w-2 rounded-full bg-red-500" />}
-                                {student.characterName} ({student.studentName})
-                            </div>
-                        </SelectItem>
-                     ))}
-                </SelectContent>
-            </Select>
-
         </>
     );
 }
