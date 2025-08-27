@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { User } from 'firebase/auth';
 import type { Student, Message } from '@/lib/data';
 import { Button } from '@/components/ui/button';
@@ -35,10 +35,10 @@ import { cn } from '@/lib/utils';
 interface TeacherMessageCenterProps {
     teacher: User | null;
     students: Student[];
-    selectedStudentUids: string[];
+    selectedStudentUids?: string[];
 }
 
-export function TeacherMessageCenter({ teacher, students, selectedStudentUids }: TeacherMessageCenterProps) {
+export function TeacherMessageCenter({ teacher, students, selectedStudentUids = [] }: TeacherMessageCenterProps) {
     const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
     const [isSending, setIsSending] = useState(false);
     const [messageText, setMessageText] = useState('');

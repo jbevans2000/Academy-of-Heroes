@@ -6,7 +6,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { collection, doc, getDoc, onSnapshot, writeBatch, deleteDoc, getDocs, query, where, updateDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
-import type { Student, PendingStudent, ClassType, Company, Message } from '@/lib/data';
+import type { Student, PendingStudent, ClassType, Company } from '@/lib/data';
 import { TeacherHeader } from "@/components/teacher/teacher-header";
 import { StudentList } from "@/components/teacher/student-list";
 import { Skeleton } from '@/components/ui/skeleton';
@@ -512,14 +512,6 @@ export default function Dashboard() {
     }
   };
 
-  const handleOpenMessageDialog = (studentToMessage?: Student) => {
-      if (studentToMessage) {
-          setSelectedStudents([studentToMessage.uid]);
-      }
-      setIsMessageDialogOpen(true);
-  };
-
-
   if (isLoading || !teacher) {
     return (
        <div className="flex min-h-screen w-full flex-col">
@@ -832,7 +824,7 @@ export default function Dashboard() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-            <TeacherMessageCenter teacher={teacher} students={students} onSendMessage={handleOpenMessageDialog} />
+            <TeacherMessageCenter teacher={teacher} students={students} selectedStudentUids={selectedStudents} />
             <div className="flex items-center space-x-2">
                 <Switch id="show-hidden" checked={showHidden} onCheckedChange={setShowHidden} />
                 <Label htmlFor="show-hidden" className="flex items-center gap-1 cursor-pointer font-semibold text-black text-lg">
@@ -857,7 +849,7 @@ export default function Dashboard() {
                                 onSelectStudent={handleToggleStudentSelection}
                                 setStudents={setStudents}
                                 teacherUid={teacher.uid}
-                                onSendMessage={handleOpenMessageDialog}
+                                onSendMessage={() => {}}
                             />
                         </div>
                     )
@@ -871,7 +863,7 @@ export default function Dashboard() {
                             onSelectStudent={handleToggleStudentSelection}
                             setStudents={setStudents}
                             teacherUid={teacher.uid}
-                            onSendMessage={handleOpenMessageDialog}
+                            onSendMessage={() => {}}
                         />
                     </div>
                 )}
@@ -883,7 +875,7 @@ export default function Dashboard() {
                 onSelectStudent={handleToggleStudentSelection}
                 setStudents={setStudents}
                 teacherUid={teacher.uid}
-                onSendMessage={handleOpenMessageDialog}
+                onSendMessage={() => {}}
             />
         ) : null}
       </main>
