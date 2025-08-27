@@ -9,7 +9,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Star, Coins, CheckCircle, XCircle, ScrollText, HeartCrack, Sparkles, Shield, UserCheck, BarChart, Dices } from 'lucide-react';
+import { ArrowLeft, Star, Coins, CheckCircle, XCircle, ScrollText, HeartCrack, Sparkles, Shield, UserCheck, BarChart, Dices, Trophy, Heart, Wand2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -42,6 +42,9 @@ interface RewardBreakdown {
     xpFromDamageShare: number;
     hadFullParticipation: boolean;
     totalDamageDealt: number;
+    martialSacrificeBonus: boolean;
+    arcaneSacrificeBonus: boolean;
+    divineSacrificeBonus: boolean;
 }
 
 interface SavedBattle {
@@ -172,6 +175,7 @@ export default function BattleSummaryDetailPage() {
                 <div className="w-full max-w-4xl space-y-6">
                     <Card className="shadow-2xl bg-card/80 backdrop-blur-sm">
                         <CardHeader className="text-center">
+                            <Trophy className="h-12 w-12 mx-auto text-yellow-400"/>
                             <CardTitle className="text-4xl font-headline">{summary.battleName}</CardTitle>
                             <CardDescription>
                                 Battle concluded on {date ? format(new Date(date.seconds * 1000), 'PPPp') : 'Date unknown'}
@@ -202,17 +206,20 @@ export default function BattleSummaryDetailPage() {
                                         <span className="font-semibold">+{breakdown.xpFromAnswers} XP, +{breakdown.goldFromAnswers} Gold</span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <span className="flex items-center gap-2"><Dices className="h-5 w-5 text-blue-500" />Powers Used</span>
+                                        <span className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-blue-500" />Powers Used</span>
                                         <span className="font-semibold">+{breakdown.xpFromPowers} XP, +{breakdown.goldFromPowers} Gold</span>
                                     </div>
                                     <div className="flex justify-between items-center">
                                         <span className="flex items-center gap-2"><UserCheck className="h-5 w-5 text-purple-500" />Full Participation Bonus</span>
                                         <span className="font-semibold">{breakdown.hadFullParticipation ? `+${breakdown.xpFromParticipation} XP, +${breakdown.goldFromParticipation} Gold` : <XCircle className="h-5 w-5 text-destructive" />}</span>
                                     </div>
-                                    <div className="flex justify-between items-center">
+                                     <div className="flex justify-between items-center">
                                         <span className="flex items-center gap-2"><BarChart className="h-5 w-5 text-orange-500" />Damage Share Bonus</span>
                                         <span className="font-semibold">{breakdown.hadFullParticipation ? `+${breakdown.xpFromDamageShare} XP` : <XCircle className="h-5 w-5 text-destructive" />}</span>
                                     </div>
+                                    {breakdown.martialSacrificeBonus && <div className="flex justify-between items-center text-amber-600"><span className="flex items-center gap-2"><Shield className="h-5 w-5" />Martial Sacrifice Bonus</span><span className="font-semibold">+25% XP/Gold</span></div>}
+                                    {breakdown.arcaneSacrificeBonus && <div className="flex justify-between items-center text-blue-600"><span className="flex items-center gap-2"><Wand2 className="h-5 w-5" />Arcane Sacrifice Bonus</span><span className="font-semibold">+25% XP</span></div>}
+                                    {breakdown.divineSacrificeBonus && <div className="flex justify-between items-center text-green-600"><span className="flex items-center gap-2"><Heart className="h-5 w-5" />Divine Sacrifice Bonus</span><span className="font-semibold">+25% XP</span></div>}
                                 </div>
                             )}
                         </CardContent>
