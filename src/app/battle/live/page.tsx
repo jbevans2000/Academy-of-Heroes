@@ -206,9 +206,9 @@ function VoteDialog({ voteState, userUid, teacherUid }: { voteState: VoteState |
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center animate-in fade-in-50">
             <Card className="w-full max-w-lg text-center p-8 bg-black/90 text-white border-purple-500 shadow-2xl shadow-purple-500/50">
                 <CardHeader>
-                    <CardTitle className="text-3xl font-headline text-purple-300">A Cosmic Choice!</CardTitle>
+                    <CardTitle className="text-3xl font-headline text-purple-300">Divine Judgment!</CardTitle>
                     <CardDescription className="text-lg text-white/90">
-                        {voteState.casterName} wants to whisk you forward in time to the next question! Do you agree?
+                        {voteState.casterName} has invoked Divine Judgment! The party must choose the outcome. Your vote matters!
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -217,8 +217,8 @@ function VoteDialog({ voteState, userUid, teacherUid }: { voteState: VoteState |
                         <p className="text-xl font-semibold text-green-400">Your vote has been cast!</p>
                     ) : (
                         <div className="grid grid-cols-2 gap-4">
-                            <Button size="lg" className="bg-green-600 hover:bg-green-700" onClick={() => handleVote('yes')}>Yes, let's go!</Button>
-                            <Button size="lg" variant="destructive" onClick={() => handleVote('no')}>No, let's fight!</Button>
+                            <Button size="lg" className="bg-green-600 hover:bg-green-700" onClick={() => handleVote('yes')}>Empower Party</Button>
+                            <Button size="lg" variant="destructive" onClick={() => handleVote('no')}>Damage Boss</Button>
                         </div>
                     )}
                 </CardContent>
