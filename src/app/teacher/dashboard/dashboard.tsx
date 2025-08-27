@@ -512,6 +512,14 @@ export default function Dashboard() {
     }
   };
 
+  const handleOpenMessageDialog = (studentToMessage?: Student) => {
+      if (studentToMessage) {
+          setSelectedStudents([studentToMessage.uid]);
+      }
+      setIsMessageDialogOpen(true);
+  };
+
+
   if (isLoading || !teacher) {
     return (
        <div className="flex min-h-screen w-full flex-col">
@@ -824,7 +832,7 @@ export default function Dashboard() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-            <TeacherMessageCenter teacher={teacher} students={students} selectedStudentUids={selectedStudents} />
+            <TeacherMessageCenter teacher={teacher} students={students} onSendMessage={handleOpenMessageDialog} />
             <div className="flex items-center space-x-2">
                 <Switch id="show-hidden" checked={showHidden} onCheckedChange={setShowHidden} />
                 <Label htmlFor="show-hidden" className="flex items-center gap-1 cursor-pointer font-semibold text-black text-lg">
@@ -849,6 +857,7 @@ export default function Dashboard() {
                                 onSelectStudent={handleToggleStudentSelection}
                                 setStudents={setStudents}
                                 teacherUid={teacher.uid}
+                                onSendMessage={handleOpenMessageDialog}
                             />
                         </div>
                     )
@@ -862,6 +871,7 @@ export default function Dashboard() {
                             onSelectStudent={handleToggleStudentSelection}
                             setStudents={setStudents}
                             teacherUid={teacher.uid}
+                            onSendMessage={handleOpenMessageDialog}
                         />
                     </div>
                 )}
@@ -873,6 +883,7 @@ export default function Dashboard() {
                 onSelectStudent={handleToggleStudentSelection}
                 setStudents={setStudents}
                 teacherUid={teacher.uid}
+                onSendMessage={handleOpenMessageDialog}
             />
         ) : null}
       </main>

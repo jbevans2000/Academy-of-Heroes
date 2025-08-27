@@ -8,7 +8,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { auth, db } from "@/lib/firebase";
 import { signOut, onAuthStateChanged, type User } from "firebase/auth";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, query, where, onSnapshot, doc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { StudentMessageDialog } from './student-message-dialog';
 
@@ -36,20 +36,23 @@ export function DashboardHeader({ characterName = 'Account' }: DashboardHeaderPr
     const unsubMeta = onSnapshot(studentMetaRef, (docSnap) => {
         if (docSnap.exists()) {
             const teacherUid = docSnap.data().teacherUid;
-            const messagesQuery = query(
-                collection(db, 'teachers', teacherUid, 'students', user.uid, 'messages'),
-                where('isRead', '==', false),
-                where('sender', '==', 'teacher')
-            );
-            const unsubscribeMessages = onSnapshot(messagesQuery, (snapshot) => {
-                setHasUnreadMessages(!snapshot.empty);
-            });
-            return () => unsubscribeMessages();
+            if (teacherUid) { // Ensure teacherUid exists before querying
+              const studentRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
+              const unsubscribeStudent = onSnapshot(studentRef, (studentDoc) => {
+                  if (studentDoc.exists() && studentDoc.data().hasUnreadMessages) {
+                      setHasUnreadMessages(true);
+                  } else {
+                      setHasUnreadMessages(false);
+                  }
+              });
+              return () => unsubscribeStudent();
+            }
         }
     });
 
     return () => unsubMeta();
   }, [user]);
+
 
   const handleLogout = async () => {
     await signOut(auth);

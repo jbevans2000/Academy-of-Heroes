@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -6,7 +7,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Student, Company } from '@/lib/data';
-import { Star, Coins, User, Sword, Trophy, Heart, Zap, Loader2, Edit, Settings, Briefcase, FileText, Eye, EyeOff } from 'lucide-react';
+import { Star, Coins, User, Sword, Trophy, Heart, Zap, Loader2, Edit, Settings, Briefcase, FileText, Eye, EyeOff, MessageSquare } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -279,9 +280,10 @@ interface StudentCardProps {
   onSelect: () => void;
   setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
   teacherUid: string;
+  onSendMessage: (student: Student) => void;
 }
 
-export function StudentCard({ student, isSelected, onSelect, setStudents, teacherUid }: StudentCardProps) {
+export function StudentCard({ student, isSelected, onSelect, setStudents, teacherUid, onSendMessage }: StudentCardProps) {
   const avatarUrl = student.avatarUrl || 'https://placehold.co/100x100.png';
   const [company, setCompany] = useState<Company | null>(null);
   const [isNotesOpen, setIsNotesOpen] = useState(false);
@@ -377,6 +379,16 @@ export function StudentCard({ student, isSelected, onSelect, setStudents, teache
                         <p>{student.isHidden ? 'Click to Unhide' : 'Click to Hide'}</p>
                     </TooltipContent>
                  </Tooltip>
+                 {student.hasUnreadMessages && (
+                    <Tooltip>
+                        <TooltipTrigger className="absolute bottom-2 right-2 z-10">
+                            <div className="w-3 h-3 rounded-full bg-red-500 ring-2 ring-white animate-pulse" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Unread Message</p>
+                        </TooltipContent>
+                    </Tooltip>
+                 )}
                 {isOnline && (
                     <Tooltip>
                         <TooltipTrigger className="absolute top-3 left-10 z-10">
@@ -457,14 +469,17 @@ export function StudentCard({ student, isSelected, onSelect, setStudents, teache
                 />
                 </div>
             </CardContent>
-            <CardFooter className="p-2 bg-secondary/30 mt-auto grid grid-cols-2 gap-2">
+            <CardFooter className="p-2 bg-secondary/30 mt-auto grid grid-cols-3 gap-2">
+                 <Button className="w-full" variant="outline" onClick={() => onSendMessage(student)}>
+                    <MessageSquare className="h-4 w-4" />
+                </Button>
                 <DialogTrigger asChild>
                 <Button className="w-full" variant="secondary">
                     View Details
                 </Button>
                 </DialogTrigger>
                 <Button className="w-full" variant="outline" onClick={() => setIsNotesOpen(true)}>
-                    <FileText className="mr-2 h-4 w-4" /> Notes
+                    <FileText className="h-4 w-4" />
                 </Button>
             </CardFooter>
            </div>

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { StudentCard } from './student-card';
@@ -10,9 +11,10 @@ interface StudentListProps {
   onSelectStudent: (uid: string) => void;
   setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
   teacherUid: string;
+  onSendMessage: (student: Student) => void;
 }
 
-export function StudentList({ students, selectedStudents, onSelectStudent, setStudents, teacherUid }: StudentListProps) {
+export function StudentList({ students, selectedStudents, onSelectStudent, setStudents, teacherUid, onSendMessage }: StudentListProps) {
   if (students.length === 0) {
     return (
       <div className="flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
@@ -31,6 +33,7 @@ export function StudentList({ students, selectedStudents, onSelectStudent, setSt
                 onSelect={() => onSelectStudent(student.uid)}
                 setStudents={setStudents}
                 teacherUid={teacherUid}
+                onSendMessage={onSendMessage}
             />
       ))}
     </div>
