@@ -90,6 +90,10 @@ export default function Dashboard() {
 
   const { toast } = useToast();
   
+  // New state for single student messaging
+  const [isSingleMessageOpen, setIsSingleMessageOpen] = useState(false);
+  const [studentToMessage, setStudentToMessage] = useState<Student | null>(null);
+  
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async user => {
         if (!user) {
@@ -511,6 +515,12 @@ export default function Dashboard() {
         }
     }
   };
+  
+  const handleOpenSingleMessageDialog = (student: Student) => {
+    setSelectedStudents([student.uid]);
+    setStudentToMessage(student);
+    setIsSingleMessageOpen(true);
+  };
 
   if (isLoading || !teacher) {
     return (
@@ -824,7 +834,14 @@ export default function Dashboard() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-            <TeacherMessageCenter teacher={teacher} students={students} selectedStudentUids={selectedStudents} />
+            <TeacherMessageCenter 
+                teacher={teacher} 
+                students={students} 
+                selectedStudentUids={selectedStudents}
+                isBulkMessageOpen={isSingleMessageOpen}
+                onBulkMessageOpenChange={setIsSingleMessageOpen}
+                initialStudentToMessage={studentToMessage}
+            />
             <div className="flex items-center space-x-2">
                 <Switch id="show-hidden" checked={showHidden} onCheckedChange={setShowHidden} />
                 <Label htmlFor="show-hidden" className="flex items-center gap-1 cursor-pointer font-semibold text-black text-lg">
@@ -849,7 +866,7 @@ export default function Dashboard() {
                                 onSelectStudent={handleToggleStudentSelection}
                                 setStudents={setStudents}
                                 teacherUid={teacher.uid}
-                                onSendMessage={() => {}}
+                                onSendMessage={handleOpenSingleMessageDialog}
                             />
                         </div>
                     )
@@ -863,7 +880,7 @@ export default function Dashboard() {
                             onSelectStudent={handleToggleStudentSelection}
                             setStudents={setStudents}
                             teacherUid={teacher.uid}
-                            onSendMessage={() => {}}
+                            onSendMessage={handleOpenSingleMessageDialog}
                         />
                     </div>
                 )}
@@ -875,7 +892,7 @@ export default function Dashboard() {
                 onSelectStudent={handleToggleStudentSelection}
                 setStudents={setStudents}
                 teacherUid={teacher.uid}
-                onSendMessage={() => {}}
+                onSendMessage={handleOpenSingleMessageDialog}
             />
         ) : null}
       </main>

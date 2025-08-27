@@ -36,19 +36,37 @@ interface TeacherMessageCenterProps {
     teacher: User | null;
     students: Student[];
     selectedStudentUids?: string[];
+    isBulkMessageOpen: boolean;
+    onBulkMessageOpenChange: (isOpen: boolean) => void;
+    initialStudentToMessage: Student | null;
 }
 
-export function TeacherMessageCenter({ teacher, students, selectedStudentUids = [] }: TeacherMessageCenterProps) {
-    const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
-    const [isSending, setIsSending] = useState(false);
-    const [messageText, setMessageText] = useState('');
+export function TeacherMessageCenter({ 
+    teacher, 
+    students, 
+    selectedStudentUids = [],
+    isBulkMessageOpen,
+    onBulkMessageOpenChange,
+    initialStudentToMessage
+}: TeacherMessageCenterProps) {
     const { toast } = useToast();
+    
+    // For bulk messages
+    const [bulkMessageText, setBulkMessageText] = useState('');
+    const [isSending, setIsSending] = useState(false);
     
     // For viewing conversations
     const [isConversationViewOpen, setIsConversationViewOpen] = useState(false);
     const [currentThreadStudent, setCurrentThreadStudent] = useState<Student | null>(null);
     const [currentThreadMessages, setCurrentThreadMessages] = useState<Message[]>([]);
     
+    // Effect to open dialog when a student is selected to be messaged
+     useEffect(() => {
+        if (initialStudentToMessage) {
+            onBulkMessageOpenChange(true);
+        }
+    }, [initialStudentToMessage, onBulkMessageOpenChange]);
+
     const unreadMessagesByStudent = students.reduce((acc, student) => {
         if (student.hasUnreadMessages) {
             acc[student.uid] = true;
@@ -72,7 +90,8 @@ export function TeacherMessageCenter({ teacher, students, selectedStudentUids = 
 
 
     const handleSendMessage = async () => {
-        if (!teacher || selectedStudentUids.length === 0 || !messageText.trim()) {
+        const uidsToSend = initialStudentToMessage ? [initialStudentToMessage.uid] : selectedStudentUids;
+        if (!teacher || uidsToSend.length === 0 || !bulkMessageText.trim()) {
             toast({ variant: 'destructive', title: 'Error', description: 'Please select students and write a message.' });
             return;
         }
@@ -80,13 +99,13 @@ export function TeacherMessageCenter({ teacher, students, selectedStudentUids = 
         try {
             const result = await sendMessageToStudents({
                 teacherUid: teacher.uid,
-                studentUids: selectedStudentUids,
-                message: messageText,
+                studentUids: uidsToSend,
+                message: bulkMessageText,
             });
             if (result.success) {
                 toast({ title: 'Message Sent!', description: result.message });
-                setMessageText('');
-                setIsMessageDialogOpen(false);
+                setBulkMessageText('');
+                onBulkMessageOpenChange(false);
             } else {
                 throw new Error(result.error);
             }
@@ -101,33 +120,43 @@ export function TeacherMessageCenter({ teacher, students, selectedStudentUids = 
         setCurrentThreadStudent(student);
         setIsConversationViewOpen(true);
     }
+    
+    const getRecipientDescription = () => {
+        if (initialStudentToMessage) {
+            return `Your message will be sent to ${initialStudentToMessage.characterName}.`
+        }
+        if (selectedStudentUids.length > 0) {
+            return `Your message will be sent to the ${selectedStudentUids.length} selected student(s).`
+        }
+        return '';
+    }
 
     return (
         <>
-            <Dialog open={isMessageDialogOpen} onOpenChange={setIsMessageDialogOpen}>
+            <Dialog open={isBulkMessageOpen} onOpenChange={onBulkMessageOpenChange}>
                 <DialogTrigger asChild>
-                     <Button disabled={selectedStudentUids.length === 0}>
-                        <MessageSquare className="mr-2 h-4 w-4" /> Message ({selectedStudentUids.length})
+                     <Button disabled={selectedStudentUids.length === 0 && !initialStudentToMessage}>
+                        <MessageSquare className="mr-2 h-4 w-4" /> Message ({initialStudentToMessage ? 1 : selectedStudentUids.length})
                     </Button>
                 </DialogTrigger>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Send a Message</DialogTitle>
                         <DialogDescription>
-                           Your message will be sent to the {selectedStudentUids.length} selected student(s).
+                           {getRecipientDescription()}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-4">
                         <Textarea 
-                            value={messageText} 
-                            onChange={(e) => setMessageText(e.target.value)}
-                            placeholder="Type your message to the student(s)..."
+                            value={bulkMessageText} 
+                            onChange={(e) => setBulkMessageText(e.target.value)}
+                            placeholder="Type your message..."
                             rows={5}
                             disabled={isSending}
                         />
                     </div>
                     <DialogFooter>
-                         <Button variant="outline" onClick={() => setIsMessageDialogOpen(false)}>Cancel</Button>
+                         <Button variant="outline" onClick={() => onBulkMessageOpenChange(false)}>Cancel</Button>
                         <Button onClick={handleSendMessage} disabled={isSending}>
                             {isSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4"/>}
                             Send Message
