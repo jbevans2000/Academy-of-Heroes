@@ -66,13 +66,13 @@ export const avatarData: ClassAvatarData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%205%20(8).jpg?alt=media&token=86e3099a-d378-4dc6-9e65-2523d4f9b120'
     ],
     6: [
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(1).png?alt=media&token=bee3fcf6-814b-4b83-a2f3-933944a56be0',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(2).png?alt=media&token=df808f43-65a8-458d-8407-a9e79c52c057',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(3).png?alt=media&token=8baddac0-ccf3-47c0-9a20-845c7ba4de26',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(4).png?alt=media&token=563dedcd-3c22-4c05-970f-8506449ec25b',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(5).png?alt=media&token=4b4dffe7-e4d1-4eac-8888-57aa6751ff9b',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(6).png?alt=media&token=14750532-ab4a-4ee1-bfa2-9ed4f5c27c10',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(7).png?alt=media&token=f334879d-cfb7-4026-8c68-f823f57228cf',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(6).png?alt=media&token=14750532-ab4a-4ee1-bfa2-9ed4f5c27c10',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(4).png?alt=media&token=563dedcd-3c22-4c05-970f-8506449ec25b',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(1).png?alt=media&token=bee3fcf6-814b-4b83-a2f3-933944a56be0',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(5).png?alt=media&token=4b4dffe7-e4d1-4eac-8888-57aa6751ff9b',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(8).png?alt=media&token=b74c725b-927f-4dc6-9523-c42035015063'
     ],
     7: generatePlaceholders(8, 'dragon knight'),
@@ -142,14 +142,14 @@ export const avatarData: ClassAvatarData = {
         'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FLevel%205%20Healers%20(8).png?alt=media&token=ae08c651-b463-47df-8010-01b95754bf01'
     ],
     6: [
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%206%20(1).png?alt=media&token=c92f1e31-5e29-45e4-8c3a-53fcb4267983',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%206%20(2).png?alt=media&token=236f1e4a-cfff-4e1b-a6bd-f919a443c542',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%206%20(3).png?alt=media&token=b9eb4c31-e02c-4b82-8f94-ead2acd5fed9',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%206%20(4).png?alt=media&token=52ee7415-d8db-4a50-b3e8-0776d30edca8',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%206%20(3).png?alt=media&token=b9eb4c31-e02c-4b82-8f94-ead2acd5fed9',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%206%20(5).png?alt=media&token=ee374d98-ddc5-4535-8a1f-cfe9e59d6f0d',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%206%20(2).png?alt=media&token=236f1e4a-cfff-4e1b-a6bd-f919a443c542',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%206%20(1).png?alt=media&token=c92f1e31-5e29-45e4-8c3a-53fcb4267983',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%206%20(6).png?alt=media&token=1269f08c-e225-400a-b359-d522ee3b39f6',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%206%20(7).png?alt=media&token=26417e6a-76ae-4346-8c63-3f4161477eb7',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%206%20(8).png?alt=media&token=f1ba5ccc-a458-4ffd-a67b-9fc4df32d014'
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%206%20(8).png?alt=media&token=f1ba5ccc-a458-4ffd-a67b-9fc4df32d014',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%206%20(7).png?alt=media&token=26417e6a-76ae-4346-8c63-3f4161477eb7'
     ],
     7: generatePlaceholders(8, 'life cleric'),
     8: generatePlaceholders(8, 'war cleric'),
@@ -217,7 +217,16 @@ export const avatarData: ClassAvatarData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FLevel%205%20Mages%20(7).png?alt=media&token=c3320dca-6caa-4320-b9af-e18dc3b6fc63',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FLevel%205%20Mages%20(8).png?alt=media&token=0b10faa0-c81f-455b-bd36-29b86908cd42'
     ],
-    6: generatePlaceholders(8, 'light wizard'),
+    6: [
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%206%20(4).png?alt=media&token=a6954804-90a8-4cd1-961d-87c1d115ab81',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%206%20(2).png?alt=media&token=ddd18b2e-9f8c-47b4-890c-00c37690c407',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%206%20(5).png?alt=media&token=a1c4ced7-247b-4053-9480-7fc81847773c',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%206%20(1).png?alt=media&token=1de48491-0493-4a62-8950-838e97c4586e',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%206%20(8).png?alt=media&token=2eaa3b05-bf21-4d7b-ab3f-2f6301f67e84',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%206%20(3).png?alt=media&token=ccdca024-41ce-4f5b-9191-0ca6001dfa2c',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%206%20(6).png?alt=media&token=800e55f4-b790-4be4-af04-482643933481',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%206%20(7).png?alt=media&token=0d3dfadd-ed8e-409c-8ae0-b9da0fd8d3f6'
+    ],
     7: generatePlaceholders(8, 'arcane mage'),
     8: generatePlaceholders(8, 'fire mage'),
     9: generatePlaceholders(8, 'ice mage'),
