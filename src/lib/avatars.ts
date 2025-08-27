@@ -141,7 +141,16 @@ export const avatarData: ClassAvatarData = {
         'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FLevel%205%20Healers%20(7).png?alt=media&token=0beeed2e-3c1c-4c7c-a520-875ff362683f',
         'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FLevel%205%20Healers%20(8).png?alt=media&token=ae08c651-b463-47df-8010-01b95754bf01'
     ],
-    6: generatePlaceholders(8, 'light cleric'),
+    6: [
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%206%20(1).png?alt=media&token=c92f1e31-5e29-45e4-8c3a-53fcb4267983',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%206%20(2).png?alt=media&token=236f1e4a-cfff-4e1b-a6bd-f919a443c542',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%206%20(3).png?alt=media&token=b9eb4c31-e02c-4b82-8f94-ead2acd5fed9',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%206%20(4).png?alt=media&token=52ee7415-d8db-4a50-b3e8-0776d30edca8',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%206%20(5).png?alt=media&token=ee374d98-ddc5-4535-8a1f-cfe9e59d6f0d',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%206%20(6).png?alt=media&token=1269f08c-e225-400a-b359-d522ee3b39f6',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%206%20(7).png?alt=media&token=26417e6a-76ae-4346-8c63-3f4161477eb7',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%206%20(8).png?alt=media&token=f1ba5ccc-a458-4ffd-a67b-9fc4df32d014'
+    ],
     7: generatePlaceholders(8, 'life cleric'),
     8: generatePlaceholders(8, 'war cleric'),
     9: generatePlaceholders(8, 'divine cleric'),
