@@ -66,7 +66,6 @@ interface LiveBattleState {
   queuedPowers?: QueuedPower[];
   fallenPlayerUids?: string[];
   empoweredMageUids?: string[]; // For Solar Empowerment
-  cosmicDivinationUses?: number; // For Cosmic Divination (old)
   divineJudgmentUses?: number; // For Divine Judgment
   voteState?: VoteState | null; 
   sorcerersIntuitionUses?: { [key: string]: number }; // For Sorcerer's Intuition
@@ -1216,6 +1215,7 @@ export default function TeacherLiveBattlePage() {
                 const voteEndsAt = new Date(Date.now() + 15000); // 15 second vote
 
                 batch.update(liveBattleRef, {
+                    divineJudgmentUses: increment(1),
                     voteState: {
                         isActive: true,
                         casterName: activation.studentName,
@@ -1565,7 +1565,6 @@ export default function TeacherLiveBattlePage() {
         totalPowerDamage: 0,
         fallenPlayerUids: initiallyFallenUids,
         empoweredMageUids: [],
-        cosmicDivinationUses: 0,
         divineJudgmentUses: 0,
         sorcerersIntuitionUses: {},
         elementalFusionCasts: {},
