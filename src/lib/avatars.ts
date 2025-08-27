@@ -124,7 +124,16 @@ export const avatarData: ClassAvatarData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%202%20(7).jpg?alt=media&token=8941fa94-b80a-4357-9cea-7c49d79825a9',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%202%20(8).jpg?alt=media&token=b6abe374-ea1e-4587-96e1-815e09149d5c'
     ],
-    3: generatePlaceholders(8, 'dark mage'),
+    3: [
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMAge%20Level%203%20(1).jpg?alt=media&token=ced1f636-fd40-42b8-a285-c805dd898260',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMAge%20Level%203%20(2).jpg?alt=media&token=68eecda7-46ea-4a11-addc-cb2f9f640e4a',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMAge%20Level%203%20(3).jpg?alt=media&token=e89b603e-68fa-4e29-8cfc-198193f82e95',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMAge%20Level%203%20(4).jpg?alt=media&token=dcea9b3f-955f-4d84-b569-00938ce1c0c6',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMAge%20Level%203%20(5).jpg?alt=media&token=afec6319-6c88-4664-813b-df00bd9d7c09',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMAge%20Level%203%20(6).jpg?alt=media&token=e31ce166-d792-4db4-bb8f-8526c3c5f35e',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMAge%20Level%203%20(7).jpg?alt=media&token=a29776e6-edf8-4e24-801c-2d932ed3bfef',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2Fenvato-labs-ai-f73a1932-365e-44ea-88ab-0f6328cb5b34.jpg?alt=media&token=d243b432-1e09-4da6-9592-509f9d580940'
+    ],
     4: generatePlaceholders(8, 'elemental wizard'),
     5: generatePlaceholders(8, 'epic mage'),
     6: generatePlaceholders(8, 'light wizard'),
