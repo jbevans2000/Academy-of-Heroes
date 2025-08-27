@@ -37,6 +37,7 @@ export type Student = {
     inventory?: { [boonId: string]: number }; // Map of boonId to quantity
     questApprovalRequired?: boolean; // Student-specific override
     isArchived?: boolean; // To hide accounts after data migration
+    teacherNotes?: string; // Private notes for the teacher
     shielded?: {
         roundsRemaining: number;
         casterName: string;

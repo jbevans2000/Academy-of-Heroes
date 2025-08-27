@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Student, Company } from '@/lib/data';
-import { Star, Coins, User, Sword, Trophy, Heart, Zap, Loader2, Edit, Settings, Briefcase } from 'lucide-react';
+import { Star, Coins, User, Sword, Trophy, Heart, Zap, Loader2, Edit, Settings, Briefcase, FileText } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { calculateLevel, calculateHpGain, calculateMpGain, calculateBaseMaxHp, MAX_LEVEL, XP_FOR_MAX_LEVEL } from '@/lib/game-mechanics';
 import { Label } from '../ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { TeacherNotesDialog } from './teacher-notes-dialog';
 
 interface EditableStatProps {
     student: Student;
@@ -282,6 +283,7 @@ interface StudentCardProps {
 export function StudentCard({ student, isSelected, onSelect, setStudents, teacherUid }: StudentCardProps) {
   const avatarUrl = student.avatarUrl || 'https://placehold.co/100x100.png';
   const [company, setCompany] = useState<Company | null>(null);
+  const [isNotesOpen, setIsNotesOpen] = useState(false);
   
   const isOnline = student.onlineStatus?.status === 'online';
 
@@ -313,6 +315,12 @@ export function StudentCard({ student, isSelected, onSelect, setStudents, teache
 
   return (
     <>
+      <TeacherNotesDialog
+        isOpen={isNotesOpen}
+        onOpenChange={setIsNotesOpen}
+        student={student}
+        teacherUid={teacherUid}
+      />
       <Dialog>
       <TooltipProvider>
         <Card className={cn("shadow-lg rounded-xl flex flex-col overflow-hidden transition-all duration-300 relative", isSelected ? "ring-2 ring-primary scale-105" : "hover:scale-105")}>
@@ -411,12 +419,15 @@ export function StudentCard({ student, isSelected, onSelect, setStudents, teache
                 />
                 </div>
             </CardContent>
-            <CardFooter className="p-2 bg-secondary/30 mt-auto grid grid-cols-1 gap-2">
+            <CardFooter className="p-2 bg-secondary/30 mt-auto grid grid-cols-2 gap-2">
                 <DialogTrigger asChild>
                 <Button className="w-full" variant="secondary">
                     View Details
                 </Button>
                 </DialogTrigger>
+                <Button className="w-full" variant="outline" onClick={() => setIsNotesOpen(true)}>
+                    <FileText className="mr-2 h-4 w-4" /> Notes
+                </Button>
             </CardFooter>
            </div>
         </Card>

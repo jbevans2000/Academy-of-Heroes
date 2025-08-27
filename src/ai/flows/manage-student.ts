@@ -45,6 +45,25 @@ export async function updateStudentDetails(input: UpdateDetailsInput): Promise<A
   }
 }
 
+interface UpdateNotesInput {
+  teacherUid: string;
+  studentUid: string;
+  notes: string;
+}
+
+export async function updateStudentNotes(input: UpdateNotesInput): Promise<ActionResponse> {
+  try {
+    const studentRef = doc(db, 'teachers', input.teacherUid, 'students', input.studentUid);
+    await updateDoc(studentRef, {
+      teacherNotes: input.notes,
+    });
+    return { success: true };
+  } catch (e: any) {
+    console.error("Error in updateStudentNotes:", e);
+    return { success: false, error: e.message || 'Failed to update student notes.' };
+  }
+}
+
 interface ResetPasswordInput {
   teacherUid: string;
   studentUid: string;
