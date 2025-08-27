@@ -46,8 +46,9 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase } from 'lucide-react';
+import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain, MAX_LEVEL } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -82,6 +83,7 @@ export default function Dashboard() {
   const searchParams = useSearchParams();
 
   const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
+  const [showHidden, setShowHidden] = useState(false);
   
   const [sortOrder, setSortOrder] = useState<SortOrder>('studentName');
 
@@ -168,22 +170,22 @@ export default function Dashboard() {
 
 
   const sortedStudents = useMemo(() => {
-    const activeStudents = students.filter(s => !s.isArchived);
+    const relevantStudents = students.filter(s => !s.isArchived && (showHidden ? s.isHidden : !s.isHidden));
     switch(sortOrder) {
       case 'studentName':
-        return { type: 'flat', data: [...activeStudents].sort((a, b) => a.studentName.localeCompare(b.studentName)) };
+        return { type: 'flat', data: [...relevantStudents].sort((a, b) => a.studentName.localeCompare(b.studentName)) };
       case 'characterName':
-        return { type: 'flat', data: [...activeStudents].sort((a, b) => a.characterName.localeCompare(b.characterName)) };
+        return { type: 'flat', data: [...relevantStudents].sort((a, b) => a.characterName.localeCompare(b.characterName)) };
       case 'xp':
-        return { type: 'flat', data: [...activeStudents].sort((a, b) => (b.xp || 0) - (a.xp || 0)) };
+        return { type: 'flat', data: [...relevantStudents].sort((a, b) => (b.xp || 0) - (a.xp || 0)) };
       case 'class':
         const classOrder: ClassType[] = ['Guardian', 'Healer', 'Mage'];
-        return { type: 'flat', data: [...activeStudents].sort((a, b) => classOrder.indexOf(a.class) - classOrder.indexOf(b.class)) };
+        return { type: 'flat', data: [...relevantStudents].sort((a, b) => classOrder.indexOf(a.class) - classOrder.indexOf(b.class)) };
       case 'company':
         const grouped: { [companyId: string]: Student[] } = {};
         const freelancers: Student[] = [];
 
-        activeStudents.forEach(student => {
+        relevantStudents.forEach(student => {
             if (student.companyId && companies.find(c => c.id === student.companyId)) {
                 if (!grouped[student.companyId]) {
                     grouped[student.companyId] = [];
@@ -209,9 +211,9 @@ export default function Dashboard() {
 
         return { type: 'grouped', data: grouped, freelancers, companyOrder: sortedCompanyIds };
       default:
-        return { type: 'flat', data: activeStudents };
+        return { type: 'flat', data: relevantStudents };
     }
-  }, [students, sortOrder, companies]);
+  }, [students, sortOrder, companies, showHidden]);
 
   const handleToggleStudentSelection = (uid: string) => {
     setSelectedStudents(prev =>
@@ -821,6 +823,13 @@ export default function Dashboard() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+            <div className="flex items-center space-x-2">
+                <Switch id="show-hidden" checked={showHidden} onCheckedChange={setShowHidden} />
+                <Label htmlFor="show-hidden" className="flex items-center gap-1 cursor-pointer font-semibold text-black text-lg">
+                    {showHidden ? <EyeOff className="w-5 h-5"/> : <Eye className="w-5 h-5"/>}
+                    {showHidden ? 'Showing Hidden Heroes' : 'Show Hidden Heroes'}
+                </Label>
+            </div>
         </div>
         {sortOrder === 'company' && sortedStudents.type === 'grouped' ? (
              <div className="space-y-6">
@@ -868,4 +877,3 @@ export default function Dashboard() {
     </div>
   );
 }
-

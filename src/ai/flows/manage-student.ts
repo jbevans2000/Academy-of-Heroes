@@ -64,6 +64,26 @@ export async function updateStudentNotes(input: UpdateNotesInput): Promise<Actio
   }
 }
 
+interface ToggleVisibilityInput {
+  teacherUid: string;
+  studentUid: string;
+  isHidden: boolean;
+}
+
+export async function toggleStudentVisibility(input: ToggleVisibilityInput): Promise<ActionResponse> {
+  try {
+    const studentRef = doc(db, 'teachers', input.teacherUid, 'students', input.studentUid);
+    await updateDoc(studentRef, {
+      isHidden: input.isHidden,
+    });
+    return { success: true };
+  } catch (e: any) {
+    console.error("Error in toggleStudentVisibility:", e);
+    return { success: false, error: e.message || 'Failed to update student visibility.' };
+  }
+}
+
+
 interface ResetPasswordInput {
   teacherUid: string;
   studentUid: string;

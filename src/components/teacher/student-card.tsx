@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Student, Company } from '@/lib/data';
-import { Star, Coins, User, Sword, Trophy, Heart, Zap, Loader2, Edit, Settings, Briefcase, FileText } from 'lucide-react';
+import { Star, Coins, User, Sword, Trophy, Heart, Zap, Loader2, Edit, Settings, Briefcase, FileText, Eye, EyeOff } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -26,6 +26,7 @@ import { calculateLevel, calculateHpGain, calculateMpGain, calculateBaseMaxHp, M
 import { Label } from '../ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { TeacherNotesDialog } from './teacher-notes-dialog';
+import { toggleStudentVisibility } from '@/ai/flows/manage-student';
 
 interface EditableStatProps {
     student: Student;
@@ -286,6 +287,7 @@ export function StudentCard({ student, isSelected, onSelect, setStudents, teache
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   
   const isOnline = student.onlineStatus?.status === 'online';
+  const { toast } = useToast();
 
   useEffect(() => {
     let unsubscribe: () => void;
@@ -305,6 +307,27 @@ export function StudentCard({ student, isSelected, onSelect, setStudents, teache
         if(unsubscribe) unsubscribe();
     };
   }, [student.companyId, teacherUid]);
+  
+  const handleToggleVisibility = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent the card from being selected
+    try {
+      const result = await toggleStudentVisibility({
+        teacherUid,
+        studentUid: student.uid,
+        isHidden: !student.isHidden,
+      });
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update visibility');
+      }
+      toast({
+        title: `Hero ${student.isHidden ? 'Revealed' : 'Hidden'}`,
+        description: `${student.characterName} is now ${student.isHidden ? 'visible' : 'hidden'}.`,
+      });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
+    }
+  };
+
 
   const avatarBorderColor = {
     Mage: 'border-blue-600',
@@ -323,7 +346,7 @@ export function StudentCard({ student, isSelected, onSelect, setStudents, teache
       />
       <Dialog>
       <TooltipProvider>
-        <Card className={cn("shadow-lg rounded-xl flex flex-col overflow-hidden transition-all duration-300 relative", isSelected ? "ring-2 ring-primary scale-105" : "hover:scale-105")}>
+        <Card className={cn("shadow-lg rounded-xl flex flex-col overflow-hidden transition-all duration-300 relative", isSelected ? "ring-2 ring-primary scale-105" : "hover:scale-105", student.isHidden && "opacity-60 bg-gray-200")}>
             {company?.logoUrl && (
                 <div className="absolute inset-0 z-0">
                     <Image src={company.logoUrl} alt="Company Logo" fill className="object-cover opacity-50" />
@@ -339,9 +362,24 @@ export function StudentCard({ student, isSelected, onSelect, setStudents, teache
                         className="h-6 w-6 border-2 border-black bg-white"
                     />
                 </div>
+                 <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute top-2 left-2 z-10 h-7 w-7"
+                            onClick={handleToggleVisibility}
+                        >
+                            {student.isHidden ? <EyeOff className="w-5 h-5"/> : <Eye className="w-5 h-5"/>}
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>{student.isHidden ? 'Click to Unhide' : 'Click to Hide'}</p>
+                    </TooltipContent>
+                 </Tooltip>
                 {isOnline && (
                     <Tooltip>
-                        <TooltipTrigger className="absolute top-2 left-2 z-10">
+                        <TooltipTrigger className="absolute top-3 left-10 z-10">
                         <div className="w-3 h-3 rounded-full bg-green-500 ring-2 ring-white animate-pulse" />
                         </TooltipTrigger>
                         <TooltipContent>

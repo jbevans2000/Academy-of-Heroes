@@ -44,6 +44,7 @@ export type Student = {
     };
     guardedBy?: string | null; // UID of the Guardian protecting this student
     damageShield?: number; // For Absorb power
+    isHidden?: boolean; // To temporarily hide from teacher dashboard
 }
 
 export type PendingStudent = {
