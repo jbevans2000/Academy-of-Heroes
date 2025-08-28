@@ -48,12 +48,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff, MessageSquare } from 'lucide-react';
+import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff, MessageSquare, Heart, Zap as ZapIcon } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain, MAX_LEVEL } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { archiveStudents } from '@/ai/flows/manage-student';
 import { TeacherMessageCenter } from '@/components/teacher/teacher-message-center';
+import { restoreAllStudentsHp, restoreAllStudentsMp } from '@/ai/flows/manage-class';
 
 interface TeacherData {
     name: string;
@@ -526,6 +527,26 @@ export default function Dashboard() {
         setIsMessageCenterOpen(true);
     }
   };
+  
+  const handleRestoreAll = async (stat: 'hp' | 'mp') => {
+      if (!teacher) return;
+      setIsAwarding(true);
+      try {
+          const result = stat === 'hp'
+              ? await restoreAllStudentsHp(teacher.uid)
+              : await restoreAllStudentsMp(teacher.uid);
+          
+          if (result.success) {
+              toast({ title: 'Success!', description: result.message });
+          } else {
+              throw new Error(result.error);
+          }
+      } catch (error: any) {
+          toast({ variant: 'destructive', title: 'Error', description: error.message });
+      } finally {
+          setIsAwarding(false);
+      }
+  }
 
 
   if (isLoading || !teacher) {
@@ -673,6 +694,47 @@ export default function Dashboard() {
                         <Wrench className="mr-2 h-4 w-4" />
                         <span>The Guild Leader's Toolkit</span>
                     </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-green-600 focus:bg-green-100 focus:text-green-800">
+                                <Heart className="mr-2 h-4 w-4" />
+                                <span>Restore All HP</span>
+                            </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                This will restore every student in your guild to their maximum HP.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleRestoreAll('hp')}>Confirm</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-blue-600 focus:bg-blue-100 focus:text-blue-800">
+                                <ZapIcon className="mr-2 h-4 w-4" />
+                                <span>Restore All MP</span>
+                            </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                         <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                This will restore every student in your guild to their maximum Magic Points.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleRestoreAll('mp')}>Confirm</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </DropdownMenuContent>
             </DropdownMenu>
             
@@ -843,7 +905,7 @@ export default function Dashboard() {
             <TeacherMessageCenter 
                 teacher={teacher} 
                 students={students} 
-                selectedStudentUids={selectedStudents}
+                selectedStudentUids={selectedStudentUids}
                 isMessageOpen={isMessageCenterOpen}
                 onMessageOpenChange={setIsMessageCenterOpen}
                 isConversationViewOpen={isConversationViewOpen}
@@ -907,4 +969,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
 
