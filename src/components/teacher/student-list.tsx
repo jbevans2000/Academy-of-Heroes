@@ -3,7 +3,7 @@
 'use client';
 
 import { StudentCard } from './student-card';
-import type { Student } from '@/lib/data';
+import type { Student, QuestHub, Chapter } from '@/lib/data';
 
 interface StudentListProps {
   students: Student[];
@@ -12,9 +12,11 @@ interface StudentListProps {
   setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
   teacherUid: string;
   onSendMessage: (student: Student) => void;
+  hubs: QuestHub[];
+  chapters: Chapter[];
 }
 
-export function StudentList({ students, selectedStudents, onSelectStudent, setStudents, teacherUid, onSendMessage }: StudentListProps) {
+export function StudentList({ students, selectedStudents, onSelectStudent, setStudents, teacherUid, onSendMessage, hubs, chapters }: StudentListProps) {
   if (students.length === 0) {
     return (
       <div className="flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
@@ -34,6 +36,8 @@ export function StudentList({ students, selectedStudents, onSelectStudent, setSt
                 setStudents={setStudents}
                 teacherUid={teacherUid}
                 onSendMessage={onSendMessage}
+                hubs={hubs}
+                chapters={chapters}
             />
       ))}
     </div>

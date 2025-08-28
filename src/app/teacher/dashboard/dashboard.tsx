@@ -4,9 +4,9 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { collection, doc, getDoc, onSnapshot, writeBatch, deleteDoc, getDocs, query, where, updateDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, onSnapshot, writeBatch, deleteDoc, getDocs, query, where, updateDoc, orderBy } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
-import type { Student, PendingStudent, ClassType, Company } from '@/lib/data';
+import type { Student, PendingStudent, ClassType, Company, QuestHub, Chapter } from '@/lib/data';
 import { TeacherHeader } from "@/components/teacher/teacher-header";
 import { StudentList } from "@/components/teacher/student-list";
 import { Skeleton } from '@/components/ui/skeleton';
@@ -55,6 +55,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { archiveStudents } from '@/ai/flows/manage-student';
 import { TeacherMessageCenter } from '@/components/teacher/teacher-message-center';
 import { restoreAllStudentsHp, restoreAllStudentsMp } from '@/ai/flows/manage-class';
+import { SetQuestProgressDialog } from '@/components/teacher/set-quest-progress-dialog';
 
 interface TeacherData {
     name: string;
@@ -69,6 +70,8 @@ export default function Dashboard() {
   const [students, setStudents] = useState<Student[]>([]);
   const [pendingStudents, setPendingStudents] = useState<PendingStudent[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [hubs, setHubs] = useState<QuestHub[]>([]);
+  const [chapters, setChapters] = useState<Chapter[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [xpAmount, setXpAmount] = useState<number | string>('');
@@ -79,6 +82,7 @@ export default function Dashboard() {
   const [isGoldDialogOpen, setIsGoldDialogOpen] = useState(false);
   const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false);
   const [isArchiveConfirmOpen, setIsArchiveConfirmOpen] = useState(false);
+  const [isQuestProgressOpen, setIsQuestProgressOpen] = useState(false);
   const [teacher, setTeacher] = useState<User | null>(null);
   const [teacherData, setTeacherData] = useState<TeacherData | null>(null);
   const router = useRouter();
@@ -164,6 +168,17 @@ export default function Dashboard() {
         const companiesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
         setCompanies(companiesData.sort((a,b) => a.name.localeCompare(b.name)));
     });
+    
+    // Fetch quests data
+    const hubsQuery = query(collection(db, 'teachers', teacherUid, 'questHubs'), orderBy('hubOrder'));
+    const hubsUnsubscribe = onSnapshot(hubsQuery, (snapshot) => {
+        setHubs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub)))
+    });
+    
+    const chaptersQuery = query(collection(db, 'teachers', teacherUid, 'chapters'), orderBy('chapterNumber'));
+    const chaptersUnsubscribe = onSnapshot(chaptersQuery, (snapshot) => {
+        setChapters(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter)))
+    });
 
 
     // Cleanup listeners on unmount
@@ -172,6 +187,8 @@ export default function Dashboard() {
         studentsUnsubscribe();
         pendingUnsubscribe();
         companiesUnsubscribe();
+        hubsUnsubscribe();
+        chaptersUnsubscribe();
     };
   }, [teacher]);
 
@@ -694,6 +711,16 @@ export default function Dashboard() {
                         <Wrench className="mr-2 h-4 w-4" />
                         <span>The Guild Leader's Toolkit</span>
                     </DropdownMenuItem>
+                    <DropdownMenuItem 
+                        disabled={selectedStudents.length === 0}
+                        onSelect={(e) => {
+                            e.preventDefault();
+                            setIsQuestProgressOpen(true);
+                        }}
+                    >
+                        <BookOpen className="mr-2 h-4 w-4" />
+                        <span>Set Chapter Location for Selected</span>
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -912,6 +939,14 @@ export default function Dashboard() {
                 onConversationViewOpenChange={setIsConversationViewOpen}
                 studentToMessage={studentToMessage}
             />
+            <SetQuestProgressDialog
+                isOpen={isQuestProgressOpen}
+                onOpenChange={setIsQuestProgressOpen}
+                studentsToUpdate={students.filter(s => selectedStudents.includes(s.uid))}
+                teacherUid={teacher.uid}
+                hubs={hubs}
+                chapters={chapters}
+            />
             <div className="flex items-center space-x-2">
                 <Switch id="show-hidden" checked={showHidden} onCheckedChange={setShowHidden} />
                 <Label htmlFor="show-hidden" className="flex items-center gap-1 cursor-pointer font-semibold text-black text-lg">
@@ -937,6 +972,8 @@ export default function Dashboard() {
                                 setStudents={setStudents}
                                 teacherUid={teacher.uid}
                                 onSendMessage={handleOpenMessageCenter}
+                                hubs={hubs}
+                                chapters={chapters}
                             />
                         </div>
                     )
@@ -951,6 +988,8 @@ export default function Dashboard() {
                             setStudents={setStudents}
                             teacherUid={teacher.uid}
                             onSendMessage={handleOpenMessageCenter}
+                            hubs={hubs}
+                            chapters={chapters}
                         />
                     </div>
                 )}
@@ -963,6 +1002,8 @@ export default function Dashboard() {
                 setStudents={setStudents}
                 teacherUid={teacher.uid}
                 onSendMessage={handleOpenMessageCenter}
+                hubs={hubs}
+                chapters={chapters}
             />
         ) : null}
       </main>

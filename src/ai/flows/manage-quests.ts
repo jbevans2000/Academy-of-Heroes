@@ -1,9 +1,9 @@
 
 'use server';
 
-import { doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs, writeBatch, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs, writeBatch, deleteDoc, serverTimestamp, query as firestoreQuery, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Student } from '@/lib/data';
+import type { Student, QuestHub, Chapter } from '@/lib/data';
 import { logGameEvent } from '@/lib/gamelog';
 import firebase from 'firebase/compat/app';
 
@@ -42,6 +42,13 @@ interface RequestChapterCompletionInput {
 interface ApproveChapterCompletionInput {
     teacherUid: string;
     requestId: string;
+}
+
+interface SetStudentQuestProgressInput {
+    teacherUid: string;
+    studentUids: string[];
+    hubId: string;
+    chapterNumber: number;
 }
 
 // --------- SETTINGS MANAGEMENT ---------
@@ -174,5 +181,66 @@ export async function approveAllPending(teacherUid: string): Promise<CountRespon
     } catch (error: any) {
         console.error("Error approving all requests:", error);
         return { success: false, error: 'Failed to approve all requests.' };
+    }
+}
+
+// --------- PROGRESS MANAGEMENT ---------
+
+export async function setStudentQuestProgress(input: SetStudentQuestProgressInput): Promise<ActionResponse> {
+    const { teacherUid, studentUids, hubId, chapterNumber } = input;
+    if (!teacherUid || studentUids.length === 0 || !hubId || chapterNumber === undefined) {
+        return { success: false, error: 'Invalid input provided.' };
+    }
+
+    const batch = writeBatch(db);
+    try {
+        // Fetch all hub and chapter data once
+        const hubsRef = collection(db, 'teachers', teacherUid, 'questHubs');
+        const chaptersRef = collection(db, 'teachers', teacherUid, 'chapters');
+        const [hubsSnapshot, chaptersSnapshot] = await Promise.all([getDocs(hubsRef), getDocs(chaptersRef)]);
+        
+        const allHubs = hubsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
+        const allChapters = chaptersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
+
+        const targetHub = allHubs.find(h => h.id === hubId);
+        if (!targetHub) throw new Error("Target hub not found.");
+
+        const precedingHubs = allHubs.filter(h => h.hubOrder < targetHub.hubOrder);
+
+        for (const studentUid of studentUids) {
+            const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
+            const studentSnap = await getDoc(studentRef);
+            if (!studentSnap.exists()) continue; // Skip if student doesn't exist
+
+            const studentData = studentSnap.data() as Student;
+            const newQuestProgress = { ...(studentData.questProgress || {}) };
+
+            // Mark all chapters in preceding hubs as complete
+            for (const hub of precedingHubs) {
+                const chaptersInHub = allChapters.filter(c => c.hubId === hub.id);
+                if (chaptersInHub.length > 0) {
+                    newQuestProgress[hub.id] = chaptersInHub.length;
+                }
+            }
+
+            // Set the progress for the target hub
+            newQuestProgress[hubId] = chapterNumber > 0 ? chapterNumber - 1 : 0;
+            
+            const newHubsCompleted = Math.max(studentData.hubsCompleted || 0, targetHub.hubOrder -1);
+
+            batch.update(studentRef, { 
+                questProgress: newQuestProgress,
+                hubsCompleted: newHubsCompleted
+            });
+        }
+        
+        await batch.commit();
+        await logGameEvent(teacherUid, 'GAMEMASTER', `Set quest progress for ${studentUids.length} student(s) to Hub: ${targetHub.name}, Chapter: ${chapterNumber}.`);
+
+        return { success: true };
+
+    } catch (error: any) {
+        console.error("Error setting student quest progress:", error);
+        return { success: false, error: error.message || "Failed to update student progress." };
     }
 }

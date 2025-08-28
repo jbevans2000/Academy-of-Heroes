@@ -6,8 +6,8 @@ import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import type { Student, Company } from '@/lib/data';
-import { Star, Coins, User, Sword, Trophy, Heart, Zap, Loader2, Edit, Settings, Briefcase, FileText, Eye, EyeOff, MessageSquare } from 'lucide-react';
+import type { Student, Company, QuestHub, Chapter } from '@/lib/data';
+import { Star, Coins, User, Sword, Trophy, Heart, Zap, Loader2, Edit, Settings, Briefcase, FileText, Eye, EyeOff, MessageSquare, BookOpen } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -28,6 +28,7 @@ import { Label } from '../ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { TeacherNotesDialog } from './teacher-notes-dialog';
 import { toggleStudentVisibility, updateStudentDetails } from '@/ai/flows/manage-student';
+import { SetQuestProgressDialog } from './set-quest-progress-dialog';
 
 interface EditableStatProps {
     student: Student;
@@ -380,12 +381,15 @@ interface StudentCardProps {
   setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
   teacherUid: string;
   onSendMessage: (student: Student) => void;
+  hubs: QuestHub[];
+  chapters: Chapter[];
 }
 
-export function StudentCard({ student, isSelected, onSelect, setStudents, teacherUid, onSendMessage }: StudentCardProps) {
+export function StudentCard({ student, isSelected, onSelect, setStudents, teacherUid, onSendMessage, hubs, chapters }: StudentCardProps) {
   const avatarUrl = student.avatarUrl || 'https://placehold.co/100x100.png';
   const [company, setCompany] = useState<Company | null>(null);
   const [isNotesOpen, setIsNotesOpen] = useState(false);
+  const [isQuestProgressOpen, setIsQuestProgressOpen] = useState(false);
   
   const isOnline = student.onlineStatus?.status === 'online';
   const { toast } = useToast();
@@ -444,6 +448,14 @@ export function StudentCard({ student, isSelected, onSelect, setStudents, teache
         onOpenChange={setIsNotesOpen}
         student={student}
         teacherUid={teacherUid}
+      />
+       <SetQuestProgressDialog
+        isOpen={isQuestProgressOpen}
+        onOpenChange={setIsQuestProgressOpen}
+        studentsToUpdate={[student]}
+        teacherUid={teacherUid}
+        hubs={hubs}
+        chapters={chapters}
       />
       <Dialog>
       <TooltipProvider>
@@ -588,9 +600,14 @@ export function StudentCard({ student, isSelected, onSelect, setStudents, teache
                     View Details
                 </Button>
                 </DialogTrigger>
-                <Button className="w-full" variant="outline" onClick={() => setIsNotesOpen(true)}>
-                    <FileText className="h-4 w-4" />
-                </Button>
+                <div className="flex gap-1">
+                   <Button className="flex-1" variant="outline" onClick={() => setIsNotesOpen(true)}>
+                        <FileText className="h-4 w-4" />
+                    </Button>
+                    <Button className="flex-1" variant="outline" onClick={() => setIsQuestProgressOpen(true)}>
+                        <BookOpen className="h-4 w-4" />
+                    </Button>
+                </div>
             </CardFooter>
            </div>
         </Card>
