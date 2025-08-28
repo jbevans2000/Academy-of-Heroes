@@ -905,7 +905,7 @@ export default function Dashboard() {
             <TeacherMessageCenter 
                 teacher={teacher} 
                 students={students} 
-                selectedStudentUids={selectedStudentUids}
+                selectedStudentUids={selectedStudents}
                 isMessageOpen={isMessageCenterOpen}
                 onMessageOpenChange={setIsMessageCenterOpen}
                 isConversationViewOpen={isConversationViewOpen}
@@ -969,5 +969,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
-
