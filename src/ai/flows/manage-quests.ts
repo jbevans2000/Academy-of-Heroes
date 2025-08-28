@@ -21,6 +21,7 @@ interface CountResponse extends ActionResponse {
 
 interface QuestSettings {
     globalApprovalRequired: boolean;
+    isDailyLimitEnabled: boolean; // New setting
     studentOverrides?: {
         [studentUid: string]: boolean;
     };
@@ -58,11 +59,12 @@ export async function getQuestSettings(teacherUid: string): Promise<QuestSetting
         const data = teacherSnap.data();
         return {
             globalApprovalRequired: data.questSettings?.globalApprovalRequired ?? false,
+            isDailyLimitEnabled: data.questSettings?.isDailyLimitEnabled ?? true, // Default to true
             studentOverrides: data.questSettings?.studentOverrides || {},
         };
     }
     // Default settings if not found
-    return { globalApprovalRequired: false, studentOverrides: {} };
+    return { globalApprovalRequired: false, isDailyLimitEnabled: true, studentOverrides: {} };
 }
 
 export async function updateQuestSettings(teacherUid: string, newSettings: Partial<QuestSettings>): Promise<ActionResponse> {
@@ -71,9 +73,6 @@ export async function updateQuestSettings(teacherUid: string, newSettings: Parti
         const teacherRef = doc(db, 'teachers', teacherUid);
         await setDoc(teacherRef, { questSettings: newSettings }, { merge: true });
         
-        // This flow no longer needs to update individual student docs,
-        // as the override logic is handled client-side based on the main teacher doc.
-
         return { success: true, message: 'Quest settings updated.' };
     } catch (error: any) {
         console.error("Error updating quest settings:", error);
@@ -91,6 +90,8 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
     try {
         const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
         const chapterRef = doc(db, 'teachers', teacherUid, 'chapters', chapterId);
+        
+        const questSettings = await getQuestSettings(teacherUid);
 
         const [studentSnap, chapterSnap] = await Promise.all([getDoc(studentRef), getDoc(chapterRef)]);
 
@@ -100,8 +101,8 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
         const student = studentSnap.data() as Student;
         const chapter = chapterSnap.data() as Chapter;
 
-        // Daily Completion Limit Check
-        if (student.lastChapterCompletion) {
+        // Daily Completion Limit Check (only if enabled)
+        if (questSettings.isDailyLimitEnabled && student.lastChapterCompletion) {
             const lastCompletionDate = student.lastChapterCompletion.toDate();
             const now = new Date();
             const timeSinceCompletion = now.getTime() - lastCompletionDate.getTime();
@@ -117,7 +118,6 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
         }
 
         // Check if approval is required
-        const questSettings = await getQuestSettings(teacherUid);
         const isGlobalApprovalOn = questSettings.globalApprovalRequired;
         const studentOverride = questSettings.studentOverrides?.[student.uid];
         
@@ -144,7 +144,7 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
         }
 
         // --- If no approval needed, complete it directly ---
-        const chaptersInHubQuery = query(collection(db, 'teachers', teacherUid, 'chapters'), where('hubId', '==', hubId));
+        const chaptersInHubQuery = firestoreQuery(collection(db, 'teachers', teacherUid, 'chapters'), where('hubId', '==', hubId));
         const totalChaptersInHub = (await getDocs(chaptersInHubQuery)).size;
         
         const newProgress = { ...student.questProgress, [hubId]: chapter.chapterNumber };

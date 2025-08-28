@@ -33,6 +33,7 @@ export default function ManageQuestCompletionPage() {
 
     // Settings State
     const [globalApproval, setGlobalApproval] = useState(false);
+    const [isDailyLimitEnabled, setIsDailyLimitEnabled] = useState(true);
     const [studentOverrides, setStudentOverrides] = useState<{ [uid: string]: boolean }>({});
     const [isUpdating, setIsUpdating] = useState(false);
     const [isProcessing, setIsProcessing] = useState<string | null>(null);
@@ -52,6 +53,7 @@ export default function ManageQuestCompletionPage() {
             setIsLoading(true);
             const settings = await getQuestSettings(teacher.uid);
             setGlobalApproval(settings.globalApprovalRequired);
+            setIsDailyLimitEnabled(settings.isDailyLimitEnabled);
             setStudentOverrides(settings.studentOverrides || {});
         };
 
@@ -75,29 +77,39 @@ export default function ManageQuestCompletionPage() {
 
     }, [teacher]);
 
-    const handleGlobalToggle = async (checked: boolean) => {
+    const handleGlobalApprovalToggle = async (checked: boolean) => {
         if (!teacher) return;
         setIsUpdating(true);
         setGlobalApproval(checked);
-        // When the global toggle changes, we clear all overrides.
         setStudentOverrides({});
         
         const result = await updateQuestSettings(teacher.uid, { 
             globalApprovalRequired: checked,
-            studentOverrides: {} // Reset all overrides
+            studentOverrides: {}
         });
 
         if (!result.success) {
             toast({ variant: 'destructive', title: 'Error', description: result.error });
-            // Revert state on failure
             setGlobalApproval(!checked);
-            // We would need to refetch the old overrides here for a perfect revert,
-            // but for simplicity, we'll just revert the global toggle.
         } else {
              toast({ title: 'Global Setting Updated', description: 'All student settings have been aligned to the new global default.' });
         }
         setIsUpdating(false);
     };
+
+    const handleDailyLimitToggle = async (checked: boolean) => {
+        if (!teacher) return;
+        setIsUpdating(true);
+        setIsDailyLimitEnabled(checked);
+        const result = await updateQuestSettings(teacher.uid, { isDailyLimitEnabled: checked });
+        if (!result.success) {
+            toast({ variant: 'destructive', title: 'Error', description: result.error });
+            setIsDailyLimitEnabled(!checked);
+        } else {
+            toast({ title: 'Gameplay Setting Updated', description: `Daily limit is now ${checked ? 'ON' : 'OFF'}.` });
+        }
+        setIsUpdating(false);
+    }
 
     const handleStudentToggle = async (studentUid: string, checked: boolean) => {
         if (!teacher) return;
@@ -105,8 +117,6 @@ export default function ManageQuestCompletionPage() {
         const originalOverrides = { ...studentOverrides };
         const newOverrides = { ...studentOverrides };
 
-        // If the student's new state matches the global state, we can remove the override.
-        // Otherwise, we set the override.
         if (checked === globalApproval) {
             delete newOverrides[studentUid];
         } else {
@@ -118,7 +128,6 @@ export default function ManageQuestCompletionPage() {
         const result = await updateQuestSettings(teacher.uid, { studentOverrides: newOverrides });
          if (!result.success) {
             toast({ variant: 'destructive', title: 'Error', description: result.error });
-            // Revert on failure
             setStudentOverrides(originalOverrides);
         }
         setIsUpdating(false);
@@ -181,28 +190,31 @@ export default function ManageQuestCompletionPage() {
                     
                     <Card>
                         <CardHeader>
-                            <CardTitle>Global Approval Setting</CardTitle>
-                            <CardDescription>Require teacher approval for ALL students before they can advance to the next chapter. Individual student settings below can override this.</CardDescription>
+                            <CardTitle>Global Gameplay Settings</CardTitle>
+                            <CardDescription>These rules apply to all students unless individually overridden.</CardDescription>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="space-y-4">
                              <div className="flex items-center space-x-2">
-                                <Switch id="global-approval" checked={globalApproval} onCheckedChange={handleGlobalToggle} disabled={isUpdating} />
-                                <Label htmlFor="global-approval">{globalApproval ? "Approval Required for All Students" : "Students Can Advance Freely"}</Label>
-                                {isUpdating && <Loader2 className="h-4 w-4 animate-spin" />}
+                                <Switch id="global-approval" checked={globalApproval} onCheckedChange={handleGlobalApprovalToggle} disabled={isUpdating} />
+                                <Label htmlFor="global-approval">{globalApproval ? "Approval Required to Advance Chapters" : "Students Can Advance Freely"}</Label>
                             </div>
+                             <div className="flex items-center space-x-2">
+                                <Switch id="daily-limit" checked={isDailyLimitEnabled} onCheckedChange={handleDailyLimitToggle} disabled={isUpdating} />
+                                <Label htmlFor="daily-limit">{isDailyLimitEnabled ? "Enforce 1 Chapter Completion Per Day" : "Daily Limit is OFF"}</Label>
+                            </div>
+                            {isUpdating && <Loader2 className="h-4 w-4 animate-spin" />}
                         </CardContent>
                     </Card>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                          <Card>
                             <CardHeader>
-                                <CardTitle>Individual Student Settings</CardTitle>
-                                <CardDescription>Override the global setting for specific students.</CardDescription>
+                                <CardTitle>Individual Student Overrides</CardTitle>
+                                <CardDescription>Override the global approval setting for specific students.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-3 max-h-96 overflow-y-auto">
                                 {students.map(student => {
                                     const hasOverride = studentOverrides.hasOwnProperty(student.uid);
-                                    // The student's effective setting is the override if it exists, otherwise the global setting.
                                     const isRestricted = hasOverride ? studentOverrides[student.uid] : globalApproval;
                                     
                                     return (
