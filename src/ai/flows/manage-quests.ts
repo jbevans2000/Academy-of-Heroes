@@ -26,18 +26,15 @@ interface QuestSettings {
     };
 }
 
-interface RequestChapterCompletionInput {
+interface CompleteChapterInput {
     teacherUid: string;
     studentUid: string;
-    studentName: string;
-    characterName: string;
     hubId: string;
     chapterId: string;
-    chapterNumber: number;
-    chapterTitle: string;
     quizScore?: number;
     quizAnswers?: any[];
 }
+
 
 interface ApproveChapterCompletionInput {
     teacherUid: string;
@@ -46,6 +43,7 @@ interface ApproveChapterCompletionInput {
 
 interface SetStudentQuestProgressInput {
     teacherUid: string;
+
     studentUids: string[];
     hubId: string;
     chapterNumber: number;
@@ -86,22 +84,97 @@ export async function updateQuestSettings(teacherUid: string, newSettings: Parti
 
 // --------- REQUEST MANAGEMENT ---------
 
-export async function requestChapterCompletion(input: RequestChapterCompletionInput): Promise<ActionResponse> {
-    const { teacherUid, ...requestData } = input;
-    if (!teacherUid) return { success: false, error: 'Teacher not found.' };
+export async function completeChapter(input: CompleteChapterInput): Promise<ActionResponse> {
+    const { teacherUid, studentUid, hubId, chapterId, quizScore, quizAnswers } = input;
+    if (!teacherUid || !studentUid || !hubId || !chapterId) return { success: false, error: 'Invalid input.' };
 
     try {
-        const requestsRef = collection(db, 'teachers', teacherUid, 'pendingQuestRequests');
-        await addDoc(requestsRef, {
-            ...requestData,
-            requestedAt: serverTimestamp(),
-        });
-        return { success: true, message: 'Request sent for approval.' };
+        const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
+        const chapterRef = doc(db, 'teachers', teacherUid, 'chapters', chapterId);
+
+        const [studentSnap, chapterSnap] = await Promise.all([getDoc(studentRef), getDoc(chapterRef)]);
+
+        if (!studentSnap.exists()) throw new Error("Student not found.");
+        if (!chapterSnap.exists()) throw new Error("Chapter not found.");
+
+        const student = studentSnap.data() as Student;
+        const chapter = chapterSnap.data() as Chapter;
+
+        // Daily Completion Limit Check
+        if (student.lastChapterCompletion) {
+            const lastCompletionDate = student.lastChapterCompletion.toDate();
+            const now = new Date();
+            const timeSinceCompletion = now.getTime() - lastCompletionDate.getTime();
+            const hoursSinceCompletion = timeSinceCompletion / (1000 * 60 * 60);
+            if (hoursSinceCompletion < 24) {
+                return { success: false, error: 'You may only complete one chapter per day. Your next quest awaits tomorrow!' };
+            }
+        }
+        
+        const currentProgress = student.questProgress?.[hubId] || 0;
+        if (chapter.chapterNumber !== currentProgress + 1) {
+            return { success: false, error: "This chapter cannot be marked as complete yet. Complete the previous chapter first." };
+        }
+
+        // Check if approval is required
+        const questSettings = await getQuestSettings(teacherUid);
+        const isGlobalApprovalOn = questSettings.globalApprovalRequired;
+        const studentOverride = questSettings.studentOverrides?.[student.uid];
+        
+        let needsApproval = isGlobalApprovalOn;
+        if (studentOverride !== undefined) {
+            needsApproval = studentOverride; // Override takes precedence
+        }
+
+        if (needsApproval) {
+            const requestsRef = collection(db, 'teachers', teacherUid, 'pendingQuestRequests');
+            await addDoc(requestsRef, {
+                studentUid,
+                studentName: student.studentName,
+                characterName: student.characterName,
+                hubId: hubId,
+                chapterId: chapterId,
+                chapterNumber: chapter.chapterNumber,
+                chapterTitle: chapter.title,
+                quizScore,
+                quizAnswers,
+                requestedAt: serverTimestamp(),
+            });
+            return { success: true, message: 'Request sent for approval.' };
+        }
+
+        // --- If no approval needed, complete it directly ---
+        const chaptersInHubQuery = query(collection(db, 'teachers', teacherUid, 'chapters'), where('hubId', '==', hubId));
+        const totalChaptersInHub = (await getDocs(chaptersInHubQuery)).size;
+        
+        const newProgress = { ...student.questProgress, [hubId]: chapter.chapterNumber };
+        const updates: any = {
+            questProgress: newProgress,
+            lastChapterCompletion: serverTimestamp() // Update the timestamp
+        };
+
+        if (chapter.chapterNumber === totalChaptersInHub) {
+            const hubRef = doc(db, 'teachers', teacherUid, 'questHubs', hubId);
+            const hubSnap = await getDoc(hubRef);
+            if(hubSnap.exists()) {
+                 const hub = hubSnap.data() as QuestHub;
+                 if ((student.hubsCompleted || 0) < hub.hubOrder) {
+                    updates.hubsCompleted = hub.hubOrder;
+                }
+            }
+        }
+        
+        await updateDoc(studentRef, updates);
+        await logGameEvent(teacherUid, 'CHAPTER', `${student.characterName} completed Chapter ${chapter.chapterNumber}: ${chapter.title}.`);
+
+        return { success: true, message: `You have completed Chapter ${chapter.chapterNumber}: ${chapter.title}!` };
+
     } catch (error: any) {
-        console.error("Error creating quest completion request:", error);
-        return { success: false, error: "Could not send your request for approval." };
+        console.error("Error completing chapter:", error);
+        return { success: false, error: error.message || "Failed to complete chapter." };
     }
 }
+
 
 async function approveSingleRequest(batch: firebase.firestore.WriteBatch, teacherUid: string, requestId: string, requestData: any) {
     const { studentUid, hubId, chapterNumber, chapterTitle } = requestData;
@@ -120,7 +193,10 @@ async function approveSingleRequest(batch: firebase.firestore.WriteBatch, teache
     // This prevents issues if a teacher accidentally approves an old request.
     if (chapterNumber === currentProgress + 1) {
         const newProgress = { ...studentData.questProgress, [hubId]: chapterNumber };
-        batch.update(studentRef, { questProgress: newProgress });
+        batch.update(studentRef, { 
+            questProgress: newProgress,
+            lastChapterCompletion: serverTimestamp() // Also update timestamp on approval
+        });
         await logGameEvent(teacherUid, 'CHAPTER', `${studentData.characterName}'s completion of "${chapterTitle}" was approved.`);
     }
 
