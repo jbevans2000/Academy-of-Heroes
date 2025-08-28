@@ -1082,18 +1082,19 @@ export default function TeacherLiveBattlePage() {
                         totalDamage += Math.floor(Math.random() * 6) + 1;
                     }
                     totalDamage += studentData.level || 1;
-
-                    const newQueuedPower: QueuedPower = {
-                        casterUid: activation.studentUid,
-                        powerName: 'Chaos Storm',
-                        damage: totalDamage,
-                    };
                     
                     batch.update(liveBattleRef, {
-                        queuedPowers: arrayUnion(newQueuedPower),
+                        totalPowerDamage: increment(totalDamage),
                         [`chaosStormCasts.${activation.studentUid}`]: increment(1),
-                        powerEventMessage: `${activation.studentName} has summoned a storm of pure chaos to smite the Enemy!`,
+                        powerEventMessage: `${activation.studentName} has summoned a storm of pure chaos to smite the Enemy for ${totalDamage} damage!`,
                         targetedEvent: { targetUid: activation.studentUid, message: `You have summoned a storm of pure chaos to smite the Enemy for ${totalDamage} damage!` },
+                    });
+                     batch.set(doc(battleLogRef), {
+                        round: liveState.currentQuestionIndex + 1,
+                        casterName: activation.studentName,
+                        powerName: activation.powerName,
+                        description: `Dealt ${totalDamage} direct damage.`,
+                        timestamp: serverTimestamp()
                     });
                 }
             } else if (activation.powerName === 'Enduring Spirit') {

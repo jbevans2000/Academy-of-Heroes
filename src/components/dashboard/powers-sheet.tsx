@@ -41,6 +41,7 @@ interface LiveBattleState {
     martialSacrificeCasterUid?: string;
     arcaneSacrificeCasterUid?: string;
     divineSacrificeCasterUid?: string;
+    chaosStormCasts?: { [studentUid: string]: number };
 }
 
 interface PowersSheetProps {
@@ -178,6 +179,13 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
         const uses = battleState.inspiringStrikeCasts?.[student.uid] || 0;
         if (uses >= 2) {
              toast({ variant: 'destructive', title: 'Power Limit Reached', description: 'Your voice is hoarse! You cannot inspire again this battle.' });
+            return;
+        }
+    }
+    if (power.name === 'Chaos Storm') {
+        const uses = battleState.chaosStormCasts?.[student.uid] || 0;
+        if (uses >= 2) {
+             toast({ variant: 'destructive', title: 'Power Limit Reached', description: 'You are too exhausted to control the forces of Chaos! Choose another power!' });
             return;
         }
     }
