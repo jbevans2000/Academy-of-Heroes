@@ -918,7 +918,50 @@ export default function TeacherLiveBattlePage() {
 
             const batch = writeBatch(db);
 
-            if (activation.powerName === 'Absorb') {
+            if (activation.powerName === 'Nature’s Guidance') {
+                const baseChance = 0.20;
+                const levelBonus = (studentData.level || 1) * 0.01;
+                const successChance = baseChance + levelBonus;
+                const roll = Math.random();
+
+                if (roll <= successChance) {
+                    // Success
+                    const currentQuestion = battle!.questions[battleData!.currentQuestionIndex];
+                    const incorrectAnswerIndices = currentQuestion.answers
+                        .map((_, i) => i)
+                        .filter(i => i !== currentQuestion.correctAnswerIndex);
+
+                    const removableIndices = incorrectAnswerIndices.filter(i => !(battleData!.removedAnswerIndices || []).includes(i));
+
+                    if (removableIndices.length > 0) {
+                        const indexToRemove = removableIndices[Math.floor(Math.random() * removableIndices.length)];
+                        batch.update(liveBattleRef, {
+                            removedAnswerIndices: arrayUnion(indexToRemove),
+                            powerEventMessage: `${activation.studentName} used Nature's Guidance successfully!`
+                        });
+                        batch.set(doc(battleLogRef), {
+                            round: liveState.currentQuestionIndex + 1,
+                            casterName: activation.studentName,
+                            powerName: activation.powerName,
+                            description: 'Removed one incorrect answer.',
+                            timestamp: serverTimestamp()
+                        });
+                    }
+                } else {
+                    // Failure
+                    batch.update(liveBattleRef, {
+                        powerEventMessage: `The spirits of nature do not answer ${activation.studentName}'s call! The power fizzles!`,
+                        targetedEvent: { targetUid: activation.studentUid, message: "Your plea to nature went unanswered!" }
+                    });
+                     batch.set(doc(battleLogRef), {
+                        round: liveState.currentQuestionIndex + 1,
+                        casterName: activation.studentName,
+                        powerName: activation.powerName,
+                        description: 'Fizzled and had no effect.',
+                        timestamp: serverTimestamp()
+                    });
+                }
+            } else if (activation.powerName === 'Absorb') {
                 if (!activation.targets || activation.targets.length === 0 || !activation.inputValue) return;
                 const absorbAmount = activation.inputValue;
                 const selfDamage = Math.floor(absorbAmount * 0.8);
@@ -1009,30 +1052,6 @@ export default function TeacherLiveBattlePage() {
                         targetedEvent: { targetUid: activation.studentUid, message: "You channel all of your life's energy into a final, selfless act, sending a wave of pure vitality to your allies as your spirit departs the battlefield." }
                     });
                     batch.update(studentRef, { hp: 0, mp: 0 });
-                }
-            } else if (activation.powerName === 'Nature’s Guidance') {
-                const currentQuestion = battle!.questions[battleData!.currentQuestionIndex];
-
-                const incorrectAnswerIndices = currentQuestion.answers
-                    .map((_, i) => i)
-                    .filter(i => i !== currentQuestion.correctAnswerIndex);
-
-                const removableIndices = incorrectAnswerIndices.filter(i => !(battleData!.removedAnswerIndices || []).includes(i));
-
-                if (removableIndices.length > 0) {
-                    const indexToRemove = removableIndices[Math.floor(Math.random() * removableIndices.length)];
-
-                    batch.update(liveBattleRef, {
-                        removedAnswerIndices: arrayUnion(indexToRemove),
-                        powerEventMessage: `${activation.studentName} used Nature's Guidance!`
-                    });
-                     batch.set(doc(battleLogRef), {
-                        round: liveState.currentQuestionIndex + 1,
-                        casterName: activation.studentName,
-                        powerName: activation.powerName,
-                        description: 'Removed one incorrect answer.',
-                        timestamp: serverTimestamp()
-                    });
                 }
             } else if (activation.powerName === 'Wildfire') {
                 const roll1 = Math.floor(Math.random() * 6) + 1;
