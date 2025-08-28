@@ -27,7 +27,7 @@ import { calculateLevel, calculateHpGain, calculateMpGain, calculateBaseMaxHp, M
 import { Label } from '../ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { TeacherNotesDialog } from './teacher-notes-dialog';
-import { toggleStudentVisibility } from '@/ai/flows/manage-student';
+import { toggleStudentVisibility, updateStudentDetails } from '@/ai/flows/manage-student';
 
 interface EditableStatProps {
     student: Student;
@@ -46,6 +46,105 @@ interface EditablePairedStatProps {
     label: string;
     setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
     teacherUid: string;
+}
+
+interface EditableTextProps {
+    student: Student;
+    field: 'studentName' | 'characterName';
+    icon: React.ReactNode;
+    label: string;
+    setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
+    teacherUid: string;
+}
+
+function EditableText({ student, field, icon, label, setStudents, teacherUid }: EditableTextProps) {
+    const [isEditing, setIsEditing] = useState(false);
+    const [value, setValue] = useState(student[field]);
+    const [isLoading, setIsLoading] = useState(false);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const { toast } = useToast();
+
+    useEffect(() => {
+        if (isEditing && inputRef.current) {
+            inputRef.current.focus();
+            inputRef.current.select();
+        }
+    }, [isEditing]);
+    
+     useEffect(() => {
+        setValue(student[field]);
+    }, [student, field]);
+
+    const handleSave = async () => {
+        if (!value.trim()) {
+            toast({ variant: 'destructive', title: 'Invalid Input', description: 'Name cannot be empty.' });
+            setValue(student[field]); // Revert to original
+            setIsEditing(false);
+            return;
+        }
+        setIsLoading(true);
+
+        const updates = {
+            studentName: field === 'studentName' ? value : student.studentName,
+            characterName: field === 'characterName' ? value : student.characterName,
+        };
+
+        try {
+            const result = await updateStudentDetails({
+                teacherUid,
+                studentUid: student.uid,
+                ...updates
+            });
+            if (!result.success) {
+                 throw new Error(result.error || `Could not update ${label}`);
+            }
+             toast({ title: 'Stat Updated!', description: `${student.characterName}'s ${label} has been updated.` });
+        } catch (error: any) {
+             toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
+             setValue(student[field]);
+        } finally {
+            setIsEditing(false);
+            setIsLoading(false);
+        }
+    };
+    
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') handleSave();
+        else if (e.key === 'Escape') {
+            setValue(student[field]);
+            setIsEditing(false);
+        }
+    }
+
+    if (isEditing) {
+        return (
+            <div className="col-span-2 space-y-1">
+                <Label htmlFor={`edit-${field}`}>{label}</Label>
+                <Input
+                    ref={inputRef}
+                    id={`edit-${field}`}
+                    type="text"
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    onBlur={handleSave}
+                    onKeyDown={handleKeyDown}
+                    className="h-8"
+                    disabled={isLoading}
+                />
+            </div>
+        )
+    }
+
+    return (
+        <div 
+            className="flex items-center gap-2 cursor-pointer group"
+            onClick={() => setIsEditing(true)}
+        >
+            {icon}
+            <span className="font-bold truncate" title={value}>{value}</span>
+            <Edit className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
+    );
 }
 
 
@@ -412,11 +511,22 @@ export function StudentCard({ student, isSelected, onSelect, setStudents, teache
                 </div>
             </CardHeader>
             <CardContent className="p-4 flex-grow space-y-3">
-                <CardTitle className="text-xl font-bold truncate">{student.characterName}</CardTitle>
-                <div className="text-sm text-muted-foreground flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    <span>{student.studentName}</span>
-                </div>
+                <EditableText
+                    student={student}
+                    field="characterName"
+                    label="Character Name"
+                    icon={<Sword className="w-4 h-4" />}
+                    setStudents={setStudents}
+                    teacherUid={teacherUid}
+                />
+                <EditableText
+                    student={student}
+                    field="studentName"
+                    label="Student Name"
+                    icon={<User className="w-4 h-4" />}
+                    setStudents={setStudents}
+                    teacherUid={teacherUid}
+                />
                 <div className="text-sm text-muted-foreground flex items-center gap-2">
                     <Sword className="w-4 h-4" />
                     <span>{student.class}</span>
@@ -500,3 +610,4 @@ export function StudentCard({ student, isSelected, onSelect, setStudents, teache
     </>
   );
 }
+
