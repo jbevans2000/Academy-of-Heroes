@@ -35,13 +35,8 @@ export function BattleChatBox({ teacherUid, battleId, userName, isTeacher, isCha
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(scrollToBottom, [messages]);
 
   useEffect(() => {
     if (!teacherUid || !battleId) return;
@@ -87,7 +82,7 @@ export function BattleChatBox({ teacherUid, battleId, userName, isTeacher, isCha
         <CardDescription className="text-black">Talk with your party members!</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow overflow-hidden flex flex-col">
-        <div className="flex-grow overflow-y-auto pr-4 space-y-4">
+        <div ref={scrollAreaRef} className="flex-grow overflow-y-auto pr-4 space-y-4">
           {messages.map((msg) => (
             <div
               key={msg.id}
@@ -107,7 +102,6 @@ export function BattleChatBox({ teacherUid, battleId, userName, isTeacher, isCha
               <p className="text-black whitespace-pre-wrap">{msg.text}</p>
             </div>
           ))}
-          <div ref={messagesEndRef} />
         </div>
         <form onSubmit={handleSendMessage} className="mt-4 flex gap-2">
           <Input

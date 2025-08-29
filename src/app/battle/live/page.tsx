@@ -80,6 +80,7 @@ interface LiveBattleState {
   fallenPlayerUids?: string[]; // New: List of fallen players
   powerUsersThisRound?: { [key: string]: string[] }; // For one power per round rule
   voteState?: VoteState | null; // For Divine Judgment
+  isChatDisabled?: boolean;
 }
 
 interface Question {
@@ -708,6 +709,7 @@ export default function LiveBattlePage() {
                         userName={student.characterName}
                         teacherUid={teacherUid}
                         battleId={'active-battle'}
+                        isChatDisabled={battleState.isChatDisabled}
                     />
                 </div>
             </div>
