@@ -621,98 +621,70 @@ export default function TeacherLiveBattlePage() {
         if (!isDivinationSkip) {
             const currentQuestion = battle.questions[liveState.currentQuestionIndex];
             const damageOnIncorrect = currentQuestion.damage || 0;
+            const damageToTakeByStudent: { [uid: string]: number } = {};
 
+            // Calculate initial damage for each student
             if (damageOnIncorrect > 0) {
                  for (const student of studentsInBattle) {
-                     let totalDamageToStudent = 0;
                      const studentResponse = finalRoundResponses.find(r => r.studentUid === student.uid);
 
                      // Damage for own incorrect answer
                      if (!studentResponse || !studentResponse.isCorrect) {
-                        totalDamageToStudent += damageOnIncorrect;
-                     }
-
-                     // Add redirected damage if they are a Guardian
-                     if(redirectedDamageForGuardians[student.uid]) {
-                         totalDamageToStudent += redirectedDamageForGuardians[student.uid];
-                     }
-                     
-                     // Apply damage if not shielded/guarded
-                     if (totalDamageToStudent > 0) {
-                        const isShielded = newShields[student.uid]?.roundsRemaining > 0;
-                        const casterName = newShields[student.uid]?.casterName || "An ally";
-                        const isGuarded = !!student.guardedBy; // Check the student's guardedBy field
-
-                        if (!isShielded && !isGuarded) {
-                            let damageToApply = totalDamageToStudent;
-                            
-                            // Check for Absorb shields
-                            if (studentDamageShields[student.uid] && studentDamageShields[student.uid] > 0) {
-                                const shieldAmount = studentDamageShields[student.uid];
-                                roundEvents.push({ studentUid: student.uid, message: `Your Absorb shield negated some damage!` });
-                                if (damageToApply <= shieldAmount) {
-                                    studentDamageShields[student.uid] -= damageToApply;
-                                    damageToApply = 0;
-                                } else {
-                                    damageToApply -= shieldAmount;
-                                    delete studentDamageShields[student.uid];
-                                }
-                            }
-
-                            if (damageToApply > 0) {
-                                const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
-                                const newHp = Math.max(0, student.hp - damageToApply);
-                                batch.update(studentRef, { hp: newHp });
-                                if (newHp === 0 && !liveState.fallenPlayerUids?.includes(student.uid)) {
-                                    newlyFallenUids.push(student.uid);
-                                }
-                            }
-                        } else if(isGuarded) {
-                            // Damage redirection for Guard power
-                            const guardianUid = student.guardedBy;
-                            const guardianName = studentMap.get(guardianUid || '')?.characterName || 'A Guardian';
-                            roundEvents.push({ studentUid: student.uid, message: `You were protected by ${guardianName}'s Guard!` });
-                            if (guardianUid) {
-                                roundEvents.push({ studentUid: guardianUid, message: `Your Guard protected ${student.characterName}!` });
-                                if(!redirectedDamageForGuardians[guardianUid]) redirectedDamageForGuardians[guardianUid] = 0;
-                                redirectedDamageForGuardians[guardianUid] += totalDamageToStudent;
-                            }
-                        } else if (isShielded) {
-                            roundEvents.push({ studentUid: student.uid, message: `Your shield from ${casterName} absorbed all damage!` });
-                        }
+                        damageToTakeByStudent[student.uid] = (damageToTakeByStudent[student.uid] || 0) + damageOnIncorrect;
                      }
                  }
+            }
+            
+            // Handle damage redirection from Guard
+            for(const student of studentsInBattle) {
+                if (student.guardedBy && damageToTakeByStudent[student.uid] > 0) {
+                    const guardianUid = student.guardedBy;
+                    const guardianName = studentMap.get(guardianUid)?.characterName || 'A Guardian';
+                    
+                    roundEvents.push({ studentUid: student.uid, message: `You were protected by ${guardianName}'s Guard!` });
+                    if(guardianUid) roundEvents.push({ studentUid: guardianUid, message: `Your Guard protected ${student.characterName}!` });
+                    
+                    if (guardianUid) {
+                        damageToTakeByStudent[guardianUid] = (damageToTakeByStudent[guardianUid] || 0) + damageToTakeByStudent[student.uid];
+                    }
+                    delete damageToTakeByStudent[student.uid]; // The guarded student takes no damage
+                }
+            }
 
-                 // Final pass to apply all collected redirected damage to Guardians
-                 for (const guardianUid in redirectedDamageForGuardians) {
-                     const guardian = studentMap.get(guardianUid);
-                     if(guardian) {
-                        const isShielded = newShields[guardian.uid]?.roundsRemaining > 0;
-                        if (!isShielded) {
-                            let damageToApply = redirectedDamageForGuardians[guardianUid];
-                            // Check for Absorb shields on the Guardian
-                            if (studentDamageShields[guardian.uid] && studentDamageShields[guardian.uid] > 0) {
-                                const shieldAmount = studentDamageShields[guardian.uid];
-                                if (damageToApply <= shieldAmount) {
-                                    studentDamageShields[guardian.uid] -= damageToApply;
-                                    damageToApply = 0;
-                                } else {
-                                    damageToApply -= shieldAmount;
-                                    delete studentDamageShields[guardian.uid];
-                                }
-                            }
+            // Apply all damage after redirection calculations
+            for (const studentUid in damageToTakeByStudent) {
+                const student = studentMap.get(studentUid);
+                if(!student) continue;
 
-                            if (damageToApply > 0) {
-                                const guardianRef = doc(db, 'teachers', teacherUid, 'students', guardian.uid);
-                                const newHp = Math.max(0, guardian.hp - damageToApply);
-                                batch.update(guardianRef, { hp: newHp });
-                                if (newHp === 0 && !liveState.fallenPlayerUids?.includes(guardian.uid)) {
-                                    newlyFallenUids.push(guardian.uid);
-                                }
-                            }
-                        }
-                     }
-                 }
+                let damageToApply = damageToTakeByStudent[studentUid];
+                const isShielded = newShields[student.uid]?.roundsRemaining > 0;
+                
+                if (isShielded) {
+                     const casterName = newShields[student.uid]?.casterName || "An ally";
+                     roundEvents.push({ studentUid: student.uid, message: `Your shield from ${casterName} absorbed all damage!` });
+                     continue; // Skip damage application
+                }
+                
+                if (studentDamageShields[student.uid] && studentDamageShields[student.uid] > 0) {
+                    const shieldAmount = studentDamageShields[student.uid];
+                    roundEvents.push({ studentUid: student.uid, message: `Your Absorb shield negated some damage!` });
+                    if (damageToApply <= shieldAmount) {
+                        studentDamageShields[student.uid] -= damageToApply;
+                        damageToApply = 0;
+                    } else {
+                        damageToApply -= shieldAmount;
+                        delete studentDamageShields[student.uid];
+                    }
+                }
+
+                if (damageToApply > 0) {
+                    const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
+                    const newHp = Math.max(0, student.hp - damageToApply);
+                    batch.update(studentRef, { hp: newHp });
+                    if (newHp === 0 && !liveState.fallenPlayerUids?.includes(student.uid)) {
+                        newlyFallenUids.push(student.uid);
+                    }
+                }
             }
         }
         
