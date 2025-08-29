@@ -236,29 +236,17 @@ function VoteDialog({ voteState, userUid, teacherUid }: { voteState: VoteState |
     );
 }
 
-function VolumeControl({ audioRef }: { audioRef: React.RefObject<HTMLAudioElement> }) {
-    const [volume, setVolume] = useState(0); // Start muted
-    const [hasInteracted, setHasInteracted] = useState(false);
+function VolumeControl({ audioRef, onFirstInteraction }: { audioRef: React.RefObject<HTMLAudioElement>; onFirstInteraction: () => void; }) {
+    const [volume, setVolume] = useState(0); 
 
     const handleVolumeChange = (value: number[]) => {
+        onFirstInteraction(); // Signal interaction on any slider move
         const newVolume = value[0];
         setVolume(newVolume);
         if (audioRef.current) {
             audioRef.current.volume = newVolume / 100;
         }
-        if (!hasInteracted) {
-            setHasInteracted(true);
-        }
     };
-    
-    // Set initial volume to a low, default level after first interaction
-    useEffect(() => {
-        if (hasInteracted && audioRef.current && volume === 0) {
-            const defaultVolume = 20;
-            setVolume(defaultVolume);
-            audioRef.current.volume = defaultVolume / 100;
-        }
-    }, [hasInteracted, audioRef, volume]);
     
     const getVolumeIcon = () => {
         if (volume === 0) return <VolumeX className="h-6 w-6" />;
@@ -282,6 +270,38 @@ function VolumeControl({ audioRef }: { audioRef: React.RefObject<HTMLAudioElemen
     );
 }
 
+// A persistent audio player for the entire battle duration
+const AudioPlayer = ({ battleState, battle, audioRef, onFirstInteraction }: {
+    battleState: LiveBattleState | null;
+    battle: Battle | null;
+    audioRef: React.RefObject<HTMLAudioElement>;
+    onFirstInteraction: () => void;
+}) => {
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio || !battle || !battle.musicUrl) return;
+
+        const shouldPlay = battleState?.status === 'IN_PROGRESS' || battleState?.status === 'ROUND_ENDING' || battleState?.status === 'SHOWING_RESULTS';
+
+        if (shouldPlay) {
+            if (audio.src !== battle.musicUrl) {
+                audio.src = battle.musicUrl;
+            }
+            audio.play().catch(e => console.error("Audio play failed:", e));
+        } else {
+            audio.pause();
+        }
+    }, [battleState?.status, battle, battle?.musicUrl, audioRef]);
+    
+    return (
+        <>
+            <audio ref={audioRef} loop />
+            {battle?.musicUrl && <VolumeControl audioRef={audioRef} onFirstInteraction={onFirstInteraction} />}
+        </>
+    );
+}
+
+
 export default function LiveBattlePage() {
   const [battleState, setBattleState] = useState<LiveBattleState | null>(null);
   const [battle, setBattle] = useState<Battle | null>(null);
@@ -302,6 +322,18 @@ export default function LiveBattlePage() {
   const studentRef = useRef(student);
   const audioRef = useRef<HTMLAudioElement>(null);
   const router = useRouter();
+
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const onFirstInteraction = () => {
+      if (!hasInteracted) {
+          setHasInteracted(true);
+          const audio = audioRef.current;
+          if (audio) {
+              audio.volume = 0.2; // Start at a reasonable volume
+              audio.play().catch(e => console.error("Audio play failed on interaction:", e));
+          }
+      }
+  };
   
   useEffect(() => {
     battleStateRef.current = battleState;
@@ -435,28 +467,12 @@ export default function LiveBattlePage() {
       fetchBattle();
     }
   }, [battleState?.battleId, teacherUid, battle]);
-  
-  // Audio playback effect
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio || !battle || !battle.musicUrl) return;
-
-    const shouldPlay = battleState?.status === 'IN_PROGRESS' || battleState?.status === 'ROUND_ENDING' || battleState?.status === 'SHOWING_RESULTS';
-
-    if (shouldPlay) {
-        if (audio.src !== battle.musicUrl) {
-            audio.src = battle.musicUrl;
-        }
-        audio.play().catch(e => console.error("Audio play failed:", e));
-    } else {
-        audio.pause();
-    }
-  }, [battleState?.status, battle, battle?.musicUrl]);
 
   const handleSubmitAnswer = async () => {
     if (!user || !student || !battleState?.battleId || !battle || (battleState.status !== 'IN_PROGRESS' && battleState.status !== 'ROUND_ENDING') || !teacherUid || isFallen || submittedAnswer || selectedAnswer === null) return;
     
     setSubmittedAnswer(true);
+    onFirstInteraction();
     
     const currentQuestion = battle.questions[battleState.currentQuestionIndex];
     const isCorrect = selectedAnswer === currentQuestion.correctAnswerIndex;
@@ -599,35 +615,29 @@ export default function LiveBattlePage() {
     );
   }
 
-  // A persistent audio player for the entire battle duration
-  const AudioPlayer = () => (
-      <>
-          <audio ref={audioRef} loop />
-          {battle?.musicUrl && <VolumeControl audioRef={audioRef} />}
-      </>
-  );
+  // If we reach here, we are in an active battle phase.
+  const currentQuestion = battle ? battle.questions[battleState.currentQuestionIndex] : null;
+  const bossImage = battle?.bossImageUrl || 'https://placehold.co/600x400.png';
+  const expiryTimestamp = battleState.timerEndsAt ? new Date(battleState.timerEndsAt.seconds * 1000) : null;
+  const isRoundActive = battleState.status === 'IN_PROGRESS' || battleState.status === 'ROUND_ENDING';
 
-  if ((battleState.status === 'IN_PROGRESS' || battleState.status === 'ROUND_ENDING') && battle) {
-    const currentQuestion = battle.questions[battleState.currentQuestionIndex];
-    const bossImage = battle.bossImageUrl || 'https://placehold.co/600x400.png';
-    const expiryTimestamp = battleState.timerEndsAt ? new Date(battleState.timerEndsAt.seconds * 1000) : null;
-    const isRoundActive = battleState.status === 'IN_PROGRESS' || battleState.status === 'ROUND_ENDING';
-
-    return (
-      <>
-        <AudioPlayer />
-        <FallenPlayerDialog isOpen={showFallenDialog} onOpenChange={setShowFallenDialog} />
-        <VoteDialog voteState={battleState.voteState || null} userUid={user.uid} teacherUid={teacherUid} />
-        <PowersSheet
-          isOpen={isPowersSheetOpen}
-          onOpenChange={setIsPowersSheetOpen}
-          student={student}
-          isBattleView={true}
-          teacherUid={teacherUid}
-          battleId={'active-battle'}
-          battleState={battleState}
-        />
-        <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 p-4">
+  return (
+    <>
+      <AudioPlayer battleState={battleState} battle={battle} audioRef={audioRef} onFirstInteraction={onFirstInteraction} />
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 p-4">
+        {battleState.status === 'IN_PROGRESS' || battleState.status === 'ROUND_ENDING' ? (
+          <>
+            <FallenPlayerDialog isOpen={showFallenDialog} onOpenChange={setShowFallenDialog} />
+            <VoteDialog voteState={battleState.voteState || null} userUid={user.uid} teacherUid={teacherUid} />
+            <PowersSheet
+              isOpen={isPowersSheetOpen}
+              onOpenChange={setIsPowersSheetOpen}
+              student={student}
+              isBattleView={true}
+              teacherUid={teacherUid}
+              battleId={'active-battle'}
+              battleState={battleState}
+            />
             {targetedMessage && (
                 <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-md p-4 rounded-md bg-green-600 text-white font-bold text-center shadow-lg animate-in fade-in-20 slide-in-from-top-10">
                     {targetedMessage}
@@ -659,7 +669,7 @@ export default function LiveBattlePage() {
                                 <div className="flex-shrink-0 mx-auto">
                                     <Image 
                                         src={bossImage}
-                                        alt={battle.battleName}
+                                        alt={battle?.battleName || 'Boss'}
                                         width={250}
                                         height={250}
                                         className="rounded-lg shadow-lg border-4 border-primary/50 object-contain"
@@ -667,7 +677,7 @@ export default function LiveBattlePage() {
                                     />
                                 </div>
                                 <div className="flex-grow flex flex-col justify-center items-center text-center">
-                                    <h2 className="text-2xl md:text-3xl font-bold">{currentQuestion.questionText}</h2>
+                                    <h2 className="text-2xl md:text-3xl font-bold">{currentQuestion?.questionText}</h2>
                                 </div>
                             </div>
                             
@@ -691,7 +701,7 @@ export default function LiveBattlePage() {
                             )}
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {currentQuestion.answers.map((answer, index) => {
+                                {currentQuestion?.answers.map((answer, index) => {
                                     const isRemoved = battleState.removedAnswerIndices?.includes(index);
                                     return (
                                         <Button
@@ -735,128 +745,108 @@ export default function LiveBattlePage() {
                     />
                 </div>
             </div>
-        </div>
-      </>
-    )
-  }
-  
-  if (battleState.status === 'SHOWING_RESULTS' && battle) {
-      const lastQuestion = battle.questions[battleState.currentQuestionIndex];
-      const correctAnswerText = lastQuestion.answers[lastQuestion.correctAnswerIndex];
-      const myPersonalEvents = battleState.roundEvents?.filter(e => e.studentUid === user.uid) || [];
+          </>
+        ) : battleState.status === 'SHOWING_RESULTS' && battle ? (
+            <div className="relative flex w-full flex-grow items-center justify-center p-4">
+                {battle.bossImageUrl && (
+                    <Image
+                        src={battle.bossImageUrl}
+                        alt="Boss Background"
+                        fill
+                        className="object-cover opacity-20"
+                        data-ai-hint="fantasy monster"
+                    />
+                )}
+                <div className="w-full max-w-2xl mx-auto z-10">
+                    <Card className="text-center shadow-lg bg-card/80 backdrop-blur-sm text-card-foreground">
+                        <CardHeader>
+                            <CardTitle className="text-4xl font-bold tracking-tight">Round Over!</CardTitle>
+                            <CardDescription className="text-lg text-muted-foreground">Waiting for the next round to begin...</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                             {lastAnswerCorrect === true && (
+                                <div className="p-4 rounded-md bg-green-900/70 border border-green-700 text-green-200 flex items-center justify-center gap-4">
+                                    <CheckCircle className="h-10 w-10 text-green-400" />
+                                    <p className="text-xl font-bold">You scored a hit!</p>
+                                </div>
+                            )}
 
+                            {lastAnswerCorrect === false && (
+                                <div className="p-4 rounded-md bg-red-900/70 border border-red-700 text-red-200 flex items-center justify-center gap-4">
+                                    <HeartCrack className="h-10 w-10 text-red-400" />
+                                    <p className="text-xl font-bold">You took {battle.questions[battleState.currentQuestionIndex].damage} damage!</p>
+                                </div>
+                            )}
+                            
+                            {lastAnswerCorrect === null && (
+                                <div className="p-4 rounded-md bg-gray-700 border border-gray-600 text-gray-200 flex items-center justify-center gap-4">
+                                    <p className="text-xl font-bold">You did not submit an answer this round.</p>
+                                </div>
+                            )}
 
-      return (
-        <>
-        <AudioPlayer />
-        <div className="relative flex min-h-screen flex-col items-center justify-center p-4 bg-gray-900">
-            {battle.bossImageUrl && (
-                <Image
-                    src={battle.bossImageUrl}
-                    alt="Boss Background"
-                    fill
-                    className="object-cover opacity-20"
-                    data-ai-hint="fantasy monster"
-                />
-            )}
-            <div className="w-full max-w-2xl mx-auto z-10">
-                <Card className="text-center shadow-lg bg-card/80 backdrop-blur-sm text-card-foreground">
-                    <CardHeader>
-                        <CardTitle className="text-4xl font-bold tracking-tight">Round Over!</CardTitle>
-                        <CardDescription className="text-lg text-muted-foreground">Waiting for the next round to begin...</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        
-                        {lastAnswerCorrect === true && (
-                            <div className="p-4 rounded-md bg-green-900/70 border border-green-700 text-green-200 flex items-center justify-center gap-4">
-                                <CheckCircle className="h-10 w-10 text-green-400" />
-                                <p className="text-xl font-bold">You scored a hit!</p>
+                            <div className="p-4 rounded-md bg-secondary text-secondary-foreground">
+                                <p className="text-lg text-muted-foreground mb-1">The correct answer was:</p>
+                                <p className="text-2xl font-bold">{battle.questions[battleState.currentQuestionIndex].answers[battle.questions[battleState.currentQuestionIndex].correctAnswerIndex]}</p>
                             </div>
-                        )}
+                            
+                            {(battleState.roundEvents?.filter(e => e.studentUid === user.uid) || []).length > 0 && (
+                                <div className="p-4 rounded-md bg-blue-900/70 border border-blue-700 text-blue-200 text-left">
+                                    <h4 className="font-bold text-center mb-2 flex items-center justify-center gap-2"><Info className="h-5 w-5"/>Round Events</h4>
+                                    <Separator className="bg-blue-600 mb-2"/>
+                                    <ul className="space-y-1 list-disc list-inside">
+                                        {battleState.roundEvents?.filter(e => e.studentUid === user.uid).map((event, index) => (
+                                            <li key={index}>{event.message}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
 
-                        {lastAnswerCorrect === false && (
-                            <div className="p-4 rounded-md bg-red-900/70 border border-red-700 text-red-200 flex items-center justify-center gap-4">
-                                <HeartCrack className="h-10 w-10 text-red-400" />
-                                <p className="text-xl font-bold">You took {lastQuestion.damage} damage!</p>
-                            </div>
-                        )}
-                        
-                         {lastAnswerCorrect === null && (
-                            <div className="p-4 rounded-md bg-gray-700 border border-gray-600 text-gray-200 flex items-center justify-center gap-4">
-                                <p className="text-xl font-bold">You did not submit an answer this round.</p>
-                            </div>
-                        )}
-
-                        <div className="p-4 rounded-md bg-secondary text-secondary-foreground">
-                            <p className="text-lg text-muted-foreground mb-1">The correct answer was:</p>
-                            <p className="text-2xl font-bold">{correctAnswerText}</p>
-                        </div>
-                        
-                        {myPersonalEvents.length > 0 && (
-                            <div className="p-4 rounded-md bg-blue-900/70 border border-blue-700 text-blue-200 text-left">
-                                <h4 className="font-bold text-center mb-2 flex items-center justify-center gap-2"><Info className="h-5 w-5"/>Round Events</h4>
-                                <Separator className="bg-blue-600 mb-2"/>
-                                <ul className="space-y-1 list-disc list-inside">
-                                    {myPersonalEvents.map((event, index) => (
-                                        <li key={index}>{event.message}</li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-
-                        {battleState.lastRoundDamage !== undefined && battleState.lastRoundDamage > 0 && (
-                            <div className="p-4 rounded-md bg-sky-900/70 border border-sky-700 text-sky-200 flex items-center justify-center gap-4">
-                                <Swords className="h-10 w-10 text-sky-400" />
-                                <p className="text-xl font-bold">Your fellowship dealt {battleState.lastRoundDamage} damage to the boss this round!</p>
-                            </div>
-                        )}
-                        
-                         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mt-8" />
-                    </CardContent>
-                </Card>
+                            {battleState.lastRoundDamage !== undefined && battleState.lastRoundDamage > 0 && (
+                                <div className="p-4 rounded-md bg-sky-900/70 border border-sky-700 text-sky-200 flex items-center justify-center gap-4">
+                                    <Swords className="h-10 w-10 text-sky-400" />
+                                    <p className="text-xl font-bold">Your fellowship dealt {battleState.lastRoundDamage} damage to the boss this round!</p>
+                                </div>
+                            )}
+                            
+                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mt-8" />
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
-        </div>
-        </>
-      );
-  }
-
-  // New state for when the battle is over but before a new one has started
-  if (battleState.status === 'BATTLE_ENDED' && battle) {
-      return (
-        <div className="relative flex min-h-screen flex-col items-center justify-center p-4 bg-gray-900">
-            {battle.bossImageUrl && (
-                <Image
-                    src={battle.bossImageUrl}
-                    alt="Boss Background"
-                    fill
-                    className="object-cover opacity-20"
-                    data-ai-hint="fantasy monster"
-                />
-            )}
-            <div className="w-full max-w-2xl mx-auto z-10">
-                <Card className="text-center shadow-lg bg-card/80 backdrop-blur-sm text-card-foreground">
-                    <CardHeader>
-                        <CardTitle className="text-4xl font-bold tracking-tight">The Battle is Over!</CardTitle>
-                        <CardDescription className="text-lg text-muted-foreground">The teacher has concluded the battle. Awaiting the next session.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <Button size="lg" onClick={() => router.push('/dashboard')}>
-                            Return to Dashboard
-                        </Button>
-                    </CardContent>
-                </Card>
+        ) : battleState.status === 'BATTLE_ENDED' && battle ? (
+             <div className="relative flex w-full flex-grow items-center justify-center p-4">
+                {battle.bossImageUrl && (
+                    <Image
+                        src={battle.bossImageUrl}
+                        alt="Boss Background"
+                        fill
+                        className="object-cover opacity-20"
+                        data-ai-hint="fantasy monster"
+                    />
+                )}
+                <div className="w-full max-w-2xl mx-auto z-10">
+                    <Card className="text-center shadow-lg bg-card/80 backdrop-blur-sm text-card-foreground">
+                        <CardHeader>
+                            <CardTitle className="text-4xl font-bold tracking-tight">The Battle is Over!</CardTitle>
+                            <CardDescription className="text-lg text-muted-foreground">The teacher has concluded the battle. Awaiting the next session.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <Button size="lg" onClick={() => router.push('/dashboard')}>
+                                Return to Dashboard
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
-        </div>
-      );
-  }
-
-
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4 text-center">
-        <Swords className="h-24 w-24 text-primary mb-6" />
-        <h1 className="text-4xl font-bold tracking-tight">The Battle is On!</h1>
-        <p className="text-xl text-muted-foreground mt-2">Waiting for the next round...</p>
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mt-8" />
-    </div>
+        ) : (
+            <div className="text-center">
+                <Swords className="h-24 w-24 text-primary mb-6" />
+                <h1 className="text-4xl font-bold tracking-tight">The Battle is On!</h1>
+                <p className="text-xl text-muted-foreground mt-2">Waiting for the next round...</p>
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mt-8" />
+            </div>
+        )}
+      </div>
+    </>
   );
 }
