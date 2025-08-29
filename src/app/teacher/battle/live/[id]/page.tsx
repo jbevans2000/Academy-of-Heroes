@@ -703,36 +703,6 @@ export default function TeacherLiveBattlePage() {
             }
         });
 
-        // Elemental Fusion & Inspiring Strike damage calculation
-        const elementalFusionCasters = new Set<string>();
-        if(currentLiveState.powerUsersThisRound) {
-            for (const studentUid in currentLiveState.powerUsersThisRound) {
-                if (currentLiveState.powerUsersThisRound[studentUid].includes('Elemental Fusion')) {
-                    elementalFusionCasters.add(studentUid);
-                }
-            }
-        }
-        const inspiringStrikeCasters = new Set<string>();
-        if(currentLiveState.powerUsersThisRound) {
-            for (const studentUid in currentLiveState.powerUsersThisRound) {
-                if (currentLiveState.powerUsersThisRound[studentUid].includes('Inspiring Strike')) {
-                    inspiringStrikeCasters.add(studentUid);
-                }
-            }
-        }
-        
-        if (elementalFusionCasters.size > 0) {
-            const bonusDamage = baseDamageFromAnswers * 2;
-            powerDamage += bonusDamage;
-            powersUsedThisRound.push(`Elemental Fusion (+${bonusDamage} dmg)`);
-        }
-        if (inspiringStrikeCasters.size > 0) {
-            const bonusDamage = baseDamageFromAnswers * 2;
-            powerDamage += bonusDamage;
-            powersUsedThisRound.push(`Inspiring Strike (+${bonusDamage} dmg)`);
-        }
-
-
         if (!isDivinationSkip) {
             for (const power of liveState.queuedPowers || []) {
                 const casterResponse = finalRoundResponses.find(res => res.studentUid === power.casterUid);
@@ -760,6 +730,35 @@ export default function TeacherLiveBattlePage() {
                     });
                 }
             }
+        }
+        
+        // Elemental Fusion & Inspiring Strike damage calculation
+        const elementalFusionCasters = new Set<string>();
+        if(currentLiveState.powerUsersThisRound) {
+            for (const studentUid in currentLiveState.powerUsersThisRound) {
+                if (currentLiveState.powerUsersThisRound[studentUid].includes('Elemental Fusion')) {
+                    elementalFusionCasters.add(studentUid);
+                }
+            }
+        }
+        const inspiringStrikeCasters = new Set<string>();
+        if(currentLiveState.powerUsersThisRound) {
+            for (const studentUid in currentLiveState.powerUsersThisRound) {
+                if (currentLiveState.powerUsersThisRound[studentUid].includes('Inspiring Strike')) {
+                    inspiringStrikeCasters.add(studentUid);
+                }
+            }
+        }
+        
+        if (elementalFusionCasters.size > 0) {
+            const bonusDamage = powerDamage * 2; // Triple the power damage
+            powerDamage += bonusDamage;
+            powersUsedThisRound.push(`Elemental Fusion (x3 Power Dmg)`);
+        }
+        if (inspiringStrikeCasters.size > 0) {
+            const bonusDamage = powerDamage * 2; // Triple the power damage
+            powerDamage += bonusDamage;
+            powersUsedThisRound.push(`Inspiring Strike (x3 Power Dmg)`);
         }
 
         const totalDamageThisRound = baseDamageFromAnswers + powerDamage;
@@ -1407,7 +1406,7 @@ export default function TeacherLiveBattlePage() {
                         round: liveState.currentQuestionIndex + 1,
                         casterName: activation.studentName,
                         powerName: activation.powerName,
-                        description: `Tripled the party's base damage for the round.`,
+                        description: `Tripled the party's power damage for the round.`,
                         timestamp: serverTimestamp()
                     });
                 }
@@ -1428,7 +1427,7 @@ export default function TeacherLiveBattlePage() {
                         round: liveState.currentQuestionIndex + 1,
                         casterName: activation.studentName,
                         powerName: activation.powerName,
-                        description: `Tripled the party's base damage for the round.`,
+                        description: `Tripled the party's power damage for the round.`,
                         timestamp: serverTimestamp()
                     });
                 }
