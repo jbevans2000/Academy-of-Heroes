@@ -236,7 +236,7 @@ function VoteDialog({ voteState, userUid, teacherUid }: { voteState: VoteState |
     );
 }
 
-function VolumeControl({ audioRef }: { audioRef: React.RefObject<HTMLAudioElement> }) {
+function VolumeControl({ audioRef, onFirstInteraction }: { audioRef: React.RefObject<HTMLAudioElement>, onFirstInteraction: () => void }) {
     const [volume, setVolume] = useState(0); // Start muted
 
     const handleVolumeChange = (value: number[]) => {
@@ -245,6 +245,7 @@ function VolumeControl({ audioRef }: { audioRef: React.RefObject<HTMLAudioElemen
         if (audioRef.current) {
             audioRef.current.volume = newVolume / 100;
         }
+        onFirstInteraction();
     };
     
     const getVolumeIcon = () => {
@@ -284,6 +285,7 @@ export default function LiveBattlePage() {
   const [showFallenDialog, setShowFallenDialog] = useState(false);
   const [targetedMessage, setTargetedMessage] = useState<string | null>(null);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
+  const [hasInteracted, setHasInteracted] = useState(false);
 
   const battleStateRef = useRef(battleState);
   const studentRef = useRef(student);
@@ -428,21 +430,36 @@ export default function LiveBattlePage() {
     const audio = audioRef.current;
     if (!audio || !battle || !battle.musicUrl) return;
 
-    if (battleState?.status === 'IN_PROGRESS' || battleState?.status === 'ROUND_ENDING' || battleState?.status === 'SHOWING_RESULTS') {
+    const shouldPlay = battleState?.status === 'IN_PROGRESS' || battleState?.status === 'ROUND_ENDING' || battleState?.status === 'SHOWING_RESULTS';
+
+    if (shouldPlay) {
         if (audio.src !== battle.musicUrl) {
             audio.src = battle.musicUrl;
+            setHasInteracted(false); // Reset interaction status for new track
         }
-        audio.volume = 0; // Start muted
+        if (!hasInteracted) {
+            audio.volume = 0;
+        }
         audio.play().catch(e => console.error("Audio play failed:", e));
     } else {
         audio.pause();
     }
-  }, [battleState?.status, battle, battle?.musicUrl]);
+  }, [battleState?.status, battle, battle?.musicUrl, hasInteracted]);
+
+  const handleFirstInteraction = () => {
+      if (!hasInteracted && audioRef.current && audioRef.current.volume === 0) {
+          audioRef.current.volume = 0.2; // Set to a low, default volume
+          setHasInteracted(true);
+      } else if (!hasInteracted) {
+          setHasInteracted(true);
+      }
+  };
 
   const handleSubmitAnswer = async () => {
     if (!user || !student || !battleState?.battleId || !battle || (battleState.status !== 'IN_PROGRESS' && battleState.status !== 'ROUND_ENDING') || !teacherUid || isFallen || submittedAnswer || selectedAnswer === null) return;
     
     setSubmittedAnswer(true);
+    handleFirstInteraction(); // Register submission as first interaction
     
     const currentQuestion = battle.questions[battleState.currentQuestionIndex];
     const isCorrect = selectedAnswer === currentQuestion.correctAnswerIndex;
@@ -585,6 +602,14 @@ export default function LiveBattlePage() {
     );
   }
 
+  // A persistent audio player for the entire battle duration
+  const AudioPlayer = () => (
+      <>
+          <audio ref={audioRef} loop />
+          {battle?.musicUrl && <VolumeControl audioRef={audioRef} onFirstInteraction={handleFirstInteraction} />}
+      </>
+  );
+
   if ((battleState.status === 'IN_PROGRESS' || battleState.status === 'ROUND_ENDING') && battle) {
     const currentQuestion = battle.questions[battleState.currentQuestionIndex];
     const bossImage = battle.bossImageUrl || 'https://placehold.co/600x400.png';
@@ -593,7 +618,7 @@ export default function LiveBattlePage() {
 
     return (
       <>
-        <audio ref={audioRef} loop />
+        <AudioPlayer />
         <FallenPlayerDialog isOpen={showFallenDialog} onOpenChange={setShowFallenDialog} />
         <VoteDialog voteState={battleState.voteState || null} userUid={user.uid} teacherUid={teacherUid} />
         <PowersSheet
@@ -713,7 +738,6 @@ export default function LiveBattlePage() {
                     />
                 </div>
             </div>
-            {battle.musicUrl && <VolumeControl audioRef={audioRef} />}
         </div>
       </>
     )
@@ -726,6 +750,8 @@ export default function LiveBattlePage() {
 
 
       return (
+        <>
+        <AudioPlayer />
         <div className="relative flex min-h-screen flex-col items-center justify-center p-4 bg-gray-900">
             {battle.bossImageUrl && (
                 <Image
@@ -792,8 +818,8 @@ export default function LiveBattlePage() {
                     </CardContent>
                 </Card>
             </div>
-             {battle.musicUrl && <VolumeControl audioRef={audioRef} />}
         </div>
+        </>
       );
   }
 
