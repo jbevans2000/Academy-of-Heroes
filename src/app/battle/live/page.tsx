@@ -700,7 +700,7 @@ export default function LiveBattlePage() {
                         </CardContent>
                     </Card>
                 </div>
-                <div className="lg:col-span-1 flex flex-col gap-6">
+                <div className="lg:col-span-1 flex flex-col gap-6 max-h-[90vh] overflow-hidden">
                     <BattleDisplay students={activeParticipants} />
                     {battleState.battleId && <BattleLog teacherUid={teacherUid} />}
                     <BattleChatBox 

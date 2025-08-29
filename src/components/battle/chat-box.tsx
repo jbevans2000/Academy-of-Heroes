@@ -79,7 +79,7 @@ export function BattleChatBox({ teacherUid, battleId, userName, isTeacher }: Bat
   };
 
   return (
-    <Card className="flex flex-col h-full bg-card/60 backdrop-blur-sm">
+    <Card className="flex flex-col h-full bg-card/60 backdrop-blur-sm min-h-0">
       <CardHeader>
         <CardTitle className="text-black">The War Council</CardTitle>
         <CardDescription className="text-black">Talk with your party members!</CardDescription>
@@ -122,5 +122,3 @@ export function BattleChatBox({ teacherUid, battleId, userName, isTeacher }: Bat
     </Card>
   );
 }
-
-    
