@@ -236,8 +236,9 @@ function VoteDialog({ voteState, userUid, teacherUid }: { voteState: VoteState |
     );
 }
 
-function VolumeControl({ audioRef, onFirstInteraction }: { audioRef: React.RefObject<HTMLAudioElement>, onFirstInteraction: () => void }) {
+function VolumeControl({ audioRef }: { audioRef: React.RefObject<HTMLAudioElement> }) {
     const [volume, setVolume] = useState(0); // Start muted
+    const [hasInteracted, setHasInteracted] = useState(false);
 
     const handleVolumeChange = (value: number[]) => {
         const newVolume = value[0];
@@ -245,8 +246,19 @@ function VolumeControl({ audioRef, onFirstInteraction }: { audioRef: React.RefOb
         if (audioRef.current) {
             audioRef.current.volume = newVolume / 100;
         }
-        onFirstInteraction();
+        if (!hasInteracted) {
+            setHasInteracted(true);
+        }
     };
+    
+    // Set initial volume to a low, default level after first interaction
+    useEffect(() => {
+        if (hasInteracted && audioRef.current && volume === 0) {
+            const defaultVolume = 20;
+            setVolume(defaultVolume);
+            audioRef.current.volume = defaultVolume / 100;
+        }
+    }, [hasInteracted, audioRef, volume]);
     
     const getVolumeIcon = () => {
         if (volume === 0) return <VolumeX className="h-6 w-6" />;
@@ -285,7 +297,6 @@ export default function LiveBattlePage() {
   const [showFallenDialog, setShowFallenDialog] = useState(false);
   const [targetedMessage, setTargetedMessage] = useState<string | null>(null);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
-  const [hasInteracted, setHasInteracted] = useState(false);
 
   const battleStateRef = useRef(battleState);
   const studentRef = useRef(student);
@@ -435,31 +446,17 @@ export default function LiveBattlePage() {
     if (shouldPlay) {
         if (audio.src !== battle.musicUrl) {
             audio.src = battle.musicUrl;
-            setHasInteracted(false); // Reset interaction status for new track
-        }
-        if (!hasInteracted) {
-            audio.volume = 0;
         }
         audio.play().catch(e => console.error("Audio play failed:", e));
     } else {
         audio.pause();
     }
-  }, [battleState?.status, battle, battle?.musicUrl, hasInteracted]);
-
-  const handleFirstInteraction = () => {
-      if (!hasInteracted && audioRef.current && audioRef.current.volume === 0) {
-          audioRef.current.volume = 0.2; // Set to a low, default volume
-          setHasInteracted(true);
-      } else if (!hasInteracted) {
-          setHasInteracted(true);
-      }
-  };
+  }, [battleState?.status, battle, battle?.musicUrl]);
 
   const handleSubmitAnswer = async () => {
     if (!user || !student || !battleState?.battleId || !battle || (battleState.status !== 'IN_PROGRESS' && battleState.status !== 'ROUND_ENDING') || !teacherUid || isFallen || submittedAnswer || selectedAnswer === null) return;
     
     setSubmittedAnswer(true);
-    handleFirstInteraction(); // Register submission as first interaction
     
     const currentQuestion = battle.questions[battleState.currentQuestionIndex];
     const isCorrect = selectedAnswer === currentQuestion.correctAnswerIndex;
@@ -606,7 +603,7 @@ export default function LiveBattlePage() {
   const AudioPlayer = () => (
       <>
           <audio ref={audioRef} loop />
-          {battle?.musicUrl && <VolumeControl audioRef={audioRef} onFirstInteraction={handleFirstInteraction} />}
+          {battle?.musicUrl && <VolumeControl audioRef={audioRef} />}
       </>
   );
 
