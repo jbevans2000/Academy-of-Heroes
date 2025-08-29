@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -77,7 +76,8 @@ export function TeacherMessageCenter({
     }, [isConversationViewOpen, studentToMessage, teacher]);
 
 
-    const handleSendMessage = async () => {
+    const handleSendMessage = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
         const uidsToSend = studentToMessage ? [studentToMessage.uid] : selectedStudentUids;
 
         if (!teacher || uidsToSend.length === 0 || !messageText.trim()) {
@@ -132,7 +132,7 @@ export function TeacherMessageCenter({
                            {getRecipientDescription()}
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="py-4">
+                    <form onSubmit={handleSendMessage} className="py-4 space-y-4">
                         <Textarea 
                             value={messageText} 
                             onChange={(e) => setMessageText(e.target.value)}
@@ -140,14 +140,14 @@ export function TeacherMessageCenter({
                             rows={5}
                             disabled={isSending}
                         />
-                    </div>
-                    <DialogFooter>
-                         <Button variant="outline" onClick={() => onMessageOpenChange(false)}>Cancel</Button>
-                        <Button onClick={handleSendMessage} disabled={isSending || selectedStudentUids.length === 0}>
-                            {isSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4"/>}
-                            Send Message
-                        </Button>
-                    </DialogFooter>
+                        <DialogFooter>
+                            <Button variant="outline" type="button" onClick={() => onMessageOpenChange(false)}>Cancel</Button>
+                            <Button type="submit" disabled={isSending || selectedStudentUids.length === 0}>
+                                {isSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4"/>}
+                                Send Message
+                            </Button>
+                        </DialogFooter>
+                    </form>
                 </DialogContent>
             </Dialog>
 
@@ -176,7 +176,7 @@ export function TeacherMessageCenter({
                             </div>
                         </ScrollArea>
                     </div>
-                     <div className="flex gap-2 pt-4 border-t">
+                     <form onSubmit={handleSendMessage} className="flex gap-2 pt-4 border-t">
                         <Textarea 
                             value={messageText} 
                             onChange={(e) => setMessageText(e.target.value)} 
@@ -184,10 +184,10 @@ export function TeacherMessageCenter({
                             rows={2}
                             disabled={isSending}
                         />
-                        <Button onClick={handleSendMessage} disabled={isSending || !messageText.trim()}>
+                        <Button type="submit" disabled={isSending || !messageText.trim()}>
                             {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                         </Button>
-                    </div>
+                    </form>
                 </DialogContent>
             </Dialog>
         </>

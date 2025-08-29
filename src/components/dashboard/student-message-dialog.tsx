@@ -73,7 +73,8 @@ export function StudentMessageDialog({ isOpen, onOpenChange }: StudentMessageDia
 
     useEffect(scrollToBottom, [messages]);
     
-    const handleSendMessage = async () => {
+    const handleSendMessage = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
         if (!newMessage.trim() || !student || !user) return;
         setIsSending(true);
         try {
@@ -122,7 +123,7 @@ export function StudentMessageDialog({ isOpen, onOpenChange }: StudentMessageDia
                         </div>
                     </ScrollArea>
                 </div>
-                <div className="flex gap-2 pt-4 border-t">
+                <form onSubmit={handleSendMessage} className="flex gap-2 pt-4 border-t">
                     <Textarea 
                         value={newMessage} 
                         onChange={(e) => setNewMessage(e.target.value)} 
@@ -130,10 +131,10 @@ export function StudentMessageDialog({ isOpen, onOpenChange }: StudentMessageDia
                         rows={2}
                         disabled={isSending}
                     />
-                    <Button onClick={handleSendMessage} disabled={isSending || !newMessage.trim()}>
+                    <Button type="submit" disabled={isSending || !newMessage.trim()}>
                         {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     </Button>
-                </div>
+                </form>
             </DialogContent>
         </Dialog>
     );
