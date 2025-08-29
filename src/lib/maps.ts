@@ -1,4 +1,5 @@
 
+
 export const defaultHubMaps = [
     "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/hub-maps%2FDefault%20Hub%20Maps%2FMap%20Two.PNG?alt=media&token=b5ffb4f4-abe1-47f9-aaa7-6f06568a52b9",
     "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/hub-maps%2FDefault%20Hub%20Maps%2FMap%20Eleven.JPG?alt=media&token=ec1b4cbc-1bbb-4a9a-9321-eb1496eee824",
@@ -20,4 +21,16 @@ export const defaultHubMaps = [
     "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/hub-maps%2FDefault%20Hub%20Maps%2FMap%20Twenty%20Two.JPG?alt=media&token=d1cf61b0-0d4b-4e1a-bd3d-77c5bc307c07",
     "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/hub-maps%2FDefault%20Hub%20Maps%2FCapital.JPG?alt=media&token=5ce45706-4439-472d-9c2e-4b5c3790a1ff",
     "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/hub-maps%2FDefault%20Hub%20Maps%2FMap%20Eight.JPG?alt=media&token=d9d34597-e786-480b-b7e4-6d782996c4f2",
+];
+
+export const defaultWorldMaps = [
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FWorld%20Maps%2FWorld%20Map%20(1).jpg?alt=media&token=028e0244-2c28-4df3-99cd-2f16c1c39dc7",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FWorld%20Maps%2FWorld%20Map%20(1).png?alt=media&token=8aa33b17-0ab8-459c-8e4c-dbfc3e43612f",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FWorld%20Maps%2FWorld%20Map%20(2).jpg?alt=media&token=9c667f81-4445-4077-a686-2eed5d607125",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FWorld%20Maps%2FWorld%20Map%20(2).png?alt=media&token=1b9803af-ef76-4b5e-ab59-cb97e78deff5",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FWorld%20Maps%2FWorld%20Map%20(3).jpg?alt=media&token=f46483bd-849a-45cc-9e28-fe59372017b6",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FWorld%20Maps%2FWorld%20Map%20(3).png?alt=media&token=c4e27680-2c08-4bd6-84c7-af603a918ba1",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FWorld%20Maps%2FWorld%20Map%20(4).jpg?alt=media&token=078755aa-92e9-4ee0-8732-0fe2d0d68400",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FWorld%20Maps%2FWorld%20Map%20(4).png?alt=media&token=cc95e9ad-c448-4f6f-a35f-8bc291b022e2",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FWorld%20Maps%2FWorld%20Map%20(5).jpg?alt=media&token=4128e2d1-c307-449a-be9c-4e280798891b"
 ];

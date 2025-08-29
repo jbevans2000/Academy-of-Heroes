@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { PlusCircle, LayoutDashboard, Edit, Trash2, Loader2, Eye, Wrench, Image as ImageIcon, Upload, X } from 'lucide-react';
+import { PlusCircle, LayoutDashboard, Edit, Trash2, Loader2, Eye, Wrench, Image as ImageIcon, Upload, X, Library } from 'lucide-react';
 import { collection, getDocs, doc, deleteDoc, onSnapshot, updateDoc, getDoc } from 'firebase/firestore';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -33,6 +33,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { cn } from '@/lib/utils';
 import NextImage from 'next/image';
 import Link from 'next/link';
+import { WorldMapGallery } from '@/components/teacher/world-map-gallery';
 
 export default function QuestsPage() {
   const router = useRouter();
@@ -45,6 +46,7 @@ export default function QuestsPage() {
   
   // State for world map dialog
   const [isMapDialogOpen, setIsMapDialogOpen] = useState(false);
+  const [isWorldMapGalleryOpen, setIsWorldMapGalleryOpen] = useState(false);
   const [worldMapUrl, setWorldMapUrl] = useState('');
   const [mapImageFile, setMapImageFile] = useState<File | null>(null);
   const [isUploadingMap, setIsUploadingMap] = useState(false);
@@ -139,6 +141,18 @@ export default function QuestsPage() {
         setIsUploadingMap(false);
     }
   };
+  
+  const handleSelectWorldMapFromGallery = async (url: string) => {
+    if (!teacher) return;
+    try {
+        const teacherRef = doc(db, 'teachers', teacher.uid);
+        await updateDoc(teacherRef, { worldMapUrl: url });
+        toast({ title: 'World Map Updated!', description: 'Your new world map has been set from the gallery.' });
+    } catch(error) {
+        console.error("Error setting world map from gallery:", error);
+        toast({ variant: 'destructive', title: 'Update Failed' });
+    }
+  };
 
   const handleRevertToDefault = async () => {
     if (!teacher) return;
@@ -163,15 +177,19 @@ export default function QuestsPage() {
           <DialogHeader>
             <DialogTitle>Set Your World Map Image</DialogTitle>
             <DialogDescription>
-              Upload a new image to serve as the world map for your quests.
+              Upload a new image or choose from the gallery to serve as the world map for your quests.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
              <div className="flex items-center gap-2">
                 <Label htmlFor="map-upload" className={cn(buttonVariants({ variant: 'default' }), "cursor-pointer")}>
                     <Upload className="mr-2 h-4 w-4" />
-                    Choose File
+                    Choose File to Upload
                 </Label>
+                 <Button variant="outline" onClick={() => { setIsMapDialogOpen(false); setIsWorldMapGalleryOpen(true); }}>
+                    <Library className="mr-2 h-4 w-4" />
+                    Choose From Gallery
+                 </Button>
                 <Input id="map-upload" type="file" accept="image/*" onChange={(e) => setMapImageFile(e.target.files ? e.target.files[0] : null)} className="hidden" disabled={isUploadingMap}/>
                 {mapImageFile && <p className="text-sm text-muted-foreground">{mapImageFile.name}</p>}
             </div>
@@ -198,6 +216,13 @@ export default function QuestsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <WorldMapGallery 
+        isOpen={isWorldMapGalleryOpen}
+        onOpenChange={setIsWorldMapGalleryOpen}
+        onMapSelect={handleSelectWorldMapFromGallery}
+      />
+      
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="flex items-center justify-between mb-6">
