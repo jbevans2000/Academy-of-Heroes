@@ -92,12 +92,9 @@ export function TeacherMessageCenter({
                 message: messageText,
             });
             if (result.success) {
-                toast({ title: 'Message Sent!', description: result.message });
+                // Do not toast on success for a better chat experience, just clear the input.
                 setMessageText('');
-                // Close the appropriate dialog
-                if (isConversationViewOpen) onConversationViewOpenChange(false);
-                if (isMessageOpen) onMessageOpenChange(false);
-
+                // The dialog will no longer close automatically.
             } else {
                 throw new Error(result.error);
             }
