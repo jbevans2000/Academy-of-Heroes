@@ -50,8 +50,8 @@ export default function TeacherRegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
-  const [isBetaFeaturesActive, setIsBetaFeaturesActive] = useState(false);
-  const maxSteps = isBetaFeaturesActive ? 3 : 2;
+  
+  const maxSteps = 2;
 
   const router = useRouter();
   const { toast } = useToast();
@@ -62,7 +62,6 @@ export default function TeacherRegisterPage() {
         try {
             const settings = await getGlobalSettings();
             setIsRegistrationOpen(settings.isTeacherRegistrationOpen);
-            setIsBetaFeaturesActive(settings.isFeedbackPanelVisible || false);
         } catch (error) {
             console.error("Failed to check registration status:", error);
             // Default to open if there's an error, to not block registration unintentionally
@@ -84,10 +83,6 @@ export default function TeacherRegisterPage() {
         toast({ variant: 'destructive', title: 'Passwords Do Not Match', description: 'Please ensure your passwords match.' });
         return;
     }
-     if (step === 2 && (!schoolName || !className || !address)) {
-        toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill in your school, address, and guild name.' });
-        return;
-    }
     setStep(s => s + 1);
   }
 
@@ -96,9 +91,8 @@ export default function TeacherRegisterPage() {
   }
 
   const handleSubmit = async () => {
-    // Final NDA Check if beta features are active
-    if (isBetaFeaturesActive && (ndaSignature.trim() !== name.trim() || !ndaAgreed)) {
-        toast({ variant: 'destructive', title: 'Agreement Required', description: 'You must type your full name exactly as entered in Step 1 and check the box to agree to the NDA.' });
+    if ((!schoolName || !className || !address)) {
+        toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill in your school, address, and guild name.' });
         return;
     }
     
@@ -236,11 +230,7 @@ export default function TeacherRegisterPage() {
                         </div>
                         <div className="flex items-center">
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>2</div>
-                             {isBetaFeaturesActive && <div className={`w-16 h-1 ${step > 2 ? 'bg-primary' : 'bg-muted'}`}></div>}
                         </div>
-                        {isBetaFeaturesActive && (
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 3 ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>3</div>
-                        )}
                     </div>
 
                     {/* Step 1: Account Info */}
@@ -289,72 +279,6 @@ export default function TeacherRegisterPage() {
                         </div>
                     )}
 
-                    {/* Step 3: NDA */}
-                    {step === 3 && isBetaFeaturesActive && (
-                         <div className="space-y-4 animate-in fade-in-50">
-                            <h3 className="text-xl font-semibold text-center">Step 3: Beta Tester Agreement</h3>
-                            <Card className="border-primary">
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2"><Gavel/> Beta Test Non-Disclosure Agreement (NDA)</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <ScrollArea className="h-64 w-full rounded-md border p-4 prose prose-sm max-w-none">
-                                        <p>This Agreement is entered into as of the date signed below between Jason Evans (“Developer”), creator of Academy of Heroes (formerly “ClassCraft”), and the undersigned Beta Tester (“Tester”).</p>
-                                        <h3>1. Purpose</h3>
-                                        <p>Developer is providing Tester with early access to the Academy of Heroes app, including its stories, graphics, branding, game mechanics, lesson integration features, and related materials (“Confidential Information”), solely for the purpose of testing in their own classroom and providing feedback.</p>
-                                        <h3>2. Confidentiality & Permitted Use</h3>
-                                        <p>Tester agrees:</p>
-                                        <ul>
-                                            <li>Tester may use the app with their own students in the normal course of classroom instruction during the beta period.</li>
-                                            <li>Tester may not share, copy, disclose, or distribute the app, its code, scripts, artwork, text, logos, lesson structures, or design concepts outside of their own classroom.</li>
-                                            <li>Tester may not grant access to other teachers, schools, or third parties without Developer’s written permission.</li>
-                                            <li>Tester may not reverse-engineer, decompile, or attempt to replicate the app or its underlying systems.</li>
-                                            <li>Except for permitted classroom use, Tester will keep all feedback, gameplay, screenshots, and discussions about the app private unless given written permission by Developer.</li>
-                                        </ul>
-                                        <h3>3. Intellectual Property</h3>
-                                        <p>Tester acknowledges that:</p>
-                                        <ul>
-                                            <li>Academy of Heroes is the sole property of Developer.</li>
-                                            <li>All trademarks, copyrighted materials (including storyline, lesson design, characters, artwork, rewards, and mechanics), and proprietary scripts remain with Developer.</li>
-                                            <li>Participation in the beta gives Tester no ownership, license, or rights beyond personal use for testing in their classroom.</li>
-                                        </ul>
-                                        <h3>4. Tester-Created Content</h3>
-                                        <p>During beta, Tester may create quests, boss battles, rewards, or other custom content (“Tester Content”).</p>
-                                        <p>Tester acknowledges that all Tester Content exists only within the beta testing environment and may be modified or removed by Developer at any time.</p>
-                                        <p>At the end of the beta period, all Tester Content and all beta tester accounts may be permanently removed, at Developer’s discretion.</p>
-                                        <p>Developer will provide notice before such removal occurs.</p>
-                                        <p>Tester has no ownership or continuing rights to Tester Content once the beta period ends.</p>
-                                        <h3>5. Feedback</h3>
-                                        <p>Any feedback, suggestions, or ideas provided by Tester may be used by Developer freely to improve the app. Tester does not acquire any rights to compensation or ownership from their feedback.</p>
-                                        <h3>6. Term & Termination</h3>
-                                        <p>This NDA begins upon Tester’s signature and remains in effect until the public release of the app or until Developer provides written release.</p>
-                                        <p>Developer may revoke Tester’s access at any time and require destruction of all related materials.</p>
-                                        <h3>7. Remedies</h3>
-                                        <p>Tester understands that breach of this NDA may cause harm to Developer, and Developer reserves the right to pursue legal or equitable remedies, including injunctive relief.</p>
-                                        <h3>8. General</h3>
-                                        <p>This Agreement is governed by the laws of the State of Nevada, USA.</p>
-                                        <p>If any provision is found invalid, the remainder remains in effect.</p>
-                                        <p>This Agreement represents the full understanding between the parties.</p>
-                                    </ScrollArea>
-                                </CardContent>
-                            </Card>
-                             <div className="space-y-4 pt-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="nda-signature">Type Your Full Name to Agree</Label>
-                                    <Input id="nda-signature" placeholder={name || "Your Full Name"} value={ndaSignature} onChange={(e) => setNdaSignature(e.target.value)} />
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox id="nda-agree" checked={ndaAgreed} onCheckedChange={(checked) => setNdaAgreed(!!checked)} />
-                                    <label
-                                        htmlFor="nda-agree"
-                                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                    >
-                                        I have read and agree to the Beta Tester NDA.
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </CardContent>
                 <CardFooter className="flex flex-col gap-4">
                     <div className="flex justify-between w-full">
@@ -364,9 +288,9 @@ export default function TeacherRegisterPage() {
                         {step < maxSteps ? (
                             <Button onClick={handleNextStep} disabled={isLoading}>Next</Button>
                         ) : (
-                             <Button onClick={handleSubmit} disabled={isLoading || (isBetaFeaturesActive && (!ndaAgreed || name.trim() !== ndaSignature.trim()))}>
+                             <Button onClick={handleSubmit} disabled={isLoading}>
                                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} 
-                                {isBetaFeaturesActive ? 'Agree & Complete Registration' : 'Complete Registration'}
+                                Complete Registration
                             </Button>
                         )}
                     </div>
