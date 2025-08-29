@@ -644,12 +644,21 @@ export default function TeacherLiveBattlePage() {
                     roundEvents.push({ studentUid: student.uid, message: `You were protected by ${guardianName}'s Guard!` });
                     if(guardianUid) roundEvents.push({ studentUid: guardianUid, message: `Your Guard protected ${student.characterName}!` });
                     
+                    // Add the guarded student's damage to the guardian's total for this round
                     if (guardianUid) {
-                        damageToTakeByStudent[guardianUid] = (damageToTakeByStudent[guardianUid] || 0) + damageToTakeByStudent[student.uid];
+                        if (!redirectedDamageForGuardians[guardianUid]) redirectedDamageForGuardians[guardianUid] = 0;
+                        redirectedDamageForGuardians[guardianUid] += damageToTakeByStudent[student.uid];
                     }
+                    
                     delete damageToTakeByStudent[student.uid]; // The guarded student takes no damage
                 }
             }
+
+            // Add redirected damage to the main damage calculation
+            for (const guardianUid in redirectedDamageForGuardians) {
+                damageToTakeByStudent[guardianUid] = (damageToTakeByStudent[guardianUid] || 0) + redirectedDamageForGuardians[guardianUid];
+            }
+
 
             // Apply all damage after redirection calculations
             for (const studentUid in damageToTakeByStudent) {
