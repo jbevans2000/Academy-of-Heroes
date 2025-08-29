@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -27,9 +28,10 @@ interface BattleChatBoxProps {
   battleId: string;
   userName: string;
   isTeacher: boolean;
+  isChatDisabled?: boolean;
 }
 
-export function BattleChatBox({ teacherUid, battleId, userName, isTeacher }: BattleChatBoxProps) {
+export function BattleChatBox({ teacherUid, battleId, userName, isTeacher, isChatDisabled = false }: BattleChatBoxProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -59,7 +61,7 @@ export function BattleChatBox({ teacherUid, battleId, userName, isTeacher }: Bat
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newMessage.trim() === '' || !teacherUid || !battleId) return;
+    if (newMessage.trim() === '' || !teacherUid || !battleId || isChatDisabled) return;
 
     setIsSending(true);
     try {
@@ -111,10 +113,10 @@ export function BattleChatBox({ teacherUid, battleId, userName, isTeacher }: Bat
           <Input
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Send a message..."
-            disabled={isSending}
+            placeholder={isChatDisabled ? "Chat is disabled by the Guild Leader" : "Send a message..."}
+            disabled={isSending || isChatDisabled}
           />
-          <Button type="submit" disabled={isSending || newMessage.trim() === ''}>
+          <Button type="submit" disabled={isSending || newMessage.trim() === '' || isChatDisabled}>
             {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
         </form>

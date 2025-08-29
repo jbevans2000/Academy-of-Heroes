@@ -10,7 +10,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, Download, Timer, HeartCrack, Video, ShieldCheck, Sparkles, Skull, Trash2, VolumeX, Volume1, Volume2 as VolumeIcon } from 'lucide-react';
+import { Loader2, Download, Timer, HeartCrack, Video, ShieldCheck, Sparkles, Skull, Trash2, VolumeX, Volume1, Volume2 as VolumeIcon, MessageSquareOff } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RoundResults, type Result } from '@/components/teacher/round-results';
 import { downloadCsv } from '@/lib/utils';
@@ -24,6 +24,8 @@ import { BattleLog } from '@/components/battle/battle-log';
 import { useToast } from '@/hooks/use-toast';
 import { classPowers } from '@/lib/powers';
 import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 
 interface QueuedPower {
@@ -87,6 +89,7 @@ interface LiveBattleState {
   martialSacrificeCasterUid?: string | null; // Tracks if the power has been used
   arcaneSacrificeCasterUid?: string | null; // Tracks if the power has been used
   divineSacrificeCasterUid?: string | null;
+  isChatDisabled?: boolean;
 }
 
 interface PowerActivation {
@@ -1610,6 +1613,7 @@ export default function TeacherLiveBattlePage() {
         martialSacrificeCasterUid: null,
         arcaneSacrificeCasterUid: null,
         divineSacrificeCasterUid: null,
+        isChatDisabled: false,
     });
     await logGameEvent(teacherUid, 'BOSS_BATTLE', `Round 1 of '${battle.battleName}' has started.`);
   };
@@ -1713,6 +1717,23 @@ export default function TeacherLiveBattlePage() {
         toast({ variant: "destructive", title: "Error", description: "Could not clear the chat." });
     }
   };
+  
+  const handleToggleChat = async () => {
+    if (!teacherUid || !liveState) return;
+    const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
+    const newChatStatus = !(liveState.isChatDisabled ?? false);
+    try {
+        await updateDoc(liveBattleRef, { isChatDisabled: newChatStatus });
+        toast({
+            title: 'Chat Updated',
+            description: `Chat has been ${newChatStatus ? 'disabled' : 'enabled'}.`
+        });
+    } catch (error) {
+        console.error("Error toggling chat:", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not update chat status.' });
+    }
+  };
+
 
   if (isLoading || !battle || !liveState || !user || !teacherData) {
     return (
@@ -1786,7 +1807,7 @@ export default function TeacherLiveBattlePage() {
 
                         <div className="p-4 border rounded-lg">
                             <h3 className="font-semibold text-lg mb-2">Controls</h3>
-                            <div className="flex flex-wrap gap-4">
+                            <div className="flex flex-wrap items-center gap-4">
                                 {isWaitingToStart && (
                                     <Button onClick={handleStartFirstQuestion} size="lg">Start First Question</Button>
                                 )}
@@ -1821,6 +1842,13 @@ export default function TeacherLiveBattlePage() {
                                     {isEndingBattle ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                     End Battle
                                 </Button>
+                                 <div className="flex items-center space-x-2">
+                                    <Switch id="disable-chat" checked={liveState.isChatDisabled ?? false} onCheckedChange={handleToggleChat} />
+                                    <Label htmlFor="disable-chat" className="flex items-center gap-1 cursor-pointer">
+                                        <MessageSquareOff className="w-4 h-4"/>
+                                        Disable Chat
+                                    </Label>
+                                </div>
                             </div>
                         </div>
                     </CardContent>
@@ -1890,6 +1918,7 @@ export default function TeacherLiveBattlePage() {
                     userName={"The Wise One"}
                     teacherUid={teacherUid || ''}
                     battleId={'active-battle'}
+                    isChatDisabled={liveState.isChatDisabled ?? false}
                 />
             </div>
         </div>
