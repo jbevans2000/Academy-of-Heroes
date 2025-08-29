@@ -547,48 +547,52 @@ export function StudentCard({ student, isSelected, onSelect, setStudents, teache
                     <Briefcase className="w-4 h-4" />
                     <span>{company?.name || 'Freelancer'}</span>
                 </div>
-                <div className="grid grid-cols-2 gap-4 text-sm pt-2">
-                <div className="flex items-center space-x-1">
-                        <Trophy className="h-5 w-5 text-orange-400" />
-                        <div>
-                        <p className="font-semibold">{student.level ?? 1}</p>
-                        <p className="text-xs text-muted-foreground">Level</p>
+                <div className="space-y-3 text-sm pt-2">
+                    <div className="flex justify-between items-center gap-2">
+                        <div className="flex items-center space-x-1">
+                            <Trophy className="h-5 w-5 text-orange-400" />
+                            <div>
+                            <p className="font-semibold">{student.level ?? 1}</p>
+                            <p className="text-xs text-muted-foreground">Level</p>
+                            </div>
                         </div>
+                        <EditableStat 
+                            student={student}
+                            stat="xp"
+                            label="Experience"
+                            icon={<Star className="h-5 w-5 text-yellow-400" />}
+                            setStudents={setStudents}
+                            teacherUid={teacherUid}
+                        />
+                        <EditableStat 
+                            student={student}
+                            stat="gold"
+                            label="Gold"
+                            icon={<Coins className="h-5 w-5 text-amber-500" />}
+                            setStudents={setStudents}
+                            teacherUid={teacherUid}
+                        />
                     </div>
-                <EditableStat 
-                    student={student}
-                    stat="xp"
-                    label="Experience"
-                    icon={<Star className="h-5 w-5 text-yellow-400" />}
-                    setStudents={setStudents}
-                    teacherUid={teacherUid}
-                />
-                <EditablePairedStat
-                    student={student}
-                    stat="hp"
-                    maxStat="maxHp"
-                    label="HP"
-                    icon={<Heart className="h-5 w-5 text-red-500" />}
-                    setStudents={setStudents}
-                    teacherUid={teacherUid}
-                />
-                <EditablePairedStat
-                    student={student}
-                    stat="mp"
-                    maxStat="maxMp"
-                    label="MP"
-                    icon={<Zap className="h-5 w-5 text-blue-500" />}
-                    setStudents={setStudents}
-                    teacherUid={teacherUid}
-                />
-                <EditableStat 
-                    student={student}
-                    stat="gold"
-                    label="Gold"
-                    icon={<Coins className="h-5 w-5 text-amber-500" />}
-                    setStudents={setStudents}
-                    teacherUid={teacherUid}
-                />
+                     <div className="flex justify-between items-center gap-2">
+                        <EditablePairedStat
+                            student={student}
+                            stat="hp"
+                            maxStat="maxHp"
+                            label="HP"
+                            icon={<Heart className="h-5 w-5 text-red-500" />}
+                            setStudents={setStudents}
+                            teacherUid={teacherUid}
+                        />
+                        <EditablePairedStat
+                            student={student}
+                            stat="mp"
+                            maxStat="maxMp"
+                            label="MP"
+                            icon={<Zap className="h-5 w-5 text-blue-500" />}
+                            setStudents={setStudents}
+                            teacherUid={teacherUid}
+                        />
+                    </div>
                 </div>
             </CardContent>
             <CardFooter className="p-2 bg-secondary/30 mt-auto grid grid-cols-3 gap-2">
