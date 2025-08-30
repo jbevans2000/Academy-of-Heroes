@@ -257,7 +257,6 @@ export default function DuelPage() {
                     winnerUid = otherPlayerUid;
                     loserUid = user.uid;
                 } else {
-                    // It's a tie, randomly pick winner
                     isDraw = true;
                     if (Math.random() < 0.5) {
                         winnerUid = user.uid;
@@ -278,28 +277,24 @@ export default function DuelPage() {
                 const today = format(new Date(), 'yyyy-MM-dd');
 
                 if (isDraw) {
-                    // Winner gets full rewards
                     batch.update(winnerRef, {
                         xp: increment(duelSettings.rewardXp),
                         gold: increment(duelSettings.rewardGold),
                         lastDuelDate: today,
                         duelsCompletedToday: increment(1)
                     });
-                    // Loser of the tie gets a full refund
                     batch.update(loserRef, {
                         gold: increment(duelSettings.duelCost || 0),
                         lastDuelDate: today,
                         duelsCompletedToday: increment(1)
                     });
                 } else {
-                    // Standard win/loss
                     batch.update(winnerRef, {
                         xp: increment(duelSettings.rewardXp),
                         gold: increment(duelSettings.rewardGold),
                         lastDuelDate: today,
                         duelsCompletedToday: increment(1)
                     });
-                     // Loser gets 50% refund
                     const refundAmount = Math.floor((duel.cost || 0) / 2);
                     batch.update(loserRef, {
                         gold: increment(refundAmount),
@@ -329,16 +324,13 @@ export default function DuelPage() {
             const duelRef = doc(db, 'teachers', teacherUid, 'duels', duelId);
             const batch = writeBatch(db);
             
-            // Set duel status to finished and declare winner
             batch.update(duelRef, { status: 'finished', winnerUid: opponentUid });
 
-            // Set both players' inDuel status to false
             const leaverRef = doc(db, 'teachers', teacherUid, 'students', user!.uid);
             const winnerRef = doc(db, 'teachers', teacherUid, 'students', opponentUid);
             batch.update(leaverRef, { inDuel: false });
             batch.update(winnerRef, { inDuel: false });
 
-            // Grant full rewards to the winner
             batch.update(winnerRef, {
                 xp: increment(duelSettings.rewardXp),
                 gold: increment(duelSettings.rewardGold)
@@ -517,3 +509,5 @@ export default function DuelPage() {
         </div>
     )
 }
+
+    
