@@ -31,6 +31,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { ChallengeDialog } from '@/components/dashboard/challenge-dialog';
+import { getDuelSettings } from '@/ai/flows/manage-duels';
+import { format } from 'date-fns';
 
 interface DashboardClientProps {
   student: Student;
@@ -119,14 +121,20 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
   const handleDuelRequestResponse = async (accept: boolean) => {
     if (!activeDuelRequest || !student.teacherUid) return;
     
-    // Check for gold cost before accepting
-    if (accept && activeDuelRequest.cost > 0 && student.gold < activeDuelRequest.cost) {
-        toast({ variant: 'destructive', title: 'Not Enough Gold!', description: `You need ${activeDuelRequest.cost} Gold to accept this duel.` });
-        setActiveDuelRequest(null);
-        // We will also decline it on the backend so it doesn't linger.
-        const duelRef = doc(db, 'teachers', student.teacherUid, 'duels', activeDuelRequest.id);
-        await updateDoc(duelRef, { status: 'declined' });
-        return;
+    if (accept) {
+        const settings = await getDuelSettings(student.teacherUid);
+        const today = format(new Date(), 'yyyy-MM-dd');
+        const duelsCompletedToday = student.lastDuelDate === today ? (student.duelsCompletedToday || 0) : 0;
+        
+        if (settings.isDailyLimitEnabled && duelsCompletedToday >= (settings.dailyDuelLimit || 999)) {
+            toast({ variant: 'destructive', title: 'Daily Limit Reached', description: `You have already completed your daily limit of ${settings.dailyDuelLimit} duels.` });
+            accept = false; // Force decline
+        }
+
+        if (accept && activeDuelRequest.cost > 0 && student.gold < activeDuelRequest.cost) {
+            toast({ variant: 'destructive', title: 'Not Enough Gold!', description: `You need ${activeDuelRequest.cost} Gold to accept this duel.` });
+            accept = false; // Force decline
+        }
     }
     
     const duelRef = doc(db, 'teachers', student.teacherUid, 'duels', activeDuelRequest.id);
