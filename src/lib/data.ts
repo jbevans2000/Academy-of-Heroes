@@ -1,4 +1,5 @@
 
+
 export type ClassType = 'Guardian' | 'Healer' | 'Mage' | '';
 
 export type Company = {

@@ -9,14 +9,14 @@ interface StudentListProps {
   students: Student[];
   selectedStudents: string[];
   onSelectStudent: (uid: string) => void;
-  setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
   teacherUid: string;
   onSendMessage: (student: Student) => void;
   hubs: QuestHub[];
   chapters: Chapter[];
+  onlineUids: string[];
 }
 
-export function StudentList({ students, selectedStudents, onSelectStudent, setStudents, teacherUid, onSendMessage, hubs, chapters }: StudentListProps) {
+export function StudentList({ students, selectedStudents, onSelectStudent, teacherUid, onSendMessage, hubs, chapters, onlineUids }: StudentListProps) {
   if (students.length === 0) {
     return (
       <div className="flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
@@ -33,13 +33,14 @@ export function StudentList({ students, selectedStudents, onSelectStudent, setSt
                 student={student}
                 isSelected={selectedStudents.includes(student.uid)}
                 onSelect={() => onSelectStudent(student.uid)}
-                setStudents={setStudents}
                 teacherUid={teacherUid}
                 onSendMessage={onSendMessage}
                 hubs={hubs}
                 chapters={chapters}
+                isOnline={onlineUids.includes(student.uid)}
             />
       ))}
     </div>
   );
 }
+

@@ -35,7 +35,6 @@ interface EditableStatProps {
     stat: 'xp' | 'gold';
     icon: React.ReactNode;
     label: string;
-    setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
     teacherUid: string;
 }
 
@@ -45,7 +44,6 @@ interface EditablePairedStatProps {
     maxStat: 'maxHp' | 'maxMp';
     icon: React.ReactNode;
     label: string;
-    setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
     teacherUid: string;
 }
 
@@ -54,11 +52,10 @@ interface EditableTextProps {
     field: 'studentName' | 'characterName';
     icon: React.ReactNode;
     label: string;
-    setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
     teacherUid: string;
 }
 
-function EditableText({ student, field, icon, label, setStudents, teacherUid }: EditableTextProps) {
+function EditableText({ student, field, icon, label, teacherUid }: EditableTextProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [value, setValue] = useState(student[field]);
     const [isLoading, setIsLoading] = useState(false);
@@ -149,7 +146,7 @@ function EditableText({ student, field, icon, label, setStudents, teacherUid }: 
 }
 
 
-function EditableStat({ student, stat, icon, label, setStudents, teacherUid }: EditableStatProps) {
+function EditableStat({ student, stat, icon, label, teacherUid }: EditableStatProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [value, setValue] = useState(student[stat] ?? 0);
     const [isLoading, setIsLoading] = useState(false);
@@ -281,7 +278,7 @@ function EditableStat({ student, stat, icon, label, setStudents, teacherUid }: E
     );
 }
 
-function EditablePairedStat({ student, stat, maxStat, icon, label, setStudents, teacherUid }: EditablePairedStatProps) {
+function EditablePairedStat({ student, stat, maxStat, icon, label, teacherUid }: EditablePairedStatProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [currentValue, setCurrentValue] = useState(student[stat] ?? 0);
     const [maxValue, setMaxValue] = useState(student[maxStat] ?? 0);
@@ -378,20 +375,19 @@ interface StudentCardProps {
   student: Student;
   isSelected: boolean;
   onSelect: () => void;
-  setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
   teacherUid: string;
   onSendMessage: (student: Student) => void;
   hubs: QuestHub[];
   chapters: Chapter[];
+  isOnline: boolean;
 }
 
-export function StudentCard({ student, isSelected, onSelect, setStudents, teacherUid, onSendMessage, hubs, chapters }: StudentCardProps) {
+export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendMessage, hubs, chapters, isOnline }: StudentCardProps) {
   const avatarUrl = student.avatarUrl || 'https://placehold.co/100x100.png';
   const [company, setCompany] = useState<Company | null>(null);
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [isQuestProgressOpen, setIsQuestProgressOpen] = useState(false);
   
-  const isOnline = student.onlineStatus?.status === 'online';
   const { toast } = useToast();
 
   useEffect(() => {
@@ -528,7 +524,6 @@ export function StudentCard({ student, isSelected, onSelect, setStudents, teache
                     field="characterName"
                     label="Character Name"
                     icon={<Sword className="w-4 h-4" />}
-                    setStudents={setStudents}
                     teacherUid={teacherUid}
                 />
                 <EditableText
@@ -536,7 +531,6 @@ export function StudentCard({ student, isSelected, onSelect, setStudents, teache
                     field="studentName"
                     label="Student Name"
                     icon={<User className="w-4 h-4" />}
-                    setStudents={setStudents}
                     teacherUid={teacherUid}
                 />
                 <div className="text-sm text-muted-foreground flex items-center gap-2">
@@ -631,4 +625,5 @@ export function StudentCard({ student, isSelected, onSelect, setStudents, teache
     </>
   );
 }
+
 
