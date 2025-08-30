@@ -425,6 +425,18 @@ export default function DuelPage() {
 
     const currentQuestion = duel.questions ? duel.questions[duel.currentQuestionIndex] : null;
 
+    if (duel.status === 'active' && (!duel.questions || duel.questions.length === 0)) {
+        return (
+            <div className="flex h-screen items-center justify-center bg-gray-900 text-white">
+                <Card className="text-center p-8 bg-card/80 backdrop-blur-sm">
+                    <Loader2 className="h-16 w-16 mx-auto text-primary animate-spin" />
+                    <CardTitle className="text-4xl mt-4">Preparing the Arena...</CardTitle>
+                    <CardDescription>Questions are being selected for your duel.</CardDescription>
+                </Card>
+            </div>
+        )
+    }
+
     return (
         <div className="flex h-screen flex-col items-center justify-center bg-gray-900 p-4 text-white">
              <div className="absolute top-4 left-4 z-10">
