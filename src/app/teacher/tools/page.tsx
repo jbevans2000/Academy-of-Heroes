@@ -66,7 +66,7 @@ const tools = [
         path: '/teacher/tools/wheel-of-fate',
         editPath: '/teacher/tools/wheel-of-fate/edit',
         disabled: false,
-        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2FThe%20Wheel%20of%20Fate%202.png?alt=media&token=1e4b790b-a126-4c23-9960-fb2ce9d89896',
+        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2FWheel%20of%20Fate%20Background.jpg?alt=media&token=b5fe255d-9897-495d-bbde-1ddcb2d05e49',
     }
 ]
 
