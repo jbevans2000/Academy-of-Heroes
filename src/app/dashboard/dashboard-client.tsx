@@ -1,11 +1,11 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Student } from "@/lib/data";
-import { StatsCard } from "@/components/dashboard/stats-card";
-import { AvatarDisplay } from "@/components/dashboard/avatar-display";
-import { Button } from "@/components/ui/button";
+import { StatsCard } from "./stats-card";
+import { AvatarDisplay } from "./avatar-display";
+import { Button } from "../ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { User, Map, Swords, Sparkles, BookHeart, ImageIcon, Gem, Package, Hammer, Briefcase, Loader2 } from "lucide-react";
@@ -18,7 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { CompanyDisplay } from '@/components/dashboard/company-display';
+import { CompanyDisplay } from './company-display';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,14 +43,33 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
   const [companyMembers, setCompanyMembers] = useState<Student[]>([]);
   const [isLoadingCompany, setIsLoadingCompany] = useState(false);
 
-  const handleReadyForBattle = async () => {
-    if (!student.teacherUid) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Cannot find your teacher\'s guild.' });
-      return;
+  useEffect(() => {
+    // Check for the ready_for_battle URL parameter on page load
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('ready_for_battle') === 'true') {
+      // Clear the parameter from the URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+      
+      // Now proceed to the battle
+      const enterBattle = async () => {
+        if (!student.teacherUid) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Cannot find your teacher\'s guild.' });
+            return;
+        }
+        const studentRef = doc(db, 'teachers', student.teacherUid, 'students', student.uid);
+        await updateDoc(studentRef, { inBattle: true });
+        router.push('/battle/live');
+      }
+      enterBattle();
     }
-    const studentRef = doc(db, 'teachers', student.teacherUid, 'students', student.uid);
-    await updateDoc(studentRef, { inBattle: true });
-    router.push('/battle/live');
+  }, [student, router, toast]);
+
+  const handleReadyForBattle = async () => {
+    // Instead of navigating directly, set a URL parameter and reload the page.
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set('ready_for_battle', 'true');
+    window.location.href = currentUrl.toString();
   };
 
   const handleCheckCompany = async () => {
