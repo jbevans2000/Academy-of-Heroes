@@ -7,7 +7,7 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, PlusCircle, Edit, Trash2, Check, X, Loader2, Save, Star, Coins } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Edit, Trash2, Check, X, Loader2, Save, Star, Coins, ShieldAlert } from 'lucide-react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { collection, onSnapshot, query, doc } from 'firebase/firestore';
@@ -27,6 +27,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 
 export default function TrainingGroundsPage() {
@@ -219,7 +221,11 @@ export default function TrainingGroundsPage() {
                 <ArrowLeft className="mr-2 h-4 w-4" /> Back to Podium
             </Button>
             <div className="flex gap-2">
-                 <Button variant="destructive" onClick={handleToggleDuelsEnabled} disabled={isToggling === 'main_switch'}>
+                 <Button 
+                    onClick={handleToggleDuelsEnabled} 
+                    disabled={isToggling === 'main_switch'}
+                    className={cn(isDuelsEnabled ? 'bg-destructive hover:bg-destructive/90' : 'bg-green-600 hover:bg-green-700')}
+                 >
                     {isToggling === 'main_switch' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     {isDuelsEnabled ? 'Close Training Grounds' : 'Open Training Grounds'}
                 </Button>
@@ -227,6 +233,14 @@ export default function TrainingGroundsPage() {
             </div>
           </div>
           
+            <Alert variant={isDuelsEnabled ? 'default' : 'destructive'} className={cn('bg-opacity-80 backdrop-blur-sm', isDuelsEnabled ? 'bg-green-100 dark:bg-green-900/50 border-green-500' : 'bg-red-100 dark:bg-red-900/50 border-red-500')}>
+                <ShieldAlert className={cn("h-4 w-4", isDuelsEnabled ? 'text-green-600' : 'text-destructive')} />
+                <AlertTitle className="font-bold text-lg">Training Grounds Status</AlertTitle>
+                <AlertDescription className="font-semibold text-base">
+                    The Training Grounds are currently {isDuelsEnabled ? 'OPEN' : 'CLOSED'}. Students {isDuelsEnabled ? 'CAN' : 'CANNOT'} challenge each other to duels.
+                </AlertDescription>
+            </Alert>
+
            <Card>
                 <CardHeader>
                     <CardTitle>Duel Rewards</CardTitle>
