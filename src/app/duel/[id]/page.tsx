@@ -138,7 +138,6 @@ export default function DuelPage() {
                 
                 const currentDuelData = duelDocForTransaction.data() as DuelState;
                 if (currentDuelData.costsDeducted) {
-                    console.log("Costs already deducted for this duel.");
                     return; // Abort if costs are already processed
                 }
                 
@@ -388,14 +387,12 @@ export default function DuelPage() {
                 if (!winnerDoc.exists()) throw new Error("Winner not found");
                 const winnerData = winnerDoc.data();
                 
-                const finalXp = (winnerData.xp || 0) + duelSettings.rewardXp;
-                const finalGold = (winnerData.gold || 0) + duelSettings.rewardGold + (duel.cost || 0);
+                const finalGold = (winnerData.gold || 0) + (duel.cost || 0);
 
                 transaction.update(duelRef, { status: 'finished', winnerUid: opponentUid });
                 transaction.update(leaverRef, { inDuel: false });
                 transaction.update(winnerRef, { 
                     inDuel: false,
-                    xp: finalXp,
                     gold: Math.max(0, finalGold)
                 });
             });
@@ -520,7 +517,7 @@ export default function DuelPage() {
                         <AlertDialogHeader>
                             <AlertDialogTitle>Are you sure you want to end the duel?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                You will forfeit the match and your entry fee. Your opponent will be declared the winner and receive the full reward.
+                                You will forfeit the match and your entry fee. Your opponent will be declared the winner and have their entry fee refunded.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
