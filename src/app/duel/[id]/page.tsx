@@ -44,7 +44,7 @@ interface DuelState {
     winnerUid?: string;
     isDraw?: boolean;
     cost?: number;
-    costsDeducted?: boolean; // New flag to ensure one-time deduction
+    costsDeducted?: boolean; 
 }
 
 const DuelPlayerCard = ({ player, answers, isCurrentUser }: { player: Student | null, answers: number[], isCurrentUser: boolean }) => {
@@ -84,8 +84,6 @@ export default function DuelPage() {
     const [hasAnswered, setHasAnswered] = useState(false);
     const [duelSettings, setDuelSettings] = useState<DuelSettings | null>(null);
     const [isLeaving, setIsLeaving] = useState(false);
-
-    // New state for decline dialog
     const [showDeclinedDialog, setShowDeclinedDialog] = useState(false);
     
     const duelRef = useMemo(() => {
@@ -138,7 +136,7 @@ export default function DuelPage() {
                 
                 const currentDuelData = duelDocForTransaction.data() as DuelState;
                 if (currentDuelData.costsDeducted) {
-                    return; // Abort if costs are already processed
+                    return; 
                 }
                 
                 const challengerRef = doc(db, 'teachers', teacherUid, 'students', currentDuelData.challengerUid);
@@ -216,12 +214,6 @@ export default function DuelPage() {
                     const batch = writeBatch(db);
                     await setPlayerDuelStatus(batch, [duelData.challengerUid, duelData.opponentUid], false);
                     await batch.commit();
-                    toast({
-                        variant: 'destructive',
-                        title: 'Duel Ended',
-                        description: 'Your opponent has left the duel.',
-                    });
-                    router.push('/dashboard');
                 }
 
                 setDuel(duelData);
@@ -272,7 +264,6 @@ export default function DuelPage() {
         const newAnswers = [...(duel.answers![user.uid] || [])];
         newAnswers[duel.currentQuestionIndex] = isCorrect ? 1 : 0;
         
-        // Optimistically update UI
         setHasAnswered(true);
         
         const otherPlayerUid = user.uid === duel.challengerUid ? duel.opponentUid : duel.challengerUid;
@@ -285,8 +276,8 @@ export default function DuelPage() {
                         const freshDuelSnap = await transaction.get(duelRef);
                         if (!freshDuelSnap.exists()) throw new Error("Duel document not found during final transaction.");
                         
-                        // Update local answers for the transaction logic
-                        const finalDuelAnswers = {...freshDuelSnap.data().answers};
+                        const finalDuelData = freshDuelSnap.data() as DuelState;
+                        const finalDuelAnswers = {...finalDuelData.answers};
                         finalDuelAnswers[user.uid] = newAnswers;
 
                         const userScore = finalDuelAnswers[user.uid].filter(a => a === 1).length;
@@ -324,7 +315,7 @@ export default function DuelPage() {
                         const winnerData = winnerDoc.data();
                         const loserData = loserDoc.data();
                         
-                        const duelCost = duel.cost || 0;
+                        const duelCost = finalDuelData.cost || 0;
 
                         // WRITES LAST
                         const winnerFinalXp = (winnerData.xp || 0) + duelSettings.rewardXp;
@@ -351,8 +342,8 @@ export default function DuelPage() {
                             isDraw 
                         });
 
-                        const winnerName = winnerUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
-                        const loserName = loserUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
+                        const winnerName = winnerUid === finalDuelData.challengerUid ? finalDuelData.challengerName : finalDuelData.opponentName;
+                        const loserName = loserUid === finalDuelData.challengerUid ? finalDuelData.challengerName : finalDuelData.opponentName;
                         await logGameEvent(teacherUid, 'DUEL', `${winnerName} ${isDraw ? 'won a tie-breaker against' : 'defeated'} ${loserName} in a duel.`);
                     });
                 } catch (e) {
@@ -371,37 +362,25 @@ export default function DuelPage() {
     };
 
     const handleEndDuel = async () => {
-        if (!duel || !teacherUid || !duelSettings) return;
+        if (!duel || !teacherUid || !duelSettings || !user || !duelRef) return;
         
-        const opponentUid = user?.uid === duel.challengerUid ? duel.opponentUid : duel.challengerUid;
-        if (!opponentUid) return;
+        const opponentUid = user.uid === duel.challengerUid ? duel.opponentUid : duel.challengerUid;
 
         setIsLeaving(true);
         try {
             await runTransaction(db, async (transaction) => {
-                const duelRef = doc(db, 'teachers', teacherUid, 'duels', duelId);
-                const leaverRef = doc(db, 'teachers', teacherUid, 'students', user!.uid);
                 const winnerRef = doc(db, 'teachers', teacherUid, 'students', opponentUid);
                 
                 const winnerDoc = await transaction.get(winnerRef);
                 if (!winnerDoc.exists()) throw new Error("Winner not found");
                 const winnerData = winnerDoc.data();
                 
-                const finalGold = (winnerData.gold || 0) + (duel.cost || 0);
+                const duelCost = duel.cost || 0;
+                const finalGold = (winnerData.gold || 0) + duelCost;
 
-                transaction.update(duelRef, { status: 'finished', winnerUid: opponentUid });
-                transaction.update(leaverRef, { inDuel: false });
-                transaction.update(winnerRef, { 
-                    inDuel: false,
-                    gold: Math.max(0, finalGold)
-                });
+                transaction.update(duelRef, { status: 'abandoned', winnerUid: opponentUid });
+                transaction.update(winnerRef, { gold: Math.max(0, finalGold) });
             });
-
-            toast({
-                title: 'Duel Forfeited',
-                description: 'You have left the duel. Your opponent has been declared the winner.',
-            });
-            router.push('/dashboard');
         } catch (error) {
             console.error("Error ending duel:", error);
             toast({
@@ -488,6 +467,25 @@ export default function DuelPage() {
         )
     }
 
+    if (duel.status === 'abandoned') {
+        const didIForfeit = duel.winnerUid !== user?.uid;
+        const messageTitle = didIForfeit ? "You have exited the Arena!" : "Your opponent has left the Arena!";
+        const messageDescription = didIForfeit ? "You have forfeited your entry fee." : "Your entry fee has been refunded.";
+
+        return (
+             <div className="flex h-screen items-center justify-center bg-gray-900 text-white">
+                <Card className="text-center p-8 bg-card/80 backdrop-blur-sm">
+                    <Shield className="h-16 w-16 mx-auto text-primary" />
+                    <CardTitle className="text-4xl mt-4">{messageTitle}</CardTitle>
+                    <CardDescription>{messageDescription}</CardDescription>
+                    <CardContent>
+                        <Button className="mt-4" onClick={() => router.push('/dashboard')}>Return to Dashboard</Button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+
     if (duel.status === 'active' && (!duel.questions || duel.questions.length === 0)) {
         return (
             <div className="flex h-screen items-center justify-center bg-gray-900 text-white">
@@ -510,7 +508,7 @@ export default function DuelPage() {
                     <AlertDialogTrigger asChild>
                         <Button variant="destructive" disabled={isLeaving}>
                             {isLeaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowLeft className="mr-2 h-4 w-4" />}
-                            End Duel and Return to Dashboard
+                            Forfeit Duel
                         </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
