@@ -178,35 +178,35 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
               avatarHint={student.class}
             />
             <div className="grid grid-cols-2 gap-4">
-              <Link href="/dashboard/map" passHref className="col-span-2">
-                  <Button size="lg" className="w-full py-8 text-lg justify-center">
-                      <Map className="mr-4 h-8 w-8" />
-                      Embark on Your Quest
-                  </Button>
-              </Link>
-              <Button size="lg" className="w-full py-8 text-lg justify-center" onClick={() => setIsChallengeDialogOpen(true)}>
-                  <Swords className="mr-4 h-8 w-8" />
-                  Training Grounds
-              </Button>
-              <Button size="lg" className="w-full py-8 text-lg justify-center" onClick={handleReadyForBattle}>
-                  <Sparkles className="mr-4 h-8 w-8" />
-                  Ready for Battle
-              </Button>
-               <Link href="/dashboard/songs-and-stories" passHref className="w-full">
-                  <Button size="lg" className="w-full py-8 text-lg justify-center">
-                      <BookHeart className="mr-4 h-8 w-8" />
-                      Songs and Stories
-                  </Button>
-              </Link>
-              <Link href="/dashboard/avatars" passHref className="w-full">
-                  <Button size="lg" className="w-full py-8 text-lg justify-center">
-                      Change Avatar
-                  </Button>
-              </Link>
-               <Button size="lg" className="col-span-2 w-full py-8 text-lg justify-center" onClick={handleCheckCompany} disabled={isLoadingCompany}>
-                  {isLoadingCompany ? <Loader2 className="mr-4 h-8 w-8 animate-spin"/> : <Briefcase className="mr-4 h-8 w-8" />}
-                  Check Company
-              </Button>
+                <Link href="/dashboard/map" passHref className="col-span-2">
+                    <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90">
+                        <Map className="mr-4 h-8 w-8" />
+                        Embark on Your Quest
+                    </Button>
+                </Link>
+                <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setIsChallengeDialogOpen(true)}>
+                    <Swords className="mr-4 h-8 w-8" />
+                    Training Grounds
+                </Button>
+                <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleReadyForBattle}>
+                    <Sparkles className="mr-4 h-8 w-8" />
+                    Ready for Battle
+                </Button>
+                <Link href="/dashboard/songs-and-stories" passHref className="w-full">
+                    <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90">
+                        <BookHeart className="mr-4 h-8 w-8" />
+                        Songs and Stories
+                    </Button>
+                </Link>
+                <Link href="/dashboard/avatars" passHref className="w-full">
+                    <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90">
+                        Change Avatar
+                    </Button>
+                </Link>
+                <Button size="lg" className="col-span-2 w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleCheckCompany} disabled={isLoadingCompany}>
+                    {isLoadingCompany ? <Loader2 className="mr-4 h-8 w-8 animate-spin"/> : <Briefcase className="mr-4 h-8 w-8" />}
+                    Check Company
+                </Button>
             </div>
           </div>
           <StatsCard 

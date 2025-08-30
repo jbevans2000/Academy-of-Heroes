@@ -1,7 +1,8 @@
 
+
 import type { ClassType } from "./data";
 
-export const MAX_LEVEL = 30;
+export const MAX_LEVEL = 20;
 // XP required to reach level 30 is 2900. Once a student has this, they are level 30.
 export const XP_FOR_MAX_LEVEL = (MAX_LEVEL - 1) * 100;
 
