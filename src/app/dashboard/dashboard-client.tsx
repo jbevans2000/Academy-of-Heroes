@@ -22,7 +22,6 @@ import { CompanyDisplay } from '@/components/dashboard/company-display';
 import {
   AlertDialog,
   AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -179,32 +178,32 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
             />
             <div className="grid grid-cols-2 gap-4">
               <Link href="/dashboard/map" passHref className="col-span-2">
-                  <Button size="lg" className="w-full py-8 text-lg">
+                  <Button size="lg" className="w-full py-8 text-lg justify-center">
                       <Map className="mr-4 h-8 w-8" />
                       Embark on Your Quest
                   </Button>
               </Link>
-              <Button size="lg" className="w-full py-8 text-lg" onClick={() => setIsChallengeDialogOpen(true)}>
+              <Button size="lg" className="w-full py-8 text-lg justify-center" onClick={() => setIsChallengeDialogOpen(true)}>
                   <Swords className="mr-4 h-8 w-8" />
                   Train with a Guildmate
               </Button>
-              <Button size="lg" variant="secondary" className="w-full py-8 text-lg" onClick={handleReadyForBattle}>
+              <Button size="lg" variant="secondary" className="w-full py-8 text-lg justify-center" onClick={handleReadyForBattle}>
                   <Sparkles className="mr-4 h-8 w-8" />
                   Ready for Battle
               </Button>
                <Link href="/dashboard/songs-and-stories" passHref>
-                  <Button size="lg" variant="secondary" className="w-full py-8 text-lg">
+                  <Button size="lg" variant="secondary" className="w-full py-8 text-lg justify-center">
                       <BookHeart className="mr-4 h-8 w-8" />
                       Songs and Stories
                   </Button>
               </Link>
               <Link href="/dashboard/avatars" passHref>
-                  <Button size="lg" variant="secondary" className="w-full py-8 text-lg">
+                  <Button size="lg" variant="secondary" className="w-full py-8 text-lg justify-center">
                       <ImageIcon className="mr-4 h-8 w-8" />
                       Change Avatar
                   </Button>
               </Link>
-               <Button size="lg" variant="secondary" className="col-span-2 w-full py-8 text-lg" onClick={handleCheckCompany} disabled={isLoadingCompany}>
+               <Button size="lg" variant="secondary" className="col-span-2 w-full py-8 text-lg justify-center" onClick={handleCheckCompany} disabled={isLoadingCompany}>
                   {isLoadingCompany ? <Loader2 className="mr-4 h-8 w-8 animate-spin"/> : <Briefcase className="mr-4 h-8 w-8" />}
                   Check Company
               </Button>
