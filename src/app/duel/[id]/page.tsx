@@ -11,7 +11,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Swords, CheckCircle, XCircle, Trophy, Loader2, Shield } from 'lucide-react';
+import { Swords, CheckCircle, XCircle, Trophy, Loader2, Shield, ArrowLeft } from 'lucide-react';
 import type { Student } from '@/lib/data';
 import type { DuelQuestion, DuelQuestionSection, DuelSettings } from '@/lib/duels';
 import { useToast } from '@/hooks/use-toast';
@@ -21,7 +21,7 @@ import { calculateLevel } from '@/lib/game-mechanics';
 import { getDuelSettings, updateDuelSettings } from '@/ai/flows/manage-duels';
 
 interface DuelState {
-    status: 'pending' | 'active' | 'declined' | 'finished';
+    status: 'pending' | 'active' | 'declined' | 'finished' | 'abandoned';
     challengerUid: string;
     opponentUid: string;
     challengerName: string;
@@ -68,6 +68,7 @@ export default function DuelPage() {
     const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
     const [hasAnswered, setHasAnswered] = useState(false);
     const [duelSettings, setDuelSettings] = useState<DuelSettings | null>(null);
+    const [isLeaving, setIsLeaving] = useState(false);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, currentUser => {
@@ -143,6 +144,15 @@ export default function DuelPage() {
                     await setPlayerDuelStatus([duelData.challengerUid, duelData.opponentUid], false);
                 } else if (prevStatus !== 'declined' && duelData.status === 'declined') {
                     await setPlayerDuelStatus([duelData.challengerUid, duelData.opponentUid], false);
+                } else if (prevStatus !== 'abandoned' && duelData.status === 'abandoned') {
+                    // One player has left, clean up for both.
+                    await setPlayerDuelStatus([duelData.challengerUid, duelData.opponentUid], false);
+                    toast({
+                        variant: 'destructive',
+                        title: 'Duel Ended',
+                        description: 'Your opponent has left the duel.',
+                    });
+                    router.push('/dashboard');
                 }
 
                 setDuel(duelData);
@@ -237,6 +247,40 @@ export default function DuelPage() {
         
         await batch.commit();
     };
+
+    const handleEndDuel = async () => {
+        if (!duel || !teacherUid) return;
+        setIsLeaving(true);
+        try {
+            const duelRef = doc(db, 'teachers', teacherUid, 'duels', duelId);
+            const batch = writeBatch(db);
+            
+            // Set duel status to abandoned
+            batch.update(duelRef, { status: 'abandoned' });
+
+            // Set both players' inDuel status to false
+            const challengerRef = doc(db, 'teachers', teacherUid, 'students', duel.challengerUid);
+            const opponentRef = doc(db, 'teachers', teacherUid, 'students', duel.opponentUid);
+            batch.update(challengerRef, { inDuel: false });
+            batch.update(opponentRef, { inDuel: false });
+            
+            await batch.commit();
+            
+            toast({
+                title: 'Duel Ended',
+                description: 'You have left the duel.',
+            });
+            router.push('/dashboard');
+        } catch (error) {
+            console.error("Error ending duel:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Could not end the duel. Please try again.',
+            });
+            setIsLeaving(false);
+        }
+    };
     
     const currentUserAnswers = user && duel?.answers ? (duel.answers[user.uid] || []) : [];
     const opponentUid = user?.uid === duel?.challengerUid ? duel?.opponentUid : duel?.challengerUid;
@@ -268,6 +312,12 @@ export default function DuelPage() {
 
     return (
         <div className="flex h-screen flex-col items-center justify-center bg-gray-900 p-4 text-white">
+             <div className="absolute top-4 left-4 z-10">
+                <Button variant="destructive" onClick={handleEndDuel} disabled={isLeaving}>
+                    {isLeaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowLeft className="mr-2 h-4 w-4" />}
+                    End Duel and Return to Dashboard
+                </Button>
+            </div>
             <div className="w-full max-w-4xl">
                 <div className="grid grid-cols-2 gap-4 mb-4">
                     <DuelPlayerCard player={challenger} answers={duel.answers?.[duel.challengerUid] || []} isCurrentUser={user?.uid === challenger?.uid} />
