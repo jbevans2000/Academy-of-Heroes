@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -70,13 +69,13 @@ export function DashboardHeader({ characterName = 'Account' }: DashboardHeaderPr
         if (studentMetaSnap.exists()) {
           const foundTeacherUid = studentMetaSnap.data().teacherUid;
           setTeacherUid(foundTeacherUid);
-          updatePresence(foundTeacherUid, currentUser.uid, 'online');
         }
       } else {
         if(inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
       }
     });
-     const settingsRef = doc(db, 'settings', 'global');
+
+    const settingsRef = doc(db, 'settings', 'global');
     const unsubscribeSettings = onSnapshot(settingsRef, (docSnap) => {
         if (docSnap.exists()) {
             setIsFeedbackPanelVisible(docSnap.data().isFeedbackPanelVisible || false);
@@ -98,6 +97,9 @@ export function DashboardHeader({ characterName = 'Account' }: DashboardHeaderPr
 
   useEffect(() => {
     if (!user || !teacherUid) return;
+
+    // Set presence to online now that we have all necessary info
+    updatePresence(teacherUid, user.uid, 'online');
 
     const studentRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
     const unsubscribeStudent = onSnapshot(studentRef, (studentDoc) => {
