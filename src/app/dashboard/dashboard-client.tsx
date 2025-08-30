@@ -200,7 +200,6 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
               </Link>
               <Link href="/dashboard/avatars" passHref className="w-full">
                   <Button size="lg" className="w-full py-8 text-lg justify-center">
-                      <ImageIcon className="mr-4 h-8 w-8" />
                       Change Avatar
                   </Button>
               </Link>
