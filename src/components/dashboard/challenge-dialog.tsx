@@ -94,7 +94,7 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
   
   const today = format(new Date(), 'yyyy-MM-dd');
   const duelsCompleted = student.lastDuelDate === today ? (student.duelsCompletedToday || 0) : 0;
-  const hasReachedLimit = duelSettings?.isDailyLimitEnabled && duelSettings.dailyDuelLimit ? duelsCompleted >= duelSettings.dailyDuelLimit : false;
+  const hasReachedLimit = duelSettings?.isDailyLimitEnabled && duelSettings.dailyLimit ? duelsCompleted >= duelSettings.dailyLimit : false;
 
   const availableStudents = useMemo(() => {
     if (!duelSettings?.isDuelsEnabled || hasReachedLimit) return [];

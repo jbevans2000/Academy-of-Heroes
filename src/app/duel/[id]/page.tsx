@@ -3,14 +3,14 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getDoc, onSnapshot, collection, query, where, getDocs, updateDoc, writeBatch, increment } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, collection, query, where, getDocs, updateDoc, writeBatch, increment, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Swords, CheckCircle, XCircle, Trophy, Loader2, Shield, ArrowLeft } from 'lucide-react';
+import { Swords, CheckCircle, XCircle, Trophy, Loader2, Shield, ArrowLeft, Hourglass } from 'lucide-react';
 import type { Student } from '@/lib/data';
 import type { DuelQuestion, DuelQuestionSection, DuelSettings } from '@/lib/duels';
 import { useToast } from '@/hooks/use-toast';
@@ -156,7 +156,18 @@ export default function DuelPage() {
                 } else if (prevStatus !== 'finished' && duelData.status === 'finished') {
                     await setPlayerDuelStatus([duelData.challengerUid, duelData.opponentUid], false);
                 } else if (prevStatus !== 'declined' && duelData.status === 'declined') {
-                    await setPlayerDuelStatus([duelData.challengerUid, duelData.opponentUid], false);
+                    // Only show toast to the challenger
+                    if (user?.uid === duelData.challengerUid) {
+                        toast({
+                            variant: 'destructive',
+                            title: 'Challenge Declined',
+                            description: `${duelData.opponentName} has declined your challenge.`,
+                        });
+                    }
+                     // Clean up the duel doc for declined duels
+                    await deleteDoc(duelRef);
+                    router.push('/dashboard');
+
                 } else if (prevStatus !== 'abandoned' && duelData.status === 'abandoned') {
                     // One player has left, clean up for both.
                     await setPlayerDuelStatus([duelData.challengerUid, duelData.opponentUid], false);
@@ -225,9 +236,7 @@ export default function DuelPage() {
                 const userScore = newAnswers.filter(a => a === 1).length;
                 const opponentScore = duel.answers![otherPlayerUid].filter(a => a === 1).length;
                 let winnerUid = '';
-                let winnerName = '';
                 let loserUid = '';
-                let loserName = '';
                 let isDraw = false;
 
                 if (userScore > opponentScore) {
@@ -244,8 +253,8 @@ export default function DuelPage() {
                     loserUid = coinFlip ? otherPlayerUid : user.uid;
                 }
                 
-                winnerName = winnerUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
-                loserName = loserUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
+                const winnerName = winnerUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
+                const loserName = loserUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
 
                 batch.update(duelRef, { status: 'finished', winnerUid, isDraw });
                 
@@ -330,6 +339,21 @@ export default function DuelPage() {
 
     if (isLoading || !duel) {
         return <div className="flex h-screen items-center justify-center bg-gray-900"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
+    }
+
+    if (duel.status === 'pending') {
+        return (
+             <div className="flex h-screen items-center justify-center bg-gray-900 text-white">
+                <Card className="text-center p-8 bg-card/80 backdrop-blur-sm">
+                    <Hourglass className="h-16 w-16 mx-auto text-primary animate-spin" />
+                    <CardTitle className="text-4xl mt-4">Duel Pending...</CardTitle>
+                    <CardDescription>Waiting for {duel.challengerUid === user?.uid ? duel.opponentName : duel.challengerName} to respond to your challenge.</CardDescription>
+                    <CardContent>
+                        <Button className="mt-4" variant="destructive" onClick={() => router.push('/dashboard')}>Cancel Challenge & Return</Button>
+                    </CardContent>
+                </Card>
+            </div>
+        )
     }
 
     if (duel.status === 'finished') {
@@ -423,5 +447,3 @@ export default function DuelPage() {
         </div>
     )
 }
-
-    
