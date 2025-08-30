@@ -49,7 +49,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff, MessageSquare, Heart, Zap as ZapIcon } from 'lucide-react';
-import { calculateLevel, calculateHpGain, calculateMpGain, MAX_LEVEL } from '@/lib/game-mechanics';
+import { calculateLevel, calculateHpGain, calculateMpGain, MAX_LEVEL, XP_FOR_MAX_LEVEL } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { archiveStudents } from '@/ai/flows/manage-student';
@@ -988,7 +988,7 @@ export default function Dashboard() {
                                 onSendMessage={handleOpenMessageCenter}
                                 hubs={hubs}
                                 chapters={chapters}
-                                onlineUids={onlineUids}
+                                onlineUids={onlineUids || []}
                             />
                         </div>
                     )
@@ -1004,7 +1004,7 @@ export default function Dashboard() {
                             onSendMessage={handleOpenMessageCenter}
                             hubs={hubs}
                             chapters={chapters}
-                            onlineUids={onlineUids}
+                            onlineUids={onlineUids || []}
                         />
                     </div>
                 )}

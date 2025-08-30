@@ -135,7 +135,6 @@ export default function DuelPage() {
                 // Handle status changes
                 if (prevStatus !== 'active' && duelData.status === 'active') {
                     
-                    // Use a transaction to deduct gold and set status
                     try {
                         await runTransaction(db, async (transaction) => {
                             const challengerRef = doc(db, 'teachers', teacherUid, 'students', duelData.challengerUid);
@@ -153,17 +152,15 @@ export default function DuelPage() {
 
                             const cost = duelData.cost || 0;
                             
-                            // Deduct cost if applicable
                             if (cost > 0) {
-                                transaction.update(challengerRef, { gold: challengerData.gold - cost });
-                                transaction.update(opponentRef, { gold: opponentData.gold - cost });
+                                transaction.update(challengerRef, { gold: Math.max(0, challengerData.gold - cost) });
+                                transaction.update(opponentRef, { gold: Math.max(0, opponentData.gold - cost) });
                             }
                             
                             // Set inDuel status
                             transaction.update(challengerRef, { inDuel: true });
                             transaction.update(opponentRef, { inDuel: true });
 
-                            // Fetch and set questions if they don't exist
                             if (!duelData.questions || duelData.questions.length === 0) {
                                 const activeSectionsSnapshot = await getDocs(query(collection(db, 'teachers', teacherUid, 'duelQuestionSections'), where('isActive', '==', true)));
                                 const allQuestions: DuelQuestion[] = [];
@@ -195,7 +192,6 @@ export default function DuelPage() {
                     if (user?.uid === duelData.challengerUid) {
                         setShowDeclinedDialog(true);
                     }
-                     // Clean up the duel doc for declined duels
                     await deleteDoc(duelRef);
 
                 } else if (prevStatus !== 'abandoned' && duelData.status === 'abandoned') {
@@ -212,9 +208,6 @@ export default function DuelPage() {
 
                 setDuel(duelData);
 
-            } else {
-                // This else block is reached when the document is deleted (e.g., after being declined).
-                // Instead of showing a toast, we rely on the status change logic to show the dialog.
             }
         });
 
@@ -259,7 +252,6 @@ export default function DuelPage() {
         const batch = writeBatch(db);
         batch.update(duelRef, { [`answers.${user.uid}`]: newAnswers });
         
-        // Check if both players have answered
         const otherPlayerUid = user.uid === duel.challengerUid ? duel.opponentUid : duel.challengerUid;
         if (duel.answers![otherPlayerUid].length > duel.currentQuestionIndex) {
              if (duel.currentQuestionIndex >= 9) { // Last question
@@ -309,23 +301,20 @@ export default function DuelPage() {
                     const duelCost = duel.cost || 0;
                     
                     if (isDraw) {
-                        // Winner gets standard reward
                          transaction.update(winnerRef, {
-                            xp: increment(duelSettings.rewardXp),
-                            gold: winnerData.gold + duelSettings.rewardGold, // Only add reward, fee was already paid.
+                            xp: winnerData.xp + duelSettings.rewardXp,
+                            gold: winnerData.gold + duelSettings.rewardGold, 
                             lastDuelDate: today,
                             duelsCompletedToday: increment(1)
                         });
-                        // Loser gets full refund
                          transaction.update(loserRef, {
                             gold: loserData.gold + duelCost,
                             lastDuelDate: today,
                             duelsCompletedToday: increment(1)
                         });
                     } else {
-                        // Standard win: winner gets reward, loser gets half refund
                          transaction.update(winnerRef, {
-                            xp: increment(duelSettings.rewardXp),
+                            xp: winnerData.xp + duelSettings.rewardXp,
                             gold: winnerData.gold + duelSettings.rewardGold,
                             lastDuelDate: today,
                             duelsCompletedToday: increment(1)
@@ -340,7 +329,7 @@ export default function DuelPage() {
 
                     await logGameEvent(teacherUid, 'DUEL', `${winnerName} ${isDraw ? 'won a tie-breaker against' : 'defeated'} ${loserName} in a duel.`);
                 });
-                return; // End the function here, as the transaction handles the final update.
+                return;
 
             } else {
                 batch.update(duelRef, { currentQuestionIndex: duel.currentQuestionIndex + 1 });
@@ -371,8 +360,8 @@ export default function DuelPage() {
                 transaction.update(leaverRef, { inDuel: false });
                 transaction.update(winnerRef, { 
                     inDuel: false,
-                    xp: increment(duelSettings.rewardXp),
-                    gold: winnerData.gold + duelSettings.rewardGold + (duel.cost || 0)
+                    xp: (winnerData.xp || 0) + duelSettings.rewardXp,
+                    gold: (winnerData.gold || 0) + duelSettings.rewardGold + (duel.cost || 0)
                 });
             });
 
