@@ -58,7 +58,7 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
             
             const presenceRef = doc(db, 'teachers', student.teacherUid, 'presence', 'online');
             const unsubPresence = onSnapshot(presenceRef, (presenceSnap) => {
-                const presenceData = presenceSnap.data() || {};
+                const presenceData = presenceSnap.data()?.onlineStatus || {};
                 const availableStudents = allStudentsData.filter(s =>
                     s.uid !== student.uid &&
                     (s.inDuel === undefined || s.inDuel === false) &&
