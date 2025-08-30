@@ -52,6 +52,8 @@ export type Student = {
     damageShield?: number; // For Absorb power
     isHidden?: boolean; // To temporarily hide from teacher dashboard
     hasUnreadMessages?: boolean; // Denormalized field for quick UI updates
+    lastDuelDate?: string; // YYYY-MM-DD
+    duelsCompletedToday?: number;
 }
 
 export type PendingStudent = {

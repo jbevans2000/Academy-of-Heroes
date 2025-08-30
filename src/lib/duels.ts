@@ -19,4 +19,7 @@ export interface DuelSettings {
     rewardXp: number;
     rewardGold: number;
     isDuelsEnabled?: boolean;
+    duelCost?: number;
+    dailyDuelLimit?: number;
+    isDailyLimitEnabled?: boolean;
 }
