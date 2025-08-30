@@ -44,6 +44,7 @@ interface DuelState {
     winnerUid?: string;
     isDraw?: boolean;
     cost?: number;
+    costsDeducted?: boolean; // New flag to ensure one-time deduction
 }
 
 const DuelPlayerCard = ({ player, answers, isCurrentUser }: { player: Student | null, answers: number[], isCurrentUser: boolean }) => {
@@ -128,6 +129,70 @@ export default function DuelPage() {
         });
     };
 
+    const handleDuelStart = useCallback(async (duelData: DuelState) => {
+        if (!teacherUid || !duelRef) return;
+        try {
+            await runTransaction(db, async (transaction) => {
+                const duelDocForTransaction = await transaction.get(duelRef);
+                if (!duelDocForTransaction.exists()) throw new Error("Duel disappeared.");
+                
+                const currentDuelData = duelDocForTransaction.data() as DuelState;
+                if (currentDuelData.costsDeducted) {
+                    console.log("Costs already deducted for this duel.");
+                    return; // Abort if costs are already processed
+                }
+                
+                const challengerRef = doc(db, 'teachers', teacherUid, 'students', currentDuelData.challengerUid);
+                const opponentRef = doc(db, 'teachers', teacherUid, 'students', currentDuelData.opponentUid);
+                
+                const challengerDoc = await transaction.get(challengerRef);
+                const opponentDoc = await transaction.get(opponentRef);
+
+                if (!challengerDoc.exists() || !opponentDoc.exists()) {
+                    throw new Error("A duelist could not be found.");
+                }
+
+                const challengerData = challengerDoc.data();
+                const opponentData = opponentDoc.data();
+                const cost = currentDuelData.cost || 0;
+                
+                if (cost > 0) {
+                    const newChallengerGold = Math.max(0, (challengerData.gold || 0) - cost);
+                    const newOpponentGold = Math.max(0, (opponentData.gold || 0) - cost);
+                    transaction.update(challengerRef, { gold: newChallengerGold });
+                    transaction.update(opponentRef, { gold: newOpponentGold });
+                }
+                
+                transaction.update(challengerRef, { inDuel: true });
+                transaction.update(opponentRef, { inDuel: true });
+                
+                const duelUpdates: Partial<DuelState> = { costsDeducted: true };
+
+                 if (!currentDuelData.questions || currentDuelData.questions.length === 0) {
+                    const activeSectionsSnapshot = await getDocs(query(collection(db, 'teachers', teacherUid, 'duelQuestionSections'), where('isActive', '==', true)));
+                    const allQuestions: DuelQuestion[] = [];
+                    for (const sectionDoc of activeSectionsSnapshot.docs) {
+                        const questionsSnapshot = await getDocs(collection(sectionDoc.ref, 'questions'));
+                        questionsSnapshot.forEach(qDoc => allQuestions.push({id: qDoc.id, ...qDoc.data()} as DuelQuestion));
+                    }
+                    
+                    const shuffled = allQuestions.sort(() => 0.5 - Math.random());
+                    const selectedQuestions = shuffled.slice(0, 10);
+                    
+                    duelUpdates.questions = selectedQuestions.map(q => ({...q, id: q.id}));
+                    duelUpdates.currentQuestionIndex = 0;
+                    duelUpdates.answers = { [currentDuelData.challengerUid]: [], [currentDuelData.opponentUid]: [] };
+                }
+                
+                transaction.update(duelRef, duelUpdates);
+            });
+        } catch (e) {
+             console.error("Duel start transaction failed: ", e);
+             toast({ variant: "destructive", title: "Error Starting Duel", description: "Could not deduct gold and start the duel." });
+        }
+    }, [teacherUid, duelRef, toast]);
+
+
     // Set up duel listener
     useEffect(() => {
         if (!duelRef || !teacherUid) return;
@@ -139,60 +204,7 @@ export default function DuelPage() {
 
                 // Handle status changes
                 if (prevStatus !== 'active' && duelData.status === 'active') {
-                    
-                    try {
-                        await runTransaction(db, async (transaction) => {
-                            const duelDocForTransaction = await transaction.get(duelRef);
-                            if (!duelDocForTransaction.exists()) throw new Error("Duel disappeared.");
-                            const currentDuelData = duelDocForTransaction.data() as DuelState;
-                            
-                            const challengerRef = doc(db, 'teachers', teacherUid, 'students', currentDuelData.challengerUid);
-                            const opponentRef = doc(db, 'teachers', teacherUid, 'students', currentDuelData.opponentUid);
-                            
-                            const challengerDoc = await transaction.get(challengerRef);
-                            const opponentDoc = await transaction.get(opponentRef);
-
-                            if (!challengerDoc.exists() || !opponentDoc.exists()) {
-                                throw new Error("A duelist could not be found.");
-                            }
-
-                            const challengerData = challengerDoc.data();
-                            const opponentData = opponentDoc.data();
-                            const cost = currentDuelData.cost || 0;
-                            
-                            if (cost > 0) {
-                                const newChallengerGold = Math.max(0, (challengerData.gold || 0) - cost);
-                                const newOpponentGold = Math.max(0, (opponentData.gold || 0) - cost);
-                                transaction.update(challengerRef, { gold: newChallengerGold });
-                                transaction.update(opponentRef, { gold: newOpponentGold });
-                            }
-                            
-                            transaction.update(challengerRef, { inDuel: true });
-                            transaction.update(opponentRef, { inDuel: true });
-
-                             if (!currentDuelData.questions || currentDuelData.questions.length === 0) {
-                                const activeSectionsSnapshot = await getDocs(query(collection(db, 'teachers', teacherUid, 'duelQuestionSections'), where('isActive', '==', true)));
-                                const allQuestions: DuelQuestion[] = [];
-                                for (const sectionDoc of activeSectionsSnapshot.docs) {
-                                    const questionsSnapshot = await getDocs(collection(sectionDoc.ref, 'questions'));
-                                    questionsSnapshot.forEach(qDoc => allQuestions.push({id: qDoc.id, ...qDoc.data()} as DuelQuestion));
-                                }
-                                
-                                const shuffled = allQuestions.sort(() => 0.5 - Math.random());
-                                const selectedQuestions = shuffled.slice(0, 10);
-                                
-                                transaction.update(duelRef, { 
-                                    questions: selectedQuestions.map(q => ({...q, id: q.id})),
-                                    currentQuestionIndex: 0,
-                                    answers: { [currentDuelData.challengerUid]: [], [currentDuelData.opponentUid]: [] }
-                                });
-                            }
-                        });
-                    } catch (e) {
-                         console.error("Duel start transaction failed: ", e);
-                         toast({ variant: "destructive", title: "Error Starting Duel", description: "Could not deduct gold and start the duel." });
-                    }
-
+                    handleDuelStart(duelData);
                 } else if (prevStatus !== 'finished' && duelData.status === 'finished') {
                     const batch = writeBatch(db);
                     await setPlayerDuelStatus(batch, [duelData.challengerUid, duelData.opponentUid], false);
@@ -226,7 +238,7 @@ export default function DuelPage() {
 
         return () => unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [duelRef, teacherUid, router, toast]);
+    }, [duelRef, teacherUid, router, toast, handleDuelStart]);
 
     // Fetch player data once duel is loaded
     useEffect(() => {
