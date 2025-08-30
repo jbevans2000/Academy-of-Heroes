@@ -61,7 +61,7 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
                 const presenceData = presenceSnap.data()?.onlineStatus || {};
                 const availableStudents = allStudentsData.filter(s =>
                     s.uid !== student.uid &&
-                    !s.inDuel && // Corrected from s.inDuel
+                    (s.inDuel === undefined || s.inDuel === false) && // Explicitly check for undefined
                     presenceData[s.uid]?.status === 'online'
                 );
                 setOnlineStudents(availableStudents);
