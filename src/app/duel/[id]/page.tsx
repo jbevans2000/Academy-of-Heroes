@@ -135,7 +135,7 @@ export default function DuelPage() {
                         const selectedQuestions = shuffled.slice(0, 10);
                         
                         await updateDoc(duelRef, { 
-                            questions: selectedQuestions,
+                            questions: selectedQuestions.map(q => ({...q, id: q.id})),
                             currentQuestionIndex: 0,
                             answers: { [duelData.challengerUid]: [], [duelData.opponentUid]: [] }
                         });
@@ -331,7 +331,7 @@ export default function DuelPage() {
                     </CardHeader>
                     <CardContent>
                         {hasAnswered ? (
-                            <div className="text-center text-yellow-400 font-bold text-lg">
+                            <div className="text-center text-black font-bold text-lg">
                                 Your answer is locked in! Waiting for your opponent...
                             </div>
                         ) : (
