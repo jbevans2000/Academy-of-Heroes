@@ -28,7 +28,19 @@ export function DashboardHeader({ characterName = 'Account' }: DashboardHeaderPr
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleLogout = useCallback(async (isInactive = false) => {
+    // Before signing out, mark the user as offline
+    if (auth.currentUser && teacherUid) {
+      const studentRef = doc(db, 'teachers', teacherUid, 'students', auth.currentUser.uid);
+      await updateDoc(studentRef, {
+        onlineStatus: { status: 'offline', lastSeen: serverTimestamp() }
+      }).catch(error => {
+        // This might fail if the page is closing, so we can ignore the error.
+        console.log("Benign error on logout/unmount:", error.message);
+      });
+    }
+
     await signOut(auth);
+    
     if (isInactive) {
         toast({
             title: 'Session Ended',
@@ -42,7 +54,7 @@ export function DashboardHeader({ characterName = 'Account' }: DashboardHeaderPr
         });
     }
     router.push('/');
-  }, [router, toast]);
+  }, [router, toast, teacherUid]);
   
   const resetInactivityTimer = useCallback(() => {
     if (inactivityTimerRef.current) {
@@ -57,11 +69,14 @@ export function DashboardHeader({ characterName = 'Account' }: DashboardHeaderPr
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
        if (currentUser) {
+        resetInactivityTimer();
         const studentMetaRef = doc(db, 'students', currentUser.uid);
         const studentMetaSnap = await getDoc(studentMetaRef);
         if (studentMetaSnap.exists()) {
           setTeacherUid(studentMetaSnap.data().teacherUid);
         }
+      } else {
+        if(inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
       }
     });
      const settingsRef = doc(db, 'settings', 'global');
@@ -71,11 +86,9 @@ export function DashboardHeader({ characterName = 'Account' }: DashboardHeaderPr
         }
     });
 
-    // Inactivity event listeners
     const events = ['mousemove', 'keydown', 'click', 'scroll'];
     events.forEach(event => window.addEventListener(event, resetInactivityTimer));
-    resetInactivityTimer(); // Start the timer on mount
-
+    
     return () => {
         unsubscribeAuth();
         unsubscribeSettings();
@@ -98,7 +111,6 @@ export function DashboardHeader({ characterName = 'Account' }: DashboardHeaderPr
         }
     });
 
-    // Effect to manage online presence
     const setOnline = () => {
       updateDoc(studentRef, {
         onlineStatus: { status: 'online', lastSeen: serverTimestamp() }
@@ -106,7 +118,7 @@ export function DashboardHeader({ characterName = 'Account' }: DashboardHeaderPr
     };
 
     const setOffline = () => {
-      if (studentRef) {
+      if (auth.currentUser && studentRef) {
           updateDoc(studentRef, {
               onlineStatus: { status: 'offline', lastSeen: serverTimestamp() }
           }).catch(error => {
@@ -121,7 +133,10 @@ export function DashboardHeader({ characterName = 'Account' }: DashboardHeaderPr
 
     return () => {
         unsubscribeStudent();
-        if (auth.currentUser) { // Only set offline if user didn't manually log out
+        // Check if user is still logged in before setting offline status on unmount
+        // This prevents the status from being set to offline if the user navigates away
+        // but is still technically logged in. The onAuthStateChanged handles the main logout.
+        if (auth.currentUser) {
             setOffline();
         }
         window.removeEventListener('beforeunload', setOffline);

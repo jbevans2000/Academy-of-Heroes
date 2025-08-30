@@ -8,7 +8,7 @@ import { doc, onSnapshot, getDoc, updateDoc, serverTimestamp } from 'firebase/fi
 import { auth, db } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import { DashboardHeader } from '@/components/dashboard/header';
-import { DashboardClient } from '@/components/dashboard/dashboard-client';
+import { DashboardClient } from './dashboard-client';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   AlertDialog,
@@ -38,7 +38,6 @@ export default function Dashboard() {
   useEffect(() => {
     const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // Find the teacher UID from the global student document
         const studentMetaRef = doc(db, 'students', user.uid);
         const studentMetaSnap = await getDoc(studentMetaRef);
 
@@ -50,17 +49,18 @@ export default function Dashboard() {
              router.push('/awaiting-approval');
              return;
           }
-
-          // If approved, listen to the actual student document.
-          // This listener will handle the case where the document is created *after* the teacher approves.
+          
           const studentRef = doc(db, 'teachers', foundTeacherUid, 'students', user.uid);
           const unsub = onSnapshot(studentRef, (docSnap) => {
             if (docSnap.exists()) {
-              setStudent({ uid: docSnap.id, ...docSnap.data() } as Student);
+              const studentData = { uid: docSnap.id, ...docSnap.data() } as Student;
+              if (studentData.isArchived) {
+                router.push('/account-archived');
+                return;
+              }
+              setStudent(studentData);
               setIsLoading(false);
             } else {
-              // The student is approved but the doc doesn't exist yet. The user might see a brief loading state.
-              // This is better than redirecting, as the listener will eventually fire.
               setIsLoading(true);
             }
           }, (error) => {
@@ -68,21 +68,17 @@ export default function Dashboard() {
              router.push('/');
           });
           
-          // Return the listener cleanup function
           return () => unsub();
         } else {
-          // If the metadata doc doesn't exist, something is wrong
           console.error(`No teacher metadata found for student with UID: ${user.uid}`);
           router.push('/');
         }
       } else {
-        // No user is signed in.
         setIsLoading(false);
         router.push('/');
       }
     });
 
-    // Return the unsubscribe function for the auth listener
     return () => authUnsubscribe();
   }, [router]);
   
