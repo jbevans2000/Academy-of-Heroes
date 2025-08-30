@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { onSnapshot, collection, query, addDoc, serverTimestamp, doc } from 'firebase/firestore';
+import { onSnapshot, collection, query, addDoc, serverTimestamp, doc, updateDoc, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Swords } from 'lucide-react';
@@ -135,6 +135,7 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
             opponentName: opponentToChallenge.characterName,
             status: 'pending',
             createdAt: serverTimestamp(),
+            cost: duelSettings?.duelCost || 0,
         });
         toast({ title: 'Challenge Sent!', description: `Your challenge has been sent to ${opponentToChallenge.characterName}.` });
         router.push(`/duel/${newDuelDoc.id}`);
@@ -210,3 +211,5 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
     </>
   );
 }
+
+    

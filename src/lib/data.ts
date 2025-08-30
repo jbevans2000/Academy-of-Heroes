@@ -117,3 +117,5 @@ export const classData = {
     baseStats: { hp: 6, mp: 15 },
   },
 };
+
+    

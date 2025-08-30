@@ -23,3 +23,5 @@ export interface DuelSettings {
     dailyDuelLimit?: number;
     isDailyLimitEnabled?: boolean;
 }
+
+    
