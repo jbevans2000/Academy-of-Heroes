@@ -1,0 +1,41 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+  
+    function isStudentInClass(teacherId) {
+      return get(/databases/$(database)/documents/students/$(request.auth.uid)).data.teacherUid == teacherId;
+    }
+  
+    match /teachers/{teacherId} {
+      allow read, write: if request.auth.uid == teacherId;
+      
+      // Students can only read the presence document of their own class
+      match /presence/online {
+        allow read: if isStudentInClass(teacherId);
+        allow write: if false; // No client-side writes allowed
+      }
+      
+      match /students/{studentId} {
+        allow read: if isStudentInClass(teacherId);
+        allow write: if request.auth.uid == studentId; // Students can only write to their own document
+      }
+      
+      // Lock down all other subcollections by default for students
+      match /{allOtherSubcollections}/{docId} {
+         allow read, write: if request.auth.uid == teacherId;
+      }
+    }
+
+    match /students/{studentId} {
+      allow read: if request.auth.uid == studentId;
+      allow write: if false; // Only backend can write here
+    }
+    
+    // Deny all other collections by default
+    match /{path=**}/(document) {
+      allow read, write: if false;
+    }
+  }
+}

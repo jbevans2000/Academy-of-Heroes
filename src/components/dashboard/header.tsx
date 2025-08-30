@@ -11,6 +11,7 @@ import { collection, query, where, onSnapshot, doc, getDoc, updateDoc, serverTim
 import { useRouter } from "next/navigation";
 import { StudentMessageDialog } from './student-message-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { updatePresence } from '@/lib/presence';
 
 interface DashboardHeaderProps {
     characterName?: string;
@@ -28,15 +29,8 @@ export function DashboardHeader({ characterName = 'Account' }: DashboardHeaderPr
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleLogout = useCallback(async (isInactive = false) => {
-    // Before signing out, mark the user as offline
     if (auth.currentUser && teacherUid) {
-      const studentRef = doc(db, 'teachers', teacherUid, 'students', auth.currentUser.uid);
-      await updateDoc(studentRef, {
-        onlineStatus: { status: 'offline', lastSeen: serverTimestamp() }
-      }).catch(error => {
-        // This might fail if the page is closing, so we can ignore the error.
-        console.log("Benign error on logout/unmount:", error.message);
-      });
+      await updatePresence(teacherUid, auth.currentUser.uid, 'offline');
     }
 
     await signOut(auth);
@@ -73,7 +67,9 @@ export function DashboardHeader({ characterName = 'Account' }: DashboardHeaderPr
         const studentMetaRef = doc(db, 'students', currentUser.uid);
         const studentMetaSnap = await getDoc(studentMetaRef);
         if (studentMetaSnap.exists()) {
-          setTeacherUid(studentMetaSnap.data().teacherUid);
+          const foundTeacherUid = studentMetaSnap.data().teacherUid;
+          setTeacherUid(foundTeacherUid);
+          updatePresence(foundTeacherUid, currentUser.uid, 'online');
         }
       } else {
         if(inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
@@ -111,34 +107,17 @@ export function DashboardHeader({ characterName = 'Account' }: DashboardHeaderPr
         }
     });
 
-    const setOnline = () => {
-      updateDoc(studentRef, {
-        onlineStatus: { status: 'online', lastSeen: serverTimestamp() }
-      });
-    };
-
     const setOffline = () => {
-      if (auth.currentUser && studentRef) {
-          updateDoc(studentRef, {
-              onlineStatus: { status: 'offline', lastSeen: serverTimestamp() }
-          }).catch(error => {
-              console.log("Benign error on logout/unmount:", error.message);
-          });
-      }
-    };
-    
-    setOnline(); 
+        if (auth.currentUser && teacherUid) {
+            updatePresence(teacherUid, auth.currentUser.uid, 'offline');
+        }
+    }
 
     window.addEventListener('beforeunload', setOffline);
 
     return () => {
         unsubscribeStudent();
-        // Check if user is still logged in before setting offline status on unmount
-        // This prevents the status from being set to offline if the user navigates away
-        // but is still technically logged in. The onAuthStateChanged handles the main logout.
-        if (auth.currentUser) {
-            setOffline();
-        }
+        setOffline();
         window.removeEventListener('beforeunload', setOffline);
     };
   }, [user, teacherUid]);

@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { onSnapshot, collection, query, where, addDoc, serverTimestamp } from 'firebase/firestore';
+import { onSnapshot, collection, query, where, addDoc, serverTimestamp, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Swords } from 'lucide-react';
@@ -35,6 +35,7 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
   const [isLoading, setIsLoading] = useState(true);
   const [isChallenging, setIsChallenging] = useState<string | null>(null);
   const [duelSettings, setDuelSettings] = useState<DuelSettings | null>(null);
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
 
   useEffect(() => {
     if (!isOpen || !student.teacherUid) return;
@@ -48,30 +49,40 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
             return;
         }
 
-        const studentsRef = collection(db, 'teachers', student.teacherUid, 'students');
-        
-        const q = query(
-          studentsRef,
-          where('isArchived', '!=', true)
+        // First, get a list of all students in the class
+        const allStudentsQuery = query(
+            collection(db, 'teachers', student.teacherUid, 'students'),
+            where('isArchived', '!=', true)
         );
+        const unsubAllStudents = onSnapshot(allStudentsQuery, (snapshot) => {
+            const allStudentsData = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
+            setAllStudents(allStudentsData);
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-          const allStudents = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
-          // Client-side filter to find available, online students
-          const availableStudents = allStudents.filter(s => 
-              s.uid !== student.uid && 
-              s.onlineStatus?.status === 'online' &&
-              !s.inDuel
-          );
-          setOnlineStudents(availableStudents);
-          setIsLoading(false);
+            // Now, listen to the single presence document
+            const presenceRef = doc(db, 'teachers', student.teacherUid, 'presence', 'online');
+            const unsubPresence = onSnapshot(presenceRef, (presenceSnap) => {
+                const presenceData = presenceSnap.data()?.onlineStatus || {};
+                const availableStudents = allStudentsData.filter(s =>
+                    s.uid !== student.uid &&
+                    !s.inDuel &&
+                    presenceData[s.uid]?.status === 'online'
+                );
+                setOnlineStudents(availableStudents);
+                setIsLoading(false);
+            }, (error) => {
+                console.error("Error fetching presence data: ", error);
+                toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch online students.' });
+                setIsLoading(false);
+            });
+            return () => unsubPresence();
+
         }, (error) => {
-          console.error("Error fetching online students: ", error);
-          toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch online students.' });
-          setIsLoading(false);
+             console.error("Error fetching all students: ", error);
+             toast({ variant: 'destructive', title: 'Error', description: 'Could not load class roster.' });
+             setIsLoading(false);
         });
 
-        return () => unsubscribe();
+        return () => unsubAllStudents();
     });
 
   }, [isOpen, student.teacherUid, student.uid, toast]);
