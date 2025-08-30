@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -153,7 +154,8 @@ export default function DuelPage() {
         });
 
         return () => unsubscribe();
-    }, [teacherUid, duelId, router, toast, duel?.status]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [teacherUid, duelId, router, toast]);
 
     // Fetch player data once duel is loaded
     useEffect(() => {

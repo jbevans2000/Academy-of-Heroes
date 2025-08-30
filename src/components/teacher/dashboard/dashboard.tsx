@@ -448,6 +448,7 @@ export default function Dashboard() {
         hubsCompleted: 0,
         isNewlyApproved: true,
         inBattle: false,
+        inDuel: false,
       };
       
       const newStudentRef = doc(db, 'teachers', teacher.uid, 'students', uid);
