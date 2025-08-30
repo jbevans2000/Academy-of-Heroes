@@ -35,7 +35,6 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
   const [isLoading, setIsLoading] = useState(true);
   const [isChallenging, setIsChallenging] = useState<string | null>(null);
   const [duelSettings, setDuelSettings] = useState<DuelSettings | null>(null);
-  const [allStudents, setAllStudents] = useState<Student[]>([]);
 
   useEffect(() => {
     if (!isOpen || !student.teacherUid) return;
@@ -49,22 +48,20 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
             return;
         }
 
-        // First, get a list of all students in the class
         const allStudentsQuery = query(
             collection(db, 'teachers', student.teacherUid, 'students'),
             where('isArchived', '!=', true)
         );
+        
         const unsubAllStudents = onSnapshot(allStudentsQuery, (snapshot) => {
             const allStudentsData = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
-            setAllStudents(allStudentsData);
-
-            // Now, listen to the single presence document
+            
             const presenceRef = doc(db, 'teachers', student.teacherUid, 'presence', 'online');
             const unsubPresence = onSnapshot(presenceRef, (presenceSnap) => {
                 const presenceData = presenceSnap.data()?.onlineStatus || {};
                 const availableStudents = allStudentsData.filter(s =>
                     s.uid !== student.uid &&
-                    !s.inDuel &&
+                    !s.inDuel && // Corrected from s.inDuel
                     presenceData[s.uid]?.status === 'online'
                 );
                 setOnlineStudents(availableStudents);
