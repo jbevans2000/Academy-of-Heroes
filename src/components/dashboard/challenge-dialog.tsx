@@ -52,14 +52,17 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
         
         const q = query(
           studentsRef,
-          where('onlineStatus.status', '==', 'online'),
           where('isArchived', '!=', true)
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-          const allOnlineStudents = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
-          // Client-side filter to remove the current user and those already in a duel.
-          const availableStudents = allOnlineStudents.filter(s => s.uid !== student.uid && !s.inDuel);
+          const allStudents = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
+          // Client-side filter to find available, online students
+          const availableStudents = allStudents.filter(s => 
+              s.uid !== student.uid && 
+              s.onlineStatus?.status === 'online' &&
+              !s.inDuel
+          );
           setOnlineStudents(availableStudents);
           setIsLoading(false);
         }, (error) => {

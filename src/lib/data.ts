@@ -1,5 +1,4 @@
 
-
 export type ClassType = 'Guardian' | 'Healer' | 'Mage' | '';
 
 export type Company = {
@@ -15,39 +14,6 @@ export interface Message {
   timestamp: any; // Firestore ServerTimestamp
   isRead: boolean;
 }
-
-export type QuestHub = {
-    id: string;
-    name: string;
-    hubOrder: number;
-    worldMapUrl: string;
-    coordinates: { x: number; y: number };
-}
-
-export type Chapter = {
-    id:string;
-    hubId: string;
-    title: string;
-    chapterNumber: number;
-    // Story media
-    storyContent: string;
-    mainImageUrl: string;
-    videoUrl: string;
-    decorativeImageUrl1: string;
-    decorativeImageUrl2: string;
-    storyAdditionalContent: string;
-    // Lesson media
-    lessonContent: string;
-    lessonMainImageUrl: string;
-    lessonVideoUrl: string;
-    lessonDecorativeImageUrl1: string;
-    lessonDecorativeImageUrl2: string;
-    lessonAdditionalContent: string;
-    
-    coordinates: { x: number; y: number }; // Position on the hub map
-    quiz?: Quiz;
-}
-
 
 export type Student = {
     uid: string;
@@ -68,7 +34,6 @@ export type Student = {
     maxMp: number;
     questProgress: { [hubId: string]: number }; // e.g., { hubId1: 2, hubId2: 0 } means chapter 2 is last completed in hub1
     hubsCompleted: number; // The order number of the last hub completed
-    lastChapterCompletion?: any; // Firestore ServerTimestamp
     isNewlyApproved?: boolean;
     onlineStatus?: {
         status: 'online' | 'offline';
