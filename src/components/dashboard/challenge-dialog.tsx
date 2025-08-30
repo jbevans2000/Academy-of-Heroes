@@ -49,16 +49,18 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
         }
 
         const studentsRef = collection(db, 'teachers', student.teacherUid, 'students');
+        // Firestore limitation: Cannot have multiple '!=' filters.
+        // Query for online students (excluding self) and then filter client-side.
         const q = query(
           studentsRef,
           where('onlineStatus.status', '==', 'online'),
-          where('uid', '!=', student.uid), // Exclude the current student
-          where('isArchived', '!=', true),
-          where('inBattle', '!=', true)
+          where('uid', '!=', student.uid)
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-          const availableStudents = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
+          const allOnlineStudents = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
+          // Filter out archived or in-battle students on the client
+          const availableStudents = allOnlineStudents.filter(s => !s.isArchived && !s.inBattle);
           setOnlineStudents(availableStudents);
           setIsLoading(false);
         }, (error) => {
