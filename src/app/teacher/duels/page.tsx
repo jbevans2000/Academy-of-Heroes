@@ -7,14 +7,22 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, PlusCircle, Edit, Trash2, Check, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Edit, Trash2, Check, X, Loader2, Save, Star, Coins } from 'lucide-react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { collection, onSnapshot, query, doc } from 'firebase/firestore';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import type { DuelQuestionSection } from '@/lib/duels';
+import type { DuelQuestionSection, DuelSettings } from '@/lib/duels';
 import { useToast } from '@/hooks/use-toast';
-import { createDuelSection, updateDuelSection, deleteDuelSection, toggleDuelSectionActive, deactivateAllDuelSections } from '@/ai/flows/manage-duels';
+import { 
+    createDuelSection, 
+    updateDuelSection, 
+    deleteDuelSection, 
+    toggleDuelSectionActive, 
+    deactivateAllDuelSections,
+    getDuelSettings,
+    updateDuelSettings
+} from '@/ai/flows/manage-duels';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
@@ -42,6 +50,10 @@ export default function TrainingGroundsPage() {
   // Toggling State
   const [isToggling, setIsToggling] = useState<string | null>(null);
 
+  // Settings State
+  const [duelSettings, setDuelSettings] = useState<DuelSettings>({ rewardXp: 25, rewardGold: 10 });
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
       if (user) {
@@ -65,6 +77,9 @@ export default function TrainingGroundsPage() {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not load question sections.' });
         setIsLoading(false);
     });
+
+    getDuelSettings(teacher.uid).then(setDuelSettings);
+
     return () => unsubscribe();
   }, [teacher, toast]);
   
@@ -134,6 +149,19 @@ export default function TrainingGroundsPage() {
         setIsToggling(null);
     }
   }
+  
+   const handleSaveSettings = async () => {
+    if (!teacher) return;
+    setIsSavingSettings(true);
+    try {
+        await updateDuelSettings({ teacherUid: teacher.uid, settings: duelSettings });
+        toast({ title: 'Rewards Updated', description: 'Duel rewards have been saved.' });
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
+    } finally {
+        setIsSavingSettings(false);
+    }
+  };
 
   return (
     <>
@@ -197,6 +225,37 @@ export default function TrainingGroundsPage() {
             </div>
           </div>
           
+           <Card>
+                <CardHeader>
+                    <CardTitle>Duel Rewards</CardTitle>
+                    <CardDescription>Set the rewards for winning a duel. This applies to all duels.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex items-end gap-4">
+                    <div className="space-y-1">
+                        <Label htmlFor="reward-xp" className="flex items-center gap-1"><Star className="h-4 w-4" /> XP Reward</Label>
+                        <Input 
+                            id="reward-xp"
+                            type="number"
+                            value={duelSettings.rewardXp}
+                            onChange={(e) => setDuelSettings(prev => ({...prev, rewardXp: Number(e.target.value)}))}
+                        />
+                    </div>
+                     <div className="space-y-1">
+                        <Label htmlFor="reward-gold" className="flex items-center gap-1"><Coins className="h-4 w-4" /> Gold Reward</Label>
+                        <Input 
+                            id="reward-gold"
+                            type="number"
+                            value={duelSettings.rewardGold}
+                             onChange={(e) => setDuelSettings(prev => ({...prev, rewardGold: Number(e.target.value)}))}
+                        />
+                    </div>
+                    <Button onClick={handleSaveSettings} disabled={isSavingSettings}>
+                         {isSavingSettings ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                        Save Rewards
+                    </Button>
+                </CardContent>
+            </Card>
+
           <Card>
             <CardHeader>
                 <CardTitle>The Training Grounds</CardTitle>

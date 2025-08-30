@@ -12,11 +12,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { Swords, CheckCircle, XCircle, Trophy, Loader2, Shield } from 'lucide-react';
 import type { Student } from '@/lib/data';
-import type { DuelQuestion, DuelQuestionSection } from '@/lib/duels';
+import type { DuelQuestion, DuelQuestionSection, DuelSettings } from '@/lib/duels';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { logGameEvent } from '@/lib/gamelog';
 import { calculateLevel } from '@/lib/game-mechanics';
+import { getDuelSettings } from '@/ai/flows/manage-duels';
 
 interface DuelState {
     status: 'pending' | 'active' | 'declined' | 'finished';
@@ -65,6 +66,7 @@ export default function DuelPage() {
     
     const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
     const [hasAnswered, setHasAnswered] = useState(false);
+    const [duelSettings, setDuelSettings] = useState<DuelSettings | null>(null);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, currentUser => {
@@ -84,7 +86,11 @@ export default function DuelPage() {
             const studentMetaRef = doc(db, 'students', user.uid);
             const studentMetaSnap = await getDoc(studentMetaRef);
             if (studentMetaSnap.exists()) {
-                setTeacherUid(studentMetaSnap.data().teacherUid);
+                const uid = studentMetaSnap.data().teacherUid;
+                setTeacherUid(uid);
+                // Fetch duel settings once we have the teacher UID
+                const settings = await getDuelSettings(uid);
+                setDuelSettings(settings);
             }
         }
         getTeacher();
@@ -152,7 +158,7 @@ export default function DuelPage() {
     }, [user, duel]);
     
     const handleSubmitAnswer = async () => {
-        if (selectedAnswer === null || !user || !duel || hasAnswered || !teacherUid) return;
+        if (selectedAnswer === null || !user || !duel || hasAnswered || !teacherUid || !duelSettings) return;
         
         const duelRef = doc(db, 'teachers', teacherUid, 'duels', duelId);
         const currentQuestion = duel.questions![duel.currentQuestionIndex];
@@ -192,10 +198,10 @@ export default function DuelPage() {
                 if(winnerUid !== 'draw') {
                     const winnerRef = doc(db, 'teachers', teacherUid, 'students', winnerUid);
                     batch.update(winnerRef, {
-                        xp: increment(25),
-                        gold: increment(10)
+                        xp: increment(duelSettings.rewardXp),
+                        gold: increment(duelSettings.rewardGold)
                     });
-                    await logGameEvent(teacherUid, 'DUEL', `${winnerName} defeated ${loserName} in a duel.`);
+                    await logGameEvent(teacherUid, 'DUEL', `${winnerName} defeated ${loserName} in a duel and earned ${duelSettings.rewardXp} XP and ${duelSettings.rewardGold} Gold.`);
                 } else {
                      await logGameEvent(teacherUid, 'DUEL', `A duel between ${duel.challengerName} and ${duel.opponentName} ended in a draw.`);
                 }
@@ -219,11 +225,13 @@ export default function DuelPage() {
 
     if (duel.status === 'finished') {
         const winner = duel.winnerUid === 'draw' ? 'The duel was a draw!' : (duel.winnerUid === user?.uid ? 'You are victorious!' : 'You have been defeated!');
+        const rewardsMessage = duel.winnerUid === user?.uid && duelSettings ? `You have been awarded ${duelSettings.rewardXp} XP and ${duelSettings.rewardGold} Gold!` : '';
         return (
             <div className="flex h-screen items-center justify-center bg-gray-900 text-white">
                 <Card className="text-center p-8 bg-card/80 backdrop-blur-sm">
                     <Trophy className="h-16 w-16 mx-auto text-yellow-400" />
                     <CardTitle className="text-4xl mt-4">{winner}</CardTitle>
+                    <CardDescription>{rewardsMessage}</CardDescription>
                     <CardContent>
                         <Button className="mt-4" onClick={() => router.push('/dashboard')}>Return to Dashboard</Button>
                     </CardContent>

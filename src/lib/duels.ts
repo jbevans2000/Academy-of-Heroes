@@ -1,4 +1,5 @@
 
+
 export interface DuelQuestion {
     id: string;
     text: string;
@@ -12,4 +13,9 @@ export interface DuelQuestionSection {
     questionCount: number;
     isActive: boolean;
     createdAt: any; // Firestore ServerTimestamp
+}
+
+export interface DuelSettings {
+    rewardXp: number;
+    rewardGold: number;
 }

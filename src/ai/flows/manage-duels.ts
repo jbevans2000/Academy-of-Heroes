@@ -3,8 +3,9 @@
 /**
  * @fileOverview Server-side functions for managing duel question sections.
  */
-import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, writeBatch, getDocs } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, writeBatch, getDocs, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import type { DuelSettings } from '@/lib/duels';
 
 interface ActionResponse {
   success: boolean;
@@ -128,4 +129,33 @@ export async function deactivateAllDuelSections(input: DeactivateAllInput): Prom
          console.error('Error deactivating all sections:', error);
          return { success: false, error: error.message || 'Failed to deactivate sections.' };
      }
+}
+
+// === SETTINGS MANAGEMENT ===
+
+export async function getDuelSettings(teacherUid: string): Promise<DuelSettings> {
+    const teacherRef = doc(db, 'teachers', teacherUid);
+    const teacherSnap = await getDoc(teacherRef);
+    if (teacherSnap.exists()) {
+        const data = teacherSnap.data();
+        return data.duelSettings || { rewardXp: 25, rewardGold: 10 };
+    }
+    return { rewardXp: 25, rewardGold: 10 }; // Default values
+}
+
+interface UpdateDuelSettingsInput {
+    teacherUid: string;
+    settings: DuelSettings;
+}
+
+export async function updateDuelSettings(input: UpdateDuelSettingsInput): Promise<ActionResponse> {
+    if (!input.teacherUid) return { success: false, error: 'User not authenticated.' };
+    try {
+        const teacherRef = doc(db, 'teachers', input.teacherUid);
+        await updateDoc(teacherRef, { duelSettings: input.settings });
+        return { success: true, message: 'Duel settings updated.' };
+    } catch (error: any) {
+        console.error("Error updating duel settings:", error);
+        return { success: false, error: error.message || 'Failed to update settings.' };
+    }
 }
