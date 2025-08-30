@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ArrowLeft, PlusCircle, Trash2, Loader2, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { doc, getDoc, addDoc, updateDoc, deleteDoc, collection, onSnapshot, query } from 'firebase/firestore';
+import { doc, getDoc, addDoc, updateDoc, deleteDoc, collection, onSnapshot, query, setDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { onAuthStateChanged, type User } from 'firebase/auth';
