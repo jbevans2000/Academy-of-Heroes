@@ -3,8 +3,8 @@
 
 import { useState, useEffect } from 'react';
 import type { Student } from "@/lib/data";
-import { StatsCard } from "./stats-card";
-import { AvatarDisplay } from "./avatar-display";
+import { StatsCard } from "@/components/dashboard/stats-card";
+import { AvatarDisplay } from "@/components/dashboard/avatar-display";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -18,7 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { CompanyDisplay } from './company-display';
+import { CompanyDisplay } from '@/components/dashboard/company-display';
 import {
   AlertDialog,
   AlertDialogAction,
