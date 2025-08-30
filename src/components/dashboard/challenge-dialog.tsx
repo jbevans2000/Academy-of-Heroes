@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { onSnapshot, collection, query, where, addDoc, serverTimestamp, doc } from 'firebase/firestore';
+import { onSnapshot, collection, query, where, addDoc, serverTimestamp, doc, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Swords } from 'lucide-react';
@@ -39,6 +39,7 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
   useEffect(() => {
     if (!isOpen || !student.teacherUid) return;
 
+    let unsubPresence: (() => void) | null = null;
     setIsLoading(true);
 
     getDuelSettings(student.teacherUid).then(settings => {
@@ -48,44 +49,46 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
             return;
         }
 
+        // 1. Fetch all students once to have a complete roster.
         const allStudentsQuery = query(
             collection(db, 'teachers', student.teacherUid, 'students'),
             where('isArchived', '!=', true)
         );
-        
-        const unsubAllStudents = onSnapshot(allStudentsQuery, (studentsSnapshot) => {
+
+        getDocs(allStudentsQuery).then(studentsSnapshot => {
             const allStudentsData = studentsSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
-            
+
+            // 2. Now that we have the roster, listen for real-time presence updates.
             const presenceRef = doc(db, 'teachers', student.teacherUid, 'presence', 'online');
-            const unsubPresence = onSnapshot(presenceRef, (presenceSnap) => {
-                if (presenceSnap.exists()) {
-                    const onlineStatusMap = presenceSnap.data()?.onlineStatus || {};
-                    const availableStudents = allStudentsData.filter(s =>
-                        s.uid !== student.uid &&
-                        (s.inDuel === undefined || s.inDuel === false) &&
-                        onlineStatusMap[s.uid]?.status === 'online'
-                    );
-                    setOnlineStudents(availableStudents);
-                } else {
-                    setOnlineStudents([]);
-                }
+            unsubPresence = onSnapshot(presenceRef, (presenceSnap) => {
+                const onlineStatusMap = presenceSnap.exists() ? presenceSnap.data().onlineStatus || {} : {};
+                
+                const availableStudents = allStudentsData.filter(s =>
+                    s.uid !== student.uid &&
+                    (s.inDuel === undefined || s.inDuel === false) &&
+                    onlineStatusMap[s.uid]?.status === 'online'
+                );
+
+                setOnlineStudents(availableStudents);
                 setIsLoading(false);
+
             }, (error) => {
                 console.error("Error fetching presence data: ", error);
                 toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch online students.' });
                 setIsLoading(false);
             });
-            return () => unsubPresence();
-
-        }, (error) => {
-             console.error("Error fetching all students: ", error);
-             toast({ variant: 'destructive', title: 'Error', description: 'Could not load class roster.' });
-             setIsLoading(false);
+        }).catch(error => {
+            console.error("Error fetching all students: ", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not load class roster.' });
+            setIsLoading(false);
         });
-
-        return () => unsubAllStudents();
     });
 
+    return () => {
+        if (unsubPresence) {
+            unsubPresence();
+        }
+    };
   }, [isOpen, student.teacherUid, student.uid, toast]);
   
   const handleChallenge = async (opponent: Student) => {
