@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { Student } from '@/lib/data';
 import type { DuelSettings } from '@/lib/duels';
 import {
@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { onSnapshot, collection, query, where, addDoc, serverTimestamp, doc, getDocs } from 'firebase/firestore';
+import { onSnapshot, collection, query, addDoc, serverTimestamp, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Swords } from 'lucide-react';
@@ -31,7 +31,8 @@ interface ChallengeDialogProps {
 export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDialogProps) {
   const { toast } = useToast();
   const router = useRouter();
-  const [onlineStudents, setOnlineStudents] = useState<Student[]>([]);
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
+  const [onlineUids, setOnlineUids] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isChallenging, setIsChallenging] = useState<string | null>(null);
   const [duelSettings, setDuelSettings] = useState<DuelSettings | null>(null);
@@ -39,73 +40,71 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
   useEffect(() => {
     if (!isOpen || !student.teacherUid) return;
 
-    let unsubPresence: (() => void) | null = null;
     setIsLoading(true);
-
+    
     getDuelSettings(student.teacherUid).then(settings => {
-        setDuelSettings(settings);
-        if (!settings.isDuelsEnabled) {
-            setIsLoading(false);
-            return;
-        }
+      setDuelSettings(settings);
+    });
+    
+    // Listener for ALL students in the class
+    const studentsQuery = query(
+        collection(db, 'teachers', student.teacherUid, 'students')
+    );
+    const unsubStudents = onSnapshot(studentsQuery, (snapshot) => {
+        const studentsData = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
+        setAllStudents(studentsData);
+        setIsLoading(false); // Set loading to false once we have the roster
+    }, (error) => {
+        console.error("Error fetching students: ", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not load class roster.' });
+        setIsLoading(false);
+    });
 
-        // 1. Fetch all students once to have a complete roster.
-        const allStudentsQuery = query(
-            collection(db, 'teachers', student.teacherUid, 'students'),
-            where('isArchived', '!=', true)
-        );
-
-        getDocs(allStudentsQuery).then(studentsSnapshot => {
-            const allStudentsData = studentsSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
-
-            // 2. Now that we have the roster, listen for real-time presence updates.
-            const presenceRef = doc(db, 'teachers', student.teacherUid, 'presence', 'online');
-            unsubPresence = onSnapshot(presenceRef, (presenceSnap) => {
-                const onlineStatusMap = presenceSnap.exists() ? presenceSnap.data().onlineStatus || {} : {};
-                
-                const availableStudents = allStudentsData.filter(s =>
-                    s.uid !== student.uid &&
-                    (s.inDuel === undefined || s.inDuel === false) &&
-                    onlineStatusMap[s.uid]?.status === 'online'
-                );
-
-                setOnlineStudents(availableStudents);
-                setIsLoading(false);
-
-            }, (error) => {
-                console.error("Error fetching presence data: ", error);
-                toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch online students.' });
-                setIsLoading(false);
-            });
-        }).catch(error => {
-            console.error("Error fetching all students: ", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not load class roster.' });
-            setIsLoading(false);
-        });
+    // Listener for the single presence document
+    const presenceRef = doc(db, 'teachers', student.teacherUid, 'presence', 'online');
+    const unsubPresence = onSnapshot(presenceRef, (presenceSnap) => {
+        const presenceData = presenceSnap.exists() ? presenceSnap.data().onlineStatus || {} : {};
+        const uids = Object.keys(presenceData).filter(uid => presenceData[uid]?.status === 'online');
+        setOnlineUids(uids);
+    }, (error) => {
+        console.error("Error fetching presence data: ", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch online students.' });
     });
 
     return () => {
-        if (unsubPresence) {
-            unsubPresence();
-        }
+        unsubStudents();
+        unsubPresence();
     };
-  }, [isOpen, student.teacherUid, student.uid, toast]);
+  }, [isOpen, student.teacherUid, toast]);
   
+  // Use useMemo to recalculate the available students whenever the full student list OR the online UID list changes.
+  const availableStudents = useMemo(() => {
+    if (!duelSettings?.isDuelsEnabled) return [];
+
+    return allStudents.filter(s =>
+        s.uid !== student.uid && // Not the current user
+        (s.inDuel === undefined || s.inDuel === false) && // Not already in a duel
+        !s.isArchived && // Not archived
+        onlineUids.includes(s.uid) // Is online
+    );
+  }, [allStudents, onlineUids, student.uid, duelSettings]);
+
+
   const handleChallenge = async (opponent: Student) => {
     if (!student.teacherUid) return;
     setIsChallenging(opponent.uid);
     try {
         const duelsRef = collection(db, 'teachers', student.teacherUid, 'duels');
-        await addDoc(duelsRef, {
+        const newDuelDoc = await addDoc(duelsRef, {
             challengerUid: student.uid,
             challengerName: student.characterName,
             opponentUid: opponent.uid,
             opponentName: opponent.characterName,
-            status: 'pending', // pending, active, declined, finished
+            status: 'pending',
             createdAt: serverTimestamp(),
         });
         toast({ title: 'Challenge Sent!', description: `Your challenge has been sent to ${opponent.characterName}.` });
-        onOpenChange(false);
+        router.push(`/duel/${newDuelDoc.id}`);
     } catch (error) {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not send the challenge.' });
     } finally {
@@ -131,11 +130,11 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
                 </div>
             ) : !(duelSettings?.isDuelsEnabled ?? true) ? (
                  <p className="text-center text-muted-foreground p-4">The Training Grounds are currently closed by the Guild Leader.</p>
-            ) : onlineStudents.length === 0 ? (
+            ) : availableStudents.length === 0 ? (
                 <p className="text-center text-muted-foreground p-4">No other heroes are available for a duel right now.</p>
             ) : (
                 <div className="space-y-2">
-                    {onlineStudents.map(opp => (
+                    {availableStudents.map(opp => (
                         <div key={opp.uid} className="flex items-center justify-between p-2 border rounded-lg">
                             <div className="flex items-center gap-2">
                                 <Image src={opp.avatarUrl} alt={opp.characterName} width={40} height={40} className="rounded-full" />
