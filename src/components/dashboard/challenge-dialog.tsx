@@ -58,10 +58,10 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
             
             const presenceRef = doc(db, 'teachers', student.teacherUid, 'presence', 'online');
             const unsubPresence = onSnapshot(presenceRef, (presenceSnap) => {
-                const presenceData = presenceSnap.data()?.onlineStatus || {};
+                const presenceData = presenceSnap.data() || {};
                 const availableStudents = allStudentsData.filter(s =>
                     s.uid !== student.uid &&
-                    (s.inDuel === undefined || s.inDuel === false) && // Explicitly check for undefined
+                    (s.inDuel === undefined || s.inDuel === false) &&
                     presenceData[s.uid]?.status === 'online'
                 );
                 setOnlineStudents(availableStudents);
@@ -125,7 +125,7 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
             ) : !(duelSettings?.isDuelsEnabled ?? true) ? (
                  <p className="text-center text-muted-foreground p-4">The Training Grounds are currently closed by the Guild Leader.</p>
             ) : onlineStudents.length === 0 ? (
-                <p className="text-center text-muted-foreground">No other heroes are available for a duel right now.</p>
+                <p className="text-center text-muted-foreground p-4">No other heroes are available for a duel right now.</p>
             ) : (
                 <div className="space-y-2">
                     {onlineStudents.map(opp => (
