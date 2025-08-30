@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { logGameEvent } from '@/lib/gamelog';
 import { calculateLevel } from '@/lib/game-mechanics';
-import { getDuelSettings } from '@/ai/flows/manage-duels';
+import { getDuelSettings, updateDuelSettings } from '@/ai/flows/manage-duels';
 
 interface DuelState {
     status: 'pending' | 'active' | 'declined' | 'finished';
@@ -88,13 +88,22 @@ export default function DuelPage() {
             if (studentMetaSnap.exists()) {
                 const uid = studentMetaSnap.data().teacherUid;
                 setTeacherUid(uid);
-                // Fetch duel settings once we have the teacher UID
                 const settings = await getDuelSettings(uid);
                 setDuelSettings(settings);
             }
         }
         getTeacher();
     }, [user]);
+
+    const setPlayerDuelStatus = async (playerUids: string[], inDuel: boolean) => {
+        if (!teacherUid) return;
+        const batch = writeBatch(db);
+        playerUids.forEach(uid => {
+            const playerRef = doc(db, 'teachers', teacherUid, 'students', uid);
+            batch.update(playerRef, { inDuel });
+        });
+        await batch.commit();
+    };
 
     // Set up duel listener
     useEffect(() => {
@@ -104,26 +113,39 @@ export default function DuelPage() {
         const unsubscribe = onSnapshot(duelRef, async (docSnap) => {
             if (docSnap.exists()) {
                 const duelData = docSnap.data() as DuelState;
-                // If it's the first time loading an active duel, fetch questions
-                if (duelData.status === 'active' && !duelData.questions) {
-                    const activeSectionsSnapshot = await getDocs(query(collection(db, 'teachers', teacherUid, 'duelQuestionSections'), where('isActive', '==', true)));
-                    const allQuestions: DuelQuestion[] = [];
-                    for (const sectionDoc of activeSectionsSnapshot.docs) {
-                        const questionsSnapshot = await getDocs(collection(sectionDoc.ref, 'questions'));
-                        questionsSnapshot.forEach(qDoc => allQuestions.push(qDoc.data() as DuelQuestion));
+                const prevStatus = duel?.status;
+
+                // Handle status changes
+                if (prevStatus !== 'active' && duelData.status === 'active') {
+                    // Duel just started, set players' inDuel status
+                    await setPlayerDuelStatus([duelData.challengerUid, duelData.opponentUid], true);
+                    
+                    // Fetch questions if they don't exist
+                    if (!duelData.questions) {
+                        const activeSectionsSnapshot = await getDocs(query(collection(db, 'teachers', teacherUid, 'duelQuestionSections'), where('isActive', '==', true)));
+                        const allQuestions: DuelQuestion[] = [];
+                        for (const sectionDoc of activeSectionsSnapshot.docs) {
+                            const questionsSnapshot = await getDocs(collection(sectionDoc.ref, 'questions'));
+                            questionsSnapshot.forEach(qDoc => allQuestions.push(qDoc.data() as DuelQuestion));
+                        }
+                        
+                        const shuffled = allQuestions.sort(() => 0.5 - Math.random());
+                        const selectedQuestions = shuffled.slice(0, 10);
+                        
+                        await updateDoc(duelRef, { 
+                            questions: selectedQuestions,
+                            currentQuestionIndex: 0,
+                            answers: { [duelData.challengerUid]: [], [duelData.opponentUid]: [] }
+                        });
                     }
-                    
-                    const shuffled = allQuestions.sort(() => 0.5 - Math.random());
-                    const selectedQuestions = shuffled.slice(0, 10);
-                    
-                    await updateDoc(duelRef, { 
-                        questions: selectedQuestions,
-                        currentQuestionIndex: 0,
-                        answers: { [duelData.challengerUid]: [], [duelData.opponentUid]: [] }
-                    });
-                } else {
-                    setDuel(duelData);
+                } else if (prevStatus !== 'finished' && duelData.status === 'finished') {
+                    await setPlayerDuelStatus([duelData.challengerUid, duelData.opponentUid], false);
+                } else if (prevStatus !== 'declined' && duelData.status === 'declined') {
+                    await setPlayerDuelStatus([duelData.challengerUid, duelData.opponentUid], false);
                 }
+
+                setDuel(duelData);
+
             } else {
                 toast({ variant: 'destructive', title: 'Duel not found.' });
                 router.push('/dashboard');
@@ -131,7 +153,7 @@ export default function DuelPage() {
         });
 
         return () => unsubscribe();
-    }, [teacherUid, duelId, router, toast]);
+    }, [teacherUid, duelId, router, toast, duel?.status]);
 
     // Fetch player data once duel is loaded
     useEffect(() => {

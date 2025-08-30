@@ -45,6 +45,7 @@ export type Chapter = {
     lessonAdditionalContent: string;
     
     coordinates: { x: number; y: number }; // Position on the hub map
+    quiz?: Quiz;
 }
 
 
@@ -75,6 +76,7 @@ export type Student = {
     };
     companyId?: string;
     inBattle: boolean; 
+    inDuel?: boolean;
     inventory?: { [boonId: string]: number }; // Map of boonId to quantity
     questApprovalRequired?: boolean; // Student-specific override
     isArchived?: boolean; // To hide accounts after data migration
