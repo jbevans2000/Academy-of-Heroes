@@ -211,5 +211,3 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
     </>
   );
 }
-
-    

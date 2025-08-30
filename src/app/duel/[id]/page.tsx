@@ -19,6 +19,8 @@ import { cn } from '@/lib/utils';
 import { logGameEvent } from '@/lib/gamelog';
 import { calculateLevel } from '@/lib/game-mechanics';
 import { getDuelSettings, updateDuelSettings } from '@/ai/flows/manage-duels';
+import { format } from 'date-fns';
+
 
 interface DuelState {
     status: 'pending' | 'active' | 'declined' | 'finished' | 'abandoned';
@@ -30,6 +32,7 @@ interface DuelState {
     answers?: { [uid: string]: number[] }; // { studentUid: [answerForQ1, answerForQ2, ...] }
     currentQuestionIndex: number;
     winnerUid?: string;
+    isDraw?: boolean;
 }
 
 const DuelPlayerCard = ({ player, answers, isCurrentUser }: { player: Student | null, answers: number[], isCurrentUser: boolean }) => {
@@ -213,32 +216,50 @@ export default function DuelPage() {
                 const opponentScore = duel.answers![otherPlayerUid].filter(a => a === 1).length;
                 let winnerUid = '';
                 let winnerName = '';
+                let loserUid = '';
                 let loserName = '';
+                let isDraw = false;
 
                 if (userScore > opponentScore) {
                     winnerUid = user.uid;
-                    winnerName = user.uid === duel.challengerUid ? duel.challengerName : duel.opponentName;
-                    loserName = user.uid === duel.challengerUid ? duel.opponentName : duel.challengerName;
+                    loserUid = otherPlayerUid;
                 } else if (opponentScore > userScore) {
                     winnerUid = otherPlayerUid;
-                    winnerName = otherPlayerUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
-                    loserName = otherPlayerUid === duel.challengerUid ? duel.opponentName : duel.challengerName;
+                    loserUid = user.uid;
                 } else {
-                    winnerUid = 'draw';
+                    // Tie-breaker
+                    isDraw = true;
+                    const coinFlip = Math.random() < 0.5;
+                    winnerUid = coinFlip ? user.uid : otherPlayerUid;
+                    loserUid = coinFlip ? otherPlayerUid : user.uid;
                 }
                 
-                batch.update(duelRef, { status: 'finished', winnerUid });
+                winnerName = winnerUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
+                loserName = loserUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
 
-                if(winnerUid !== 'draw') {
-                    const winnerRef = doc(db, 'teachers', teacherUid, 'students', winnerUid);
-                    batch.update(winnerRef, {
-                        xp: increment(duelSettings.rewardXp),
-                        gold: increment(duelSettings.rewardGold)
-                    });
-                    await logGameEvent(teacherUid, 'DUEL', `${winnerName} defeated ${loserName} in a duel and earned ${duelSettings.rewardXp} XP and ${duelSettings.rewardGold} Gold.`);
-                } else {
-                     await logGameEvent(teacherUid, 'DUEL', `A duel between ${duel.challengerName} and ${duel.opponentName} ended in a draw.`);
-                }
+                batch.update(duelRef, { status: 'finished', winnerUid, isDraw });
+                
+                const winnerRef = doc(db, 'teachers', teacherUid, 'students', winnerUid);
+                const loserRef = doc(db, 'teachers', teacherUid, 'students', loserUid);
+                const today = format(new Date(), 'yyyy-MM-dd');
+
+                // Update winner
+                batch.update(winnerRef, {
+                    xp: increment(duelSettings.rewardXp),
+                    gold: increment(duelSettings.rewardGold),
+                    lastDuelDate: today,
+                    duelsCompletedToday: increment(1)
+                });
+                
+                // Update loser (refund 50% of cost)
+                const refundAmount = Math.floor((duelSettings.duelCost || 0) / 2);
+                batch.update(loserRef, {
+                    gold: increment(refundAmount),
+                    lastDuelDate: today,
+                    duelsCompletedToday: increment(1)
+                });
+
+                await logGameEvent(teacherUid, 'DUEL', `${winnerName} defeated ${loserName} in a duel and earned ${duelSettings.rewardXp} XP and ${duelSettings.rewardGold} Gold.`);
 
             } else {
                 batch.update(duelRef, { currentQuestionIndex: duel.currentQuestionIndex + 1 });
@@ -249,26 +270,36 @@ export default function DuelPage() {
     };
 
     const handleEndDuel = async () => {
-        if (!duel || !teacherUid) return;
+        if (!duel || !teacherUid || !duelSettings) return;
+        
+        const opponentUid = user?.uid === duel.challengerUid ? duel.opponentUid : duel.challengerUid;
+        if (!opponentUid) return;
+
         setIsLeaving(true);
         try {
             const duelRef = doc(db, 'teachers', teacherUid, 'duels', duelId);
             const batch = writeBatch(db);
             
-            // Set duel status to abandoned
-            batch.update(duelRef, { status: 'abandoned' });
+            // Set duel status to abandoned and declare winner
+            batch.update(duelRef, { status: 'finished', winnerUid: opponentUid });
 
             // Set both players' inDuel status to false
-            const challengerRef = doc(db, 'teachers', teacherUid, 'students', duel.challengerUid);
-            const opponentRef = doc(db, 'teachers', teacherUid, 'students', duel.opponentUid);
-            batch.update(challengerRef, { inDuel: false });
-            batch.update(opponentRef, { inDuel: false });
+            const leaverRef = doc(db, 'teachers', teacherUid, 'students', user!.uid);
+            const winnerRef = doc(db, 'teachers', teacherUid, 'students', opponentUid);
+            batch.update(leaverRef, { inDuel: false });
+            batch.update(winnerRef, { inDuel: false });
+
+            // Grant full rewards to the winner
+            batch.update(winnerRef, {
+                xp: increment(duelSettings.rewardXp),
+                gold: increment(duelSettings.rewardGold)
+            });
             
             await batch.commit();
             
             toast({
-                title: 'Duel Ended',
-                description: 'You have left the duel.',
+                title: 'Duel Forfeited',
+                description: 'You have left the duel. Your opponent has been declared the winner.',
             });
             router.push('/dashboard');
         } catch (error) {
@@ -292,14 +323,19 @@ export default function DuelPage() {
     }
 
     if (duel.status === 'finished') {
-        const winner = duel.winnerUid === 'draw' ? 'The duel was a draw!' : (duel.winnerUid === user?.uid ? 'You are victorious!' : 'You have been defeated!');
+        const winnerMessage = duel.winnerUid === user?.uid ? 'You are victorious!' : 'You have been defeated!';
         const rewardsMessage = duel.winnerUid === user?.uid && duelSettings ? `You have been awarded ${duelSettings.rewardXp} XP and ${duelSettings.rewardGold} Gold!` : '';
+        const wasDraw = duel.isDraw ?? false;
+
         return (
             <div className="flex h-screen items-center justify-center bg-gray-900 text-white">
                 <Card className="text-center p-8 bg-card/80 backdrop-blur-sm">
                     <Trophy className="h-16 w-16 mx-auto text-yellow-400" />
-                    <CardTitle className="text-4xl mt-4">{winner}</CardTitle>
+                    <CardTitle className="text-4xl mt-4">{winnerMessage}</CardTitle>
                     <CardDescription>{rewardsMessage}</CardDescription>
+                     {wasDraw && (
+                        <p className="text-muted-foreground mt-2">(The duel was a tie! The winner was chosen by a flip of a coin.)</p>
+                    )}
                     <CardContent>
                         <Button className="mt-4" onClick={() => router.push('/dashboard')}>Return to Dashboard</Button>
                     </CardContent>
@@ -313,10 +349,28 @@ export default function DuelPage() {
     return (
         <div className="flex h-screen flex-col items-center justify-center bg-gray-900 p-4 text-white">
              <div className="absolute top-4 left-4 z-10">
-                <Button variant="destructive" onClick={handleEndDuel} disabled={isLeaving}>
-                    {isLeaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowLeft className="mr-2 h-4 w-4" />}
-                    End Duel and Return to Dashboard
-                </Button>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" disabled={isLeaving}>
+                            {isLeaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowLeft className="mr-2 h-4 w-4" />}
+                            End Duel and Return to Dashboard
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure you want to end the duel?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                You will forfeit the match and your entry fee. Your opponent will be declared the winner and receive the full reward.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleEndDuel} className="bg-destructive hover:bg-destructive/90">
+                                Forfeit Duel
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
             <div className="w-full max-w-4xl">
                 <div className="grid grid-cols-2 gap-4 mb-4">
@@ -331,7 +385,7 @@ export default function DuelPage() {
                     </CardHeader>
                     <CardContent>
                         {hasAnswered ? (
-                            <div className="text-center text-black font-bold text-lg">
+                            <div className="text-center text-white font-bold text-lg p-4 bg-black/30 rounded-md">
                                 Your answer is locked in! Waiting for your opponent...
                             </div>
                         ) : (
