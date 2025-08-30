@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import type { Student } from "@/lib/data";
 import { StatsCard } from "./stats-card";
 import { AvatarDisplay } from "./avatar-display";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { User, Map, Swords, Sparkles, BookHeart, ImageIcon, Gem, Package, Hammer, Briefcase, Loader2 } from "lucide-react";
