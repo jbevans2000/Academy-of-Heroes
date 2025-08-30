@@ -10,7 +10,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Swords, CheckCircle, XCircle, Trophy, Loader2, Shield, ArrowLeft, Hourglass } from 'lucide-react';
+import { Swords, CheckCircle, XCircle, Trophy, Loader2, Shield, ArrowLeft, Hourglass, Info } from 'lucide-react';
 import type { Student } from '@/lib/data';
 import type { DuelQuestion, DuelQuestionSection, DuelSettings } from '@/lib/duels';
 import { useToast } from '@/hooks/use-toast';
@@ -43,6 +43,7 @@ interface DuelState {
     currentQuestionIndex: number;
     winnerUid?: string;
     isDraw?: boolean;
+    cost?: number;
 }
 
 const DuelPlayerCard = ({ player, answers, isCurrentUser }: { player: Student | null, answers: number[], isCurrentUser: boolean }) => {
@@ -82,6 +83,9 @@ export default function DuelPage() {
     const [hasAnswered, setHasAnswered] = useState(false);
     const [duelSettings, setDuelSettings] = useState<DuelSettings | null>(null);
     const [isLeaving, setIsLeaving] = useState(false);
+
+    // New state for decline dialog
+    const [showDeclinedDialog, setShowDeclinedDialog] = useState(false);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, currentUser => {
@@ -156,17 +160,11 @@ export default function DuelPage() {
                 } else if (prevStatus !== 'finished' && duelData.status === 'finished') {
                     await setPlayerDuelStatus([duelData.challengerUid, duelData.opponentUid], false);
                 } else if (prevStatus !== 'declined' && duelData.status === 'declined') {
-                    // Only show toast to the challenger
                     if (user?.uid === duelData.challengerUid) {
-                        toast({
-                            variant: 'destructive',
-                            title: 'Challenge Declined',
-                            description: `${duelData.opponentName} has declined your challenge.`,
-                        });
+                        setShowDeclinedDialog(true);
                     }
                      // Clean up the duel doc for declined duels
                     await deleteDoc(duelRef);
-                    router.push('/dashboard');
 
                 } else if (prevStatus !== 'abandoned' && duelData.status === 'abandoned') {
                     // One player has left, clean up for both.
@@ -182,8 +180,8 @@ export default function DuelPage() {
                 setDuel(duelData);
 
             } else {
-                toast({ variant: 'destructive', title: 'Duel not found.' });
-                router.push('/dashboard');
+                // This else block is reached when the document is deleted (e.g., after being declined).
+                // Instead of showing a toast, we rely on the status change logic to show the dialog.
             }
         });
 
@@ -246,11 +244,11 @@ export default function DuelPage() {
                     winnerUid = otherPlayerUid;
                     loserUid = user.uid;
                 } else {
-                    // Tie-breaker
                     isDraw = true;
-                    const coinFlip = Math.random() < 0.5;
-                    winnerUid = coinFlip ? user.uid : otherPlayerUid;
-                    loserUid = coinFlip ? otherPlayerUid : user.uid;
+                    // In a tie, no rewards are given to either player, but cost is still refunded.
+                    // The winnerUid can be left empty or set arbitrarily. For consistency, let's pick one.
+                    winnerUid = user.uid; // Challenger wins ties for simplicity
+                    loserUid = otherPlayerUid;
                 }
                 
                 const winnerName = winnerUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
@@ -262,13 +260,15 @@ export default function DuelPage() {
                 const loserRef = doc(db, 'teachers', teacherUid, 'students', loserUid);
                 const today = format(new Date(), 'yyyy-MM-dd');
 
-                // Update winner
-                batch.update(winnerRef, {
-                    xp: increment(duelSettings.rewardXp),
-                    gold: increment(duelSettings.rewardGold),
-                    lastDuelDate: today,
-                    duelsCompletedToday: increment(1)
-                });
+                if (!isDraw) {
+                    // Update winner
+                    batch.update(winnerRef, {
+                        xp: increment(duelSettings.rewardXp),
+                        gold: increment(duelSettings.rewardGold),
+                        lastDuelDate: today,
+                        duelsCompletedToday: increment(1)
+                    });
+                }
                 
                 // Update loser (refund 50% of cost)
                 const refundAmount = Math.floor((duelSettings.duelCost || 0) / 2);
@@ -277,8 +277,13 @@ export default function DuelPage() {
                     lastDuelDate: today,
                     duelsCompletedToday: increment(1)
                 });
+                
+                // If it was a draw, also refund the "winner"
+                if (isDraw) {
+                    batch.update(winnerRef, { gold: increment(refundAmount), lastDuelDate: today, duelsCompletedToday: increment(1) });
+                }
 
-                await logGameEvent(teacherUid, 'DUEL', `${winnerName} defeated ${loserName} in a duel and earned ${duelSettings.rewardXp} XP and ${duelSettings.rewardGold} Gold.`);
+                await logGameEvent(teacherUid, 'DUEL', `${winnerName} ${isDraw ? 'tied with' : 'defeated'} ${loserName} in a duel.`);
 
             } else {
                 batch.update(duelRef, { currentQuestionIndex: duel.currentQuestionIndex + 1 });
@@ -299,7 +304,7 @@ export default function DuelPage() {
             const duelRef = doc(db, 'teachers', teacherUid, 'duels', duelId);
             const batch = writeBatch(db);
             
-            // Set duel status to abandoned and declare winner
+            // Set duel status to finished and declare winner
             batch.update(duelRef, { status: 'finished', winnerUid: opponentUid });
 
             // Set both players' inDuel status to false
@@ -341,6 +346,24 @@ export default function DuelPage() {
         return <div className="flex h-screen items-center justify-center bg-gray-900"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
     }
 
+    if (showDeclinedDialog) {
+        return (
+            <AlertDialog open={true} onOpenChange={() => router.push('/dashboard')}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Challenge Declined</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Your challenge to {duel.opponentName} was declined. You were not charged the Arena Fee.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogAction onClick={() => router.push('/dashboard')}>Return to Dashboard</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        )
+    }
+
     if (duel.status === 'pending') {
         return (
              <div className="flex h-screen items-center justify-center bg-gray-900 text-white">
@@ -348,18 +371,22 @@ export default function DuelPage() {
                     <Hourglass className="h-16 w-16 mx-auto text-primary animate-spin" />
                     <CardTitle className="text-4xl mt-4">Duel Pending...</CardTitle>
                     <CardDescription>Waiting for {duel.challengerUid === user?.uid ? duel.opponentName : duel.challengerName} to respond to your challenge.</CardDescription>
-                    <CardContent>
-                        <Button className="mt-4" variant="destructive" onClick={() => router.push('/dashboard')}>Cancel Challenge & Return</Button>
-                    </CardContent>
                 </Card>
             </div>
         )
     }
 
     if (duel.status === 'finished') {
-        const winnerMessage = duel.winnerUid === user?.uid ? 'You are victorious!' : 'You have been defeated!';
-        const rewardsMessage = duel.winnerUid === user?.uid && duelSettings ? `You have been awarded ${duelSettings.rewardXp} XP and ${duelSettings.rewardGold} Gold!` : '';
-        const wasDraw = duel.isDraw ?? false;
+        const winnerMessage = duel.isDraw ? "It's a draw!" : (duel.winnerUid === user?.uid ? 'You are victorious!' : 'You have been defeated!');
+        let rewardsMessage = '';
+        if (duel.isDraw) {
+            rewardsMessage = `Your entry fee of ${Math.floor((duel.cost || 0) / 2)} Gold has been refunded.`;
+        } else if (duel.winnerUid === user?.uid && duelSettings) {
+            rewardsMessage = `You have been awarded ${duelSettings.rewardXp} XP and ${duelSettings.rewardGold} Gold!`;
+        } else {
+             rewardsMessage = `Your entry fee of ${Math.floor((duel.cost || 0) / 2)} Gold has been refunded for finishing the duel.`;
+        }
+
 
         return (
             <div className="flex h-screen items-center justify-center bg-gray-900 text-white">
@@ -367,8 +394,8 @@ export default function DuelPage() {
                     <Trophy className="h-16 w-16 mx-auto text-yellow-400" />
                     <CardTitle className="text-4xl mt-4">{winnerMessage}</CardTitle>
                     <CardDescription>{rewardsMessage}</CardDescription>
-                     {wasDraw && (
-                        <p className="text-muted-foreground mt-2">(The duel was a tie! The winner was chosen by a flip of a coin.)</p>
+                     {duel.isDraw && (
+                        <p className="text-muted-foreground mt-2">(The duel was a tie! Both players have their entry fee partially refunded.)</p>
                     )}
                     <CardContent>
                         <Button className="mt-4" onClick={() => router.push('/dashboard')}>Return to Dashboard</Button>
