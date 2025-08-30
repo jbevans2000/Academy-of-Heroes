@@ -18,4 +18,5 @@ export interface DuelQuestionSection {
 export interface DuelSettings {
     rewardXp: number;
     rewardGold: number;
+    isDuelsEnabled?: boolean;
 }

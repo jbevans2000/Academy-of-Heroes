@@ -19,7 +19,6 @@ import {
     updateDuelSection, 
     deleteDuelSection, 
     toggleDuelSectionActive, 
-    deactivateAllDuelSections,
     getDuelSettings,
     updateDuelSettings
 } from '@/ai/flows/manage-duels';
@@ -45,13 +44,12 @@ export default function TrainingGroundsPage() {
 
   // Deletion State
   const [sectionToDelete, setSectionToDelete] = useState<DuelQuestionSection | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
   
   // Toggling State
   const [isToggling, setIsToggling] = useState<string | null>(null);
 
   // Settings State
-  const [duelSettings, setDuelSettings] = useState<DuelSettings>({ rewardXp: 25, rewardGold: 10 });
+  const [duelSettings, setDuelSettings] = useState<DuelSettings>({ rewardXp: 25, rewardGold: 10, isDuelsEnabled: true });
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   useEffect(() => {
@@ -113,14 +111,14 @@ export default function TrainingGroundsPage() {
 
   const handleDelete = async () => {
     if (!teacher || !sectionToDelete) return;
-    setIsDeleting(true);
+    setIsToggling(sectionToDelete.id); // Re-use toggling state for loading indicator
     try {
         await deleteDuelSection({ teacherUid: teacher.uid, sectionId: sectionToDelete.id });
         toast({ title: 'Section Deleted', description: `"${sectionToDelete.name}" and all its questions have been removed.` });
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Delete Failed', description: error.message });
     } finally {
-        setIsDeleting(false);
+        setIsToggling(null);
         setSectionToDelete(null);
     }
   };
@@ -137,12 +135,14 @@ export default function TrainingGroundsPage() {
     }
   }
 
-  const handleDeactivateAll = async () => {
+  const handleToggleDuelsEnabled = async () => {
     if(!teacher) return;
-    setIsToggling('all');
+    const newStatus = !(duelSettings.isDuelsEnabled ?? true);
+    setIsToggling('main_switch');
     try {
-        await deactivateAllDuelSections({ teacherUid: teacher.uid });
-        toast({ title: 'All Sections Deactivated' });
+        await updateDuelSettings({ teacherUid: teacher.uid, settings: { isDuelsEnabled: newStatus } });
+        setDuelSettings(prev => ({...prev, isDuelsEnabled: newStatus}));
+        toast({ title: `Training Grounds ${newStatus ? 'Opened' : 'Closed'}` });
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
     } finally {
@@ -154,7 +154,7 @@ export default function TrainingGroundsPage() {
     if (!teacher) return;
     setIsSavingSettings(true);
     try {
-        await updateDuelSettings({ teacherUid: teacher.uid, settings: duelSettings });
+        await updateDuelSettings({ teacherUid: teacher.uid, settings: { rewardXp: duelSettings.rewardXp, rewardGold: duelSettings.rewardGold } });
         toast({ title: 'Rewards Updated', description: 'Duel rewards have been saved.' });
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
@@ -162,6 +162,8 @@ export default function TrainingGroundsPage() {
         setIsSavingSettings(false);
     }
   };
+
+  const isDuelsEnabled = duelSettings.isDuelsEnabled ?? true;
 
   return (
     <>
@@ -217,9 +219,9 @@ export default function TrainingGroundsPage() {
                 <ArrowLeft className="mr-2 h-4 w-4" /> Back to Podium
             </Button>
             <div className="flex gap-2">
-                 <Button variant="destructive" onClick={handleDeactivateAll} disabled={isToggling === 'all'}>
-                    {isToggling === 'all' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Deactivate All
+                 <Button variant="destructive" onClick={handleToggleDuelsEnabled} disabled={isToggling === 'main_switch'}>
+                    {isToggling === 'main_switch' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {isDuelsEnabled ? 'Close Training Grounds' : 'Open Training Grounds'}
                 </Button>
                  <Button onClick={() => handleOpenDialog(null)}><PlusCircle className="mr-2 h-4 w-4"/> New Section</Button>
             </div>

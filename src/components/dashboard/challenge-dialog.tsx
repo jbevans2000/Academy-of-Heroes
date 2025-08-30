@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Student } from '@/lib/data';
+import type { DuelSettings } from '@/lib/duels';
 import {
   Dialog,
   DialogContent,
@@ -19,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Swords } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { getDuelSettings } from '@/ai/flows/manage-duels';
 
 interface ChallengeDialogProps {
   isOpen: boolean;
@@ -32,31 +34,42 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
   const [onlineStudents, setOnlineStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isChallenging, setIsChallenging] = useState<string | null>(null);
+  const [duelSettings, setDuelSettings] = useState<DuelSettings | null>(null);
 
   useEffect(() => {
     if (!isOpen || !student.teacherUid) return;
 
     setIsLoading(true);
-    const studentsRef = collection(db, 'teachers', student.teacherUid, 'students');
-    const q = query(
-      studentsRef,
-      where('onlineStatus.status', '==', 'online'),
-      where('uid', '!=', student.uid), // Exclude the current student
-      where('isArchived', '!=', true),
-      where('inBattle', '!=', true)
-    );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const availableStudents = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
-      setOnlineStudents(availableStudents);
-      setIsLoading(false);
-    }, (error) => {
-      console.error("Error fetching online students: ", error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch online students.' });
-      setIsLoading(false);
+    getDuelSettings(student.teacherUid).then(settings => {
+        setDuelSettings(settings);
+        if (!settings.isDuelsEnabled) {
+            setIsLoading(false);
+            return;
+        }
+
+        const studentsRef = collection(db, 'teachers', student.teacherUid, 'students');
+        const q = query(
+          studentsRef,
+          where('onlineStatus.status', '==', 'online'),
+          where('uid', '!=', student.uid), // Exclude the current student
+          where('isArchived', '!=', true),
+          where('inBattle', '!=', true)
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+          const availableStudents = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
+          setOnlineStudents(availableStudents);
+          setIsLoading(false);
+        }, (error) => {
+          console.error("Error fetching online students: ", error);
+          toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch online students.' });
+          setIsLoading(false);
+        });
+
+        return () => unsubscribe();
     });
 
-    return () => unsubscribe();
   }, [isOpen, student.teacherUid, student.uid, toast]);
   
   const handleChallenge = async (opponent: Student) => {
@@ -97,6 +110,8 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
                 <div className="flex justify-center items-center h-full">
                     <Loader2 className="h-8 w-8 animate-spin"/>
                 </div>
+            ) : !(duelSettings?.isDuelsEnabled ?? true) ? (
+                 <p className="text-center text-muted-foreground p-4">The Training Grounds are currently closed by the Guild Leader.</p>
             ) : onlineStudents.length === 0 ? (
                 <p className="text-center text-muted-foreground">No other heroes are available for a duel right now.</p>
             ) : (

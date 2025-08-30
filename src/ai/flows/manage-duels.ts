@@ -108,29 +108,6 @@ export async function toggleDuelSectionActive(input: ToggleSectionActiveInput): 
     }
 }
 
-interface DeactivateAllInput {
-    teacherUid: string;
-}
-
-export async function deactivateAllDuelSections(input: DeactivateAllInput): Promise<ActionResponse> {
-     if (!input.teacherUid) return { success: false, error: 'Invalid input.' };
-     try {
-         const sectionsRef = collection(db, 'teachers', input.teacherUid, 'duelQuestionSections');
-         const snapshot = await getDocs(sectionsRef);
-         if (snapshot.empty) return { success: true };
-
-         const batch = writeBatch(db);
-         snapshot.forEach(doc => {
-             batch.update(doc.ref, { isActive: false });
-         });
-         await batch.commit();
-         return { success: true };
-     } catch (error: any) {
-         console.error('Error deactivating all sections:', error);
-         return { success: false, error: error.message || 'Failed to deactivate sections.' };
-     }
-}
-
 // === SETTINGS MANAGEMENT ===
 
 export async function getDuelSettings(teacherUid: string): Promise<DuelSettings> {
@@ -138,21 +115,31 @@ export async function getDuelSettings(teacherUid: string): Promise<DuelSettings>
     const teacherSnap = await getDoc(teacherRef);
     if (teacherSnap.exists()) {
         const data = teacherSnap.data();
-        return data.duelSettings || { rewardXp: 25, rewardGold: 10 };
+        // Provide default values if they don't exist
+        return { 
+            rewardXp: data.duelSettings?.rewardXp ?? 25, 
+            rewardGold: data.duelSettings?.rewardGold ?? 10,
+            isDuelsEnabled: data.duelSettings?.isDuelsEnabled ?? true,
+        };
     }
-    return { rewardXp: 25, rewardGold: 10 }; // Default values
+    return { rewardXp: 25, rewardGold: 10, isDuelsEnabled: true }; // Default values
 }
 
 interface UpdateDuelSettingsInput {
     teacherUid: string;
-    settings: DuelSettings;
+    settings: Partial<DuelSettings>; // Allow partial updates
 }
 
 export async function updateDuelSettings(input: UpdateDuelSettingsInput): Promise<ActionResponse> {
     if (!input.teacherUid) return { success: false, error: 'User not authenticated.' };
     try {
         const teacherRef = doc(db, 'teachers', input.teacherUid);
-        await updateDoc(teacherRef, { duelSettings: input.settings });
+        // Use dot notation to update nested fields
+        const updates: { [key: string]: any } = {};
+        for (const [key, value] of Object.entries(input.settings)) {
+            updates[`duelSettings.${key}`] = value;
+        }
+        await updateDoc(teacherRef, updates);
         return { success: true, message: 'Duel settings updated.' };
     } catch (error: any) {
         console.error("Error updating duel settings:", error);
