@@ -22,6 +22,7 @@ import { CompanyDisplay } from '@/components/dashboard/company-display';
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
