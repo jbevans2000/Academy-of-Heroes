@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -138,7 +139,7 @@ export default function WheelOfFatePage() {
                             <p className="text-3xl font-bold mt-2">{result.text}</p>
                         </div>
                     ) : (
-                        <p className="text-xl text-white/80">Click the button to spin the wheel!</p>
+                        <p className="text-xl text-white/80">Click the button to Reveal Your Destiny!</p>
                     )}
                 </div>
 
