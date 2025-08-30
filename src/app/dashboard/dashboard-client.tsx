@@ -177,8 +177,8 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
               avatarSrc={student.avatarUrl}
               avatarHint={student.class}
             />
-            <div className="space-y-4 flex flex-col items-center">
-              <Link href="/dashboard/map" passHref className="w-full">
+            <div className="grid grid-cols-2 gap-4">
+              <Link href="/dashboard/map" passHref className="col-span-2">
                   <Button size="lg" className="w-full py-8 text-lg">
                       <Map className="mr-4 h-8 w-8" />
                       Embark on Your Quest
@@ -191,6 +191,22 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
               <Button size="lg" variant="secondary" className="w-full py-8 text-lg" onClick={handleReadyForBattle}>
                   <Sparkles className="mr-4 h-8 w-8" />
                   Ready for Battle
+              </Button>
+               <Link href="/dashboard/songs-and-stories" passHref>
+                  <Button size="lg" variant="secondary" className="w-full py-8 text-lg">
+                      <BookHeart className="mr-4 h-8 w-8" />
+                      Songs and Stories
+                  </Button>
+              </Link>
+              <Link href="/dashboard/avatars" passHref>
+                  <Button size="lg" variant="secondary" className="w-full py-8 text-lg">
+                      <ImageIcon className="mr-4 h-8 w-8" />
+                      Change Avatar
+                  </Button>
+              </Link>
+               <Button size="lg" variant="secondary" className="col-span-2 w-full py-8 text-lg" onClick={handleCheckCompany} disabled={isLoadingCompany}>
+                  {isLoadingCompany ? <Loader2 className="mr-4 h-8 w-8 animate-spin"/> : <Briefcase className="mr-4 h-8 w-8" />}
+                  Check Company
               </Button>
             </div>
           </div>
