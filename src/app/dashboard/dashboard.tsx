@@ -85,34 +85,6 @@ export default function Dashboard() {
     // Return the unsubscribe function for the auth listener
     return () => authUnsubscribe();
   }, [router]);
-
-  // Effect to manage online presence
-  useEffect(() => {
-    if (!student?.uid || !teacherUid) return;
-
-    const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
-
-    // Set status to online when component mounts
-    updateDoc(studentRef, {
-      onlineStatus: { status: 'online', lastSeen: serverTimestamp() }
-    });
-
-    // Function to set status to offline
-    const setOffline = () => {
-        updateDoc(studentRef, {
-            onlineStatus: { status: 'offline', lastSeen: serverTimestamp() }
-        });
-    };
-    
-    // Set status to offline when the user navigates away or closes the tab
-    window.addEventListener('beforeunload', setOffline);
-
-    // Set status to offline when the component unmounts (e.g., logout)
-    return () => {
-        window.removeEventListener('beforeunload', setOffline);
-        setOffline();
-    };
-  }, [student?.uid, teacherUid]);
   
   const handleCloseApprovedDialog = async () => {
     setShowApprovedDialog(false);

@@ -8,7 +8,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { auth, db } from "@/lib/firebase";
 import { signOut, onAuthStateChanged, type User } from "firebase/auth";
-import { collection, query, where, onSnapshot, doc } from "firebase/firestore";
+import { collection, query, where, onSnapshot, doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { StudentMessageDialog } from './student-message-dialog';
 
@@ -22,10 +22,18 @@ export function DashboardHeader({ characterName = 'Account' }: DashboardHeaderPr
   const [user, setUser] = useState<User | null>(null);
   const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
   const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
+  const [teacherUid, setTeacherUid] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+       if (currentUser) {
+        const studentMetaRef = doc(db, 'students', currentUser.uid);
+        const studentMetaSnap = await getDoc(studentMetaRef);
+        if (studentMetaSnap.exists()) {
+          setTeacherUid(studentMetaSnap.data().teacherUid);
+        }
+      }
     });
      const settingsRef = doc(db, 'settings', 'global');
     const unsubscribeSettings = onSnapshot(settingsRef, (docSnap) => {
@@ -41,27 +49,47 @@ export function DashboardHeader({ characterName = 'Account' }: DashboardHeaderPr
   }, []);
 
   useEffect(() => {
-    if (!user) return;
-    const studentMetaRef = doc(db, 'students', user.uid);
-    const unsubMeta = onSnapshot(studentMetaRef, (docSnap) => {
-        if (docSnap.exists()) {
-            const teacherUid = docSnap.data().teacherUid;
-            if (teacherUid) { // Ensure teacherUid exists before querying
-              const studentRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
-              const unsubscribeStudent = onSnapshot(studentRef, (studentDoc) => {
-                  if (studentDoc.exists() && studentDoc.data().hasUnreadMessages) {
-                      setHasUnreadMessages(true);
-                  } else {
-                      setHasUnreadMessages(false);
-                  }
-              });
-              return () => unsubscribeStudent();
-            }
+    if (!user || !teacherUid) return;
+
+    // Listener for unread messages
+    const studentRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
+    const unsubscribeStudent = onSnapshot(studentRef, (studentDoc) => {
+        if (studentDoc.exists() && studentDoc.data().hasUnreadMessages) {
+            setHasUnreadMessages(true);
+        } else {
+            setHasUnreadMessages(false);
         }
     });
 
-    return () => unsubMeta();
-  }, [user]);
+    // Effect to manage online presence
+    const setOnline = () => {
+      updateDoc(studentRef, {
+        onlineStatus: { status: 'online', lastSeen: serverTimestamp() }
+      });
+    };
+
+    const setOffline = () => {
+      // Check if studentRef still exists before trying to update
+      if (studentRef) {
+          updateDoc(studentRef, {
+              onlineStatus: { status: 'offline', lastSeen: serverTimestamp() }
+          }).catch(error => {
+              // This can happen on logout if component unmounts too fast. It's safe to ignore.
+              console.log("Benign error on logout/unmount:", error.message);
+          });
+      }
+    };
+    
+    setOnline(); // Set online when component mounts/user is identified
+
+    window.addEventListener('beforeunload', setOffline);
+
+    return () => {
+        unsubscribeStudent();
+        setOffline(); // Set offline when component unmounts
+        window.removeEventListener('beforeunload', setOffline);
+    };
+  }, [user, teacherUid]);
 
 
   const handleLogout = async () => {
