@@ -62,15 +62,15 @@ export default function WheelOfFatePage() {
         setIsSpinning(true);
         setResult(null);
 
-        // Calculate a random end rotation
-        const newRotation = rotation + 360 * 5 + Math.random() * 360; // Spin at least 5 times
+        // Calculate a random end rotation. More spins make it feel slower over the duration.
+        const newRotation = rotation + 360 * 6 + Math.random() * 360; 
         setRotation(newRotation);
 
         setTimeout(() => {
             const randomIndex = Math.floor(Math.random() * events.length);
             setResult(events[randomIndex]);
             setIsSpinning(false);
-        }, 4000); // Duration of the spin animation
+        }, 5000); // Duration of the spin animation
     };
 
     return (
@@ -92,22 +92,22 @@ export default function WheelOfFatePage() {
                         Back to All Tools
                     </Button>
                 </div>
-                <div className="relative flex items-center justify-center w-[500px] h-[500px]">
+                <div className="relative flex items-center justify-center w-[600px] h-[600px]">
                     <Image
                         src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2FThe%20Wheel%20of%20Fate%202.png?alt=media&token=1e4b790b-a126-4c23-9960-fb2ce9d89896"
                         alt="The Wheel of Fate"
-                        width={500}
-                        height={500}
-                        className="transition-transform duration-[4000ms] ease-out"
+                        width={600}
+                        height={600}
+                        className="transition-transform duration-[5000ms] ease-out"
                         style={{ transform: `rotate(${rotation}deg)` }}
                         priority
                     />
                     <div 
-                        className="absolute w-0 h-0 top-[32px] left-1/2 -translate-x-1/2"
+                        className="absolute w-0 h-0 top-[38px] left-1/2 -translate-x-1/2"
                         style={{
-                            borderLeft: '15px solid transparent',
-                            borderRight: '15px solid transparent',
-                            borderTop: '25px solid hsl(var(--primary))',
+                            borderLeft: '20px solid transparent',
+                            borderRight: '20px solid transparent',
+                            borderTop: '30px solid hsl(var(--primary))',
                         }}
                     />
                 </div>
