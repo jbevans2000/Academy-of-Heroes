@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getDoc, onSnapshot, collection, query, where, getDocs, updateDoc, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, collection, query, where, getDocs, updateDoc, writeBatch, increment } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import Image from 'next/image';
@@ -152,9 +152,9 @@ export default function DuelPage() {
     }, [user, duel]);
     
     const handleSubmitAnswer = async () => {
-        if (selectedAnswer === null || !user || !duel || hasAnswered) return;
+        if (selectedAnswer === null || !user || !duel || hasAnswered || !teacherUid) return;
         
-        const duelRef = doc(db, 'teachers', teacherUid!, 'duels', duelId);
+        const duelRef = doc(db, 'teachers', teacherUid, 'duels', duelId);
         const currentQuestion = duel.questions![duel.currentQuestionIndex];
         const isCorrect = selectedAnswer === currentQuestion.correctAnswerIndex;
 
@@ -172,11 +172,33 @@ export default function DuelPage() {
                 const userScore = newAnswers.filter(a => a === 1).length;
                 const opponentScore = duel.answers![otherPlayerUid].filter(a => a === 1).length;
                 let winnerUid = '';
-                if (userScore > opponentScore) winnerUid = user.uid;
-                else if (opponentScore > userScore) winnerUid = otherPlayerUid;
-                else winnerUid = 'draw';
+                let winnerName = '';
+                let loserName = '';
+
+                if (userScore > opponentScore) {
+                    winnerUid = user.uid;
+                    winnerName = user.uid === duel.challengerUid ? duel.challengerName : duel.opponentName;
+                    loserName = user.uid === duel.challengerUid ? duel.opponentName : duel.challengerName;
+                } else if (opponentScore > userScore) {
+                    winnerUid = otherPlayerUid;
+                    winnerName = otherPlayerUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
+                    loserName = otherPlayerUid === duel.challengerUid ? duel.opponentName : duel.challengerName;
+                } else {
+                    winnerUid = 'draw';
+                }
                 
                 batch.update(duelRef, { status: 'finished', winnerUid });
+
+                if(winnerUid !== 'draw') {
+                    const winnerRef = doc(db, 'teachers', teacherUid, 'students', winnerUid);
+                    batch.update(winnerRef, {
+                        xp: increment(25),
+                        gold: increment(10)
+                    });
+                    await logGameEvent(teacherUid, 'DUEL', `${winnerName} defeated ${loserName} in a duel.`);
+                } else {
+                     await logGameEvent(teacherUid, 'DUEL', `A duel between ${duel.challengerName} and ${duel.opponentName} ended in a draw.`);
+                }
 
             } else {
                 batch.update(duelRef, { currentQuestionIndex: duel.currentQuestionIndex + 1 });
