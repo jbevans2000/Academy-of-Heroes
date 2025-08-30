@@ -703,6 +703,10 @@ export default function Dashboard() {
                         <Swords className="mr-2 h-4 w-4" />
                         <span>The Field of Battle</span>
                     </DropdownMenuItem>
+                     <DropdownMenuItem onClick={() => router.push('/teacher/duels')}>
+                        <Swords className="mr-2 h-4 w-4" />
+                        <span>The Training Grounds</span>
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/teacher/battles/summary')}>
                         <BookHeart className="mr-2 h-4 w-4" />
                         <span>Battle Archives</span>
