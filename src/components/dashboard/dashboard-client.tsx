@@ -119,29 +119,8 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
   const handleDuelRequestResponse = async (accept: boolean) => {
     if (!activeDuelRequest || !student.teacherUid) return;
     const duelRef = doc(db, 'teachers', student.teacherUid, 'duels', activeDuelRequest.id);
-    const cost = activeDuelRequest.cost || 0;
-
     if (accept) {
-        if (cost > 0 && student.gold < cost) {
-            toast({ variant: 'destructive', title: 'Not Enough Gold!', description: `You need ${cost} Gold to accept this duel.` });
-            // Optionally, auto-decline
-            await updateDoc(duelRef, { status: 'declined' });
-            setActiveDuelRequest(null);
-            return;
-        }
-
-        const batch = writeBatch(db);
-        // Deduct cost from both players
-        if(cost > 0) {
-            const challengerRef = doc(db, 'teachers', student.teacherUid, 'students', activeDuelRequest.challengerUid);
-            const opponentRef = doc(db, 'teachers', student.teacherUid, 'students', student.uid);
-            batch.update(challengerRef, { gold: -cost });
-            batch.update(opponentRef, { gold: -cost });
-        }
-        
-        batch.update(duelRef, { status: 'active' });
-        await batch.commit();
-
+        await updateDoc(duelRef, { status: 'active' });
         router.push(`/duel/${activeDuelRequest.id}`);
     } else {
         await updateDoc(duelRef, { status: 'declined' });
@@ -170,9 +149,9 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
             <AlertDialogHeader>
                 <AlertDialogTitle>A Challenger Appears!</AlertDialogTitle>
                 <AlertDialogDescription>
-                    {activeDuelRequest?.challengerName} has challenged you to a friendly duel!
-                    {activeDuelRequest?.cost > 0 && ` Accepting will cost ${activeDuelRequest.cost} Gold.`}
-                    <br />
+                    {activeDuelRequest?.challengerName} has challenged you to a friendly duel! 
+                    {activeDuelRequest?.cost > 0 && ` The entry fee is ${activeDuelRequest.cost} Gold.`}
+                    <br/>
                     Do you accept?
                 </AlertDialogDescription>
             </AlertDialogHeader>
