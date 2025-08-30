@@ -27,6 +27,7 @@ export default function WheelOfFatePage() {
     const [isSpinning, setIsSpinning] = useState(false);
     const [result, setResult] = useState<WheelEvent | null>(null);
     const [rotation, setRotation] = useState(0);
+    const [key, setKey] = useState(0); // Key to re-trigger animation
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -59,15 +60,20 @@ export default function WheelOfFatePage() {
             return;
         }
         
+        setKey(prevKey => prevKey + 1); // Reset animation state
         setIsSpinning(true);
         setResult(null);
 
-        // More spins make it feel slower over the duration.
-        const newRotation = rotation + 360 * 6 + Math.random() * 360; 
-        setRotation(newRotation);
+        // Calculate final rotation
+        const randomIndex = Math.floor(Math.random() * events.length);
+        const segmentAngle = 360 / (events.length || 1);
+        const randomOffset = Math.random() * segmentAngle;
+        // The final angle points the top of the wheel to the selected segment
+        const finalAngle = 360 * 5 - (randomIndex * segmentAngle + randomOffset);
+
+        setRotation(finalAngle);
 
         setTimeout(() => {
-            const randomIndex = Math.floor(Math.random() * events.length);
             setResult(events[randomIndex]);
             setIsSpinning(false);
         }, 5000); // Duration of the spin animation
@@ -75,6 +81,19 @@ export default function WheelOfFatePage() {
 
     return (
         <div className="relative flex min-h-screen w-full flex-col overflow-hidden">
+             <style jsx global>{`
+                @keyframes spin-wheel {
+                    0% {
+                        transform: rotate(0deg);
+                    }
+                    100% {
+                        transform: rotate(var(--final-rotation));
+                    }
+                }
+                .animate-spin-wheel {
+                    animation: spin-wheel 5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+                }
+            `}</style>
             <div 
                 className="absolute inset-0 -z-10"
                 style={{
@@ -94,12 +113,13 @@ export default function WheelOfFatePage() {
                 </div>
                 <div className="relative flex items-center justify-center w-[700px] h-[700px]">
                     <Image
+                        key={key} // Use key to re-mount the component and restart animation
                         src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2FThe%20Wheel%20of%20Fate%202.png?alt=media&token=1e4b790b-a126-4c23-9960-fb2ce9d89896"
                         alt="The Wheel of Fate"
                         width={700}
                         height={700}
-                        className="transition-transform duration-[5000ms] ease-out"
-                        style={{ transform: `rotate(${rotation}deg)` }}
+                        className={isSpinning ? 'animate-spin-wheel' : ''}
+                        style={{ '--final-rotation': `${rotation}deg` } as React.CSSProperties}
                         priority
                     />
                     <div 
