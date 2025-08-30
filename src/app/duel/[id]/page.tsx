@@ -127,7 +127,7 @@ export default function DuelPage() {
                         const allQuestions: DuelQuestion[] = [];
                         for (const sectionDoc of activeSectionsSnapshot.docs) {
                             const questionsSnapshot = await getDocs(collection(sectionDoc.ref, 'questions'));
-                            questionsSnapshot.forEach(qDoc => allQuestions.push(qDoc.data() as DuelQuestion));
+                            questionsSnapshot.forEach(qDoc => allQuestions.push({id: qDoc.id, ...qDoc.data()} as DuelQuestion));
                         }
                         
                         const shuffled = allQuestions.sort(() => 0.5 - Math.random());
@@ -277,7 +277,7 @@ export default function DuelPage() {
                 <Card className="bg-card/80 backdrop-blur-sm">
                     <CardHeader className="text-center">
                         <CardTitle>Question {duel.currentQuestionIndex + 1} / 10</CardTitle>
-                        <h2 className="text-2xl font-bold text-white pt-2">{currentQuestion?.questionText}</h2>
+                        <h2 className="text-2xl font-bold text-white pt-2">{currentQuestion?.text}</h2>
                     </CardHeader>
                     <CardContent>
                         {hasAnswered ? (
