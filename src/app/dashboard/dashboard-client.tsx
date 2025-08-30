@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { User, Map, Swords, Sparkles, BookHeart, ImageIcon, Gem, Package, Hammer, Briefcase, Loader2 } from "lucide-react";
-import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, updateDoc, collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -22,12 +22,14 @@ import { CompanyDisplay } from '@/components/dashboard/company-display';
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { ChallengeDialog } from '@/components/dashboard/challenge-dialog';
 
 interface DashboardClientProps {
   student: Student;
@@ -42,6 +44,8 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
   const [isFreelancerAlertOpen, setIsFreelancerAlertOpen] = useState(false);
   const [companyMembers, setCompanyMembers] = useState<Student[]>([]);
   const [isLoadingCompany, setIsLoadingCompany] = useState(false);
+  const [isChallengeDialogOpen, setIsChallengeDialogOpen] = useState(false);
+  const [activeDuelRequest, setActiveDuelRequest] = useState<any>(null);
 
   useEffect(() => {
     // Check for the ready_for_battle URL parameter on page load
@@ -64,6 +68,22 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
       enterBattle();
     }
   }, [student, router, toast]);
+  
+  useEffect(() => {
+    if (!student.teacherUid) return;
+    const duelsRef = collection(db, 'teachers', student.teacherUid, 'duels');
+    const q = query(duelsRef, where('opponentUid', '==', student.uid), where('status', '==', 'pending'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+            const duelDoc = snapshot.docs[0];
+            setActiveDuelRequest({ id: duelDoc.id, ...duelDoc.data() });
+        } else {
+            setActiveDuelRequest(null);
+        }
+    });
+    return () => unsubscribe();
+  }, [student.uid, student.teacherUid]);
+
 
   const handleReadyForBattle = async () => {
     // Instead of navigating directly, set a URL parameter and reload the page.
@@ -94,6 +114,18 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
           setIsLoadingCompany(false);
       }
   };
+  
+  const handleDuelRequestResponse = async (accept: boolean) => {
+    if (!activeDuelRequest || !student.teacherUid) return;
+    const duelRef = doc(db, 'teachers', student.teacherUid, 'duels', activeDuelRequest.id);
+    if (accept) {
+        await updateDoc(duelRef, { status: 'active' });
+        router.push(`/duel/${activeDuelRequest.id}`);
+    } else {
+        await updateDoc(duelRef, { status: 'declined' });
+    }
+    setActiveDuelRequest(null);
+  };
 
   return (
     <>
@@ -110,11 +142,32 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
               </AlertDialogFooter>
           </AlertDialogContent>
       </AlertDialog>
+      
+      <AlertDialog open={!!activeDuelRequest} onOpenChange={(isOpen) => !isOpen && setActiveDuelRequest(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>A Challenger Appears!</AlertDialogTitle>
+                <AlertDialogDescription>
+                    {activeDuelRequest?.challengerName} has challenged you to a friendly duel! Do you accept?
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => handleDuelRequestResponse(false)}>Decline</AlertDialogCancel>
+                <AlertDialogAction onClick={() => handleDuelRequestResponse(true)}>Accept</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <CompanyDisplay 
         isOpen={isCompanyDialogOpen}
         onOpenChange={setIsCompanyDialogOpen}
         members={companyMembers}
+      />
+      
+      <ChallengeDialog 
+        isOpen={isChallengeDialogOpen}
+        onOpenChange={setIsChallengeDialogOpen}
+        student={student}
       />
 
       <div className="p-4 md:p-6 lg:p-8">
@@ -131,25 +184,13 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                       Embark on Your Quest
                   </Button>
               </Link>
-              <Button size="lg" className="w-full py-8 text-lg" onClick={handleReadyForBattle}>
+              <Button size="lg" className="w-full py-8 text-lg" onClick={() => setIsChallengeDialogOpen(true)}>
                   <Swords className="mr-4 h-8 w-8" />
-                  Ready for Battle
+                  Train with a Guildmate
               </Button>
-              <Link href="/dashboard/songs-and-stories" passHref className="w-full">
-                  <Button size="lg" variant="secondary" className="w-full py-8 text-lg">
-                      <BookHeart className="mr-4 h-8 w-8" />
-                      Songs and Stories
-                  </Button>
-              </Link>
-              <Link href="/dashboard/avatars" passHref className="w-full">
-                  <Button size="lg" variant="secondary" className="w-full py-8 text-lg">
-                      <ImageIcon className="mr-4 h-8 w-8" />
-                      Change Avatar
-                  </Button>
-              </Link>
-               <Button size="lg" variant="secondary" className="w-full py-8 text-lg" onClick={handleCheckCompany} disabled={isLoadingCompany}>
-                  {isLoadingCompany ? <Loader2 className="mr-4 h-8 w-8 animate-spin"/> : <Briefcase className="mr-4 h-8 w-8" />}
-                  Check Company
+              <Button size="lg" variant="secondary" className="w-full py-8 text-lg" onClick={handleReadyForBattle}>
+                  <Sparkles className="mr-4 h-8 w-8" />
+                  Ready for Battle
               </Button>
             </div>
           </div>
