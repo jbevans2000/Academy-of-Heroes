@@ -68,8 +68,8 @@ export default function WheelOfFatePage() {
         const randomIndex = Math.floor(Math.random() * events.length);
         const segmentAngle = 360 / (events.length || 1);
         const randomOffset = Math.random() * segmentAngle;
-        // The final angle points the top of the wheel to the selected segment
-        const finalAngle = 360 * 5 - (randomIndex * segmentAngle + randomOffset);
+        // 6 full spins + the random result
+        const finalAngle = 360 * 6 + (360 - (randomIndex * segmentAngle + randomOffset));
 
         setRotation(finalAngle);
 
@@ -97,7 +97,7 @@ export default function WheelOfFatePage() {
             <div 
                 className="absolute inset-0 -z-10"
                 style={{
-                    backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-a83d7350-f8d1-4e49-980b-2200a7b4588e.jpg?alt=media&token=81c15f9d-50b2-4d9a-9e19-58b6bd27f525')`,
+                    backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2FWheel%20of%20Fate%20Background.jpg?alt=media&token=b5fe255d-9897-495d-bbde-1ddcb2d05e49')`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                 }}
