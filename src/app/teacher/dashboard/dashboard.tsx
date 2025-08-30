@@ -49,7 +49,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff, MessageSquare, Heart, Zap as ZapIcon } from 'lucide-react';
-import { calculateLevel, calculateHpGain, calculateMpGain, MAX_LEVEL } from '@/lib/game-mechanics';
+import { calculateLevel, calculateHpGain, calculateMpGain, MAX_LEVEL, XP_FOR_MAX_LEVEL } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { archiveStudents } from '@/ai/flows/manage-student';
@@ -85,6 +85,7 @@ export default function Dashboard() {
   const [isQuestProgressOpen, setIsQuestProgressOpen] = useState(false);
   const [teacher, setTeacher] = useState<User | null>(null);
   const [teacherData, setTeacherData] = useState<TeacherData | null>(null);
+  const [onlineUids, setOnlineUids] = useState<string[]>([]);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -168,6 +169,14 @@ export default function Dashboard() {
         const companiesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
         setCompanies(companiesData.sort((a,b) => a.name.localeCompare(b.name)));
     });
+
+    // Set up presence listener
+    const presenceRef = doc(db, 'teachers', teacher.uid, 'presence', 'online');
+    const unsubPresence = onSnapshot(presenceRef, (presenceSnap) => {
+        const presenceData = presenceSnap.exists() ? presenceSnap.data().onlineStatus || {} : {};
+        const uids = Object.keys(presenceData).filter(uid => presenceData[uid]?.status === 'online');
+        setOnlineUids(uids);
+    });
     
     // Fetch quests data
     const hubsQuery = query(collection(db, 'teachers', teacherUid, 'questHubs'), orderBy('hubOrder'));
@@ -189,6 +198,7 @@ export default function Dashboard() {
         companiesUnsubscribe();
         hubsUnsubscribe();
         chaptersUnsubscribe();
+        unsubPresence();
     };
   }, [teacher]);
 
@@ -448,6 +458,7 @@ export default function Dashboard() {
         hubsCompleted: 0,
         isNewlyApproved: true,
         inBattle: false,
+        inDuel: false,
       };
       
       const newStudentRef = doc(db, 'teachers', teacher.uid, 'students', uid);
@@ -973,11 +984,11 @@ export default function Dashboard() {
                                 students={members}
                                 selectedStudents={selectedStudents}
                                 onSelectStudent={handleToggleStudentSelection}
-                                setStudents={setStudents}
                                 teacherUid={teacher.uid}
                                 onSendMessage={handleOpenMessageCenter}
                                 hubs={hubs}
                                 chapters={chapters}
+                                onlineUids={onlineUids || []}
                             />
                         </div>
                     )
@@ -989,11 +1000,11 @@ export default function Dashboard() {
                             students={sortedStudents.freelancers}
                             selectedStudents={selectedStudents}
                             onSelectStudent={handleToggleStudentSelection}
-                            setStudents={setStudents}
                             teacherUid={teacher.uid}
                             onSendMessage={handleOpenMessageCenter}
                             hubs={hubs}
                             chapters={chapters}
+                            onlineUids={onlineUids || []}
                         />
                     </div>
                 )}
@@ -1003,14 +1014,16 @@ export default function Dashboard() {
                 students={sortedStudents.data} 
                 selectedStudents={selectedStudents}
                 onSelectStudent={handleToggleStudentSelection}
-                setStudents={setStudents}
                 teacherUid={teacher.uid}
                 onSendMessage={handleOpenMessageCenter}
                 hubs={hubs}
                 chapters={chapters}
+                onlineUids={onlineUids || []}
             />
         ) : null}
       </main>
     </div>
   );
 }
+
+    
