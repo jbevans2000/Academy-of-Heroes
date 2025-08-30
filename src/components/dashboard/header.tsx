@@ -50,7 +50,7 @@ export function DashboardHeader({ characterName = 'Account' }: DashboardHeaderPr
     }
     inactivityTimerRef.current = setTimeout(() => {
         handleLogout(true);
-    }, 15 * 60 * 1000); // 15 minutes
+    }, 30 * 60 * 1000); // 30 minutes
   }, [handleLogout]);
 
   useEffect(() => {
