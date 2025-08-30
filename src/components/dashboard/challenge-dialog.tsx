@@ -53,18 +53,22 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
             where('isArchived', '!=', true)
         );
         
-        const unsubAllStudents = onSnapshot(allStudentsQuery, (snapshot) => {
-            const allStudentsData = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
+        const unsubAllStudents = onSnapshot(allStudentsQuery, (studentsSnapshot) => {
+            const allStudentsData = studentsSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
             
             const presenceRef = doc(db, 'teachers', student.teacherUid, 'presence', 'online');
             const unsubPresence = onSnapshot(presenceRef, (presenceSnap) => {
-                const presenceData = presenceSnap.data()?.onlineStatus || {};
-                const availableStudents = allStudentsData.filter(s =>
-                    s.uid !== student.uid &&
-                    (s.inDuel === undefined || s.inDuel === false) &&
-                    presenceData[s.uid]?.status === 'online'
-                );
-                setOnlineStudents(availableStudents);
+                if (presenceSnap.exists()) {
+                    const onlineStatusMap = presenceSnap.data()?.onlineStatus || {};
+                    const availableStudents = allStudentsData.filter(s =>
+                        s.uid !== student.uid &&
+                        (s.inDuel === undefined || s.inDuel === false) &&
+                        onlineStatusMap[s.uid]?.status === 'online'
+                    );
+                    setOnlineStudents(availableStudents);
+                } else {
+                    setOnlineStudents([]);
+                }
                 setIsLoading(false);
             }, (error) => {
                 console.error("Error fetching presence data: ", error);
