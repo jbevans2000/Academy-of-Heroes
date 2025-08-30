@@ -120,9 +120,20 @@ export async function getDuelSettings(teacherUid: string): Promise<DuelSettings>
             rewardXp: data.duelSettings?.rewardXp ?? 25, 
             rewardGold: data.duelSettings?.rewardGold ?? 10,
             isDuelsEnabled: data.duelSettings?.isDuelsEnabled ?? true,
+            duelCost: data.duelSettings?.duelCost ?? 0,
+            dailyDuelLimit: data.duelSettings?.dailyDuelLimit ?? 5,
+            isDailyLimitEnabled: data.duelSettings?.isDailyLimitEnabled ?? true,
         };
     }
-    return { rewardXp: 25, rewardGold: 10, isDuelsEnabled: true }; // Default values
+    // Default values if settings document doesn't exist
+    return { 
+        rewardXp: 25, 
+        rewardGold: 10, 
+        isDuelsEnabled: true, 
+        duelCost: 0, 
+        dailyDuelLimit: 5, 
+        isDailyLimitEnabled: true 
+    };
 }
 
 interface UpdateDuelSettingsInput {
@@ -132,6 +143,12 @@ interface UpdateDuelSettingsInput {
 
 export async function updateDuelSettings(input: UpdateDuelSettingsInput): Promise<ActionResponse> {
     if (!input.teacherUid) return { success: false, error: 'User not authenticated.' };
+    
+    const { rewardGold, duelCost } = input.settings;
+    if (duelCost !== undefined && rewardGold !== undefined && duelCost > 0 && rewardGold <= duelCost) {
+        return { success: false, error: 'Gold reward must be greater than the duel cost.' };
+    }
+
     try {
         const teacherRef = doc(db, 'teachers', input.teacherUid);
         // Use dot notation to update nested fields

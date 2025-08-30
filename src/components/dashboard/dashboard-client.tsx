@@ -1,15 +1,15 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Student } from "@/lib/data";
-import { StatsCard } from "./stats-card";
-import { AvatarDisplay } from "./avatar-display";
-import { Button } from "../ui/button";
+import { StatsCard } from "@/components/dashboard/stats-card";
+import { AvatarDisplay } from "@/components/dashboard/avatar-display";
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { User, Map, Swords, Sparkles, BookHeart, ImageIcon, Gem, Package, Hammer, Briefcase, Loader2 } from "lucide-react";
-import { doc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, updateDoc, collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -18,7 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { CompanyDisplay } from './company-display';
+import { CompanyDisplay } from '@/components/dashboard/company-display';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +28,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { ChallengeDialog } from '@/components/dashboard/challenge-dialog';
 
 interface DashboardClientProps {
   student: Student;
@@ -42,15 +43,52 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
   const [isFreelancerAlertOpen, setIsFreelancerAlertOpen] = useState(false);
   const [companyMembers, setCompanyMembers] = useState<Student[]>([]);
   const [isLoadingCompany, setIsLoadingCompany] = useState(false);
+  const [isChallengeDialogOpen, setIsChallengeDialogOpen] = useState(false);
+  const [activeDuelRequest, setActiveDuelRequest] = useState<any>(null);
+
+  useEffect(() => {
+    // Check for the ready_for_battle URL parameter on page load
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('ready_for_battle') === 'true') {
+      // Clear the parameter from the URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+      
+      // Now proceed to the battle
+      const enterBattle = async () => {
+        if (!student.teacherUid) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Cannot find your teacher\'s guild.' });
+            return;
+        }
+        const studentRef = doc(db, 'teachers', student.teacherUid, 'students', student.uid);
+        await updateDoc(studentRef, { inBattle: true });
+        router.push('/battle/live');
+      }
+      enterBattle();
+    }
+  }, [student, router, toast]);
+  
+  useEffect(() => {
+    if (!student.teacherUid) return;
+    const duelsRef = collection(db, 'teachers', student.teacherUid, 'duels');
+    const q = query(duelsRef, where('opponentUid', '==', student.uid), where('status', '==', 'pending'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+            const duelDoc = snapshot.docs[0];
+            setActiveDuelRequest({ id: duelDoc.id, ...duelDoc.data() });
+        } else {
+            setActiveDuelRequest(null);
+        }
+    });
+    return () => unsubscribe();
+  }, [student.uid, student.teacherUid]);
+
 
   const handleReadyForBattle = async () => {
-    if (!student.teacherUid) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Cannot find your teacher\'s guild.' });
-      return;
-    }
-    const studentRef = doc(db, 'teachers', student.teacherUid, 'students', student.uid);
-    await updateDoc(studentRef, { inBattle: true });
-    router.push('/battle/live');
+    // Instead of navigating directly, set a URL parameter and reload the page.
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set('ready_for_battle', 'true');
+    window.location.href = currentUrl.toString();
   };
 
   const handleCheckCompany = async () => {
@@ -75,6 +113,18 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
           setIsLoadingCompany(false);
       }
   };
+  
+  const handleDuelRequestResponse = async (accept: boolean) => {
+    if (!activeDuelRequest || !student.teacherUid) return;
+    const duelRef = doc(db, 'teachers', student.teacherUid, 'duels', activeDuelRequest.id);
+    if (accept) {
+        await updateDoc(duelRef, { status: 'active' });
+        router.push(`/duel/${activeDuelRequest.id}`);
+    } else {
+        await updateDoc(duelRef, { status: 'declined' });
+    }
+    setActiveDuelRequest(null);
+  };
 
   return (
     <>
@@ -91,11 +141,32 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
               </AlertDialogFooter>
           </AlertDialogContent>
       </AlertDialog>
+      
+      <AlertDialog open={!!activeDuelRequest} onOpenChange={(isOpen) => !isOpen && setActiveDuelRequest(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>A Challenger Appears!</AlertDialogTitle>
+                <AlertDialogDescription>
+                    {activeDuelRequest?.challengerName} has challenged you to a friendly duel! Do you accept?
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => handleDuelRequestResponse(false)}>Decline</AlertDialogCancel>
+                <AlertDialogAction onClick={() => handleDuelRequestResponse(true)}>Accept</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <CompanyDisplay 
         isOpen={isCompanyDialogOpen}
         onOpenChange={setIsCompanyDialogOpen}
         members={companyMembers}
+      />
+      
+      <ChallengeDialog 
+        isOpen={isChallengeDialogOpen}
+        onOpenChange={setIsChallengeDialogOpen}
+        student={student}
       />
 
       <div className="p-4 md:p-6 lg:p-8">
@@ -105,33 +176,36 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
               avatarSrc={student.avatarUrl}
               avatarHint={student.class}
             />
-            <div className="space-y-4 flex flex-col items-center">
-              <Link href="/dashboard/map" passHref className="w-full">
-                  <Button size="lg" className="w-full py-8 text-lg">
-                      <Map className="mr-4 h-8 w-8" />
-                      Embark on Your Quest
-                  </Button>
-              </Link>
-              <Button size="lg" className="w-full py-8 text-lg" onClick={handleReadyForBattle}>
-                  <Swords className="mr-4 h-8 w-8" />
-                  Ready for Battle
-              </Button>
-              <Link href="/dashboard/songs-and-stories" passHref className="w-full">
-                  <Button size="lg" variant="secondary" className="w-full py-8 text-lg">
-                      <BookHeart className="mr-4 h-8 w-8" />
-                      Songs and Stories
-                  </Button>
-              </Link>
-              <Link href="/dashboard/avatars" passHref className="w-full">
-                  <Button size="lg" variant="secondary" className="w-full py-8 text-lg">
-                      <ImageIcon className="mr-4 h-8 w-8" />
-                      Change Avatar
-                  </Button>
-              </Link>
-               <Button size="lg" variant="secondary" className="w-full py-8 text-lg" onClick={handleCheckCompany} disabled={isLoadingCompany}>
-                  {isLoadingCompany ? <Loader2 className="mr-4 h-8 w-8 animate-spin"/> : <Briefcase className="mr-4 h-8 w-8" />}
-                  Check Company
-              </Button>
+            <div className="grid grid-cols-2 gap-4">
+                <Link href="/dashboard/map" passHref className="col-span-2">
+                    <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90">
+                        <Map className="mr-4 h-8 w-8" />
+                        Embark on Your Quest
+                    </Button>
+                </Link>
+                <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setIsChallengeDialogOpen(true)}>
+                    <Swords className="mr-4 h-8 w-8" />
+                    Training Grounds
+                </Button>
+                <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleReadyForBattle}>
+                    <Sparkles className="mr-4 h-8 w-8" />
+                    Ready for Battle
+                </Button>
+                <Link href="/dashboard/songs-and-stories" passHref className="w-full">
+                    <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90">
+                        <BookHeart className="mr-4 h-8 w-8" />
+                        Songs and Stories
+                    </Button>
+                </Link>
+                <Link href="/dashboard/avatars" passHref className="w-full">
+                    <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90">
+                        Change Avatar
+                    </Button>
+                </Link>
+                <Button size="lg" className="col-span-2 w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleCheckCompany} disabled={isLoadingCompany}>
+                    {isLoadingCompany ? <Loader2 className="mr-4 h-8 w-8 animate-spin"/> : <Briefcase className="mr-4 h-8 w-8" />}
+                    Check Company
+                </Button>
             </div>
           </div>
           <StatsCard 
