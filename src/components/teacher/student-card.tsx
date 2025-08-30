@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -555,7 +554,6 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
                             stat="xp"
                             label="Experience"
                             icon={<Star className="h-5 w-5 text-yellow-400" />}
-                            setStudents={setStudents}
                             teacherUid={teacherUid}
                         />
                         <EditableStat 
@@ -563,7 +561,6 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
                             stat="gold"
                             label="Gold"
                             icon={<Coins className="h-5 w-5 text-amber-500" />}
-                            setStudents={setStudents}
                             teacherUid={teacherUid}
                         />
                     </div>
@@ -574,7 +571,6 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
                             maxStat="maxHp"
                             label="HP"
                             icon={<Heart className="h-5 w-5 text-red-500" />}
-                            setStudents={setStudents}
                             teacherUid={teacherUid}
                         />
                         <EditablePairedStat
@@ -583,7 +579,6 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
                             maxStat="maxMp"
                             label="MP"
                             icon={<Zap className="h-5 w-5 text-blue-500" />}
-                            setStudents={setStudents}
                             teacherUid={teacherUid}
                         />
                     </div>
@@ -625,5 +620,3 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
     </>
   );
 }
-
-

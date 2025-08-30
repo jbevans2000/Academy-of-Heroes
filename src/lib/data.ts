@@ -36,6 +36,7 @@ export type Student = {
     questProgress: { [hubId: string]: number }; // e.g., { hubId1: 2, hubId2: 0 } means chapter 2 is last completed in hub1
     hubsCompleted: number; // The order number of the last hub completed
     isNewlyApproved?: boolean;
+    lastChapterCompletion?: any; // Firestore ServerTimestamp
     companyId?: string;
     inBattle: boolean; 
     inDuel?: boolean;
@@ -114,5 +115,3 @@ export const classData = {
     baseStats: { hp: 6, mp: 15 },
   },
 };
-
-    
