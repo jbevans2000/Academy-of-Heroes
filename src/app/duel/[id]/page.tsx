@@ -230,7 +230,6 @@ export default function DuelPage() {
         const otherPlayerUid = user.uid === duel.challengerUid ? duel.opponentUid : duel.challengerUid;
         if (duel.answers![otherPlayerUid].length > duel.currentQuestionIndex) {
              if (duel.currentQuestionIndex >= 9) { // Last question
-                // Determine winner
                 const userScore = newAnswers.filter(a => a === 1).length;
                 const opponentScore = duel.answers![otherPlayerUid].filter(a => a === 1).length;
                 let winnerUid = '';
@@ -244,11 +243,15 @@ export default function DuelPage() {
                     winnerUid = otherPlayerUid;
                     loserUid = user.uid;
                 } else {
+                    // It's a tie, randomly pick winner
                     isDraw = true;
-                    // In a tie, no rewards are given to either player, but cost is still refunded.
-                    // The winnerUid can be left empty or set arbitrarily. For consistency, let's pick one.
-                    winnerUid = user.uid; // Challenger wins ties for simplicity
-                    loserUid = otherPlayerUid;
+                    if (Math.random() < 0.5) {
+                        winnerUid = user.uid;
+                        loserUid = otherPlayerUid;
+                    } else {
+                        winnerUid = otherPlayerUid;
+                        loserUid = user.uid;
+                    }
                 }
                 
                 const winnerName = winnerUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
@@ -260,30 +263,38 @@ export default function DuelPage() {
                 const loserRef = doc(db, 'teachers', teacherUid, 'students', loserUid);
                 const today = format(new Date(), 'yyyy-MM-dd');
 
-                if (!isDraw) {
-                    // Update winner
+                if (isDraw) {
+                    // Winner gets full rewards
                     batch.update(winnerRef, {
                         xp: increment(duelSettings.rewardXp),
                         gold: increment(duelSettings.rewardGold),
                         lastDuelDate: today,
                         duelsCompletedToday: increment(1)
                     });
-                }
-                
-                // Update loser (refund 50% of cost)
-                const refundAmount = Math.floor((duelSettings.duelCost || 0) / 2);
-                batch.update(loserRef, {
-                    gold: increment(refundAmount),
-                    lastDuelDate: today,
-                    duelsCompletedToday: increment(1)
-                });
-                
-                // If it was a draw, also refund the "winner"
-                if (isDraw) {
-                    batch.update(winnerRef, { gold: increment(refundAmount), lastDuelDate: today, duelsCompletedToday: increment(1) });
+                    // Loser of the tie gets a full refund
+                    batch.update(loserRef, {
+                        gold: increment(duelSettings.duelCost || 0),
+                        lastDuelDate: today,
+                        duelsCompletedToday: increment(1)
+                    });
+                } else {
+                    // Standard win/loss
+                    batch.update(winnerRef, {
+                        xp: increment(duelSettings.rewardXp),
+                        gold: increment(duelSettings.rewardGold),
+                        lastDuelDate: today,
+                        duelsCompletedToday: increment(1)
+                    });
+                     // Loser gets 50% refund
+                    const refundAmount = Math.floor((duelSettings.duelCost || 0) / 2);
+                    batch.update(loserRef, {
+                        gold: increment(refundAmount),
+                        lastDuelDate: today,
+                        duelsCompletedToday: increment(1)
+                    });
                 }
 
-                await logGameEvent(teacherUid, 'DUEL', `${winnerName} ${isDraw ? 'tied with' : 'defeated'} ${loserName} in a duel.`);
+                await logGameEvent(teacherUid, 'DUEL', `${winnerName} ${isDraw ? 'won a tie-breaker against' : 'defeated'} ${loserName} in a duel.`);
 
             } else {
                 batch.update(duelRef, { currentQuestionIndex: duel.currentQuestionIndex + 1 });
@@ -377,16 +388,23 @@ export default function DuelPage() {
     }
 
     if (duel.status === 'finished') {
-        const winnerMessage = duel.isDraw ? "It's a draw!" : (duel.winnerUid === user?.uid ? 'You are victorious!' : 'You have been defeated!');
+        const winnerMessage = duel.winnerUid === user?.uid ? 'You are victorious!' : 'You have been defeated!';
+        
         let rewardsMessage = '';
+        const winnerStudent = duel.winnerUid === user?.uid ? user : opponent;
+        const loserStudent = duel.winnerUid === user?.uid ? opponent : user;
+
         if (duel.isDraw) {
-            rewardsMessage = `Your entry fee of ${Math.floor((duel.cost || 0) / 2)} Gold has been refunded.`;
+            if (duel.winnerUid === user?.uid) {
+                rewardsMessage = `The duel was a tie! You won the coin toss and have been awarded ${duelSettings?.rewardXp} XP and ${duelSettings?.rewardGold} Gold!`;
+            } else {
+                rewardsMessage = `The duel was a tie! You lost the coin toss, but your entry fee of ${duelSettings?.duelCost} Gold has been refunded.`;
+            }
         } else if (duel.winnerUid === user?.uid && duelSettings) {
             rewardsMessage = `You have been awarded ${duelSettings.rewardXp} XP and ${duelSettings.rewardGold} Gold!`;
         } else {
              rewardsMessage = `Your entry fee of ${Math.floor((duel.cost || 0) / 2)} Gold has been refunded for finishing the duel.`;
         }
-
 
         return (
             <div className="flex h-screen items-center justify-center bg-gray-900 text-white">
@@ -394,8 +412,8 @@ export default function DuelPage() {
                     <Trophy className="h-16 w-16 mx-auto text-yellow-400" />
                     <CardTitle className="text-4xl mt-4">{winnerMessage}</CardTitle>
                     <CardDescription>{rewardsMessage}</CardDescription>
-                     {duel.isDraw && (
-                        <p className="text-muted-foreground mt-2">(The duel was a tie! Both players have their entry fee partially refunded.)</p>
+                    {duel.isDraw && (
+                        <p className="text-muted-foreground mt-2">(The duel was a tie! The winner was chosen by a flip of a coin.)</p>
                     )}
                     <CardContent>
                         <Button className="mt-4" onClick={() => router.push('/dashboard')}>Return to Dashboard</Button>
