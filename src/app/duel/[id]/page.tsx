@@ -283,18 +283,21 @@ export default function DuelPage() {
                         lastDuelDate: today,
                         duelsCompletedToday: increment(1)
                     });
+                    // Refund loser's entry fee
                     batch.update(loserRef, {
-                        gold: increment(duelSettings.duelCost || 0),
+                        gold: increment(duel.cost || 0),
                         lastDuelDate: today,
                         duelsCompletedToday: increment(1)
                     });
                 } else {
+                    // Standard win
                     batch.update(winnerRef, {
                         xp: increment(duelSettings.rewardXp),
                         gold: increment(duelSettings.rewardGold),
                         lastDuelDate: today,
                         duelsCompletedToday: increment(1)
                     });
+                     // Refund loser half their entry fee
                     const refundAmount = Math.floor((duel.cost || 0) / 2);
                     batch.update(loserRef, {
                         gold: increment(refundAmount),
@@ -331,9 +334,10 @@ export default function DuelPage() {
             batch.update(leaverRef, { inDuel: false });
             batch.update(winnerRef, { inDuel: false });
 
+            // Forfeit means winner gets full rewards, leaver gets nothing back.
             batch.update(winnerRef, {
                 xp: increment(duelSettings.rewardXp),
-                gold: increment(duelSettings.rewardGold)
+                gold: increment(duelSettings.rewardGold + (duel.cost || 0))
             });
             
             await batch.commit();
@@ -400,12 +404,12 @@ export default function DuelPage() {
         
         if (duel.isDraw) {
             if (duel.winnerUid === user?.uid) {
-                rewardsMessage = `The duel was a tie! You won the coin toss and have been awarded ${duelSettings?.rewardXp} XP and ${duelSettings?.rewardGold} Gold!`;
+                rewardsMessage = `You won the tie-breaker and have been awarded ${duelSettings?.rewardXp} XP and ${duelSettings?.rewardGold} Gold!`;
             } else {
-                rewardsMessage = `The duel was a tie! You lost the coin toss, but your entry fee of ${duelSettings?.duelCost} Gold has been refunded.`;
+                rewardsMessage = `You lost the tie-breaker, but your entry fee of ${duelSettings?.duelCost} Gold has been fully refunded.`;
             }
         } else if (duel.winnerUid === user?.uid && duelSettings) {
-            rewardsMessage = `You have been awarded ${duelSettings.rewardXp} XP and ${duelSettings.rewardGold} Gold!`;
+            rewardsMessage = `You have been awarded ${duelSettings.rewardXp} XP and ${duelSettings.rewardGold} Gold! Your entry fee was returned.`;
         } else {
              rewardsMessage = `Your entry fee of ${Math.floor((duel.cost || 0) / 2)} Gold has been refunded for finishing the duel.`;
         }
@@ -509,5 +513,3 @@ export default function DuelPage() {
         </div>
     )
 }
-
-    
