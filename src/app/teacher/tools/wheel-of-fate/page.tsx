@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -146,7 +145,7 @@ export default function WheelOfFatePage() {
                 <div className="mt-8">
                     <Button size="lg" className="text-xl py-8 px-10" onClick={handleSpin} disabled={isSpinning}>
                         {isSpinning ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <RefreshCw className="mr-2 h-6 w-6" />}
-                        Spin the Wheel
+                        Spin the Wheel of Fate!
                     </Button>
                 </div>
             </main>
