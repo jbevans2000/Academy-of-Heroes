@@ -7,7 +7,7 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, PlusCircle, Edit, Trash2, Check, X, Loader2, Save, Star, Coins, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Edit, Trash2, Check, X, Loader2, Save, Star, Coins, ShieldAlert, RefreshCcw } from 'lucide-react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { collection, onSnapshot, query, doc } from 'firebase/firestore';
@@ -20,7 +20,8 @@ import {
     deleteDuelSection, 
     toggleDuelSectionActive, 
     getDuelSettings,
-    updateDuelSettings
+    updateDuelSettings,
+    resetAllDuelStatuses
 } from '@/ai/flows/manage-duels';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -53,6 +54,7 @@ export default function TrainingGroundsPage() {
   // Settings State
   const [duelSettings, setDuelSettings] = useState<DuelSettings>({ rewardXp: 25, rewardGold: 10, isDuelsEnabled: true });
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -165,6 +167,23 @@ export default function TrainingGroundsPage() {
     }
   };
 
+  const handleResetStatuses = async () => {
+    if (!teacher) return;
+    setIsResetting(true);
+    try {
+        const result = await resetAllDuelStatuses(teacher.uid);
+        if (result.success) {
+            toast({ title: 'Statuses Reset', description: result.message });
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (error: any) {
+         toast({ variant: 'destructive', title: 'Reset Failed', description: error.message });
+    } finally {
+        setIsResetting(false);
+    }
+  }
+
   const isDuelsEnabled = duelSettings.isDuelsEnabled ?? true;
 
   return (
@@ -243,8 +262,8 @@ export default function TrainingGroundsPage() {
 
            <Card>
                 <CardHeader>
-                    <CardTitle>Duel Rewards</CardTitle>
-                    <CardDescription>Set the rewards for winning a duel. This applies to all duels.</CardDescription>
+                    <CardTitle>Duel Rewards & Status</CardTitle>
+                    <CardDescription>Set the rewards for winning a duel. You can also reset all duel statuses if a student gets stuck.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex items-end gap-4">
                     <div className="space-y-1">
@@ -268,6 +287,10 @@ export default function TrainingGroundsPage() {
                     <Button onClick={handleSaveSettings} disabled={isSavingSettings}>
                          {isSavingSettings ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                         Save Rewards
+                    </Button>
+                    <Button variant="secondary" onClick={handleResetStatuses} disabled={isResetting}>
+                        {isResetting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
+                        Reset All Duel Statuses
                     </Button>
                 </CardContent>
             </Card>

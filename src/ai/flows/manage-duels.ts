@@ -146,3 +146,31 @@ export async function updateDuelSettings(input: UpdateDuelSettingsInput): Promis
         return { success: false, error: error.message || 'Failed to update settings.' };
     }
 }
+
+// === STATUS MANAGEMENT ===
+
+export async function resetAllDuelStatuses(teacherUid: string): Promise<ActionResponse> {
+    if (!teacherUid) {
+        return { success: false, error: 'Teacher UID is required.' };
+    }
+    try {
+        const studentsRef = collection(db, 'teachers', teacherUid, 'students');
+        const studentsSnapshot = await getDocs(studentsRef);
+        
+        if (studentsSnapshot.empty) {
+            return { success: true, message: 'No students found to reset.' };
+        }
+
+        const batch = writeBatch(db);
+        studentsSnapshot.forEach(studentDoc => {
+            batch.update(studentDoc.ref, { inDuel: false });
+        });
+        
+        await batch.commit();
+
+        return { success: true, message: 'All student duel statuses have been reset.' };
+    } catch (error: any) {
+        console.error("Error resetting duel statuses:", error);
+        return { success: false, error: error.message || 'Failed to reset duel statuses.' };
+    }
+}
