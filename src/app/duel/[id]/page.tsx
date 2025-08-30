@@ -153,15 +153,15 @@ export default function DuelPage() {
                             const cost = duelData.cost || 0;
                             
                             if (cost > 0) {
-                                transaction.update(challengerRef, { gold: Math.max(0, challengerData.gold - cost) });
-                                transaction.update(opponentRef, { gold: Math.max(0, opponentData.gold - cost) });
+                                transaction.update(challengerRef, { gold: Math.max(0, (challengerData.gold || 0) - cost) });
+                                transaction.update(opponentRef, { gold: Math.max(0, (opponentData.gold || 0) - cost) });
                             }
                             
                             // Set inDuel status
                             transaction.update(challengerRef, { inDuel: true });
                             transaction.update(opponentRef, { inDuel: true });
 
-                            if (!duelData.questions || duelData.questions.length === 0) {
+                             if (!duelData.questions || duelData.questions.length === 0) {
                                 const activeSectionsSnapshot = await getDocs(query(collection(db, 'teachers', teacherUid, 'duelQuestionSections'), where('isActive', '==', true)));
                                 const allQuestions: DuelQuestion[] = [];
                                 for (const sectionDoc of activeSectionsSnapshot.docs) {
@@ -192,8 +192,8 @@ export default function DuelPage() {
                     if (user?.uid === duelData.challengerUid) {
                         setShowDeclinedDialog(true);
                     }
-                    await deleteDoc(duelRef);
-
+                    // The doc is deleted after a short delay on the other user's end, 
+                    // so we just listen for the deletion instead of deleting it twice.
                 } else if (prevStatus !== 'abandoned' && duelData.status === 'abandoned') {
                     const batch = writeBatch(db);
                     await setPlayerDuelStatus(batch, [duelData.challengerUid, duelData.opponentUid], false);
@@ -208,6 +208,13 @@ export default function DuelPage() {
 
                 setDuel(duelData);
 
+            } else {
+                 if (prevStatus === 'declined' || prevStatus === 'abandoned') {
+                    // This means the doc was deleted. If we were the challenger, navigate away.
+                    if (user?.uid === duel?.challengerUid) {
+                        router.push('/dashboard');
+                    }
+                }
             }
         });
 
@@ -257,20 +264,12 @@ export default function DuelPage() {
              if (duel.currentQuestionIndex >= 9) { // Last question
                 
                 await runTransaction(db, async (transaction) => {
-                    const winnerRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
-                    const loserRef = doc(db, 'teachers', teacherUid, 'students', otherPlayerUid);
-
-                    const winnerDoc = await transaction.get(winnerRef);
-                    const loserDoc = await transaction.get(loserRef);
-
-                    if (!winnerDoc.exists() || !loserDoc.exists()) {
-                        throw new Error("Student data not found for reward calculation.");
-                    }
-                    const winnerData = winnerDoc.data();
-                    const loserData = loserDoc.data();
+                    const freshDuelSnap = await transaction.get(duelRef);
+                    if (!freshDuelSnap.exists()) throw new Error("Duel document not found during final transaction.");
+                    const finalDuelData = freshDuelSnap.data() as DuelState;
 
                     const userScore = newAnswers.filter(a => a === 1).length;
-                    const opponentScore = duel.answers![otherPlayerUid].filter(a => a === 1).length;
+                    const opponentScore = finalDuelData.answers![otherPlayerUid].filter(a => a === 1).length;
                     
                     let winnerUid = '';
                     let loserUid = '';
@@ -293,45 +292,47 @@ export default function DuelPage() {
                         }
                     }
                     
+                    const winnerRef = doc(db, 'teachers', teacherUid, 'students', winnerUid);
+                    const loserRef = doc(db, 'teachers', teacherUid, 'students', loserUid);
+                    const winnerDoc = await transaction.get(winnerRef);
+                    const loserDoc = await transaction.get(loserRef);
+                    if (!winnerDoc.exists() || !loserDoc.exists()) throw new Error("A duelist could not be found.");
+
+                    const winnerData = winnerDoc.data();
+                    const loserData = loserDoc.data();
+
                     const winnerName = winnerUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
                     const loserName = loserUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
-
                     const today = format(new Date(), 'yyyy-MM-dd');
                     const duelCost = duel.cost || 0;
                     
+                    // Award winner
+                    transaction.update(winnerRef, {
+                        xp: (winnerData.xp || 0) + duelSettings.rewardXp,
+                        gold: Math.max(0, (winnerData.gold || 0) + duelSettings.rewardGold), 
+                        lastDuelDate: today,
+                        duelsCompletedToday: increment(1)
+                    });
+                    
+                    // Handle loser
                     if (isDraw) {
-                         const winnerFinalGold = (winnerData.gold || 0) + duelSettings.rewardGold;
-                         transaction.update(winnerRef, {
-                            xp: (winnerData.xp || 0) + duelSettings.rewardXp,
-                            gold: Math.max(0, winnerFinalGold), 
-                            lastDuelDate: today,
-                            duelsCompletedToday: increment(1)
-                        });
-                         const loserFinalGold = (loserData.gold || 0) + duelCost;
-                         transaction.update(loserRef, {
-                            gold: Math.max(0, loserFinalGold),
+                        // Full refund for draw loser
+                        transaction.update(loserRef, {
+                            gold: Math.max(0, (loserData.gold || 0) + duelCost),
                             lastDuelDate: today,
                             duelsCompletedToday: increment(1)
                         });
                     } else {
-                         const winnerFinalGold = (winnerData.gold || 0) + duelSettings.rewardGold;
-                         transaction.update(winnerRef, {
-                            xp: (winnerData.xp || 0) + duelSettings.rewardXp,
-                            gold: Math.max(0, winnerFinalGold),
-                            lastDuelDate: today,
-                            duelsCompletedToday: increment(1)
-                        });
+                        // Half refund for standard loser
                         const refundAmount = Math.floor(duelCost / 2);
-                        const loserFinalGold = (loserData.gold || 0) + refundAmount;
                          transaction.update(loserRef, {
-                            gold: Math.max(0, loserFinalGold),
+                            gold: Math.max(0, (loserData.gold || 0) + refundAmount),
                             lastDuelDate: today,
                             duelsCompletedToday: increment(1)
                         });
                     }
                     
                     transaction.update(duelRef, { status: 'finished', winnerUid, isDraw });
-
                     await logGameEvent(teacherUid, 'DUEL', `${winnerName} ${isDraw ? 'won a tie-breaker against' : 'defeated'} ${loserName} in a duel.`);
                 });
                 return;
@@ -399,7 +400,10 @@ export default function DuelPage() {
 
     if (showDeclinedDialog) {
         return (
-            <AlertDialog open={true} onOpenChange={() => router.push('/dashboard')}>
+            <AlertDialog open={true} onOpenChange={() => {
+                 setShowDeclinedDialog(false);
+                 router.push('/dashboard');
+            }}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Challenge Declined</AlertDialogTitle>
