@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -20,6 +19,17 @@ import { logGameEvent } from '@/lib/gamelog';
 import { calculateLevel } from '@/lib/game-mechanics';
 import { getDuelSettings, updateDuelSettings } from '@/ai/flows/manage-duels';
 import { format } from 'date-fns';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 
 interface DuelState {
@@ -413,3 +423,5 @@ export default function DuelPage() {
         </div>
     )
 }
+
+    
