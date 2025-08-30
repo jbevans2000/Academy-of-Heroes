@@ -177,23 +177,6 @@ export default function DuelPage() {
                 else winnerUid = 'draw';
                 
                 batch.update(duelRef, { status: 'finished', winnerUid });
-                
-                const winnerStudent = students.find(s => s.uid === winnerUid);
-                const xpGained = 25;
-                const goldGained = 10;
-                
-                if (winnerStudent) {
-                    const studentRef = doc(db, 'teachers', teacherUid!, 'students', winnerUid);
-                    const currentXp = winnerStudent.xp || 0;
-                    const newXp = currentXp + xpGained;
-                    const currentLevel = winnerStudent.level || 1;
-                    const newLevel = calculateLevel(newXp);
-                    
-                    const updates: any = { xp: newXp, gold: (winnerStudent.gold || 0) + goldGained };
-                    if (newLevel > currentLevel) updates.level = newLevel;
-                    
-                    batch.update(studentRef, updates);
-                }
 
             } else {
                 batch.update(duelRef, { currentQuestionIndex: duel.currentQuestionIndex + 1 });
