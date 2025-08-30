@@ -277,7 +277,7 @@ export default function DuelPage() {
                 <Card className="bg-card/80 backdrop-blur-sm">
                     <CardHeader className="text-center">
                         <CardTitle>Question {duel.currentQuestionIndex + 1} / 10</CardTitle>
-                        <CardDescription>{currentQuestion?.questionText}</CardDescription>
+                        <h2 className="text-2xl font-bold text-white pt-2">{currentQuestion?.questionText}</h2>
                     </CardHeader>
                     <CardContent>
                         {hasAnswered ? (
