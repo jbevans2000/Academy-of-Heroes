@@ -568,3 +568,5 @@ export default function DuelPage() {
         </div>
     )
 }
+
+    
