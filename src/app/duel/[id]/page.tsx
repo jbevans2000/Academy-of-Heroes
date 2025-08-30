@@ -257,6 +257,18 @@ export default function DuelPage() {
              if (duel.currentQuestionIndex >= 9) { // Last question
                 
                 await runTransaction(db, async (transaction) => {
+                    const winnerRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
+                    const loserRef = doc(db, 'teachers', teacherUid, 'students', otherPlayerUid);
+
+                    const winnerDoc = await transaction.get(winnerRef);
+                    const loserDoc = await transaction.get(loserRef);
+
+                    if (!winnerDoc.exists() || !loserDoc.exists()) {
+                        throw new Error("Student data not found for reward calculation.");
+                    }
+                    const winnerData = winnerDoc.data();
+                    const loserData = loserDoc.data();
+
                     const userScore = newAnswers.filter(a => a === 1).length;
                     const opponentScore = duel.answers![otherPlayerUid].filter(a => a === 1).length;
                     
@@ -284,48 +296,41 @@ export default function DuelPage() {
                     const winnerName = winnerUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
                     const loserName = loserUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
 
-                    transaction.update(duelRef, { status: 'finished', winnerUid, isDraw });
-                    
-                    const winnerRef = doc(db, 'teachers', teacherUid, 'students', winnerUid);
-                    const loserRef = doc(db, 'teachers', teacherUid, 'students', loserUid);
                     const today = format(new Date(), 'yyyy-MM-dd');
-
-                    const winnerDoc = await transaction.get(winnerRef);
-                    const loserDoc = await transaction.get(loserRef);
-                    if (!winnerDoc.exists() || !loserDoc.exists()) {
-                        throw new Error("Student data not found for reward calculation.");
-                    }
-                    const winnerData = winnerDoc.data();
-                    const loserData = loserDoc.data();
-                    
                     const duelCost = duel.cost || 0;
                     
                     if (isDraw) {
+                         const winnerFinalGold = (winnerData.gold || 0) + duelSettings.rewardGold;
                          transaction.update(winnerRef, {
-                            xp: winnerData.xp + duelSettings.rewardXp,
-                            gold: winnerData.gold + duelSettings.rewardGold, 
+                            xp: (winnerData.xp || 0) + duelSettings.rewardXp,
+                            gold: Math.max(0, winnerFinalGold), 
                             lastDuelDate: today,
                             duelsCompletedToday: increment(1)
                         });
+                         const loserFinalGold = (loserData.gold || 0) + duelCost;
                          transaction.update(loserRef, {
-                            gold: loserData.gold + duelCost,
+                            gold: Math.max(0, loserFinalGold),
                             lastDuelDate: today,
                             duelsCompletedToday: increment(1)
                         });
                     } else {
+                         const winnerFinalGold = (winnerData.gold || 0) + duelSettings.rewardGold;
                          transaction.update(winnerRef, {
-                            xp: winnerData.xp + duelSettings.rewardXp,
-                            gold: winnerData.gold + duelSettings.rewardGold,
+                            xp: (winnerData.xp || 0) + duelSettings.rewardXp,
+                            gold: Math.max(0, winnerFinalGold),
                             lastDuelDate: today,
                             duelsCompletedToday: increment(1)
                         });
                         const refundAmount = Math.floor(duelCost / 2);
+                        const loserFinalGold = (loserData.gold || 0) + refundAmount;
                          transaction.update(loserRef, {
-                            gold: loserData.gold + refundAmount,
+                            gold: Math.max(0, loserFinalGold),
                             lastDuelDate: today,
                             duelsCompletedToday: increment(1)
                         });
                     }
+                    
+                    transaction.update(duelRef, { status: 'finished', winnerUid, isDraw });
 
                     await logGameEvent(teacherUid, 'DUEL', `${winnerName} ${isDraw ? 'won a tie-breaker against' : 'defeated'} ${loserName} in a duel.`);
                 });
@@ -355,13 +360,16 @@ export default function DuelPage() {
                 const winnerDoc = await transaction.get(winnerRef);
                 if (!winnerDoc.exists()) throw new Error("Winner not found");
                 const winnerData = winnerDoc.data();
+                
+                const finalXp = (winnerData.xp || 0) + duelSettings.rewardXp;
+                const finalGold = (winnerData.gold || 0) + duelSettings.rewardGold + (duel.cost || 0);
 
                 transaction.update(duelRef, { status: 'finished', winnerUid: opponentUid });
                 transaction.update(leaverRef, { inDuel: false });
                 transaction.update(winnerRef, { 
                     inDuel: false,
-                    xp: (winnerData.xp || 0) + duelSettings.rewardXp,
-                    gold: (winnerData.gold || 0) + duelSettings.rewardGold + (duel.cost || 0)
+                    xp: finalXp,
+                    gold: Math.max(0, finalGold)
                 });
             });
 
