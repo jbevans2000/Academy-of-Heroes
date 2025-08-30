@@ -4,10 +4,11 @@
 import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Timer, Volume2, Users, Dices, Wrench, Swords, ScrollText, DatabaseZap, Sparkles, ImageIcon, Archive } from 'lucide-react';
+import { ArrowLeft, Timer, Volume2, Users, Dices, Wrench, Swords, ScrollText, DatabaseZap, Sparkles, ImageIcon, Archive, Edit } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 const tools = [
     {
@@ -57,6 +58,15 @@ const tools = [
         path: '/teacher/tools/the-royal-scribe',
         disabled: false,
         bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-061eec79-9062-4e42-a63e-0458bee737cd.jpg?alt=media&token=6077d818-0966-4653-b533-1d97e6c33d31',
+    },
+    {
+        title: 'The Wheel of Fate',
+        description: 'Spin the wheel to get a random classroom event from your custom list.',
+        icon: <Dices className="h-10 w-10 text-primary" />,
+        path: '/teacher/tools/wheel-of-fate',
+        editPath: '/teacher/tools/wheel-of-fate/edit',
+        disabled: false,
+        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2FThe%20Wheel%20of%20Fate%202.png?alt=media&token=1e4b790b-a126-4c23-9960-fb2ce9d89896',
     }
 ]
 
@@ -92,31 +102,38 @@ export default function ClassroomToolsPage() {
                     </div>
                      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                         {tools.map((tool, index) => (
-                             <Link href={tool.disabled ? '#' : tool.path} key={index} className={cn("group", tool.disabled && "pointer-events-none")}>
-                                <div className="relative flex flex-col justify-between h-64 p-6 rounded-lg overflow-hidden border shadow-sm transition-transform hover:scale-105 bg-card">
-                                    <div className="absolute inset-0">
-                                        <Image
-                                            src={tool.bgImage}
-                                            alt={`${tool.title} background`}
-                                            fill
-                                            className="object-cover"
-                                        />
-                                        <div className="absolute inset-0 bg-black/60 group-hover:bg-black/70 transition-colors" />
+                            <Card key={index} className="relative flex flex-col justify-between h-64 p-6 rounded-lg overflow-hidden border shadow-sm bg-card transition-transform hover:scale-105 group">
+                                <div className="absolute inset-0">
+                                    <Image
+                                        src={tool.bgImage}
+                                        alt={`${tool.title} background`}
+                                        fill
+                                        className="object-cover"
+                                    />
+                                    <div className="absolute inset-0 bg-black/60 group-hover:bg-black/70 transition-colors" />
+                                </div>
+                                <div className="relative z-10 flex flex-col h-full text-white">
+                                    <div className="flex items-center gap-4 mb-2">
+                                        {tool.icon}
+                                        <h3 className="text-xl font-bold">{tool.title}</h3>
                                     </div>
-                                    <div className="relative z-10 flex flex-col h-full text-white">
-                                        <div className="flex items-center gap-4 mb-2">
-                                            {tool.icon}
-                                            <h3 className="text-xl font-bold">{tool.title}</h3>
-                                        </div>
-                                        <p className="text-sm text-white/80">{tool.description}</p>
-                                        <div className="mt-auto">
-                                            <Button className="w-full" variant={tool.title === 'Database Migration' ? 'destructive' : 'secondary'} disabled={tool.disabled}>
+                                    <p className="text-sm text-white/80 flex-grow">{tool.description}</p>
+                                    <div className="mt-auto flex gap-2">
+                                        <Link href={tool.disabled ? '#' : tool.path} passHref className="flex-1">
+                                            <Button className="w-full" variant="secondary" disabled={tool.disabled}>
                                                 {tool.disabled ? "Coming Soon" : "Launch Tool"}
                                             </Button>
-                                        </div>
+                                        </Link>
+                                        {tool.editPath && (
+                                            <Link href={tool.editPath} passHref>
+                                                <Button variant="outline" size="icon">
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
+                                            </Link>
+                                        )}
                                     </div>
                                 </div>
-                            </Link>
+                            </Card>
                         ))}
                     </div>
                 </div>
