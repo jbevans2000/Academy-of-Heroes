@@ -86,6 +86,12 @@ export default function DuelPage() {
 
     // New state for decline dialog
     const [showDeclinedDialog, setShowDeclinedDialog] = useState(false);
+    
+    const duelRef = useMemo(() => {
+        if (!teacherUid || !duelId) return null;
+        return doc(db, 'teachers', teacherUid, 'duels', duelId);
+    }, [teacherUid, duelId]);
+
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, currentUser => {
@@ -124,9 +130,8 @@ export default function DuelPage() {
 
     // Set up duel listener
     useEffect(() => {
-        if (!teacherUid || !duelId) return;
+        if (!duelRef || !teacherUid) return;
         
-        const duelRef = doc(db, 'teachers', teacherUid, 'duels', duelId);
         const unsubscribe = onSnapshot(duelRef, async (docSnap) => {
             if (docSnap.exists()) {
                 const duelData = docSnap.data() as DuelState;
@@ -137,8 +142,12 @@ export default function DuelPage() {
                     
                     try {
                         await runTransaction(db, async (transaction) => {
-                            const challengerRef = doc(db, 'teachers', teacherUid, 'students', duelData.challengerUid);
-                            const opponentRef = doc(db, 'teachers', teacherUid, 'students', duelData.opponentUid);
+                            const duelDocForTransaction = await transaction.get(duelRef);
+                            if (!duelDocForTransaction.exists()) throw new Error("Duel disappeared.");
+                            const currentDuelData = duelDocForTransaction.data() as DuelState;
+                            
+                            const challengerRef = doc(db, 'teachers', teacherUid, 'students', currentDuelData.challengerUid);
+                            const opponentRef = doc(db, 'teachers', teacherUid, 'students', currentDuelData.opponentUid);
                             
                             const challengerDoc = await transaction.get(challengerRef);
                             const opponentDoc = await transaction.get(opponentRef);
@@ -149,19 +158,19 @@ export default function DuelPage() {
 
                             const challengerData = challengerDoc.data();
                             const opponentData = opponentDoc.data();
-
-                            const cost = duelData.cost || 0;
+                            const cost = currentDuelData.cost || 0;
                             
                             if (cost > 0) {
-                                transaction.update(challengerRef, { gold: Math.max(0, (challengerData.gold || 0) - cost) });
-                                transaction.update(opponentRef, { gold: Math.max(0, (opponentData.gold || 0) - cost) });
+                                const newChallengerGold = Math.max(0, (challengerData.gold || 0) - cost);
+                                const newOpponentGold = Math.max(0, (opponentData.gold || 0) - cost);
+                                transaction.update(challengerRef, { gold: newChallengerGold });
+                                transaction.update(opponentRef, { gold: newOpponentGold });
                             }
                             
-                            // Set inDuel status
                             transaction.update(challengerRef, { inDuel: true });
                             transaction.update(opponentRef, { inDuel: true });
 
-                             if (!duelData.questions || duelData.questions.length === 0) {
+                             if (!currentDuelData.questions || currentDuelData.questions.length === 0) {
                                 const activeSectionsSnapshot = await getDocs(query(collection(db, 'teachers', teacherUid, 'duelQuestionSections'), where('isActive', '==', true)));
                                 const allQuestions: DuelQuestion[] = [];
                                 for (const sectionDoc of activeSectionsSnapshot.docs) {
@@ -175,7 +184,7 @@ export default function DuelPage() {
                                 transaction.update(duelRef, { 
                                     questions: selectedQuestions.map(q => ({...q, id: q.id})),
                                     currentQuestionIndex: 0,
-                                    answers: { [duelData.challengerUid]: [], [duelData.opponentUid]: [] }
+                                    answers: { [currentDuelData.challengerUid]: [], [currentDuelData.opponentUid]: [] }
                                 });
                             }
                         });
@@ -192,8 +201,6 @@ export default function DuelPage() {
                     if (user?.uid === duelData.challengerUid) {
                         setShowDeclinedDialog(true);
                     }
-                    // The doc is deleted after a short delay on the other user's end, 
-                    // so we just listen for the deletion instead of deleting it twice.
                 } else if (prevStatus !== 'abandoned' && duelData.status === 'abandoned') {
                     const batch = writeBatch(db);
                     await setPlayerDuelStatus(batch, [duelData.challengerUid, duelData.opponentUid], false);
@@ -209,8 +216,7 @@ export default function DuelPage() {
                 setDuel(duelData);
 
             } else {
-                 if (prevStatus === 'declined' || prevStatus === 'abandoned') {
-                    // This means the doc was deleted. If we were the challenger, navigate away.
+                 if (duel?.status === 'declined' || duel?.status === 'abandoned') {
                     if (user?.uid === duel?.challengerUid) {
                         router.push('/dashboard');
                     }
@@ -220,7 +226,7 @@ export default function DuelPage() {
 
         return () => unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [teacherUid, duelId, router, toast]);
+    }, [duelRef, teacherUid, router, toast]);
 
     // Fetch player data once duel is loaded
     useEffect(() => {
@@ -247,102 +253,110 @@ export default function DuelPage() {
     }, [user, duel]);
     
     const handleSubmitAnswer = async () => {
-        if (selectedAnswer === null || !user || !duel || hasAnswered || !teacherUid || !duelSettings) return;
+        if (selectedAnswer === null || !user || !duel || hasAnswered || !teacherUid || !duelSettings || !duelRef) return;
         
-        const duelRef = doc(db, 'teachers', teacherUid, 'duels', duelId);
         const currentQuestion = duel.questions![duel.currentQuestionIndex];
         const isCorrect = selectedAnswer === currentQuestion.correctAnswerIndex;
 
         const newAnswers = [...(duel.answers![user.uid] || [])];
         newAnswers[duel.currentQuestionIndex] = isCorrect ? 1 : 0;
         
-        const batch = writeBatch(db);
-        batch.update(duelRef, { [`answers.${user.uid}`]: newAnswers });
+        // Optimistically update UI
+        setHasAnswered(true);
         
         const otherPlayerUid = user.uid === duel.challengerUid ? duel.opponentUid : duel.challengerUid;
-        if (duel.answers![otherPlayerUid].length > duel.currentQuestionIndex) {
-             if (duel.currentQuestionIndex >= 9) { // Last question
-                
-                await runTransaction(db, async (transaction) => {
-                    const freshDuelSnap = await transaction.get(duelRef);
-                    if (!freshDuelSnap.exists()) throw new Error("Duel document not found during final transaction.");
-                    const finalDuelData = freshDuelSnap.data() as DuelState;
+        const opponentHasAnswered = (duel.answers![otherPlayerUid] || []).length > duel.currentQuestionIndex;
+        
+        if (opponentHasAnswered) { // This is the second answer, so end the round/duel
+            if (duel.currentQuestionIndex >= 9) { // Last question
+                try {
+                    await runTransaction(db, async (transaction) => {
+                        const freshDuelSnap = await transaction.get(duelRef);
+                        if (!freshDuelSnap.exists()) throw new Error("Duel document not found during final transaction.");
+                        
+                        // Update local answers for the transaction logic
+                        const finalDuelAnswers = {...freshDuelSnap.data().answers};
+                        finalDuelAnswers[user.uid] = newAnswers;
 
-                    const userScore = newAnswers.filter(a => a === 1).length;
-                    const opponentScore = finalDuelData.answers![otherPlayerUid].filter(a => a === 1).length;
-                    
-                    let winnerUid = '';
-                    let loserUid = '';
-                    let isDraw = false;
+                        const userScore = finalDuelAnswers[user.uid].filter(a => a === 1).length;
+                        const opponentScore = finalDuelAnswers[otherPlayerUid].filter(a => a === 1).length;
+                        
+                        let winnerUid = '';
+                        let loserUid = '';
+                        let isDraw = false;
 
-                    if (userScore > opponentScore) {
-                        winnerUid = user.uid;
-                        loserUid = otherPlayerUid;
-                    } else if (opponentScore > userScore) {
-                        winnerUid = otherPlayerUid;
-                        loserUid = user.uid;
-                    } else {
-                        isDraw = true;
-                        if (Math.random() < 0.5) {
+                        if (userScore > opponentScore) {
                             winnerUid = user.uid;
                             loserUid = otherPlayerUid;
-                        } else {
+                        } else if (opponentScore > userScore) {
                             winnerUid = otherPlayerUid;
                             loserUid = user.uid;
+                        } else {
+                            isDraw = true;
+                            if (Math.random() < 0.5) {
+                                winnerUid = user.uid;
+                                loserUid = otherPlayerUid;
+                            } else {
+                                winnerUid = otherPlayerUid;
+                                loserUid = user.uid;
+                            }
                         }
-                    }
-                    
-                    const winnerRef = doc(db, 'teachers', teacherUid, 'students', winnerUid);
-                    const loserRef = doc(db, 'teachers', teacherUid, 'students', loserUid);
-                    const winnerDoc = await transaction.get(winnerRef);
-                    const loserDoc = await transaction.get(loserRef);
-                    if (!winnerDoc.exists() || !loserDoc.exists()) throw new Error("A duelist could not be found.");
+                        
+                        const winnerRef = doc(db, 'teachers', teacherUid, 'students', winnerUid);
+                        const loserRef = doc(db, 'teachers', teacherUid, 'students', loserUid);
+                        
+                        // READS FIRST
+                        const winnerDoc = await transaction.get(winnerRef);
+                        const loserDoc = await transaction.get(loserRef);
+                        if (!winnerDoc.exists() || !loserDoc.exists()) throw new Error("A duelist could not be found.");
 
-                    const winnerData = winnerDoc.data();
-                    const loserData = loserDoc.data();
+                        const winnerData = winnerDoc.data();
+                        const loserData = loserDoc.data();
+                        
+                        const duelCost = duel.cost || 0;
 
-                    const winnerName = winnerUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
-                    const loserName = loserUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
-                    const today = format(new Date(), 'yyyy-MM-dd');
-                    const duelCost = duel.cost || 0;
-                    
-                    // Award winner
-                    transaction.update(winnerRef, {
-                        xp: (winnerData.xp || 0) + duelSettings.rewardXp,
-                        gold: Math.max(0, (winnerData.gold || 0) + duelSettings.rewardGold), 
-                        lastDuelDate: today,
-                        duelsCompletedToday: increment(1)
+                        // WRITES LAST
+                        const winnerFinalXp = (winnerData.xp || 0) + duelSettings.rewardXp;
+                        const winnerFinalGold = (winnerData.gold || 0) + duelSettings.rewardGold;
+                        transaction.update(winnerRef, { xp: winnerFinalXp, gold: winnerFinalGold });
+                        
+                        if (isDraw) {
+                            const loserFinalGold = (loserData.gold || 0) + duelCost;
+                            transaction.update(loserRef, { gold: loserFinalGold });
+                        } else {
+                            const refundAmount = Math.floor(duelCost / 2);
+                            const loserFinalGold = (loserData.gold || 0) + refundAmount;
+                            transaction.update(loserRef, { gold: loserFinalGold });
+                        }
+
+                        const today = format(new Date(), 'yyyy-MM-dd');
+                        transaction.update(winnerRef, { lastDuelDate: today, duelsCompletedToday: increment(1) });
+                        transaction.update(loserRef, { lastDuelDate: today, duelsCompletedToday: increment(1) });
+                        
+                        transaction.update(duelRef, { 
+                            [`answers.${user.uid}`]: newAnswers,
+                            status: 'finished', 
+                            winnerUid, 
+                            isDraw 
+                        });
+
+                        const winnerName = winnerUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
+                        const loserName = loserUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
+                        await logGameEvent(teacherUid, 'DUEL', `${winnerName} ${isDraw ? 'won a tie-breaker against' : 'defeated'} ${loserName} in a duel.`);
                     });
-                    
-                    // Handle loser
-                    if (isDraw) {
-                        // Full refund for draw loser
-                        transaction.update(loserRef, {
-                            gold: Math.max(0, (loserData.gold || 0) + duelCost),
-                            lastDuelDate: today,
-                            duelsCompletedToday: increment(1)
-                        });
-                    } else {
-                        // Half refund for standard loser
-                        const refundAmount = Math.floor(duelCost / 2);
-                         transaction.update(loserRef, {
-                            gold: Math.max(0, (loserData.gold || 0) + refundAmount),
-                            lastDuelDate: today,
-                            duelsCompletedToday: increment(1)
-                        });
-                    }
-                    
-                    transaction.update(duelRef, { status: 'finished', winnerUid, isDraw });
-                    await logGameEvent(teacherUid, 'DUEL', `${winnerName} ${isDraw ? 'won a tie-breaker against' : 'defeated'} ${loserName} in a duel.`);
+                } catch (e) {
+                     console.error("Duel end transaction failed:", e);
+                     toast({ variant: "destructive", title: "Error Ending Duel", description: "Could not finalize the duel." });
+                }
+            } else { // Not the last question, advance to next
+                await updateDoc(duelRef, {
+                    [`answers.${user.uid}`]: newAnswers,
+                    currentQuestionIndex: duel.currentQuestionIndex + 1,
                 });
-                return;
-
-            } else {
-                batch.update(duelRef, { currentQuestionIndex: duel.currentQuestionIndex + 1 });
             }
+        } else { // This is the first answer, just submit it
+            await updateDoc(duelRef, { [`answers.${user.uid}`]: newAnswers });
         }
-        
-        await batch.commit();
     };
 
     const handleEndDuel = async () => {
