@@ -101,7 +101,7 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
 
     return allStudents.filter(s => {
         const opponentDuelsCompleted = s.lastDuelDate === today ? (s.duelsCompletedToday || 0) : 0;
-        const opponentHasReachedLimit = duelSettings?.isDailyLimitEnabled && duelSettings.dailyDuelLimit ? opponentDuelsCompleted >= duelSettings.dailyDuelLimit : false;
+        const opponentHasReachedLimit = duelSettings?.isDailyLimitEnabled && duelSettings.dailyLimit ? opponentDuelsCompleted >= duelSettings.dailyLimit : false;
 
         return s.uid !== student.uid &&
                (s.inDuel === undefined || s.inDuel === false) &&

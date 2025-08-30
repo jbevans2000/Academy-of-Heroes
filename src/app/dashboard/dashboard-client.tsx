@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -117,6 +118,17 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
   
   const handleDuelRequestResponse = async (accept: boolean) => {
     if (!activeDuelRequest || !student.teacherUid) return;
+    
+    // Check for gold cost before accepting
+    if (accept && activeDuelRequest.cost > 0 && student.gold < activeDuelRequest.cost) {
+        toast({ variant: 'destructive', title: 'Not Enough Gold!', description: `You need ${activeDuelRequest.cost} Gold to accept this duel.` });
+        setActiveDuelRequest(null);
+        // We will also decline it on the backend so it doesn't linger.
+        const duelRef = doc(db, 'teachers', student.teacherUid, 'duels', activeDuelRequest.id);
+        await updateDoc(duelRef, { status: 'declined' });
+        return;
+    }
+    
     const duelRef = doc(db, 'teachers', student.teacherUid, 'duels', activeDuelRequest.id);
     if (accept) {
         await updateDoc(duelRef, { status: 'active' });
@@ -148,7 +160,10 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
             <AlertDialogHeader>
                 <AlertDialogTitle>A Challenger Appears!</AlertDialogTitle>
                 <AlertDialogDescription>
-                    {activeDuelRequest?.challengerName} has challenged you to a friendly duel! Do you accept?
+                    {activeDuelRequest?.challengerName} has challenged you to a friendly duel!
+                    {activeDuelRequest?.cost > 0 && <strong> The entry fee is {activeDuelRequest.cost} Gold.</strong>}
+                    <br/>
+                    Do you accept?
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
