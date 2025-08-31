@@ -119,7 +119,10 @@ export default function HairSizerPage() {
                                 <CardHeader><CardTitle>Hairstyles</CardTitle></CardHeader>
                                  <CardContent className="grid grid-cols-2 gap-2">
                                      {hairstyles.map(style => (
-                                         <div key={style.id} className="border p-1 rounded-md cursor-pointer hover:border-primary" onClick={() => setSelectedHairstyle(style)}>
+                                         <div 
+                                            key={style.id} 
+                                            className={cn("border p-1 rounded-md cursor-pointer hover:border-primary", selectedHairstyle?.id === style.id && "border-primary ring-2 ring-primary")}
+                                            onClick={() => setSelectedHairstyle(style)}>
                                              <Image src={style.baseImageUrl} alt={style.styleName} width={100} height={100} className="w-full h-auto object-contain bg-gray-200" />
                                              <p className="text-xs text-center mt-1">{style.styleName}</p>
                                          </div>
@@ -135,10 +138,14 @@ export default function HairSizerPage() {
                              <Card className="h-[70vh]">
                                 <CardHeader><CardTitle>Canvas</CardTitle></CardHeader>
                                 <CardContent className="relative w-full h-full flex items-center justify-center bg-gray-200 rounded-md">
-                                   {selectedBodyUrl ? (
-                                        <Image src={selectedBodyUrl} alt="Selected Base Body" width={500} height={500} className="object-contain max-h-full max-w-full" />
-                                   ) : (
-                                       <p>Select a Base Body to begin.</p>
+                                   {!selectedBodyUrl && <p>Select a Base Body to begin.</p>}
+                                   {selectedBodyUrl && (
+                                        <Image src={selectedBodyUrl} alt="Selected Base Body" fill className="object-contain" />
+                                   )}
+                                   {selectedHairstyle && (
+                                        <div className="absolute inset-0">
+                                             <Image src={selectedHairstyle.baseImageUrl} alt={selectedHairstyle.styleName} fill className="object-contain" />
+                                        </div>
                                    )}
                                 </CardContent>
                             </Card>
