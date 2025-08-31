@@ -64,9 +64,8 @@ export default function ArmorSizerPage() {
         const unsubArmor = onSnapshot(collection(db, 'armorPieces'), (snapshot) => {
             const pieces = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ArmorPiece));
             setArmorPieces(pieces);
+             setIsLoading(false);
         });
-
-        setIsLoading(false);
 
         return () => {
             unsubBodies();
@@ -86,9 +85,9 @@ export default function ArmorSizerPage() {
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="w-full max-w-7xl mx-auto space-y-6">
                      <div className="flex justify-between items-center">
-                         <Button variant="outline" onClick={() => router.push('/admin/tools')}>
+                         <Button variant="outline" onClick={() => router.push('/admin/dashboard')}>
                             <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to All Tools
+                            Back to Admin Dashboard
                         </Button>
                          <h1 className="text-2xl font-bold">Armor Sizer</h1>
                          <Button disabled>Save Transform</Button>
@@ -100,7 +99,7 @@ export default function ArmorSizerPage() {
                                 <CardHeader><CardTitle>Base Bodies</CardTitle></CardHeader>
                                 <CardContent className="grid grid-cols-2 gap-2">
                                     {isLoading ? (
-                                        <Skeleton className="h-24 w-full col-span-2" />
+                                        Array.from({length: 8}).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)
                                     ) : (
                                         baseBodies.map(body => (
                                             <div key={body.id} className="border p-1 rounded-md cursor-pointer hover:border-primary" onClick={() => setSelectedBody(body)}>

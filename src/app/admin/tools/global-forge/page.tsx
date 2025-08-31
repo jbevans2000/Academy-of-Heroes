@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,25 @@ import { useToast } from '@/hooks/use-toast';
 export default function GlobalForgePage() {
     const router = useRouter();
     const { toast } = useToast();
+    const [user, setUser] = useState<User | null>(null);
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            if (currentUser) {
+                const adminRef = doc(db, 'admins', currentUser.uid);
+                const adminSnap = await getDoc(adminRef);
+                if (adminSnap.exists()) {
+                    setUser(currentUser);
+                } else {
+                    router.push('/teacher/dashboard');
+                }
+            } else {
+                router.push('/teacher/login');
+            }
+        });
+        return () => unsubscribe();
+    }, [router]);
+
 
     // Placeholder functions for future implementation
     const handleAddNewArmor = () => {
@@ -33,9 +53,9 @@ export default function GlobalForgePage() {
             <TeacherHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="w-full max-w-4xl mx-auto space-y-6">
-                     <Button variant="outline" onClick={() => router.push('/admin/tools')}>
+                     <Button variant="outline" onClick={() => router.push('/admin/dashboard')}>
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to All Tools
+                        Back to Admin Dashboard
                     </Button>
                     <Card className="shadow-2xl">
                         <CardHeader className="text-center">
