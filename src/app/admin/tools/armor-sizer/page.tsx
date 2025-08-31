@@ -17,6 +17,8 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
+import { cn } from '@/lib/utils';
+
 
 export default function ArmorSizerPage() {
     const router = useRouter();
@@ -98,7 +100,28 @@ export default function ArmorSizerPage() {
                              <Card>
                                 <CardHeader><CardTitle>Base Bodies</CardTitle></CardHeader>
                                 <CardContent className="grid grid-cols-2 gap-2">
-                                    {Array.from({length: 8}).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}
+                                    {isLoading ? (
+                                        Array.from({length: 8}).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)
+                                    ) : (
+                                        baseBodies.map(body => (
+                                            <div 
+                                                key={body.id} 
+                                                className={cn(
+                                                    "border-2 p-1 rounded-md cursor-pointer hover:border-primary",
+                                                    selectedBody?.id === body.id && "border-primary"
+                                                )}
+                                                onClick={() => setSelectedBody(body)}
+                                            >
+                                                <Image 
+                                                    src={body.imageUrl} 
+                                                    alt={body.name} 
+                                                    width={body.width} 
+                                                    height={body.height} 
+                                                    className="w-full h-auto object-contain bg-gray-200"
+                                                />
+                                            </div>
+                                        ))
+                                    )}
                                 </CardContent>
                             </Card>
                             <Card>
