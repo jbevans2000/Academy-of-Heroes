@@ -16,7 +16,7 @@ import { getGlobalSettings, updateGlobalSettings } from '@/ai/flows/manage-setti
 import { deleteFeedback } from '@/ai/flows/submit-feedback';
 import { moderateStudent } from '@/ai/flows/manage-student';
 import { deleteTeacher } from '@/ai/flows/manage-teacher';
-import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2 } from 'lucide-react';
+import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -477,6 +477,29 @@ export default function AdminDashboardPage() {
                     </Card>
                      <Card>
                         <CardHeader>
+                            <CardTitle>Master Admin Tools</CardTitle>
+                            <CardDescription>Tools for managing global assets.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                             <Button className="w-full justify-start" asChild>
+                                <Link href="/admin/tools/global-forge">
+                                    <Diamond className="mr-2 h-4 w-4" /> Global Forge
+                                </Link>
+                            </Button>
+                            <Button className="w-full justify-start" asChild>
+                                <Link href="/admin/tools/hair-sizer">
+                                    <Wrench className="mr-2 h-4 w-4" /> Hair Sizer
+                                </Link>
+                            </Button>
+                            <Button className="w-full justify-start" asChild>
+                                <Link href="/admin/tools/armor-sizer">
+                                    <Wrench className="mr-2 h-4 w-4" /> Armor Sizer
+                                </Link>
+                            </Button>
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader>
                             <CardTitle>Beta Features</CardTitle>
                             <CardDescription>Toggle experimental features.</CardDescription>
                         </CardHeader>
@@ -588,4 +611,3 @@ export default function AdminDashboardPage() {
     );
 }
 
-    
