@@ -98,16 +98,7 @@ export default function ArmorSizerPage() {
                              <Card>
                                 <CardHeader><CardTitle>Base Bodies</CardTitle></CardHeader>
                                 <CardContent className="grid grid-cols-2 gap-2">
-                                    {isLoading ? (
-                                        Array.from({length: 8}).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)
-                                    ) : (
-                                        baseBodies.map(body => (
-                                            <div key={body.id} className="border p-1 rounded-md cursor-pointer hover:border-primary" onClick={() => setSelectedBody(body)}>
-                                                <Image src={body.imageUrl} alt={body.name} width={100} height={150} className="w-full h-auto object-contain bg-gray-200" />
-                                                <p className="text-xs text-center mt-1">{body.name}</p>
-                                            </div>
-                                        ))
-                                    )}
+                                    {Array.from({length: 8}).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}
                                 </CardContent>
                             </Card>
                             <Card>
