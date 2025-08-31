@@ -4,11 +4,10 @@
 import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Timer, Volume2, Users, Dices, Wrench, Swords, ScrollText, DatabaseZap, Sparkles, ImageIcon, Archive, Edit, Diamond } from 'lucide-react';
+import { ArrowLeft, Timer, Volume2, Users, Dices, Wrench, Swords, ScrollText } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 const tools = [
     {
@@ -30,7 +29,7 @@ const tools = [
     {
         title: 'The Runes of Destiny',
         description: 'Draw from the runes to summon a hero for a task.',
-        icon: <Sparkles className="h-10 w-10 text-primary" />,
+        icon: <Users className="h-10 w-10 text-primary" />,
         path: '/teacher/tools/random-student',
         disabled: false,
         bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-01eb6e6f-c49f-49a6-8296-3b97d092a4c2.jpg?alt=media&token=6fe54bce-fef4-4ad1-92a2-fdef04425008',
@@ -70,68 +69,8 @@ const tools = [
     }
 ];
 
-const adminTools = [
-     {
-        title: 'Global Forge',
-        description: 'Create and manage all cosmetic items like armor and hairstyles.',
-        icon: <Diamond className="h-10 w-10 text-primary" />,
-        path: '/admin/tools/global-forge',
-        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-a2624b42-7576-444f-8012-6188e7f1d441.jpg?alt=media&token=96357608-7264-4458-963d-b4b6006e8b7c'
-    },
-    {
-        title: 'Hair Sizer',
-        description: 'Position and scale hairstyles on different body types.',
-        icon: <Wrench className="h-10 w-10 text-primary" />,
-        path: '/admin/tools/hair-sizer',
-        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-e358b5a0-a029-450f-90e6-799c424d1668.jpg?alt=media&token=9ac606d2-31f4-41d6-8480-e889a7414704'
-    },
-    {
-        title: 'Armor Sizer',
-        description: 'Position and scale armor pieces on different body types.',
-        icon: <Wrench className="h-10 w-10 text-primary" />,
-        path: '/admin/tools/armor-sizer',
-        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-3b24f5a3-f094-4b55-83c9-04c94483a992.jpg?alt=media&token=81d227c8-89c0-432a-af94-d4b998a44d03'
-    },
-];
-
 export default function ClassroomToolsPage() {
     const router = useRouter();
-
-    const ToolCard = ({ tool }: { tool: (typeof tools[0] & { editPath?: string }) | typeof adminTools[0] & { disabled?: boolean } }) => (
-        <Card className="relative flex flex-col justify-between h-64 p-6 rounded-lg overflow-hidden border shadow-sm bg-card transition-transform hover:scale-105 group">
-            <div className="absolute inset-0">
-                <Image
-                    src={tool.bgImage}
-                    alt={`${tool.title} background`}
-                    fill
-                    className="object-cover"
-                    data-ai-hint="fantasy background"
-                />
-                <div className="absolute inset-0 bg-black/60 group-hover:bg-black/70 transition-colors" />
-            </div>
-            <div className="relative z-10 flex flex-col h-full text-white">
-                <div className="flex items-center gap-4 mb-2">
-                    {tool.icon}
-                    <h3 className="text-xl font-bold">{tool.title}</h3>
-                </div>
-                <p className="text-sm text-white/80 flex-grow">{tool.description}</p>
-                <div className="mt-auto flex gap-2">
-                    <Link href={tool.disabled ? '#' : tool.path} passHref className="flex-1">
-                        <Button className="w-full" variant="secondary" disabled={tool.disabled}>
-                            {tool.disabled ? "Coming Soon" : "Launch Tool"}
-                        </Button>
-                    </Link>
-                    {'editPath' in tool && tool.editPath && (
-                        <Link href={tool.editPath} passHref>
-                            <Button variant="outline" size="icon">
-                                <Edit className="h-4 w-4" />
-                            </Button>
-                        </Link>
-                    )}
-                </div>
-            </div>
-        </Card>
-    );
 
     return (
         <div className="relative min-h-screen w-full flex flex-col">
@@ -163,24 +102,40 @@ export default function ClassroomToolsPage() {
                     </div>
                      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                         {tools.map((tool, index) => (
-                           <ToolCard key={index} tool={tool} />
-                        ))}
-                    </div>
-                    
-                    <div className="pt-8">
-                         <div className="p-6 rounded-lg bg-red-900/80 backdrop-blur-sm text-white">
-                            <div className="flex items-center gap-4">
-                                <div>
-                                    <h2 className="text-2xl font-bold">Master Admin Forges</h2>
-                                    <p>Tools for creating and managing global game assets.</p>
+                            <Card key={index} className="relative flex flex-col justify-between h-64 p-6 rounded-lg overflow-hidden border shadow-sm bg-card transition-transform hover:scale-105 group">
+                                <div className="absolute inset-0">
+                                    <Image
+                                        src={tool.bgImage}
+                                        alt={`${tool.title} background`}
+                                        fill
+                                        className="object-cover"
+                                        data-ai-hint="fantasy background"
+                                    />
+                                    <div className="absolute inset-0 bg-black/60 group-hover:bg-black/70 transition-colors" />
                                 </div>
-                            </div>
-                        </div>
-                         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-4">
-                             {adminTools.map((tool, index) => (
-                               <ToolCard key={index} tool={tool} />
-                            ))}
-                        </div>
+                                <div className="relative z-10 flex flex-col h-full text-white">
+                                    <div className="flex items-center gap-4 mb-2">
+                                        {tool.icon}
+                                        <h3 className="text-xl font-bold">{tool.title}</h3>
+                                    </div>
+                                    <p className="text-sm text-white/80 flex-grow">{tool.description}</p>
+                                    <div className="mt-auto flex gap-2">
+                                         <Link href={tool.disabled ? '#' : tool.path} passHref className="flex-1">
+                                            <Button className="w-full" variant="secondary" disabled={tool.disabled}>
+                                                {tool.disabled ? "Coming Soon" : "Launch Tool"}
+                                            </Button>
+                                        </Link>
+                                        {tool.editPath && (
+                                            <Link href={tool.editPath} passHref>
+                                                <Button variant="outline" size="icon">
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
+                                            </Link>
+                                        )}
+                                    </div>
+                                </div>
+                            </Card>
+                        ))}
                     </div>
                 </div>
             </main>

@@ -97,7 +97,7 @@ const adminTools = [
 export default function ClassroomToolsPage() {
     const router = useRouter();
 
-    const ToolCard = ({ tool }: { tool: (typeof tools[0] & { editPath?: string }) | typeof adminTools[0] }) => (
+    const ToolCard = ({ tool }: { tool: (typeof tools[0] & { editPath?: string }) | typeof adminTools[0] & { disabled?: boolean } }) => (
         <Card className="relative flex flex-col justify-between h-64 p-6 rounded-lg overflow-hidden border shadow-sm bg-card transition-transform hover:scale-105 group">
             <div className="absolute inset-0">
                 <Image
