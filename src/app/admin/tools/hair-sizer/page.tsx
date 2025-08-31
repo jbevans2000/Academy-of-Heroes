@@ -1,0 +1,196 @@
+
+'use client';
+
+// This is a new file for Phase 1.
+// It will serve as the dedicated tool for sizing hairstyles.
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { onAuthStateChanged, type User } from 'firebase/auth';
+import { db, auth } from '@/lib/firebase';
+import { doc, getDoc, collection, onSnapshot, writeBatch } from 'firebase/firestore';
+import type { BaseBody, Hairstyle } from '@/lib/forge';
+import { TeacherHeader } from '@/components/teacher/teacher-header';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
+import Image from 'next/image';
+
+
+export default function HairSizerPage() {
+    const router = useRouter();
+    const { toast } = useToast();
+    const [user, setUser] = useState<User | null>(null);
+
+    // Data State
+    const [baseBodies, setBaseBodies] = useState<BaseBody[]>([]);
+    const [hairstyles, setHairstyles] = useState<Hairstyle[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Seeding State
+    const [isSeeded, setIsSeeded] = useState(false);
+
+    // UI State
+    const [selectedBody, setSelectedBody] = useState<BaseBody | null>(null);
+    const [selectedHairstyle, setSelectedHairstyle] = useState<Hairstyle | null>(null);
+    
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            if (currentUser) {
+                 const adminRef = doc(db, 'admins', currentUser.uid);
+                const adminSnap = await getDoc(adminRef);
+                if (adminSnap.exists()) {
+                    setUser(currentUser);
+                } else {
+                    router.push('/teacher/dashboard');
+                }
+            } else {
+                router.push('/teacher/login');
+            }
+        });
+
+        return () => unsubscribe();
+    }, [router]);
+    
+    // Data Seeding Effect
+    useEffect(() => {
+        if (!user || isSeeded) return;
+
+        const seedInitialData = async () => {
+            try {
+                // Check if baseBodies collection is empty
+                const baseBodiesRef = collection(db, 'baseBodies');
+                const baseBodiesSnap = await getDoc(doc(baseBodiesRef, 'initial_check'));
+                
+                if (!baseBodiesSnap.exists()) {
+                    const batch = writeBatch(db);
+                    
+                    const placeholderBodies = [
+                        { id: 'male-1', name: 'Male Frame 1', imageUrl: 'https://placehold.co/400x600/EFEFEF/7F7F7F?text=Male+Body', width: 400, height: 600 },
+                        { id: 'female-1', name: 'Female Frame 1', imageUrl: 'https://placehold.co/400x600/EFEFEF/7F7F7F?text=Female+Body', width: 400, height: 600 },
+                    ];
+
+                    placeholderBodies.forEach(body => {
+                        const docRef = doc(db, 'baseBodies', body.id);
+                        batch.set(docRef, body);
+                    });
+
+                    // Add check document to prevent re-seeding
+                    batch.set(doc(baseBodiesRef, 'initial_check'), { seeded: true });
+                    
+                    await batch.commit();
+                    toast({ title: "Initial bodies seeded." });
+                }
+                setIsSeeded(true); // Mark as seeded even if data already exists
+            } catch (error) {
+                console.error("Error seeding data:", error);
+                toast({ variant: 'destructive', title: "Seeding Failed", description: "Could not create initial placeholder data." });
+            }
+        };
+
+        seedInitialData();
+    }, [user, isSeeded, toast]);
+
+    // Data Fetching Effect
+    useEffect(() => {
+        if (!user || !isSeeded) return;
+        
+        setIsLoading(true);
+
+        const unsubBodies = onSnapshot(collection(db, 'baseBodies'), (snapshot) => {
+            const bodies = snapshot.docs
+                .filter(doc => doc.id !== 'initial_check') // Exclude the check doc
+                .map(doc => ({ id: doc.id, ...doc.data() } as BaseBody));
+            setBaseBodies(bodies);
+        });
+
+        const unsubHairstyles = onSnapshot(collection(db, 'hairstyles'), (snapshot) => {
+            const styles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hairstyle));
+            setHairstyles(styles);
+        });
+
+        setIsLoading(false);
+
+        return () => {
+            unsubBodies();
+            unsubHairstyles();
+        };
+    }, [user, isSeeded]);
+
+
+    if (!user) {
+        return (
+             <div className="flex h-screen items-center justify-center bg-gray-900"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>
+        );
+    }
+
+
+    return (
+        <div className="flex min-h-screen w-full flex-col bg-muted/40">
+            <TeacherHeader />
+            <main className="flex-1 p-4 md:p-6 lg:p-8">
+                <div className="w-full max-w-7xl mx-auto space-y-6">
+                     <div className="flex justify-between items-center">
+                         <Button variant="outline" onClick={() => router.push('/admin/tools')}>
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Back to All Tools
+                        </Button>
+                         <h1 className="text-2xl font-bold">Hair Sizer</h1>
+                         <Button disabled>Save Transform</Button>
+                     </div>
+                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                        {/* Library Panel */}
+                        <div className="lg:col-span-1 space-y-4">
+                            <Card>
+                                <CardHeader><CardTitle>Base Bodies</CardTitle></CardHeader>
+                                <CardContent className="grid grid-cols-2 gap-2">
+                                    {isLoading ? (
+                                        <Skeleton className="h-24 w-full col-span-2" />
+                                    ) : (
+                                        baseBodies.map(body => (
+                                            <div key={body.id} className="border p-1 rounded-md cursor-pointer hover:border-primary" onClick={() => setSelectedBody(body)}>
+                                                <Image src={body.imageUrl} alt={body.name} width={100} height={150} className="w-full h-auto object-contain bg-gray-200" />
+                                                <p className="text-xs text-center mt-1">{body.name}</p>
+                                            </div>
+                                        ))
+                                    )}
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardHeader><CardTitle>Hairstyles</CardTitle></CardHeader>
+                                 <CardContent className="grid grid-cols-2 gap-2">
+                                     <p className="col-span-2 text-sm text-muted-foreground">Hairstyles will appear here when added in the Global Forge.</p>
+                                </CardContent>
+                            </Card>
+                        </div>
+                        {/* Canvas Panel */}
+                        <div className="lg:col-span-2">
+                             <Card className="h-[70vh]">
+                                <CardHeader><CardTitle>Canvas</CardTitle></CardHeader>
+                                <CardContent className="relative w-full h-full flex items-center justify-center bg-gray-200 rounded-md">
+                                   {selectedBody ? (
+                                        <Image src={selectedBody.imageUrl} alt={selectedBody.name} width={selectedBody.width} height={selectedBody.height} className="object-contain max-h-full max-w-full" />
+                                   ) : (
+                                       <p>Select a Base Body to begin.</p>
+                                   )}
+                                </CardContent>
+                            </Card>
+                        </div>
+                        {/* Controls Panel */}
+                        <div className="lg:col-span-1">
+                             <Card>
+                                <CardHeader><CardTitle>Controls</CardTitle></CardHeader>
+                                <CardContent>
+                                    <p className="text-sm text-muted-foreground">Controls for positioning and scaling will appear here when a hairstyle is selected.</p>
+                                </CardContent>
+                            </Card>
+                        </div>
+                     </div>
+                </div>
+            </main>
+        </div>
+    )
+}
