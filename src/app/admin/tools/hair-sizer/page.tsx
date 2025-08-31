@@ -61,13 +61,13 @@ export default function HairSizerPage() {
 
         const seedInitialData = async () => {
             try {
-                // Check if baseBodies collection is empty
+                const batch = writeBatch(db);
+
+                // --- Seed Base Bodies ---
                 const baseBodiesRef = collection(db, 'baseBodies');
                 const baseBodiesSnap = await getDoc(doc(baseBodiesRef, 'initial_check'));
                 
                 if (!baseBodiesSnap.exists()) {
-                    const batch = writeBatch(db);
-                    
                     const placeholderBodies = [
                         { id: 'male-1', name: 'Male Frame 1', imageUrl: 'https://placehold.co/400x600/EFEFEF/7F7F7F?text=Male+Body', width: 400, height: 600 },
                         { id: 'female-1', name: 'Female Frame 1', imageUrl: 'https://placehold.co/400x600/EFEFEF/7F7F7F?text=Female+Body', width: 400, height: 600 },
@@ -77,14 +77,41 @@ export default function HairSizerPage() {
                         const docRef = doc(db, 'baseBodies', body.id);
                         batch.set(docRef, body);
                     });
-
-                    // Add check document to prevent re-seeding
                     batch.set(doc(baseBodiesRef, 'initial_check'), { seeded: true });
-                    
-                    await batch.commit();
-                    toast({ title: "Initial bodies seeded." });
                 }
-                setIsSeeded(true); // Mark as seeded even if data already exists
+
+                // --- Seed Hairstyles ---
+                const hairstylesRef = collection(db, 'hairstyles');
+                const hairstylesSnap = await getDoc(doc(hairstylesRef, 'initial_check'));
+
+                if (!hairstylesSnap.exists()) {
+                     const shortBobHairstyle = {
+                        id: 'short-bob-female',
+                        styleName: "Short Bob",
+                        baseImageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FHairstyles%2FFemale%20Hairstyles%2FShort%20Bob%20Style%2FShort%20Bob%20-%20Blond.png?alt=media&token=4cf191a6-040c-45ad-90d1-8e2290e00cbc",
+                        colors: [
+                            { name: "Amber", imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FHairstyles%2FFemale%20Hairstyles%2FShort%20Bob%20Style%2FShort%20Bob%20-%20Amber.png?alt=media&token=d1ebb396-b3a4-437c-a3a4-11ec98060a39" },
+                            { name: "Aqua", imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FHairstyles%2FFemale%20Hairstyles%2FShort%20Bob%20Style%2FShort%20Bob%20-%20Aqua.png?alt=media&token=a7053c5e-b0da-4c8d-a100-737bd1b01c20" },
+                            { name: "Blond", imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FHairstyles%2FFemale%20Hairstyles%2FShort%20Bob%20Style%2FShort%20Bob%20-%20Blond.png?alt=media&token=4cf191a6-040c-45ad-90d1-8e2290e00cbc" },
+                            { name: "Flax", imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FHairstyles%2FFemale%20Hairstyles%2FShort%20Bob%20Style%2FShort%20Bob%20-%20Flax.png?alt=media&token=642faedc-03e2-43e3-990e-9db18d334206" },
+                            { name: "Flint", imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FHairstyles%2FFemale%20Hairstyles%2FShort%20Bob%20Style%2FShort%20Bob%20-%20Flint.png?alt=media&token=3a0bb26f-1b0f-4351-926d-dce7a649801f" },
+                            { name: "Gray", imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FHairstyles%2FFemale%20Hairstyles%2FShort%20Bob%20Style%2FShort%20Bob%20-%20Gray.png?alt=media&token=5b9d52f0-6cda-4f2a-906a-30934049b3bb" },
+                            { name: "Seafoam", imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FHairstyles%2FFemale%20Hairstyles%2FShort%20Bob%20Style%2FShort%20Bob%20-%20Seafoam.png?alt=media&token=9c51d8a3-ac7d-401d-825e-bde502001889" },
+                            { name: "Turquoise", imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FHairstyles%2FFemale%20Hairstyles%2FShort%20Bob%20Style%2FShort%20Bob%20-%20Turquoise.png?alt=media&token=849631b6-e557-4f28-b900-136e9b3c496d" },
+                            { name: "Black", imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FHairstyles%2FFemale%20Hairstyles%2FShort%20Bob%20Style%2FShort_Bob_Black_Final.png?alt=media&token=39c73b62-a0f9-4f97-8d52-9e4a6725e726" },
+                            { name: "Brown", imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FHairstyles%2FFemale%20Hairstyles%2FShort%20Bob%20Style%2FShort_Bob_Brown.png?alt=media&token=55384618-4eb9-4430-93d7-34717472ea3a" },
+                        ],
+                        transforms: {},
+                        isPublished: true,
+                    };
+
+                    batch.set(doc(hairstylesRef, shortBobHairstyle.id), shortBobHairstyle);
+                    batch.set(doc(hairstylesRef, 'initial_check'), { seeded: true });
+                }
+
+                await batch.commit();
+                toast({ title: "Initial data seeded." });
+                setIsSeeded(true);
             } catch (error) {
                 console.error("Error seeding data:", error);
                 toast({ variant: 'destructive', title: "Seeding Failed", description: "Could not create initial placeholder data." });
@@ -108,7 +135,9 @@ export default function HairSizerPage() {
         });
 
         const unsubHairstyles = onSnapshot(collection(db, 'hairstyles'), (snapshot) => {
-            const styles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hairstyle));
+            const styles = snapshot.docs
+                .filter(doc => doc.id !== 'initial_check')
+                .map(doc => ({ id: doc.id, ...doc.data() } as Hairstyle));
             setHairstyles(styles);
         });
 
@@ -162,7 +191,15 @@ export default function HairSizerPage() {
                             <Card>
                                 <CardHeader><CardTitle>Hairstyles</CardTitle></CardHeader>
                                  <CardContent className="grid grid-cols-2 gap-2">
-                                     <p className="col-span-2 text-sm text-muted-foreground">Hairstyles will appear here when added in the Global Forge.</p>
+                                     {hairstyles.map(style => (
+                                         <div key={style.id} className="border p-1 rounded-md cursor-pointer hover:border-primary" onClick={() => setSelectedHairstyle(style)}>
+                                             <Image src={style.baseImageUrl} alt={style.styleName} width={100} height={100} className="w-full h-auto object-contain bg-gray-200" />
+                                             <p className="text-xs text-center mt-1">{style.styleName}</p>
+                                         </div>
+                                     ))}
+                                     {hairstyles.length === 0 && !isLoading && (
+                                         <p className="col-span-2 text-sm text-muted-foreground">Hairstyles will appear here when added in the Global Forge.</p>
+                                     )}
                                 </CardContent>
                             </Card>
                         </div>
