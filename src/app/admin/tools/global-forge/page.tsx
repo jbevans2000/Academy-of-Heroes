@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Diamond, Loader2, Upload, X, Save, PlusCircle, Edit, Trash2, Scissors } from 'lucide-react';
+import { ArrowLeft, Diamond, Loader2, Upload, X, Save, PlusCircle, Edit, Trash2, Scissors, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { addArmorPiece, updateArmorPiece, deleteArmorPiece } from '@/ai/flows/manage-forge';
 import type { ArmorPiece, ArmorSlot, ArmorClassRequirement, Hairstyle } from '@/lib/forge';
@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Switch } from '@/components/ui/switch';
 
 // --- DIALOGS ---
 
@@ -169,6 +170,10 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave }: 
                             <Input id="gold-cost" type="number" value={formData.goldCost || ''} onChange={e => handleInputChange('goldCost', e.target.value)} />
                         </div>
                     </div>
+                     <div className="flex items-center space-x-2 pt-4">
+                        <Switch id="armor-published" checked={formData.isPublished} onCheckedChange={(checked) => handleInputChange('isPublished', checked)} />
+                        <Label htmlFor="armor-published">Published to Students</Label>
+                    </div>
                 </div>
                 </ScrollArea>
                 <DialogFooter>
@@ -302,6 +307,10 @@ const HairstyleEditorDialog = ({ isOpen, onOpenChange, hairstyle, teacherUid }: 
                                 </div>
                             ))}
                             <Button variant="outline" size="sm" onClick={addColor}>Add Color Variation</Button>
+                        </div>
+                         <div className="flex items-center space-x-2 pt-4">
+                            <Switch id="hair-published" checked={formData.isPublished} onCheckedChange={(checked) => handleInputChange('isPublished', checked)} />
+                            <Label htmlFor="hair-published">Published to Students</Label>
                         </div>
                     </div>
                 </ScrollArea>
@@ -483,7 +492,20 @@ export default function GlobalForgePage() {
                                     ) : (
                                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                             {armorPieces.map(piece => (
-                                                <Card key={piece.id} className="flex flex-col">
+                                                <Card key={piece.id} className="flex flex-col relative">
+                                                     <div className="absolute top-2 left-2 z-10">
+                                                        {piece.isPublished ? (
+                                                            <div className="flex items-center gap-1 bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full border border-green-300">
+                                                                <Eye className="h-3 w-3" />
+                                                                Published
+                                                            </div>
+                                                        ) : (
+                                                             <div className="flex items-center gap-1 bg-gray-100 text-gray-800 text-xs font-semibold px-2 py-1 rounded-full border border-gray-300">
+                                                                <EyeOff className="h-3 w-3" />
+                                                                Hidden
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                     <CardHeader className="items-center">
                                                         <div className="w-24 h-24 relative bg-secondary rounded-md">
                                                             <NextImage src={piece.imageUrl || ''} alt={piece.name} fill className="object-contain p-1" />
@@ -526,7 +548,20 @@ export default function GlobalForgePage() {
                                     ) : (
                                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                             {hairstyles.map(style => (
-                                                <Card key={style.id} className="flex flex-col">
+                                                <Card key={style.id} className="flex flex-col relative">
+                                                    <div className="absolute top-2 left-2 z-10">
+                                                        {style.isPublished ? (
+                                                            <div className="flex items-center gap-1 bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full border border-green-300">
+                                                                <Eye className="h-3 w-3" />
+                                                                Published
+                                                            </div>
+                                                        ) : (
+                                                             <div className="flex items-center gap-1 bg-gray-100 text-gray-800 text-xs font-semibold px-2 py-1 rounded-full border border-gray-300">
+                                                                <EyeOff className="h-3 w-3" />
+                                                                Hidden
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                     <CardHeader className="items-center">
                                                         <div className="w-24 h-24 relative bg-secondary rounded-md">
                                                             <NextImage src={style.baseImageUrl || ''} alt={style.styleName} fill className="object-contain p-1" />
