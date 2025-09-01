@@ -107,15 +107,15 @@ export default function HairSizerPage() {
             e.preventDefault();
             setTransform(prev => {
                 switch(e.key) {
-                    case 'ArrowUp': return {...prev, y: prev.y - 0.5 };
-                    case 'ArrowDown': return {...prev, y: prev.y + 0.5 };
-                    case 'ArrowLeft': return {...prev, x: prev.x - 0.5 };
-                    case 'ArrowRight': return {...prev, x: prev.x + 0.5 };
+                    case 'ArrowUp': return {...prev, y: prev.y - 0.1 };
+                    case 'ArrowDown': return {...prev, y: prev.y + 0.1 };
+                    case 'ArrowLeft': return {...prev, x: prev.x - 0.1 };
+                    case 'ArrowRight': return {...prev, x: prev.x + 0.1 };
                     case '+':
                     case '=':
-                         return {...prev, scale: prev.scale + 1 };
+                         return {...prev, scale: prev.scale + 0.1 };
                     case '-':
-                         return {...prev, scale: prev.scale - 1 };
+                         return {...prev, scale: prev.scale - 0.1 };
                     default: return prev;
                 }
             });
@@ -281,15 +281,15 @@ export default function HairSizerPage() {
                                         <>
                                             <div className="space-y-2">
                                                 <Label htmlFor="x-pos">X Position: {transform.x.toFixed(2)}%</Label>
-                                                <Slider id="x-pos" value={[transform.x]} onValueChange={([val]) => setTransform(t => ({...t, x: val}))} min={-50} max={150} step={0.1} />
+                                                <Slider id="x-pos" value={[transform.x]} onValueChange={([val]) => setTransform(t => ({...t, x: val}))} min={-50} max={150} step={0.01} />
                                             </div>
                                              <div className="space-y-2">
                                                 <Label htmlFor="y-pos">Y Position: {transform.y.toFixed(2)}%</Label>
-                                                <Slider id="y-pos" value={[transform.y]} onValueChange={([val]) => setTransform(t => ({...t, y: val}))} min={-50} max={150} step={0.1} />
+                                                <Slider id="y-pos" value={[transform.y]} onValueChange={([val]) => setTransform(t => ({...t, y: val}))} min={-50} max={150} step={0.01} />
                                             </div>
                                              <div className="space-y-2">
-                                                <Label htmlFor="scale">Scale: {transform.scale}%</Label>
-                                                <Slider id="scale" value={[transform.scale]} onValueChange={([val]) => setTransform(t => ({...t, scale: val}))} min={10} max={200} step={1} />
+                                                <Label htmlFor="scale">Scale: {transform.scale.toFixed(2)}%</Label>
+                                                <Slider id="scale" value={[transform.scale]} onValueChange={([val]) => setTransform(t => ({...t, scale: val}))} min={10} max={200} step={0.1} />
                                             </div>
                                         </>
                                      ) : (
