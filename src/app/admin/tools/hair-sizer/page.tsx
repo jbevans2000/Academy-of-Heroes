@@ -46,9 +46,8 @@ export default function HairSizerPage() {
     const [selectedHairstyle, setSelectedHairstyle] = useState<Hairstyle | null>(null);
 
     // Transform State
-    const [transform, setTransform] = useState({ x: 0, y: 0, scale: 100 });
+    const [transform, setTransform] = useState({ x: 50, y: 50, scale: 100 });
     const [isDragging, setIsDragging] = useState(false);
-    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
     const canvasRef = useRef<HTMLDivElement>(null);
 
 
@@ -102,32 +101,40 @@ export default function HairSizerPage() {
         if (selectedHairstyle && selectedBody) {
             const savedTransform = selectedHairstyle.transforms?.[selectedBody.id];
             if (savedTransform) {
-                setTransform(savedTransform);
+                // If x/y are small numbers, they are probably percentages. Otherwise, convert from old pixel format.
+                const needsConversion = Math.abs(savedTransform.x) > 5 || Math.abs(savedTransform.y) > 5;
+                if(needsConversion && canvasRef.current) {
+                    const rect = canvasRef.current.getBoundingClientRect();
+                    setTransform({
+                        x: (savedTransform.x / rect.width) * 100,
+                        y: (savedTransform.y / rect.height) * 100,
+                        scale: savedTransform.scale
+                    })
+                } else {
+                    setTransform(savedTransform);
+                }
             } else {
                 // Reset to default if no transform is saved for this combo
-                setTransform({ x: 0, y: 0, scale: 100 });
+                setTransform({ x: 50, y: 50, scale: 100 });
             }
         }
     }, [selectedHairstyle, selectedBody]);
 
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (!canvasRef.current) return;
         e.preventDefault();
         setIsDragging(true);
-        const canvasRect = canvasRef.current.getBoundingClientRect();
-        setDragStart({
-            x: e.clientX - canvasRect.left - transform.x,
-            y: e.clientY - canvasRect.top - transform.y
-        });
     };
 
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!isDragging || !canvasRef.current) return;
         e.preventDefault();
         const canvasRect = canvasRef.current.getBoundingClientRect();
-        const newX = e.clientX - canvasRect.left - dragStart.x;
-        const newY = e.clientY - canvasRect.top - dragStart.y;
+        
+        // Calculate the mouse position relative to the canvas in percentages
+        const newX = ((e.clientX - canvasRect.left) / canvasRect.width) * 100;
+        const newY = ((e.clientY - canvasRect.top) / canvasRect.height) * 100;
+
         setTransform(prev => ({ ...prev, x: newX, y: newY }));
     };
 
@@ -185,14 +192,14 @@ export default function HairSizerPage() {
                              <Card>
                                 <CardHeader><CardTitle>Base Bodies</CardTitle></CardHeader>
                                 <CardContent className="grid grid-cols-2 gap-2">
-                                     {baseBodyUrls.map((body, index) => (
+                                     {baseBodies.map((body) => (
                                         <div 
-                                            key={index} 
+                                            key={body.id} 
                                             className={cn(
                                                 "border p-1 rounded-md cursor-pointer hover:border-primary", 
-                                                selectedBody?.imageUrl === body.imageUrl && "border-primary ring-2 ring-primary"
+                                                selectedBody?.id === body.id && "border-primary ring-2 ring-primary"
                                             )} 
-                                            onClick={() => setSelectedBody(body as BaseBody)}
+                                            onClick={() => setSelectedBody(body)}
                                         >
                                             <Image src={body.imageUrl} alt={body.name} width={150} height={150} className="w-full h-auto object-contain bg-gray-200 rounded-sm" />
                                         </div>
@@ -231,15 +238,16 @@ export default function HairSizerPage() {
                                 >
                                    {!selectedBody && <p>Select a Base Body to begin.</p>}
                                    {selectedBody && (
-                                        <Image src={selectedBody.imageUrl} alt="Selected Base Body" width={selectedBody.width} height={selectedBody.height} className="object-contain" />
+                                        <Image src={selectedBody.imageUrl} alt="Selected Base Body" width={selectedBody.width} height={selectedBody.height} className="object-contain max-h-full max-w-full" />
                                    )}
                                    {selectedHairstyle && selectedBody && (
                                         <div 
                                             className="absolute cursor-move"
                                             style={{
-                                                left: `${transform.x}px`,
-                                                top: `${transform.y}px`,
+                                                left: `${transform.x}%`,
+                                                top: `${transform.y}%`,
                                                 width: `${transform.scale}%`,
+                                                transform: 'translate(-50%, -50%)', // Center the image on the coords
                                             }}
                                             onMouseDown={handleMouseDown}
                                         >
@@ -263,12 +271,12 @@ export default function HairSizerPage() {
                                      {selectedHairstyle ? (
                                         <>
                                             <div className="space-y-2">
-                                                <Label htmlFor="x-pos">X Position: {transform.x}</Label>
-                                                <Slider id="x-pos" value={[transform.x]} onValueChange={([val]) => setTransform(t => ({...t, x: val}))} min={-400} max={400} step={1} />
+                                                <Label htmlFor="x-pos">X Position: {transform.x.toFixed(2)}%</Label>
+                                                <Slider id="x-pos" value={[transform.x]} onValueChange={([val]) => setTransform(t => ({...t, x: val}))} min={0} max={100} step={0.1} />
                                             </div>
                                              <div className="space-y-2">
-                                                <Label htmlFor="y-pos">Y Position: {transform.y}</Label>
-                                                <Slider id="y-pos" value={[transform.y]} onValueChange={([val]) => setTransform(t => ({...t, y: val}))} min={-400} max={400} step={1} />
+                                                <Label htmlFor="y-pos">Y Position: {transform.y.toFixed(2)}%</Label>
+                                                <Slider id="y-pos" value={[transform.y]} onValueChange={([val]) => setTransform(t => ({...t, y: val}))} min={0} max={100} step={0.1} />
                                             </div>
                                              <div className="space-y-2">
                                                 <Label htmlFor="scale">Scale: {transform.scale}%</Label>
