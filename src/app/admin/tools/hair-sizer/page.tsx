@@ -72,7 +72,9 @@ export default function HairSizerPage() {
         });
 
         const unsubBodies = onSnapshot(collection(db, 'baseBodies'), (snapshot) => {
-            const bodiesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BaseBody));
+            const bodiesData = snapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() } as BaseBody))
+                .sort((a: any, b: any) => a.order - b.order); // Ensure consistent ordering
             setBaseBodies(bodiesData);
             setIsLoading(false);
         });
@@ -174,16 +176,16 @@ export default function HairSizerPage() {
                                      {isLoading ? (
                                         Array.from({length: 8}).map((_, i) => <Skeleton key={i} className="w-full h-24" />)
                                      ) : baseBodies.length > 0 ? (
-                                        baseBodies.map((body, i) => (
+                                        baseBodies.map((body) => (
                                             <div 
-                                                key={body?.id || i} 
+                                                key={body.id} 
                                                 className={cn(
                                                     "border p-1 rounded-md cursor-pointer hover:border-primary", 
-                                                    selectedBody?.id === body?.id && "border-primary ring-2 ring-primary"
+                                                    selectedBody?.id === body.id && "border-primary ring-2 ring-primary"
                                                 )} 
                                                 onClick={() => setSelectedBody(body)}
                                             >
-                                                <Image src={body.imageUrl} alt={body.name || `Base Body ${i + 1}`} width={150} height={150} className="w-full h-auto object-contain bg-gray-200 rounded-sm" />
+                                                <Image src={body.imageUrl} alt={body.name} width={150} height={150} className="w-full h-auto object-contain bg-gray-200 rounded-sm" />
                                             </div>
                                         ))
                                      ) : (
