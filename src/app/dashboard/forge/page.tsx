@@ -224,7 +224,7 @@ export default function ForgePage() {
                         className={cn("h-16 w-16 rounded-md border-2 cursor-pointer", selectedHairstyleColor === color.imageUrl ? "border-primary ring-2 ring-primary" : "border-transparent")}
                         onClick={() => setSelectedHairstyleColor(color.imageUrl)}
                     >
-                        <Image src={color.imageUrl} alt={color.name} width={64} height={64} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                        <Image src={color.imageUrl} alt={`Color ${index+1}`} width={64} height={64} className="w-full h-full object-contain rounded-sm bg-secondary" />
                     </div>
                 ))}
             </div>
