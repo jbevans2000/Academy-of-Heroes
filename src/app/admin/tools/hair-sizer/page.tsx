@@ -98,6 +98,34 @@ export default function HairSizerPage() {
             }
         }
     }, [selectedHairstyle, selectedBody]);
+    
+    // Effect for keyboard controls
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (!selectedHairstyle || !selectedBody) return;
+            
+            e.preventDefault();
+            setTransform(prev => {
+                switch(e.key) {
+                    case 'ArrowUp': return {...prev, y: prev.y - 0.5 };
+                    case 'ArrowDown': return {...prev, y: prev.y + 0.5 };
+                    case 'ArrowLeft': return {...prev, x: prev.x - 0.5 };
+                    case 'ArrowRight': return {...prev, x: prev.x + 0.5 };
+                    case '+':
+                    case '=':
+                         return {...prev, scale: prev.scale + 1 };
+                    case '-':
+                         return {...prev, scale: prev.scale - 1 };
+                    default: return prev;
+                }
+            });
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [selectedHairstyle, selectedBody]);
 
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -212,37 +240,35 @@ export default function HairSizerPage() {
                                     className="relative w-full h-full flex items-center justify-center bg-gray-200 rounded-md overflow-hidden"
                                 >
                                    {!selectedBody && <p>Select a Base Body to begin.</p>}
-                                   {selectedBody && (
-                                        <div 
-                                            ref={bodyImageRef} 
-                                            className="relative w-[500px] h-[500px]"
-                                            onMouseMove={handleMouseMove}
-                                            onMouseUp={handleMouseUp}
-                                            onMouseLeave={handleMouseUp}
-                                        >
-                                            <Image src={selectedBody.imageUrl} alt="Selected Base Body" fill className="object-contain" priority />
-                                             {selectedHairstyle && (
-                                                <div 
-                                                    className="absolute cursor-move"
-                                                    style={{
-                                                        left: `${transform.x}%`,
-                                                        top: `${transform.y}%`,
-                                                        width: `${transform.scale}%`,
-                                                        transform: 'translate(-50%, -50%)',
-                                                    }}
-                                                    onMouseDown={handleMouseDown}
-                                                >
-                                                    <Image 
-                                                        src={selectedHairstyle.baseImageUrl} 
-                                                        alt={selectedHairstyle.styleName} 
-                                                        width={500} 
-                                                        height={500}
-                                                        className="object-contain w-full h-auto pointer-events-none"
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
-                                   )}
+                                   <div 
+                                        ref={bodyImageRef} 
+                                        className="relative w-[500px] h-[500px]"
+                                        onMouseMove={handleMouseMove}
+                                        onMouseUp={handleMouseUp}
+                                        onMouseLeave={handleMouseUp}
+                                    >
+                                        {selectedBody && <Image src={selectedBody.imageUrl} alt="Selected Base Body" fill className="object-contain" priority />}
+                                        {selectedHairstyle && (
+                                            <div 
+                                                className="absolute cursor-move"
+                                                style={{
+                                                    top: `${transform.y}%`,
+                                                    left: `${transform.x}%`,
+                                                    width: `${transform.scale}%`,
+                                                    transform: 'translate(-50%, -50%)',
+                                                }}
+                                                onMouseDown={handleMouseDown}
+                                            >
+                                                <Image 
+                                                    src={selectedHairstyle.baseImageUrl} 
+                                                    alt={selectedHairstyle.styleName} 
+                                                    width={500} 
+                                                    height={500}
+                                                    className="object-contain w-full h-auto pointer-events-none"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
                                 </CardContent>
                             </Card>
                         </div>
