@@ -49,10 +49,11 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
     existingSetNames: string[];
 }) => {
     const { toast } = useToast();
-    const [formData, setFormData] = useState<Partial<ArmorPiece>>({});
-    const [isSaving, setIsSaving] = useState(false);
-    const [isUploading, setIsUploading] = useState<'display' | 'modular' | null>(null);
-    const [isSetPopoverOpen, setIsSetPopoverOpen] = useState(false);
+    const [formData, setFormData = useState<Partial<ArmorPiece>>({});
+    const [isSaving, setIsSaving = useState(false);
+    const [isUploading, setIsUploading = useState<'display' | 'modular' | null>(null);
+    const [isSetPopoverOpen, setIsSetPopoverOpen = useState(false);
+    const [setSearch, setSetSearch = useState('');
 
 
     useEffect(() => {
@@ -61,6 +62,7 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
                 name: '', description: '', imageUrl: '', modularImageUrl: '', slot: 'head',
                 classRequirement: 'Any', levelRequirement: 1, goldCost: 0, isPublished: false, setName: ''
             });
+            setSetSearch(''); // Reset search on open
         }
     }, [isOpen, armor]);
 
@@ -110,6 +112,10 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
             setIsSaving(false);
         }
     };
+    
+    const filteredSets = existingSetNames.filter(name => name.toLowerCase().includes(setSearch.toLowerCase()));
+    const showCreateOption = setSearch && !filteredSets.some(name => name.toLowerCase() === setSearch.toLowerCase());
+
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -133,12 +139,12 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                                <Command onValueChange={(value) => handleInputChange('setName', value)}>
-                                    <CommandInput placeholder="Search or create set..." />
+                                <Command>
+                                    <CommandInput placeholder="Search or create set..." value={setSearch} onValueChange={setSetSearch}/>
                                     <CommandList>
-                                        <CommandEmpty>No set found. Type a name to create a new one.</CommandEmpty>
+                                        <CommandEmpty>No set found.</CommandEmpty>
                                         <CommandGroup>
-                                            {existingSetNames.map((setName) => (
+                                            {filteredSets.map((setName) => (
                                                 <CommandItem
                                                     key={setName}
                                                     value={setName}
@@ -151,6 +157,17 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
                                                     {setName}
                                                 </CommandItem>
                                             ))}
+                                            {showCreateOption && (
+                                                <CommandItem
+                                                    onSelect={() => {
+                                                        handleInputChange('setName', setSearch);
+                                                        setIsSetPopoverOpen(false);
+                                                    }}
+                                                >
+                                                    <PlusCircle className="mr-2 h-4 w-4" />
+                                                    Create "{setSearch}"
+                                                </CommandItem>
+                                            )}
                                         </CommandGroup>
                                     </CommandList>
                                 </Command>
@@ -234,9 +251,9 @@ const HairstyleEditorDialog = ({ isOpen, onOpenChange, hairstyle, teacherUid }: 
     teacherUid: string;
 }) => {
     const { toast } = useToast();
-    const [formData, setFormData] = useState<Partial<Hairstyle>>({ styleName: '', baseImageUrl: '', colors: [], transforms: {}, isPublished: false });
-    const [isSaving, setIsSaving] = useState(false);
-    const [isUploading, setIsUploading] = useState<string | null>(null);
+    const [formData, setFormData = useState<Partial<Hairstyle>>({ styleName: '', baseImageUrl: '', colors: [], transforms: {}, isPublished: false });
+    const [isSaving, setIsSaving = useState(false);
+    const [isUploading, setIsUploading = useState<string | null>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -377,22 +394,22 @@ const HairstyleEditorDialog = ({ isOpen, onOpenChange, hairstyle, teacherUid }: 
 export default function GlobalForgePage() {
     const router = useRouter();
     const { toast } = useToast();
-    const [user, setUser] = useState<User | null>(null);
-    const [armorPieces, setArmorPieces] = useState<ArmorPiece[]>([]);
-    const [hairstyles, setHairstyles] = useState<Hairstyle[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [user, setUser = useState<User | null>(null);
+    const [armorPieces, setArmorPieces = useState<ArmorPiece[]>([]);
+    const [hairstyles, setHairstyles = useState<Hairstyle[]>([]);
+    const [isLoading, setIsLoading = useState(true);
 
     // Armor Dialog state
-    const [isArmorEditorOpen, setIsArmorEditorOpen] = useState(false);
-    const [editingArmor, setEditingArmor] = useState<Partial<ArmorPiece> | null>(null);
-    const [armorToDelete, setArmorToDelete] = useState<ArmorPiece | null>(null);
-    const [isDeletingArmor, setIsDeletingArmor] = useState(false);
+    const [isArmorEditorOpen, setIsArmorEditorOpen = useState(false);
+    const [editingArmor, setEditingArmor = useState<Partial<ArmorPiece> | null>(null);
+    const [armorToDelete, setArmorToDelete = useState<ArmorPiece | null>(null);
+    const [isDeletingArmor, setIsDeletingArmor = useState(false);
 
     // Hairstyle Dialog state
-    const [isHairstyleEditorOpen, setIsHairstyleEditorOpen] = useState(false);
-    const [editingHairstyle, setEditingHairstyle] = useState<Partial<Hairstyle> | null>(null);
-    const [hairstyleToDelete, setHairstyleToDelete] = useState<Hairstyle | null>(null);
-    const [isDeletingHairstyle, setIsDeletingHairstyle] = useState(false);
+    const [isHairstyleEditorOpen, setIsHairstyleEditorOpen = useState(false);
+    const [editingHairstyle, setEditingHairstyle = useState<Partial<Hairstyle> | null>(null);
+    const [hairstyleToDelete, setHairstyleToDelete = useState<Hairstyle | null>(null);
+    const [isDeletingHairstyle, setIsDeletingHairstyle = useState(false);
 
     const existingSetNames = useMemo(() => {
         const names = new Set(armorPieces.map(p => p.setName).filter(Boolean));
@@ -641,3 +658,5 @@ export default function GlobalForgePage() {
         </>
     )
 }
+
+    
