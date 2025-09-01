@@ -205,8 +205,11 @@ export default function ForgePage() {
                 const bodiesSnap = await getDocs(collection(db, 'baseBodies'));
                 const bodiesData = bodiesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as BaseBody)).sort((a: any, b: any) => a.order - b.order);
                 setBaseBodies(bodiesData);
-                if (!selectedBodyId && bodiesData.length > 0) {
-                    setSelectedBodyId(bodiesData[0].id);
+                if (bodiesData.length > 0 && !selectedBodyId) {
+                    // Set default body only if it's not already set by student data
+                    if (!student?.equippedBodyId) {
+                       setSelectedBodyId(bodiesData[0].id);
+                    }
                 }
 
                 const hairQuery = query(collection(db, 'hairstyles'), where('isPublished', '==', true));
@@ -220,7 +223,7 @@ export default function ForgePage() {
 
              } catch (e) {
                 console.error("Error fetching cosmetics:", e);
-                toast({ variant: 'destructive', title: "Error", description: "Could not load cosmetic items." });
+                toast({ variant: 'destructive', title: "Error", description: "Could not load inventory items." });
              } finally {
                 setIsLoading(false);
              }
@@ -229,7 +232,7 @@ export default function ForgePage() {
         fetchCosmetics();
 
         return () => unsubStudent();
-    }, [user, teacherUid, selectedBodyId, toast]);
+    }, [user, teacherUid, toast]);
     
     const selectedHairstyle = hairstyles.find(h => h.id === selectedHairstyleId);
 
