@@ -21,7 +21,7 @@ import type { ArmorPiece, ArmorSlot, ArmorClassRequirement } from '@/lib/forge';
 import { v4 as uuidv4 } from 'uuid';
 import NextImage from 'next/image';
 import { cn } from '@/lib/utils';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
