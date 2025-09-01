@@ -205,11 +205,8 @@ export default function ForgePage() {
                 const bodiesSnap = await getDocs(collection(db, 'baseBodies'));
                 const bodiesData = bodiesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as BaseBody)).sort((a: any, b: any) => a.order - b.order);
                 setBaseBodies(bodiesData);
-                if (bodiesData.length > 0 && !selectedBodyId) {
-                    // Set default body only if it's not already set by student data
-                    if (!student?.equippedBodyId) {
-                       setSelectedBodyId(bodiesData[0].id);
-                    }
+                if (bodiesData.length > 0 && !student?.equippedBodyId) {
+                    setSelectedBodyId(bodiesData[0].id);
                 }
 
                 const hairQuery = query(collection(db, 'hairstyles'), where('isPublished', '==', true));
@@ -232,7 +229,7 @@ export default function ForgePage() {
         fetchCosmetics();
 
         return () => unsubStudent();
-    }, [user, teacherUid, toast]);
+    }, [user, teacherUid, toast, student?.equippedBodyId]);
     
     const selectedHairstyle = hairstyles.find(h => h.id === selectedHairstyleId);
 
@@ -316,3 +313,5 @@ export default function ForgePage() {
         </div>
     );
 }
+
+    
