@@ -10,7 +10,7 @@ import type { ArmorPiece } from '@/lib/forge';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Layers } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
@@ -45,7 +45,10 @@ export default function ArmorSizerPage() {
     const [selectedArmor, setSelectedArmor] = useState<ArmorPiece | null>(null);
     
     // Transform State
+    const [editingLayer, setEditingLayer] = useState<'primary' | 'secondary'>('primary');
     const [transform, setTransform] = useState({ x: 50, y: 50, scale: 100 });
+    const [transform2, setTransform2] = useState({ x: 50, y: 50, scale: 100 });
+
     const [isDragging, setIsDragging] = useState(false);
     const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -88,13 +91,16 @@ export default function ArmorSizerPage() {
     useEffect(() => {
         if (selectedArmor && selectedBody) {
             const savedTransform = selectedArmor.transforms?.[selectedBody.id];
-            if (savedTransform) {
-                setTransform(savedTransform);
-            } else {
-                setTransform({ x: 50, y: 50, scale: 100 });
-            }
+            const savedTransform2 = selectedArmor.transforms2?.[selectedBody.id];
+            
+            setTransform(savedTransform || { x: 50, y: 50, scale: 100 });
+            setTransform2(savedTransform2 || { x: 50, y: 50, scale: 100 });
+            setEditingLayer('primary'); // Reset to primary layer on selection change
         }
     }, [selectedArmor, selectedBody]);
+
+    const activeTransform = editingLayer === 'primary' ? transform : transform2;
+    const setActiveTransform = editingLayer === 'primary' ? setTransform : setTransform2;
 
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -108,7 +114,7 @@ export default function ArmorSizerPage() {
         const canvasRect = canvasRef.current.getBoundingClientRect();
         const newX = ((e.clientX - canvasRect.left) / canvasRect.width) * 100;
         const newY = ((e.clientY - canvasRect.top) / canvasRect.height) * 100;
-        setTransform(prev => ({ ...prev, x: newX, y: newY }));
+        setActiveTransform(prev => ({ ...prev, x: newX, y: newY }));
     };
 
     const handleMouseUp = () => {
@@ -123,9 +129,14 @@ export default function ArmorSizerPage() {
         setIsSaving(true);
         try {
             const armorRef = doc(db, 'armorPieces', selectedArmor.id);
-            await updateDoc(armorRef, {
+            const updates: any = {
                 [`transforms.${selectedBody.id}`]: transform
-            });
+            };
+            if(selectedArmor.modularImageUrl2) {
+                updates[`transforms2.${selectedBody.id}`] = transform2;
+            }
+
+            await updateDoc(armorRef, updates);
             toast({ title: 'Transform Saved!', description: `Position for ${selectedArmor.name} on ${selectedBody.name} has been saved.` });
         } catch (error) {
             console.error("Error saving transform:", error);
@@ -155,7 +166,7 @@ export default function ArmorSizerPage() {
                          <h1 className="text-2xl font-bold">Armor Sizer</h1>
                          <Button onClick={handleSaveTransform} disabled={isSaving || !selectedBody || !selectedArmor}>
                             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                            Save Transform
+                            Save All Transforms
                          </Button>
                      </div>
                      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -187,7 +198,7 @@ export default function ArmorSizerPage() {
                                             )}
                                             onClick={() => setSelectedArmor(piece)}
                                         >
-                                            <Image src={piece.modularImageUrl} alt={piece.name} width={150} height={150} className="w-full h-auto object-contain bg-gray-200 rounded-sm" />
+                                            <Image src={piece.imageUrl} alt={piece.name} width={150} height={150} className="w-full h-auto object-contain bg-gray-200 rounded-sm" />
                                              <p className="text-xs text-center mt-1 truncate">{piece.name}</p>
                                         </div>
                                     ))}
@@ -211,18 +222,34 @@ export default function ArmorSizerPage() {
                                        <p>Select a Base Body to begin.</p>
                                    )}
                                     {selectedArmor && selectedBody && (
-                                        <div 
-                                            className="absolute cursor-move"
-                                            style={{
-                                                left: `${transform.x}%`,
-                                                top: `${transform.y}%`,
-                                                width: `${transform.scale}%`,
-                                                transform: 'translate(-50%, -50%)',
-                                            }}
-                                            onMouseDown={handleMouseDown}
-                                        >
-                                             <Image src={selectedArmor.modularImageUrl} alt={selectedArmor.name} width={500} height={500} className="object-contain max-h-full max-w-full pointer-events-none" />
-                                        </div>
+                                        <>
+                                            <div 
+                                                className={cn("absolute cursor-move", editingLayer !== 'primary' && 'opacity-50 pointer-events-none')}
+                                                style={{
+                                                    left: `${transform.x}%`,
+                                                    top: `${transform.y}%`,
+                                                    width: `${transform.scale}%`,
+                                                    transform: 'translate(-50%, -50%)',
+                                                }}
+                                                onMouseDown={handleMouseDown}
+                                            >
+                                                <Image src={selectedArmor.modularImageUrl} alt={selectedArmor.name} width={500} height={500} className="object-contain max-h-full max-w-full pointer-events-none" />
+                                            </div>
+                                            {selectedArmor.modularImageUrl2 && (
+                                                 <div 
+                                                    className={cn("absolute cursor-move", editingLayer !== 'secondary' && 'opacity-50 pointer-events-none')}
+                                                    style={{
+                                                        left: `${transform2.x}%`,
+                                                        top: `${transform2.y}%`,
+                                                        width: `${transform2.scale}%`,
+                                                        transform: 'translate(-50%, -50%)',
+                                                    }}
+                                                    onMouseDown={handleMouseDown}
+                                                >
+                                                    <Image src={selectedArmor.modularImageUrl2} alt={selectedArmor.name} width={500} height={500} className="object-contain max-h-full max-w-full pointer-events-none" />
+                                                </div>
+                                            )}
+                                        </>
                                     )}
                                 </CardContent>
                             </Card>
@@ -234,17 +261,26 @@ export default function ArmorSizerPage() {
                                 <CardContent className="space-y-6">
                                      {selectedArmor ? (
                                         <>
+                                            {selectedArmor.modularImageUrl2 && (
+                                                <div className="space-y-2 p-2 border rounded-md">
+                                                    <Label className="flex items-center gap-2"><Layers/> Editing Layer</Label>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <Button variant={editingLayer === 'primary' ? 'default' : 'outline'} onClick={() => setEditingLayer('primary')}>Primary</Button>
+                                                        <Button variant={editingLayer === 'secondary' ? 'default' : 'outline'} onClick={() => setEditingLayer('secondary')}>Secondary</Button>
+                                                    </div>
+                                                </div>
+                                            )}
                                             <div className="space-y-2">
-                                                <Label htmlFor="x-pos">X Position: {transform.x.toFixed(2)}%</Label>
-                                                <Slider id="x-pos" value={[transform.x]} onValueChange={([val]) => setTransform(t => ({...t, x: val}))} min={0} max={100} step={0.1} />
+                                                <Label htmlFor="x-pos">X Position: {activeTransform.x.toFixed(2)}%</Label>
+                                                <Slider id="x-pos" value={[activeTransform.x]} onValueChange={([val]) => setActiveTransform(t => ({...t, x: val}))} min={0} max={100} step={0.1} />
                                             </div>
                                              <div className="space-y-2">
-                                                <Label htmlFor="y-pos">Y Position: {transform.y.toFixed(2)}%</Label>
-                                                <Slider id="y-pos" value={[transform.y]} onValueChange={([val]) => setTransform(t => ({...t, y: val}))} min={0} max={100} step={0.1} />
+                                                <Label htmlFor="y-pos">Y Position: {activeTransform.y.toFixed(2)}%</Label>
+                                                <Slider id="y-pos" value={[activeTransform.y]} onValueChange={([val]) => setActiveTransform(t => ({...t, y: val}))} min={0} max={100} step={0.1} />
                                             </div>
                                              <div className="space-y-2">
-                                                <Label htmlFor="scale">Scale: {transform.scale}%</Label>
-                                                <Slider id="scale" value={[transform.scale]} onValueChange={([val]) => setTransform(t => ({...t, scale: val}))} min={10} max={200} step={1} />
+                                                <Label htmlFor="scale">Scale: {activeTransform.scale}%</Label>
+                                                <Slider id="scale" value={[activeTransform.scale]} onValueChange={([val]) => setActiveTransform(t => ({...t, scale: val}))} min={10} max={200} step={1} />
                                             </div>
                                         </>
                                      ) : (

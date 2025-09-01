@@ -108,12 +108,12 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
     const { toast } = useToast();
     const [formData, setFormData] = useState<Partial<ArmorPiece>>({});
     const [isSaving, setIsSaving] = useState(false);
-    const [isUploading, setIsUploading] = useState<'display' | 'modular' | null>(null);
+    const [isUploading, setIsUploading] = useState<'display' | 'modular' | 'modular2' | null>(null);
     
     useEffect(() => {
         if (isOpen) {
             setFormData(armor || {
-                name: '', description: '', imageUrl: '', modularImageUrl: '', slot: 'head',
+                name: '', description: '', imageUrl: '', modularImageUrl: '', modularImageUrl2: '', slot: 'head',
                 classRequirement: 'Any', levelRequirement: 1, goldCost: 0, isPublished: false, setName: ''
             });
         }
@@ -124,12 +124,11 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
     };
     
     const handleSetChange = (value: string) => {
-        // Use a unique value for "None" to avoid issues with empty string value in SelectItem
         const finalValue = value === '--none--' ? '' : value;
         handleInputChange('setName', finalValue);
     }
 
-    const handleFileUpload = async (file: File | null, type: 'display' | 'modular') => {
+    const handleFileUpload = async (file: File | null, type: 'display' | 'modular' | 'modular2') => {
         if (!file || !teacherUid) return;
         setIsUploading(type);
         try {
@@ -138,8 +137,14 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
             const storageRef = ref(storage, `armor-pieces/${teacherUid}/${imageId}_${type}`);
             await uploadBytes(storageRef, file);
             const downloadUrl = await getDownloadURL(storageRef);
-            handleInputChange(type === 'display' ? 'imageUrl' : 'modularImageUrl', downloadUrl);
-            toast({ title: `${type === 'display' ? 'Display' : 'Modular'} image uploaded.` });
+            
+            let fieldToUpdate: keyof ArmorPiece;
+            if (type === 'display') fieldToUpdate = 'imageUrl';
+            else if (type === 'modular') fieldToUpdate = 'modularImageUrl';
+            else fieldToUpdate = 'modularImageUrl2';
+
+            handleInputChange(fieldToUpdate, downloadUrl);
+            toast({ title: `Image for ${type} uploaded.` });
         } catch (error) {
             toast({ variant: 'destructive', title: 'Upload Failed' });
         } finally {
@@ -171,6 +176,8 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
             setIsSaving(false);
         }
     };
+
+    const showPairedUploader = formData.slot === 'hands' || formData.slot === 'feet';
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -209,11 +216,22 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
                     </div>
 
                      <div className="p-4 border rounded-md space-y-2">
-                        <Label>Modular Overlay Image (for character)</Label>
+                        <Label>Modular Overlay Image (Primary)</Label>
                         <Input type="file" onChange={e => handleFileUpload(e.target.files?.[0] || null, 'modular')} disabled={isUploading === 'modular'} />
                         {isUploading === 'modular' && <Loader2 className="animate-spin" />}
                         {formData.modularImageUrl && <NextImage src={formData.modularImageUrl} alt="Modular" width={80} height={80} className="rounded-md border" />}
                     </div>
+                    
+                    {showPairedUploader && (
+                        <div className="p-4 border rounded-md space-y-2 animate-in fade-in-50">
+                            <Label>Modular Overlay Image (Secondary)</Label>
+                            <p className="text-xs text-muted-foreground">For paired items like gloves or boots.</p>
+                            <Input type="file" onChange={e => handleFileUpload(e.target.files?.[0] || null, 'modular2')} disabled={isUploading === 'modular2'} />
+                            {isUploading === 'modular2' && <Loader2 className="animate-spin" />}
+                            {formData.modularImageUrl2 && <NextImage src={formData.modularImageUrl2} alt="Modular 2" width={80} height={80} className="rounded-md border" />}
+                        </div>
+                    )}
+
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">

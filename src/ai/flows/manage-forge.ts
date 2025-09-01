@@ -6,7 +6,7 @@ import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from '
 import { db } from '@/lib/firebase';
 import type { ArmorPiece } from '@/lib/forge';
 
-type CreateArmorPieceInput = Omit<ArmorPiece, 'id' | 'transforms' | 'createdAt'>;
+type CreateArmorPieceInput = Omit<ArmorPiece, 'id' | 'transforms' | 'transforms2' | 'createdAt'>;
 type UpdateArmorPieceInput = Partial<ArmorPiece> & { id: string };
 
 
@@ -29,7 +29,9 @@ export async function addArmorPiece(armorData: CreateArmorPieceInput): Promise<A
         levelRequirement: Number(armorData.levelRequirement) || 1,
         goldCost: Number(armorData.goldCost) || 0,
         isPublished: armorData.isPublished || false,
+        modularImageUrl2: armorData.modularImageUrl2 || '',
         transforms: {},
+        transforms2: {},
         createdAt: serverTimestamp(),
     });
     return { success: true, message: 'Armor piece added to the forge.' };

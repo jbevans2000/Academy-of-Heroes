@@ -32,13 +32,21 @@ export interface ArmorPiece {
     name: string;
     description: string;
     imageUrl: string; // This will be the display/icon image
-    modularImageUrl: string; // This is the image for the character overlay
+    modularImageUrl: string; // This is the image for the character overlay (e.g., left glove)
+    modularImageUrl2?: string; // Optional second image for pairs (e.g., right glove)
     slot: ArmorSlot;
     classRequirement: ArmorClassRequirement;
     levelRequirement: number;
     goldCost: number;
-    setName?: string; // New field for the armor set
+    setName?: string; 
     transforms: {
+        [bodyId: string]: {
+            x: number;
+            y: number;
+            scale: number;
+        }
+    };
+     transforms2?: { // Transforms for the second modular image
         [bodyId: string]: {
             x: number;
             y: number;
