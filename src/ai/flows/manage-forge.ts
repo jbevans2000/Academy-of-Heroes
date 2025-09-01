@@ -1,11 +1,12 @@
 
+
 'use server';
 
 import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { ArmorPiece } from '@/lib/forge';
 
-type CreateArmorPieceInput = Omit<ArmorPiece, 'id' | 'isPublished' | 'transforms' | 'createdAt'>;
+type CreateArmorPieceInput = Omit<ArmorPiece, 'id' | 'transforms' | 'createdAt'>;
 type UpdateArmorPieceInput = Partial<ArmorPiece> & { id: string };
 
 
@@ -26,7 +27,7 @@ export async function addArmorPiece(armorData: CreateArmorPieceInput): Promise<A
         ...armorData,
         levelRequirement: Number(armorData.levelRequirement) || 1,
         goldCost: Number(armorData.goldCost) || 0,
-        isPublished: false,
+        isPublished: armorData.isPublished || false,
         transforms: {},
         createdAt: serverTimestamp(),
     });

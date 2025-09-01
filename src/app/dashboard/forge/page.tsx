@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -100,7 +101,7 @@ export default function ForgePage() {
                 const studentData = { uid: doc.id, ...doc.data() } as Student;
                 setStudent(studentData);
                 // Set initial selections from student data
-                setSelectedBodyId(studentData.equippedBodyId || 'body_1');
+                setSelectedBodyId(studentData.equippedBodyId || null);
                 setSelectedHairstyleId(studentData.equippedHairstyleId || null);
                 setSelectedHairstyleColor(studentData.equippedHairstyleColor || null);
             }
