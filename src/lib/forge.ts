@@ -37,6 +37,7 @@ export interface ArmorPiece {
     classRequirement: ArmorClassRequirement;
     levelRequirement: number;
     goldCost: number;
+    setName?: string; // New field for the armor set
     transforms: {
         [bodyId: string]: {
             x: number;

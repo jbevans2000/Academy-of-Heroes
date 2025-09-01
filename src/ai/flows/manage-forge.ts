@@ -25,6 +25,7 @@ export async function addArmorPiece(armorData: CreateArmorPieceInput): Promise<A
     const armorRef = collection(db, 'armorPieces');
     await addDoc(armorRef, {
         ...armorData,
+        setName: armorData.setName || '',
         levelRequirement: Number(armorData.levelRequirement) || 1,
         goldCost: Number(armorData.goldCost) || 0,
         isPublished: armorData.isPublished || false,

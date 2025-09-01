@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Diamond, Loader2, Upload, X, Save, PlusCircle, Edit, Trash2, Scissors, CheckCircle, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Diamond, Loader2, Upload, X, Save, PlusCircle, Edit, Trash2, Scissors, CheckCircle, Eye, EyeOff, ChevronsUpDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { addArmorPiece, updateArmorPiece, deleteArmorPiece } from '@/ai/flows/manage-forge';
 import type { ArmorPiece, ArmorSlot, ArmorClassRequirement, Hairstyle } from '@/lib/forge';
@@ -35,26 +35,31 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 
 // --- DIALOGS ---
 
-const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave }: {
+const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, existingSetNames }: {
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
     armor: Partial<ArmorPiece> | null;
     teacherUid: string;
     onSave: () => void;
+    existingSetNames: string[];
 }) => {
     const { toast } = useToast();
     const [formData, setFormData] = useState<Partial<ArmorPiece>>({});
     const [isSaving, setIsSaving] = useState(false);
     const [isUploading, setIsUploading] = useState<'display' | 'modular' | null>(null);
+    const [isSetPopoverOpen, setIsSetPopoverOpen] = useState(false);
+
 
     useEffect(() => {
         if (isOpen) {
             setFormData(armor || {
                 name: '', description: '', imageUrl: '', modularImageUrl: '', slot: 'head',
-                classRequirement: 'Any', levelRequirement: 1, goldCost: 0, isPublished: false
+                classRequirement: 'Any', levelRequirement: 1, goldCost: 0, isPublished: false, setName: ''
             });
         }
     }, [isOpen, armor]);
@@ -117,6 +122,40 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave }: 
                      <div className="space-y-2">
                         <Label htmlFor="armor-name">Name</Label>
                         <Input id="armor-name" value={formData.name || ''} onChange={e => handleInputChange('name', e.target.value)} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="set-name">Set Name</Label>
+                         <Popover open={isSetPopoverOpen} onOpenChange={setIsSetPopoverOpen}>
+                            <PopoverTrigger asChild>
+                                <Button variant="outline" role="combobox" aria-expanded={isSetPopoverOpen} className="w-full justify-between">
+                                    {formData.setName || "Select or Create a Set..."}
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                <Command onValueChange={(value) => handleInputChange('setName', value)}>
+                                    <CommandInput placeholder="Search or create set..." />
+                                    <CommandList>
+                                        <CommandEmpty>No set found. Type a name to create a new one.</CommandEmpty>
+                                        <CommandGroup>
+                                            {existingSetNames.map((setName) => (
+                                                <CommandItem
+                                                    key={setName}
+                                                    value={setName}
+                                                    onSelect={(currentValue) => {
+                                                        handleInputChange('setName', currentValue === formData.setName ? "" : currentValue);
+                                                        setIsSetPopoverOpen(false);
+                                                    }}
+                                                >
+                                                    <CheckCircle className={cn("mr-2 h-4 w-4", formData.setName === setName ? "opacity-100" : "opacity-0")} />
+                                                    {setName}
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="armor-desc">Description</Label>
@@ -355,6 +394,11 @@ export default function GlobalForgePage() {
     const [hairstyleToDelete, setHairstyleToDelete] = useState<Hairstyle | null>(null);
     const [isDeletingHairstyle, setIsDeletingHairstyle] = useState(false);
 
+    const existingSetNames = useMemo(() => {
+        const names = new Set(armorPieces.map(p => p.setName).filter(Boolean));
+        return Array.from(names);
+    }, [armorPieces]);
+
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -437,6 +481,7 @@ export default function GlobalForgePage() {
                 armor={editingArmor}
                 teacherUid={user.uid}
                 onSave={() => { /* Real-time listener will update UI */}}
+                existingSetNames={existingSetNames}
             />}
              {user && <HairstyleEditorDialog 
                 isOpen={isHairstyleEditorOpen}
@@ -519,6 +564,7 @@ export default function GlobalForgePage() {
                                                     </CardHeader>
                                                     <CardContent className="flex-grow text-center space-y-1">
                                                         <p className="font-bold">{piece.name}</p>
+                                                        {piece.setName && <p className="text-xs font-semibold text-primary">{piece.setName}</p>}
                                                         <p className="text-sm text-muted-foreground">{piece.classRequirement} - {piece.slot}</p>
                                                         <p className="text-sm">Lvl {piece.levelRequirement} / {piece.goldCost}g</p>
                                                     </CardContent>
