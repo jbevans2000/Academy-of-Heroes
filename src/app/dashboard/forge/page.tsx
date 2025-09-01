@@ -32,23 +32,22 @@ const CharacterCanvas = ({ student, equipment, baseBody }: {
     const hairstyleTransform = hairstyle?.transforms?.[baseBody.id] || { x: 50, y: 50, scale: 100 };
     
     return (
-        <div className="relative w-full h-full">
-            <div className="relative w-full h-full">
-                 <Image src={baseBody.imageUrl} alt="Base Body" fill className="object-contain" priority />
-                 {hairstyleColor && (
-                    <div
-                        className="absolute w-full h-full"
-                        style={{
-                            transform: `translateX(${hairstyleTransform.x - 50}%) translateY(${hairstyleTransform.y - 50}%) scale(${hairstyleTransform.scale / 100})`
-                        }}
-                    >
-                        <div className="relative w-full h-full">
-                            <Image src={hairstyleColor} alt="Hairstyle" fill className="object-contain pointer-events-none" />
-                        </div>
-                    </div>
-                )}
-            </div>
-             {/* TODO: Add Armor Layers Here */}
+        <div className="relative w-full max-w-[500px] aspect-square">
+            <Image src={baseBody.imageUrl} alt="Base Body" fill className="object-contain" priority />
+            {hairstyleColor && (
+                <div
+                    className="absolute pointer-events-none"
+                    style={{
+                        top: `${hairstyleTransform.y}%`,
+                        left: `${hairstyleTransform.x}%`,
+                        width: `${hairstyleTransform.scale}%`,
+                        transform: 'translate(-50%, -50%)'
+                    }}
+                >
+                    <Image src={hairstyleColor} alt="Hairstyle" width={500} height={500} className="object-contain" />
+                </div>
+            )}
+            {/* TODO: Add Armor Layers Here */}
         </div>
     );
 };
@@ -255,7 +254,7 @@ export default function ForgePage() {
                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div className="lg:col-span-2">
                             <Card className="h-[75vh]">
-                                <CardContent className="h-full p-4 flex items-center justify-center relative">
+                                <CardContent className="h-full p-4 flex items-center justify-center">
                                      <CharacterCanvas 
                                         student={student}
                                         baseBody={baseBodies.find(b => b.id === selectedBodyId) || null}

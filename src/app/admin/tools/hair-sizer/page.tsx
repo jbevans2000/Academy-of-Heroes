@@ -37,7 +37,6 @@ export default function HairSizerPage() {
     // Transform State
     const [transform, setTransform] = useState({ x: 50, y: 50, scale: 100 });
     const [isDragging, setIsDragging] = useState(false);
-    const canvasRef = useRef<HTMLDivElement>(null);
     const bodyImageRef = useRef<HTMLDivElement>(null);
 
 
@@ -210,36 +209,38 @@ export default function HairSizerPage() {
                              <Card className="h-[70vh]">
                                 <CardHeader><CardTitle>Canvas</CardTitle></CardHeader>
                                 <CardContent 
-                                    ref={canvasRef}
-                                    onMouseMove={handleMouseMove}
-                                    onMouseUp={handleMouseUp}
-                                    onMouseLeave={handleMouseUp}
                                     className="relative w-full h-full flex items-center justify-center bg-gray-200 rounded-md overflow-hidden"
                                 >
                                    {!selectedBody && <p>Select a Base Body to begin.</p>}
                                    {selectedBody && (
-                                        <div ref={bodyImageRef} className="relative w-[500px] h-[500px]">
-                                            <Image src={selectedBody.imageUrl} alt="Selected Base Body" fill className="object-contain" priority />
-                                        </div>
-                                   )}
-                                   {selectedHairstyle && selectedBody && (
                                         <div 
-                                            className="absolute cursor-move"
-                                            style={{
-                                                left: `${transform.x}%`,
-                                                top: `${transform.y}%`,
-                                                width: `${transform.scale}%`,
-                                                transform: 'translate(-50%, -50%)',
-                                            }}
-                                            onMouseDown={handleMouseDown}
+                                            ref={bodyImageRef} 
+                                            className="relative w-[500px] h-[500px]"
+                                            onMouseMove={handleMouseMove}
+                                            onMouseUp={handleMouseUp}
+                                            onMouseLeave={handleMouseUp}
                                         >
-                                             <Image 
-                                                src={selectedHairstyle.baseImageUrl} 
-                                                alt={selectedHairstyle.styleName} 
-                                                width={500} 
-                                                height={500}
-                                                className="object-contain w-full h-auto pointer-events-none"
-                                             />
+                                            <Image src={selectedBody.imageUrl} alt="Selected Base Body" fill className="object-contain" priority />
+                                             {selectedHairstyle && (
+                                                <div 
+                                                    className="absolute cursor-move"
+                                                    style={{
+                                                        left: `${transform.x}%`,
+                                                        top: `${transform.y}%`,
+                                                        width: `${transform.scale}%`,
+                                                        transform: 'translate(-50%, -50%)',
+                                                    }}
+                                                    onMouseDown={handleMouseDown}
+                                                >
+                                                    <Image 
+                                                        src={selectedHairstyle.baseImageUrl} 
+                                                        alt={selectedHairstyle.styleName} 
+                                                        width={500} 
+                                                        height={500}
+                                                        className="object-contain w-full h-auto pointer-events-none"
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
                                    )}
                                 </CardContent>
