@@ -10,8 +10,8 @@ export interface BaseBody {
 export interface Hairstyle {
     id: string;
     styleName: string;
-    baseImageUrl: string;
-    colors: { name: string; imageUrl: string; }[];
+    baseImageUrl: string; // The single image used for sizing
+    colors: { name: string; imageUrl: string; }[]; // An array for all color variations
     transforms: {
         [bodyId: string]: {
             x: number;
@@ -20,6 +20,7 @@ export interface Hairstyle {
         }
     };
     isPublished: boolean;
+    createdAt?: any;
 }
 
 export type ArmorSlot = 'head' | 'shoulders' | 'chest' | 'hands' | 'legs' | 'feet';
