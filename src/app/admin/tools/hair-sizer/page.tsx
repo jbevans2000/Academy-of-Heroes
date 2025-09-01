@@ -72,9 +72,9 @@ export default function HairSizerPage() {
         });
 
         const unsubBodies = onSnapshot(collection(db, 'baseBodies'), (snapshot) => {
-            const bodies = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BaseBody));
-            setBaseBodies(bodies);
-             setIsLoading(false);
+            const bodiesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BaseBody));
+            setBaseBodies(bodiesData);
+            setIsLoading(false);
         });
 
         return () => {
@@ -171,22 +171,24 @@ export default function HairSizerPage() {
                              <Card>
                                 <CardHeader><CardTitle>Base Bodies</CardTitle></CardHeader>
                                 <CardContent className="grid grid-cols-2 gap-2">
-                                     {isLoading ? Array.from({length: 8}).map((_, i) => <Skeleton key={i} className="w-full h-24" />) :
-                                     baseBodies.map((body, i) => {
-                                        return (
+                                     {isLoading ? (
+                                        Array.from({length: 8}).map((_, i) => <Skeleton key={i} className="w-full h-24" />)
+                                     ) : baseBodies.length > 0 ? (
+                                        baseBodies.map((body, i) => (
                                             <div 
                                                 key={body?.id || i} 
                                                 className={cn(
                                                     "border p-1 rounded-md cursor-pointer hover:border-primary", 
                                                     selectedBody?.id === body?.id && "border-primary ring-2 ring-primary"
                                                 )} 
-                                                onClick={() => body && setSelectedBody(body)}
+                                                onClick={() => setSelectedBody(body)}
                                             >
-                                                <Image src={body.imageUrl} alt={`Base Body ${i + 1}`} width={150} height={150} className="w-full h-auto object-contain bg-gray-200 rounded-sm" />
+                                                <Image src={body.imageUrl} alt={body.name || `Base Body ${i + 1}`} width={150} height={150} className="w-full h-auto object-contain bg-gray-200 rounded-sm" />
                                             </div>
-                                        )
-                                     })}
-                                     {baseBodies.length === 0 && !isLoading && <p className="col-span-2 text-sm text-muted-foreground">No base bodies found. Use the Global Forge to populate them.</p>}
+                                        ))
+                                     ) : (
+                                        <p className="col-span-2 text-sm text-muted-foreground">No base bodies found. Use the Global Forge to populate them.</p>
+                                     )}
                                 </CardContent>
                             </Card>
                             <Card>
