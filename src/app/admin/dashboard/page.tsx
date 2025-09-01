@@ -353,7 +353,7 @@ export default function AdminDashboardPage() {
             <main className="flex-1 p-4 md:p-6 lg:p-8 grid gap-6 md:grid-cols-3 lg:grid-cols-4">
                  
                  <div className="lg:col-span-3 space-y-6">
-                    <Collapsible defaultOpen>
+                    <Collapsible>
                         <Card>
                             <CollapsibleTrigger asChild>
                                 <div className="flex w-full cursor-pointer items-center justify-between p-6">
@@ -409,7 +409,7 @@ export default function AdminDashboardPage() {
                             </CollapsibleContent>
                         </Card>
                     </Collapsible>
-                    <Collapsible defaultOpen>
+                    <Collapsible>
                         <Card>
                              <CollapsibleTrigger asChild>
                                 <div className="flex w-full cursor-pointer items-center justify-between p-6">
