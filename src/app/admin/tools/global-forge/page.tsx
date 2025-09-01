@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, auth, app } from '@/lib/firebase';
-import { collection, onSnapshot, doc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from 'firestore';
+import { collection, onSnapshot, doc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -62,7 +62,7 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
                 name: '', description: '', imageUrl: '', modularImageUrl: '', slot: 'head',
                 classRequirement: 'Any', levelRequirement: 1, goldCost: 0, isPublished: false, setName: ''
             });
-            setSetSearch(''); // Reset search on open
+            setSetSearch(armor?.setName || ''); // Initialize search with current value
         }
     }, [isOpen, armor]);
 
@@ -114,7 +114,7 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
     };
     
     const filteredSets = existingSetNames.filter(name => name.toLowerCase().includes(setSearch.toLowerCase()));
-    const showCreateOption = setSearch && !filteredSets.some(name => name.toLowerCase() === setSearch.toLowerCase());
+    const showCreateOption = setSearch && !existingSetNames.find(name => name.toLowerCase() === setSearch.toLowerCase());
 
 
     return (
@@ -139,8 +139,8 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                                <Command>
-                                    <CommandInput placeholder="Search or create set..." value={setSearch} onValueChange={setSetSearch}/>
+                                <Command onValueChange={setSetSearch}>
+                                    <CommandInput placeholder="Search or create set..." />
                                     <CommandList>
                                         <CommandEmpty>No set found.</CommandEmpty>
                                         <CommandGroup>
@@ -159,8 +159,9 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
                                             ))}
                                             {showCreateOption && (
                                                 <CommandItem
-                                                    onSelect={() => {
-                                                        handleInputChange('setName', setSearch);
+                                                    value={setSearch}
+                                                    onSelect={(currentValue) => {
+                                                        handleInputChange('setName', currentValue);
                                                         setIsSetPopoverOpen(false);
                                                     }}
                                                 >
