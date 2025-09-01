@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, auth, app } from '@/lib/firebase';
-import { collection, onSnapshot, doc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, doc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Diamond, Loader2, Upload, X, Save, PlusCircle, Edit, Trash2, Scissors, CheckCircle, Eye, EyeOff, ChevronsUpDown } from 'lucide-react';
+import { ArrowLeft, Diamond, Loader2, Upload, X, Save, PlusCircle, Edit, Trash2, Scissors, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { addArmorPiece, updateArmorPiece, deleteArmorPiece } from '@/ai/flows/manage-forge';
 import type { ArmorPiece, ArmorSlot, ArmorClassRequirement, Hairstyle } from '@/lib/forge';
@@ -35,10 +35,66 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+
+async function createNewSet(teacherUid: string, setName: string) {
+    if (!setName.trim()) return { success: false, error: 'Set name cannot be empty.' };
+    try {
+        const setsRef = collection(db, 'teachers', teacherUid, 'armorSets');
+        await addDoc(setsRef, { name: setName, createdAt: serverTimestamp() });
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
+}
 
 // --- DIALOGS ---
+
+const SetCreatorDialog = ({ isOpen, onOpenChange, teacherUid, onSetCreated }: {
+    isOpen: boolean;
+    onOpenChange: (isOpen: boolean) => void;
+    teacherUid: string;
+    onSetCreated: () => void;
+}) => {
+    const { toast } = useToast();
+    const [setName, setSetName] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        const result = await createNewSet(teacherUid, setName);
+        if (result.success) {
+            toast({ title: 'Set Created', description: `The set "${setName}" is now available.` });
+            onSetCreated();
+            onOpenChange(false);
+            setSetName('');
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: result.error });
+        }
+        setIsSaving(false);
+    }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Create New Armor Set</DialogTitle>
+                    <DialogDescription>Enter the name for a new armor set. You can assign pieces to this set in the editor.</DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    <Label htmlFor="new-set-name">Set Name</Label>
+                    <Input id="new-set-name" value={setName} onChange={e => setSetName(e.target.value)} placeholder="e.g., Dragonscale Armor" />
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={handleSave} disabled={isSaving || !setName.trim()}>
+                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Create Set
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 
 const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, existingSetNames }: {
     isOpen: boolean;
@@ -52,9 +108,6 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
     const [formData, setFormData] = useState<Partial<ArmorPiece>>({});
     const [isSaving, setIsSaving] = useState(false);
     const [isUploading, setIsUploading] = useState<'display' | 'modular' | null>(null);
-    const [isSetPopoverOpen, setIsSetPopoverOpen] = useState(false);
-    const [setSearch, setSetSearch] = useState('');
-
 
     useEffect(() => {
         if (isOpen) {
@@ -62,7 +115,6 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
                 name: '', description: '', imageUrl: '', modularImageUrl: '', slot: 'head',
                 classRequirement: 'Any', levelRequirement: 1, goldCost: 0, isPublished: false, setName: ''
             });
-            setSetSearch('');
         }
     }, [isOpen, armor]);
 
@@ -112,10 +164,6 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
             setIsSaving(false);
         }
     };
-    
-    const filteredSets = existingSetNames.filter(name => name.toLowerCase().includes(setSearch.toLowerCase()));
-    const showCreateOption = setSearch && !existingSetNames.find(name => name.toLowerCase() === setSearch.toLowerCase());
-
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -131,49 +179,15 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="set-name">Set Name</Label>
-                         <Popover open={isSetPopoverOpen} onOpenChange={setIsSetPopoverOpen}>
-                            <PopoverTrigger asChild>
-                                <Button variant="outline" role="combobox" aria-expanded={isSetPopoverOpen} className="w-full justify-between">
-                                    {formData.setName || "Select or Create a Set..."}
-                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                                <Command>
-                                    <CommandInput placeholder="Search or create set..." value={setSearch} onValueChange={setSetSearch} />
-                                    <CommandList>
-                                        <CommandEmpty>No set found.</CommandEmpty>
-                                        <CommandGroup>
-                                            {filteredSets.map((setName) => (
-                                                <CommandItem
-                                                    key={setName}
-                                                    value={setName}
-                                                    onSelect={() => {
-                                                        handleInputChange('setName', setName);
-                                                        setIsSetPopoverOpen(false);
-                                                    }}
-                                                >
-                                                    <CheckCircle className={cn("mr-2 h-4 w-4", formData.setName === setName ? "opacity-100" : "opacity-0")} />
-                                                    {setName}
-                                                </CommandItem>
-                                            ))}
-                                            {showCreateOption && (
-                                                <CommandItem
-                                                    value={setSearch}
-                                                    onSelect={() => {
-                                                        handleInputChange('setName', setSearch);
-                                                        setIsSetPopoverOpen(false);
-                                                    }}
-                                                >
-                                                    <PlusCircle className="mr-2 h-4 w-4" />
-                                                    Create "{setSearch}"
-                                                </CommandItem>
-                                            )}
-                                        </CommandGroup>
-                                    </CommandList>
-                                </Command>
-                            </PopoverContent>
-                        </Popover>
+                         <Select value={formData.setName} onValueChange={value => handleInputChange('setName', value)}>
+                             <SelectTrigger><SelectValue placeholder="Select a set..."/></SelectTrigger>
+                             <SelectContent>
+                                 <SelectItem value="">None</SelectItem>
+                                 {existingSetNames.map(name => (
+                                     <SelectItem key={name} value={name}>{name}</SelectItem>
+                                 ))}
+                             </SelectContent>
+                         </Select>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="armor-desc">Description</Label>
@@ -398,6 +412,7 @@ export default function GlobalForgePage() {
     const [user, setUser] = useState<User | null>(null);
     const [armorPieces, setArmorPieces] = useState<ArmorPiece[]>([]);
     const [hairstyles, setHairstyles] = useState<Hairstyle[]>([]);
+    const [armorSets, setArmorSets] = useState<{id: string, name: string}[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     // Armor Dialog state
@@ -405,6 +420,9 @@ export default function GlobalForgePage() {
     const [editingArmor, setEditingArmor] = useState<Partial<ArmorPiece> | null>(null);
     const [armorToDelete, setArmorToDelete] = useState<ArmorPiece | null>(null);
     const [isDeletingArmor, setIsDeletingArmor] = useState(false);
+    
+    // Set Creator Dialog
+    const [isSetCreatorOpen, setIsSetCreatorOpen] = useState(false);
 
     // Hairstyle Dialog state
     const [isHairstyleEditorOpen, setIsHairstyleEditorOpen] = useState(false);
@@ -413,9 +431,8 @@ export default function GlobalForgePage() {
     const [isDeletingHairstyle, setIsDeletingHairstyle] = useState(false);
 
     const existingSetNames = useMemo(() => {
-        const names = new Set(armorPieces.map(p => p.setName).filter(Boolean));
-        return Array.from(names) as string[];
-    }, [armorPieces]);
+        return armorSets.map(s => s.name).sort((a, b) => a.localeCompare(b));
+    }, [armorSets]);
 
 
     useEffect(() => {
@@ -448,9 +465,15 @@ export default function GlobalForgePage() {
             setHairstyles(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hairstyle)));
         });
 
+        const setsQuery = collection(db, 'teachers', user.uid, 'armorSets');
+        const unsubSets = onSnapshot(setsQuery, (snapshot) => {
+            setArmorSets(snapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name })));
+        });
+
         return () => {
             unsubArmor();
             unsubHairstyles();
+            unsubSets();
         };
     }, [user]);
     
@@ -501,6 +524,12 @@ export default function GlobalForgePage() {
                 onSave={() => { /* Real-time listener will update UI */}}
                 existingSetNames={existingSetNames}
             />}
+            {user && <SetCreatorDialog
+                isOpen={isSetCreatorOpen}
+                onOpenChange={setIsSetCreatorOpen}
+                teacherUid={user.uid}
+                onSetCreated={() => { /* Listener will update */}}
+            />}
              {user && <HairstyleEditorDialog 
                 isOpen={isHairstyleEditorOpen}
                 onOpenChange={setIsHairstyleEditorOpen}
@@ -548,7 +577,10 @@ export default function GlobalForgePage() {
                                         <CardTitle className="flex items-center gap-2"><Diamond className="text-primary"/> Armor Management</CardTitle>
                                         <CardDescription>Manage all armor pieces available in the game.</CardDescription>
                                     </div>
-                                    <Button onClick={handleNewArmor}><PlusCircle className="mr-2 h-4 w-4" /> Create Armor</Button>
+                                    <div className="flex gap-2">
+                                        <Button onClick={() => setIsSetCreatorOpen(true)} variant="secondary"><PlusCircle className="mr-2 h-4 w-4" /> Create Set</Button>
+                                        <Button onClick={handleNewArmor}><PlusCircle className="mr-2 h-4 w-4" /> Create Armor</Button>
+                                    </div>
                                 </CardHeader>
                                 <CardContent>
                                     <ScrollArea className="h-[60vh]">
