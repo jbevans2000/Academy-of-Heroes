@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -198,7 +197,7 @@ const HairstyleEditorDialog = ({ isOpen, onOpenChange, hairstyle, teacherUid }: 
     const { toast } = useToast();
     const [formData, setFormData] = useState<Partial<Hairstyle>>({ styleName: '', baseImageUrl: '', colors: [], transforms: {}, isPublished: false });
     const [isSaving, setIsSaving] = useState(false);
-    const [isUploading, setIsUploading] = useState<string | null>(null);
+    const [isUploading, setIsUploading<string | null>(null);
 
     useEffect(() => {
         if (isOpen) {
