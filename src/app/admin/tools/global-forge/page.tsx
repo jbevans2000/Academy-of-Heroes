@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -138,8 +139,8 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                                <Command onValueChange={setSetSearch}>
-                                    <CommandInput placeholder="Search or create set..." value={setSearch} />
+                                <Command>
+                                    <CommandInput placeholder="Search or create set..." value={setSearch} onValueChange={setSetSearch} />
                                     <CommandList>
                                         <CommandEmpty>No set found.</CommandEmpty>
                                         <CommandGroup>
@@ -159,8 +160,8 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
                                             {showCreateOption && (
                                                 <CommandItem
                                                     value={setSearch}
-                                                    onSelect={(currentValue) => {
-                                                        handleInputChange('setName', currentValue);
+                                                    onSelect={() => {
+                                                        handleInputChange('setName', setSearch);
                                                         setIsSetPopoverOpen(false);
                                                     }}
                                                 >
