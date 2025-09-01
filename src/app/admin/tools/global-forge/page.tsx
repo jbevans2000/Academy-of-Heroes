@@ -44,10 +44,6 @@ export default function GlobalForgePage() {
         toast({ title: "Coming Soon!", description: "Functionality to add new armor pieces will be implemented here." });
     }
 
-    const handleAddNewHairstyle = () => {
-        toast({ title: "Coming Soon!", description: "Functionality to add new hairstyles will be implemented here." });
-    }
-
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
             <TeacherHeader />
@@ -67,7 +63,7 @@ export default function GlobalForgePage() {
                                 Your central hub for creating and managing all game assets. Items created here will appear in the respective sizer tools.
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <CardContent className="grid grid-cols-1">
                             <Card>
                                 <CardHeader>
                                     <CardTitle>Armor Management</CardTitle>
@@ -75,15 +71,6 @@ export default function GlobalForgePage() {
                                 </CardHeader>
                                 <CardContent>
                                     <Button className="w-full" onClick={handleAddNewArmor}>Add New Armor Piece</Button>
-                                </CardContent>
-                            </Card>
-                             <Card>
-                                <CardHeader>
-                                    <CardTitle>Hairstyle Management</CardTitle>
-                                    <CardDescription>Create new hairstyle styles and add color variations.</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                     <Button className="w-full" onClick={handleAddNewHairstyle}>Add New Hairstyle</Button>
                                 </CardContent>
                             </Card>
                         </CardContent>
