@@ -30,7 +30,7 @@ export async function populateBaseBodies() {
     // 2. Add the new documents
     baseBodyUrls.forEach((bodyData, index) => {
         const docRef = doc(collectionRef); // Creates a new document with a random ID
-        batch.set(docRef, { ...bodyData, order: index });
+        batch.set(docRef, { ...bodyData, order: index + 1 });
     });
     
     await batch.commit();
