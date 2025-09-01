@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -99,10 +100,10 @@ export default function ForgePage() {
             if (doc.exists()) {
                 const studentData = { uid: doc.id, ...doc.data() } as Student;
                 setStudent(studentData);
-                // Set initial selections from student data
-                setSelectedBodyId(studentData.equippedBodyId || null);
-                setSelectedHairstyleId(studentData.equippedHairstyleId || null);
-                setSelectedHairstyleColor(studentData.equippedHairstyleColor || null);
+                // Set initial selections from student data if they haven't been set yet
+                if (selectedBodyId === null) setSelectedBodyId(studentData.equippedBodyId || null);
+                if (selectedHairstyleId === null) setSelectedHairstyleId(studentData.equippedHairstyleId || null);
+                if (selectedHairstyleColor === null) setSelectedHairstyleColor(studentData.equippedHairstyleColor || null);
             }
         });
         
@@ -111,8 +112,10 @@ export default function ForgePage() {
                 const bodiesSnap = await getDocs(collection(db, 'baseBodies'));
                 const bodiesData = bodiesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as BaseBody)).sort((a: any, b: any) => a.order - b.order);
                 setBaseBodies(bodiesData);
-                if (bodiesData.length > 0 && !student?.equippedBodyId) {
-                    setSelectedBodyId(bodiesData[0].id);
+                
+                // Set initial body if there's none equipped on the student record
+                if (!student?.equippedBodyId && bodiesData.length > 0) {
+                   setSelectedBodyId(bodiesData[0].id);
                 }
 
                 const hairQuery = query(collection(db, 'hairstyles'), where('isPublished', '==', true));
@@ -126,7 +129,7 @@ export default function ForgePage() {
 
              } catch (e) {
                 console.error("Error fetching cosmetics:", e);
-                toast({ variant: 'destructive', title: "Error", description: "Could not load inventory items." });
+                toast({ variant: 'destructive', title: "Error", description: "Could not load cosmetic items." });
              } finally {
                 setIsLoading(false);
              }
@@ -135,7 +138,8 @@ export default function ForgePage() {
         fetchCosmetics();
 
         return () => unsubStudent();
-    }, [user, teacherUid, toast, student?.equippedBodyId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user, teacherUid, toast]);
     
     const selectedHairstyle = hairstyles.find(h => h.id === selectedHairstyleId);
 
@@ -294,3 +298,4 @@ export default function ForgePage() {
         </div>
     );
 }
+
