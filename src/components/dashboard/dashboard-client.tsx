@@ -31,6 +31,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { ChallengeDialog } from '@/components/dashboard/challenge-dialog';
+import { getDuelSettings } from '@/ai/flows/manage-duels';
+import { format } from 'date-fns';
 
 interface DashboardClientProps {
   student: Student;
@@ -118,6 +120,23 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
   
   const handleDuelRequestResponse = async (accept: boolean) => {
     if (!activeDuelRequest || !student.teacherUid) return;
+    
+    if (accept) {
+        const settings = await getDuelSettings(student.teacherUid);
+        const today = format(new Date(), 'yyyy-MM-dd');
+        const duelsCompletedToday = student.lastDuelDate === today ? (student.duelsCompletedToday || 0) : 0;
+        
+        if (settings.isDailyLimitEnabled && duelsCompletedToday >= (settings.dailyDuelLimit || 999)) {
+            toast({ variant: 'destructive', title: 'Daily Limit Reached', description: `You have already completed your daily limit of ${settings.dailyDuelLimit} duels.` });
+            accept = false; // Force decline
+        }
+
+        if (accept && activeDuelRequest.cost > 0 && student.gold < activeDuelRequest.cost) {
+            toast({ variant: 'destructive', title: 'Not Enough Gold!', description: `You need ${activeDuelRequest.cost} Gold to accept this duel.` });
+            accept = false; // Force decline
+        }
+    }
+    
     const duelRef = doc(db, 'teachers', student.teacherUid, 'duels', activeDuelRequest.id);
     if (accept) {
         await updateDoc(duelRef, { status: 'active' });
@@ -149,8 +168,8 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
             <AlertDialogHeader>
                 <AlertDialogTitle>A Challenger Appears!</AlertDialogTitle>
                 <AlertDialogDescription>
-                    {activeDuelRequest?.challengerName} has challenged you to a friendly duel! 
-                    {activeDuelRequest?.cost > 0 && ` The entry fee is ${activeDuelRequest.cost} Gold.`}
+                    {activeDuelRequest?.challengerName} has challenged you to a friendly duel!
+                    {activeDuelRequest?.cost > 0 && <strong> The entry fee is {activeDuelRequest.cost} Gold.</strong>}
                     <br/>
                     Do you accept?
                 </AlertDialogDescription>
@@ -231,22 +250,17 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                           </Button>
                       </Link>
                       
-                      <Tooltip>
-                          <TooltipTrigger asChild>
-                              <Button variant="outline" disabled className="h-auto py-4 px-8 border-2 border-gray-600 bg-gray-500/10 cursor-not-allowed">
-                                  <div className="relative flex items-center gap-4">
-                                      <Hammer className="h-12 w-12 text-gray-500" />
-                                      <div>
-                                          <h3 className="text-xl font-bold">The Forge</h3>
-                                          <p className="text-muted-foreground">Equip your Avatar!</p>
-                                      </div>
+                      <Link href="/dashboard/forge" passHref>
+                          <Button variant="outline" className="h-auto py-4 px-8 border-2 border-gray-600 bg-gray-500/10 hover:bg-gray-500/20">
+                              <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
+                                  <Hammer className="h-12 w-12 text-gray-400" />
+                                  <div>
+                                      <h3 className="text-xl font-bold">The Forge</h3>
+                                      <p className="text-muted-foreground">Equip your Avatar!</p>
                                   </div>
-                              </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>The Dwarven Forgemasters are currently visiting the Tavern! Please check back later!</p>
-                          </TooltipContent>
-                      </Tooltip>
+                              </div>
+                          </Button>
+                      </Link>
 
                       <Link href="/dashboard/inventory" passHref>
                           <Button variant="outline" className="h-auto py-4 px-8 border-2 border-purple-600 bg-purple-500/10 hover:bg-purple-500/20">
