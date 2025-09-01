@@ -16,7 +16,7 @@ import { getGlobalSettings, updateGlobalSettings } from '@/ai/flows/manage-setti
 import { deleteFeedback } from '@/ai/flows/submit-feedback';
 import { moderateStudent } from '@/ai/flows/manage-student';
 import { deleteTeacher } from '@/ai/flows/manage-teacher';
-import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench } from 'lucide-react';
+import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +27,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -348,91 +353,109 @@ export default function AdminDashboardPage() {
             <main className="flex-1 p-4 md:p-6 lg:p-8 grid gap-6 md:grid-cols-3 lg:grid-cols-4">
                  
                  <div className="lg:col-span-3 space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>All Guilds</CardTitle>
-                            <CardDescription>A list of all registered teachers and their guilds. Click the guild name to view that teacher's dashboard.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                           <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Guild Name</TableHead>
-                                        <TableHead>Leader (Teacher)</TableHead>
-                                        <TableHead>Teacher UID</TableHead>
-                                        <TableHead>Email</TableHead>
-                                        <TableHead>School</TableHead>
-                                        <TableHead>Students</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {teachers.map((teacher) => (
-                                        <TableRow key={teacher.id}>
-                                            <TableCell>
-                                                <Link href={`/teacher/dashboard?teacherId=${teacher.id}`} className="font-semibold underline hover:text-primary">
-                                                    {teacher.className}
-                                                </Link>
-                                            </TableCell>
-                                            <TableCell>{teacher.name}</TableCell>
-                                            <TableCell className="font-mono text-xs">{teacher.id}</TableCell>
-                                            <TableCell>{teacher.email}</TableCell>
-                                            <TableCell>{teacher.schoolName}</TableCell>
-                                            <TableCell>{teacher.studentCount}</TableCell>
-                                            <TableCell className="text-right">
-                                                 <Button variant="destructive" size="sm" onClick={() => setTeacherToDelete(teacher)}>
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                           </Table>
-                            {teachers.length === 0 && !isLoading && (
-                                <div className="text-center py-10">
-                                    <p className="text-muted-foreground">No teachers have registered yet.</p>
+                    <Collapsible defaultOpen>
+                        <Card>
+                            <CollapsibleTrigger asChild>
+                                <div className="flex w-full cursor-pointer items-center justify-between p-6">
+                                    <div>
+                                        <CardTitle>All Guilds</CardTitle>
+                                        <CardDescription>A list of all registered teachers and their guilds. Click the guild name to view that teacher's dashboard.</CardDescription>
+                                    </div>
+                                    <ChevronDown className="h-6 w-6 transition-transform duration-200 group-data-[state=open]:rotate-180" />
                                 </div>
-                            )}
-                    </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>All Students</CardTitle>
-                            <CardDescription>A complete list of every student account in the system.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                           <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Student Name</TableHead>
-                                        <TableHead>Character Name</TableHead>
-                                        <TableHead>Login Alias</TableHead>
-                                        <TableHead>Guild / Teacher</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {allStudents.map(student => (
-                                        <TableRow key={student.uid}>
-                                            <TableCell>{student.studentName}</TableCell>
-                                            <TableCell>{student.characterName}</TableCell>
-                                            <TableCell className="font-mono">{student.studentId}</TableCell>
-                                            <TableCell>
-                                                 <Link href={`/teacher/dashboard?teacherId=${student.teacherId}`} className="underline hover:text-primary">
-                                                    {student.teacherName}
-                                                </Link>
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <Button variant="destructive" size="sm" onClick={() => setStudentToDelete(student)}>
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                                <CardContent>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Guild Name</TableHead>
+                                                <TableHead>Leader (Teacher)</TableHead>
+                                                <TableHead>Teacher UID</TableHead>
+                                                <TableHead>Email</TableHead>
+                                                <TableHead>School</TableHead>
+                                                <TableHead>Students</TableHead>
+                                                <TableHead className="text-right">Actions</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {teachers.map((teacher) => (
+                                                <TableRow key={teacher.id}>
+                                                    <TableCell>
+                                                        <Link href={`/teacher/dashboard?teacherId=${teacher.id}`} className="font-semibold underline hover:text-primary">
+                                                            {teacher.className}
+                                                        </Link>
+                                                    </TableCell>
+                                                    <TableCell>{teacher.name}</TableCell>
+                                                    <TableCell className="font-mono text-xs">{teacher.id}</TableCell>
+                                                    <TableCell>{teacher.email}</TableCell>
+                                                    <TableCell>{teacher.schoolName}</TableCell>
+                                                    <TableCell>{teacher.studentCount}</TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Button variant="destructive" size="sm" onClick={() => setTeacherToDelete(teacher)}>
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                </Table>
+                                {teachers.length === 0 && !isLoading && (
+                                    <div className="text-center py-10">
+                                        <p className="text-muted-foreground">No teachers have registered yet.</p>
+                                    </div>
+                                )}
+                                </CardContent>
+                            </CollapsibleContent>
+                        </Card>
+                    </Collapsible>
+                    <Collapsible defaultOpen>
+                        <Card>
+                             <CollapsibleTrigger asChild>
+                                <div className="flex w-full cursor-pointer items-center justify-between p-6">
+                                    <div>
+                                        <CardTitle>All Students</CardTitle>
+                                        <CardDescription>A complete list of every student account in the system.</CardDescription>
+                                    </div>
+                                    <ChevronDown className="h-6 w-6 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                                </div>
+                            </CollapsibleTrigger>
+                             <CollapsibleContent>
+                                <CardContent>
+                                <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Student Name</TableHead>
+                                                <TableHead>Character Name</TableHead>
+                                                <TableHead>Login Alias</TableHead>
+                                                <TableHead>Guild / Teacher</TableHead>
+                                                <TableHead className="text-right">Actions</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {allStudents.map(student => (
+                                                <TableRow key={student.uid}>
+                                                    <TableCell>{student.studentName}</TableCell>
+                                                    <TableCell>{student.characterName}</TableCell>
+                                                    <TableCell className="font-mono">{student.studentId}</TableCell>
+                                                    <TableCell>
+                                                        <Link href={`/teacher/dashboard?teacherId=${student.teacherId}`} className="underline hover:text-primary">
+                                                            {student.teacherName}
+                                                        </Link>
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Button variant="destructive" size="sm" onClick={() => setStudentToDelete(student)}>
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                             </CollapsibleContent>
+                        </Card>
+                    </Collapsible>
                  </div>
 
                 <div className="space-y-6 lg:col-span-1">
