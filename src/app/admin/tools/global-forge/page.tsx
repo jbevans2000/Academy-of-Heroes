@@ -534,7 +534,7 @@ export default function GlobalForgePage() {
                                                     </CardHeader>
                                                     <CardContent className="flex-grow text-center space-y-1">
                                                         <p className="font-bold">{style.styleName}</p>
-                                                        <p className="text-sm text-muted-foreground">{style.colors.length} color(s)</p>
+                                                        <p className="text-sm text-muted-foreground">{style.colors?.length || 0} color(s)</p>
                                                     </CardContent>
                                                     <CardFooter className="p-2 flex gap-1">
                                                         <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditHairstyle(style)}><Edit className="mr-1 h-3 w-3" /> Edit</Button>
