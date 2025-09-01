@@ -252,7 +252,7 @@ const HairstyleEditorDialog = ({ isOpen, onOpenChange, hairstyle, teacherUid }: 
         }
         setIsSaving(true);
         try {
-            const collectionRef = collection(db, 'teachers', teacherUid, 'hairstyles');
+            const collectionRef = collection(db, 'hairstyles');
             if (formData.id) {
                 const docRef = doc(collectionRef, formData.id);
                 await updateDoc(docRef, formData);
@@ -323,7 +323,7 @@ const HairstyleEditorDialog = ({ isOpen, onOpenChange, hairstyle, teacherUid }: 
 export default function GlobalForgePage() {
     const router = useRouter();
     const { toast } = useToast();
-    const [user, setTeacher] = useState<User | null>(null);
+    const [user, setUser] = useState<User | null>(null);
     const [armorPieces, setArmorPieces] = useState<ArmorPiece[]>([]);
     const [hairstyles, setHairstyles] = useState<Hairstyle[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -347,7 +347,7 @@ export default function GlobalForgePage() {
                 const adminRef = doc(db, 'admins', currentUser.uid);
                 const adminSnap = await getDoc(adminRef);
                 if (adminSnap.exists()) {
-                    setTeacher(currentUser);
+                    setUser(currentUser);
                 } else {
                     router.push('/teacher/dashboard');
                 }
@@ -366,7 +366,7 @@ export default function GlobalForgePage() {
             setIsLoading(false);
         });
         
-        const hairstylesQuery = collection(db, 'teachers', user.uid, 'hairstyles');
+        const hairstylesQuery = collection(db, 'hairstyles');
         const unsubHairstyles = onSnapshot(hairstylesQuery, (snapshot) => {
             setHairstyles(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hairstyle)));
         });
@@ -403,7 +403,7 @@ export default function GlobalForgePage() {
         if (!hairstyleToDelete || !user) return;
         setIsDeletingHairstyle(true);
         try {
-            await deleteDoc(doc(db, 'teachers', user.uid, 'hairstyles', hairstyleToDelete.id));
+            await deleteDoc(doc(db, 'hairstyles', hairstyleToDelete.id));
             toast({ title: 'Hairstyle Deleted' });
             setHairstyleToDelete(null);
         } catch (error: any) {
@@ -435,7 +435,7 @@ export default function GlobalForgePage() {
                     <AlertDialogDescription>This will permanently remove this armor piece. This cannot be undone.</AlertDialogDescription>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteArmor} disabled={isDeletingArmor}>
+                        <AlertDialogAction onClick={handleDeleteArmor} disabled={isDeletingArmor} className="bg-destructive hover:bg-destructive/90">
                             {isDeletingArmor && <Loader2 className="animate-spin mr-2" />} Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>
@@ -447,7 +447,7 @@ export default function GlobalForgePage() {
                     <AlertDialogDescription>This will permanently remove this hairstyle and all its colors. This cannot be undone.</AlertDialogDescription>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteHairstyle} disabled={isDeletingHairstyle}>
+                        <AlertDialogAction onClick={handleDeleteHairstyle} disabled={isDeletingHairstyle} className="bg-destructive hover:bg-destructive/90">
                             {isDeletingHairstyle && <Loader2 className="animate-spin mr-2" />} Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>
