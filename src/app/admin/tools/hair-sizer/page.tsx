@@ -18,17 +18,6 @@ import { cn } from '@/lib/utils';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 
-const baseBodyUrls = [
-    { name: 'Base Body 1', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(1).png?alt=media&token=8ff364fe-6a96-4ace-b4e8-f011c87f725f', width: 500, height: 500 },
-    { name: 'Base Body 2', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(2).png?alt=media&token=c41b2cae-9f42-43c5-bd3c-e33d316c0a78', width: 500, height: 500 },
-    { name: 'Base Body 3', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(3).png?alt=media&token=f345fe77-f7e5-4d76-b42e-5154db5d9777', width: 500, height: 500 },
-    { name: 'Base Body 4', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(4).png?alt=media&token=202e80bd-ed73-41d6-b60e-8992740545d4', width: 500, height: 500 },
-    { name: 'Base Body 5', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(5).png?alt=media&token=a1132f06-6b2a-46af-95b3-b7b489d6f68b', width: 500, height: 500 },
-    { name: 'Base Body 6', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(6).png?alt=media&token=1fbc2b95-d1fd-4662-b3ae-57e6d004a6fe', width: 500, height: 500 },
-    { name: 'Base Body 7', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(7).png?alt=media&token=0070e4e9-f0cc-443b-bc1b-7679d7b7225b', width: 500, height: 500 },
-    { name: 'Base Body 8', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(8).png?alt=media&token=91503537-a701-412c-a082-8d969d99eb84', width: 500, height: 500 },
-];
-
 
 export default function HairSizerPage() {
     const router = useRouter();
@@ -49,6 +38,7 @@ export default function HairSizerPage() {
     const [transform, setTransform] = useState({ x: 50, y: 50, scale: 100 });
     const [isDragging, setIsDragging] = useState(false);
     const canvasRef = useRef<HTMLDivElement>(null);
+    const bodyImageRef = useRef<HTMLDivElement>(null);
 
 
     useEffect(() => {
@@ -102,18 +92,7 @@ export default function HairSizerPage() {
         if (selectedHairstyle && selectedBody) {
             const savedTransform = selectedHairstyle.transforms?.[selectedBody.id];
             if (savedTransform) {
-                // If x/y are small numbers, they are probably percentages. Otherwise, convert from old pixel format.
-                const needsConversion = Math.abs(savedTransform.x) > 5 || Math.abs(savedTransform.y) > 5;
-                if(needsConversion && canvasRef.current) {
-                    const rect = canvasRef.current.getBoundingClientRect();
-                    setTransform({
-                        x: (savedTransform.x / rect.width) * 100,
-                        y: (savedTransform.y / rect.height) * 100,
-                        scale: savedTransform.scale
-                    })
-                } else {
-                    setTransform(savedTransform);
-                }
+                setTransform(savedTransform);
             } else {
                 // Reset to default if no transform is saved for this combo
                 setTransform({ x: 50, y: 50, scale: 100 });
@@ -128,13 +107,13 @@ export default function HairSizerPage() {
     };
 
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (!isDragging || !canvasRef.current) return;
+        if (!isDragging || !bodyImageRef.current) return;
         e.preventDefault();
-        const canvasRect = canvasRef.current.getBoundingClientRect();
+        const bodyRect = bodyImageRef.current.getBoundingClientRect();
         
-        // Calculate the mouse position relative to the canvas in percentages
-        const newX = ((e.clientX - canvasRect.left) / canvasRect.width) * 100;
-        const newY = ((e.clientY - canvasRect.top) / canvasRect.height) * 100;
+        // Calculate position relative to the base body image, as a percentage
+        const newX = ((e.clientX - bodyRect.left) / bodyRect.width) * 100;
+        const newY = ((e.clientY - bodyRect.top) / bodyRect.height) * 100;
 
         setTransform(prev => ({ ...prev, x: newX, y: newY }));
     };
@@ -239,7 +218,9 @@ export default function HairSizerPage() {
                                 >
                                    {!selectedBody && <p>Select a Base Body to begin.</p>}
                                    {selectedBody && (
-                                        <Image src={selectedBody.imageUrl} alt="Selected Base Body" width={selectedBody.width} height={selectedBody.height} className="object-contain max-h-full max-w-full" />
+                                        <div ref={bodyImageRef} className="relative w-[500px] h-[500px]">
+                                            <Image src={selectedBody.imageUrl} alt="Selected Base Body" fill className="object-contain" priority />
+                                        </div>
                                    )}
                                    {selectedHairstyle && selectedBody && (
                                         <div 
@@ -248,7 +229,7 @@ export default function HairSizerPage() {
                                                 left: `${transform.x}%`,
                                                 top: `${transform.y}%`,
                                                 width: `${transform.scale}%`,
-                                                transform: 'translate(-50%, -50%)', // Center the image on the coords
+                                                transform: 'translate(-50%, -50%)',
                                             }}
                                             onMouseDown={handleMouseDown}
                                         >
@@ -273,11 +254,11 @@ export default function HairSizerPage() {
                                         <>
                                             <div className="space-y-2">
                                                 <Label htmlFor="x-pos">X Position: {transform.x.toFixed(2)}%</Label>
-                                                <Slider id="x-pos" value={[transform.x]} onValueChange={([val]) => setTransform(t => ({...t, x: val}))} min={0} max={100} step={0.1} />
+                                                <Slider id="x-pos" value={[transform.x]} onValueChange={([val]) => setTransform(t => ({...t, x: val}))} min={-50} max={150} step={0.1} />
                                             </div>
                                              <div className="space-y-2">
                                                 <Label htmlFor="y-pos">Y Position: {transform.y.toFixed(2)}%</Label>
-                                                <Slider id="y-pos" value={[transform.y]} onValueChange={([val]) => setTransform(t => ({...t, y: val}))} min={0} max={100} step={0.1} />
+                                                <Slider id="y-pos" value={[transform.y]} onValueChange={([val]) => setTransform(t => ({...t, y: val}))} min={-50} max={150} step={0.1} />
                                             </div>
                                              <div className="space-y-2">
                                                 <Label htmlFor="scale">Scale: {transform.scale}%</Label>
