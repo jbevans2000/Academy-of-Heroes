@@ -41,6 +41,8 @@ export default function ArmorSizerPage() {
 
     // UI State
     const [selectedBodyUrl, setSelectedBodyUrl] = useState<string | null>(null);
+    const [selectedArmor, setSelectedArmor] = useState<ArmorPiece | null>(null);
+
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -111,7 +113,23 @@ export default function ArmorSizerPage() {
                             <Card>
                                 <CardHeader><CardTitle>Armor Pieces</CardTitle></CardHeader>
                                 <CardContent className="grid grid-cols-2 gap-2">
-                                    <p className="col-span-2 text-sm text-muted-foreground">Armor pieces will appear here when added in the Global Forge.</p>
+                                    {isLoading && Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="w-full h-24" />)}
+                                    {armorPieces.length === 0 && !isLoading && (
+                                        <p className="col-span-2 text-sm text-muted-foreground">No armor pieces found. Create some in the Global Forge first.</p>
+                                    )}
+                                    {armorPieces.map(piece => (
+                                        <div 
+                                            key={piece.id} 
+                                            className={cn(
+                                                "border p-1 rounded-md cursor-pointer hover:border-primary", 
+                                                selectedArmor?.id === piece.id && "border-primary ring-2 ring-primary"
+                                            )}
+                                            onClick={() => setSelectedArmor(piece)}
+                                        >
+                                            <Image src={piece.modularImageUrl} alt={piece.name} width={150} height={150} className="w-full h-auto object-contain bg-gray-200 rounded-sm" />
+                                             <p className="text-xs text-center mt-1 truncate">{piece.name}</p>
+                                        </div>
+                                    ))}
                                 </CardContent>
                             </Card>
                         </div>
@@ -125,6 +143,11 @@ export default function ArmorSizerPage() {
                                    ) : (
                                        <p>Select a Base Body to begin.</p>
                                    )}
+                                    {selectedArmor && (
+                                        <div className="absolute">
+                                             <Image src={selectedArmor.modularImageUrl} alt={selectedArmor.name} width={500} height={500} className="object-contain max-h-full max-w-full pointer-events-none" />
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
                         </div>
