@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, auth, app } from '@/lib/firebase';
-import { collection, onSnapshot, doc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -35,6 +35,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
+
 
 async function createNewSet(teacherUid: string, setName: string) {
     if (!setName.trim()) return { success: false, error: 'Set name cannot be empty.' };
@@ -108,7 +109,7 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
     const [formData, setFormData] = useState<Partial<ArmorPiece>>({});
     const [isSaving, setIsSaving] = useState(false);
     const [isUploading, setIsUploading] = useState<'display' | 'modular' | null>(null);
-
+    
     useEffect(() => {
         if (isOpen) {
             setFormData(armor || {
@@ -122,6 +123,12 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
         setFormData(prev => ({...prev, [field]: value}));
     };
     
+    const handleSetChange = (value: string) => {
+        // Use a unique value for "None" to avoid issues with empty string value in SelectItem
+        const finalValue = value === '--none--' ? '' : value;
+        handleInputChange('setName', finalValue);
+    }
+
     const handleFileUpload = async (file: File | null, type: 'display' | 'modular') => {
         if (!file || !teacherUid) return;
         setIsUploading(type);
@@ -179,10 +186,10 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="set-name">Set Name</Label>
-                         <Select value={formData.setName} onValueChange={value => handleInputChange('setName', value)}>
+                         <Select value={formData.setName || '--none--'} onValueChange={handleSetChange}>
                              <SelectTrigger><SelectValue placeholder="Select a set..."/></SelectTrigger>
                              <SelectContent>
-                                 <SelectItem value="">None</SelectItem>
+                                 <SelectItem value="--none--">None</SelectItem>
                                  {existingSetNames.map(name => (
                                      <SelectItem key={name} value={name}>{name}</SelectItem>
                                  ))}
@@ -312,7 +319,7 @@ const HairstyleEditorDialog = ({ isOpen, onOpenChange, hairstyle, teacherUid }: 
                 });
 
                 const urls = await Promise.all(uploadPromises);
-                const newColorObjects = urls.map(url => ({ imageUrl: url }));
+                const newColorObjects = urls.map(url => ({ imageUrl: url, name: 'Default Color' })); // Add a default name
 
                 setFormData(prev => ({...prev, colors: [...(prev.colors || []), ...newColorObjects]}));
                 toast({ title: `${files.length} color variation(s) uploaded.` });
