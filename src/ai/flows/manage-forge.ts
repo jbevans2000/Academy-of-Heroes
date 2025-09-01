@@ -1,11 +1,13 @@
 
 'use server';
 
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { ArmorPiece } from '@/lib/forge';
 
-type CreateArmorPieceInput = Omit<ArmorPiece, 'id' | 'isPublished' | 'transforms'>;
+type CreateArmorPieceInput = Omit<ArmorPiece, 'id' | 'isPublished' | 'transforms' | 'createdAt'>;
+type UpdateArmorPieceInput = Partial<ArmorPiece> & { id: string };
+
 
 interface ActionResponse {
   success: boolean;
@@ -14,7 +16,7 @@ interface ActionResponse {
 }
 
 export async function addArmorPiece(armorData: CreateArmorPieceInput): Promise<ActionResponse> {
-  if (!armorData.name || !armorData.description || !armorData.imageUrl || !armorData.slot || !armorData.classRequirement) {
+  if (!armorData.name || !armorData.description || !armorData.imageUrl || !armorData.modularImageUrl || !armorData.slot || !armorData.classRequirement) {
     return { success: false, error: 'Missing required armor data.' };
   }
 
@@ -33,4 +35,32 @@ export async function addArmorPiece(armorData: CreateArmorPieceInput): Promise<A
     console.error('Error adding armor piece: ', error);
     return { success: false, error: error.message || 'Failed to create armor piece.' };
   }
+}
+
+export async function updateArmorPiece(armorData: UpdateArmorPieceInput): Promise<ActionResponse> {
+  if (!armorData.id) {
+    return { success: false, error: 'Armor piece ID is required for an update.' };
+  }
+  try {
+    const armorRef = doc(db, 'armorPieces', armorData.id);
+    const { id, ...dataToUpdate } = armorData;
+    await updateDoc(armorRef, dataToUpdate);
+    return { success: true, message: 'Armor piece updated successfully.' };
+  } catch (error: any) {
+    console.error('Error updating armor piece: ', error);
+    return { success: false, error: error.message || 'Failed to update armor piece.' };
+  }
+}
+
+export async function deleteArmorPiece(armorId: string): Promise<ActionResponse> {
+    if (!armorId) {
+        return { success: false, error: 'Armor piece ID is required.' };
+    }
+    try {
+        await deleteDoc(doc(db, 'armorPieces', armorId));
+        return { success: true, message: 'Armor piece deleted.' };
+    } catch (error: any) {
+        console.error("Error deleting armor piece:", error);
+        return { success: false, error: 'Failed to delete armor piece.' };
+    }
 }

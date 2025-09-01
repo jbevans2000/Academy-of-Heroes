@@ -29,7 +29,8 @@ export interface ArmorPiece {
     id: string;
     name: string;
     description: string;
-    imageUrl: string;
+    imageUrl: string; // This will be the display/icon image
+    modularImageUrl: string; // This is the image for the character overlay
     slot: ArmorSlot;
     classRequirement: ArmorClassRequirement;
     levelRequirement: number;
@@ -42,4 +43,5 @@ export interface ArmorPiece {
         }
     };
     isPublished: boolean;
+    createdAt?: any;
 }
