@@ -1,11 +1,10 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, onSnapshot, query, where, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc, getDoc, updateDoc, getDocs } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import type { ArmorPiece, Hairstyle, BaseBody } from '@/lib/forge';
@@ -100,10 +99,10 @@ export default function ForgePage() {
             if (doc.exists()) {
                 const studentData = { uid: doc.id, ...doc.data() } as Student;
                 setStudent(studentData);
-                // Set initial selections from student data
-                setSelectedBodyId(studentData.equippedBodyId || null);
-                setSelectedHairstyleId(studentData.equippedHairstyleId || null);
-                setSelectedHairstyleColor(studentData.equippedHairstyleColor || null);
+                // Set initial selections from student data if they haven't been set yet
+                if (selectedBodyId === null) setSelectedBodyId(studentData.equippedBodyId || null);
+                if (selectedHairstyleId === null) setSelectedHairstyleId(studentData.equippedHairstyleId || null);
+                if (selectedHairstyleColor === null) setSelectedHairstyleColor(studentData.equippedHairstyleColor || null);
             }
         });
         
@@ -112,8 +111,10 @@ export default function ForgePage() {
                 const bodiesSnap = await getDocs(collection(db, 'baseBodies'));
                 const bodiesData = bodiesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as BaseBody)).sort((a: any, b: any) => a.order - b.order);
                 setBaseBodies(bodiesData);
-                if (!selectedBodyId && bodiesData.length > 0) {
-                    setSelectedBodyId(bodiesData[0].id);
+                
+                // Set initial body if there's none equipped on the student record
+                if (!student?.equippedBodyId && bodiesData.length > 0) {
+                   setSelectedBodyId(bodiesData[0].id);
                 }
 
                 const hairQuery = query(collection(db, 'hairstyles'), where('isPublished', '==', true));
@@ -136,7 +137,8 @@ export default function ForgePage() {
         fetchCosmetics();
 
         return () => unsubStudent();
-    }, [user, teacherUid, selectedBodyId, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user, teacherUid, toast]);
     
     const selectedHairstyle = hairstyles.find(h => h.id === selectedHairstyleId);
 
@@ -162,35 +164,72 @@ export default function ForgePage() {
 
     const handleReset = () => {
         if (student) {
-            setSelectedBodyId(student.equippedBodyId || 'body_1');
+            setSelectedBodyId(student.equippedBodyId || baseBodies[0]?.id || null);
             setSelectedHairstyleId(student.equippedHairstyleId || null);
             setSelectedHairstyleColor(student.equippedHairstyleColor || null);
         }
     }
     
-    const renderEquipmentGrid = (items: any[], selectedId: string | null, onSelect: (id: string | null) => void, onColorSelect?: (url: string | null) => void) => (
-        <div className="grid grid-cols-4 gap-2">
-            {items.map(item => (
+    const renderBodyGrid = () => (
+        <div className="grid grid-cols-3 gap-2">
+            {baseBodies.map(item => (
                 <Card 
                     key={item.id} 
                     className={cn(
                         "cursor-pointer hover:border-primary", 
-                        selectedId === item.id && "border-2 border-primary"
+                        selectedBodyId === item.id && "border-2 border-primary"
                     )}
-                    onClick={() => {
-                        onSelect(item.id);
-                        if (onColorSelect) { // Automatically select first color
-                           onColorSelect(item.colors?.[0]?.imageUrl || null);
-                        }
-                    }}
+                    onClick={() => setSelectedBodyId(item.id)}
                 >
                     <CardContent className="p-1 aspect-square">
-                        <Image src={item.imageUrl || item.baseImageUrl} alt={item.name || item.styleName} width={100} height={100} className="w-full h-full object-contain rounded-sm" />
+                        <Image src={item.imageUrl} alt={item.name} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
                     </CardContent>
                 </Card>
             ))}
         </div>
     );
+    
+    const renderHairstyleGrid = () => (
+        <div className="grid grid-cols-3 gap-2">
+            {hairstyles.map(item => (
+                <Card 
+                    key={item.id} 
+                    className={cn(
+                        "cursor-pointer hover:border-primary", 
+                        selectedHairstyleId === item.id && "border-2 border-primary"
+                    )}
+                    onClick={() => {
+                        setSelectedHairstyleId(item.id);
+                        // Automatically select first color
+                        setSelectedHairstyleColor(item.colors?.[0]?.imageUrl || null);
+                    }}
+                >
+                    <CardContent className="p-1 aspect-square">
+                        <Image src={item.baseImageUrl} alt={item.styleName} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+    );
+
+    const renderHairColorGrid = () => {
+        if (!selectedHairstyle) {
+            return <p className="text-center text-muted-foreground py-8">Select a hairstyle first to see color options.</p>
+        }
+        return (
+            <div className="grid grid-cols-5 gap-2">
+                {selectedHairstyle.colors.map((color, index) => (
+                    <div 
+                        key={index} 
+                        className={cn("h-16 w-16 rounded-md border-2 cursor-pointer", selectedHairstyleColor === color.imageUrl ? "border-primary ring-2 ring-primary" : "border-transparent")}
+                        onClick={() => setSelectedHairstyleColor(color.imageUrl)}
+                    >
+                        <Image src={color.imageUrl} alt={color.name} width={64} height={64} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                    </div>
+                ))}
+            </div>
+        )
+    };
     
     if (isLoading) {
         return <div className="flex items-center justify-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>
@@ -201,76 +240,59 @@ export default function ForgePage() {
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
             <DashboardHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-                    {/* Left Panel: Character Display */}
-                    <div className="lg:col-span-2 h-[80vh]">
-                        <Card className="h-full flex flex-col">
-                            <CardHeader>
-                                <CardTitle>Character Forge</CardTitle>
-                                <CardDescription>Customize your hero's appearance.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex-grow">
-                                <CharacterCanvas 
-                                    student={student}
-                                    baseBody={baseBodies.find(b => b.id === selectedBodyId) || null}
-                                    equipment={{ hairstyle: selectedHairstyle, hairstyleColor: selectedHairstyleColor }}
-                                />
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* Right Panel: Equipment Selection */}
-                    <div className="h-[80vh] flex flex-col gap-4">
-                        <Card className="flex-grow flex flex-col">
-                             <Tabs defaultValue="body" className="w-full h-full flex flex-col">
-                                <TabsList className="grid w-full grid-cols-4">
-                                    <TabsTrigger value="body">Body</TabsTrigger>
-                                    <TabsTrigger value="hair">Hair</TabsTrigger>
-                                    <TabsTrigger value="head">Head</TabsTrigger>
-                                    <TabsTrigger value="shoulders">Shoulders</TabsTrigger>
-                                </TabsList>
-                                <ScrollArea className="flex-grow">
-                                <TabsContent value="body" className="p-2">
-                                     {renderEquipmentGrid(baseBodies, selectedBodyId, setSelectedBodyId)}
-                                </TabsContent>
-                                <TabsContent value="hair" className="p-2 space-y-4">
-                                    {renderEquipmentGrid(hairstyles, selectedHairstyleId, setSelectedHairstyleId, setSelectedHairstyleColor)}
-                                    {selectedHairstyle && (
-                                        <>
-                                            <hr />
-                                            <h4 className="font-semibold text-sm">Colors</h4>
-                                            <div className="grid grid-cols-5 gap-2">
-                                                {selectedHairstyle.colors.map((color, index) => (
-                                                    <div 
-                                                        key={index} 
-                                                        className={cn("h-12 w-12 rounded-md border-2 cursor-pointer", selectedHairstyleColor === color.imageUrl ? "border-primary ring-2 ring-primary" : "border-transparent")}
-                                                        onClick={() => setSelectedHairstyleColor(color.imageUrl)}
-                                                    >
-                                                        <Image src={color.imageUrl} alt={color.name} width={48} height={48} className="w-full h-full object-contain rounded-sm" />
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </>
-                                    )}
-                                </TabsContent>
-                                <TabsContent value="head" className="p-2">
-                                    <p className="text-center text-muted-foreground p-8">Head armor coming soon!</p>
-                                </TabsContent>
-                                <TabsContent value="shoulders" className="p-2">
-                                     <p className="text-center text-muted-foreground p-8">Shoulder armor coming soon!</p>
-                                </TabsContent>
-                                </ScrollArea>
-                            </Tabs>
-                        </Card>
-                        <div className="flex-shrink-0 grid grid-cols-2 gap-2">
-                             <Button variant="outline" size="lg" onClick={handleReset} disabled={isSaving}><RotateCcw className="mr-2 h-4 w-4"/>Reset</Button>
+                 <div className="w-full max-w-7xl mx-auto space-y-4">
+                     <div className="flex justify-between items-center">
+                        <Button variant="outline" onClick={() => router.push('/dashboard')}><ArrowLeft className="mr-2 h-4 w-4"/> Back to Dashboard</Button>
+                        <div className="flex gap-2">
+                             <Button variant="secondary" size="lg" onClick={handleReset} disabled={isSaving}><RotateCcw className="mr-2 h-4 w-4"/>Reset Changes</Button>
                              <Button size="lg" onClick={handleSave} disabled={isSaving}>
                                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4" />}
-                                Save
+                                Save Appearance
                              </Button>
                         </div>
                     </div>
-                </div>
+                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-2">
+                            <Card className="h-[75vh]">
+                                <CardContent className="h-full p-4 flex items-center justify-center relative">
+                                     <CharacterCanvas 
+                                        student={student}
+                                        baseBody={baseBodies.find(b => b.id === selectedBodyId) || null}
+                                        equipment={{ hairstyle: selectedHairstyle, hairstyleColor: selectedHairstyleColor }}
+                                    />
+                                </CardContent>
+                            </Card>
+                        </div>
+                        <div className="lg:col-span-1">
+                            <Card className="h-[75vh] flex flex-col">
+                                <CardHeader>
+                                    <CardTitle>Armory</CardTitle>
+                                    <CardDescription>Select your equipment.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="flex-grow overflow-hidden">
+                                     <Tabs defaultValue="body" className="w-full h-full flex flex-col">
+                                        <TabsList className="grid w-full grid-cols-3">
+                                            <TabsTrigger value="body">Body</TabsTrigger>
+                                            <TabsTrigger value="hair">Hairstyle</TabsTrigger>
+                                            <TabsTrigger value="hair_color">Hair Color</TabsTrigger>
+                                        </TabsList>
+                                        <ScrollArea className="flex-grow mt-4 h-full">
+                                            <TabsContent value="body" className="p-2">
+                                                {renderBodyGrid()}
+                                            </TabsContent>
+                                            <TabsContent value="hair" className="p-2">
+                                                {renderHairstyleGrid()}
+                                            </TabsContent>
+                                            <TabsContent value="hair_color" className="p-2 space-y-4">
+                                                {renderHairColorGrid()}
+                                            </TabsContent>
+                                        </ScrollArea>
+                                    </Tabs>
+                                </CardContent>
+                            </Card>
+                        </div>
+                     </div>
+                 </div>
             </main>
         </div>
     );
