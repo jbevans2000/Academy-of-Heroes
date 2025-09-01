@@ -31,6 +31,7 @@ const CharacterCanvas = ({ student, equipment, baseBody }: {
 
     const hairstyleTransform = hairstyle?.transforms?.[baseBody.id] || { x: 50, y: 50, scale: 100 };
     
+    // Use absolute positioning with pixels instead of percentages
     return (
         <div className="relative w-full h-full">
             <Image src={baseBody.imageUrl} alt="Base Body" fill className="object-contain" priority />
@@ -38,9 +39,10 @@ const CharacterCanvas = ({ student, equipment, baseBody }: {
                 <div
                     className="absolute"
                     style={{
-                        left: `${hairstyleTransform.x}%`,
-                        top: `${hairstyleTransform.y}%`,
+                        left: `${hairstyleTransform.x}px`,
+                        top: `${hairstyleTransform.y}px`,
                         width: `${hairstyleTransform.scale}%`,
+                        // We still need translate to center the image on the coords
                         transform: 'translate(-50%, -50%)'
                     }}
                 >
