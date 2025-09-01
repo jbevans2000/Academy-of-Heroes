@@ -49,11 +49,11 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
     existingSetNames: string[];
 }) => {
     const { toast } = useToast();
-    const [formData, setFormData = useState<Partial<ArmorPiece>>({});
-    const [isSaving, setIsSaving = useState(false);
-    const [isUploading, setIsUploading = useState<'display' | 'modular' | null>(null);
-    const [isSetPopoverOpen, setIsSetPopoverOpen = useState(false);
-    const [setSearch, setSetSearch = useState('');
+    const [formData, setFormData] = useState<Partial<ArmorPiece>>({});
+    const [isSaving, setIsSaving] = useState(false);
+    const [isUploading, setIsUploading] = useState<'display' | 'modular' | null>(null);
+    const [isSetPopoverOpen, setIsSetPopoverOpen] = useState(false);
+    const [setSearch, setSetSearch] = useState('');
 
 
     useEffect(() => {
@@ -251,9 +251,9 @@ const HairstyleEditorDialog = ({ isOpen, onOpenChange, hairstyle, teacherUid }: 
     teacherUid: string;
 }) => {
     const { toast } = useToast();
-    const [formData, setFormData = useState<Partial<Hairstyle>>({ styleName: '', baseImageUrl: '', colors: [], transforms: {}, isPublished: false });
-    const [isSaving, setIsSaving = useState(false);
-    const [isUploading, setIsUploading = useState<string | null>(null);
+    const [formData, setFormData] = useState<Partial<Hairstyle>>({ styleName: '', baseImageUrl: '', colors: [], transforms: {}, isPublished: false });
+    const [isSaving, setIsSaving] = useState(false);
+    const [isUploading, setIsUploading] = useState<string | null>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -394,26 +394,26 @@ const HairstyleEditorDialog = ({ isOpen, onOpenChange, hairstyle, teacherUid }: 
 export default function GlobalForgePage() {
     const router = useRouter();
     const { toast } = useToast();
-    const [user, setUser = useState<User | null>(null);
-    const [armorPieces, setArmorPieces = useState<ArmorPiece[]>([]);
-    const [hairstyles, setHairstyles = useState<Hairstyle[]>([]);
-    const [isLoading, setIsLoading = useState(true);
+    const [user, setUser] = useState<User | null>(null);
+    const [armorPieces, setArmorPieces] = useState<ArmorPiece[]>([]);
+    const [hairstyles, setHairstyles] = useState<Hairstyle[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     // Armor Dialog state
-    const [isArmorEditorOpen, setIsArmorEditorOpen = useState(false);
-    const [editingArmor, setEditingArmor = useState<Partial<ArmorPiece> | null>(null);
-    const [armorToDelete, setArmorToDelete = useState<ArmorPiece | null>(null);
-    const [isDeletingArmor, setIsDeletingArmor = useState(false);
+    const [isArmorEditorOpen, setIsArmorEditorOpen] = useState(false);
+    const [editingArmor, setEditingArmor] = useState<Partial<ArmorPiece> | null>(null);
+    const [armorToDelete, setArmorToDelete] = useState<ArmorPiece | null>(null);
+    const [isDeletingArmor, setIsDeletingArmor] = useState(false);
 
     // Hairstyle Dialog state
-    const [isHairstyleEditorOpen, setIsHairstyleEditorOpen = useState(false);
-    const [editingHairstyle, setEditingHairstyle = useState<Partial<Hairstyle> | null>(null);
-    const [hairstyleToDelete, setHairstyleToDelete = useState<Hairstyle | null>(null);
-    const [isDeletingHairstyle, setIsDeletingHairstyle = useState(false);
+    const [isHairstyleEditorOpen, setIsHairstyleEditorOpen] = useState(false);
+    const [editingHairstyle, setEditingHairstyle] = useState<Partial<Hairstyle> | null>(null);
+    const [hairstyleToDelete, setHairstyleToDelete] = useState<Hairstyle | null>(null);
+    const [isDeletingHairstyle, setIsDeletingHairstyle] = useState(false);
 
     const existingSetNames = useMemo(() => {
         const names = new Set(armorPieces.map(p => p.setName).filter(Boolean));
-        return Array.from(names);
+        return Array.from(names) as string[];
     }, [armorPieces]);
 
 
@@ -658,5 +658,4 @@ export default function GlobalForgePage() {
         </>
     )
 }
-
     
