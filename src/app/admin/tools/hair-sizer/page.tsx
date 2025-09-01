@@ -84,6 +84,7 @@ export default function HairSizerPage() {
 
         const unsubBodies = onSnapshot(collection(db, 'baseBodies'), (snapshot) => {
             const bodiesData = snapshot.docs
+                .filter(doc => doc.id !== 'initial_check')
                 .map(doc => ({ id: doc.id, ...doc.data() } as BaseBody))
                 .sort((a: any, b: any) => a.order - b.order); // Ensure consistent ordering
             setBaseBodies(bodiesData);
