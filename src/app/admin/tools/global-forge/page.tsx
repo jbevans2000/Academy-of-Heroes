@@ -12,14 +12,16 @@ import { doc, getDoc } from 'firebase/firestore';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Diamond } from 'lucide-react';
+import { ArrowLeft, Diamond, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { populateBaseBodies } from '@/ai/flows/populate-forge';
 
 
 export default function GlobalForgePage() {
     const router = useRouter();
     const { toast } = useToast();
     const [user, setUser] = useState<User | null>(null);
+    const [isPopulating, setIsPopulating] = useState(false);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -46,6 +48,20 @@ export default function GlobalForgePage() {
 
     const handleAddNewHairstyle = () => {
         toast({ title: "Coming Soon!", description: "Functionality to add new hairstyles will be implemented here." });
+    }
+    
+    const handlePopulate = async () => {
+        if (!user) return;
+        setIsPopulating(true);
+        try {
+            await populateBaseBodies();
+            toast({ title: 'Success!', description: 'The baseBodies collection has been populated.' });
+        } catch (e: any) {
+            console.error(e);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not populate base bodies.' });
+        } finally {
+            setIsPopulating(false);
+        }
     }
 
     return (
@@ -84,6 +100,17 @@ export default function GlobalForgePage() {
                                 </CardHeader>
                                 <CardContent>
                                      <Button className="w-full" onClick={handleAddNewHairstyle}>Add New Hairstyle</Button>
+                                </CardContent>
+                            </Card>
+                            <Card className="md:col-span-2">
+                                <CardHeader>
+                                    <CardTitle>Database Tools (Temporary)</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <Button onClick={handlePopulate} disabled={isPopulating}>
+                                        {isPopulating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                        Populate Base Bodies
+                                    </Button>
                                 </CardContent>
                             </Card>
                         </CardContent>
