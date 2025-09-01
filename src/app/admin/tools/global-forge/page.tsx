@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -62,7 +61,7 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
                 name: '', description: '', imageUrl: '', modularImageUrl: '', slot: 'head',
                 classRequirement: 'Any', levelRequirement: 1, goldCost: 0, isPublished: false, setName: ''
             });
-            setSetSearch(armor?.setName || ''); // Initialize search with current value
+            setSetSearch('');
         }
     }, [isOpen, armor]);
 
@@ -140,7 +139,7 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
                             </PopoverTrigger>
                             <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                                 <Command onValueChange={setSetSearch}>
-                                    <CommandInput placeholder="Search or create set..." />
+                                    <CommandInput placeholder="Search or create set..." value={setSearch} />
                                     <CommandList>
                                         <CommandEmpty>No set found.</CommandEmpty>
                                         <CommandGroup>
@@ -148,8 +147,8 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
                                                 <CommandItem
                                                     key={setName}
                                                     value={setName}
-                                                    onSelect={(currentValue) => {
-                                                        handleInputChange('setName', currentValue === formData.setName ? "" : currentValue);
+                                                    onSelect={() => {
+                                                        handleInputChange('setName', setName);
                                                         setIsSetPopoverOpen(false);
                                                     }}
                                                 >
@@ -659,4 +658,3 @@ export default function GlobalForgePage() {
         </>
     )
 }
-    
