@@ -10,7 +10,7 @@ import type { Student } from '@/lib/data';
 import type { ArmorPiece, Hairstyle, BaseBody } from '@/lib/forge';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Loader2, RotateCcw, Shield } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, RotateCcw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -18,7 +18,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 const CharacterCanvas = ({ student, equipment, baseBody }: {
     student: Student | null;
@@ -53,96 +52,6 @@ const CharacterCanvas = ({ student, equipment, baseBody }: {
     );
 };
 
-const ArmoryDialog = ({
-    baseBodies,
-    hairstyles,
-    armorPieces,
-    selectedBodyId,
-    setSelectedBodyId,
-    selectedHairstyleId,
-    setSelectedHairstyleId,
-    selectedHairstyleColor,
-    setSelectedHairstyleColor,
-    onOpenChange
-}: {
-    baseBodies: BaseBody[];
-    hairstyles: Hairstyle[];
-    armorPieces: ArmorPiece[];
-    selectedBodyId: string | null;
-    setSelectedBodyId: (id: string | null) => void;
-    selectedHairstyleId: string | null;
-    setSelectedHairstyleId: (id: string | null) => void;
-    selectedHairstyleColor: string | null;
-    setSelectedHairstyleColor: (color: string | null) => void;
-    onOpenChange: (isOpen: boolean) => void;
-}) => {
-    
-    const selectedHairstyle = hairstyles.find(h => h.id === selectedHairstyleId);
-
-    const renderEquipmentGrid = (items: any[], selectedId: string | null, onSelect: (id: string | null) => void, onColorSelect?: (url: string | null) => void) => (
-        <div className="grid grid-cols-4 gap-2">
-            {items.map(item => (
-                <Card 
-                    key={item.id} 
-                    className={cn(
-                        "cursor-pointer hover:border-primary", 
-                        selectedId === item.id && "border-2 border-primary"
-                    )}
-                    onClick={() => {
-                        onSelect(item.id);
-                        if (onColorSelect) { // Automatically select first color
-                           onColorSelect(item.colors?.[0]?.imageUrl || null);
-                        }
-                    }}
-                >
-                    <CardContent className="p-1 aspect-square">
-                        <Image src={item.imageUrl || item.baseImageUrl} alt={item.name || item.styleName} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
-    );
-    
-    return (
-        <DialogContent className="max-w-xl">
-            <DialogHeader>
-                <DialogTitle>Armory</DialogTitle>
-            </DialogHeader>
-            <Tabs defaultValue="body" className="w-full h-full flex flex-col">
-                <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="body">Body</TabsTrigger>
-                    <TabsTrigger value="hair">Hairstyle</TabsTrigger>
-                    <TabsTrigger value="hair_color">Hair Color</TabsTrigger>
-                </TabsList>
-                <ScrollArea className="flex-grow mt-4 h-96">
-                    <TabsContent value="body" className="p-2">
-                        {renderEquipmentGrid(baseBodies, selectedBodyId, setSelectedBodyId)}
-                    </TabsContent>
-                    <TabsContent value="hair" className="p-2">
-                         {renderEquipmentGrid(hairstyles, selectedHairstyleId, setSelectedHairstyleId, setSelectedHairstyleColor)}
-                    </TabsContent>
-                    <TabsContent value="hair_color" className="p-2 space-y-4">
-                        {selectedHairstyle ? (
-                            <div className="grid grid-cols-5 gap-2">
-                                {selectedHairstyle.colors.map((color, index) => (
-                                    <div 
-                                        key={index} 
-                                        className={cn("h-16 w-16 rounded-md border-2 cursor-pointer", selectedHairstyleColor === color.imageUrl ? "border-primary ring-2 ring-primary" : "border-transparent")}
-                                        onClick={() => setSelectedHairstyleColor(color.imageUrl)}
-                                    >
-                                        <Image src={color.imageUrl} alt={color.name} width={64} height={64} className="w-full h-full object-contain rounded-sm" />
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <p className="text-center text-muted-foreground py-8">Select a hairstyle first to see color options.</p>
-                        )}
-                    </TabsContent>
-                </ScrollArea>
-            </Tabs>
-        </DialogContent>
-    )
-}
 
 export default function ForgePage() {
     const router = useRouter();
@@ -157,9 +66,6 @@ export default function ForgePage() {
     const [armorPieces, setArmorPieces] = useState<ArmorPiece[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
-    
-    // Armory Dialog State
-    const [isArmoryOpen, setIsArmoryOpen] = useState(false);
 
     // Equipment State
     const [selectedBodyId, setSelectedBodyId] = useState<string | null>(null);
@@ -261,6 +167,66 @@ export default function ForgePage() {
         }
     }
     
+    const renderBodyGrid = () => (
+        <div className="grid grid-cols-3 gap-2">
+            {baseBodies.map(item => (
+                <Card 
+                    key={item.id} 
+                    className={cn(
+                        "cursor-pointer hover:border-primary", 
+                        selectedBodyId === item.id && "border-2 border-primary"
+                    )}
+                    onClick={() => setSelectedBodyId(item.id)}
+                >
+                    <CardContent className="p-1 aspect-square">
+                        <Image src={item.imageUrl} alt={item.name} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+    );
+    
+    const renderHairstyleGrid = () => (
+        <div className="grid grid-cols-3 gap-2">
+            {hairstyles.map(item => (
+                <Card 
+                    key={item.id} 
+                    className={cn(
+                        "cursor-pointer hover:border-primary", 
+                        selectedHairstyleId === item.id && "border-2 border-primary"
+                    )}
+                    onClick={() => {
+                        setSelectedHairstyleId(item.id);
+                        // Automatically select first color
+                        setSelectedHairstyleColor(item.colors?.[0]?.imageUrl || null);
+                    }}
+                >
+                    <CardContent className="p-1 aspect-square">
+                        <Image src={item.baseImageUrl} alt={item.styleName} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+    );
+
+    const renderHairColorGrid = () => {
+        if (!selectedHairstyle) {
+            return <p className="text-center text-muted-foreground py-8">Select a hairstyle first to see color options.</p>
+        }
+        return (
+            <div className="grid grid-cols-5 gap-2">
+                {selectedHairstyle.colors.map((color, index) => (
+                    <div 
+                        key={index} 
+                        className={cn("h-16 w-16 rounded-md border-2 cursor-pointer", selectedHairstyleColor === color.imageUrl ? "border-primary ring-2 ring-primary" : "border-transparent")}
+                        onClick={() => setSelectedHairstyleColor(color.imageUrl)}
+                    >
+                        <Image src={color.imageUrl} alt={color.name} width={64} height={64} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                    </div>
+                ))}
+            </div>
+        )
+    };
     
     if (isLoading) {
         return <div className="flex items-center justify-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>
@@ -271,7 +237,7 @@ export default function ForgePage() {
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
             <DashboardHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
-                 <div className="w-full max-w-5xl mx-auto space-y-4">
+                 <div className="w-full max-w-7xl mx-auto space-y-4">
                      <div className="flex justify-between items-center">
                         <Button variant="outline" onClick={() => router.push('/dashboard')}><ArrowLeft className="mr-2 h-4 w-4"/> Back to Dashboard</Button>
                         <div className="flex gap-2">
@@ -282,36 +248,49 @@ export default function ForgePage() {
                              </Button>
                         </div>
                     </div>
-                    <Card className="h-[75vh]">
-                        <CardContent className="h-full p-4 flex items-center justify-center relative">
-                            <Dialog open={isArmoryOpen} onOpenChange={setIsArmoryOpen}>
-                                <DialogTrigger asChild>
-                                    <Button className="absolute top-4 left-4 z-10" size="lg"><Shield className="mr-2 h-5 w-5"/> Armory</Button>
-                                </DialogTrigger>
-                                <ArmoryDialog 
-                                    baseBodies={baseBodies}
-                                    hairstyles={hairstyles}
-                                    armorPieces={armorPieces}
-                                    selectedBodyId={selectedBodyId}
-                                    setSelectedBodyId={setSelectedBodyId}
-                                    selectedHairstyleId={selectedHairstyleId}
-                                    setSelectedHairstyleId={setSelectedHairstyleId}
-                                    selectedHairstyleColor={selectedHairstyleColor}
-                                    setSelectedHairstyleColor={setSelectedHairstyleColor}
-                                    onOpenChange={setIsArmoryOpen}
-                                />
-                            </Dialog>
-                            <CharacterCanvas 
-                                student={student}
-                                baseBody={baseBodies.find(b => b.id === selectedBodyId) || null}
-                                equipment={{ hairstyle: selectedHairstyle, hairstyleColor: selectedHairstyleColor }}
-                            />
-                        </CardContent>
-                    </Card>
+                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-2">
+                            <Card className="h-[75vh]">
+                                <CardContent className="h-full p-4 flex items-center justify-center relative">
+                                     <CharacterCanvas 
+                                        student={student}
+                                        baseBody={baseBodies.find(b => b.id === selectedBodyId) || null}
+                                        equipment={{ hairstyle: selectedHairstyle, hairstyleColor: selectedHairstyleColor }}
+                                    />
+                                </CardContent>
+                            </Card>
+                        </div>
+                        <div className="lg:col-span-1">
+                            <Card className="h-[75vh] flex flex-col">
+                                <CardHeader>
+                                    <CardTitle>Armory</CardTitle>
+                                    <CardDescription>Select your equipment.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="flex-grow overflow-hidden">
+                                     <Tabs defaultValue="body" className="w-full h-full flex flex-col">
+                                        <TabsList className="grid w-full grid-cols-3">
+                                            <TabsTrigger value="body">Body</TabsTrigger>
+                                            <TabsTrigger value="hair">Hairstyle</TabsTrigger>
+                                            <TabsTrigger value="hair_color">Hair Color</TabsTrigger>
+                                        </TabsList>
+                                        <ScrollArea className="flex-grow mt-4 h-full">
+                                            <TabsContent value="body" className="p-2">
+                                                {renderBodyGrid()}
+                                            </TabsContent>
+                                            <TabsContent value="hair" className="p-2">
+                                                {renderHairstyleGrid()}
+                                            </TabsContent>
+                                            <TabsContent value="hair_color" className="p-2 space-y-4">
+                                                {renderHairColorGrid()}
+                                            </TabsContent>
+                                        </ScrollArea>
+                                    </Tabs>
+                                </CardContent>
+                            </Card>
+                        </div>
+                     </div>
                  </div>
             </main>
         </div>
     );
 }
-
-    
