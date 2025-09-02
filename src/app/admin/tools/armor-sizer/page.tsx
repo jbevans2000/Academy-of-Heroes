@@ -33,10 +33,10 @@ const baseBodyUrls = [
 const slotZIndex: Record<ArmorSlot, number> = {
     legs: 1,
     chest: 2,
-    hands: 5, 
-    feet: 5,
-    shoulders: 4,
-    head: 6,
+    shoulders: 3,
+    head: 3,
+    hands: 3, 
+    feet: 3,
 };
 
 
