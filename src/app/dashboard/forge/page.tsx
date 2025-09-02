@@ -10,7 +10,7 @@ import type { Student } from '@/lib/data';
 import type { ArmorPiece, Hairstyle, BaseBody } from '@/lib/forge';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Loader2, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, RotateCcw, Hammer } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -18,6 +18,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const CharacterCanvas = ({ student, equipment, baseBody }: {
     student: Student | null;
@@ -251,6 +252,13 @@ export default function ForgePage() {
                              </Button>
                         </div>
                     </div>
+                    <Alert className="bg-amber-100 border-amber-300 text-amber-900">
+                        <Hammer className="h-4 w-4 text-amber-900" />
+                        <AlertTitle className="font-bold">Under Construction!</AlertTitle>
+                        <AlertDescription>
+                           The Forge is Currently Under Construction. All Features are not yet available!
+                        </AlertDescription>
+                    </Alert>
                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div className="lg:col-span-2">
                             <Card className="h-[75vh]">
