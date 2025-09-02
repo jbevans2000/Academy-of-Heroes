@@ -10,13 +10,14 @@ import type { ArmorPiece } from '@/lib/forge';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Save, Layers, Trash2, Edit } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Layers, Trash2, Edit, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 
 const baseBodyUrls = [
     { id: 'body_1', name: 'Base Body 1', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(1).png?alt=media&token=8ff364fe-6a96-4ace-b4e8-f011c87f725f', width: 500, height: 500 },
@@ -45,6 +46,7 @@ export default function ArmorSizerPage() {
     const [equippedPieces, setEquippedPieces] = useState<ArmorPiece[]>([]);
     const [activePieceId, setActivePieceId] = useState<string | null>(null);
     const [editingLayer, setEditingLayer] = useState<'primary' | 'secondary'>('primary');
+    const [isPreviewMode, setIsPreviewMode] = useState(false);
     
     // Transform State
     const [transforms, setTransforms] = useState<{ [pieceId: string]: { x: number; y: number; scale: number; x2: number; y2: number; scale2: number; } }>({});
@@ -135,6 +137,7 @@ export default function ArmorSizerPage() {
     }
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, pieceId: string, layer: 'primary' | 'secondary') => {
+        if (isPreviewMode) return;
         e.preventDefault();
         setActivePieceId(pieceId);
         setEditingLayer(layer);
@@ -142,7 +145,7 @@ export default function ArmorSizerPage() {
     };
 
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (!isDragging || !canvasRef.current || !activeTransform) return;
+        if (!isDragging || !canvasRef.current || !activeTransform || isPreviewMode) return;
         e.preventDefault();
         const canvasRect = canvasRef.current.getBoundingClientRect();
         const newX = ((e.clientX - canvasRect.left) / canvasRect.width) * 100;
@@ -200,7 +203,7 @@ export default function ArmorSizerPage() {
                             Back to Admin Dashboard
                         </Button>
                          <h1 className="text-2xl font-bold">Armor Sizer</h1>
-                         <Button onClick={handleSaveTransform} disabled={isSaving || !activePiece}>
+                         <Button onClick={handleSaveTransform} disabled={isSaving || !activePiece || isPreviewMode}>
                             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                             Save Active Piece
                          </Button>
@@ -264,7 +267,10 @@ export default function ArmorSizerPage() {
                                         return (
                                         <div key={piece.id}>
                                             <div 
-                                                className={cn("absolute cursor-move", !isActive && 'opacity-50 pointer-events-none')}
+                                                className={cn(
+                                                    "absolute cursor-move",
+                                                    isPreviewMode ? 'opacity-100 pointer-events-none' : (!isActive && 'opacity-50 pointer-events-none')
+                                                )}
                                                 style={{
                                                     left: `${pieceTransforms.x}%`,
                                                     top: `${pieceTransforms.y}%`,
@@ -278,7 +284,10 @@ export default function ArmorSizerPage() {
                                             </div>
                                             {piece.modularImageUrl2 && (
                                                  <div 
-                                                    className={cn("absolute cursor-move", !isActive && 'opacity-50 pointer-events-none')}
+                                                    className={cn(
+                                                        "absolute cursor-move",
+                                                        isPreviewMode ? 'opacity-100 pointer-events-none' : (!isActive && 'opacity-50 pointer-events-none')
+                                                    )}
                                                     style={{
                                                         left: `${pieceTransforms.x2}%`,
                                                         top: `${pieceTransforms.y2}%`,
@@ -299,14 +308,22 @@ export default function ArmorSizerPage() {
                         {/* Controls Panel */}
                         <div className="lg:col-span-1 space-y-4">
                             <Card>
-                                <CardHeader><CardTitle>Equipped Pieces</CardTitle></CardHeader>
+                                <CardHeader>
+                                    <div className="flex justify-between items-center">
+                                        <CardTitle>Equipped Pieces</CardTitle>
+                                        <div className="flex items-center space-x-2">
+                                            <Label htmlFor="preview-mode" className="flex items-center gap-1 cursor-pointer"><Eye className="h-4 w-4"/> Preview</Label>
+                                            <Switch id="preview-mode" checked={isPreviewMode} onCheckedChange={setIsPreviewMode} />
+                                        </div>
+                                    </div>
+                                </CardHeader>
                                 <CardContent className="space-y-2">
                                      {equippedPieces.length === 0 && <p className="text-sm text-muted-foreground">Select pieces from the library to add them here.</p>}
                                      {equippedPieces.map(piece => (
-                                         <div key={piece.id} className={cn("flex items-center justify-between p-2 rounded-md", piece.id === activePieceId ? 'bg-primary/20' : 'bg-secondary')}>
+                                         <div key={piece.id} className={cn("flex items-center justify-between p-2 rounded-md", piece.id === activePieceId && !isPreviewMode ? 'bg-primary/20' : 'bg-secondary')}>
                                              <span className="font-semibold text-sm truncate">{piece.name}</span>
                                              <div className="flex gap-1">
-                                                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setActivePieceId(piece.id)}><Edit className="h-4 w-4" /></Button>
+                                                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setActivePieceId(piece.id)} disabled={isPreviewMode}><Edit className="h-4 w-4" /></Button>
                                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleArmorLibraryClick(piece)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                                              </div>
                                          </div>
@@ -322,8 +339,8 @@ export default function ArmorSizerPage() {
                                                 <div className="space-y-2 p-2 border rounded-md">
                                                     <Label className="flex items-center gap-2"><Layers/> Editing Layer</Label>
                                                     <div className="grid grid-cols-2 gap-2">
-                                                        <Button variant={editingLayer === 'primary' ? 'default' : 'outline'} onClick={() => setEditingLayer('primary')}>Primary</Button>
-                                                        <Button variant={editingLayer === 'secondary' ? 'default' : 'outline'} onClick={() => setEditingLayer('secondary')}>Secondary</Button>
+                                                        <Button variant={editingLayer === 'primary' ? 'default' : 'outline'} onClick={() => setEditingLayer('primary')} disabled={isPreviewMode}>Primary</Button>
+                                                        <Button variant={editingLayer === 'secondary' ? 'default' : 'outline'} onClick={() => setEditingLayer('secondary')} disabled={isPreviewMode}>Secondary</Button>
                                                     </div>
                                                 </div>
                                             )}
@@ -331,30 +348,30 @@ export default function ArmorSizerPage() {
                                                  <>
                                                     <div className="space-y-2">
                                                         <Label htmlFor="x-pos">X Position: {activeTransform.x.toFixed(2)}%</Label>
-                                                        <Slider id="x-pos" value={[activeTransform.x]} onValueChange={([val]) => handleSliderChange('x', val)} min={0} max={100} step={0.1} />
+                                                        <Slider id="x-pos" value={[activeTransform.x]} onValueChange={([val]) => handleSliderChange('x', val)} min={0} max={100} step={0.1} disabled={isPreviewMode} />
                                                     </div>
                                                     <div className="space-y-2">
                                                         <Label htmlFor="y-pos">Y Position: {activeTransform.y.toFixed(2)}%</Label>
-                                                        <Slider id="y-pos" value={[activeTransform.y]} onValueChange={([val]) => handleSliderChange('y', val)} min={0} max={100} step={0.1} />
+                                                        <Slider id="y-pos" value={[activeTransform.y]} onValueChange={([val]) => handleSliderChange('y', val)} min={0} max={100} step={0.1} disabled={isPreviewMode} />
                                                     </div>
                                                     <div className="space-y-2">
                                                         <Label htmlFor="scale">Scale: {activeTransform.scale}%</Label>
-                                                        <Slider id="scale" value={[activeTransform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={200} step={1} />
+                                                        <Slider id="scale" value={[activeTransform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={200} step={1} disabled={isPreviewMode} />
                                                     </div>
                                                 </>
                                             ) : (
                                                  <>
                                                     <div className="space-y-2">
                                                         <Label htmlFor="x2-pos">X2 Position: {activeTransform.x2.toFixed(2)}%</Label>
-                                                        <Slider id="x2-pos" value={[activeTransform.x2]} onValueChange={([val]) => handleSliderChange('x2', val)} min={0} max={100} step={0.1} />
+                                                        <Slider id="x2-pos" value={[activeTransform.x2]} onValueChange={([val]) => handleSliderChange('x2', val)} min={0} max={100} step={0.1} disabled={isPreviewMode} />
                                                     </div>
                                                     <div className="space-y-2">
                                                         <Label htmlFor="y2-pos">Y2 Position: {activeTransform.y2.toFixed(2)}%</Label>
-                                                        <Slider id="y2-pos" value={[activeTransform.y2]} onValueChange={([val]) => handleSliderChange('y2', val)} min={0} max={100} step={0.1} />
+                                                        <Slider id="y2-pos" value={[activeTransform.y2]} onValueChange={([val]) => handleSliderChange('y2', val)} min={0} max={100} step={0.1} disabled={isPreviewMode} />
                                                     </div>
                                                     <div className="space-y-2">
                                                         <Label htmlFor="scale2">Scale 2: {activeTransform.scale2}%</Label>
-                                                        <Slider id="scale2" value={[activeTransform.scale2]} onValueChange={([val]) => handleSliderChange('scale2', val)} min={10} max={200} step={1} />
+                                                        <Slider id="scale2" value={[activeTransform.scale2]} onValueChange={([val]) => handleSliderChange('scale2', val)} min={10} max={200} step={1} disabled={isPreviewMode} />
                                                     </div>
                                                 </>
                                             )}
