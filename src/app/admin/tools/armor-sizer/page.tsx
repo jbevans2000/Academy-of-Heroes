@@ -33,9 +33,9 @@ const baseBodyUrls = [
 const slotZIndex: Record<ArmorSlot, number> = {
     legs: 1,
     chest: 2,
-    shoulders: 4,
-    feet: 5,
     hands: 5, 
+    feet: 5,
+    shoulders: 4,
     head: 6,
 };
 
@@ -399,7 +399,3 @@ export default function ArmorSizerPage() {
         </div>
     );
 }
-
-    
-
-    
