@@ -276,7 +276,7 @@ export default function ArmorSizerPage() {
                                         const baseZIndex = slotZIndex[piece.slot] || 1;
 
                                         return (
-                                        <div key={piece.id}>
+                                        <React.Fragment key={piece.id}>
                                             <div 
                                                 className={cn(
                                                     "absolute cursor-move",
@@ -311,7 +311,7 @@ export default function ArmorSizerPage() {
                                                     <Image src={piece.modularImageUrl2} alt={piece.name} width={500} height={500} className="object-contain max-h-full max-w-full pointer-events-none" />
                                                 </div>
                                             )}
-                                        </div>
+                                        </React.Fragment>
                                     )})}
                                 </CardContent>
                             </Card>
