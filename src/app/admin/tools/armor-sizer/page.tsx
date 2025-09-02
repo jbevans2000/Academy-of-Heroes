@@ -1,16 +1,16 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
-import { doc, getDoc, collection, onSnapshot, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, onSnapshot, updateDoc } from 'firestore';
 import type { ArmorPiece } from '@/lib/forge';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Save, Layers } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Layers, Trash2, Edit } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
@@ -36,18 +36,18 @@ export default function ArmorSizerPage() {
     const [user, setUser] = useState<User | null>(null);
 
     // Data State
-    const [armorPieces, setArmorPieces] = useState<ArmorPiece[]>([]);
+    const [allArmorPieces, setAllArmorPieces] = useState<ArmorPiece[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
     // UI State
     const [selectedBody, setSelectedBody] = useState<(typeof baseBodyUrls[0]) | null>(null);
-    const [selectedArmor, setSelectedArmor] = useState<ArmorPiece | null>(null);
+    const [equippedPieces, setEquippedPieces] = useState<ArmorPiece[]>([]);
+    const [activePieceId, setActivePieceId] = useState<string | null>(null);
+    const [editingLayer, setEditingLayer] = useState<'primary' | 'secondary'>('primary');
     
     // Transform State
-    const [editingLayer, setEditingLayer] = useState<'primary' | 'secondary'>('primary');
-    const [transform, setTransform] = useState({ x: 50, y: 50, scale: 100 });
-    const [transform2, setTransform2] = useState({ x: 50, y: 50, scale: 100 });
+    const [transforms, setTransforms] = useState<{ [pieceId: string]: { x: number; y: number; scale: number; x2: number; y2: number; scale2: number; } }>({});
 
     const [isDragging, setIsDragging] = useState(false);
     const canvasRef = useRef<HTMLDivElement>(null);
@@ -73,71 +73,107 @@ export default function ArmorSizerPage() {
     // Data Fetching Effect
     useEffect(() => {
         if (!user) return;
-        
         setIsLoading(true);
-
         const unsubArmor = onSnapshot(collection(db, 'armorPieces'), (snapshot) => {
             const pieces = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ArmorPiece));
-            setArmorPieces(pieces);
+            setAllArmorPieces(pieces);
              setIsLoading(false);
         });
-
-        return () => {
-            unsubArmor();
-        };
+        return () => unsubArmor();
     }, [user]);
 
-    // Effect to update transform when selection changes
+    // Effect to update transform states when selected body or equipped pieces change
     useEffect(() => {
-        if (selectedArmor && selectedBody) {
-            const savedTransform = selectedArmor.transforms?.[selectedBody.id];
-            const savedTransform2 = selectedArmor.transforms2?.[selectedBody.id];
-            
-            setTransform(savedTransform || { x: 50, y: 50, scale: 100 });
-            setTransform2(savedTransform2 || { x: 50, y: 50, scale: 100 });
-            setEditingLayer('primary'); // Reset to primary layer on selection change
-        }
-    }, [selectedArmor, selectedBody]);
+        if (!selectedBody) return;
 
-    const activeTransform = editingLayer === 'primary' ? transform : transform2;
-    const setActiveTransform = editingLayer === 'primary' ? setTransform : setTransform2;
+        const newTransforms: typeof transforms = {};
+        equippedPieces.forEach(piece => {
+            const savedTransform = piece.transforms?.[selectedBody.id] || { x: 50, y: 50, scale: 100 };
+            const savedTransform2 = piece.transforms2?.[selectedBody.id] || { x: 50, y: 50, scale: 100 };
+            newTransforms[piece.id] = {
+                x: savedTransform.x,
+                y: savedTransform.y,
+                scale: savedTransform.scale,
+                x2: savedTransform2.x,
+                y2: savedTransform2.y,
+                scale2: savedTransform2.scale,
+            };
+        });
+        setTransforms(newTransforms);
+        
+    }, [equippedPieces, selectedBody]);
+    
+    const activePiece = useMemo(() => {
+        return equippedPieces.find(p => p.id === activePieceId) || null;
+    }, [activePieceId, equippedPieces]);
 
+    const activeTransform = activePieceId ? transforms[activePieceId] : null;
 
-    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    const handleArmorLibraryClick = (piece: ArmorPiece) => {
+        setEquippedPieces(prev => {
+            const isEquipped = prev.some(p => p.id === piece.id);
+            if (isEquipped) {
+                // If it's the active piece, deactivate it
+                if(activePieceId === piece.id) setActivePieceId(null);
+                return prev.filter(p => p.id !== piece.id);
+            } else {
+                return [...prev, piece];
+            }
+        });
+    }
+
+    const setTransformForActivePiece = (newTransform: Partial<(typeof transforms)[string]>) => {
+        if (!activePieceId) return;
+        setTransforms(prev => ({
+            ...prev,
+            [activePieceId]: { ...prev[activePieceId], ...newTransform },
+        }));
+    };
+    
+    const handleSliderChange = (type: 'x' | 'y' | 'scale' | 'x2' | 'y2' | 'scale2', value: number) => {
+        setTransformForActivePiece({ [type]: value });
+    }
+
+    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, pieceId: string, layer: 'primary' | 'secondary') => {
         e.preventDefault();
+        setActivePieceId(pieceId);
+        setEditingLayer(layer);
         setIsDragging(true);
     };
 
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (!isDragging || !canvasRef.current) return;
+        if (!isDragging || !canvasRef.current || !activeTransform) return;
         e.preventDefault();
         const canvasRect = canvasRef.current.getBoundingClientRect();
         const newX = ((e.clientX - canvasRect.left) / canvasRect.width) * 100;
         const newY = ((e.clientY - canvasRect.top) / canvasRect.height) * 100;
-        setActiveTransform(prev => ({ ...prev, x: newX, y: newY }));
+        
+        if(editingLayer === 'primary') {
+            setTransformForActivePiece({ x: newX, y: newY });
+        } else {
+             setTransformForActivePiece({ x2: newX, y2: newY });
+        }
     };
 
-    const handleMouseUp = () => {
-        setIsDragging(false);
-    };
+    const handleMouseUp = () => setIsDragging(false);
 
     const handleSaveTransform = async () => {
-        if (!selectedArmor || !selectedBody) {
-            toast({ variant: 'destructive', title: 'Selection Missing', description: 'Please select an armor piece and a base body.' });
+        if (!activePiece || !selectedBody || !activeTransform) {
+            toast({ variant: 'destructive', title: 'Selection Missing', description: 'Please select a base body and an active armor piece to save.' });
             return;
         }
         setIsSaving(true);
         try {
-            const armorRef = doc(db, 'armorPieces', selectedArmor.id);
+            const armorRef = doc(db, 'armorPieces', activePiece.id);
             const updates: any = {
-                [`transforms.${selectedBody.id}`]: transform
+                [`transforms.${selectedBody.id}`]: { x: activeTransform.x, y: activeTransform.y, scale: activeTransform.scale }
             };
-            if(selectedArmor.modularImageUrl2) {
-                updates[`transforms2.${selectedBody.id}`] = transform2;
+            if(activePiece.modularImageUrl2) {
+                updates[`transforms2.${selectedBody.id}`] = { x: activeTransform.x2, y: activeTransform.y2, scale: activeTransform.scale2 };
             }
 
             await updateDoc(armorRef, updates);
-            toast({ title: 'Transform Saved!', description: `Position for ${selectedArmor.name} on ${selectedBody.name} has been saved.` });
+            toast({ title: 'Transform Saved!', description: `Position for ${activePiece.name} on ${selectedBody.name} has been saved.` });
         } catch (error) {
             console.error("Error saving transform:", error);
             toast({ variant: 'destructive', title: 'Save Failed', description: 'Could not save the transform.' });
@@ -164,9 +200,9 @@ export default function ArmorSizerPage() {
                             Back to Admin Dashboard
                         </Button>
                          <h1 className="text-2xl font-bold">Armor Sizer</h1>
-                         <Button onClick={handleSaveTransform} disabled={isSaving || !selectedBody || !selectedArmor}>
+                         <Button onClick={handleSaveTransform} disabled={isSaving || !activePiece}>
                             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                            Save All Transforms
+                            Save Active Piece
                          </Button>
                      </div>
                      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -184,19 +220,19 @@ export default function ArmorSizerPage() {
                             </Card>
                             <Card>
                                 <CardHeader><CardTitle>Armor Pieces</CardTitle></CardHeader>
-                                <CardContent className="grid grid-cols-2 gap-2">
+                                <CardContent className="grid grid-cols-2 gap-2 max-h-[50vh] overflow-y-auto">
                                     {isLoading && Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="w-full h-24" />)}
-                                    {armorPieces.length === 0 && !isLoading && (
+                                    {allArmorPieces.length === 0 && !isLoading && (
                                         <p className="col-span-2 text-sm text-muted-foreground">No armor pieces found. Create some in the Global Forge first.</p>
                                     )}
-                                    {armorPieces.map(piece => (
+                                    {allArmorPieces.map(piece => (
                                         <div 
                                             key={piece.id} 
                                             className={cn(
                                                 "border p-1 rounded-md cursor-pointer hover:border-primary", 
-                                                selectedArmor?.id === piece.id && "border-primary ring-2 ring-primary"
+                                                equippedPieces.some(p => p.id === piece.id) && "border-primary ring-2 ring-primary"
                                             )}
-                                            onClick={() => setSelectedArmor(piece)}
+                                            onClick={() => handleArmorLibraryClick(piece)}
                                         >
                                             <Image src={piece.imageUrl} alt={piece.name} width={150} height={150} className="w-full h-auto object-contain bg-gray-200 rounded-sm" />
                                              <p className="text-xs text-center mt-1 truncate">{piece.name}</p>
@@ -221,47 +257,68 @@ export default function ArmorSizerPage() {
                                    ) : (
                                        <p>Select a Base Body to begin.</p>
                                    )}
-                                    {selectedArmor && selectedBody && (
-                                        <>
+                                    {equippedPieces.map(piece => {
+                                        const pieceTransforms = transforms[piece.id];
+                                        if (!pieceTransforms) return null;
+                                        const isActive = piece.id === activePieceId;
+                                        return (
+                                        <div key={piece.id}>
                                             <div 
-                                                className={cn("absolute cursor-move", editingLayer !== 'primary' && 'opacity-50 pointer-events-none')}
+                                                className={cn("absolute cursor-move", !isActive && 'opacity-50 pointer-events-none')}
                                                 style={{
-                                                    left: `${transform.x}%`,
-                                                    top: `${transform.y}%`,
-                                                    width: `${transform.scale}%`,
+                                                    left: `${pieceTransforms.x}%`,
+                                                    top: `${pieceTransforms.y}%`,
+                                                    width: `${pieceTransforms.scale}%`,
                                                     transform: 'translate(-50%, -50%)',
+                                                    zIndex: isActive && editingLayer === 'primary' ? 10 : 1,
                                                 }}
-                                                onMouseDown={handleMouseDown}
+                                                onMouseDown={(e) => handleMouseDown(e, piece.id, 'primary')}
                                             >
-                                                <Image src={selectedArmor.modularImageUrl} alt={selectedArmor.name} width={500} height={500} className="object-contain max-h-full max-w-full pointer-events-none" />
+                                                <Image src={piece.modularImageUrl} alt={piece.name} width={500} height={500} className="object-contain max-h-full max-w-full pointer-events-none" />
                                             </div>
-                                            {selectedArmor.modularImageUrl2 && (
+                                            {piece.modularImageUrl2 && (
                                                  <div 
-                                                    className={cn("absolute cursor-move", editingLayer !== 'secondary' && 'opacity-50 pointer-events-none')}
+                                                    className={cn("absolute cursor-move", !isActive && 'opacity-50 pointer-events-none')}
                                                     style={{
-                                                        left: `${transform2.x}%`,
-                                                        top: `${transform2.y}%`,
-                                                        width: `${transform2.scale}%`,
+                                                        left: `${pieceTransforms.x2}%`,
+                                                        top: `${pieceTransforms.y2}%`,
+                                                        width: `${pieceTransforms.scale2}%`,
                                                         transform: 'translate(-50%, -50%)',
+                                                        zIndex: isActive && editingLayer === 'secondary' ? 10 : 2,
                                                     }}
-                                                    onMouseDown={handleMouseDown}
+                                                    onMouseDown={(e) => handleMouseDown(e, piece.id, 'secondary')}
                                                 >
-                                                    <Image src={selectedArmor.modularImageUrl2} alt={selectedArmor.name} width={500} height={500} className="object-contain max-h-full max-w-full pointer-events-none" />
+                                                    <Image src={piece.modularImageUrl2} alt={piece.name} width={500} height={500} className="object-contain max-h-full max-w-full pointer-events-none" />
                                                 </div>
                                             )}
-                                        </>
-                                    )}
+                                        </div>
+                                    )})}
                                 </CardContent>
                             </Card>
                         </div>
                         {/* Controls Panel */}
-                        <div className="lg:col-span-1">
+                        <div className="lg:col-span-1 space-y-4">
+                            <Card>
+                                <CardHeader><CardTitle>Equipped Pieces</CardTitle></CardHeader>
+                                <CardContent className="space-y-2">
+                                     {equippedPieces.length === 0 && <p className="text-sm text-muted-foreground">Select pieces from the library to add them here.</p>}
+                                     {equippedPieces.map(piece => (
+                                         <div key={piece.id} className={cn("flex items-center justify-between p-2 rounded-md", piece.id === activePieceId ? 'bg-primary/20' : 'bg-secondary')}>
+                                             <span className="font-semibold text-sm truncate">{piece.name}</span>
+                                             <div className="flex gap-1">
+                                                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setActivePieceId(piece.id)}><Edit className="h-4 w-4" /></Button>
+                                                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleArmorLibraryClick(piece)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                             </div>
+                                         </div>
+                                     ))}
+                                </CardContent>
+                            </Card>
                              <Card>
                                 <CardHeader><CardTitle>Controls</CardTitle></CardHeader>
                                 <CardContent className="space-y-6">
-                                     {selectedArmor ? (
+                                     {activePiece && activeTransform ? (
                                         <>
-                                            {selectedArmor.modularImageUrl2 && (
+                                            {activePiece.modularImageUrl2 && (
                                                 <div className="space-y-2 p-2 border rounded-md">
                                                     <Label className="flex items-center gap-2"><Layers/> Editing Layer</Label>
                                                     <div className="grid grid-cols-2 gap-2">
@@ -270,21 +327,40 @@ export default function ArmorSizerPage() {
                                                     </div>
                                                 </div>
                                             )}
-                                            <div className="space-y-2">
-                                                <Label htmlFor="x-pos">X Position: {activeTransform.x.toFixed(2)}%</Label>
-                                                <Slider id="x-pos" value={[activeTransform.x]} onValueChange={([val]) => setActiveTransform(t => ({...t, x: val}))} min={0} max={100} step={0.1} />
-                                            </div>
-                                             <div className="space-y-2">
-                                                <Label htmlFor="y-pos">Y Position: {activeTransform.y.toFixed(2)}%</Label>
-                                                <Slider id="y-pos" value={[activeTransform.y]} onValueChange={([val]) => setActiveTransform(t => ({...t, y: val}))} min={0} max={100} step={0.1} />
-                                            </div>
-                                             <div className="space-y-2">
-                                                <Label htmlFor="scale">Scale: {activeTransform.scale}%</Label>
-                                                <Slider id="scale" value={[activeTransform.scale]} onValueChange={([val]) => setActiveTransform(t => ({...t, scale: val}))} min={10} max={200} step={1} />
-                                            </div>
+                                            {editingLayer === 'primary' ? (
+                                                 <>
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor="x-pos">X Position: {activeTransform.x.toFixed(2)}%</Label>
+                                                        <Slider id="x-pos" value={[activeTransform.x]} onValueChange={([val]) => handleSliderChange('x', val)} min={0} max={100} step={0.1} />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor="y-pos">Y Position: {activeTransform.y.toFixed(2)}%</Label>
+                                                        <Slider id="y-pos" value={[activeTransform.y]} onValueChange={([val]) => handleSliderChange('y', val)} min={0} max={100} step={0.1} />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor="scale">Scale: {activeTransform.scale}%</Label>
+                                                        <Slider id="scale" value={[activeTransform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={200} step={1} />
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                 <>
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor="x2-pos">X2 Position: {activeTransform.x2.toFixed(2)}%</Label>
+                                                        <Slider id="x2-pos" value={[activeTransform.x2]} onValueChange={([val]) => handleSliderChange('x2', val)} min={0} max={100} step={0.1} />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor="y2-pos">Y2 Position: {activeTransform.y2.toFixed(2)}%</Label>
+                                                        <Slider id="y2-pos" value={[activeTransform.y2]} onValueChange={([val]) => handleSliderChange('y2', val)} min={0} max={100} step={0.1} />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor="scale2">Scale 2: {activeTransform.scale2}%</Label>
+                                                        <Slider id="scale2" value={[activeTransform.scale2]} onValueChange={([val]) => handleSliderChange('scale2', val)} min={10} max={200} step={1} />
+                                                    </div>
+                                                </>
+                                            )}
                                         </>
                                      ) : (
-                                        <p className="text-sm text-muted-foreground">Select an armor piece to see its controls.</p>
+                                        <p className="text-sm text-muted-foreground">Select an equipped piece to see its controls.</p>
                                      )}
                                 </CardContent>
                             </Card>
@@ -295,3 +371,4 @@ export default function ArmorSizerPage() {
         </div>
     );
 }
+
