@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
 import { doc, getDoc, collection, onSnapshot, updateDoc } from 'firebase/firestore';
-import type { ArmorPiece } from '@/lib/forge';
+import type { ArmorPiece, ArmorSlot } from '@/lib/forge';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,15 @@ const baseBodyUrls = [
     { id: 'body_7', name: 'Base Body 7', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(7).png?alt=media&token=0070e4e9-f0cc-443b-bc1b-7679d7b7225b', width: 500, height: 500 },
     { id: 'body_8', name: 'Base Body 8', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(8).png?alt=media&token=91503537-a701-412c-a082-8d969d99eb84', width: 500, height: 500 },
 ];
+
+const slotZIndex: Record<ArmorSlot, number> = {
+    legs: 1,
+    chest: 2,
+    feet: 3,
+    hands: 4,
+    shoulders: 5,
+    head: 6,
+};
 
 
 export default function ArmorSizerPage() {
@@ -264,6 +273,8 @@ export default function ArmorSizerPage() {
                                         const pieceTransforms = transforms[piece.id];
                                         if (!pieceTransforms) return null;
                                         const isActive = piece.id === activePieceId;
+                                        const baseZIndex = slotZIndex[piece.slot] || 1;
+
                                         return (
                                         <div key={piece.id}>
                                             <div 
@@ -276,7 +287,7 @@ export default function ArmorSizerPage() {
                                                     top: `${pieceTransforms.y}%`,
                                                     width: `${pieceTransforms.scale}%`,
                                                     transform: 'translate(-50%, -50%)',
-                                                    zIndex: isActive && editingLayer === 'primary' ? 10 : 1,
+                                                    zIndex: isActive && editingLayer === 'primary' ? 20 : baseZIndex,
                                                 }}
                                                 onMouseDown={(e) => handleMouseDown(e, piece.id, 'primary')}
                                             >
@@ -293,7 +304,7 @@ export default function ArmorSizerPage() {
                                                         top: `${pieceTransforms.y2}%`,
                                                         width: `${pieceTransforms.scale2}%`,
                                                         transform: 'translate(-50%, -50%)',
-                                                        zIndex: isActive && editingLayer === 'secondary' ? 10 : 2,
+                                                        zIndex: isActive && editingLayer === 'secondary' ? 20 : baseZIndex,
                                                     }}
                                                     onMouseDown={(e) => handleMouseDown(e, piece.id, 'secondary')}
                                                 >
