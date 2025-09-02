@@ -33,8 +33,8 @@ const baseBodyUrls = [
 const slotZIndex: Record<ArmorSlot, number> = {
     legs: 1,
     chest: 2,
-    shoulders: 3,
     head: 3,
+    shoulders: 3,
     hands: 3, 
     feet: 3,
 };
@@ -273,7 +273,7 @@ export default function ArmorSizerPage() {
                                         const pieceTransforms = transforms[piece.id];
                                         if (!pieceTransforms) return null;
                                         const isActive = piece.id === activePieceId;
-                                        const baseZIndex = slotZIndex[piece.slot] || 1;
+                                        const zIndex = slotZIndex[piece.slot] || 1;
 
                                         return (
                                         <React.Fragment key={piece.id}>
@@ -287,7 +287,7 @@ export default function ArmorSizerPage() {
                                                     top: `${pieceTransforms.y}%`,
                                                     width: `${pieceTransforms.scale}%`,
                                                     transform: 'translate(-50%, -50%)',
-                                                    zIndex: isActive && editingLayer === 'primary' ? 20 : baseZIndex,
+                                                    zIndex: isPreviewMode ? zIndex : (isActive && editingLayer === 'primary' ? 20 : zIndex),
                                                 }}
                                                 onMouseDown={(e) => handleMouseDown(e, piece.id, 'primary')}
                                             >
@@ -304,7 +304,7 @@ export default function ArmorSizerPage() {
                                                         top: `${pieceTransforms.y2}%`,
                                                         width: `${pieceTransforms.scale2}%`,
                                                         transform: 'translate(-50%, -50%)',
-                                                        zIndex: isActive && editingLayer === 'secondary' ? 20 : baseZIndex,
+                                                        zIndex: isPreviewMode ? zIndex : (isActive && editingLayer === 'secondary' ? 20 : zIndex),
                                                     }}
                                                     onMouseDown={(e) => handleMouseDown(e, piece.id, 'secondary')}
                                                 >
@@ -367,7 +367,7 @@ export default function ArmorSizerPage() {
                                                     </div>
                                                     <div className="space-y-2">
                                                         <Label htmlFor="scale">Scale: {activeTransform.scale}%</Label>
-                                                        <Slider id="scale" value={[activeTransform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={200} step={1} disabled={isPreviewMode} />
+                                                        <Slider id="scale" value={[activeTransform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={200} step={0.5} disabled={isPreviewMode} />
                                                     </div>
                                                 </>
                                             ) : (
@@ -382,7 +382,7 @@ export default function ArmorSizerPage() {
                                                     </div>
                                                     <div className="space-y-2">
                                                         <Label htmlFor="scale2">Scale 2: {activeTransform.scale2}%</Label>
-                                                        <Slider id="scale2" value={[activeTransform.scale2]} onValueChange={([val]) => handleSliderChange('scale2', val)} min={10} max={200} step={1} disabled={isPreviewMode} />
+                                                        <Slider id="scale2" value={[activeTransform.scale2]} onValueChange={([val]) => handleSliderChange('scale2', val)} min={10} max={200} step={0.5} disabled={isPreviewMode} />
                                                     </div>
                                                 </>
                                             )}
