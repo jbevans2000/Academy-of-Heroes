@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
@@ -33,9 +33,9 @@ const baseBodyUrls = [
 const slotZIndex: Record<ArmorSlot, number> = {
     legs: 1,
     chest: 2,
-    feet: 3,
-    hands: 4,
-    shoulders: 5,
+    feet: 5, // Should be higher than legs and chest
+    hands: 5, // Should be higher than legs and chest
+    shoulders: 4,
     head: 6,
 };
 
@@ -399,3 +399,5 @@ export default function ArmorSizerPage() {
         </div>
     );
 }
+
+    
