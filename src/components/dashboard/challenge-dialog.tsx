@@ -91,31 +91,55 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
     };
   }, [isOpen, student.teacherUid, toast]);
   
-  const today = format(new Date(), 'yyyy-MM-dd');
-  const duelsCompleted = student.lastDuelDate === today ? (student.duelsCompletedToday || 0) : 0;
-  const hasReachedLimit = duelSettings?.isDailyLimitEnabled && duelSettings.dailyLimit ? duelsCompleted >= duelSettings.dailyLimit : false;
-
   const availableStudents = useMemo(() => {
-    if (!duelSettings?.isDuelsEnabled || hasReachedLimit) return [];
-
+    if (!duelSettings?.isDuelsEnabled) return [];
     return allStudents.filter(s => {
-        const opponentDuelsCompleted = s.lastDuelDate === today ? (s.duelsCompletedToday || 0) : 0;
-        const opponentHasReachedLimit = duelSettings?.isDailyLimitEnabled && duelSettings.dailyLimit ? opponentDuelsCompleted >= duelSettings.dailyLimit : false;
-
         return s.uid !== student.uid &&
                (s.inDuel === undefined || s.inDuel === false) &&
                !s.isArchived &&
-               onlineUids.includes(s.uid) &&
-               !opponentHasReachedLimit;
+               onlineUids.includes(s.uid);
     });
-  }, [allStudents, onlineUids, student.uid, duelSettings, hasReachedLimit, today]);
+  }, [allStudents, onlineUids, student.uid, duelSettings]);
 
   const handleChallengeClick = (opponent: Student) => {
+      const today = format(new Date(), 'yyyy-MM-dd');
+
+      // 1. Check if the challenger has reached their limit
+      if (duelSettings?.isDailyLimitEnabled) {
+          const challengerDuelsToday = student.lastDuelDate === today ? (student.duelsCompletedToday || 0) : 0;
+          if (challengerDuelsToday >= (duelSettings.dailyDuelLimit || 999)) {
+              toast({
+                  variant: 'destructive',
+                  title: 'Daily Limit Reached',
+                  description: "The Guild Leader has imposed a daily limit for the Training Grounds! Please return tomorrow for additional training!",
+                  duration: 6000,
+              });
+              return;
+          }
+      }
+      
+      // 2. Check if the opponent has reached their limit
+      if (duelSettings?.isDailyLimitEnabled) {
+          const opponentDuelsToday = opponent.lastDuelDate === today ? (opponent.duelsCompletedToday || 0) : 0;
+          if (opponentDuelsToday >= (duelSettings.dailyLimit || 999)) {
+              toast({
+                  variant: 'destructive',
+                  title: 'Opponent Unavailable',
+                  description: `${opponent.characterName} has reached their daily duel limit. Please find another sparring partner.`,
+                  duration: 6000,
+              });
+              return;
+          }
+      }
+      
+      // 3. Check if challenger has enough gold
       const cost = duelSettings?.duelCost || 0;
       if (cost > 0 && student.gold < cost) {
           toast({ variant: 'destructive', title: 'Not Enough Gold!', description: `You need ${cost} Gold to start this duel.` });
           return;
       }
+      
+      // All checks passed, proceed to confirmation
       setOpponentToChallenge(opponent);
       setIsConfirming(true);
   }
@@ -153,8 +177,8 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
         <DialogHeader>
           <DialogTitle>Challenge a Guildmate</DialogTitle>
           <DialogDescription>
-            {hasReachedLimit 
-                ? `You have reached your daily limit of ${duelSettings?.dailyDuelLimit} duels.`
+            {!(duelSettings?.isDuelsEnabled ?? true)
+                ? 'The Training Grounds are currently closed by the Guild Leader.'
                 : 'Select an online hero to challenge to a friendly duel.'
             }
           </DialogDescription>
@@ -166,7 +190,7 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
                     <Loader2 className="h-8 w-8 animate-spin"/>
                 </div>
             ) : !(duelSettings?.isDuelsEnabled ?? true) ? (
-                 <p className="text-center text-muted-foreground p-4">The Training Grounds are currently closed by the Guild Leader.</p>
+                 <p className="text-center text-muted-foreground p-4">The Training Grounds are closed.</p>
             ) : availableStudents.length === 0 ? (
                 <p className="text-center text-muted-foreground p-4">No other heroes are available for a duel right now.</p>
             ) : (
