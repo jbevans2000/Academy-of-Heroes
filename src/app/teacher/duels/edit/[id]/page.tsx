@@ -10,9 +10,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ArrowLeft, PlusCircle, Trash2, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Trash2, Loader2, Save, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { doc, getDoc, addDoc, updateDoc, deleteDoc, collection, onSnapshot, query, setDoc } from 'firebase/firestore';
+import { doc, getDoc, addDoc, updateDoc, deleteDoc, collection, onSnapshot, query, setDoc, writeBatch } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -69,6 +69,59 @@ export default function EditDuelSectionPage() {
 
     }, [sectionId, teacher, router, toast]);
     
+    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target?.result as string;
+            try {
+                const rows = text.split(/\r\n|\n/);
+                const headers = rows[0].split(',').map(h => h.trim());
+                const expectedHeaders = ['Q', 'A1', 'A2', 'A3', 'A4', 'C'];
+                
+                if (JSON.stringify(headers) !== JSON.stringify(expectedHeaders)) {
+                    toast({ variant: 'destructive', title: 'Invalid CSV Format', description: 'Headers must be exactly: Q,A1,A2,A3,A4,C' });
+                    return;
+                }
+
+                const newQuestions: DuelQuestion[] = [];
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row.trim()) continue; // Skip empty rows
+
+                    const values = row.split(','); // Simplified parsing
+                    const questionText = values[0];
+                    const answers = values.slice(1, 5);
+                    const correctAnswerText = values[5];
+                    
+                    const correctAnswerIndex = answers.findIndex(ans => ans.trim().toLowerCase() === correctAnswerText.trim().toLowerCase());
+
+                    if (correctAnswerIndex === -1) {
+                         toast({ variant: 'destructive', title: 'Parsing Error', description: `Could not find correct answer '${correctAnswerText}' in options for question: "${questionText}"` });
+                         continue; // Skip this question
+                    }
+
+                    newQuestions.push({
+                        id: uuidv4(),
+                        text: questionText,
+                        answers: answers,
+                        correctAnswerIndex: correctAnswerIndex,
+                    });
+                }
+                
+                setQuestions(prev => [...prev, ...newQuestions]);
+                toast({ title: 'Upload Successful', description: `${newQuestions.length} questions have been added to the editor.` });
+
+            } catch (error) {
+                toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not parse the CSV file. Please check its format.' });
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = ''; // Reset file input
+    };
+
     const handleAddQuestion = () => {
         setQuestions(prev => [...prev, { id: uuidv4(), text: '', answers: ['', '', '', ''], correctAnswerIndex: 0 }]);
     };
@@ -105,16 +158,27 @@ export default function EditDuelSectionPage() {
         setIsSaving(true);
         try {
             const sectionRef = doc(db, 'teachers', teacher.uid, 'duelQuestionSections', sectionId);
+            const batch = writeBatch(db);
+            
+            // Set/update all questions currently in state
             for (const question of questions) {
                 const questionRef = doc(sectionRef, 'questions', question.id);
-                // This will create or update the document
-                await setDoc(questionRef, { ...question }, { merge: true });
+                const { id, ...questionData } = question; // Don't save our client-side uuid as a field
+                batch.set(questionRef, questionData);
             }
 
-            // You might need to delete questions that were removed from the state but still exist in firestore.
-            // This requires fetching the original list and comparing. For simplicity, this is omitted for now.
+            // To handle deletion, we fetch current questions in DB and delete those not in state.
+            const existingQuestionsSnap = await getDocs(collection(sectionRef, 'questions'));
+            const stateQuestionIds = new Set(questions.map(q => q.id));
+            existingQuestionsSnap.forEach(doc => {
+                if (!stateQuestionIds.has(doc.id)) {
+                    batch.delete(doc.ref);
+                }
+            });
 
-            await updateDoc(sectionRef, { questionCount: questions.length });
+            batch.update(sectionRef, { questionCount: questions.length });
+
+            await batch.commit();
 
             toast({ title: 'Questions Saved', description: 'Your changes have been saved.' });
             router.push('/teacher/duels');
@@ -143,9 +207,18 @@ export default function EditDuelSectionPage() {
                         <ArrowLeft className="mr-2 h-4 w-4" /> Back to All Sections
                     </Button>
                     <Card>
-                        <CardHeader>
-                            <CardTitle>Editing Section: {section.name}</CardTitle>
-                            <CardDescription>Add, edit, or remove questions for this section.</CardDescription>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle>Editing Section: {section.name}</CardTitle>
+                                <CardDescription>Add, edit, or remove questions for this section.</CardDescription>
+                            </div>
+                             <div>
+                                <Label htmlFor="csv-upload" className="cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                                    <Upload className="mr-2 h-4 w-4" />
+                                    Upload CSV
+                                </Label>
+                                <Input id="csv-upload" type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
+                            </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {questions.map((q, qIndex) => (
