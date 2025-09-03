@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { User, Map, Swords, Sparkles, BookHeart, ImageIcon, Gem, Package, Hammer, Briefcase, Loader2 } from "lucide-react";
-import { doc, updateDoc, collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
+import { doc, updateDoc, collection, query, where, getDocs, onSnapshot, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -32,7 +32,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { ChallengeDialog } from '@/components/dashboard/challenge-dialog';
 import { getDuelSettings } from '@/ai/flows/manage-duels';
-import { format } from 'date-fns';
 
 interface DashboardClientProps {
   student: Student;
@@ -122,16 +121,24 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
     if (!activeDuelRequest || !student.teacherUid) return;
     
     if (accept) {
+        // Fetch the latest student data before performing checks
+        const studentRef = doc(db, 'teachers', student.teacherUid, 'students', student.uid);
+        const studentSnap = await getDoc(studentRef);
+        if (!studentSnap.exists()) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not find your student data.' });
+            return;
+        }
+        const freshStudentData = studentSnap.data() as Student;
+        
         const settings = await getDuelSettings(student.teacherUid);
-        const today = format(new Date(), 'yyyy-MM-dd');
-        const duelsCompletedToday = student.lastDuelDate === today ? (student.duelsCompletedToday || 0) : 0;
+        const duelsCompletedToday = freshStudentData.dailyDuelCount || 0;
         
         if (settings.isDailyLimitEnabled && duelsCompletedToday >= (settings.dailyDuelLimit || 999)) {
             toast({ variant: 'destructive', title: 'Daily Limit Reached', description: `You have already completed your daily limit of ${settings.dailyDuelLimit} duels.` });
             accept = false; // Force decline
         }
 
-        if (accept && activeDuelRequest.cost > 0 && student.gold < activeDuelRequest.cost) {
+        if (accept && activeDuelRequest.cost > 0 && freshStudentData.gold < activeDuelRequest.cost) {
             toast({ variant: 'destructive', title: 'Not Enough Gold!', description: `You need ${activeDuelRequest.cost} Gold to accept this duel.` });
             accept = false; // Force decline
         }
@@ -281,3 +288,4 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
     </>
   );
 }
+
