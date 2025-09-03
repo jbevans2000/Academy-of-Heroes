@@ -24,20 +24,26 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { onSnapshot, collection, query, addDoc, serverTimestamp, doc, updateDoc, writeBatch } from 'firebase/firestore';
+import { onSnapshot, collection, query, addDoc, serverTimestamp, doc, updateDoc, writeBatch, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Swords } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { getDuelSettings } from '@/ai/flows/manage-duels';
-import { format } from 'date-fns';
 
 interface ChallengeDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   student: Student;
 }
+
+const isSameDay = (d1: Date, d2: Date) => {
+    return d1.getFullYear() === d2.getFullYear() &&
+           d1.getMonth() === d2.getMonth() &&
+           d1.getDate() === d2.getDate();
+}
+
 
 export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDialogProps) {
   const { toast } = useToast();
@@ -56,6 +62,16 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
   useEffect(() => {
     if (!isOpen || !student.teacherUid) return;
 
+    const resetDailyCountIfNeeded = async () => {
+        const today = new Date();
+        const lastReset = student.lastDuelCountReset?.toDate();
+        if (!lastReset || !isSameDay(today, lastReset)) {
+             const studentRef = doc(db, 'teachers', student.teacherUid, 'students', student.uid);
+             await updateDoc(studentRef, { dailyDuelCount: 0, lastDuelCountReset: serverTimestamp() });
+        }
+    };
+
+    resetDailyCountIfNeeded();
     setIsLoading(true);
     
     getDuelSettings(student.teacherUid).then(settings => {
@@ -89,7 +105,7 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
         unsubStudents();
         unsubPresence();
     };
-  }, [isOpen, student.teacherUid, toast]);
+  }, [isOpen, student.teacherUid, student.uid, toast, student.lastDuelCountReset]);
   
   const availableStudents = useMemo(() => {
     if (!duelSettings?.isDuelsEnabled) return [];
@@ -102,11 +118,10 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
   }, [allStudents, onlineUids, student.uid, duelSettings]);
 
   const handleChallengeClick = (opponent: Student) => {
-      const today = format(new Date(), 'yyyy-MM-dd');
+      if (!duelSettings) return;
 
-      // 1. Check if the challenger has reached their limit
-      if (duelSettings?.isDailyLimitEnabled) {
-          const challengerDuelsToday = student.lastDuelDate === today ? (student.duelsCompletedToday || 0) : 0;
+      if (duelSettings.isDailyLimitEnabled) {
+          const challengerDuelsToday = student.dailyDuelCount || 0;
           if (challengerDuelsToday >= (duelSettings.dailyDuelLimit || 999)) {
               toast({
                   variant: 'destructive',
@@ -116,12 +131,9 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
               });
               return;
           }
-      }
-      
-      // 2. Check if the opponent has reached their limit
-      if (duelSettings?.isDailyLimitEnabled) {
-          const opponentDuelsToday = opponent.lastDuelDate === today ? (opponent.duelsCompletedToday || 0) : 0;
-          if (opponentDuelsToday >= (duelSettings.dailyDuelLimit || 999)) {
+          
+          const opponentDuelsToday = opponent.dailyDuelCount || 0;
+           if (opponentDuelsToday >= (duelSettings.dailyDuelLimit || 999)) {
               toast({
                   variant: 'destructive',
                   title: 'Opponent Unavailable',
@@ -132,14 +144,12 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
           }
       }
       
-      // 3. Check if challenger has enough gold
-      const cost = duelSettings?.duelCost || 0;
+      const cost = duelSettings.duelCost || 0;
       if (cost > 0 && student.gold < cost) {
           toast({ variant: 'destructive', title: 'Not Enough Gold!', description: `You need ${cost} Gold to start this duel.` });
           return;
       }
       
-      // All checks passed, proceed to confirmation
       setOpponentToChallenge(opponent);
       setIsConfirming(true);
   }

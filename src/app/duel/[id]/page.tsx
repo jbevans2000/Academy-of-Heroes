@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getDoc, onSnapshot, collection, query, where, getDocs, updateDoc, writeBatch, increment, deleteDoc, runTransaction, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, collection, query, where, getDocs, updateDoc, writeBatch, increment, deleteDoc, runTransaction, Timestamp, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import Image from 'next/image';
@@ -138,9 +138,6 @@ export default function DuelPage() {
             if (studentMetaSnap.exists()) {
                 const uid = studentMetaSnap.data().teacherUid;
                 setTeacherUid(uid);
-                // Fetch settings here initially
-                const settings = await getDuelSettings(uid);
-                setDuelSettings(settings);
             }
         }
         getTeacher();
@@ -264,15 +261,20 @@ export default function DuelPage() {
     // Fetch player data once duel is loaded
     useEffect(() => {
         if (!duel || !teacherUid) return;
-        const fetchPlayers = async () => {
+        const fetchPlayersAndSettings = async () => {
             const challengerRef = doc(db, 'teachers', teacherUid, 'students', duel.challengerUid);
             const opponentRef = doc(db, 'teachers', teacherUid, 'students', duel.opponentUid);
-            const [challengerSnap, opponentSnap] = await Promise.all([getDoc(challengerRef), getDoc(opponentRef)]);
+            const [challengerSnap, opponentSnap, settings] = await Promise.all([
+                getDoc(challengerRef), 
+                getDoc(opponentRef),
+                getDuelSettings(teacherUid)
+            ]);
             if (challengerSnap.exists()) setChallenger(challengerSnap.data() as Student);
             if (opponentSnap.exists()) setOpponent(opponentSnap.data() as Student);
+            setDuelSettings(settings);
             setIsLoading(false);
         };
-        fetchPlayers();
+        fetchPlayersAndSettings();
     }, [duel, teacherUid]);
     
     // Check if current user has answered this question
@@ -376,9 +378,8 @@ export default function DuelPage() {
                             transaction.update(loserRef, { gold: loserFinalGold });
                         }
 
-                        const today = format(new Date(), 'yyyy-MM-dd');
-                        transaction.update(winnerRef, { lastDuelDate: today, duelsCompletedToday: increment(1) });
-                        transaction.update(loserRef, { lastDuelDate: today, duelsCompletedToday: increment(1) });
+                        transaction.update(winnerRef, { dailyDuelCount: increment(1) });
+                        transaction.update(loserRef, { dailyDuelCount: increment(1) });
                         
                         transaction.update(duelRef, { 
                             [`answers.${user.uid}`]: newAnswers,

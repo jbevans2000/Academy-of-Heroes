@@ -180,12 +180,15 @@ export async function resetAllDuelStatuses(teacherUid: string): Promise<ActionRe
 
         const batch = writeBatch(db);
         studentsSnapshot.forEach(studentDoc => {
-            batch.update(studentDoc.ref, { inDuel: false });
+            batch.update(studentDoc.ref, { 
+                inDuel: false,
+                dailyDuelCount: 0
+            });
         });
         
         await batch.commit();
 
-        return { success: true, message: 'All student duel statuses have been reset.' };
+        return { success: true, message: 'All student duel statuses and counts have been reset.' };
     } catch (error: any) {
         console.error("Error resetting duel statuses:", error);
         return { success: false, error: error.message || 'Failed to reset duel statuses.' };

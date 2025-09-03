@@ -1,5 +1,4 @@
 
-
 export type ClassType = 'Guardian' | 'Healer' | 'Mage' | '';
 
 export type Company = {
@@ -52,8 +51,8 @@ export type Student = {
     damageShield?: number; // For Absorb power
     isHidden?: boolean; // To temporarily hide from teacher dashboard
     hasUnreadMessages?: boolean; // Denormalized field for quick UI updates
-    lastDuelDate?: string; // YYYY-MM-DD
-    duelsCompletedToday?: number;
+    dailyDuelCount?: number;
+    lastDuelCountReset?: any; // Firestore ServerTimestamp
 }
 
 export type PendingStudent = {
@@ -117,5 +116,3 @@ export const classData = {
     baseStats: { hp: 6, mp: 15 },
   },
 };
-
-    
