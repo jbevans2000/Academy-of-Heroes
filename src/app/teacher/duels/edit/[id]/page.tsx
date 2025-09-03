@@ -19,6 +19,59 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { DuelQuestion, DuelQuestionSection } from '@/lib/duels';
 import { v4 as uuidv4 } from 'uuid';
 
+// More robust CSV parser
+function parseCsv(text: string): string[][] {
+    const rows = [];
+    let currentRow = [];
+    let currentField = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+
+        if (inQuotes) {
+            if (char === '"') {
+                if (i + 1 < text.length && text[i + 1] === '"') {
+                    currentField += '"';
+                    i++; // Skip next quote
+                } else {
+                    inQuotes = false;
+                }
+            } else {
+                currentField += char;
+            }
+        } else {
+            if (char === ',') {
+                currentRow.push(currentField);
+                currentField = '';
+            } else if (char === '"') {
+                inQuotes = true;
+            } else if (char === '\n' || char === '\r') {
+                if (currentField.length > 0 || currentRow.length > 0) {
+                    currentRow.push(currentField);
+                    rows.push(currentRow);
+                    currentRow = [];
+                    currentField = '';
+                }
+                // Handle CRLF by skipping LF if CR was just processed
+                if (char === '\r' && i + 1 < text.length && text[i + 1] === '\n') {
+                    i++;
+                }
+            } else {
+                currentField += char;
+            }
+        }
+    }
+
+    if (currentField.length > 0 || currentRow.length > 0) {
+        currentRow.push(currentField);
+        rows.push(currentRow);
+    }
+
+    return rows;
+}
+
+
 export default function EditDuelSectionPage() {
     const router = useRouter();
     const params = useParams();
@@ -58,7 +111,9 @@ export default function EditDuelSectionPage() {
         const questionsRef = collection(db, 'teachers', teacher.uid, 'duelQuestionSections', sectionId, 'questions');
         const q = query(questionsRef);
         const unsubQuestions = onSnapshot(q, (snapshot) => {
-            setQuestions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DuelQuestion)));
+            const fetchedQuestions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DuelQuestion));
+            // Add a client-side UUID if it doesn't exist for key prop
+            setQuestions(fetchedQuestions.map(q => ({ ...q, id: q.id || uuidv4() })));
             setIsLoading(false);
         });
 
@@ -76,31 +131,41 @@ export default function EditDuelSectionPage() {
         const reader = new FileReader();
         reader.onload = (e) => {
             const text = e.target?.result as string;
+            if (!text) return;
+
             try {
-                const rows = text.split(/\r\n|\n/);
-                const headers = rows[0].split(',').map(h => h.trim());
+                const parsedRows = parseCsv(text);
+                const headerRow = parsedRows[0].map(h => h.trim());
                 const expectedHeaders = ['Q', 'A1', 'A2', 'A3', 'A4', 'C'];
                 
-                if (JSON.stringify(headers) !== JSON.stringify(expectedHeaders)) {
-                    toast({ variant: 'destructive', title: 'Invalid CSV Format', description: 'Headers must be exactly: Q,A1,A2,A3,A4,C' });
+                if (JSON.stringify(headerRow) !== JSON.stringify(expectedHeaders)) {
+                    toast({ variant: 'destructive', title: 'Invalid CSV Format', description: `Headers must be exactly: ${expectedHeaders.join(',')}` });
                     return;
                 }
 
+                const dataRows = parsedRows.slice(1);
                 const newQuestions: DuelQuestion[] = [];
-                for (let i = 1; i < rows.length; i++) {
-                    const row = rows[i];
-                    if (!row.trim()) continue; // Skip empty rows
+                
+                for (const values of dataRows) {
+                     if (values.length === 0 || values.every(field => !field.trim())) continue; // Skip genuinely empty rows
 
-                    const values = row.split(','); // Simplified parsing
-                    const questionText = values[0];
-                    const answers = values.slice(1, 5);
-                    const correctAnswerText = values[5];
-                    
+                    if (values.length !== 6) {
+                        toast({ variant: 'warning', title: 'Skipped Row', description: `A row with incorrect column count was skipped: ${values.join(',')}` });
+                        continue;
+                    }
+
+                    const [questionText, a1, a2, a3, a4, correctAnswerText] = values.map(v => v.trim());
+                    const answers = [a1, a2, a3, a4];
                     const correctAnswerIndex = answers.findIndex(ans => ans.trim().toLowerCase() === correctAnswerText.trim().toLowerCase());
+                    
+                    if (!questionText || answers.some(a => !a) || !correctAnswerText) {
+                         toast({ variant: 'warning', title: 'Skipped Row', description: `Skipped a row due to missing data: "${questionText}"` });
+                         continue;
+                    }
 
                     if (correctAnswerIndex === -1) {
-                         toast({ variant: 'destructive', title: 'Parsing Error', description: `Could not find correct answer '${correctAnswerText}' in options for question: "${questionText}"` });
-                         continue; // Skip this question
+                         toast({ variant: 'warning', title: 'Skipped Row', description: `Correct answer "${correctAnswerText}" not found in options for question: "${questionText}"` });
+                         continue; 
                     }
 
                     newQuestions.push({
@@ -111,16 +176,22 @@ export default function EditDuelSectionPage() {
                     });
                 }
                 
-                setQuestions(prev => [...prev, ...newQuestions]);
-                toast({ title: 'Upload Successful', description: `${newQuestions.length} questions have been added to the editor.` });
+                if (newQuestions.length > 0) {
+                    setQuestions(prev => [...prev, ...newQuestions]);
+                    toast({ title: 'Upload Successful', description: `${newQuestions.length} questions have been added to the editor.` });
+                } else {
+                     toast({ variant: 'destructive', title: 'Upload Failed', description: 'No valid questions could be parsed from the file.' });
+                }
 
             } catch (error) {
+                console.error("CSV Parsing Error: ", error);
                 toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not parse the CSV file. Please check its format.' });
             }
         };
         reader.readAsText(file);
         event.target.value = ''; // Reset file input
     };
+
 
     const handleAddQuestion = () => {
         setQuestions(prev => [...prev, { id: uuidv4(), text: '', answers: ['', '', '', ''], correctAnswerIndex: 0 }]);
@@ -160,14 +231,7 @@ export default function EditDuelSectionPage() {
             const sectionRef = doc(db, 'teachers', teacher.uid, 'duelQuestionSections', sectionId);
             const batch = writeBatch(db);
             
-            // Set/update all questions currently in state
-            for (const question of questions) {
-                const questionRef = doc(sectionRef, 'questions', question.id);
-                const { id, ...questionData } = question; // Don't save our client-side uuid as a field
-                batch.set(questionRef, questionData);
-            }
-
-            // To handle deletion, we fetch current questions in DB and delete those not in state.
+            // To handle deletion, fetch current questions in DB and delete those not in state.
             const existingQuestionsSnap = await getDocs(collection(sectionRef, 'questions'));
             const stateQuestionIds = new Set(questions.map(q => q.id));
             existingQuestionsSnap.forEach(doc => {
@@ -175,6 +239,15 @@ export default function EditDuelSectionPage() {
                     batch.delete(doc.ref);
                 }
             });
+
+            // Set/update all questions currently in state
+            for (const question of questions) {
+                const questionRef = doc(sectionRef, 'questions', question.id);
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const { id, ...questionData } = question; // Don't save our client-side uuid as a field
+                batch.set(questionRef, questionData);
+            }
+
 
             batch.update(sectionRef, { questionCount: questions.length });
 
