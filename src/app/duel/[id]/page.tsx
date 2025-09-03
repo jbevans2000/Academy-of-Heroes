@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getDoc, onSnapshot, collection, query, where, getDocs, updateDoc, writeBatch, increment, deleteDoc, runTransaction } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, collection, query, where, getDocs, updateDoc, writeBatch, increment, deleteDoc, runTransaction, Timestamp } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import Image from 'next/image';
@@ -45,6 +45,7 @@ interface DuelState {
     isDraw?: boolean;
     cost?: number;
     costsDeducted?: boolean; 
+    timerEndsAt?: Timestamp;
 }
 
 const DuelPlayerCard = ({ player, answers, isCurrentUser }: { player: Student | null, answers: number[], isCurrentUser: boolean }) => {
@@ -66,6 +67,31 @@ const DuelPlayerCard = ({ player, answers, isCurrentUser }: { player: Student | 
         </Card>
     );
 };
+
+const CountdownTimer = ({ expiryTimestamp }: { expiryTimestamp: Timestamp | undefined }) => {
+    const [timeLeft, setTimeLeft] = useState(60);
+
+    useEffect(() => {
+        if (!expiryTimestamp) return;
+
+        const interval = setInterval(() => {
+            const now = new Date().getTime();
+            const ends = expiryTimestamp.toDate().getTime();
+            const secondsLeft = Math.round(Math.max(0, (ends - now) / 1000));
+            setTimeLeft(secondsLeft);
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [expiryTimestamp]);
+
+    return (
+        <div className="flex items-center justify-center gap-2 text-2xl font-bold font-mono text-yellow-400">
+            <Hourglass className="h-6 w-6" />
+            <span>{timeLeft}</span>
+        </div>
+    );
+};
+
 
 export default function DuelPage() {
     const router = useRouter();
@@ -163,7 +189,10 @@ export default function DuelPage() {
                 transaction.update(challengerRef, { inDuel: true });
                 transaction.update(opponentRef, { inDuel: true });
                 
-                const duelUpdates: Partial<DuelState> = { costsDeducted: true };
+                const duelUpdates: Partial<DuelState> = { 
+                    costsDeducted: true,
+                    timerEndsAt: Timestamp.fromMillis(Date.now() + 60000)
+                };
 
                  if (!currentDuelData.questions || currentDuelData.questions.length === 0) {
                     const activeSectionsSnapshot = await getDocs(query(collection(db, 'teachers', teacherUid, 'duelQuestionSections'), where('isActive', '==', true)));
@@ -255,11 +284,26 @@ export default function DuelPage() {
         setSelectedAnswer(null);
     }, [user, duel]);
     
-    const handleSubmitAnswer = async () => {
-        if (selectedAnswer === null || !user || !duel || hasAnswered || !teacherUid || !duelSettings || !duelRef) return;
+    // Timer timeout effect
+    useEffect(() => {
+        if (!duel?.timerEndsAt || hasAnswered || duel.status !== 'active') return;
+
+        const timeout = setTimeout(() => {
+            // Check again inside timeout to ensure user didn't answer just before it fired
+            if (!hasAnswered) {
+                handleSubmitAnswer(true); // true indicates a timeout
+            }
+        }, duel.timerEndsAt.toDate().getTime() - Date.now());
+
+        return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [duel?.timerEndsAt, hasAnswered, duel?.status]);
+    
+    const handleSubmitAnswer = async (isTimeout = false) => {
+        if ((!isTimeout && selectedAnswer === null) || !user || !duel || hasAnswered || !teacherUid || !duelSettings || !duelRef) return;
         
         const currentQuestion = duel.questions![duel.currentQuestionIndex];
-        const isCorrect = selectedAnswer === currentQuestion.correctAnswerIndex;
+        const isCorrect = isTimeout ? false : selectedAnswer === currentQuestion.correctAnswerIndex;
 
         const newAnswers = [...(duel.answers![user.uid] || [])];
         newAnswers[duel.currentQuestionIndex] = isCorrect ? 1 : 0;
@@ -354,6 +398,7 @@ export default function DuelPage() {
                 await updateDoc(duelRef, {
                     [`answers.${user.uid}`]: newAnswers,
                     currentQuestionIndex: duel.currentQuestionIndex + 1,
+                    timerEndsAt: Timestamp.fromMillis(Date.now() + 60000)
                 });
             }
         } else { // This is the first answer, just submit it
@@ -527,6 +572,9 @@ export default function DuelPage() {
                     </AlertDialogContent>
                 </AlertDialog>
             </div>
+            <div className="absolute top-4 right-4 z-10">
+                <CountdownTimer expiryTimestamp={duel.timerEndsAt} />
+            </div>
             <div className="w-full max-w-4xl">
                 <div className="grid grid-cols-2 gap-4 mb-4">
                     <DuelPlayerCard player={challenger} answers={duel.answers?.[duel.challengerUid] || []} isCurrentUser={user?.uid === challenger?.uid} />
@@ -558,7 +606,7 @@ export default function DuelPage() {
                                     ))}
                                 </div>
                                 <div className="text-center mt-4">
-                                     <Button onClick={handleSubmitAnswer} disabled={selectedAnswer === null}>Submit</Button>
+                                     <Button onClick={() => handleSubmitAnswer(false)} disabled={selectedAnswer === null}>Submit</Button>
                                 </div>
                             </>
                         )}
