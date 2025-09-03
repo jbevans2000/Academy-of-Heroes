@@ -33,6 +33,7 @@ export type Student = {
     maxHp: number;
     maxMp: number;
     questProgress: { [hubId: string]: number }; // e.g., { hubId1: 2, hubId2: 0 } means chapter 2 is last completed in hub1
+    completedChapters?: string[]; // New: Array of chapter UIDs for which rewards have been claimed.
     hubsCompleted: number; // The order number of the last hub completed
     isNewlyApproved?: boolean;
     lastChapterCompletion?: any; // Firestore ServerTimestamp

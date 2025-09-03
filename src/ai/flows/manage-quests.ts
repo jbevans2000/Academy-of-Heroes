@@ -1,11 +1,12 @@
 
 'use server';
 
-import { doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs, writeBatch, deleteDoc, serverTimestamp, query as firestoreQuery, where } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs, writeBatch, deleteDoc, serverTimestamp, query as firestoreQuery, where, arrayUnion, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Student, QuestHub, Chapter } from '@/lib/data';
 import { logGameEvent } from '@/lib/gamelog';
 import firebase from 'firebase/compat/app';
+import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 
 // --------- INTERFACES ---------
 
@@ -90,16 +91,19 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
     try {
         const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
         const chapterRef = doc(db, 'teachers', teacherUid, 'chapters', chapterId);
+        const hubRef = doc(db, 'teachers', teacherUid, 'questHubs', hubId);
         
         const questSettings = await getQuestSettings(teacherUid);
 
-        const [studentSnap, chapterSnap] = await Promise.all([getDoc(studentRef), getDoc(chapterRef)]);
+        const [studentSnap, chapterSnap, hubSnap] = await Promise.all([getDoc(studentRef), getDoc(chapterRef), getDoc(hubRef)]);
 
         if (!studentSnap.exists()) throw new Error("Student not found.");
         if (!chapterSnap.exists()) throw new Error("Chapter not found.");
+        if (!hubSnap.exists()) throw new Error("Quest Hub not found.");
 
         const student = studentSnap.data() as Student;
         const chapter = chapterSnap.data() as Chapter;
+        const hub = hubSnap.data() as QuestHub;
 
         // Daily Completion Limit Check (only if enabled)
         if (questSettings.isDailyLimitEnabled && student.lastChapterCompletion) {
@@ -132,8 +136,8 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
                 studentUid,
                 studentName: student.studentName,
                 characterName: student.characterName,
-                hubId: hubId,
-                chapterId: chapterId,
+                hubId: hub.id,
+                chapterId: chapter.id,
                 chapterNumber: chapter.chapterNumber,
                 chapterTitle: chapter.title,
                 quizScore,
@@ -153,21 +157,41 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
             lastChapterCompletion: serverTimestamp() // Update the timestamp
         };
 
+        // --- Award Rewards if applicable ---
+        let rewardMessage = '';
+        if (hub.areRewardsEnabled && !(student.completedChapters || []).includes(chapterId)) {
+            const xpToAdd = hub.rewardXp || 0;
+            const goldToAdd = hub.rewardGold || 0;
+
+            if (xpToAdd > 0) updates.xp = increment(xpToAdd);
+            if (goldToAdd > 0) updates.gold = increment(goldToAdd);
+            
+            // Handle Level Up
+            const newXp = (student.xp || 0) + xpToAdd;
+            const currentLevel = student.level || 1;
+            const newLevel = calculateLevel(newXp);
+            
+            if (newLevel > currentLevel) {
+                const levelsGained = newLevel - currentLevel;
+                updates.level = newLevel;
+                updates.hp = (student.hp || 0) + calculateHpGain(student.class, levelsGained);
+                updates.mp = (student.mp || 0) + calculateMpGain(student.class, levelsGained);
+            }
+
+            updates.completedChapters = arrayUnion(chapterId); // Mark chapter as rewarded
+            rewardMessage = ` You have been awarded ${xpToAdd} XP and ${goldToAdd} Gold!`;
+        }
+
         if (chapter.chapterNumber === totalChaptersInHub) {
-            const hubRef = doc(db, 'teachers', teacherUid, 'questHubs', hubId);
-            const hubSnap = await getDoc(hubRef);
-            if(hubSnap.exists()) {
-                 const hub = hubSnap.data() as QuestHub;
-                 if ((student.hubsCompleted || 0) < hub.hubOrder) {
-                    updates.hubsCompleted = hub.hubOrder;
-                }
+             if ((student.hubsCompleted || 0) < hub.hubOrder) {
+                updates.hubsCompleted = hub.hubOrder;
             }
         }
         
         await updateDoc(studentRef, updates);
         await logGameEvent(teacherUid, 'CHAPTER', `${student.characterName} completed Chapter ${chapter.chapterNumber}: ${chapter.title}.`);
 
-        return { success: true, message: `You have completed Chapter ${chapter.chapterNumber}: ${chapter.title}!` };
+        return { success: true, message: `You have completed Chapter ${chapter.chapterNumber}: ${chapter.title}!${rewardMessage}` };
 
     } catch (error: any) {
         console.error("Error completing chapter:", error);
@@ -177,26 +201,57 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
 
 
 async function approveSingleRequest(batch: firebase.firestore.WriteBatch, teacherUid: string, requestId: string, requestData: any) {
-    const { studentUid, hubId, chapterNumber, chapterTitle } = requestData;
+    const { studentUid, hubId, chapterId, chapterNumber, chapterTitle } = requestData;
     const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
+    const hubRef = doc(db, 'teachers', teacherUid, 'questHubs', hubId);
+    
+    // We need to fetch the student and hub data within the transaction/batch context if possible, but for simplicity we fetch here.
+    // For a strict transaction, these would need to be passed in or fetched with transaction.get()
     const studentSnap = await getDoc(studentRef);
+    const hubSnap = await getDoc(hubRef);
 
-    if (!studentSnap.exists()) {
-        console.warn(`Student ${studentUid} not found for request ${requestId}. Skipping.`);
+    if (!studentSnap.exists() || !hubSnap.exists()) {
+        console.warn(`Student ${studentUid} or Hub ${hubId} not found for request ${requestId}. Skipping.`);
+        const requestRefToDelete = doc(db, 'teachers', teacherUid, 'pendingQuestRequests', requestId);
+        batch.delete(requestRefToDelete); // Clean up invalid request
         return;
     }
 
     const studentData = studentSnap.data() as Student;
+    const hubData = hubSnap.data() as QuestHub;
     const currentProgress = studentData.questProgress?.[hubId] || 0;
 
     // We only approve if this is the next sequential chapter.
     // This prevents issues if a teacher accidentally approves an old request.
     if (chapterNumber === currentProgress + 1) {
         const newProgress = { ...studentData.questProgress, [hubId]: chapterNumber };
-        batch.update(studentRef, { 
+        const updates: any = {
             questProgress: newProgress,
-            lastChapterCompletion: serverTimestamp() // Also update timestamp on approval
-        });
+            lastChapterCompletion: serverTimestamp()
+        };
+
+        // --- Award Rewards on Approval ---
+        if (hubData.areRewardsEnabled && !(studentData.completedChapters || []).includes(chapterId)) {
+            const xpToAdd = hubData.rewardXp || 0;
+            const goldToAdd = hubData.rewardGold || 0;
+            
+            if(xpToAdd > 0) updates.xp = increment(xpToAdd);
+            if(goldToAdd > 0) updates.gold = increment(goldToAdd);
+
+             const newXp = (studentData.xp || 0) + xpToAdd;
+             const currentLevel = studentData.level || 1;
+             const newLevel = calculateLevel(newXp);
+
+             if(newLevel > currentLevel) {
+                 updates.level = newLevel;
+                 updates.hp = (studentData.hp || 0) + calculateHpGain(studentData.class, newLevel - currentLevel);
+                 updates.mp = (studentData.mp || 0) + calculateMpGain(studentData.class, newLevel - currentLevel);
+             }
+
+            updates.completedChapters = arrayUnion(chapterId);
+        }
+
+        batch.update(studentRef, updates);
         await logGameEvent(teacherUid, 'CHAPTER', `${studentData.characterName}'s completion of "${chapterTitle}" was approved.`);
     }
 
@@ -290,23 +345,33 @@ export async function setStudentQuestProgress(input: SetStudentQuestProgressInpu
 
             const studentData = studentSnap.data() as Student;
             const newQuestProgress = { ...(studentData.questProgress || {}) };
+            const rewardedChapters = new Set(studentData.completedChapters || []);
 
-            // Mark all chapters in preceding hubs as complete
+            // Mark all chapters in preceding hubs as complete and rewarded
             for (const hub of precedingHubs) {
                 const chaptersInHub = allChapters.filter(c => c.hubId === hub.id);
                 if (chaptersInHub.length > 0) {
                     newQuestProgress[hub.id] = chaptersInHub.length;
+                    chaptersInHub.forEach(c => rewardedChapters.add(c.id));
                 }
             }
 
-            // Set the progress for the target hub
-            newQuestProgress[hubId] = chapterNumber > 0 ? chapterNumber - 1 : 0;
+            // Set the progress for the target hub and mark previous chapters as rewarded
+            newQuestProgress[hubId] = chapterNumber > 0 ? chapterNumber : 0;
+            const chaptersInTargetHub = allChapters.filter(c => c.hubId === hubId);
+            for(let i = 1; i <= chapterNumber; i++) {
+                const chapterToMark = chaptersInTargetHub.find(c => c.chapterNumber === i);
+                if (chapterToMark) {
+                    rewardedChapters.add(chapterToMark.id);
+                }
+            }
             
             const newHubsCompleted = Math.max(studentData.hubsCompleted || 0, targetHub.hubOrder -1);
 
             batch.update(studentRef, { 
                 questProgress: newQuestProgress,
-                hubsCompleted: newHubsCompleted
+                hubsCompleted: newHubsCompleted,
+                completedChapters: Array.from(rewardedChapters) // Save the updated list of rewarded chapters
             });
         }
         

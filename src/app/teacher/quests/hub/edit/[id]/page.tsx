@@ -6,7 +6,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowLeft, Loader2, Save, Upload, X, Library } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Upload, X, Library, Star, Coins } from 'lucide-react';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -20,6 +20,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { v4 as uuidv4 } from 'uuid';
 import { cn } from '@/lib/utils';
 import { MapGallery } from '@/components/teacher/map-gallery';
+import { Switch } from '@/components/ui/switch';
 
 const defaultWorldMap = "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FWorld%20Map.JPG?alt=media&token=2d88af7d-a54c-4f34-b4c7-1a7c04485b8b";
 
@@ -182,12 +183,17 @@ export default function EditQuestHubPage() {
         setIsSaving(true);
         try {
             const hubRef = doc(db, 'teachers', teacher.uid, 'questHubs', hub.id);
-            await updateDoc(hubRef, {
+            const dataToSave = {
                 name: hub.name,
                 hubOrder: hub.hubOrder,
                 worldMapUrl: hub.worldMapUrl,
-                coordinates: hub.coordinates
-            });
+                coordinates: hub.coordinates,
+                areRewardsEnabled: hub.areRewardsEnabled ?? false,
+                rewardXp: hub.rewardXp ?? 0,
+                rewardGold: hub.rewardGold ?? 0,
+            };
+
+            await updateDoc(hubRef, dataToSave);
             toast({ title: 'Hub Updated!', description: 'Your changes have been saved.' });
             router.push('/teacher/quests');
         } catch (error) {
@@ -272,6 +278,37 @@ export default function EditQuestHubPage() {
                                         )}
                                     </div>
                                 </div>
+                                
+                                <Card className="bg-secondary/50">
+                                    <CardHeader>
+                                        <CardTitle>Chapter Completion Rewards</CardTitle>
+                                        <CardDescription>Optionally award XP and Gold to students for completing any chapter within this hub.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="flex items-center space-x-2">
+                                            <Switch 
+                                                id="enable-rewards" 
+                                                checked={hub.areRewardsEnabled} 
+                                                onCheckedChange={(checked) => handleFieldChange('areRewardsEnabled', checked)} 
+                                            />
+                                            <Label htmlFor="enable-rewards">Enable Rewards for this Hub</Label>
+                                        </div>
+
+                                        {hub.areRewardsEnabled && (
+                                            <div className="grid grid-cols-2 gap-4 animate-in fade-in-50">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="reward-xp" className="flex items-center gap-1"><Star className="h-4 w-4 text-yellow-400" /> XP Reward</Label>
+                                                    <Input id="reward-xp" type="number" value={hub.rewardXp ?? ''} onChange={(e) => handleFieldChange('rewardXp', Number(e.target.value))} placeholder="e.g., 25" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                     <Label htmlFor="reward-gold" className="flex items-center gap-1"><Coins className="h-4 w-4 text-amber-500" /> Gold Reward</Label>
+                                                    <Input id="reward-gold" type="number" value={hub.rewardGold ?? ''} onChange={(e) => handleFieldChange('rewardGold', Number(e.target.value))} placeholder="e.g., 10" />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+
                                 <div className="flex justify-end pt-4 border-t">
                                     <Button size="lg" onClick={handleSaveChanges} disabled={isSaving}>
                                     {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
