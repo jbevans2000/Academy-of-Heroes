@@ -221,15 +221,14 @@ export default function ChapterPage() {
                 const chapterDocRef = doc(db, 'teachers', teacherUid, 'chapters', chapterId as string);
                 const chapterSnap = await getDoc(chapterDocRef);
                 if (chapterSnap.exists()) {
-                    const chapterData = chapterSnap.data() as Chapter;
+                    const chapterData = { id: chapterSnap.id, ...chapterSnap.data() } as Chapter;
                     setChapter(chapterData);
-                    // @ts-ignore
                     if (!chapterData.quiz) setQuizPassed(true); // If no quiz, student can advance
 
                     const hubDocRef = doc(db, 'teachers', teacherUid, 'questHubs', hubId as string);
                     const hubSnap = await getDoc(hubDocRef);
                     if (hubSnap.exists()) {
-                        setHub(hubSnap.data() as QuestHub);
+                        setHub({ id: hubSnap.id, ...hubSnap.data() } as QuestHub);
                     }
                     
                     const chaptersInHubQuery = query(collection(db, 'teachers', teacherUid, 'chapters'), where('hubId', '==', hubId as string));
@@ -253,7 +252,6 @@ export default function ChapterPage() {
     const handleMarkComplete = async (quizScore?: number, quizAnswers?: any[]) => {
         if (!user || !student || !chapter || !hub || !teacherUid) return;
         
-        // @ts-ignore
         if (chapter.quiz && !quizPassed) {
             toast({ variant: 'destructive', title: 'Quiz Required', description: 'You must prove your knowledge before continuing your quest!' });
             return;
@@ -305,11 +303,9 @@ export default function ChapterPage() {
                 toast({ title: "Cannot Unmark", description: "This chapter has not been completed yet." });
                 return;
             }
-            // @ts-ignore
             if (chapter.chapterNumber === 0) return; // Should not happen with 1-based chapter numbers
 
             // Set progress back to the previous chapter number
-            // @ts-ignore
             const newProgressValue = chapter.chapterNumber - 1;
             
             const newProgress = {
@@ -325,7 +321,6 @@ export default function ChapterPage() {
             
             setStudent(prev => prev ? ({ ...prev, ...updates }) : null);
 
-            // @ts-ignore
             await logGameEvent(teacherUid, 'CHAPTER', `${student.characterName} rolled back progress on Chapter ${chapter.chapterNumber}: ${chapter.title}.`);
 
             toast({ title: "Quest Progress Rolled Back", description: `Progress has been reset to Chapter ${newProgressValue}.` });
@@ -392,20 +387,16 @@ export default function ChapterPage() {
         if(hub.hubOrder > lastCompletedHub + 1) {
             return <p>You have not unlocked this area yet.</p>;
         }
-        // @ts-ignore
         if (chapter.chapterNumber > lastCompletedChapter + 1) {
             return <p>You have not unlocked this chapter yet.</p>;
         }
     }
     
     const storyVideoSrc = chapter.videoUrl ? getYouTubeEmbedUrl(chapter.videoUrl) : '';
-    // @ts-ignore
     const lessonVideoSrc = chapter.lessonVideoUrl ? getYouTubeEmbedUrl(chapter.lessonVideoUrl) : '';
 
     const lastCompletedChapterForHub = student?.questProgress?.[hubId as string] || 0;
-    // @ts-ignore
     const isCurrentChapter = chapter.chapterNumber === lastCompletedChapterForHub + 1;
-    // @ts-ignore
     const isCompletedChapter = chapter.chapterNumber <= lastCompletedChapterForHub;
 
     const returnPath = isPreviewMode ? '/teacher/quests' : `/dashboard/map/${hubId}`;
@@ -490,10 +481,8 @@ export default function ChapterPage() {
                                  <div className="text-center">
                                     <h3 className="text-3xl font-bold text-primary">Lesson</h3>
                                  </div>
-                                {// @ts-ignore
-                                chapter.lessonMainImageUrl && <div className="flex justify-center">
+                                {chapter.lessonMainImageUrl && <div className="flex justify-center">
                                     <Image
-                                        // @ts-ignore
                                         src={chapter.lessonMainImageUrl}
                                         alt="Lesson main image"
                                         width={800}
@@ -504,10 +493,8 @@ export default function ChapterPage() {
                                     />
                                 </div>}
                                 {chapter.lessonContent && <><Separator /><div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: chapter.lessonContent }} /></>}
-                                {// @ts-ignore
-                                chapter.lessonDecorativeImageUrl1 && <><Separator /><div className="flex justify-center">
+                                {chapter.lessonDecorativeImageUrl1 && <><Separator /><div className="flex justify-center">
                                      <Image
-                                        // @ts-ignore
                                         src={chapter.lessonDecorativeImageUrl1}
                                         alt="Lesson decorative image"
                                         width={800}
@@ -516,12 +503,9 @@ export default function ChapterPage() {
                                         data-ai-hint="old paper"
                                     />
                                 </div></>}
-                                {// @ts-ignore
-                                chapter.lessonAdditionalContent && <><Separator /><div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: chapter.lessonAdditionalContent }} /></>}
-                                 {// @ts-ignore
-                                 chapter.lessonDecorativeImageUrl2 && <><Separator /><div className="flex justify-center">
+                                {chapter.lessonAdditionalContent && <><Separator /><div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: chapter.lessonAdditionalContent }} /></>}
+                                 {chapter.lessonDecorativeImageUrl2 && <><Separator /><div className="flex justify-center">
                                      <Image
-                                        // @ts-ignore
                                         src={chapter.lessonDecorativeImageUrl2}
                                         alt="Lesson decorative twig"
                                         width={800}
@@ -542,10 +526,8 @@ export default function ChapterPage() {
                                         className="rounded-lg shadow-lg border">
                                     </iframe>
                                 </div></>}
-                                {// @ts-ignore
-                                chapter.quiz && isCurrentChapter && student && (
+                                {chapter.quiz && isCurrentChapter && student && (
                                     <QuizComponent 
-                                        // @ts-ignore
                                         quiz={chapter.quiz}
                                         student={student}
                                         chapter={chapter as Chapter}
@@ -559,8 +541,7 @@ export default function ChapterPage() {
                     </CardContent>
                 </Card>
                  <div className="flex justify-center flex-col items-center gap-4 py-4">
-                     {// @ts-ignore
-                     isCurrentChapter && !isPreviewMode && !chapter.quiz && (
+                     {isCurrentChapter && !isPreviewMode && !chapter.quiz && (
                         <Button 
                             size="lg" 
                             onClick={() => handleMarkComplete()}
