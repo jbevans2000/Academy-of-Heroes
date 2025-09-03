@@ -121,7 +121,7 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
       // 2. Check if the opponent has reached their limit
       if (duelSettings?.isDailyLimitEnabled) {
           const opponentDuelsToday = opponent.lastDuelDate === today ? (opponent.duelsCompletedToday || 0) : 0;
-          if (opponentDuelsToday >= (duelSettings.dailyLimit || 999)) {
+          if (opponentDuelsToday >= (duelSettings.dailyDuelLimit || 999)) {
               toast({
                   variant: 'destructive',
                   title: 'Opponent Unavailable',

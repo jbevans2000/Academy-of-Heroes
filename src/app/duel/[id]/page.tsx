@@ -138,6 +138,7 @@ export default function DuelPage() {
             if (studentMetaSnap.exists()) {
                 const uid = studentMetaSnap.data().teacherUid;
                 setTeacherUid(uid);
+                // Fetch settings here initially
                 const settings = await getDuelSettings(uid);
                 setDuelSettings(settings);
             }
@@ -616,5 +617,3 @@ export default function DuelPage() {
         </div>
     )
 }
-
-    
