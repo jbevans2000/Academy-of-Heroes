@@ -320,3 +320,45 @@ export async function setStudentQuestProgress(input: SetStudentQuestProgressInpu
         return { success: false, error: error.message || "Failed to update student progress." };
     }
 }
+
+// --------- HUB & CHAPTER DELETION ---------
+
+interface DeleteHubInput {
+    teacherUid: string;
+    hubId: string;
+}
+
+export async function deleteQuestHub(input: DeleteHubInput): Promise<ActionResponse> {
+    const { teacherUid, hubId } = input;
+    if (!teacherUid || !hubId) {
+        return { success: false, error: "Invalid input provided." };
+    }
+
+    const batch = writeBatch(db);
+
+    try {
+        // 1. Find and delete all chapters associated with this hub
+        const chaptersQuery = firestoreQuery(collection(db, 'teachers', teacherUid, 'chapters'), where('hubId', '==', hubId));
+        const chaptersSnapshot = await getDocs(chaptersQuery);
+        
+        if (!chaptersSnapshot.empty) {
+            chaptersSnapshot.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+        }
+
+        // 2. Delete the hub itself
+        const hubRef = doc(db, 'teachers', teacherUid, 'questHubs', hubId);
+        batch.delete(hubRef);
+
+        await batch.commit();
+        
+        await logGameEvent(teacherUid, 'GAMEMASTER', `Deleted Quest Hub with ID: ${hubId} and its ${chaptersSnapshot.size} chapter(s).`);
+
+        return { success: true, message: 'Hub and all its chapters have been deleted.' };
+
+    } catch (error: any) {
+        console.error("Error deleting quest hub:", error);
+        return { success: false, error: error.message || 'Failed to delete the quest hub.' };
+    }
+}

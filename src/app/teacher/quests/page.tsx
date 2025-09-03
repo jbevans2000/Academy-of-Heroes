@@ -34,6 +34,8 @@ import { cn } from '@/lib/utils';
 import NextImage from 'next/image';
 import Link from 'next/link';
 import { WorldMapGallery } from '@/components/teacher/world-map-gallery';
+import { deleteQuestHub } from '@/ai/flows/manage-quests';
+
 
 export default function QuestsPage() {
   const router = useRouter();
@@ -51,6 +53,10 @@ export default function QuestsPage() {
   const [mapImageFile, setMapImageFile] = useState<File | null>(null);
   const [isUploadingMap, setIsUploadingMap] = useState(false);
   const [isReverting, setIsReverting] = useState(false);
+
+  // State for hub deletion
+  const [hubToDelete, setHubToDelete] = useState<QuestHub | null>(null);
+  const [isDeletingHub, setIsDeletingHub] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -116,6 +122,25 @@ export default function QuestsPage() {
         setIsDeleting(null);
     }
   };
+
+  const handleDeleteHub = async () => {
+    if (!teacher || !hubToDelete) return;
+    setIsDeletingHub(true);
+    try {
+        const result = await deleteQuestHub({ teacherUid: teacher.uid, hubId: hubToDelete.id });
+        if (result.success) {
+            toast({ title: "Hub Deleted", description: `"${hubToDelete.name}" and all its chapters have been removed.` });
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Delete Failed', description: error.message });
+    } finally {
+        setIsDeletingHub(false);
+        setHubToDelete(null);
+    }
+  };
+
 
   const handleWorldMapUpload = async () => {
     if (!mapImageFile || !teacher) return;
@@ -223,6 +248,24 @@ export default function QuestsPage() {
         onMapSelect={handleSelectWorldMapFromGallery}
       />
       
+      <AlertDialog open={!!hubToDelete} onOpenChange={() => setHubToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Delete Hub: {hubToDelete?.name}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This will permanently delete the entire hub and ALL of its chapters. This action cannot be undone.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteHub} disabled={isDeletingHub} className="bg-destructive hover:bg-destructive/90">
+                    {isDeletingHub ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Yes, Delete Hub
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="flex items-center justify-between mb-6">
@@ -298,6 +341,9 @@ export default function QuestsPage() {
                                         <div className="flex items-center gap-2 pr-4">
                                             <Button variant="outline" size="sm" onClick={() => router.push(`/teacher/quests/hub/edit/${hub.id}`)}>
                                                 <Edit className="mr-2 h-4 w-4" /> Edit Hub
+                                            </Button>
+                                            <Button variant="ghost" size="icon" onClick={() => setHubToDelete(hub)}>
+                                                <Trash2 className="h-4 w-4 text-destructive" />
                                             </Button>
                                             <Link href={`/teacher/quests/new?hubId=${hub.id}`} passHref>
                                                 <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
