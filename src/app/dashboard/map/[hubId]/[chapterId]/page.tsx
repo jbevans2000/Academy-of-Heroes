@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -120,6 +121,7 @@ const QuizComponent = ({ quiz, student, chapter, hub, teacherUid, onQuizComplete
     }
     
     const currentQuestion = quiz.questions[currentQuestionIndex];
+    if (!currentQuestion) return null;
 
     return (
         <Card className="mt-6 bg-secondary/50">
@@ -603,3 +605,4 @@ export default function ChapterPage() {
       </>
     );
 }
+
