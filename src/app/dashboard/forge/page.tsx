@@ -223,23 +223,24 @@ export default function ForgePage() {
     
     const ownedArmor = allArmor.filter(armor => student?.ownedArmorIds?.includes(armor.id));
 
-    const armorBySlot: Record<ArmorSlot, ArmorPiece[]> = {
-        head: ownedArmor.filter(a => a.slot === 'head'),
-        shoulders: ownedArmor.filter(a => a.slot === 'shoulders'),
-        chest: ownedArmor.filter(a => a.slot === 'chest'),
-        hands: ownedArmor.filter(a => a.slot === 'hands'),
-        legs: ownedArmor.filter(a => a.slot === 'legs'),
-        feet: ownedArmor.filter(a => a.slot === 'feet'),
-    };
+    const armorBySlot = useMemo(() => {
+        const slots: Record<ArmorSlot, ArmorPiece[]> = { head: [], shoulders: [], chest: [], hands: [], legs: [], feet: [] };
+        ownedArmor.forEach(piece => {
+            if (slots[piece.slot]) {
+                slots[piece.slot].push(piece);
+            }
+        });
+        return slots;
+    }, [ownedArmor]);
     
     const handleEquipArmor = (piece: ArmorPiece) => {
         switch (piece.slot) {
-            case 'head': setSelectedHead(piece); break;
-            case 'shoulders': setSelectedShoulders(piece); break;
-            case 'chest': setSelectedChest(piece); break;
-            case 'hands': setSelectedHands(piece); break;
-            case 'legs': setSelectedLegs(piece); break;
-            case 'feet': setSelectedFeet(piece); break;
+            case 'head': setSelectedHead(prev => prev?.id === piece.id ? null : piece); break;
+            case 'shoulders': setSelectedShoulders(prev => prev?.id === piece.id ? null : piece); break;
+            case 'chest': setSelectedChest(prev => prev?.id === piece.id ? null : piece); break;
+            case 'hands': setSelectedHands(prev => prev?.id === piece.id ? null : piece); break;
+            case 'legs': setSelectedLegs(prev => prev?.id === piece.id ? null : piece); break;
+            case 'feet': setSelectedFeet(prev => prev?.id === piece.id ? null : piece); break;
         }
     };
 
@@ -458,7 +459,7 @@ export default function ForgePage() {
                                 <CardFooter className="grid grid-cols-1 gap-2 p-2">
                                      <Button size="lg" className="h-16" onClick={() => setIsArmoryOpen(true)}>
                                         <Gem className="mr-2 h-6 w-6"/>
-                                        The Armory
+                                        Purchase New Armor
                                      </Button>
                                 </CardFooter>
                             </Card>
