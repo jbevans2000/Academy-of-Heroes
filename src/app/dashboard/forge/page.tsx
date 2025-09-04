@@ -10,7 +10,7 @@ import type { Student } from '@/lib/data';
 import type { ArmorPiece, Hairstyle, BaseBody, ArmorSlot } from '@/lib/forge';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Loader2, RotateCcw, Hammer } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, RotateCcw, Hammer, Edit, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -19,6 +19,8 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { ArmoryDialog } from '@/components/dashboard/armory-dialog';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
 
 
 const slotZIndex: Record<ArmorSlot, number> = {
@@ -49,7 +51,7 @@ const CharacterCanvas = ({ student, equipment, baseBody }: {
         equipment.hands,
         equipment.legs,
         equipment.feet,
-    ].filter(Boolean);
+    ].filter(Boolean).sort((a,b) => (slotZIndex[a.slot] || 0) - (slotZIndex[b.slot] || 0));
 
     return (
         <div className="relative w-full max-w-[500px] aspect-square">
@@ -70,12 +72,12 @@ const CharacterCanvas = ({ student, equipment, baseBody }: {
                 </div>
             )}
             
-            {equippedArmor.map(piece => {
+             {equippedArmor.map(piece => {
                 if (!piece) return null;
-                const zIndex = slotZIndex[piece.slot] || 1;
                 
                 const transform1 = piece.transforms?.[baseBody.id] || { x: 50, y: 50, scale: 100 };
                 const transform2 = piece.transforms2?.[baseBody.id];
+                const zIndex = slotZIndex[piece.slot] || 1;
 
                 return (
                     <div key={piece.id}>
@@ -140,6 +142,11 @@ export default function ForgePage() {
     const [selectedHands, setSelectedHands] = useState<ArmorPiece | null>(null);
     const [selectedLegs, setSelectedLegs] = useState<ArmorPiece | null>(null);
     const [selectedFeet, setSelectedFeet] = useState<ArmorPiece | null>(null);
+    
+    // Sizer state
+    const [activePiece, setActivePiece] = useState<ArmorPiece | null>(null);
+    const [transform, setTransform] = useState({ x: 50, y: 50, scale: 100 });
+
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -160,8 +167,6 @@ export default function ForgePage() {
         return () => unsubscribe();
     }, [router]);
     
-    // This effect now correctly depends on `allArmor` to ensure it runs
-    // *after* armor data is loaded, preventing the race condition.
     useEffect(() => {
         if (student && allArmor.length > 0) {
             setSelectedHead(allArmor.find(a => a.id === student.equippedHeadId) || null);
@@ -180,7 +185,6 @@ export default function ForgePage() {
             if (doc.exists()) {
                 const studentData = { uid: doc.id, ...doc.data() } as Student;
                 setStudent(studentData);
-                // Set initial selections that don't depend on `allArmor` here.
                 if (selectedBodyId === null) setSelectedBodyId(studentData.equippedBodyId || null);
                 if (selectedHairstyleId === null) setSelectedHairstyleId(studentData.equippedHairstyleId || null);
                 if (selectedHairstyleColor === null) setSelectedHairstyleColor(studentData.equippedHairstyleColor || null);
@@ -193,7 +197,6 @@ export default function ForgePage() {
                 const bodiesData = bodiesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as BaseBody)).sort((a: any, b: any) => a.order - b.order);
                 setBaseBodies(bodiesData);
                 
-                // Set initial body if there's none equipped on the student record
                 if (!student?.equippedBodyId && bodiesData.length > 0) {
                    setSelectedBodyId(bodiesData[0].id);
                 }
@@ -202,11 +205,10 @@ export default function ForgePage() {
                 const hairSnap = await getDocs(hairQuery);
                 setHairstyles(hairSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hairstyle)));
 
-                // Fetch all published armor
                 const armorQuery = query(collection(db, 'armorPieces'), where('isPublished', '==', true));
                 const armorSnap = await getDocs(armorQuery);
                 const armorData = armorSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ArmorPiece));
-                setAllArmor(armorData); // This will trigger the effect above to set equipped armor
+                setAllArmor(armorData);
 
              } catch (e) {
                 console.error("Error fetching cosmetics:", e);
@@ -222,32 +224,51 @@ export default function ForgePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user, teacherUid, toast]);
     
-    const selectedHairstyle = hairstyles.find(h => h.id === selectedHairstyleId);
-    
-    const ownedArmor = allArmor.filter(armor => student?.ownedArmorIds?.includes(armor.id));
-
-    const armorBySlot = useMemo(() => {
-        const slots: Record<ArmorSlot, ArmorPiece[]> = { head: [], shoulders: [], chest: [], hands: [], legs: [], feet: [] };
-        ownedArmor.forEach(piece => {
-            if (slots[piece.slot]) {
-                slots[piece.slot].push(piece);
+     useEffect(() => {
+        const selectedBody = baseBodies.find(b => b.id === selectedBodyId);
+        if (activePiece && selectedBody) {
+            const savedTransform = activePiece.transforms?.[selectedBody.id];
+            if (savedTransform) {
+                setTransform(savedTransform);
+            } else {
+                setTransform({ x: 50, y: 50, scale: 100 });
             }
-        });
-        return slots;
-    }, [ownedArmor]);
+        }
+    }, [activePiece, selectedBodyId, baseBodies]);
 
-    const armorSlotOrder: ArmorSlot[] = ['head', 'shoulders', 'chest', 'hands', 'legs', 'feet'];
-    
     const handleEquipArmor = (piece: ArmorPiece) => {
+        const equipLogic = (prev: ArmorPiece | null) => prev?.id === piece.id ? null : piece;
         switch (piece.slot) {
-            case 'head': setSelectedHead(prev => prev?.id === piece.id ? null : piece); break;
-            case 'shoulders': setSelectedShoulders(prev => prev?.id === piece.id ? null : piece); break;
-            case 'chest': setSelectedChest(prev => prev?.id === piece.id ? null : piece); break;
-            case 'hands': setSelectedHands(prev => prev?.id === piece.id ? null : piece); break;
-            case 'legs': setSelectedLegs(prev => prev?.id === piece.id ? null : piece); break;
-            case 'feet': setSelectedFeet(prev => prev?.id === piece.id ? null : piece); break;
+            case 'head': setSelectedHead(equipLogic); break;
+            case 'shoulders': setSelectedShoulders(equipLogic); break;
+            case 'chest': setSelectedChest(equipLogic); break;
+            case 'hands': setSelectedHands(equipLogic); break;
+            case 'legs': setSelectedLegs(equipLogic); break;
+            case 'feet': setSelectedFeet(equipLogic); break;
         }
     };
+    
+    const handleSliderChange = (type: 'x' | 'y' | 'scale', value: number) => {
+        if (!activePiece) return;
+        setTransform(prev => ({...prev, [type]: value}));
+        // Update the piece in its state
+        const updatedPiece = { 
+            ...activePiece, 
+            transforms: { 
+                ...activePiece.transforms, 
+                [selectedBodyId!]: {...(activePiece.transforms[selectedBodyId!] || {}), [type]: value}
+            }
+        };
+        switch(activePiece.slot) {
+             case 'head': setSelectedHead(updatedPiece); break;
+             case 'shoulders': setSelectedShoulders(updatedPiece); break;
+             case 'chest': setSelectedChest(updatedPiece); break;
+             case 'hands': setSelectedHands(updatedPiece); break;
+             case 'legs': setSelectedLegs(updatedPiece); break;
+             case 'feet': setSelectedFeet(updatedPiece); break;
+        }
+    }
+
 
     const handleSave = async () => {
         if (!user || !teacherUid) return;
@@ -279,15 +300,30 @@ export default function ForgePage() {
             setSelectedBodyId(student.equippedBodyId || baseBodies[0]?.id || null);
             setSelectedHairstyleId(student.equippedHairstyleId || null);
             setSelectedHairstyleColor(student.equippedHairstyleColor || null);
-            setSelectedHead(null);
-            setSelectedShoulders(null);
-            setSelectedChest(null);
-            setSelectedHands(null);
-            setSelectedLegs(null);
-            setSelectedFeet(null);
+            setSelectedHead(allArmor.find(a => a.id === student.equippedHeadId) || null);
+            setSelectedShoulders(allArmor.find(a => a.id === student.equippedShouldersId) || null);
+            setSelectedChest(allArmor.find(a => a.id === student.equippedChestId) || null);
+            setSelectedHands(allArmor.find(a => a.id === student.equippedHandsId) || null);
+            setSelectedLegs(allArmor.find(a => a.id === student.equippedLegsId) || null);
+            setSelectedFeet(allArmor.find(a => a.id === student.equippedFeetId) || null);
+            setActivePiece(null);
         }
         toast({ title: "Appearance Reset", description: "Your appearance has been reset to the last saved version."});
     }
+
+    const selectedHairstyle = hairstyles.find(h => h.id === selectedHairstyleId);
+    const ownedArmor = allArmor.filter(armor => student?.ownedArmorIds?.includes(armor.id));
+    const armorSlotOrder: ArmorSlot[] = ['head', 'shoulders', 'chest', 'hands', 'legs', 'feet'];
+
+    const armorBySlot = useMemo(() => {
+        const slots: Record<ArmorSlot, ArmorPiece[]> = { head: [], shoulders: [], chest: [], hands: [], legs: [], feet: [] };
+        ownedArmor.forEach(piece => {
+            if (slots[piece.slot]) {
+                slots[piece.slot].push(piece);
+            }
+        });
+        return slots;
+    }, [ownedArmor]);
 
     if (isLoading || !student) {
         return <div className="flex items-center justify-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>
@@ -303,9 +339,9 @@ export default function ForgePage() {
                         <Button variant="outline" onClick={() => router.push('/dashboard')}><ArrowLeft className="mr-2 h-4 w-4"/> Back to Dashboard</Button>
                         <div className="flex gap-2">
                              <Button variant="secondary" size="lg" onClick={handleReset} disabled={isSaving}><RotateCcw className="mr-2 h-4 w-4"/>Reset Appearance</Button>
-                             <Button size="lg" onClick={handleSave} disabled={isSaving}>
+                             <Button size="lg" onClick={handleSave} disabled>
                                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4" />}
-                                Save Appearance
+                                Save Appearance (Admin Only)
                              </Button>
                         </div>
                     </div>
@@ -350,12 +386,8 @@ export default function ForgePage() {
                                                     {baseBodies.map(item => (
                                                         <Card 
                                                             key={item.id} 
-                                                            className={cn(
-                                                                "cursor-pointer hover:border-primary", 
-                                                                selectedBodyId === item.id && "border-2 border-primary"
-                                                            )}
-                                                            onClick={() => setSelectedBodyId(item.id)}
-                                                        >
+                                                            className={cn( "cursor-pointer hover:border-primary", selectedBodyId === item.id && "border-2 border-primary" )}
+                                                            onClick={() => setSelectedBodyId(item.id)} >
                                                             <CardContent className="p-1 aspect-square">
                                                                 <Image src={item.imageUrl} alt={item.name} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
                                                             </CardContent>
@@ -368,10 +400,7 @@ export default function ForgePage() {
                                                     {hairstyles.map(item => (
                                                         <Card 
                                                             key={item.id} 
-                                                            className={cn(
-                                                                "cursor-pointer hover:border-primary", 
-                                                                selectedHairstyleId === item.id && "border-2 border-primary"
-                                                            )}
+                                                            className={cn( "cursor-pointer hover:border-primary", selectedHairstyleId === item.id && "border-2 border-primary" )}
                                                             onClick={() => {
                                                                 if(selectedHairstyleId === item.id) {
                                                                     setSelectedHairstyleId(null);
@@ -380,8 +409,7 @@ export default function ForgePage() {
                                                                     setSelectedHairstyleId(item.id);
                                                                     setSelectedHairstyleColor(item.colors?.[0]?.imageUrl || null);
                                                                 }
-                                                            }}
-                                                        >
+                                                            }} >
                                                             <CardContent className="p-1 aspect-square">
                                                                 <Image src={item.baseImageUrl} alt={item.styleName} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
                                                             </CardContent>
@@ -396,8 +424,7 @@ export default function ForgePage() {
                                                             <div 
                                                                 key={index} 
                                                                 className={cn("h-16 w-16 rounded-md border-2 cursor-pointer", selectedHairstyleColor === color.imageUrl ? "border-primary ring-2 ring-primary" : "border-transparent")}
-                                                                onClick={() => setSelectedHairstyleColor(color.imageUrl)}
-                                                            >
+                                                                onClick={() => setSelectedHairstyleColor(color.imageUrl)} >
                                                                 <Image src={color.imageUrl} alt={`Color ${index+1}`} width={64} height={64} className="w-full h-full object-contain rounded-sm bg-secondary" />
                                                             </div>
                                                         ))}
@@ -413,22 +440,12 @@ export default function ForgePage() {
                                                                 <p className="text-muted-foreground text-sm col-span-3 text-center py-2">No items owned for this slot.</p>
                                                             ) : (
                                                                 armorBySlot[slot].map(item => {
-                                                                    const isEquipped = 
-                                                                        selectedHead?.id === item.id || 
-                                                                        selectedShoulders?.id === item.id || 
-                                                                        selectedChest?.id === item.id || 
-                                                                        selectedHands?.id === item.id || 
-                                                                        selectedLegs?.id === item.id || 
-                                                                        selectedFeet?.id === item.id;
+                                                                    const isEquipped = [selectedHead, selectedShoulders, selectedChest, selectedHands, selectedLegs, selectedFeet].some(p => p?.id === item.id);
                                                                     return (
                                                                         <Card 
                                                                             key={item.id} 
-                                                                            className={cn(
-                                                                                "cursor-pointer hover:border-primary", 
-                                                                                isEquipped && "border-2 border-primary"
-                                                                            )}
-                                                                            onClick={() => handleEquipArmor(item)}
-                                                                        >
+                                                                            className={cn("cursor-pointer hover:border-primary", isEquipped && "border-2 border-primary")}
+                                                                            onClick={() => handleEquipArmor(item)} >
                                                                             <CardContent className="p-1 aspect-square">
                                                                                 <Image src={item.imageUrl} alt={item.name} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
                                                                             </CardContent>
@@ -443,11 +460,48 @@ export default function ForgePage() {
                                         </ScrollArea>
                                     </Tabs>
                                 </CardContent>
-                                <CardFooter className="grid grid-cols-1 gap-2 p-2">
+                                <CardFooter className="mt-auto grid grid-cols-1 gap-2 p-2">
                                      <Button size="lg" className="h-16" onClick={() => setIsArmoryOpen(true)}>
                                         <Hammer className="mr-2 h-6 w-6"/>
                                         The Armory
                                      </Button>
+                                     <Card>
+                                        <CardHeader className="p-2">
+                                            <CardTitle className="text-base flex items-center justify-between">
+                                                <span>Active Piece Controls</span>
+                                                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setActivePiece(null)} disabled={!activePiece}>
+                                                    <Trash2 className="h-4 w-4"/>
+                                                </Button>
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="p-2 space-y-4">
+                                            <div className="p-2 border rounded-md h-24 overflow-y-auto space-y-1">
+                                               {[selectedHead, selectedShoulders, selectedChest, selectedHands, selectedLegs, selectedFeet].filter(Boolean).map(piece => (
+                                                    <div key={piece!.id} className={cn("p-1 rounded-md cursor-pointer text-sm", activePiece?.id === piece!.id ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary')} onClick={() => setActivePiece(piece)}>
+                                                        {piece!.name}
+                                                    </div>
+                                               ))}
+                                            </div>
+                                            {activePiece && selectedBodyId ? (
+                                                <div className="space-y-4">
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor="x-pos">X Position: {transform.x.toFixed(2)}%</Label>
+                                                        <Slider id="x-pos" value={[transform.x]} onValueChange={([val]) => handleSliderChange('x', val)} min={0} max={100} step={0.1} />
+                                                    </div>
+                                                     <div className="space-y-2">
+                                                        <Label htmlFor="y-pos">Y Position: {transform.y.toFixed(2)}%</Label>
+                                                        <Slider id="y-pos" value={[transform.y]} onValueChange={([val]) => handleSliderChange('y', val)} min={0} max={100} step={0.1} />
+                                                    </div>
+                                                     <div className="space-y-2">
+                                                        <Label htmlFor="scale">Scale: {transform.scale.toFixed(2)}%</Label>
+                                                        <Slider id="scale" value={[transform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={200} step={0.5} />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <p className="text-sm text-muted-foreground text-center">Select an equipped piece to adjust it.</p>
+                                            )}
+                                        </CardContent>
+                                    </Card>
                                 </CardFooter>
                             </Card>
                         </div>
@@ -457,4 +511,3 @@ export default function ForgePage() {
         </div>
     );
 }
-
