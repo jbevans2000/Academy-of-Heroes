@@ -10,7 +10,7 @@ import type { Student } from '@/lib/data';
 import type { ArmorPiece, Hairstyle, BaseBody, ArmorSlot } from '@/lib/forge';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Loader2, RotateCcw, Hammer, Gem } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, RotateCcw, Hammer } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -279,12 +279,12 @@ export default function ForgePage() {
             setSelectedBodyId(student.equippedBodyId || baseBodies[0]?.id || null);
             setSelectedHairstyleId(student.equippedHairstyleId || null);
             setSelectedHairstyleColor(student.equippedHairstyleColor || null);
-            setSelectedHead(allArmor.find(a => a.id === student.equippedHeadId) || null);
-            setSelectedShoulders(allArmor.find(a => a.id === student.equippedShouldersId) || null);
-            setSelectedChest(allArmor.find(a => a.id === student.equippedChestId) || null);
-            setSelectedHands(allArmor.find(a => a.id === student.equippedHandsId) || null);
-            setSelectedLegs(allArmor.find(a => a.id === student.equippedLegsId) || null);
-            setSelectedFeet(allArmor.find(a => a.id === student.equippedFeetId) || null);
+            setSelectedHead(null);
+            setSelectedShoulders(null);
+            setSelectedChest(null);
+            setSelectedHands(null);
+            setSelectedLegs(null);
+            setSelectedFeet(null);
         }
         toast({ title: "Appearance Reset", description: "Your appearance has been reset to the last saved version."});
     }
@@ -445,7 +445,7 @@ export default function ForgePage() {
                                 </CardContent>
                                 <CardFooter className="grid grid-cols-1 gap-2 p-2">
                                      <Button size="lg" className="h-16" onClick={() => setIsArmoryOpen(true)}>
-                                        <Gem className="mr-2 h-6 w-6"/>
+                                        <Hammer className="mr-2 h-6 w-6"/>
                                         The Armory
                                      </Button>
                                 </CardFooter>
@@ -457,3 +457,4 @@ export default function ForgePage() {
         </div>
     );
 }
+
