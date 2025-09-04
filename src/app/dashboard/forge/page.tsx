@@ -364,9 +364,21 @@ export default function ForgePage() {
     };
 
     const handleReset = () => {
-        setInitialEquipment();
+        // This clears the current state, but doesn't save it.
+        // The appearance will revert to the last saved state on next load.
+        setSelectedBodyId(baseBodies[0]?.id || null);
+        setSelectedHairstyleId(null);
+        setSelectedHairstyleColor(null);
+        setSelectedHead(null);
+        setSelectedShoulders(null);
+        setSelectedChest(null);
+        setSelectedHands(null);
+        setSelectedLegs(null);
+        setSelectedFeet(null);
         setActivePiece(null);
-        toast({ title: "Appearance Reset", description: "Your appearance has been reset to the last saved version."});
+        setLocalTransforms({});
+        setLocalTransforms2({});
+        toast({ title: "Appearance Reset", description: "Your canvas has been cleared. Don't forget to save when you're done!"});
     }
 
     const selectedHairstyle = hairstyles.find(h => h.id === selectedHairstyleId);
