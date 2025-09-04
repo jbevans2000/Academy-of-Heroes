@@ -174,9 +174,6 @@ export default function ForgePage() {
             if (doc.exists()) {
                 const studentData = { uid: doc.id, ...doc.data() } as Student;
                 setStudent(studentData);
-                if (selectedBodyId === null) setSelectedBodyId(studentData.equippedBodyId || null);
-                if (selectedHairstyleId === null) setSelectedHairstyleId(studentData.equippedHairstyleId || null);
-                if (selectedHairstyleColor === null) setSelectedHairstyleColor(studentData.equippedHairstyleColor || null);
             }
         });
         
@@ -186,11 +183,6 @@ export default function ForgePage() {
                 const bodiesData = bodiesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as BaseBody)).sort((a: any, b: any) => a.order - b.order);
                 setBaseBodies(bodiesData);
                 
-                // Set default body if none is equipped
-                if (!student?.equippedBodyId && bodiesData.length > 0 && selectedBodyId === null) {
-                   setSelectedBodyId(bodiesData[0].id);
-                }
-
                 const hairQuery = query(collection(db, 'hairstyles'), where('isPublished', '==', true));
                 const hairSnap = await getDocs(hairQuery);
                 setHairstyles(hairSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hairstyle)));
@@ -200,15 +192,6 @@ export default function ForgePage() {
                 const armorData = armorSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ArmorPiece));
                 setAllArmor(armorData);
                 
-                if (student) {
-                    setSelectedHead(armorData.find(a => a.id === student.equippedHeadId) || null);
-                    setSelectedShoulders(armorData.find(a => a.id === student.equippedShouldersId) || null);
-                    setSelectedChest(armorData.find(a => a.id === student.equippedChestId) || null);
-                    setSelectedHands(armorData.find(a => a.id === student.equippedHandsId) || null);
-                    setSelectedLegs(armorData.find(a => a.id === student.equippedLegsId) || null);
-                    setSelectedFeet(armorData.find(a => a.id === student.equippedFeetId) || null);
-                }
-
              } catch (e) {
                 console.error("Error fetching cosmetics:", e);
                 toast({ variant: 'destructive', title: "Error", description: "Could not load cosmetic items." });
@@ -222,6 +205,20 @@ export default function ForgePage() {
         return () => unsubStudent();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user, teacherUid, toast]);
+    
+    useEffect(() => {
+        if (student && allArmor.length > 0 && baseBodies.length > 0) {
+            setSelectedBodyId(student.equippedBodyId || baseBodies[0]?.id || null);
+            setSelectedHairstyleId(student.equippedHairstyleId || null);
+            setSelectedHairstyleColor(student.equippedHairstyleColor || null);
+            setSelectedHead(allArmor.find(a => a.id === student.equippedHeadId) || null);
+            setSelectedShoulders(allArmor.find(a => a.id === student.equippedShouldersId) || null);
+            setSelectedChest(allArmor.find(a => a.id === student.equippedChestId) || null);
+            setSelectedHands(allArmor.find(a => a.id === student.equippedHandsId) || null);
+            setSelectedLegs(allArmor.find(a => a.id === student.equippedLegsId) || null);
+            setSelectedFeet(allArmor.find(a => a.id === student.equippedFeetId) || null);
+        }
+    }, [student, allArmor, baseBodies]);
     
      useEffect(() => {
         const selectedBody = baseBodies.find(b => b.id === selectedBodyId);
@@ -299,12 +296,12 @@ export default function ForgePage() {
             setSelectedBodyId(student.equippedBodyId || baseBodies[0]?.id || null);
             setSelectedHairstyleId(student.equippedHairstyleId || null);
             setSelectedHairstyleColor(student.equippedHairstyleColor || null);
-            setSelectedHead(null);
-            setSelectedShoulders(null);
-            setSelectedChest(null);
-            setSelectedHands(null);
-            setSelectedLegs(null);
-            setSelectedFeet(null);
+            setSelectedHead(allArmor.find(a => a.id === student.equippedHeadId) || null);
+            setSelectedShoulders(allArmor.find(a => a.id === student.equippedShouldersId) || null);
+            setSelectedChest(allArmor.find(a => a.id === student.equippedChestId) || null);
+            setSelectedHands(allArmor.find(a => a.id === student.equippedHandsId) || null);
+            setSelectedLegs(allArmor.find(a => a.id === student.equippedLegsId) || null);
+            setSelectedFeet(allArmor.find(a => a.id === student.equippedFeetId) || null);
             setActivePiece(null);
         }
         toast({ title: "Appearance Reset", description: "Your appearance has been reset to the last saved version."});
@@ -337,8 +334,12 @@ export default function ForgePage() {
                      <div className="flex justify-between items-center">
                         <Button variant="outline" onClick={() => router.push('/dashboard')}><ArrowLeft className="mr-2 h-4 w-4"/> Back to Dashboard</Button>
                         <div className="flex gap-2">
-                             <Button variant="secondary" size="lg" onClick={handleReset} disabled={isSaving}><RotateCcw className="mr-2 h-4 w-4"/>Reset Appearance</Button>
-                             <Button size="lg" onClick={handleSave} disabled={isSaving}>
+                             <Button onClick={() => setIsArmoryOpen(true)}>
+                                <Hammer className="mr-2 h-4 w-4"/>
+                                The Armory
+                             </Button>
+                             <Button variant="secondary" onClick={handleReset} disabled={isSaving}><RotateCcw className="mr-2 h-4 w-4"/>Reset Appearance</Button>
+                             <Button onClick={handleSave} disabled={isSaving}>
                                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4" />}
                                 Save Appearance
                              </Button>
@@ -460,10 +461,6 @@ export default function ForgePage() {
                                     </Tabs>
                                 </CardContent>
                                 <CardFooter className="mt-auto flex flex-col gap-2 p-2">
-                                     <Button size="lg" className="h-16 w-full" onClick={() => setIsArmoryOpen(true)}>
-                                        <Hammer className="mr-2 h-6 w-6"/>
-                                        The Armory
-                                     </Button>
                                      <Card className="w-full">
                                         <CardHeader className="p-2">
                                             <CardTitle className="text-base flex items-center justify-between">
