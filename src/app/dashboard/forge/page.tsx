@@ -361,9 +361,10 @@ export default function ForgePage() {
                                 </CardHeader>
                                 <CardContent className="flex-grow overflow-hidden">
                                      <Tabs defaultValue="body" className="w-full h-full flex flex-col">
-                                        <TabsList className="grid w-full grid-cols-3">
+                                        <TabsList className="grid w-full grid-cols-4">
                                             <TabsTrigger value="body">Body</TabsTrigger>
                                             <TabsTrigger value="hair">Hairstyle</TabsTrigger>
+                                            <TabsTrigger value="hair-color" disabled={!selectedHairstyle}>Color</TabsTrigger>
                                             <TabsTrigger value="armor">Armor</TabsTrigger>
                                         </TabsList>
                                         <ScrollArea className="flex-grow mt-4 h-full">
@@ -385,43 +386,39 @@ export default function ForgePage() {
                                                     ))}
                                                 </div>
                                             </TabsContent>
-                                            <TabsContent value="hair" className="p-2 space-y-4">
-                                                <div>
-                                                    <h4 className="font-semibold mb-2">Style</h4>
-                                                    <div className="grid grid-cols-3 gap-2">
-                                                        {hairstyles.map(item => (
-                                                            <Card 
-                                                                key={item.id} 
-                                                                className={cn(
-                                                                    "cursor-pointer hover:border-primary", 
-                                                                    selectedHairstyleId === item.id && "border-2 border-primary"
-                                                                )}
-                                                                onClick={() => {
-                                                                    setSelectedHairstyleId(item.id);
-                                                                    setSelectedHairstyleColor(item.colors?.[0]?.imageUrl || null);
-                                                                }}
-                                                            >
-                                                                <CardContent className="p-1 aspect-square">
-                                                                    <Image src={item.baseImageUrl} alt={item.styleName} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
-                                                                </CardContent>
-                                                            </Card>
-                                                        ))}
-                                                    </div>
+                                            <TabsContent value="hair" className="p-2">
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    {hairstyles.map(item => (
+                                                        <Card 
+                                                            key={item.id} 
+                                                            className={cn(
+                                                                "cursor-pointer hover:border-primary", 
+                                                                selectedHairstyleId === item.id && "border-2 border-primary"
+                                                            )}
+                                                            onClick={() => {
+                                                                setSelectedHairstyleId(item.id);
+                                                                setSelectedHairstyleColor(item.colors?.[0]?.imageUrl || null);
+                                                            }}
+                                                        >
+                                                            <CardContent className="p-1 aspect-square">
+                                                                <Image src={item.baseImageUrl} alt={item.styleName} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                                                            </CardContent>
+                                                        </Card>
+                                                    ))}
                                                 </div>
-                                                 {selectedHairstyle && (
-                                                    <div>
-                                                        <h4 className="font-semibold mb-2">Color</h4>
-                                                        <div className="grid grid-cols-5 gap-2">
-                                                            {selectedHairstyle.colors.map((color, index) => (
-                                                                <div 
-                                                                    key={index} 
-                                                                    className={cn("h-16 w-16 rounded-md border-2 cursor-pointer", selectedHairstyleColor === color.imageUrl ? "border-primary ring-2 ring-primary" : "border-transparent")}
-                                                                    onClick={() => setSelectedHairstyleColor(color.imageUrl)}
-                                                                >
-                                                                    <Image src={color.imageUrl} alt={`Color ${index+1}`} width={64} height={64} className="w-full h-full object-contain rounded-sm bg-secondary" />
-                                                                </div>
-                                                            ))}
-                                                        </div>
+                                            </TabsContent>
+                                            <TabsContent value="hair-color" className="p-2">
+                                                {selectedHairstyle && (
+                                                    <div className="grid grid-cols-5 gap-2">
+                                                        {selectedHairstyle.colors.map((color, index) => (
+                                                            <div 
+                                                                key={index} 
+                                                                className={cn("h-16 w-16 rounded-md border-2 cursor-pointer", selectedHairstyleColor === color.imageUrl ? "border-primary ring-2 ring-primary" : "border-transparent")}
+                                                                onClick={() => setSelectedHairstyleColor(color.imageUrl)}
+                                                            >
+                                                                <Image src={color.imageUrl} alt={`Color ${index+1}`} width={64} height={64} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                                                            </div>
+                                                        ))}
                                                     </div>
                                                 )}
                                             </TabsContent>
