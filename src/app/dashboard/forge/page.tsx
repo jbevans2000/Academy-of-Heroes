@@ -517,7 +517,7 @@ export default function ForgePage() {
                             <Card className="h-[75vh]">
                                 <CardContent className="h-full p-4 flex items-center justify-center">
                                      <CharacterCanvas 
-                                        student={{...student, armorTransforms, armorTransforms2}}
+                                        student={{...student, armorTransforms: localTransforms, armorTransforms2: localTransforms2}}
                                         baseBody={baseBodies.find(b => b.id === selectedBodyId) || null}
                                         equipment={{ 
                                             hairstyle: selectedHairstyle, 
