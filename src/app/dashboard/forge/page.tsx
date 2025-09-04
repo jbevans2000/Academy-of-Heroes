@@ -159,6 +159,19 @@ export default function ForgePage() {
         });
         return () => unsubscribe();
     }, [router]);
+    
+    // This effect now correctly depends on `allArmor` to ensure it runs
+    // *after* armor data is loaded, preventing the race condition.
+    useEffect(() => {
+        if (student && allArmor.length > 0) {
+            setSelectedHead(allArmor.find(a => a.id === student.equippedHeadId) || null);
+            setSelectedShoulders(allArmor.find(a => a.id === student.equippedShouldersId) || null);
+            setSelectedChest(allArmor.find(a => a.id === student.equippedChestId) || null);
+            setSelectedHands(allArmor.find(a => a.id === student.equippedHandsId) || null);
+            setSelectedLegs(allArmor.find(a => a.id === student.equippedLegsId) || null);
+            setSelectedFeet(allArmor.find(a => a.id === student.equippedFeetId) || null);
+        }
+    }, [student, allArmor]);
 
     useEffect(() => {
         if (!user || !teacherUid) return;
@@ -167,18 +180,10 @@ export default function ForgePage() {
             if (doc.exists()) {
                 const studentData = { uid: doc.id, ...doc.data() } as Student;
                 setStudent(studentData);
-                // Set initial selections from student data if they haven't been set yet
+                // Set initial selections that don't depend on `allArmor` here.
                 if (selectedBodyId === null) setSelectedBodyId(studentData.equippedBodyId || null);
                 if (selectedHairstyleId === null) setSelectedHairstyleId(studentData.equippedHairstyleId || null);
                 if (selectedHairstyleColor === null) setSelectedHairstyleColor(studentData.equippedHairstyleColor || null);
-                 if (allArmor.length > 0) { // Ensure armor is loaded before setting equipped
-                    setSelectedHead(allArmor.find(a => a.id === studentData.equippedHeadId) || null);
-                    setSelectedShoulders(allArmor.find(a => a.id === studentData.equippedShouldersId) || null);
-                    setSelectedChest(allArmor.find(a => a.id === studentData.equippedChestId) || null);
-                    setSelectedHands(allArmor.find(a => a.id === studentData.equippedHandsId) || null);
-                    setSelectedLegs(allArmor.find(a => a.id === studentData.equippedLegsId) || null);
-                    setSelectedFeet(allArmor.find(a => a.id === studentData.equippedFeetId) || null);
-                }
             }
         });
         
@@ -201,7 +206,7 @@ export default function ForgePage() {
                 const armorQuery = query(collection(db, 'armorPieces'), where('isPublished', '==', true));
                 const armorSnap = await getDocs(armorQuery);
                 const armorData = armorSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ArmorPiece));
-                setAllArmor(armorData);
+                setAllArmor(armorData); // This will trigger the effect above to set equipped armor
 
              } catch (e) {
                 console.error("Error fetching cosmetics:", e);
@@ -272,14 +277,14 @@ export default function ForgePage() {
     const handleReset = () => {
         if (student) {
             setSelectedBodyId(student.equippedBodyId || baseBodies[0]?.id || null);
-            setSelectedHairstyleId(null);
-            setSelectedHairstyleColor(null);
-            setSelectedHead(null);
-            setSelectedShoulders(null);
-            setSelectedChest(null);
-            setSelectedHands(null);
-            setSelectedLegs(null);
-            setSelectedFeet(null);
+            setSelectedHairstyleId(student.equippedHairstyleId || null);
+            setSelectedHairstyleColor(student.equippedHairstyleColor || null);
+            setSelectedHead(allArmor.find(a => a.id === student.equippedHeadId) || null);
+            setSelectedShoulders(allArmor.find(a => a.id === student.equippedShouldersId) || null);
+            setSelectedChest(allArmor.find(a => a.id === student.equippedChestId) || null);
+            setSelectedHands(allArmor.find(a => a.id === student.equippedHandsId) || null);
+            setSelectedLegs(allArmor.find(a => a.id === student.equippedLegsId) || null);
+            setSelectedFeet(allArmor.find(a => a.id === student.equippedFeetId) || null);
         }
         toast({ title: "Appearance Reset", description: "Your appearance has been reset to the last saved version."});
     }
