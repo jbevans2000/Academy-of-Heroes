@@ -43,11 +43,11 @@ export type Student = {
     inventory?: { [boonId: string]: number }; // Map of boonId to quantity
     ownedArmorIds?: string[]; // IDs of armor pieces the student owns
     equippedHeadId?: string;
-    equippedChestId?: string;
-    equippedLegsId?: string;
-    equippedHandsId?: string;
-    equippedFeetId?: string;
     equippedShouldersId?: string;
+    equippedChestId?: string;
+    equippedHandsId?: string;
+    equippedLegsId?: string;
+    equippedFeetId?: string;
     equippedBodyId?: string; // The ID of the base body model
     equippedHairstyleId?: string;
     equippedHairstyleColor?: string; // The URL of the specific color variation

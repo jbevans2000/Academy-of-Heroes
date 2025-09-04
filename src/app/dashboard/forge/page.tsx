@@ -7,7 +7,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, onSnapshot, query, where, doc, getDoc, updateDoc, getDocs } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
-import type { ArmorPiece, Hairstyle, BaseBody } from '@/lib/forge';
+import type { ArmorPiece, Hairstyle, BaseBody, ArmorSlot } from '@/lib/forge';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Save, Loader2, RotateCcw, Hammer, Gem } from 'lucide-react';
@@ -22,6 +22,15 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ArmoryDialog } from '@/components/dashboard/armory-dialog';
 
 
+const slotZIndex: Record<ArmorSlot, number> = {
+    legs: 1,
+    feet: 2,
+    chest: 3,
+    shoulders: 4,
+    head: 5,
+    hands: 5,
+};
+
 const CharacterCanvas = ({ student, equipment, baseBody }: {
     student: Student | null;
     equipment: any;
@@ -34,9 +43,20 @@ const CharacterCanvas = ({ student, equipment, baseBody }: {
 
     const hairstyleTransform = hairstyle?.transforms?.[baseBody.id] || { x: 50, y: 50, scale: 100 };
     
+    // An array of all equipped armor pieces, filtering out any nulls
+    const equippedArmor: ArmorPiece[] = [
+        equipment.head,
+        equipment.shoulders,
+        equipment.chest,
+        equipment.hands,
+        equipment.legs,
+        equipment.feet,
+    ].filter(Boolean);
+
     return (
         <div className="relative w-full max-w-[500px] aspect-square">
             <Image src={baseBody.imageUrl} alt="Base Body" fill className="object-contain" priority />
+            
             {hairstyleColor && (
                 <div
                     className="absolute pointer-events-none"
@@ -50,7 +70,47 @@ const CharacterCanvas = ({ student, equipment, baseBody }: {
                     <Image src={hairstyleColor} alt="Hairstyle" width={500} height={500} className="object-contain" />
                 </div>
             )}
-            {/* TODO: Add Armor Layers Here */}
+            
+            {equippedArmor.map(piece => {
+                const zIndex = slotZIndex[piece.slot] || 1;
+                
+                // Render the primary modular image
+                const transform1 = piece.transforms?.[baseBody.id] || { x: 50, y: 50, scale: 100 };
+                
+                // Render the secondary modular image if it exists
+                const transform2 = piece.transforms2?.[baseBody.id] || { x: 50, y: 50, scale: 100 };
+
+                return (
+                    <div key={piece.id}>
+                        <div
+                            className="absolute pointer-events-none"
+                            style={{
+                                top: `${transform1.y}%`,
+                                left: `${transform1.x}%`,
+                                width: `${transform1.scale}%`,
+                                transform: 'translate(-50%, -50%)',
+                                zIndex: zIndex,
+                            }}
+                        >
+                            <Image src={piece.modularImageUrl} alt={piece.name} width={500} height={500} className="object-contain" />
+                        </div>
+                        {piece.modularImageUrl2 && (
+                             <div
+                                className="absolute pointer-events-none"
+                                style={{
+                                    top: `${transform2.y}%`,
+                                    left: `${transform2.x}%`,
+                                    width: `${transform2.scale}%`,
+                                    transform: 'translate(-50%, -50%)',
+                                    zIndex: zIndex,
+                                }}
+                            >
+                                <Image src={piece.modularImageUrl2} alt={`${piece.name} (secondary)`} width={500} height={500} className="object-contain" />
+                            </div>
+                        )}
+                    </div>
+                );
+            })}
         </div>
     );
 };
@@ -77,7 +137,12 @@ export default function ForgePage() {
     const [selectedBodyId, setSelectedBodyId] = useState<string | null>(null);
     const [selectedHairstyleId, setSelectedHairstyleId] = useState<string | null>(null);
     const [selectedHairstyleColor, setSelectedHairstyleColor] = useState<string | null>(null);
-    // ... add state for armor slots
+    const [selectedHead, setSelectedHead] = useState<ArmorPiece | null>(null);
+    const [selectedShoulders, setSelectedShoulders] = useState<ArmorPiece | null>(null);
+    const [selectedChest, setSelectedChest] = useState<ArmorPiece | null>(null);
+    const [selectedHands, setSelectedHands] = useState<ArmorPiece | null>(null);
+    const [selectedLegs, setSelectedLegs] = useState<ArmorPiece | null>(null);
+    const [selectedFeet, setSelectedFeet] = useState<ArmorPiece | null>(null);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -109,6 +174,15 @@ export default function ForgePage() {
                 if (selectedBodyId === null) setSelectedBodyId(studentData.equippedBodyId || null);
                 if (selectedHairstyleId === null) setSelectedHairstyleId(studentData.equippedHairstyleId || null);
                 if (selectedHairstyleColor === null) setSelectedHairstyleColor(studentData.equippedHairstyleColor || null);
+                
+                // Initialize equipped armor from student data once
+                if (selectedHead === null) setSelectedHead(allArmor.find(a => a.id === studentData.equippedHeadId) || null);
+                if (selectedShoulders === null) setSelectedShoulders(allArmor.find(a => a.id === studentData.equippedShouldersId) || null);
+                if (selectedChest === null) setSelectedChest(allArmor.find(a => a.id === studentData.equippedChestId) || null);
+                if (selectedHands === null) setSelectedHands(allArmor.find(a => a.id === studentData.equippedHandsId) || null);
+                if (selectedLegs === null) setSelectedLegs(allArmor.find(a => a.id === studentData.equippedLegsId) || null);
+                if (selectedFeet === null) setSelectedFeet(allArmor.find(a => a.id === studentData.equippedFeetId) || null);
+
             }
         });
         
@@ -130,7 +204,18 @@ export default function ForgePage() {
                 // Fetch all published armor
                 const armorQuery = query(collection(db, 'armorPieces'), where('isPublished', '==', true));
                 const armorSnap = await getDocs(armorQuery);
-                setAllArmor(armorSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ArmorPiece)));
+                const armorData = armorSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ArmorPiece));
+                setAllArmor(armorData);
+
+                // This is a re-check to set initial armor state after allArmor is fetched
+                if (student) {
+                    setSelectedHead(armorData.find(a => a.id === student.equippedHeadId) || null);
+                    setSelectedShoulders(armorData.find(a => a.id === student.equippedShouldersId) || null);
+                    setSelectedChest(armorData.find(a => a.id === student.equippedChestId) || null);
+                    setSelectedHands(armorData.find(a => a.id === student.equippedHandsId) || null);
+                    setSelectedLegs(armorData.find(a => a.id === student.equippedLegsId) || null);
+                    setSelectedFeet(armorData.find(a => a.id === student.equippedFeetId) || null);
+                }
 
              } catch (e) {
                 console.error("Error fetching cosmetics:", e);
@@ -147,6 +232,28 @@ export default function ForgePage() {
     }, [user, teacherUid, toast]);
     
     const selectedHairstyle = hairstyles.find(h => h.id === selectedHairstyleId);
+    
+    const ownedArmor = allArmor.filter(armor => student?.ownedArmorIds?.includes(armor.id));
+
+    const armorBySlot = {
+        head: ownedArmor.filter(a => a.slot === 'head'),
+        shoulders: ownedArmor.filter(a => a.slot === 'shoulders'),
+        chest: ownedArmor.filter(a => a.slot === 'chest'),
+        hands: ownedArmor.filter(a => a.slot === 'hands'),
+        legs: ownedArmor.filter(a => a.slot === 'legs'),
+        feet: ownedArmor.filter(a => a.slot === 'feet'),
+    };
+    
+    const handleEquipArmor = (piece: ArmorPiece) => {
+        switch (piece.slot) {
+            case 'head': setSelectedHead(piece); break;
+            case 'shoulders': setSelectedShoulders(piece); break;
+            case 'chest': setSelectedChest(piece); break;
+            case 'hands': setSelectedHands(piece); break;
+            case 'legs': setSelectedLegs(piece); break;
+            case 'feet': setSelectedFeet(piece); break;
+        }
+    };
 
     const handleSave = async () => {
         if (!user || !teacherUid) return;
@@ -157,7 +264,12 @@ export default function ForgePage() {
                 equippedBodyId: selectedBodyId,
                 equippedHairstyleId: selectedHairstyleId,
                 equippedHairstyleColor: selectedHairstyleColor,
-                //... save armor slots
+                equippedHeadId: selectedHead?.id || '',
+                equippedShouldersId: selectedShoulders?.id || '',
+                equippedChestId: selectedChest?.id || '',
+                equippedHandsId: selectedHands?.id || '',
+                equippedLegsId: selectedLegs?.id || '',
+                equippedFeetId: selectedFeet?.id || '',
             });
             toast({ title: "Appearance Saved!", description: "Your hero's new look has been saved." });
         } catch (error) {
@@ -173,69 +285,36 @@ export default function ForgePage() {
             setSelectedBodyId(student.equippedBodyId || baseBodies[0]?.id || null);
             setSelectedHairstyleId(student.equippedHairstyleId || null);
             setSelectedHairstyleColor(student.equippedHairstyleColor || null);
+            setSelectedHead(allArmor.find(a => a.id === student.equippedHeadId) || null);
+            setSelectedShoulders(allArmor.find(a => a.id === student.equippedShouldersId) || null);
+            setSelectedChest(allArmor.find(a => a.id === student.equippedChestId) || null);
+            setSelectedHands(allArmor.find(a => a.id === student.equippedHandsId) || null);
+            setSelectedLegs(allArmor.find(a => a.id === student.equippedLegsId) || null);
+            setSelectedFeet(allArmor.find(a => a.id === student.equippedFeetId) || null);
         }
     }
     
-    const renderBodyGrid = () => (
+    const renderArmorGrid = (slot: ArmorSlot) => (
         <div className="grid grid-cols-3 gap-2">
-            {baseBodies.map(item => (
-                <Card 
-                    key={item.id} 
-                    className={cn(
-                        "cursor-pointer hover:border-primary", 
-                        selectedBodyId === item.id && "border-2 border-primary"
-                    )}
-                    onClick={() => setSelectedBodyId(item.id)}
-                >
-                    <CardContent className="p-1 aspect-square">
-                        <Image src={item.imageUrl} alt={item.name} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
-    );
-    
-    const renderHairstyleGrid = () => (
-        <div className="grid grid-cols-3 gap-2">
-            {hairstyles.map(item => (
-                <Card 
-                    key={item.id} 
-                    className={cn(
-                        "cursor-pointer hover:border-primary", 
-                        selectedHairstyleId === item.id && "border-2 border-primary"
-                    )}
-                    onClick={() => {
-                        setSelectedHairstyleId(item.id);
-                        // Automatically select first color
-                        setSelectedHairstyleColor(item.colors?.[0]?.imageUrl || null);
-                    }}
-                >
-                    <CardContent className="p-1 aspect-square">
-                        <Image src={item.baseImageUrl} alt={item.styleName} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
-    );
-
-    const renderHairColorGrid = () => {
-        if (!selectedHairstyle) {
-            return <p className="text-center text-muted-foreground py-8">Select a hairstyle first to see color options.</p>
-        }
-        return (
-            <div className="grid grid-cols-5 gap-2">
-                {selectedHairstyle.colors.map((color, index) => (
-                    <div 
-                        key={index} 
-                        className={cn("h-16 w-16 rounded-md border-2 cursor-pointer", selectedHairstyleColor === color.imageUrl ? "border-primary ring-2 ring-primary" : "border-transparent")}
-                        onClick={() => setSelectedHairstyleColor(color.imageUrl)}
+            {armorBySlot[slot].map(item => {
+                const isEquipped = selectedHead?.id === item.id || selectedShoulders?.id === item.id || selectedChest?.id === item.id || selectedHands?.id === item.id || selectedLegs?.id === item.id || selectedFeet?.id === item.id;
+                return (
+                    <Card 
+                        key={item.id} 
+                        className={cn(
+                            "cursor-pointer hover:border-primary", 
+                            isEquipped && "border-2 border-primary"
+                        )}
+                        onClick={() => handleEquipArmor(item)}
                     >
-                        <Image src={color.imageUrl} alt={`Color ${index+1}`} width={64} height={64} className="w-full h-full object-contain rounded-sm bg-secondary" />
-                    </div>
-                ))}
-            </div>
-        )
-    };
+                        <CardContent className="p-1 aspect-square">
+                            <Image src={item.imageUrl} alt={item.name} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                        </CardContent>
+                    </Card>
+                )
+            })}
+        </div>
+    );
     
     if (isLoading || !student) {
         return <div className="flex items-center justify-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>
@@ -272,7 +351,16 @@ export default function ForgePage() {
                                      <CharacterCanvas 
                                         student={student}
                                         baseBody={baseBodies.find(b => b.id === selectedBodyId) || null}
-                                        equipment={{ hairstyle: selectedHairstyle, hairstyleColor: selectedHairstyleColor }}
+                                        equipment={{ 
+                                            hairstyle: selectedHairstyle, 
+                                            hairstyleColor: selectedHairstyleColor,
+                                            head: selectedHead,
+                                            shoulders: selectedShoulders,
+                                            chest: selectedChest,
+                                            hands: selectedHands,
+                                            legs: selectedLegs,
+                                            feet: selectedFeet,
+                                        }}
                                     />
                                 </CardContent>
                             </Card>
@@ -280,25 +368,99 @@ export default function ForgePage() {
                         <div className="lg:col-span-1">
                             <Card className="h-[75vh] flex flex-col">
                                 <CardHeader>
-                                    <CardTitle>Armory</CardTitle>
+                                    <CardTitle>The Forge</CardTitle>
                                     <CardDescription>Select your equipment.</CardDescription>
                                 </CardHeader>
                                 <CardContent className="flex-grow overflow-hidden">
                                      <Tabs defaultValue="body" className="w-full h-full flex flex-col">
-                                        <TabsList className="grid w-full grid-cols-3">
+                                        <TabsList className="grid w-full grid-cols-4">
                                             <TabsTrigger value="body">Body</TabsTrigger>
                                             <TabsTrigger value="hair">Hairstyle</TabsTrigger>
                                             <TabsTrigger value="hair_color">Hair Color</TabsTrigger>
+                                            <TabsTrigger value="armor">Armor</TabsTrigger>
                                         </TabsList>
                                         <ScrollArea className="flex-grow mt-4 h-full">
                                             <TabsContent value="body" className="p-2">
-                                                {renderBodyGrid()}
+                                                 <div className="grid grid-cols-3 gap-2">
+                                                    {baseBodies.map(item => (
+                                                        <Card 
+                                                            key={item.id} 
+                                                            className={cn(
+                                                                "cursor-pointer hover:border-primary", 
+                                                                selectedBodyId === item.id && "border-2 border-primary"
+                                                            )}
+                                                            onClick={() => setSelectedBodyId(item.id)}
+                                                        >
+                                                            <CardContent className="p-1 aspect-square">
+                                                                <Image src={item.imageUrl} alt={item.name} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                                                            </CardContent>
+                                                        </Card>
+                                                    ))}
+                                                </div>
                                             </TabsContent>
                                             <TabsContent value="hair" className="p-2">
-                                                {renderHairstyleGrid()}
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    {hairstyles.map(item => (
+                                                        <Card 
+                                                            key={item.id} 
+                                                            className={cn(
+                                                                "cursor-pointer hover:border-primary", 
+                                                                selectedHairstyleId === item.id && "border-2 border-primary"
+                                                            )}
+                                                            onClick={() => {
+                                                                setSelectedHairstyleId(item.id);
+                                                                setSelectedHairstyleColor(item.colors?.[0]?.imageUrl || null);
+                                                            }}
+                                                        >
+                                                            <CardContent className="p-1 aspect-square">
+                                                                <Image src={item.baseImageUrl} alt={item.styleName} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                                                            </CardContent>
+                                                        </Card>
+                                                    ))}
+                                                </div>
                                             </TabsContent>
                                             <TabsContent value="hair_color" className="p-2 space-y-4">
-                                                {renderHairColorGrid()}
+                                                 {!selectedHairstyle ? (
+                                                    <p className="text-center text-muted-foreground py-8">Select a hairstyle first to see color options.</p>
+                                                ) : (
+                                                    <div className="grid grid-cols-5 gap-2">
+                                                        {selectedHairstyle.colors.map((color, index) => (
+                                                            <div 
+                                                                key={index} 
+                                                                className={cn("h-16 w-16 rounded-md border-2 cursor-pointer", selectedHairstyleColor === color.imageUrl ? "border-primary ring-2 ring-primary" : "border-transparent")}
+                                                                onClick={() => setSelectedHairstyleColor(color.imageUrl)}
+                                                            >
+                                                                <Image src={color.imageUrl} alt={`Color ${index+1}`} width={64} height={64} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </TabsContent>
+                                            <TabsContent value="armor" className="p-2 space-y-4">
+                                                <div>
+                                                    <h4 className="font-semibold mb-2">Head</h4>
+                                                    {renderArmorGrid('head')}
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-semibold mb-2">Shoulders</h4>
+                                                    {renderArmorGrid('shoulders')}
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-semibold mb-2">Chest</h4>
+                                                    {renderArmorGrid('chest')}
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-semibold mb-2">Hands</h4>
+                                                    {renderArmorGrid('hands')}
+                                                </div>
+                                                 <div>
+                                                    <h4 className="font-semibold mb-2">Legs</h4>
+                                                    {renderArmorGrid('legs')}
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-semibold mb-2">Feet</h4>
+                                                    {renderArmorGrid('feet')}
+                                                </div>
                                             </TabsContent>
                                         </ScrollArea>
                                     </Tabs>
