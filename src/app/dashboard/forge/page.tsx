@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, onSnapshot, query, where, doc, getDoc, updateDoc, getDocs } from 'firebase/firestore';
@@ -32,10 +32,14 @@ const slotZIndex: Record<ArmorSlot, number> = {
     hands: 5,
 };
 
-const CharacterCanvas = ({ student, equipment, baseBody }: {
+const CharacterCanvas = ({ student, equipment, baseBody, onMouseDown, canvasRef, onMouseMove, onMouseUp }: {
     student: Student | null;
     equipment: any;
     baseBody: BaseBody | null;
+    onMouseDown: (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece) => void;
+    canvasRef: React.RefObject<HTMLDivElement>;
+    onMouseMove: (e: React.MouseEvent<HTMLDivElement>) => void;
+    onMouseUp: () => void;
 }) => {
     if (!student || !baseBody) return <Skeleton className="w-full h-full" />;
 
@@ -51,10 +55,16 @@ const CharacterCanvas = ({ student, equipment, baseBody }: {
         equipment.hands,
         equipment.legs,
         equipment.feet,
-    ].filter(Boolean).sort((a,b) => (slotZIndex[a.slot] || 0) - (slotZIndex[b.slot] || 0));
+    ].filter(Boolean);
 
     return (
-        <div className="relative w-full max-w-[500px] aspect-square">
+        <div 
+            ref={canvasRef}
+            onMouseMove={onMouseMove}
+            onMouseUp={onMouseUp}
+            onMouseLeave={onMouseUp}
+            className="relative w-full max-w-[500px] aspect-square"
+        >
             <Image src={baseBody.imageUrl} alt="Base Body" fill className="object-contain" priority />
             
             {hairstyleColor && (
@@ -84,7 +94,8 @@ const CharacterCanvas = ({ student, equipment, baseBody }: {
                 return (
                     <div key={piece.id}>
                         <div
-                            className="absolute pointer-events-none"
+                            onMouseDown={(e) => onMouseDown(e, piece)}
+                            className="absolute pointer-events-auto cursor-move"
                             style={{
                                 top: `${transform.y}%`,
                                 left: `${transform.x}%`,
@@ -93,7 +104,7 @@ const CharacterCanvas = ({ student, equipment, baseBody }: {
                                 zIndex: zIndex,
                             }}
                         >
-                            <Image src={piece.modularImageUrl} alt={piece.name} width={500} height={500} className="object-contain" />
+                            <Image src={piece.modularImageUrl} alt={piece.name} width={500} height={500} className="object-contain pointer-events-none" />
                         </div>
                         {piece.modularImageUrl2 && piece.transforms2?.[baseBody.id] && (
                              <div
@@ -148,6 +159,8 @@ export default function ForgePage() {
     // Sizer state
     const [activePiece, setActivePiece] = useState<ArmorPiece | null>(null);
     const [localTransforms, setLocalTransforms] = useState<Student['armorTransforms']>({});
+    const [isDragging, setIsDragging] = useState(false);
+    const canvasRef = useRef<HTMLDivElement>(null);
 
 
     useEffect(() => {
@@ -176,7 +189,10 @@ export default function ForgePage() {
             if (doc.exists()) {
                 const studentData = { uid: doc.id, ...doc.data() } as Student;
                 setStudent(studentData);
-                setLocalTransforms(studentData.armorTransforms || {});
+                // Initialize local transforms only if they haven't been touched yet in the session
+                if (Object.keys(localTransforms).length === 0) {
+                    setLocalTransforms(studentData.armorTransforms || {});
+                }
             }
         });
         
@@ -254,6 +270,25 @@ export default function ForgePage() {
             }
         }));
     };
+    
+    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece) => {
+        e.preventDefault();
+        setActivePiece(piece);
+        setIsDragging(true);
+    };
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!isDragging || !canvasRef.current || !activePiece) return;
+        e.preventDefault();
+        const canvasRect = canvasRef.current.getBoundingClientRect();
+        const newX = ((e.clientX - canvasRect.left) / canvasRect.width) * 100;
+        const newY = ((e.clientY - canvasRect.top) / canvasRect.height) * 100;
+        
+        handleSliderChange('x', newX);
+        handleSliderChange('y', newY);
+    };
+
+    const handleMouseUp = () => setIsDragging(false);
 
     const handleSave = async () => {
         if (!user || !teacherUid) return;
@@ -349,6 +384,10 @@ export default function ForgePage() {
                                             legs: selectedLegs,
                                             feet: selectedFeet,
                                         }}
+                                        onMouseDown={handleMouseDown}
+                                        canvasRef={canvasRef}
+                                        onMouseMove={handleMouseMove}
+                                        onMouseUp={handleMouseUp}
                                     />
                                 </CardContent>
                             </Card>
