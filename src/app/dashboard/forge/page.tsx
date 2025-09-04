@@ -248,7 +248,7 @@ export default function ForgePage() {
             [activePiece.id]: {
                 ...prev?.[activePiece.id],
                 [selectedBodyId]: {
-                    ...(prev?.[activePiece.id]?.[selectedBodyId] || piece.transforms[selectedBodyId] || {x:50, y:50, scale:100}),
+                    ...(prev?.[activePiece.id]?.[selectedBodyId] || activePiece.transforms?.[selectedBodyId] || {x:50, y:50, scale:100}),
                     [type]: value
                 }
             }
