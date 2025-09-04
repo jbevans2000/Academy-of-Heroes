@@ -42,7 +42,6 @@ const CharacterCanvas = ({ student, equipment, baseBody }: {
 
     const hairstyleTransform = hairstyle?.transforms?.[baseBody.id] || { x: 50, y: 50, scale: 100 };
     
-    // An array of all equipped armor pieces, filtering out any nulls
     const equippedArmor: ArmorPiece[] = [
         equipment.head,
         equipment.shoulders,
@@ -64,7 +63,7 @@ const CharacterCanvas = ({ student, equipment, baseBody }: {
                         left: `${hairstyleTransform.x}%`,
                         width: `${hairstyleTransform.scale}%`,
                         transform: 'translate(-50%, -50%)',
-                        zIndex: 10 // Hair should be on top
+                        zIndex: 10
                     }}
                 >
                     <Image src={hairstyleColor} alt="Hairstyle" width={500} height={500} className="object-contain" />
@@ -75,10 +74,7 @@ const CharacterCanvas = ({ student, equipment, baseBody }: {
                 if (!piece) return null;
                 const zIndex = slotZIndex[piece.slot] || 1;
                 
-                // Render the primary modular image
                 const transform1 = piece.transforms?.[baseBody.id] || { x: 50, y: 50, scale: 100 };
-                
-                // Render the secondary modular image if it exists
                 const transform2 = piece.transforms2?.[baseBody.id];
 
                 return (
@@ -227,7 +223,7 @@ export default function ForgePage() {
     
     const ownedArmor = allArmor.filter(armor => student?.ownedArmorIds?.includes(armor.id));
 
-    const armorBySlot = {
+    const armorBySlot: Record<ArmorSlot, ArmorPiece[]> = {
         head: ownedArmor.filter(a => a.slot === 'head'),
         shoulders: ownedArmor.filter(a => a.slot === 'shoulders'),
         chest: ownedArmor.filter(a => a.slot === 'chest'),
@@ -277,19 +273,26 @@ export default function ForgePage() {
             setSelectedBodyId(student.equippedBodyId || baseBodies[0]?.id || null);
             setSelectedHairstyleId(student.equippedHairstyleId || null);
             setSelectedHairstyleColor(student.equippedHairstyleColor || null);
-            setSelectedHead(allArmor.find(a => a.id === student.equippedHeadId) || null);
-            setSelectedShoulders(allArmor.find(a => a.id === student.equippedShouldersId) || null);
-            setSelectedChest(allArmor.find(a => a.id === student.equippedChestId) || null);
-            setSelectedHands(allArmor.find(a => a.id === student.equippedHandsId) || null);
-            setSelectedLegs(allArmor.find(a => a.id === student.equippedLegsId) || null);
-            setSelectedFeet(allArmor.find(a => a.id === student.equippedFeetId) || null);
         }
+        setSelectedHead(null);
+        setSelectedShoulders(null);
+        setSelectedChest(null);
+        setSelectedHands(null);
+        setSelectedLegs(null);
+        setSelectedFeet(null);
+        toast({ title: "Appearance Reset", description: "Your equipped items have been cleared. Don't forget to save!"});
     }
     
     const renderArmorGrid = (slot: ArmorSlot) => (
         <div className="grid grid-cols-3 gap-2">
             {armorBySlot[slot].map(item => {
-                const isEquipped = selectedHead?.id === item.id || selectedShoulders?.id === item.id || selectedChest?.id === item.id || selectedHands?.id === item.id || selectedLegs?.id === item.id || selectedFeet?.id === item.id;
+                const isEquipped = 
+                    selectedHead?.id === item.id || 
+                    selectedShoulders?.id === item.id || 
+                    selectedChest?.id === item.id || 
+                    selectedHands?.id === item.id || 
+                    selectedLegs?.id === item.id || 
+                    selectedFeet?.id === item.id;
                 return (
                     <Card 
                         key={item.id} 
@@ -305,6 +308,7 @@ export default function ForgePage() {
                     </Card>
                 )
             })}
+             {armorBySlot[slot].length === 0 && <p className="text-muted-foreground text-sm col-span-3 text-center py-4">No items owned for this slot.</p>}
         </div>
     );
     
@@ -322,7 +326,7 @@ export default function ForgePage() {
                      <div className="flex justify-between items-center">
                         <Button variant="outline" onClick={() => router.push('/dashboard')}><ArrowLeft className="mr-2 h-4 w-4"/> Back to Dashboard</Button>
                         <div className="flex gap-2">
-                             <Button variant="secondary" size="lg" onClick={handleReset} disabled={isSaving}><RotateCcw className="mr-2 h-4 w-4"/>Reset Changes</Button>
+                             <Button variant="secondary" size="lg" onClick={handleReset} disabled={isSaving}><RotateCcw className="mr-2 h-4 w-4"/>Reset Appearance</Button>
                              <Button size="lg" onClick={handleSave} disabled={isSaving}>
                                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4" />}
                                 Save Appearance
@@ -358,10 +362,9 @@ export default function ForgePage() {
                                 </CardHeader>
                                 <CardContent className="flex-grow overflow-hidden">
                                      <Tabs defaultValue="body" className="w-full h-full flex flex-col">
-                                        <TabsList className="grid w-full grid-cols-4">
+                                        <TabsList className="grid w-full grid-cols-3">
                                             <TabsTrigger value="body">Body</TabsTrigger>
                                             <TabsTrigger value="hair">Hairstyle</TabsTrigger>
-                                            <TabsTrigger value="hair_color">Hair Color</TabsTrigger>
                                             <TabsTrigger value="armor">Armor</TabsTrigger>
                                         </TabsList>
                                         <ScrollArea className="flex-grow mt-4 h-full">
@@ -383,41 +386,43 @@ export default function ForgePage() {
                                                     ))}
                                                 </div>
                                             </TabsContent>
-                                            <TabsContent value="hair" className="p-2">
-                                                <div className="grid grid-cols-3 gap-2">
-                                                    {hairstyles.map(item => (
-                                                        <Card 
-                                                            key={item.id} 
-                                                            className={cn(
-                                                                "cursor-pointer hover:border-primary", 
-                                                                selectedHairstyleId === item.id && "border-2 border-primary"
-                                                            )}
-                                                            onClick={() => {
-                                                                setSelectedHairstyleId(item.id);
-                                                                setSelectedHairstyleColor(item.colors?.[0]?.imageUrl || null);
-                                                            }}
-                                                        >
-                                                            <CardContent className="p-1 aspect-square">
-                                                                <Image src={item.baseImageUrl} alt={item.styleName} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
-                                                            </CardContent>
-                                                        </Card>
-                                                    ))}
-                                                </div>
-                                            </TabsContent>
-                                            <TabsContent value="hair_color" className="p-2 space-y-4">
-                                                 {!selectedHairstyle ? (
-                                                    <p className="text-center text-muted-foreground py-8">Select a hairstyle first to see color options.</p>
-                                                ) : (
-                                                    <div className="grid grid-cols-5 gap-2">
-                                                        {selectedHairstyle.colors.map((color, index) => (
-                                                            <div 
-                                                                key={index} 
-                                                                className={cn("h-16 w-16 rounded-md border-2 cursor-pointer", selectedHairstyleColor === color.imageUrl ? "border-primary ring-2 ring-primary" : "border-transparent")}
-                                                                onClick={() => setSelectedHairstyleColor(color.imageUrl)}
+                                            <TabsContent value="hair" className="p-2 space-y-4">
+                                                <div>
+                                                    <h4 className="font-semibold mb-2">Style</h4>
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        {hairstyles.map(item => (
+                                                            <Card 
+                                                                key={item.id} 
+                                                                className={cn(
+                                                                    "cursor-pointer hover:border-primary", 
+                                                                    selectedHairstyleId === item.id && "border-2 border-primary"
+                                                                )}
+                                                                onClick={() => {
+                                                                    setSelectedHairstyleId(item.id);
+                                                                    setSelectedHairstyleColor(item.colors?.[0]?.imageUrl || null);
+                                                                }}
                                                             >
-                                                                <Image src={color.imageUrl} alt={`Color ${index+1}`} width={64} height={64} className="w-full h-full object-contain rounded-sm bg-secondary" />
-                                                            </div>
+                                                                <CardContent className="p-1 aspect-square">
+                                                                    <Image src={item.baseImageUrl} alt={item.styleName} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                                                                </CardContent>
+                                                            </Card>
                                                         ))}
+                                                    </div>
+                                                </div>
+                                                 {selectedHairstyle && (
+                                                    <div>
+                                                        <h4 className="font-semibold mb-2">Color</h4>
+                                                        <div className="grid grid-cols-5 gap-2">
+                                                            {selectedHairstyle.colors.map((color, index) => (
+                                                                <div 
+                                                                    key={index} 
+                                                                    className={cn("h-16 w-16 rounded-md border-2 cursor-pointer", selectedHairstyleColor === color.imageUrl ? "border-primary ring-2 ring-primary" : "border-transparent")}
+                                                                    onClick={() => setSelectedHairstyleColor(color.imageUrl)}
+                                                                >
+                                                                    <Image src={color.imageUrl} alt={`Color ${index+1}`} width={64} height={64} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                                                                </div>
+                                                            ))}
+                                                        </div>
                                                     </div>
                                                 )}
                                             </TabsContent>
@@ -450,7 +455,7 @@ export default function ForgePage() {
                                         </ScrollArea>
                                     </Tabs>
                                 </CardContent>
-                                <CardFooter className="grid grid-cols-2 gap-2 p-2">
+                                <CardFooter className="grid grid-cols-1 gap-2 p-2">
                                      <Button size="lg" className="h-16" onClick={() => setIsArmoryOpen(true)}>
                                         <Gem className="mr-2 h-6 w-6"/>
                                         The Armory
