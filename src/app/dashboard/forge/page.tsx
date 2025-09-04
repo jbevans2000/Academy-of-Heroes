@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, onSnapshot, query, where, doc, getDoc, updateDoc, getDocs } from 'firebase/firestore';
@@ -108,9 +108,9 @@ const CharacterCanvas = ({ student, equipment, baseBody, onMouseDown, canvasRef,
                         >
                             <Image src={piece.modularImageUrl} alt={piece.name} width={500} height={500} className="object-contain pointer-events-none" />
                         </div>
-                        {piece.modularImageUrl2 && defaultTransform2 && (
+                        {piece.modularImageUrl2 && (
                              <div
-                                className="absolute pointer-events-none" // This is intentionally not draggable. The main piece controls both.
+                                className="absolute pointer-events-none"
                                 style={{
                                     top: `${defaultTransform2.y}%`,
                                     left: `${defaultTransform2.x}%`,
