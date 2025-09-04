@@ -60,6 +60,15 @@ export type Student = {
             }
         }
     };
+    armorTransforms2?: { // Student-specific overrides for a second armor piece
+        [armorId: string]: {
+            [bodyId: string]: {
+                x: number;
+                y: number;
+                scale: number;
+            }
+        }
+    };
     questApprovalRequired?: boolean; // Student-specific override
     isArchived?: boolean; // To hide accounts after data migration
     teacherNotes?: string; // Private notes for the teacher

@@ -10,7 +10,7 @@ import type { Student } from '@/lib/data';
 import type { ArmorPiece, Hairstyle, BaseBody, ArmorSlot } from '@/lib/forge';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Loader2, RotateCcw, Hammer, Edit, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, RotateCcw, Hammer, Edit, Trash2, Layers } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -32,14 +32,16 @@ const slotZIndex: Record<ArmorSlot, number> = {
     hands: 5,
 };
 
-const CharacterCanvas = ({ student, equipment, baseBody, onMouseDown, canvasRef, onMouseMove, onMouseUp }: {
+const CharacterCanvas = ({ student, equipment, baseBody, onMouseDown, canvasRef, onMouseMove, onMouseUp, activePieceId, editingLayer }: {
     student: Student | null;
     equipment: any;
     baseBody: BaseBody | null;
-    onMouseDown: (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece) => void;
+    onMouseDown: (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece, layer: 'primary' | 'secondary') => void;
     canvasRef: React.RefObject<HTMLDivElement>;
     onMouseMove: (e: React.MouseEvent<HTMLDivElement>) => void;
     onMouseUp: () => void;
+    activePieceId: string | null;
+    editingLayer: 'primary' | 'secondary';
 }) => {
     if (!student || !baseBody) return <Skeleton className="w-full h-full" />;
 
@@ -88,38 +90,48 @@ const CharacterCanvas = ({ student, equipment, baseBody, onMouseDown, canvasRef,
                 const customTransform = student.armorTransforms?.[piece.id]?.[baseBody!.id];
                 const defaultTransform = piece.transforms?.[baseBody!.id] || { x: 50, y: 50, scale: 100 };
                 const transform = customTransform || defaultTransform;
-
+                
+                const customTransform2 = student.armorTransforms2?.[piece.id]?.[baseBody!.id];
                 const defaultTransform2 = piece.transforms2?.[baseBody!.id] || { x: 50, y: 50, scale: 100 };
+                const transform2 = customTransform2 || defaultTransform2;
 
                 const zIndex = slotZIndex[piece.slot] || 1;
+                const isActive = piece.id === activePieceId;
 
                 return (
                     <React.Fragment key={piece.id}>
                         <div
-                            onMouseDown={(e) => onMouseDown(e, piece)}
-                            className="absolute pointer-events-auto cursor-move"
+                            onMouseDown={(e) => onMouseDown(e, piece, 'primary')}
+                            className={cn(
+                                "absolute pointer-events-auto cursor-move",
+                                !isActive && "opacity-75"
+                            )}
                             style={{
                                 top: `${transform.y}%`,
                                 left: `${transform.x}%`,
                                 width: `${transform.scale}%`,
                                 transform: 'translate(-50%, -50%)',
-                                zIndex: zIndex,
+                                zIndex: isActive && editingLayer === 'primary' ? 20 : zIndex,
                             }}
                         >
                             <Image src={piece.modularImageUrl} alt={piece.name} width={500} height={500} className="object-contain pointer-events-none" />
                         </div>
                         {piece.modularImageUrl2 && (
                              <div
-                                className="absolute pointer-events-none"
+                                onMouseDown={(e) => onMouseDown(e, piece, 'secondary')}
+                                className={cn(
+                                    "absolute pointer-events-auto cursor-move",
+                                    !isActive && "opacity-75"
+                                )}
                                 style={{
-                                    top: `${defaultTransform2.y}%`,
-                                    left: `${defaultTransform2.x}%`,
-                                    width: `${defaultTransform2.scale}%`,
+                                    top: `${transform2.y}%`,
+                                    left: `${transform2.x}%`,
+                                    width: `${transform2.scale}%`,
                                     transform: 'translate(-50%, -50%)',
-                                    zIndex: zIndex,
+                                    zIndex: isActive && editingLayer === 'secondary' ? 20 : zIndex,
                                 }}
                             >
-                                <Image src={piece.modularImageUrl2} alt={`${piece.name} (secondary)`} width={500} height={500} className="object-contain" />
+                                <Image src={piece.modularImageUrl2} alt={`${piece.name} (secondary)`} width={500} height={500} className="object-contain pointer-events-none" />
                             </div>
                         )}
                     </React.Fragment>
@@ -161,6 +173,8 @@ export default function ForgePage() {
     // Sizer state
     const [activePiece, setActivePiece] = useState<ArmorPiece | null>(null);
     const [localTransforms, setLocalTransforms] = useState<Student['armorTransforms']>({});
+    const [localTransforms2, setLocalTransforms2] = useState<Student['armorTransforms2']>({});
+    const [editingLayer, setEditingLayer] = useState<'primary' | 'secondary'>('primary');
     const [isDragging, setIsDragging] = useState(false);
     const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -194,6 +208,9 @@ export default function ForgePage() {
                 // Initialize local transforms only if they haven't been touched yet in the session
                 if (Object.keys(localTransforms).length === 0) {
                     setLocalTransforms(studentData.armorTransforms || {});
+                }
+                if (Object.keys(localTransforms2).length === 0) {
+                    setLocalTransforms2(studentData.armorTransforms2 || {});
                 }
             }
         });
@@ -239,6 +256,7 @@ export default function ForgePage() {
             setSelectedLegs(allArmor.find(a => a.id === student.equippedLegsId) || null);
             setSelectedFeet(allArmor.find(a => a.id === student.equippedFeetId) || null);
             setLocalTransforms(student.armorTransforms || {});
+            setLocalTransforms2(student.armorTransforms2 || {});
         }
     }, [student, allArmor, baseBodies]);
 
@@ -258,24 +276,39 @@ export default function ForgePage() {
         }
     };
     
-    const handleSliderChange = (type: 'x' | 'y' | 'scale', value: number) => {
+    const handleSliderChange = (type: 'x' | 'y' | 'scale' | 'x2' | 'y2' | 'scale2', value: number) => {
         if (!activePiece || !selectedBodyId) return;
 
-        setLocalTransforms(prev => ({
-            ...prev,
-            [activePiece.id]: {
-                ...prev?.[activePiece.id],
-                [selectedBodyId]: {
-                    ...(prev?.[activePiece.id]?.[selectedBodyId] || activePiece.transforms?.[selectedBodyId] || {x:50, y:50, scale:100}),
-                    [type]: value
+        if (type === 'x' || type === 'y' || type === 'scale') {
+            setLocalTransforms(prev => ({
+                ...prev,
+                [activePiece.id]: {
+                    ...prev?.[activePiece.id],
+                    [selectedBodyId]: {
+                        ...(prev?.[activePiece.id]?.[selectedBodyId] || activePiece.transforms?.[selectedBodyId] || {x:50, y:50, scale:100}),
+                        [type]: value
+                    }
                 }
-            }
-        }));
+            }));
+        } else { // Handle secondary transforms
+             const key = type.slice(0, -1); // x2 -> x, y2 -> y, scale2 -> scale
+             setLocalTransforms2(prev => ({
+                ...prev,
+                [activePiece.id]: {
+                    ...prev?.[activePiece.id],
+                    [selectedBodyId]: {
+                        ...(prev?.[activePiece.id]?.[selectedBodyId] || activePiece.transforms2?.[selectedBodyId] || {x:50, y:50, scale:100}),
+                        [key]: value
+                    }
+                }
+            }));
+        }
     };
     
-    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece) => {
+    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece, layer: 'primary' | 'secondary') => {
         e.preventDefault();
         setActivePiece(piece);
+        setEditingLayer(layer);
         setIsDragging(true);
     };
 
@@ -286,8 +319,13 @@ export default function ForgePage() {
         const newX = ((e.clientX - canvasRect.left) / canvasRect.width) * 100;
         const newY = ((e.clientY - canvasRect.top) / canvasRect.height) * 100;
         
-        handleSliderChange('x', newX);
-        handleSliderChange('y', newY);
+        if (editingLayer === 'primary') {
+            handleSliderChange('x', newX);
+            handleSliderChange('y', newY);
+        } else {
+            handleSliderChange('x2', newX);
+            handleSliderChange('y2', newY);
+        }
     };
 
     const handleMouseUp = () => setIsDragging(false);
@@ -308,6 +346,7 @@ export default function ForgePage() {
                 equippedLegsId: selectedLegs?.id || '',
                 equippedFeetId: selectedFeet?.id || '',
                 armorTransforms: localTransforms,
+                armorTransforms2: localTransforms2,
             });
             toast({ title: "Appearance Saved!", description: "Your hero's new look has been saved." });
         } catch (error) {
@@ -338,12 +377,19 @@ export default function ForgePage() {
         return slots;
     }, [ownedArmor]);
     
-    const activeTransform = useMemo(() => {
+    const activePrimaryTransform = useMemo(() => {
         if (!activePiece || !selectedBodyId) return null;
         return localTransforms?.[activePiece.id]?.[selectedBodyId] 
             || activePiece.transforms?.[selectedBodyId]
             || { x: 50, y: 50, scale: 100 };
     }, [activePiece, selectedBodyId, localTransforms]);
+    
+    const activeSecondaryTransform = useMemo(() => {
+        if (!activePiece || !selectedBodyId) return null;
+        return localTransforms2?.[activePiece.id]?.[selectedBodyId] 
+            || activePiece.transforms2?.[selectedBodyId]
+            || { x: 50, y: 50, scale: 100 };
+    }, [activePiece, selectedBodyId, localTransforms2]);
 
     if (isLoading || !student) {
         return <div className="flex items-center justify-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>
@@ -471,7 +517,7 @@ export default function ForgePage() {
                             <Card className="h-[75vh]">
                                 <CardContent className="h-full p-4 flex items-center justify-center">
                                      <CharacterCanvas 
-                                        student={{...student, armorTransforms: localTransforms }}
+                                        student={{...student, armorTransforms, armorTransforms2}}
                                         baseBody={baseBodies.find(b => b.id === selectedBodyId) || null}
                                         equipment={{ 
                                             hairstyle: selectedHairstyle, 
@@ -487,6 +533,8 @@ export default function ForgePage() {
                                         canvasRef={canvasRef}
                                         onMouseMove={handleMouseMove}
                                         onMouseUp={handleMouseUp}
+                                        activePieceId={activePiece?.id || null}
+                                        editingLayer={editingLayer}
                                     />
                                 </CardContent>
                             </Card>
@@ -507,21 +555,50 @@ export default function ForgePage() {
                                                 </div>
                                         ))}
                                         </div>
-                                        {activePiece && selectedBodyId && activeTransform ? (
-                                            <div className="space-y-4">
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="x-pos">X Position: {activeTransform.x.toFixed(2)}%</Label>
-                                                    <Slider id="x-pos" value={[activeTransform.x]} onValueChange={([val]) => handleSliderChange('x', val)} min={0} max={100} step={0.1} />
+                                        {activePiece ? (
+                                            <>
+                                            {activePiece.modularImageUrl2 && (
+                                                <div className="space-y-2 p-2 border rounded-md">
+                                                    <Label className="flex items-center gap-2"><Layers/> Editing Layer</Label>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <Button variant={editingLayer === 'primary' ? 'default' : 'outline'} onClick={() => setEditingLayer('primary')}>Primary</Button>
+                                                        <Button variant={editingLayer === 'secondary' ? 'default' : 'outline'} onClick={() => setEditingLayer('secondary')}>Secondary</Button>
+                                                    </div>
                                                 </div>
+                                            )}
+
+                                            {editingLayer === 'primary' && activePrimaryTransform ? (
+                                                 <div className="space-y-4 animate-in fade-in-50">
                                                     <div className="space-y-2">
-                                                    <Label htmlFor="y-pos">Y Position: {activeTransform.y.toFixed(2)}%</Label>
-                                                    <Slider id="y-pos" value={[activeTransform.y]} onValueChange={([val]) => handleSliderChange('y', val)} min={0} max={100} step={0.1} />
-                                                </div>
+                                                        <Label htmlFor="x-pos">X Position: {activePrimaryTransform.x.toFixed(2)}%</Label>
+                                                        <Slider id="x-pos" value={[activePrimaryTransform.x]} onValueChange={([val]) => handleSliderChange('x', val)} min={0} max={100} step={0.1} />
+                                                    </div>
                                                     <div className="space-y-2">
-                                                    <Label htmlFor="scale">Scale: {activeTransform.scale.toFixed(2)}%</Label>
-                                                    <Slider id="scale" value={[activeTransform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={200} step={0.5} />
+                                                        <Label htmlFor="y-pos">Y Position: {activePrimaryTransform.y.toFixed(2)}%</Label>
+                                                        <Slider id="y-pos" value={[activePrimaryTransform.y]} onValueChange={([val]) => handleSliderChange('y', val)} min={0} max={100} step={0.1} />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor="scale">Scale: {activePrimaryTransform.scale}%</Label>
+                                                        <Slider id="scale" value={[activePrimaryTransform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={200} step={0.5} />
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            ) : editingLayer === 'secondary' && activeSecondaryTransform ? (
+                                                 <div className="space-y-4 animate-in fade-in-50">
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor="x2-pos">X2 Position: {activeSecondaryTransform.x.toFixed(2)}%</Label>
+                                                        <Slider id="x2-pos" value={[activeSecondaryTransform.x]} onValueChange={([val]) => handleSliderChange('x2', val)} min={0} max={100} step={0.1} />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor="y2-pos">Y2 Position: {activeSecondaryTransform.y.toFixed(2)}%</Label>
+                                                        <Slider id="y2-pos" value={[activeSecondaryTransform.y]} onValueChange={([val]) => handleSliderChange('y2', val)} min={0} max={100} step={0.1} />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor="scale2">Scale 2: {activeSecondaryTransform.scale}%</Label>
+                                                        <Slider id="scale2" value={[activeSecondaryTransform.scale]} onValueChange={([val]) => handleSliderChange('scale2', val)} min={10} max={200} step={0.5} />
+                                                    </div>
+                                                </div>
+                                            ) : null}
+                                            </>
                                         ) : (
                                             <p className="text-sm text-muted-foreground text-center">Select an equipped piece to adjust it.</p>
                                         )}
