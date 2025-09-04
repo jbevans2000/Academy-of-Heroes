@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, onSnapshot, query, where, doc, getDoc, updateDoc, getDocs } from 'firebase/firestore';
@@ -171,6 +171,14 @@ export default function ForgePage() {
                 if (selectedBodyId === null) setSelectedBodyId(studentData.equippedBodyId || null);
                 if (selectedHairstyleId === null) setSelectedHairstyleId(studentData.equippedHairstyleId || null);
                 if (selectedHairstyleColor === null) setSelectedHairstyleColor(studentData.equippedHairstyleColor || null);
+                 if (allArmor.length > 0) { // Ensure armor is loaded before setting equipped
+                    setSelectedHead(allArmor.find(a => a.id === studentData.equippedHeadId) || null);
+                    setSelectedShoulders(allArmor.find(a => a.id === studentData.equippedShouldersId) || null);
+                    setSelectedChest(allArmor.find(a => a.id === studentData.equippedChestId) || null);
+                    setSelectedHands(allArmor.find(a => a.id === studentData.equippedHandsId) || null);
+                    setSelectedLegs(allArmor.find(a => a.id === studentData.equippedLegsId) || null);
+                    setSelectedFeet(allArmor.find(a => a.id === studentData.equippedFeetId) || null);
+                }
             }
         });
         
@@ -194,16 +202,6 @@ export default function ForgePage() {
                 const armorSnap = await getDocs(armorQuery);
                 const armorData = armorSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ArmorPiece));
                 setAllArmor(armorData);
-
-                // This is a re-check to set initial armor state after allArmor is fetched
-                if (student) {
-                    setSelectedHead(armorData.find(a => a.id === student.equippedHeadId) || null);
-                    setSelectedShoulders(armorData.find(a => a.id === student.equippedShouldersId) || null);
-                    setSelectedChest(armorData.find(a => a.id === student.equippedChestId) || null);
-                    setSelectedHands(armorData.find(a => a.id === student.equippedHandsId) || null);
-                    setSelectedLegs(armorData.find(a => a.id === student.equippedLegsId) || null);
-                    setSelectedFeet(armorData.find(a => a.id === student.equippedFeetId) || null);
-                }
 
              } catch (e) {
                 console.error("Error fetching cosmetics:", e);
@@ -274,14 +272,14 @@ export default function ForgePage() {
             setSelectedBodyId(student.equippedBodyId || baseBodies[0]?.id || null);
             setSelectedHairstyleId(student.equippedHairstyleId || null);
             setSelectedHairstyleColor(student.equippedHairstyleColor || null);
+            setSelectedHead(allArmor.find(a => a.id === student.equippedHeadId) || null);
+            setSelectedShoulders(allArmor.find(a => a.id === student.equippedShouldersId) || null);
+            setSelectedChest(allArmor.find(a => a.id === student.equippedChestId) || null);
+            setSelectedHands(allArmor.find(a => a.id === student.equippedHandsId) || null);
+            setSelectedLegs(allArmor.find(a => a.id === student.equippedLegsId) || null);
+            setSelectedFeet(allArmor.find(a => a.id === student.equippedFeetId) || null);
         }
-        setSelectedHead(null);
-        setSelectedShoulders(null);
-        setSelectedChest(null);
-        setSelectedHands(null);
-        setSelectedLegs(null);
-        setSelectedFeet(null);
-        toast({ title: "Appearance Reset", description: "Your equipped items have been cleared. Don't forget to save!"});
+        toast({ title: "Appearance Reset", description: "Your appearance has been reset to the last saved version."});
     }
     
     const renderArmorGrid = (slot: ArmorSlot) => (
@@ -428,30 +426,22 @@ export default function ForgePage() {
                                                 )}
                                             </TabsContent>
                                             <TabsContent value="armor" className="p-2 space-y-4">
-                                                <div className="space-y-2">
-                                                    <h4 className="font-semibold mb-2">Head</h4>
-                                                    {renderArmorGrid('head')}
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <h4 className="font-semibold mb-2">Shoulders</h4>
-                                                    {renderArmorGrid('shoulders')}
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <h4 className="font-semibold mb-2">Chest</h4>
-                                                    {renderArmorGrid('chest')}
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <h4 className="font-semibold mb-2">Hands</h4>
-                                                    {renderArmorGrid('hands')}
-                                                </div>
-                                                 <div className="space-y-2">
-                                                    <h4 className="font-semibold mb-2">Legs</h4>
-                                                    {renderArmorGrid('legs')}
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <h4 className="font-semibold mb-2">Feet</h4>
-                                                    {renderArmorGrid('feet')}
-                                                </div>
+                                                 <Tabs defaultValue="head" className="w-full">
+                                                    <TabsList className="grid w-full grid-cols-3">
+                                                        <TabsTrigger value="head">Head</TabsTrigger>
+                                                        <TabsTrigger value="shoulders">Shoulders</TabsTrigger>
+                                                        <TabsTrigger value="chest">Chest</TabsTrigger>
+                                                        <TabsTrigger value="hands">Hands</TabsTrigger>
+                                                        <TabsTrigger value="legs">Legs</TabsTrigger>
+                                                        <TabsTrigger value="feet">Feet</TabsTrigger>
+                                                    </TabsList>
+                                                    <TabsContent value="head" className="mt-2">{renderArmorGrid('head')}</TabsContent>
+                                                    <TabsContent value="shoulders" className="mt-2">{renderArmorGrid('shoulders')}</TabsContent>
+                                                    <TabsContent value="chest" className="mt-2">{renderArmorGrid('chest')}</TabsContent>
+                                                    <TabsContent value="hands" className="mt-2">{renderArmorGrid('hands')}</TabsContent>
+                                                    <TabsContent value="legs" className="mt-2">{renderArmorGrid('legs')}</TabsContent>
+                                                    <TabsContent value="feet" className="mt-2">{renderArmorGrid('feet')}</TabsContent>
+                                                </Tabs>
                                             </TabsContent>
                                         </ScrollArea>
                                     </Tabs>
@@ -459,7 +449,7 @@ export default function ForgePage() {
                                 <CardFooter className="grid grid-cols-1 gap-2 p-2">
                                      <Button size="lg" className="h-16" onClick={() => setIsArmoryOpen(true)}>
                                         <Gem className="mr-2 h-6 w-6"/>
-                                        Purchase New Armor
+                                        The Armory
                                      </Button>
                                 </CardFooter>
                             </Card>
