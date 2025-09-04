@@ -88,11 +88,13 @@ const CharacterCanvas = ({ student, equipment, baseBody, onMouseDown, canvasRef,
                 const customTransform = student.armorTransforms?.[piece.id]?.[baseBody!.id];
                 const defaultTransform = piece.transforms?.[baseBody!.id] || { x: 50, y: 50, scale: 100 };
                 const transform = customTransform || defaultTransform;
-                
+
+                const defaultTransform2 = piece.transforms2?.[baseBody!.id] || { x: 50, y: 50, scale: 100 };
+
                 const zIndex = slotZIndex[piece.slot] || 1;
 
                 return (
-                    <div key={piece.id}>
+                    <React.Fragment key={piece.id}>
                         <div
                             onMouseDown={(e) => onMouseDown(e, piece)}
                             className="absolute pointer-events-auto cursor-move"
@@ -106,13 +108,13 @@ const CharacterCanvas = ({ student, equipment, baseBody, onMouseDown, canvasRef,
                         >
                             <Image src={piece.modularImageUrl} alt={piece.name} width={500} height={500} className="object-contain pointer-events-none" />
                         </div>
-                        {piece.modularImageUrl2 && piece.transforms2?.[baseBody!.id] && (
+                        {piece.modularImageUrl2 && defaultTransform2 && (
                              <div
-                                className="absolute pointer-events-none"
+                                className="absolute pointer-events-none" // This is intentionally not draggable. The main piece controls both.
                                 style={{
-                                    top: `${piece.transforms2[baseBody!.id].y}%`,
-                                    left: `${piece.transforms2[baseBody!.id].x}%`,
-                                    width: `${piece.transforms2[baseBody!.id].scale}%`,
+                                    top: `${defaultTransform2.y}%`,
+                                    left: `${defaultTransform2.x}%`,
+                                    width: `${defaultTransform2.scale}%`,
                                     transform: 'translate(-50%, -50%)',
                                     zIndex: zIndex,
                                 }}
@@ -120,7 +122,7 @@ const CharacterCanvas = ({ student, equipment, baseBody, onMouseDown, canvasRef,
                                 <Image src={piece.modularImageUrl2} alt={`${piece.name} (secondary)`} width={500} height={500} className="object-contain" />
                             </div>
                         )}
-                    </div>
+                    </React.Fragment>
                 );
             })}
         </div>
