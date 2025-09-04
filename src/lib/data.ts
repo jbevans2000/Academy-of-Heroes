@@ -51,6 +51,15 @@ export type Student = {
     equippedBodyId?: string; // The ID of the base body model
     equippedHairstyleId?: string;
     equippedHairstyleColor?: string; // The URL of the specific color variation
+    armorTransforms?: { // Student-specific overrides for armor positions
+        [armorId: string]: {
+            [bodyId: string]: {
+                x: number;
+                y: number;
+                scale: number;
+            }
+        }
+    };
     questApprovalRequired?: boolean; // Student-specific override
     isArchived?: boolean; // To hide accounts after data migration
     teacherNotes?: string; // Private notes for the teacher

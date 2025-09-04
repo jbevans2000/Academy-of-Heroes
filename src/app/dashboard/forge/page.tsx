@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, onSnapshot, query, where, doc, getDoc, updateDoc, getDocs } from 'firebase/firestore';
@@ -75,8 +75,10 @@ const CharacterCanvas = ({ student, equipment, baseBody }: {
              {equippedArmor.map(piece => {
                 if (!piece) return null;
                 
-                const transform1 = piece.transforms?.[baseBody.id] || { x: 50, y: 50, scale: 100 };
-                const transform2 = piece.transforms2?.[baseBody.id];
+                const customTransform = student.armorTransforms?.[piece.id]?.[baseBody.id];
+                const defaultTransform = piece.transforms?.[baseBody.id] || { x: 50, y: 50, scale: 100 };
+                const transform = customTransform || defaultTransform;
+                
                 const zIndex = slotZIndex[piece.slot] || 1;
 
                 return (
@@ -84,22 +86,22 @@ const CharacterCanvas = ({ student, equipment, baseBody }: {
                         <div
                             className="absolute pointer-events-none"
                             style={{
-                                top: `${transform1.y}%`,
-                                left: `${transform1.x}%`,
-                                width: `${transform1.scale}%`,
+                                top: `${transform.y}%`,
+                                left: `${transform.x}%`,
+                                width: `${transform.scale}%`,
                                 transform: 'translate(-50%, -50%)',
                                 zIndex: zIndex,
                             }}
                         >
                             <Image src={piece.modularImageUrl} alt={piece.name} width={500} height={500} className="object-contain" />
                         </div>
-                        {piece.modularImageUrl2 && transform2 && (
+                        {piece.modularImageUrl2 && piece.transforms2?.[baseBody.id] && (
                              <div
                                 className="absolute pointer-events-none"
                                 style={{
-                                    top: `${transform2.y}%`,
-                                    left: `${transform2.x}%`,
-                                    width: `${transform2.scale}%`,
+                                    top: `${piece.transforms2[baseBody.id].y}%`,
+                                    left: `${piece.transforms2[baseBody.id].x}%`,
+                                    width: `${piece.transforms2[baseBody.id].scale}%`,
                                     transform: 'translate(-50%, -50%)',
                                     zIndex: zIndex,
                                 }}
@@ -145,7 +147,7 @@ export default function ForgePage() {
     
     // Sizer state
     const [activePiece, setActivePiece] = useState<ArmorPiece | null>(null);
-    const [transform, setTransform] = useState({ x: 50, y: 50, scale: 100 });
+    const [localTransforms, setLocalTransforms] = useState<Student['armorTransforms']>({});
 
 
     useEffect(() => {
@@ -174,6 +176,7 @@ export default function ForgePage() {
             if (doc.exists()) {
                 const studentData = { uid: doc.id, ...doc.data() } as Student;
                 setStudent(studentData);
+                setLocalTransforms(studentData.armorTransforms || {});
             }
         });
         
@@ -206,7 +209,7 @@ export default function ForgePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user, teacherUid, toast]);
     
-    useEffect(() => {
+    const setInitialEquipment = useCallback(() => {
         if (student && allArmor.length > 0 && baseBodies.length > 0) {
             setSelectedBodyId(student.equippedBodyId || baseBodies[0]?.id || null);
             setSelectedHairstyleId(student.equippedHairstyleId || null);
@@ -217,20 +220,13 @@ export default function ForgePage() {
             setSelectedHands(allArmor.find(a => a.id === student.equippedHandsId) || null);
             setSelectedLegs(allArmor.find(a => a.id === student.equippedLegsId) || null);
             setSelectedFeet(allArmor.find(a => a.id === student.equippedFeetId) || null);
+            setLocalTransforms(student.armorTransforms || {});
         }
     }, [student, allArmor, baseBodies]);
-    
-     useEffect(() => {
-        const selectedBody = baseBodies.find(b => b.id === selectedBodyId);
-        if (activePiece && selectedBody) {
-            const savedTransform = activePiece.transforms?.[selectedBody.id];
-            if (savedTransform) {
-                setTransform(savedTransform);
-            } else {
-                setTransform({ x: 50, y: 50, scale: 100 });
-            }
-        }
-    }, [activePiece, selectedBodyId, baseBodies]);
+
+    useEffect(() => {
+        setInitialEquipment();
+    }, [setInitialEquipment]);
 
     const handleEquipArmor = (piece: ArmorPiece) => {
         const equipLogic = (prev: ArmorPiece | null) => prev?.id === piece.id ? null : piece;
@@ -245,26 +241,19 @@ export default function ForgePage() {
     };
     
     const handleSliderChange = (type: 'x' | 'y' | 'scale', value: number) => {
-        if (!activePiece) return;
-        setTransform(prev => ({...prev, [type]: value}));
-        // Update the piece in its state
-        const updatedPiece = { 
-            ...activePiece, 
-            transforms: { 
-                ...activePiece.transforms, 
-                [selectedBodyId!]: {...(activePiece.transforms[selectedBodyId!] || {}), [type]: value}
-            }
-        };
-        switch(activePiece.slot) {
-             case 'head': setSelectedHead(updatedPiece); break;
-             case 'shoulders': setSelectedShoulders(updatedPiece); break;
-             case 'chest': setSelectedChest(updatedPiece); break;
-             case 'hands': setSelectedHands(updatedPiece); break;
-             case 'legs': setSelectedLegs(updatedPiece); break;
-             case 'feet': setSelectedFeet(updatedPiece); break;
-        }
-    }
+        if (!activePiece || !selectedBodyId) return;
 
+        setLocalTransforms(prev => ({
+            ...prev,
+            [activePiece.id]: {
+                ...prev?.[activePiece.id],
+                [selectedBodyId]: {
+                    ...(prev?.[activePiece.id]?.[selectedBodyId] || piece.transforms[selectedBodyId] || {x:50, y:50, scale:100}),
+                    [type]: value
+                }
+            }
+        }));
+    };
 
     const handleSave = async () => {
         if (!user || !teacherUid) return;
@@ -281,6 +270,7 @@ export default function ForgePage() {
                 equippedHandsId: selectedHands?.id || '',
                 equippedLegsId: selectedLegs?.id || '',
                 equippedFeetId: selectedFeet?.id || '',
+                armorTransforms: localTransforms,
             });
             toast({ title: "Appearance Saved!", description: "Your hero's new look has been saved." });
         } catch (error) {
@@ -292,18 +282,8 @@ export default function ForgePage() {
     };
 
     const handleReset = () => {
-        if (student) {
-            setSelectedBodyId(student.equippedBodyId || baseBodies[0]?.id || null);
-            setSelectedHairstyleId(student.equippedHairstyleId || null);
-            setSelectedHairstyleColor(student.equippedHairstyleColor || null);
-            setSelectedHead(allArmor.find(a => a.id === student.equippedHeadId) || null);
-            setSelectedShoulders(allArmor.find(a => a.id === student.equippedShouldersId) || null);
-            setSelectedChest(allArmor.find(a => a.id === student.equippedChestId) || null);
-            setSelectedHands(allArmor.find(a => a.id === student.equippedHandsId) || null);
-            setSelectedLegs(allArmor.find(a => a.id === student.equippedLegsId) || null);
-            setSelectedFeet(allArmor.find(a => a.id === student.equippedFeetId) || null);
-            setActivePiece(null);
-        }
+        setInitialEquipment();
+        setActivePiece(null);
         toast({ title: "Appearance Reset", description: "Your appearance has been reset to the last saved version."});
     }
 
@@ -320,6 +300,13 @@ export default function ForgePage() {
         });
         return slots;
     }, [ownedArmor]);
+    
+    const activeTransform = useMemo(() => {
+        if (!activePiece || !selectedBodyId) return null;
+        return localTransforms?.[activePiece.id]?.[selectedBodyId] 
+            || activePiece.transforms?.[selectedBodyId]
+            || { x: 50, y: 50, scale: 100 };
+    }, [activePiece, selectedBodyId, localTransforms]);
 
     if (isLoading || !student) {
         return <div className="flex items-center justify-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>
@@ -350,7 +337,7 @@ export default function ForgePage() {
                             <Card className="h-[75vh]">
                                 <CardContent className="h-full p-4 flex items-center justify-center">
                                      <CharacterCanvas 
-                                        student={student}
+                                        student={{...student, armorTransforms: localTransforms }}
                                         baseBody={baseBodies.find(b => b.id === selectedBodyId) || null}
                                         equipment={{ 
                                             hairstyle: selectedHairstyle, 
@@ -478,19 +465,19 @@ export default function ForgePage() {
                                                     </div>
                                                ))}
                                             </div>
-                                            {activePiece && selectedBodyId ? (
+                                            {activePiece && selectedBodyId && activeTransform ? (
                                                 <div className="space-y-4">
                                                     <div className="space-y-2">
-                                                        <Label htmlFor="x-pos">X Position: {transform.x.toFixed(2)}%</Label>
-                                                        <Slider id="x-pos" value={[transform.x]} onValueChange={([val]) => handleSliderChange('x', val)} min={0} max={100} step={0.1} />
+                                                        <Label htmlFor="x-pos">X Position: {activeTransform.x.toFixed(2)}%</Label>
+                                                        <Slider id="x-pos" value={[activeTransform.x]} onValueChange={([val]) => handleSliderChange('x', val)} min={0} max={100} step={0.1} />
                                                     </div>
                                                      <div className="space-y-2">
-                                                        <Label htmlFor="y-pos">Y Position: {transform.y.toFixed(2)}%</Label>
-                                                        <Slider id="y-pos" value={[transform.y]} onValueChange={([val]) => handleSliderChange('y', val)} min={0} max={100} step={0.1} />
+                                                        <Label htmlFor="y-pos">Y Position: {activeTransform.y.toFixed(2)}%</Label>
+                                                        <Slider id="y-pos" value={[activeTransform.y]} onValueChange={([val]) => handleSliderChange('y', val)} min={0} max={100} step={0.1} />
                                                     </div>
                                                      <div className="space-y-2">
-                                                        <Label htmlFor="scale">Scale: {transform.scale.toFixed(2)}%</Label>
-                                                        <Slider id="scale" value={[transform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={200} step={0.5} />
+                                                        <Label htmlFor="scale">Scale: {activeTransform.scale.toFixed(2)}%</Label>
+                                                        <Slider id="scale" value={[activeTransform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={200} step={0.5} />
                                                     </div>
                                                 </div>
                                             ) : (
