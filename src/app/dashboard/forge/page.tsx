@@ -10,8 +10,8 @@ import type { Student } from '@/lib/data';
 import type { ArmorPiece, Hairstyle, BaseBody } from '@/lib/forge';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Loader2, RotateCcw, Hammer } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { ArrowLeft, Save, Loader2, RotateCcw, Hammer, Gem } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -19,6 +19,8 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { ArmoryDialog } from '@/components/dashboard/armory-dialog';
+
 
 const CharacterCanvas = ({ student, equipment, baseBody }: {
     student: Student | null;
@@ -64,9 +66,12 @@ export default function ForgePage() {
     const [teacherUid, setTeacherUid] = useState<string | null>(null);
     const [baseBodies, setBaseBodies] = useState<BaseBody[]>([]);
     const [hairstyles, setHairstyles] = useState<Hairstyle[]>([]);
-    const [armorPieces, setArmorPieces] = useState<ArmorPiece[]>([]);
+    const [allArmor, setAllArmor] = useState<ArmorPiece[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+
+    // Dialog State
+    const [isArmoryOpen, setIsArmoryOpen] = useState(false);
 
     // Equipment State
     const [selectedBodyId, setSelectedBodyId] = useState<string | null>(null);
@@ -122,10 +127,10 @@ export default function ForgePage() {
                 const hairSnap = await getDocs(hairQuery);
                 setHairstyles(hairSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hairstyle)));
 
-                // Add armor fetching later
-                // const armorQuery = query(collection(db, 'armorPieces'), where('isPublished', '==', true));
-                // const armorSnap = await getDocs(armorQuery);
-                // setArmorPieces(armorSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ArmorPiece)));
+                // Fetch all published armor
+                const armorQuery = query(collection(db, 'armorPieces'), where('isPublished', '==', true));
+                const armorSnap = await getDocs(armorQuery);
+                setAllArmor(armorSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ArmorPiece)));
 
              } catch (e) {
                 console.error("Error fetching cosmetics:", e);
@@ -232,13 +237,14 @@ export default function ForgePage() {
         )
     };
     
-    if (isLoading) {
+    if (isLoading || !student) {
         return <div className="flex items-center justify-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>
     }
 
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
+            {student && <ArmoryDialog isOpen={isArmoryOpen} onOpenChange={setIsArmoryOpen} student={student} allArmor={allArmor} />}
             <DashboardHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                  <div className="w-full max-w-7xl mx-auto space-y-4">
@@ -256,7 +262,7 @@ export default function ForgePage() {
                         <Hammer className="h-4 w-4 text-amber-900" />
                         <AlertTitle className="font-bold">Under Construction!</AlertTitle>
                         <AlertDescription>
-                           The Forge is Currently Under Construction. All Features are not yet available!
+                           Equipping armor is not yet functional. This feature is coming soon!
                         </AlertDescription>
                     </Alert>
                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -297,6 +303,12 @@ export default function ForgePage() {
                                         </ScrollArea>
                                     </Tabs>
                                 </CardContent>
+                                <CardFooter className="p-2">
+                                     <Button size="lg" className="w-full h-16" onClick={() => setIsArmoryOpen(true)}>
+                                        <Gem className="mr-2 h-6 w-6"/>
+                                        The Armory
+                                     </Button>
+                                </CardFooter>
                             </Card>
                         </div>
                      </div>
@@ -305,3 +317,4 @@ export default function ForgePage() {
         </div>
     );
 }
+

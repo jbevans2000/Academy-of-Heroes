@@ -41,6 +41,16 @@ export type Student = {
     inBattle: boolean; 
     inDuel?: boolean;
     inventory?: { [boonId: string]: number }; // Map of boonId to quantity
+    ownedArmorIds?: string[]; // IDs of armor pieces the student owns
+    equippedHeadId?: string;
+    equippedChestId?: string;
+    equippedLegsId?: string;
+    equippedHandsId?: string;
+    equippedFeetId?: string;
+    equippedShouldersId?: string;
+    equippedBodyId?: string; // The ID of the base body model
+    equippedHairstyleId?: string;
+    equippedHairstyleColor?: string; // The URL of the specific color variation
     questApprovalRequired?: boolean; // Student-specific override
     isArchived?: boolean; // To hide accounts after data migration
     teacherNotes?: string; // Private notes for the teacher
