@@ -18,7 +18,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ArmoryDialog } from '@/components/dashboard/armory-dialog';
 
 
@@ -64,7 +63,8 @@ const CharacterCanvas = ({ student, equipment, baseBody }: {
                         top: `${hairstyleTransform.y}%`,
                         left: `${hairstyleTransform.x}%`,
                         width: `${hairstyleTransform.scale}%`,
-                        transform: 'translate(-50%, -50%)'
+                        transform: 'translate(-50%, -50%)',
+                        zIndex: 10 // Hair should be on top
                     }}
                 >
                     <Image src={hairstyleColor} alt="Hairstyle" width={500} height={500} className="object-contain" />
@@ -72,13 +72,14 @@ const CharacterCanvas = ({ student, equipment, baseBody }: {
             )}
             
             {equippedArmor.map(piece => {
+                if (!piece) return null;
                 const zIndex = slotZIndex[piece.slot] || 1;
                 
                 // Render the primary modular image
                 const transform1 = piece.transforms?.[baseBody.id] || { x: 50, y: 50, scale: 100 };
                 
                 // Render the secondary modular image if it exists
-                const transform2 = piece.transforms2?.[baseBody.id] || { x: 50, y: 50, scale: 100 };
+                const transform2 = piece.transforms2?.[baseBody.id];
 
                 return (
                     <div key={piece.id}>
@@ -94,7 +95,7 @@ const CharacterCanvas = ({ student, equipment, baseBody }: {
                         >
                             <Image src={piece.modularImageUrl} alt={piece.name} width={500} height={500} className="object-contain" />
                         </div>
-                        {piece.modularImageUrl2 && (
+                        {piece.modularImageUrl2 && transform2 && (
                              <div
                                 className="absolute pointer-events-none"
                                 style={{
@@ -174,15 +175,6 @@ export default function ForgePage() {
                 if (selectedBodyId === null) setSelectedBodyId(studentData.equippedBodyId || null);
                 if (selectedHairstyleId === null) setSelectedHairstyleId(studentData.equippedHairstyleId || null);
                 if (selectedHairstyleColor === null) setSelectedHairstyleColor(studentData.equippedHairstyleColor || null);
-                
-                // Initialize equipped armor from student data once
-                if (selectedHead === null) setSelectedHead(allArmor.find(a => a.id === studentData.equippedHeadId) || null);
-                if (selectedShoulders === null) setSelectedShoulders(allArmor.find(a => a.id === studentData.equippedShouldersId) || null);
-                if (selectedChest === null) setSelectedChest(allArmor.find(a => a.id === studentData.equippedChestId) || null);
-                if (selectedHands === null) setSelectedHands(allArmor.find(a => a.id === studentData.equippedHandsId) || null);
-                if (selectedLegs === null) setSelectedLegs(allArmor.find(a => a.id === studentData.equippedLegsId) || null);
-                if (selectedFeet === null) setSelectedFeet(allArmor.find(a => a.id === studentData.equippedFeetId) || null);
-
             }
         });
         
@@ -337,13 +329,6 @@ export default function ForgePage() {
                              </Button>
                         </div>
                     </div>
-                    <Alert className="bg-amber-100 border-amber-300 text-amber-900">
-                        <Hammer className="h-4 w-4 text-amber-900" />
-                        <AlertTitle className="font-bold">Under Construction!</AlertTitle>
-                        <AlertDescription>
-                           Equipping armor is not yet functional. This feature is coming soon!
-                        </AlertDescription>
-                    </Alert>
                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div className="lg:col-span-2">
                             <Card className="h-[75vh]">
@@ -437,27 +422,27 @@ export default function ForgePage() {
                                                 )}
                                             </TabsContent>
                                             <TabsContent value="armor" className="p-2 space-y-4">
-                                                <div>
+                                                <div className="space-y-2">
                                                     <h4 className="font-semibold mb-2">Head</h4>
                                                     {renderArmorGrid('head')}
                                                 </div>
-                                                <div>
+                                                <div className="space-y-2">
                                                     <h4 className="font-semibold mb-2">Shoulders</h4>
                                                     {renderArmorGrid('shoulders')}
                                                 </div>
-                                                <div>
+                                                <div className="space-y-2">
                                                     <h4 className="font-semibold mb-2">Chest</h4>
                                                     {renderArmorGrid('chest')}
                                                 </div>
-                                                <div>
+                                                <div className="space-y-2">
                                                     <h4 className="font-semibold mb-2">Hands</h4>
                                                     {renderArmorGrid('hands')}
                                                 </div>
-                                                 <div>
+                                                 <div className="space-y-2">
                                                     <h4 className="font-semibold mb-2">Legs</h4>
                                                     {renderArmorGrid('legs')}
                                                 </div>
-                                                <div>
+                                                <div className="space-y-2">
                                                     <h4 className="font-semibold mb-2">Feet</h4>
                                                     {renderArmorGrid('feet')}
                                                 </div>
@@ -465,8 +450,8 @@ export default function ForgePage() {
                                         </ScrollArea>
                                     </Tabs>
                                 </CardContent>
-                                <CardFooter className="p-2">
-                                     <Button size="lg" className="w-full h-16" onClick={() => setIsArmoryOpen(true)}>
+                                <CardFooter className="grid grid-cols-2 gap-2 p-2">
+                                     <Button size="lg" className="h-16" onClick={() => setIsArmoryOpen(true)}>
                                         <Gem className="mr-2 h-6 w-6"/>
                                         The Armory
                                      </Button>
@@ -479,4 +464,3 @@ export default function ForgePage() {
         </div>
     );
 }
-
