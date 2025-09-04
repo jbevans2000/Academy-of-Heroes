@@ -29,6 +29,7 @@ export async function saveCustomAvatar(input: SaveAvatarInput): Promise<ActionRe
   try {
     const adminApp = getFirebaseAdminApp();
     const storage = getStorage(adminApp);
+    const bucket = storage.bucket('academy-heroes-mziuf.appspot.com');
     
     // Convert data URL to a buffer
     const base64Data = imageDataUrl.split(',')[1];
@@ -37,7 +38,7 @@ export async function saveCustomAvatar(input: SaveAvatarInput): Promise<ActionRe
     // Define storage path. The UUID ensures that if a user saves multiple times, they don't overwrite
     // the same file, preventing potential caching issues.
     const imagePath = `custom-avatars/${teacherUid}/${studentUid}/${uuidv4()}.png`;
-    const file = storage.bucket().file(imagePath);
+    const file = bucket.file(imagePath);
 
     // Upload the image buffer to Cloud Storage
     await file.save(imageBuffer, {
