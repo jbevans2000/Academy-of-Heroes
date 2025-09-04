@@ -230,6 +230,8 @@ export default function ForgePage() {
         });
         return slots;
     }, [ownedArmor]);
+
+    const armorSlotOrder: ArmorSlot[] = ['head', 'shoulders', 'chest', 'hands', 'legs', 'feet'];
     
     const handleEquipArmor = (piece: ArmorPiece) => {
         switch (piece.slot) {
@@ -270,51 +272,21 @@ export default function ForgePage() {
     const handleReset = () => {
         if (student) {
             setSelectedBodyId(student.equippedBodyId || baseBodies[0]?.id || null);
-            setSelectedHairstyleId(student.equippedHairstyleId || null);
-            setSelectedHairstyleColor(student.equippedHairstyleColor || null);
-            setSelectedHead(allArmor.find(a => a.id === student.equippedHeadId) || null);
-            setSelectedShoulders(allArmor.find(a => a.id === student.equippedShouldersId) || null);
-            setSelectedChest(allArmor.find(a => a.id === student.equippedChestId) || null);
-            setSelectedHands(allArmor.find(a => a.id === student.equippedHandsId) || null);
-            setSelectedLegs(allArmor.find(a => a.id === student.equippedLegsId) || null);
-            setSelectedFeet(allArmor.find(a => a.id === student.equippedFeetId) || null);
+            setSelectedHairstyleId(null);
+            setSelectedHairstyleColor(null);
+            setSelectedHead(null);
+            setSelectedShoulders(null);
+            setSelectedChest(null);
+            setSelectedHands(null);
+            setSelectedLegs(null);
+            setSelectedFeet(null);
         }
         toast({ title: "Appearance Reset", description: "Your appearance has been reset to the last saved version."});
     }
-    
-    const renderArmorGrid = (slot: ArmorSlot) => (
-        <div className="grid grid-cols-3 gap-2">
-            {armorBySlot[slot].map(item => {
-                const isEquipped = 
-                    selectedHead?.id === item.id || 
-                    selectedShoulders?.id === item.id || 
-                    selectedChest?.id === item.id || 
-                    selectedHands?.id === item.id || 
-                    selectedLegs?.id === item.id || 
-                    selectedFeet?.id === item.id;
-                return (
-                    <Card 
-                        key={item.id} 
-                        className={cn(
-                            "cursor-pointer hover:border-primary", 
-                            isEquipped && "border-2 border-primary"
-                        )}
-                        onClick={() => handleEquipArmor(item)}
-                    >
-                        <CardContent className="p-1 aspect-square">
-                            <Image src={item.imageUrl} alt={item.name} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
-                        </CardContent>
-                    </Card>
-                )
-            })}
-             {armorBySlot[slot].length === 0 && <p className="text-muted-foreground text-sm col-span-3 text-center py-4">No items owned for this slot.</p>}
-        </div>
-    );
-    
+
     if (isLoading || !student) {
         return <div className="flex items-center justify-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>
     }
-
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -367,8 +339,8 @@ export default function ForgePage() {
                                             <TabsTrigger value="hair-color" disabled={!selectedHairstyle}>Color</TabsTrigger>
                                             <TabsTrigger value="armor">Armor</TabsTrigger>
                                         </TabsList>
-                                        <ScrollArea className="flex-grow mt-4 h-full">
-                                            <TabsContent value="body" className="p-2">
+                                        <ScrollArea className="flex-grow mt-4">
+                                            <TabsContent value="body" className="p-1">
                                                  <div className="grid grid-cols-3 gap-2">
                                                     {baseBodies.map(item => (
                                                         <Card 
@@ -386,7 +358,7 @@ export default function ForgePage() {
                                                     ))}
                                                 </div>
                                             </TabsContent>
-                                            <TabsContent value="hair" className="p-2">
+                                            <TabsContent value="hair" className="p-1">
                                                 <div className="grid grid-cols-3 gap-2">
                                                     {hairstyles.map(item => (
                                                         <Card 
@@ -396,8 +368,13 @@ export default function ForgePage() {
                                                                 selectedHairstyleId === item.id && "border-2 border-primary"
                                                             )}
                                                             onClick={() => {
-                                                                setSelectedHairstyleId(item.id);
-                                                                setSelectedHairstyleColor(item.colors?.[0]?.imageUrl || null);
+                                                                if(selectedHairstyleId === item.id) {
+                                                                    setSelectedHairstyleId(null);
+                                                                    setSelectedHairstyleColor(null);
+                                                                } else {
+                                                                    setSelectedHairstyleId(item.id);
+                                                                    setSelectedHairstyleColor(item.colors?.[0]?.imageUrl || null);
+                                                                }
                                                             }}
                                                         >
                                                             <CardContent className="p-1 aspect-square">
@@ -407,7 +384,7 @@ export default function ForgePage() {
                                                     ))}
                                                 </div>
                                             </TabsContent>
-                                            <TabsContent value="hair-color" className="p-2">
+                                            <TabsContent value="hair-color" className="p-1">
                                                 {selectedHairstyle && (
                                                     <div className="grid grid-cols-5 gap-2">
                                                         {selectedHairstyle.colors.map((color, index) => (
@@ -422,23 +399,41 @@ export default function ForgePage() {
                                                     </div>
                                                 )}
                                             </TabsContent>
-                                            <TabsContent value="armor" className="p-2 space-y-4">
-                                                 <Tabs defaultValue="head" className="w-full">
-                                                    <TabsList className="grid w-full grid-cols-3">
-                                                        <TabsTrigger value="head">Head</TabsTrigger>
-                                                        <TabsTrigger value="shoulders">Shoulders</TabsTrigger>
-                                                        <TabsTrigger value="chest">Chest</TabsTrigger>
-                                                        <TabsTrigger value="hands">Hands</TabsTrigger>
-                                                        <TabsTrigger value="legs">Legs</TabsTrigger>
-                                                        <TabsTrigger value="feet">Feet</TabsTrigger>
-                                                    </TabsList>
-                                                    <TabsContent value="head" className="mt-2">{renderArmorGrid('head')}</TabsContent>
-                                                    <TabsContent value="shoulders" className="mt-2">{renderArmorGrid('shoulders')}</TabsContent>
-                                                    <TabsContent value="chest" className="mt-2">{renderArmorGrid('chest')}</TabsContent>
-                                                    <TabsContent value="hands" className="mt-2">{renderArmorGrid('hands')}</TabsContent>
-                                                    <TabsContent value="legs" className="mt-2">{renderArmorGrid('legs')}</TabsContent>
-                                                    <TabsContent value="feet" className="mt-2">{renderArmorGrid('feet')}</TabsContent>
-                                                </Tabs>
+                                            <TabsContent value="armor" className="p-1 space-y-4">
+                                                {armorSlotOrder.map(slot => (
+                                                    <div key={slot}>
+                                                        <h4 className="capitalize font-semibold mb-2 text-center border-b pb-1">{slot}</h4>
+                                                        <div className="grid grid-cols-3 gap-2">
+                                                            {armorBySlot[slot].length === 0 ? (
+                                                                <p className="text-muted-foreground text-sm col-span-3 text-center py-2">No items owned for this slot.</p>
+                                                            ) : (
+                                                                armorBySlot[slot].map(item => {
+                                                                    const isEquipped = 
+                                                                        selectedHead?.id === item.id || 
+                                                                        selectedShoulders?.id === item.id || 
+                                                                        selectedChest?.id === item.id || 
+                                                                        selectedHands?.id === item.id || 
+                                                                        selectedLegs?.id === item.id || 
+                                                                        selectedFeet?.id === item.id;
+                                                                    return (
+                                                                        <Card 
+                                                                            key={item.id} 
+                                                                            className={cn(
+                                                                                "cursor-pointer hover:border-primary", 
+                                                                                isEquipped && "border-2 border-primary"
+                                                                            )}
+                                                                            onClick={() => handleEquipArmor(item)}
+                                                                        >
+                                                                            <CardContent className="p-1 aspect-square">
+                                                                                <Image src={item.imageUrl} alt={item.name} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                                                                            </CardContent>
+                                                                        </Card>
+                                                                    )
+                                                                })
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </TabsContent>
                                         </ScrollArea>
                                     </Tabs>
