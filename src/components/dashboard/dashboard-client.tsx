@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -30,7 +31,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { ChallengeDialog } from '@/components/dashboard/challenge-dialog';
 import { getDuelSettings } from '@/ai/flows/manage-duels';
-import { format } from 'date-fns';
 
 interface DashboardClientProps {
   student: Student;
@@ -121,8 +121,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
     
     if (accept) {
         const settings = await getDuelSettings(student.teacherUid);
-        const today = format(new Date(), 'yyyy-MM-dd');
-        const duelsCompletedToday = student.lastDuelDate === today ? (student.duelsCompletedToday || 0) : 0;
+        const duelsCompletedToday = student.dailyDuelCount || 0;
         
         if (settings.isDailyLimitEnabled && duelsCompletedToday >= (settings.dailyDuelLimit || 999)) {
             toast({ variant: 'destructive', title: 'Daily Limit Reached', description: `You have already completed your daily limit of ${settings.dailyDuelLimit} duels.` });
@@ -197,6 +196,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
             <AvatarDisplay
               avatarSrc={student.avatarUrl}
               avatarHint={student.class}
+              useCustomAvatar={student.useCustomAvatar}
             />
             <div className="grid grid-cols-2 gap-4">
                 <Link href="/dashboard/map" passHref className="col-span-2">

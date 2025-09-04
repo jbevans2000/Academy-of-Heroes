@@ -24,6 +24,7 @@ export type Student = {
     characterName: string;
     class: ClassType;
     avatarUrl: string;
+    useCustomAvatar?: boolean; // New flag for custom avatars
     backgroundUrl: string;
     xp: number;
     gold: number;

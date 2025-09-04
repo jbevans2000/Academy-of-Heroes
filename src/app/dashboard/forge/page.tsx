@@ -10,7 +10,7 @@ import type { Student } from '@/lib/data';
 import type { ArmorPiece, Hairstyle, BaseBody, ArmorSlot } from '@/lib/forge';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Loader2, RotateCcw, Hammer, Edit, Trash2, Layers, Eye, Camera } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, RotateCcw, Hammer, Edit, Trash2, Layers, Eye, Camera, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -689,15 +689,15 @@ export default function ForgePage() {
                                             <p className="text-sm text-muted-foreground text-center">Select an equipped piece to adjust it.</p>
                                         )}
                                 </CardContent>
-                                 {activePiece && <CardFooter className="flex-col gap-2 items-stretch">
-                                    <Button size="sm" variant="outline" onClick={() => setActivePiece(null)} disabled={!activePiece}>
+                                 <CardFooter className="flex-col gap-2 items-stretch">
+                                    {activePiece && <Button size="sm" variant="outline" onClick={() => setActivePiece(null)} disabled={!activePiece}>
                                         <X className="mr-2 h-4 w-4"/> Clear Active Piece
-                                    </Button>
+                                    </Button>}
                                     <Button onClick={handleSetCustomAvatar} disabled={isSettingAvatar}>
                                         {isSettingAvatar ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Camera className="mr-2 h-4 w-4" />}
                                         Set as Custom Avatar
                                     </Button>
-                                </CardFooter>}
+                                </CardFooter>
                             </Card>
                         </div>
                      </div>
