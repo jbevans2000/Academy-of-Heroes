@@ -168,17 +168,6 @@ export default function ForgePage() {
     }, [router]);
     
     useEffect(() => {
-        if (student && allArmor.length > 0) {
-            setSelectedHead(allArmor.find(a => a.id === student.equippedHeadId) || null);
-            setSelectedShoulders(allArmor.find(a => a.id === student.equippedShouldersId) || null);
-            setSelectedChest(allArmor.find(a => a.id === student.equippedChestId) || null);
-            setSelectedHands(allArmor.find(a => a.id === student.equippedHandsId) || null);
-            setSelectedLegs(allArmor.find(a => a.id === student.equippedLegsId) || null);
-            setSelectedFeet(allArmor.find(a => a.id === student.equippedFeetId) || null);
-        }
-    }, [student, allArmor]);
-
-    useEffect(() => {
         if (!user || !teacherUid) return;
 
         const unsubStudent = onSnapshot(doc(db, 'teachers', teacherUid, 'students', user.uid), (doc) => {
@@ -197,7 +186,8 @@ export default function ForgePage() {
                 const bodiesData = bodiesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as BaseBody)).sort((a: any, b: any) => a.order - b.order);
                 setBaseBodies(bodiesData);
                 
-                if (!student?.equippedBodyId && bodiesData.length > 0) {
+                // Set default body if none is equipped
+                if (!student?.equippedBodyId && bodiesData.length > 0 && selectedBodyId === null) {
                    setSelectedBodyId(bodiesData[0].id);
                 }
 
@@ -209,6 +199,15 @@ export default function ForgePage() {
                 const armorSnap = await getDocs(armorQuery);
                 const armorData = armorSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ArmorPiece));
                 setAllArmor(armorData);
+                
+                if (student) {
+                    setSelectedHead(armorData.find(a => a.id === student.equippedHeadId) || null);
+                    setSelectedShoulders(armorData.find(a => a.id === student.equippedShouldersId) || null);
+                    setSelectedChest(armorData.find(a => a.id === student.equippedChestId) || null);
+                    setSelectedHands(armorData.find(a => a.id === student.equippedHandsId) || null);
+                    setSelectedLegs(armorData.find(a => a.id === student.equippedLegsId) || null);
+                    setSelectedFeet(armorData.find(a => a.id === student.equippedFeetId) || null);
+                }
 
              } catch (e) {
                 console.error("Error fetching cosmetics:", e);
@@ -300,12 +299,12 @@ export default function ForgePage() {
             setSelectedBodyId(student.equippedBodyId || baseBodies[0]?.id || null);
             setSelectedHairstyleId(student.equippedHairstyleId || null);
             setSelectedHairstyleColor(student.equippedHairstyleColor || null);
-            setSelectedHead(allArmor.find(a => a.id === student.equippedHeadId) || null);
-            setSelectedShoulders(allArmor.find(a => a.id === student.equippedShouldersId) || null);
-            setSelectedChest(allArmor.find(a => a.id === student.equippedChestId) || null);
-            setSelectedHands(allArmor.find(a => a.id === student.equippedHandsId) || null);
-            setSelectedLegs(allArmor.find(a => a.id === student.equippedLegsId) || null);
-            setSelectedFeet(allArmor.find(a => a.id === student.equippedFeetId) || null);
+            setSelectedHead(null);
+            setSelectedShoulders(null);
+            setSelectedChest(null);
+            setSelectedHands(null);
+            setSelectedLegs(null);
+            setSelectedFeet(null);
             setActivePiece(null);
         }
         toast({ title: "Appearance Reset", description: "Your appearance has been reset to the last saved version."});
@@ -339,9 +338,9 @@ export default function ForgePage() {
                         <Button variant="outline" onClick={() => router.push('/dashboard')}><ArrowLeft className="mr-2 h-4 w-4"/> Back to Dashboard</Button>
                         <div className="flex gap-2">
                              <Button variant="secondary" size="lg" onClick={handleReset} disabled={isSaving}><RotateCcw className="mr-2 h-4 w-4"/>Reset Appearance</Button>
-                             <Button size="lg" onClick={handleSave} disabled>
+                             <Button size="lg" onClick={handleSave} disabled={isSaving}>
                                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4" />}
-                                Save Appearance (Admin Only)
+                                Save Appearance
                              </Button>
                         </div>
                     </div>
@@ -376,7 +375,7 @@ export default function ForgePage() {
                                      <Tabs defaultValue="body" className="w-full h-full flex flex-col">
                                         <TabsList className="grid w-full grid-cols-4">
                                             <TabsTrigger value="body">Body</TabsTrigger>
-                                            <TabsTrigger value="hair">Hairstyle</TabsTrigger>
+                                            <TabsTrigger value="hair">Hair</TabsTrigger>
                                             <TabsTrigger value="hair-color" disabled={!selectedHairstyle}>Color</TabsTrigger>
                                             <TabsTrigger value="armor">Armor</TabsTrigger>
                                         </TabsList>
@@ -460,12 +459,12 @@ export default function ForgePage() {
                                         </ScrollArea>
                                     </Tabs>
                                 </CardContent>
-                                <CardFooter className="mt-auto grid grid-cols-1 gap-2 p-2">
-                                     <Button size="lg" className="h-16" onClick={() => setIsArmoryOpen(true)}>
+                                <CardFooter className="mt-auto flex flex-col gap-2 p-2">
+                                     <Button size="lg" className="h-16 w-full" onClick={() => setIsArmoryOpen(true)}>
                                         <Hammer className="mr-2 h-6 w-6"/>
                                         The Armory
                                      </Button>
-                                     <Card>
+                                     <Card className="w-full">
                                         <CardHeader className="p-2">
                                             <CardTitle className="text-base flex items-center justify-between">
                                                 <span>Active Piece Controls</span>
