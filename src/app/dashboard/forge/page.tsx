@@ -10,7 +10,7 @@ import type { Student } from '@/lib/data';
 import type { ArmorPiece, Hairstyle, BaseBody, ArmorSlot } from '@/lib/forge';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Loader2, RotateCcw, Hammer, Edit, Trash2, Layers, Eye } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, RotateCcw, Hammer, Edit, Trash2, Layers, Eye, Camera } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -22,6 +22,8 @@ import { ArmoryDialog } from '@/components/dashboard/armory-dialog';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
+import html2canvas from 'html2canvas';
+import { saveCustomAvatar } from '@/ai/flows/manage-avatar';
 
 
 const slotZIndex: Record<ArmorSlot, number> = {
@@ -68,6 +70,7 @@ const CharacterCanvas = ({ student, equipment, baseBody, onMouseDown, canvasRef,
             onMouseUp={onMouseUp}
             onMouseLeave={onMouseUp}
             className="relative w-full max-w-[500px] aspect-square"
+            id="character-canvas-container" // ID for html2canvas
         >
             <Image src={baseBody.imageUrl} alt="Base Body" fill className="object-contain" priority />
             
@@ -159,6 +162,7 @@ export default function ForgePage() {
     const [allArmor, setAllArmor] = useState<ArmorPiece[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isSettingAvatar, setIsSettingAvatar] = useState(false);
 
     // Dialog State
     const [isArmoryOpen, setIsArmoryOpen] = useState(false);
@@ -381,6 +385,53 @@ export default function ForgePage() {
         toast({ title: "Appearance Reset", description: "Your canvas has been cleared. Don't forget to save when you're done!"});
     }
 
+    const handleSetCustomAvatar = async () => {
+        if (!canvasRef.current || !teacherUid || !user) return;
+
+        // Force preview mode on for a clean capture
+        if (!isPreviewMode) {
+            setIsPreviewMode(true);
+            // Wait for the DOM to update
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+
+        setIsSettingAvatar(true);
+        try {
+            const canvas = await html2canvas(canvasRef.current, {
+                backgroundColor: null, // Transparent background
+                logging: false,
+                useCORS: true,
+            });
+            const imageDataUrl = canvas.toDataURL('image/png');
+
+            const result = await saveCustomAvatar({
+                teacherUid,
+                studentUid: user.uid,
+                imageDataUrl,
+            });
+            
+            if (result.success) {
+                toast({ title: 'Avatar Set!', description: 'Your custom look is now your main avatar.' });
+                 // Optionally, immediately update the student state if you want faster UI feedback
+                if (result.newAvatarUrl) {
+                    setStudent(prev => prev ? {...prev, avatarUrl: result.newAvatarUrl, useCustomAvatar: true} : null);
+                }
+            } else {
+                throw new Error(result.error || 'Failed to save avatar.');
+            }
+
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Failed to Set Avatar', description: error.message });
+        } finally {
+            setIsSettingAvatar(false);
+            // Revert preview mode if we changed it
+            if (!isPreviewMode) {
+                setIsPreviewMode(false);
+            }
+        }
+    };
+
+
     const selectedHairstyle = hairstyles.find(h => h.id === selectedHairstyleId);
     const ownedArmor = allArmor.filter(armor => student?.ownedArmorIds?.includes(armor.id));
     const armorSlotOrder: ArmorSlot[] = ['head', 'shoulders', 'chest', 'hands', 'legs', 'feet'];
@@ -426,8 +477,8 @@ export default function ForgePage() {
                                 <Hammer className="mr-2 h-4 w-4"/>
                                 The Armory
                              </Button>
-                             <Button variant="secondary" onClick={handleReset} disabled={isSaving}><RotateCcw className="mr-2 h-4 w-4"/>Reset Appearance</Button>
-                             <Button onClick={handleSave} disabled={isSaving}>
+                             <Button variant="secondary" onClick={handleReset} disabled={isSaving || isSettingAvatar}><RotateCcw className="mr-2 h-4 w-4"/>Reset Appearance</Button>
+                             <Button onClick={handleSave} disabled={isSaving || isSettingAvatar}>
                                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4" />}
                                 Save Appearance
                              </Button>
@@ -585,7 +636,10 @@ export default function ForgePage() {
                                 </CardContent>
                             </Card>
                              <Card>
-                                <CardHeader><CardTitle>Controls</CardTitle></CardHeader>
+                                <CardHeader>
+                                    <CardTitle>Controls</CardTitle>
+                                    <CardDescription>Click a piece to adjust its position and scale.</CardDescription>
+                                </CardHeader>
                                 <CardContent className="space-y-6">
                                         {activePiece ? (
                                             <>
@@ -635,9 +689,13 @@ export default function ForgePage() {
                                             <p className="text-sm text-muted-foreground text-center">Select an equipped piece to adjust it.</p>
                                         )}
                                 </CardContent>
-                                 {activePiece && <CardFooter>
+                                 {activePiece && <CardFooter className="flex-col gap-2 items-stretch">
                                     <Button size="sm" variant="outline" onClick={() => setActivePiece(null)} disabled={!activePiece}>
-                                        <Trash2 className="mr-2 h-4 w-4"/> Clear Active Piece
+                                        <X className="mr-2 h-4 w-4"/> Clear Active Piece
+                                    </Button>
+                                    <Button onClick={handleSetCustomAvatar} disabled={isSettingAvatar}>
+                                        {isSettingAvatar ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Camera className="mr-2 h-4 w-4" />}
+                                        Set as Custom Avatar
                                     </Button>
                                 </CardFooter>}
                             </Card>
