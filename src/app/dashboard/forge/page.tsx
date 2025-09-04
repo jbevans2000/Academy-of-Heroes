@@ -90,11 +90,11 @@ const CharacterCanvas = ({ student, equipment, baseBody, onMouseDown, canvasRef,
                 if (!piece) return null;
                 
                 const customTransform = student.armorTransforms?.[piece.id]?.[baseBody!.id];
-                const defaultTransform = piece.transforms?.[baseBody!.id] || { x: 50, y: 50, scale: 25 };
+                const defaultTransform = piece.transforms?.[baseBody!.id] || { x: 50, y: 50, scale: 40 };
                 const transform = customTransform || defaultTransform;
                 
                 const customTransform2 = student.armorTransforms2?.[piece.id]?.[baseBody!.id];
-                const defaultTransform2 = piece.transforms2?.[baseBody!.id] || { x: 50, y: 50, scale: 25 };
+                const defaultTransform2 = piece.transforms2?.[baseBody!.id] || { x: 50, y: 50, scale: 40 };
                 const transform2 = customTransform2 || defaultTransform2;
 
                 const zIndex = slotZIndex[piece.slot] || 1;
@@ -290,7 +290,7 @@ export default function ForgePage() {
                 [activePiece.id]: {
                     ...prev?.[activePiece.id],
                     [selectedBodyId]: {
-                        ...(prev?.[activePiece.id]?.[selectedBodyId] || activePiece.transforms[selectedBodyId] || {x:50, y:50, scale:25}),
+                        ...(prev?.[activePiece.id]?.[selectedBodyId] || activePiece.transforms[selectedBodyId] || {x:50, y:50, scale:40}),
                         [type]: value
                     }
                 }
@@ -302,7 +302,7 @@ export default function ForgePage() {
                 [activePiece.id]: {
                     ...prev?.[activePiece.id],
                     [selectedBodyId]: {
-                        ...(prev?.[activePiece.id]?.[selectedBodyId] || activePiece.transforms2?.[selectedBodyId] || {x:50, y:50, scale:25}),
+                        ...(prev?.[activePiece.id]?.[selectedBodyId] || activePiece.transforms2?.[selectedBodyId] || {x:50, y:50, scale:40}),
                         [key]: value
                     }
                 }
@@ -399,14 +399,14 @@ export default function ForgePage() {
         if (!activePiece || !selectedBodyId) return null;
         return localTransforms?.[activePiece.id]?.[selectedBodyId] 
             || activePiece.transforms?.[selectedBodyId]
-            || { x: 50, y: 50, scale: 25 };
+            || { x: 50, y: 50, scale: 40 };
     }, [activePiece, selectedBodyId, localTransforms]);
     
     const activeSecondaryTransform = useMemo(() => {
         if (!activePiece || !selectedBodyId) return null;
         return localTransforms2?.[activePiece.id]?.[selectedBodyId] 
             || activePiece.transforms2?.[selectedBodyId]
-            || { x: 50, y: 50, scale: 25 };
+            || { x: 50, y: 50, scale: 40 };
     }, [activePiece, selectedBodyId, localTransforms2]);
 
     if (isLoading || !student) {
