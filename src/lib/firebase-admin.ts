@@ -12,7 +12,9 @@ export function getFirebaseAdminApp(): App {
   // When running in a Google Cloud environment (like Cloud Run, App Engine, or
   // Firebase App Hosting), the GOOGLE_APPLICATION_CREDENTIALS environment variable
   // is automatically set. `credential.applicationDefault()` uses these credentials.
-  const app = initializeApp();
+  const app = initializeApp({
+    storageBucket: 'academy-heroes-mziuf.appspot.com',
+  });
 
   return app;
 }
