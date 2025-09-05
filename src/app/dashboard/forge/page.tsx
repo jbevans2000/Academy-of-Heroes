@@ -390,10 +390,12 @@ export default function ForgePage() {
         const canvasElement = canvasRef.current;
         if (!canvasElement || !teacherUid || !user) return;
     
-        // Force preview mode on for a clean capture
+        // Force preview mode on for a clean capture and store the original state
+        const originalPreviewState = isPreviewMode;
         if (!isPreviewMode) {
             setIsPreviewMode(true);
-            await new Promise(resolve => setTimeout(resolve, 50));
+            // Wait for React to re-render in preview mode
+            await new Promise(resolve => setTimeout(resolve, 50)); 
         }
     
         setIsSettingAvatar(true);
@@ -435,11 +437,12 @@ export default function ForgePage() {
             } finally {
                 canvasElement.style.cssText = originalStyle; // Restore original styles
                 setIsSettingAvatar(false);
-                if (!isPreviewMode) {
-                    setIsPreviewMode(false); // Restore preview mode state if it was off initially
+                // Restore original preview mode state
+                if (!originalPreviewState) {
+                    setIsPreviewMode(false); 
                 }
             }
-        }, 50); // Small delay to allow for repaint
+        }, 100); // Increased delay to be safer
     };
 
 
