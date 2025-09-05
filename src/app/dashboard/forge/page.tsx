@@ -76,12 +76,12 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, {
     localArmorTransforms,
     localArmorTransforms2,
 }, ref) => {
-    if (!student || !baseBody) return <Skeleton className="w-full h-full" />;
+    if (!student) return <Skeleton className="w-full h-full" />;
 
     const hairstyle = allHairstyles.find(h => h.id === equipment.hairstyleId);
     const hairstyleColor = equipment.hairstyleColor || hairstyle?.colors[0]?.imageUrl;
     
-    const hairstyleTransform = localHairstyleTransforms?.[baseBody.id] || hairstyle?.transforms?.[baseBody.id] || { x: 50, y: 50, scale: 100 };
+    const hairstyleTransform = localHairstyleTransforms?.[baseBody?.id || ''] || hairstyle?.transforms?.[baseBody?.id || ''] || { x: 50, y: 50, scale: 100 };
     
     const equippedArmorPieces = Object.values(equipment)
         .map(id => allArmor.find(a => a.id === id))
@@ -101,9 +101,9 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, {
             )}
 
             <div className="relative w-full h-full z-10">
-                <Image src={baseBody.imageUrl} alt="Base Body" fill className="object-contain" priority />
+                 {baseBody && <Image src={baseBody.imageUrl} alt="Base Body" fill className="object-contain" priority />}
             
-                {hairstyleColor && hairstyle && (
+                {baseBody && hairstyleColor && hairstyle && (
                     <div
                         onMouseDown={handleHairMouseDown}
                         className={cn(
@@ -123,7 +123,7 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, {
                     </div>
                 )}
                 
-                {equippedArmorPieces.map(piece => {
+                {baseBody && equippedArmorPieces.map(piece => {
                     const customTransform = localArmorTransforms?.[piece.id]?.[baseBody!.id];
                     const defaultTransform = piece.transforms?.[baseBody!.id] || { x: 50, y: 50, scale: 40 };
                     const transform = customTransform || defaultTransform;
@@ -208,7 +208,7 @@ export default function ForgePage() {
 
     // Equipment State
     const [equipment, setEquipment] = useState({
-        bodyId: baseBodyUrls[0]?.id || null,
+        bodyId: null,
         hairstyleId: null,
         hairstyleColor: null,
         backgroundUrl: null,
@@ -262,7 +262,7 @@ export default function ForgePage() {
                 setStudent(studentData);
                 // Initialize equipment state from student data once
                 setEquipment({
-                    bodyId: studentData.equippedBodyId || baseBodyUrls[0]?.id || null,
+                    bodyId: null, // Start with no body selected
                     hairstyleId: studentData.equippedHairstyleId || null,
                     hairstyleColor: studentData.equippedHairstyleColor || null,
                     backgroundUrl: studentData.backgroundUrl || null,
@@ -279,31 +279,40 @@ export default function ForgePage() {
             }
         });
         
-        // Fetch all published hairstyles and armor pieces for the armory
-        const fetchAllCosmetics = async () => {
+        // Fetch all published hairstyles
+        const fetchHairstyles = async () => {
              try {
                 const hairQuery = query(collection(db, 'hairstyles'), where('isPublished', '==', true));
                 const hairSnap = await getDocs(hairQuery);
                 setHairstyles(hairSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hairstyle)));
-
-                const armorQuery = query(collection(db, 'armorPieces'), where('isPublished', '==', true));
-                const armorSnap = await getDocs(armorQuery);
-                const armorData = armorSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ArmorPiece));
-                setAllArmor(armorData);
-                
              } catch (e) {
-                console.error("Error fetching cosmetics:", e);
-                toast({ variant: 'destructive', title: "Error", description: "Could not load cosmetic items." });
+                console.error("Error fetching hairstyles:", e);
+                toast({ variant: 'destructive', title: "Error", description: "Could not load hairstyles." });
              } finally {
                 setIsLoading(false);
              }
         }
         
-        fetchAllCosmetics();
+        fetchAllArmor();
+        fetchHairstyles();
 
         return () => unsubStudent();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user, teacherUid, toast]);
+
+     // Fetch all armor to have it ready for ownership checks and equipping
+    const fetchAllArmor = async () => {
+        if (!teacherUid) return;
+        try {
+            const armorQuery = query(collection(db, 'armorPieces'), where('isPublished', '==', true));
+            const armorSnap = await getDocs(armorQuery);
+            const armorData = armorSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ArmorPiece));
+            setAllArmor(armorData);
+        } catch (e) {
+            console.error("Error fetching all armor:", e);
+            toast({ variant: 'destructive', title: "Error", description: "Could not load armory items." });
+        }
+    };
 
     // Derived state for owned armor
     useEffect(() => {
@@ -317,10 +326,6 @@ export default function ForgePage() {
     const handleBodySelect = (bodyId: string) => {
         setEquipment(prev => ({...prev, bodyId}));
         setActivePiece(null);
-        // Reset local transforms when body changes to ensure a fresh canvas
-        setLocalTransforms({});
-        setLocalTransforms2({});
-        setLocalHairstyleTransforms({});
     }
     
     const handleEquipItem = (item: ArmorPiece | Hairstyle) => {
@@ -454,6 +459,7 @@ export default function ForgePage() {
     const handleUnequipAll = () => {
         setEquipment(prev => ({
             ...prev,
+            bodyId: null, // Clear the body as well
             hairstyleId: null, hairstyleColor: null,
             headId: null, shouldersId: null, chestId: null, handsId: null, legsId: null, feetId: null,
         }));
