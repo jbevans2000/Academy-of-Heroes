@@ -36,6 +36,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Separator } from '@/components/ui/separator';
 
 
 const slotZIndex: Record<ArmorSlot, number> = {
@@ -796,7 +797,7 @@ export default function ForgePage() {
                                                 {/* Equipped Pieces Section */}
                                                  <div className="space-y-2">
                                                      <h4 className="font-semibold border-b pb-1">Equipped</h4>
-                                                     {(equippedPieces.length === 0) && <p className="text-sm text-muted-foreground">No items equipped.</p>}
+                                                     {equippedPieces.length === 0 && <p className="text-sm text-muted-foreground">No items equipped.</p>}
                                                      {equippedPieces.map(piece => (
                                                          <div key={piece.id} className={cn("flex items-center justify-between p-2 rounded-md", piece.id === activePiece?.id && !isPreviewMode ? 'bg-primary/20' : 'bg-secondary')}>
                                                              <span className="font-semibold text-sm truncate">{'styleName' in piece ? piece.styleName : piece.name}</span>
@@ -857,4 +858,3 @@ export default function ForgePage() {
         </div>
     );
 }
-
