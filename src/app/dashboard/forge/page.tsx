@@ -483,7 +483,7 @@ export default function ForgePage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Avatar Set!</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Your custom look is now your main avatar! You may have to reload your dashboard page 2-3 times for your changes to take effect!
+                           Your custom look is now your main avatar! It may take several seconds for your new custom avatar image to load!
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
