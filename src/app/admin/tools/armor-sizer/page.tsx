@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
-import { doc, getDoc, collection, onSnapshot, updateDoc } from 'firestore';
+import { doc, getDoc, collection, onSnapshot, updateDoc } from 'firebase/firestore';
 import type { ArmorPiece, ArmorSlot } from '@/lib/forge';
 import { baseBodyUrls } from '@/lib/forge'; // Import from centralized location
 import { TeacherHeader } from '@/components/teacher/teacher-header';
@@ -389,3 +389,4 @@ export default function ArmorSizerPage() {
         </div>
     );
 }
+
