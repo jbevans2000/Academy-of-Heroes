@@ -154,13 +154,13 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, {
                     const zIndex = slotZIndex[piece.slot] || 1;
                     const isActive = piece.id === activePieceId;
 
-                    const handleMouseDown = onMouseDown ? (e: React.MouseEvent<HTMLDivElement>) => onMouseDown(e, piece, 'primary') : undefined;
-                    const handleMouseDown2 = onMouseDown ? (e: React.MouseEvent<HTMLDivElement>) => onMouseDown(e, piece, 'secondary') : undefined;
+                    const handleMouseDownPrimary = onMouseDown ? (e: React.MouseEvent<HTMLDivElement>) => onMouseDown(e, piece, 'primary') : undefined;
+                    const handleMouseDownSecondary = onMouseDown ? (e: React.MouseEvent<HTMLDivElement>) => onMouseDown(e, piece, 'secondary') : undefined;
 
                     return (
                         <React.Fragment key={piece.id}>
                             <div
-                                onMouseDown={handleMouseDown}
+                                onMouseDown={handleMouseDownPrimary}
                                 className={cn(
                                     "absolute pointer-events-auto",
                                     isPreviewMode ? "cursor-default" : "cursor-move",
@@ -178,7 +178,7 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, {
                             </div>
                             {piece.modularImageUrl2 && (
                                 <div
-                                    onMouseDown={handleMouseDown2}
+                                    onMouseDown={handleMouseDownSecondary}
                                     className={cn(
                                         "absolute pointer-events-auto",
                                         isPreviewMode ? "cursor-default" : "cursor-move",
