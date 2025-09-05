@@ -29,7 +29,8 @@ export async function saveCustomAvatar(input: SaveAvatarInput): Promise<ActionRe
   try {
     const adminApp = getFirebaseAdminApp();
     const storage = getStorage(adminApp);
-    const bucket = storage.bucket();
+    // Explicitly specify the bucket name you found.
+    const bucket = storage.bucket('academy-heroes-mziuf.firebasestorage.app');
     
     // Convert data URL to a buffer
     const base64Data = imageDataUrl.split(',')[1];
