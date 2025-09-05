@@ -1,5 +1,5 @@
 
-import { initializeApp, getApp, getApps, type App } from 'firebase-admin/app';
+import { initializeApp, getApp, getApps, type App, applicationDefault } from 'firebase-admin/app';
 
 // It's safe to call this multiple times; it will return the existing app instance
 // on subsequent calls.
@@ -9,7 +9,10 @@ export function getFirebaseAdminApp(): App {
   }
 
   // Use the simplest initialization. The environment should provide the credentials.
-  const app = initializeApp();
+  const app = initializeApp({
+    credential: applicationDefault(),
+    storageBucket: 'academy-heroes-mziuf.firebasestorage.app'
+  });
 
   return app;
 }
