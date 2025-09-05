@@ -11,7 +11,7 @@ import type { Student } from '@/lib/data';
 import type { ArmorPiece, Hairstyle, BaseBody, ArmorSlot } from '@/lib/forge';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Loader2, RotateCcw, Hammer, Edit, Trash2, Layers, Eye, Camera, X, Shirt, ArrowRight, Scissors, ChevronsRight, ChevronsLeft } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Hammer, Layers, Eye, Camera, X, Shirt, ArrowRight, Scissors, ChevronsRight, ChevronsLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -36,7 +36,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
@@ -73,27 +72,40 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, {
     student: Student | null;
     equipment: any;
     baseBody: BaseBody | null;
+    allHairstyles: Hairstyle[];
+    allArmor: ArmorPiece[];
     onMouseDown?: (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece | Hairstyle, layer: 'primary' | 'secondary') => void;
     activePieceId: string | null;
     editingLayer: 'primary' | 'secondary';
     isPreviewMode: boolean;
-    backgroundUrl: string | null;
-}>(({ student, equipment, baseBody, onMouseDown, activePieceId, editingLayer, isPreviewMode, backgroundUrl }, ref) => {
+    localHairstyleTransforms: Student['equippedHairstyleTransforms'];
+    localArmorTransforms: Student['armorTransforms'];
+    localArmorTransforms2: Student['armorTransforms2'];
+}>(({ 
+    student, 
+    equipment, 
+    baseBody, 
+    allHairstyles,
+    allArmor,
+    onMouseDown, 
+    activePieceId, 
+    editingLayer, 
+    isPreviewMode,
+    localHairstyleTransforms,
+    localArmorTransforms,
+    localArmorTransforms2,
+}, ref) => {
     if (!student || !baseBody) return <Skeleton className="w-full h-full" />;
 
-    const hairstyle = equipment.hairstyle as Hairstyle | null;
+    const hairstyle = allHairstyles.find(h => h.id === equipment.hairstyleId);
     const hairstyleColor = equipment.hairstyleColor || hairstyle?.colors[0]?.imageUrl;
-
-    const hairstyleTransform = equipment.hairstyleTransforms?.[baseBody.id] || hairstyle?.transforms?.[baseBody.id] || { x: 50, y: 50, scale: 100 };
     
-    const equippedArmor: ArmorPiece[] = [
-        equipment.head,
-        equipment.shoulders,
-        equipment.chest,
-        equipment.hands,
-        equipment.legs,
-        equipment.feet,
-    ].filter(Boolean);
+    const hairstyleTransform = localHairstyleTransforms?.[baseBody.id] || hairstyle?.transforms?.[baseBody.id] || { x: 50, y: 50, scale: 100 };
+    
+    const equippedArmorPieces = Object.values(equipment)
+        .map(id => allArmor.find(a => a.id === id))
+        .filter((p): p is ArmorPiece => !!p);
+
 
     const handleHairMouseDown = onMouseDown && hairstyle ? (e: React.MouseEvent<HTMLDivElement>) => onMouseDown(e, hairstyle, 'primary') : undefined;
 
@@ -103,8 +115,8 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, {
             className="relative w-full h-full shadow-inner overflow-hidden"
             id="character-canvas-container" // ID for html-to-image
         >
-            {backgroundUrl && (
-                <Image src={backgroundUrl} alt="Selected Background" fill className="object-cover z-0" />
+            {equipment.backgroundUrl && (
+                <Image src={equipment.backgroundUrl} alt="Selected Background" fill className="object-cover z-0" />
             )}
 
             <div className="relative w-full h-full z-10">
@@ -130,15 +142,13 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, {
                     </div>
                 )}
                 
-                {equippedArmor.map(piece => {
-                    if (!piece) return null;
-                    
-                    const customTransform = student.armorTransforms?.[piece.id]?.[baseBody!.id];
+                {equippedArmorPieces.map(piece => {
+                    const customTransform = localArmorTransforms?.[piece.id]?.[baseBody!.id];
                     const firstAvailableDefaultTransform = piece.transforms ? Object.values(piece.transforms)[0] : null;
                     const defaultTransform = piece.transforms?.[baseBody!.id] || firstAvailableDefaultTransform || { x: 50, y: 50, scale: 40 };
                     const transform = customTransform || defaultTransform;
                     
-                    const customTransform2 = student.armorTransforms2?.[piece.id]?.[baseBody!.id];
+                    const customTransform2 = localArmorTransforms2?.[piece.id]?.[baseBody!.id];
                     const firstAvailableDefaultTransform2 = piece.transforms2 ? Object.values(piece.transforms2)[0] : null;
                     const defaultTransform2 = piece.transforms2?.[baseBody!.id] || firstAvailableDefaultTransform2 || { x: 50, y: 50, scale: 40 };
                     const transform2 = customTransform2 || defaultTransform2;
@@ -217,16 +227,18 @@ export default function ForgePage() {
     const [isAvatarSetDialogOpen, setIsAvatarSetDialogOpen] = useState(false);
 
     // Equipment State
-    const [selectedBodyId, setSelectedBodyId] = useState<string | null>(null);
-    const [selectedHairstyleId, setSelectedHairstyleId] = useState<string | null>(null);
-    const [selectedHairstyleColor, setSelectedHairstyleColor] = useState<string | null>(null);
-    const [selectedHead, setSelectedHead] = useState<ArmorPiece | null>(null);
-    const [selectedShoulders, setSelectedShoulders] = useState<ArmorPiece | null>(null);
-    const [selectedChest, setSelectedChest] = useState<ArmorPiece | null>(null);
-    const [selectedHands, setSelectedHands] = useState<ArmorPiece | null>(null);
-    const [selectedLegs, setSelectedLegs] = useState<ArmorPiece | null>(null);
-    const [selectedFeet, setSelectedFeet] = useState<ArmorPiece | null>(null);
-    const [selectedBackgroundUrl, setSelectedBackgroundUrl] = useState<string | null>(null);
+    const [equipment, setEquipment] = useState({
+        bodyId: baseBodyUrls[0]?.id || null,
+        hairstyleId: null,
+        hairstyleColor: null,
+        backgroundUrl: null,
+        headId: null,
+        shouldersId: null,
+        chestId: null,
+        handsId: null,
+        legsId: null,
+        feetId: null,
+    });
     
     // Sizer state
     const [activePiece, setActivePiece] = useState<ArmorPiece | Hairstyle | null>(null);
@@ -268,16 +280,22 @@ export default function ForgePage() {
             if (doc.exists()) {
                 const studentData = { uid: doc.id, ...doc.data() } as Student;
                 setStudent(studentData);
-                // Initialize local transforms only if they haven't been touched yet in the session
-                if (Object.keys(localTransforms).length === 0) {
-                    setLocalTransforms(studentData.armorTransforms || {});
-                }
-                if (Object.keys(localTransforms2).length === 0) {
-                    setLocalTransforms2(studentData.armorTransforms2 || {});
-                }
-                 if (Object.keys(localHairstyleTransforms).length === 0) {
-                    setLocalHairstyleTransforms(studentData.equippedHairstyleTransforms || {});
-                }
+                // Initialize equipment and transforms state from student data once
+                setEquipment({
+                    bodyId: studentData.equippedBodyId || baseBodyUrls[0]?.id || null,
+                    hairstyleId: studentData.equippedHairstyleId || null,
+                    hairstyleColor: studentData.equippedHairstyleColor || null,
+                    backgroundUrl: studentData.backgroundUrl || null,
+                    headId: studentData.equippedHeadId || null,
+                    shouldersId: studentData.equippedShouldersId || null,
+                    chestId: studentData.equippedChestId || null,
+                    handsId: studentData.equippedHandsId || null,
+                    legsId: studentData.equippedLegsId || null,
+                    feetId: studentData.equippedFeetId || null,
+                });
+                setLocalTransforms(studentData.armorTransforms || {});
+                setLocalTransforms2(studentData.armorTransforms2 || {});
+                setLocalHairstyleTransforms(studentData.equippedHairstyleTransforms || {});
             }
         });
         
@@ -306,64 +324,35 @@ export default function ForgePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user, teacherUid, toast]);
     
-    const setInitialEquipment = useCallback(() => {
-        if (student && allArmor.length > 0 && baseBodyUrls.length > 0) {
-            setSelectedBodyId(student.equippedBodyId || baseBodyUrls[0]?.id || null);
-            setSelectedHairstyleId(student.equippedHairstyleId || null);
-            setSelectedHairstyleColor(student.equippedHairstyleColor || null);
-            setSelectedBackgroundUrl(student.backgroundUrl || null);
-            setSelectedHead(allArmor.find(a => a.id === student.equippedHeadId) || null);
-            setSelectedShoulders(allArmor.find(a => a.id === student.equippedShouldersId) || null);
-            setSelectedChest(allArmor.find(a => a.id === student.equippedChestId) || null);
-            setSelectedHands(allArmor.find(a => a.id === student.equippedHandsId) || null);
-            setSelectedLegs(allArmor.find(a => a.id === student.equippedLegsId) || null);
-            setSelectedFeet(allArmor.find(a => a.id === student.equippedFeetId) || null);
-            setLocalTransforms(student.armorTransforms || {});
-            setLocalTransforms2(student.armorTransforms2 || {});
-            setLocalHairstyleTransforms(student.equippedHairstyleTransforms || {});
-        }
-    }, [student, allArmor]);
-
-    useEffect(() => {
-        setInitialEquipment();
-    }, [setInitialEquipment]);
-
-    const handleEquipArmor = (piece: ArmorPiece) => {
-        const equipLogic = (prev: ArmorPiece | null) => prev?.id === piece.id ? null : piece;
-        switch (piece.slot) {
-            case 'head': setSelectedHead(equipLogic); break;
-            case 'shoulders': setSelectedShoulders(equipLogic); break;
-            case 'chest': setSelectedChest(equipLogic); break;
-            case 'hands': setSelectedHands(equipLogic); break;
-            case 'legs': setSelectedLegs(equipLogic); break;
-            case 'feet': setSelectedFeet(equipLogic); break;
-        }
-    };
-
-    const handleEquipHairstyle = (hair: Hairstyle) => {
-        if (selectedHairstyleId === hair.id) {
-            setSelectedHairstyleId(null);
-            setSelectedHairstyleColor(null);
-            if (activePiece?.id === hair.id) {
-                setActivePiece(null);
+    const handleEquipItem = (item: ArmorPiece | Hairstyle) => {
+        if ('slot' in item) { // It's an ArmorPiece
+            const slotKey = `${item.slot}Id` as keyof typeof equipment;
+            setEquipment(prev => ({
+                ...prev,
+                [slotKey]: prev[slotKey] === item.id ? null : item.id
+            }));
+        } else { // It's a Hairstyle
+            if (equipment.hairstyleId === item.id) {
+                setEquipment(prev => ({...prev, hairstyleId: null, hairstyleColor: null}));
+                if (activePiece?.id === item.id) setActivePiece(null);
+            } else {
+                setEquipment(prev => ({...prev, hairstyleId: item.id, hairstyleColor: item.colors?.[0]?.imageUrl || null}));
             }
-        } else {
-            setSelectedHairstyleId(hair.id);
-            setSelectedHairstyleColor(hair.colors?.[0]?.imageUrl || null);
         }
     };
     
     const handleSliderChange = (type: 'x' | 'y' | 'scale', value: number) => {
-        if (!activePiece || !selectedBodyId) return;
+        if (!activePiece || !equipment.bodyId) return;
 
         if ('slot' in activePiece) { // It's an ArmorPiece
+            const bodyId = equipment.bodyId;
             if (editingLayer === 'primary') {
                 setLocalTransforms(prev => ({
                     ...prev,
                     [activePiece.id]: {
                         ...prev?.[activePiece.id],
-                        [selectedBodyId]: {
-                            ...(prev?.[activePiece.id]?.[selectedBodyId] || activePiece.transforms?.[selectedBodyId] || {x:50, y:50, scale:40}),
+                        [bodyId]: {
+                            ...(prev?.[activePiece.id]?.[bodyId] || activePiece.transforms?.[bodyId] || {x:50, y:50, scale:40}),
                             [type]: value
                         }
                     }
@@ -373,8 +362,8 @@ export default function ForgePage() {
                     ...prev,
                     [activePiece.id]: {
                         ...prev?.[activePiece.id],
-                        [selectedBodyId]: {
-                            ...(prev?.[activePiece.id]?.[selectedBodyId] || activePiece.transforms2?.[selectedBodyId] || {x:50, y:50, scale:40}),
+                        [bodyId]: {
+                            ...(prev?.[activePiece.id]?.[bodyId] || activePiece.transforms2?.[bodyId] || {x:50, y:50, scale:40}),
                             [type]: value
                         }
                     }
@@ -383,8 +372,8 @@ export default function ForgePage() {
         } else { // It's a Hairstyle
              setLocalHairstyleTransforms(prev => ({
                  ...prev,
-                 [selectedBodyId]: {
-                     ...(prev?.[selectedBodyId] || activePiece.transforms?.[selectedBodyId] || {x:50, y:50, scale:100}),
+                 [equipment.bodyId!]: {
+                     ...(prev?.[equipment.bodyId!] || activePiece.transforms?.[equipment.bodyId!] || {x:50, y:50, scale:100}),
                      [type]: value,
                  }
              }));
@@ -392,9 +381,7 @@ export default function ForgePage() {
     };
     
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece | Hairstyle, layer: 'primary' | 'secondary') => {
-        if (isPreviewMode) {
-            setIsPreviewMode(false);
-        }
+        if (isPreviewMode) setIsPreviewMode(false);
         e.preventDefault();
         e.stopPropagation();
         setActivePiece(piece);
@@ -421,17 +408,17 @@ export default function ForgePage() {
         try {
             const studentRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
             await updateDoc(studentRef, {
-                equippedBodyId: selectedBodyId,
-                equippedHairstyleId: selectedHairstyleId,
-                equippedHairstyleColor: selectedHairstyleColor,
+                equippedBodyId: equipment.bodyId,
+                equippedHairstyleId: equipment.hairstyleId,
+                equippedHairstyleColor: equipment.hairstyleColor,
                 equippedHairstyleTransforms: localHairstyleTransforms,
-                backgroundUrl: selectedBackgroundUrl,
-                equippedHeadId: selectedHead?.id || '',
-                equippedShouldersId: selectedShoulders?.id || '',
-                equippedChestId: selectedChest?.id || '',
-                equippedHandsId: selectedHands?.id || '',
-                equippedLegsId: selectedLegs?.id || '',
-                equippedFeetId: selectedFeet?.id || '',
+                backgroundUrl: equipment.backgroundUrl,
+                equippedHeadId: equipment.headId,
+                equippedShouldersId: equipment.shouldersId,
+                equippedChestId: equipment.chestId,
+                equippedHandsId: equipment.handsId,
+                equippedLegsId: equipment.legsId,
+                equippedFeetId: equipment.feetId,
                 armorTransforms: localTransforms,
                 armorTransforms2: localTransforms2,
             });
@@ -445,34 +432,26 @@ export default function ForgePage() {
         }
     };
 
-    const handleReset = () => {
-        setInitialEquipment();
-        toast({ title: "Appearance Reset", description: "Your canvas has reverted to your last saved appearance."});
-    };
-
     const handleUnequipAll = () => {
-        setSelectedHead(null);
-        setSelectedShoulders(null);
-        setSelectedChest(null);
-        setSelectedHands(null);
-        setSelectedLegs(null);
-        setSelectedFeet(null);
-        setSelectedHairstyleId(null);
-        setSelectedHairstyleColor(null);
+        setEquipment(prev => ({
+            ...prev,
+            hairstyleId: null, hairstyleColor: null,
+            headId: null, shouldersId: null, chestId: null, handsId: null, legsId: null, feetId: null,
+        }));
         setActivePiece(null);
         toast({ title: "Appearance Cleared", description: "All armor and hairstyle have been removed."});
     };
 
     const handleBodyCycle = (direction: 'next' | 'prev') => {
-        if (baseBodyUrls.length === 0 || !selectedBodyId) return;
-        const currentIndex = baseBodyUrls.findIndex(b => b.id === selectedBodyId);
+        if (baseBodyUrls.length === 0 || !equipment.bodyId) return;
+        const currentIndex = baseBodyUrls.findIndex(b => b.id === equipment.bodyId);
         let nextIndex;
         if (direction === 'next') {
             nextIndex = (currentIndex + 1) % baseBodyUrls.length;
         } else {
             nextIndex = (currentIndex - 1 + baseBodyUrls.length) % baseBodyUrls.length;
         }
-        setSelectedBodyId(baseBodyUrls[nextIndex].id);
+        setEquipment(prev => ({...prev, bodyId: baseBodyUrls[nextIndex].id}));
     };
 
     const handleSetCustomAvatar = async () => {
@@ -521,7 +500,6 @@ export default function ForgePage() {
     }
 
 
-    const selectedHairstyle = hairstyles.find(h => h.id === selectedHairstyleId);
     const ownedArmor = allArmor.filter(armor => student?.ownedArmorIds?.includes(armor.id));
     const armorSlotOrder: ArmorSlot[] = ['head', 'shoulders', 'chest', 'hands', 'legs', 'feet'];
 
@@ -536,17 +514,15 @@ export default function ForgePage() {
     }, [ownedArmor]);
     
     const activeTransform = useMemo(() => {
-        if (!activePiece || !selectedBodyId) return null;
+        if (!activePiece || !equipment.bodyId) return null;
         if ('slot' in activePiece) { // Armor
-            if (editingLayer === 'primary') {
-                return localTransforms?.[activePiece.id]?.[selectedBodyId] || activePiece.transforms?.[selectedBodyId] || { x: 50, y: 50, scale: 40 };
-            } else {
-                return localTransforms2?.[activePiece.id]?.[selectedBodyId] || activePiece.transforms2?.[selectedBodyId] || { x: 50, y: 50, scale: 40 };
-            }
+            const armorTransforms = editingLayer === 'primary' ? localTransforms : localTransforms2;
+            const defaultTransforms = editingLayer === 'primary' ? activePiece.transforms : activePiece.transforms2;
+            return armorTransforms?.[activePiece.id]?.[equipment.bodyId] || defaultTransforms?.[equipment.bodyId] || { x: 50, y: 50, scale: 40 };
         } else { // Hairstyle
-            return localHairstyleTransforms?.[selectedBodyId] || activePiece.transforms?.[selectedBodyId] || { x: 50, y: 50, scale: 100 };
+            return localHairstyleTransforms?.[equipment.bodyId] || activePiece.transforms?.[equipment.bodyId] || { x: 50, y: 50, scale: 100 };
         }
-    }, [activePiece, selectedBodyId, localTransforms, localTransforms2, localHairstyleTransforms, editingLayer]);
+    }, [activePiece, equipment.bodyId, localTransforms, localTransforms2, localHairstyleTransforms, editingLayer]);
     
     if (isLoading || !student) {
         return <div className="flex items-center justify-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>
@@ -623,7 +599,7 @@ export default function ForgePage() {
                                         <TabsList className="grid w-full grid-cols-4">
                                             <TabsTrigger value="body">Body</TabsTrigger>
                                             <TabsTrigger value="hair">Hair</TabsTrigger>
-                                            <TabsTrigger value="hair-color" disabled={!selectedHairstyleId}>Color</TabsTrigger>
+                                            <TabsTrigger value="hair-color" disabled={!equipment.hairstyleId}>Color</TabsTrigger>
                                             <TabsTrigger value="armor">Armor</TabsTrigger>
                                         </TabsList>
                                         <ScrollArea className="flex-grow mt-4 max-h-[65vh]">
@@ -632,8 +608,8 @@ export default function ForgePage() {
                                                     {baseBodyUrls.map(item => (
                                                         <Card 
                                                             key={item.id} 
-                                                            className={cn( "cursor-pointer hover:border-primary", selectedBodyId === item.id && "border-2 border-primary" )}
-                                                            onClick={() => setSelectedBodyId(item.id)} >
+                                                            className={cn( "cursor-pointer hover:border-primary", equipment.bodyId === item.id && "border-2 border-primary" )}
+                                                            onClick={() => setEquipment(prev => ({ ...prev, bodyId: item.id }))} >
                                                             <CardContent className="p-1 aspect-square">
                                                                 <Image src={item.imageUrl} alt={item.name} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
                                                             </CardContent>
@@ -646,8 +622,8 @@ export default function ForgePage() {
                                                     {hairstyles.map(item => (
                                                         <Card 
                                                             key={item.id} 
-                                                            className={cn( "cursor-pointer hover:border-primary", selectedHairstyleId === item.id && "border-2 border-primary" )}
-                                                            onClick={() => handleEquipHairstyle(item)}
+                                                            className={cn( "cursor-pointer hover:border-primary", equipment.hairstyleId === item.id && "border-2 border-primary" )}
+                                                            onClick={() => handleEquipItem(item)}
                                                         >
                                                             <CardContent className="p-1 aspect-square">
                                                                 <Image src={item.baseImageUrl} alt={item.styleName} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
@@ -657,13 +633,13 @@ export default function ForgePage() {
                                                 </div>
                                             </TabsContent>
                                             <TabsContent value="hair-color" className="p-1">
-                                                {selectedHairstyle && (
+                                                {hairstyles.find(h => h.id === equipment.hairstyleId) && (
                                                     <div className="grid grid-cols-5 gap-2">
-                                                        {selectedHairstyle.colors.map((color, index) => (
+                                                        {hairstyles.find(h => h.id === equipment.hairstyleId)!.colors.map((color, index) => (
                                                             <div 
                                                                 key={index} 
-                                                                className={cn("h-16 w-16 rounded-md border-2 cursor-pointer", selectedHairstyleColor === color.imageUrl ? "border-primary ring-2 ring-primary" : "border-transparent")}
-                                                                onClick={() => setSelectedHairstyleColor(color.imageUrl)} >
+                                                                className={cn("h-16 w-16 rounded-md border-2 cursor-pointer", equipment.hairstyleColor === color.imageUrl ? "border-primary ring-2 ring-primary" : "border-transparent")}
+                                                                onClick={() => setEquipment(prev => ({...prev, hairstyleColor: color.imageUrl}))} >
                                                                 <Image src={color.imageUrl} alt={`Color ${index+1}`} width={64} height={64} className="w-full h-full object-contain rounded-sm bg-secondary" />
                                                             </div>
                                                         ))}
@@ -679,12 +655,13 @@ export default function ForgePage() {
                                                                 <p className="text-muted-foreground text-sm col-span-3 text-center py-2">No items owned for this slot.</p>
                                                             ) : (
                                                                 armorBySlot[slot].map(item => {
-                                                                    const isEquipped = item.id === selectedHead?.id || item.id === selectedShoulders?.id || item.id === selectedChest?.id || item.id === selectedHands?.id || item.id === selectedLegs?.id || item.id === selectedFeet?.id;
+                                                                    const slotKey = `${item.slot}Id` as keyof typeof equipment;
+                                                                    const isEquipped = equipment[slotKey] === item.id;
                                                                     return (
                                                                         <Card 
                                                                             key={item.id} 
                                                                             className={cn("cursor-pointer hover:border-primary", isEquipped && "border-2 border-primary")}
-                                                                            onClick={() => handleEquipArmor(item)} >
+                                                                            onClick={() => handleEquipItem(item)} >
                                                                             <CardContent className="p-1 aspect-square">
                                                                                 <Image src={item.imageUrl} alt={item.name} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
                                                                             </CardContent>
@@ -700,7 +677,7 @@ export default function ForgePage() {
                                     </Tabs>
                                 </CardContent>
                             </Card>
-                             <Card>
+                            <Card>
                                 <CardHeader><CardTitle>Backgrounds</CardTitle></CardHeader>
                                 <CardContent>
                                     <div className="grid grid-cols-3 gap-2">
@@ -719,9 +696,9 @@ export default function ForgePage() {
                                                 key={i} 
                                                 className={cn(
                                                     "border-2 p-1 rounded-md cursor-pointer hover:border-primary",
-                                                    selectedBackgroundUrl === url && "border-primary ring-2 ring-primary"
+                                                    equipment.backgroundUrl === url && "border-primary ring-2 ring-primary"
                                                 )}
-                                                onClick={() => setSelectedBackgroundUrl(url)}
+                                                onClick={() => setEquipment(prev => ({...prev, backgroundUrl: url}))}
                                             >
                                                 <Image src={url} alt={`Background ${i+1}`} width={100} height={100} className="w-full h-auto object-cover bg-gray-200 rounded-sm" data-ai-hint="fantasy background" />
                                             </div>
@@ -737,24 +714,18 @@ export default function ForgePage() {
                                 className="relative w-full aspect-square bg-gray-700 rounded-lg p-2"
                             >
                                 <CharacterCanvas 
-                                    student={{...student, equippedHairstyleTransforms: localHairstyleTransforms, armorTransforms: localTransforms, armorTransforms2: localTransforms2}}
-                                    baseBody={baseBodyUrls.find(b => b.id === selectedBodyId) || null}
-                                    equipment={{ 
-                                        hairstyle: selectedHairstyle, 
-                                        hairstyleColor: selectedHairstyleColor,
-                                        hairstyleTransforms: localHairstyleTransforms,
-                                        head: selectedHead,
-                                        shoulders: selectedShoulders,
-                                        chest: selectedChest,
-                                        hands: selectedHands,
-                                        legs: selectedLegs,
-                                        feet: selectedFeet,
-                                    }}
+                                    student={student}
+                                    baseBody={baseBodyUrls.find(b => b.id === equipment.bodyId) || null}
+                                    equipment={equipment}
+                                    allHairstyles={hairstyles}
+                                    allArmor={allArmor}
                                     onMouseDown={handleMouseDown}
                                     activePieceId={activePiece?.id || null}
                                     editingLayer={editingLayer}
                                     isPreviewMode={isPreviewMode}
-                                    backgroundUrl={selectedBackgroundUrl}
+                                    localHairstyleTransforms={localHairstyleTransforms}
+                                    localArmorTransforms={localTransforms}
+                                    localArmorTransforms2={localTransforms2}
                                 />
                                  <Collapsible
                                     open={isControlsOpen}
@@ -812,7 +783,7 @@ export default function ForgePage() {
                                                 </CardContent>
                                             </ScrollArea>
                                             <CardFooter className="flex-col gap-2 items-stretch p-2">
-                                                 <Button variant="outline" size="sm" onClick={handleUnequipAll}>Unequip All</Button>
+                                                <Button variant="outline" size="sm" onClick={handleUnequipAll}>Unequip All</Button>
                                                 <Button onClick={handleSetCustomAvatar} disabled={isSettingAvatar}>
                                                     {isSettingAvatar ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Camera className="mr-2 h-4 w-4" />}
                                                     Set as Custom Avatar
@@ -826,7 +797,7 @@ export default function ForgePage() {
                                 <Button variant="outline" onClick={() => handleBodyCycle('prev')}>
                                     <ArrowLeft className="h-5 w-5" />
                                 </Button>
-                                <span className="font-semibold">{baseBodyUrls.find(b => b.id === selectedBodyId)?.name || 'Body Type'}</span>
+                                <span className="font-semibold">{baseBodyUrls.find(b => b.id === equipment.bodyId)?.name || 'Body Type'}</span>
                                 <Button variant="outline" onClick={() => handleBodyCycle('next')}>
                                     <ArrowRight className="h-5 w-5" />
                                 </Button>
@@ -838,4 +809,3 @@ export default function ForgePage() {
         </div>
     );
 }
-
