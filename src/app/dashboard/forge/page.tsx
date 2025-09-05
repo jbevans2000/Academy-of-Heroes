@@ -322,6 +322,15 @@ export default function ForgePage() {
         return () => unsubStudent();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user, teacherUid, toast]);
+
+    const handleBodySelect = (bodyId: string) => {
+        setEquipment(prev => ({...prev, bodyId}));
+        // Reset transforms when a new body is selected
+        setLocalTransforms({});
+        setLocalTransforms2({});
+        setLocalHairstyleTransforms({});
+        setActivePiece(null);
+    }
     
     const handleEquipItem = (item: ArmorPiece | Hairstyle) => {
         if ('slot' in item) { // It's an ArmorPiece
@@ -473,7 +482,7 @@ export default function ForgePage() {
         } else {
             nextIndex = (currentIndex - 1 + baseBodyUrls.length) % baseBodyUrls.length;
         }
-        setEquipment(prev => ({...prev, bodyId: baseBodyUrls[nextIndex].id}));
+        handleBodySelect(baseBodyUrls[nextIndex].id);
     };
 
     const handleSetCustomAvatar = async () => {
@@ -651,7 +660,7 @@ export default function ForgePage() {
                                                         <Card 
                                                             key={item.id} 
                                                             className={cn( "cursor-pointer hover:border-primary", equipment.bodyId === item.id && "border-2 border-primary" )}
-                                                            onClick={() => setEquipment(prev => ({ ...prev, bodyId: item.id }))} >
+                                                            onClick={() => handleBodySelect(item.id)} >
                                                             <CardContent className="p-1 aspect-square">
                                                                 <Image src={item.imageUrl} alt={item.name} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
                                                             </CardContent>
