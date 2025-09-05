@@ -298,7 +298,7 @@ export default function ForgePage() {
                 [activePiece.id]: {
                     ...prev?.[activePiece.id],
                     [selectedBodyId]: {
-                        ...(prev?.[activePiece.id]?.[selectedBodyId] || activePiece.transforms[selectedBodyId] || {x:50, y:50, scale:40}),
+                        ...(prev?.[activePiece.id]?.[selectedBodyId] || activePiece.transforms?.[selectedBodyId] || {x:50, y:50, scale:40}),
                         [type]: value
                     }
                 }
@@ -363,6 +363,7 @@ export default function ForgePage() {
                 armorTransforms2: localTransforms2,
             });
             toast({ title: "Appearance Saved!", description: "Your hero's new look has been saved." });
+            setIsPreviewMode(true); // Automatically turn on preview mode
         } catch (error) {
             console.error("Error saving appearance:", error);
             toast({ variant: 'destructive', title: "Save Failed", description: "Could not save your new look." });
