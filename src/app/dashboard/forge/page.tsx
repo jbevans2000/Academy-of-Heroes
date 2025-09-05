@@ -342,65 +342,63 @@ export default function ForgePage() {
         }
     };
     
-    const handleSliderChange = (type: 'x' | 'y' | 'scale', value: number) => {
+    const handleSliderChange = (type: 'x' | 'y' | 'scale' | 'slider', value: number) => {
         if (!activePiece || !equipment.bodyId) return;
-        
+
         const bodyId = equipment.bodyId;
 
-        if ('slot' in activePiece) { // It's an ArmorPiece
-            const isPrimary = editingLayer === 'primary';
-            const stateSetter = isPrimary ? setLocalTransforms : setLocalTransforms2;
-            const currentTransforms = isPrimary ? localTransforms : localTransforms2;
-            const defaultTransforms = isPrimary ? activePiece.transforms : activePiece.transforms2;
+        const getBaseScale = () => {
+            if ('slot' in activePiece) {
+                const defaultTransforms = editingLayer === 'primary' ? activePiece.transforms : activePiece.transforms2;
+                return defaultTransforms?.[bodyId]?.scale || (Object.values(defaultTransforms || {})[0]?.scale || 40);
+            } else {
+                 return activePiece.transforms?.[bodyId]?.scale || (Object.values(activePiece.transforms || {})[0]?.scale || 100);
+            }
+        };
 
-            stateSetter(prev => {
-                const currentPieceTransforms = prev[activePiece.id] || {};
-                const baseTransform = currentPieceTransforms[bodyId] || defaultTransforms?.[bodyId] || {x:50, y:50, scale:40};
-                
-                const newTransform = { ...baseTransform };
-                
-                switch(type) {
-                    case 'x':
-                        newTransform.x = value;
-                        break;
-                    case 'y':
-                        newTransform.y = value;
-                        break;
-                    case 'scale':
-                        newTransform.scale = value;
-                        break;
-                }
-                
-                return {
-                    ...prev,
-                    [activePiece.id]: {
-                        ...currentPieceTransforms,
-                        [bodyId]: newTransform,
-                    },
-                };
-            });
+        const baseScale = getBaseScale();
+        // The slider's 0-100 range corresponds to a 0x-2x multiplier of the base scale. 50 is the 1x multiplier.
+        const newScale = baseScale * (value / 50);
 
-        } else { // It's a Hairstyle
-             setLocalHairstyleTransforms(prev => {
-                const baseTransform = prev[bodyId] || activePiece.transforms?.[bodyId] || {x:50, y:50, scale:100};
-                 const newTransform = { ...baseTransform };
+        const updateTransform = (prev: any) => {
+            const currentPieceTransforms = prev[activePiece.id] || {};
+            const baseTransform = currentPieceTransforms[bodyId] || (editingLayer === 'primary' 
+                ? (activePiece.transforms?.[bodyId] || {x:50, y:50, scale: baseScale})
+                : (activePiece.transforms2?.[bodyId] || {x:50, y:50, scale: baseScale})
+            );
+            const newTransform = { ...baseTransform };
 
-                switch(type) {
-                    case 'x':
-                        newTransform.x = value;
-                        break;
-                    case 'y':
-                        newTransform.y = value;
-                        break;
-                    case 'scale':
-                        newTransform.scale = value;
-                        break;
-                }
+            switch(type) {
+                case 'x': newTransform.x = value; break;
+                case 'y': newTransform.y = value; break;
+                case 'scale': newTransform.scale = value; break; // Direct scale for dragging
+                case 'slider': newTransform.scale = newScale; break; // Relative scale for slider
+            }
+            return {
+                ...prev,
+                [activePiece.id]: {
+                    ...currentPieceTransforms,
+                    [bodyId]: newTransform,
+                },
+            };
+        };
 
-                return {
-                 ...prev,
-                 [bodyId]: newTransform,
-             }});
+        const updateHairTransform = (prev: any) => {
+             const baseTransform = prev[bodyId] || activePiece.transforms?.[bodyId] || {x:50, y:50, scale: baseScale};
+             const newTransform = { ...baseTransform };
+              switch(type) {
+                case 'x': newTransform.x = value; break;
+                case 'y': newTransform.y = value; break;
+                case 'scale': newTransform.scale = value; break;
+                case 'slider': newTransform.scale = newScale; break;
+            }
+            return { ...prev, [bodyId]: newTransform };
+        };
+
+        if ('slot' in activePiece) { // ArmorPiece
+            (editingLayer === 'primary' ? setLocalTransforms : setLocalTransforms2)(updateTransform);
+        } else { // Hairstyle
+            setLocalHairstyleTransforms(updateHairTransform);
         }
     };
     
@@ -552,6 +550,23 @@ export default function ForgePage() {
             return localHairstyleTransforms?.[equipment.bodyId] || activePiece.transforms?.[equipment.bodyId] || { x: 50, y: 50, scale: 100 };
         }
     }, [activePiece, equipment.bodyId, localTransforms, localTransforms2, localHairstyleTransforms, editingLayer]);
+
+    const activeScaleForSlider = useMemo(() => {
+        if (!activeTransform || !activePiece || !equipment.bodyId) return 50;
+
+        const getBaseScale = () => {
+            if ('slot' in activePiece) { // Armor
+                const defaultTransforms = editingLayer === 'primary' ? activePiece.transforms : activePiece.transforms2;
+                return defaultTransforms?.[equipment.bodyId as string]?.scale || Object.values(defaultTransforms || {})[0]?.scale || 40;
+            } else { // Hairstyle
+                return activePiece.transforms?.[equipment.bodyId as string]?.scale || Object.values(activePiece.transforms || {})[0]?.scale || 100;
+            }
+        };
+
+        const baseScale = getBaseScale();
+        return (activeTransform.scale / baseScale) * 50;
+
+    }, [activeTransform, activePiece, equipment.bodyId, editingLayer]);
     
     if (isLoading || !student) {
         return <div className="flex items-center justify-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>
@@ -801,8 +816,8 @@ export default function ForgePage() {
                                                                             <Slider id="y-pos" value={[activeTransform.y]} onValueChange={([val]) => handleSliderChange('y', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
                                                                         </div>
                                                                         <div className="space-y-2">
-                                                                            <Label htmlFor="scale">Scale: {activeTransform.scale}%</Label>
-                                                                            <Slider id="scale" value={[activeTransform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={200} step={0.5} disabled={isPreviewMode}/>
+                                                                            <Label htmlFor="scale">Scale: {activeScaleForSlider.toFixed(2)}%</Label>
+                                                                            <Slider id="scale" value={[activeScaleForSlider]} onValueChange={([val]) => handleSliderChange('slider', val)} min={0} max={100} step={0.5} disabled={isPreviewMode}/>
                                                                         </div>
                                                                     </div>
                                                                 )}
@@ -812,7 +827,7 @@ export default function ForgePage() {
                                                         )}
                                                     </CardContent>
                                                 </ScrollArea>
-                                                 <CardFooter className="flex-col gap-2 items-stretch p-2 mt-auto">
+                                                <CardFooter className="flex-col gap-2 items-stretch p-2 mt-auto">
                                                     <Button variant="outline" size="sm" onClick={handleUnequipAll}>Unequip All</Button>
                                                     <Button onClick={handleSetCustomAvatar} disabled={isSettingAvatar}>
                                                         {isSettingAvatar ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Camera className="mr-2 h-4 w-4" />}
