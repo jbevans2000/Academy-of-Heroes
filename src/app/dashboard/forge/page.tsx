@@ -47,15 +47,15 @@ const slotZIndex: Record<ArmorSlot, number> = {
 };
 
 const backgroundPlaceholders = [
-    'https://picsum.photos/seed/bg1/400/400',
-    'https://picsum.photos/seed/bg2/400/400',
-    'https://picsum.photos/seed/bg3/400/400',
-    'https://picsum.photos/seed/bg4/400/400',
-    'https://picsum.photos/seed/bg5/400/400',
-    'https://picsum.photos/seed/bg6/400/400',
-    'https://picsum.photos/seed/bg7/400/400',
-    'https://picsum.photos/seed/bg8/400/400',
-    'https://picsum.photos/seed/bg9/400/400',
+    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_35_11%20AM.png?alt=media&token=8a2dfda2-01b8-404d-a399-46289bd84759',
+    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_36_06%20AM.png?alt=media&token=4fd59bf0-be44-4430-8c37-faf50966727e',
+    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_37_19%20AM.png?alt=media&token=eb2b1216-589d-4255-b895-34b916b1430c',
+    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_38_56%20AM.png?alt=media&token=7e424757-f1cb-42a2-8496-93339ff16de4',
+    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_41_06%20AM.png?alt=media&token=91ad076b-39f3-4284-8320-e6d79aabcc3f',
+    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_44_32%20AM.png?alt=media&token=d5326450-62b5-48ad-a4b4-bd9a68964cd0',
+    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_46_44%20AM.png?alt=media&token=512c4aa1-144a-49cd-a6cc-884ce163ebde',
+    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_50_59%20AM.png?alt=media&token=45e11f7c-40de-4da9-9c17-ebce834beee7',
+    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2006_03_10%20AM.png?alt=media&token=bb987156-6f34-489e-8d2c-a5b6349cd808',
 ]
 
 const CharacterCanvas = React.forwardRef<HTMLDivElement, {
@@ -421,7 +421,11 @@ export default function ForgePage() {
     }
 
     const handleSetCustomAvatar = async () => {
-        if (!canvasRef.current || !teacherUid || !user) return;
+        setIsConfirmingAvatar(true);
+    };
+
+    const proceedWithAvatarSet = async () => {
+         if (!canvasRef.current || !teacherUid || !user) return;
         setIsSettingAvatar(true);
     
         const captureElement = canvasRef.current;
@@ -459,7 +463,7 @@ export default function ForgePage() {
             setIsSettingAvatar(false);
             setIsConfirmingAvatar(false);
         }
-    };
+    }
 
 
     const selectedHairstyle = hairstyles.find(h => h.id === selectedHairstyleId);
@@ -514,14 +518,14 @@ export default function ForgePage() {
             <AlertDialog open={isConfirmingAvatar} onOpenChange={setIsConfirmingAvatar}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Did You Save Your Avatar's Appearance?</AlertDialogTitle>
+                        <AlertDialogTitle>Set this as your new Avatar?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            For the best results, make sure you've saved your appearance first. This ensures your avatar matches your equipped items.
+                            This will take a snapshot of your currently displayed character to use as your avatar across the game.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel onClick={() => setIsConfirmingAvatar(false)}>No, let me save</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleSetCustomAvatar} disabled={isSettingAvatar}>
+                        <AlertDialogCancel onClick={() => setIsConfirmingAvatar(false)}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={proceedWithAvatarSet} disabled={isSettingAvatar}>
                             {isSettingAvatar ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Yes, Set Avatar'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
@@ -532,7 +536,7 @@ export default function ForgePage() {
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                  <div className="w-full max-w-7xl mx-auto space-y-4">
                      <div className="flex justify-between items-center">
-                        <Button variant="outline" onClick={() => { window.location.href = '/dashboard'; }}><ArrowLeft className="mr-2 h-4 w-4"/> Back to Dashboard</Button>
+                        <Button variant="outline" onClick={() => { window.location.href = '/dashboard' }}><ArrowLeft className="mr-2 h-4 w-4"/> Back to Dashboard</Button>
                         <div className="flex gap-2">
                              <Button onClick={() => setIsArmoryOpen(true)}>
                                 <Hammer className="mr-2 h-4 w-4"/>
@@ -751,7 +755,7 @@ export default function ForgePage() {
                                     {activePiece && <Button size="sm" variant="outline" onClick={() => setActivePiece(null)} disabled={!activePiece}>
                                         <X className="mr-2 h-4 w-4"/> Clear Active Piece
                                     </Button>}
-                                    <Button onClick={() => setIsConfirmingAvatar(true)} disabled={isSettingAvatar}>
+                                    <Button onClick={handleSetCustomAvatar} disabled={isSettingAvatar}>
                                         {isSettingAvatar ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Camera className="mr-2 h-4 w-4" />}
                                         Set as Custom Avatar
                                     </Button>
