@@ -11,7 +11,7 @@ import type { Student } from '@/lib/data';
 import type { ArmorPiece, Hairstyle, BaseBody, ArmorSlot } from '@/lib/forge';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Loader2, RotateCcw, Hammer, Edit, Trash2, Layers, Eye, Camera, X, Shirt, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, RotateCcw, Hammer, Edit, Trash2, Layers, Eye, Camera, X, Shirt, ArrowRight, Scissors } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -83,7 +83,7 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, {
     const hairstyle = equipment.hairstyle as Hairstyle | null;
     const hairstyleColor = equipment.hairstyleColor || hairstyle?.colors[0]?.imageUrl;
 
-    const hairstyleTransform = hairstyle?.transforms?.[baseBody.id] || { x: 50, y: 50, scale: 100 };
+    const hairstyleTransform = equipment.hairstyleTransforms?.[baseBody.id] || hairstyle?.transforms?.[baseBody.id] || { x: 50, y: 50, scale: 100 };
     
     const equippedArmor: ArmorPiece[] = [
         equipment.head,
@@ -230,9 +230,10 @@ export default function ForgePage() {
     const [selectedBackgroundUrl, setSelectedBackgroundUrl] = useState<string | null>(null);
     
     // Sizer state
-    const [activePiece, setActivePiece] = useState<ArmorPiece | null>(null);
+    const [activePiece, setActivePiece] = useState<ArmorPiece | Hairstyle | null>(null);
     const [localTransforms, setLocalTransforms] = useState<Student['armorTransforms']>({});
     const [localTransforms2, setLocalTransforms2] = useState<Student['armorTransforms2']>({});
+    const [localHairstyleTransforms, setLocalHairstyleTransforms] = useState<Student['equippedHairstyleTransforms']>({});
     const [editingLayer, setEditingLayer] = useState<'primary' | 'secondary'>('primary');
     const [isDragging, setIsDragging] = useState(false);
     const [isPreviewMode, setIsPreviewMode] = useState(false);
@@ -271,6 +272,9 @@ export default function ForgePage() {
                 }
                 if (Object.keys(localTransforms2).length === 0) {
                     setLocalTransforms2(studentData.armorTransforms2 || {});
+                }
+                 if (Object.keys(localHairstyleTransforms).length === 0) {
+                    setLocalHairstyleTransforms(studentData.equippedHairstyleTransforms || {});
                 }
             }
         });
@@ -314,6 +318,7 @@ export default function ForgePage() {
             setSelectedFeet(allArmor.find(a => a.id === student.equippedFeetId) || null);
             setLocalTransforms(student.armorTransforms || {});
             setLocalTransforms2(student.armorTransforms2 || {});
+            setLocalHairstyleTransforms(student.equippedHairstyleTransforms || {});
         }
     }, [student, allArmor]);
 
@@ -333,32 +338,41 @@ export default function ForgePage() {
         }
     };
     
-    const handleSliderChange = (type: 'x' | 'y' | 'scale' | 'x2' | 'y2' | 'scale2', value: number) => {
+    const handleSliderChange = (type: 'x' | 'y' | 'scale', value: number) => {
         if (!activePiece || !selectedBodyId) return;
 
-        if (type === 'x' || type === 'y' || type === 'scale') {
-            setLocalTransforms(prev => ({
-                ...prev,
-                [activePiece.id]: {
-                    ...prev?.[activePiece.id],
-                    [selectedBodyId]: {
-                        ...(prev?.[activePiece.id]?.[selectedBodyId] || activePiece.transforms?.[selectedBodyId] || {x:50, y:50, scale:40}),
-                        [type]: value
+        if ('slot' in activePiece) { // It's an ArmorPiece
+            if (editingLayer === 'primary') {
+                setLocalTransforms(prev => ({
+                    ...prev,
+                    [activePiece.id]: {
+                        ...prev?.[activePiece.id],
+                        [selectedBodyId]: {
+                            ...(prev?.[activePiece.id]?.[selectedBodyId] || activePiece.transforms?.[selectedBodyId] || {x:50, y:50, scale:40}),
+                            [type]: value
+                        }
                     }
-                }
-            }));
-        } else { // Handle secondary transforms
-             const key = type.slice(0, -1) as 'x' | 'y' | 'scale';
-             setLocalTransforms2(prev => ({
-                ...prev,
-                [activePiece.id]: {
-                    ...prev?.[activePiece.id],
-                    [selectedBodyId]: {
-                        ...(prev?.[activePiece.id]?.[selectedBodyId] || activePiece.transforms2?.[selectedBodyId] || {x:50, y:50, scale:40}),
-                        [key]: value
+                }));
+            } else { // Handle secondary transforms for armor
+                 setLocalTransforms2(prev => ({
+                    ...prev,
+                    [activePiece.id]: {
+                        ...prev?.[activePiece.id],
+                        [selectedBodyId]: {
+                            ...(prev?.[activePiece.id]?.[selectedBodyId] || activePiece.transforms2?.[selectedBodyId] || {x:50, y:50, scale:40}),
+                            [type]: value
+                        }
                     }
-                }
-            }));
+                }));
+            }
+        } else { // It's a Hairstyle
+             setLocalHairstyleTransforms(prev => ({
+                 ...prev,
+                 [selectedBodyId]: {
+                     ...(prev?.[selectedBodyId] || activePiece.transforms?.[selectedBodyId] || {x:50, y:50, scale:100}),
+                     [type]: value,
+                 }
+             }));
         }
     };
     
@@ -377,13 +391,8 @@ export default function ForgePage() {
         const newX = ((e.clientX - canvasRect.left) / canvasRect.width) * 100;
         const newY = ((e.clientY - canvasRect.top) / canvasRect.height) * 100;
         
-        if (editingLayer === 'primary') {
-            handleSliderChange('x', newX);
-            handleSliderChange('y', newY);
-        } else {
-            handleSliderChange('x2', newX);
-            handleSliderChange('y2', newY);
-        }
+        handleSliderChange('x', newX);
+        handleSliderChange('y', newY);
     };
 
     const handleMouseUp = () => setIsDragging(false);
@@ -397,6 +406,7 @@ export default function ForgePage() {
                 equippedBodyId: selectedBodyId,
                 equippedHairstyleId: selectedHairstyleId,
                 equippedHairstyleColor: selectedHairstyleColor,
+                equippedHairstyleTransforms: localHairstyleTransforms,
                 backgroundUrl: selectedBackgroundUrl,
                 equippedHeadId: selectedHead?.id || '',
                 equippedShouldersId: selectedShoulders?.id || '',
@@ -418,22 +428,8 @@ export default function ForgePage() {
     };
 
     const handleReset = () => {
-        // This clears the current state, but doesn't save it.
-        // The appearance will revert to the last saved state on next load.
-        setSelectedBodyId(baseBodyUrls[0]?.id || null);
-        setSelectedHairstyleId(null);
-        setSelectedHairstyleColor(null);
-        setSelectedBackgroundUrl(null);
-        setSelectedHead(null);
-        setSelectedShoulders(null);
-        setSelectedChest(null);
-        setSelectedHands(null);
-        setSelectedLegs(null);
-        setSelectedFeet(null);
-        setActivePiece(null);
-        setLocalTransforms({});
-        setLocalTransforms2({});
-        toast({ title: "Appearance Reset", description: "Your canvas has been cleared. Don't forget to save when you're done!"});
+        setInitialEquipment();
+        toast({ title: "Appearance Reset", description: "Your canvas has reverted to your last saved appearance."});
     };
 
     const handleUnequipAll = () => {
@@ -519,19 +515,19 @@ export default function ForgePage() {
         return slots;
     }, [ownedArmor]);
     
-    const activePrimaryTransform = useMemo(() => {
+    const activeTransform = useMemo(() => {
         if (!activePiece || !selectedBodyId) return null;
-        return localTransforms?.[activePiece.id]?.[selectedBodyId] 
-            || activePiece.transforms?.[selectedBodyId]
-            || { x: 50, y: 50, scale: 40 };
-    }, [activePiece, selectedBodyId, localTransforms]);
+        if ('slot' in activePiece) { // Armor
+            if (editingLayer === 'primary') {
+                return localTransforms?.[activePiece.id]?.[selectedBodyId] || activePiece.transforms?.[selectedBodyId] || { x: 50, y: 50, scale: 40 };
+            } else {
+                return localTransforms2?.[activePiece.id]?.[selectedBodyId] || activePiece.transforms2?.[selectedBodyId] || { x: 50, y: 50, scale: 40 };
+            }
+        } else { // Hairstyle
+            return localHairstyleTransforms?.[selectedBodyId] || activePiece.transforms?.[selectedBodyId] || { x: 50, y: 50, scale: 100 };
+        }
+    }, [activePiece, selectedBodyId, localTransforms, localTransforms2, localHairstyleTransforms, editingLayer]);
     
-    const activeSecondaryTransform = useMemo(() => {
-        if (!activePiece || !selectedBodyId) return null;
-        return localTransforms2?.[activePiece.id]?.[selectedBodyId] 
-            || activePiece.transforms2?.[selectedBodyId]
-            || { x: 50, y: 50, scale: 40 };
-    }, [activePiece, selectedBodyId, localTransforms2]);
 
     if (isLoading || !student) {
         return <div className="flex items-center justify-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>
@@ -628,9 +624,12 @@ export default function ForgePage() {
                                                             if(selectedHairstyleId === item.id) {
                                                                 setSelectedHairstyleId(null);
                                                                 setSelectedHairstyleColor(null);
+                                                                setActivePiece(null);
                                                             } else {
                                                                 setSelectedHairstyleId(item.id);
                                                                 setSelectedHairstyleColor(item.colors?.[0]?.imageUrl || null);
+                                                                setActivePiece(item);
+                                                                setEditingLayer('primary'); // Reset to primary when selecting hair
                                                             }
                                                         }} >
                                                         <CardContent className="p-1 aspect-square">
@@ -689,11 +688,12 @@ export default function ForgePage() {
                         <div className="lg:col-span-1 flex flex-col items-center justify-center bg-gray-700 rounded-lg p-2">
                              <CharacterCanvas 
                                 ref={canvasRef}
-                                student={{...student, armorTransforms: localTransforms, armorTransforms2: localTransforms2}}
+                                student={{...student, equippedHairstyleTransforms: localHairstyleTransforms, armorTransforms: localTransforms, armorTransforms2: localTransforms2}}
                                 baseBody={baseBodyUrls.find(b => b.id === selectedBodyId) || null}
                                 equipment={{ 
                                     hairstyle: selectedHairstyle, 
                                     hairstyleColor: selectedHairstyleColor,
+                                    hairstyleTransforms: localHairstyleTransforms,
                                     head: selectedHead,
                                     shoulders: selectedShoulders,
                                     chest: selectedChest,
@@ -728,7 +728,15 @@ export default function ForgePage() {
                                     <Button variant="secondary" size="sm" onClick={handleUnequipAll}>Unequip All</Button>
                                 </CardHeader>
                                 <CardContent className="space-y-2">
-                                     {[selectedHead, selectedShoulders, selectedChest, selectedHands, selectedLegs, selectedFeet].filter(Boolean).length === 0 && <p className="text-sm text-muted-foreground">Select armor from the library to equip it.</p>}
+                                     {[selectedHead, selectedShoulders, selectedChest, selectedHands, selectedLegs, selectedFeet].filter(Boolean).length === 0 && !selectedHairstyle && <p className="text-sm text-muted-foreground">Select pieces from the library to equip them.</p>}
+                                     {selectedHairstyle && (
+                                         <div className={cn("flex items-center justify-between p-2 rounded-md", activePiece?.id === selectedHairstyle.id && !isPreviewMode ? 'bg-primary/20' : 'bg-secondary')}>
+                                             <span className="font-semibold text-sm truncate">{selectedHairstyle.styleName}</span>
+                                             <div className="flex gap-1">
+                                                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setActivePiece(selectedHairstyle)} disabled={isPreviewMode}><Edit className="h-4 w-4" /></Button>
+                                             </div>
+                                         </div>
+                                     )}
                                      {[selectedHead, selectedShoulders, selectedChest, selectedHands, selectedLegs, selectedFeet].filter(Boolean).map(piece => (
                                          <div key={piece!.id} className={cn("flex items-center justify-between p-2 rounded-md", activePiece?.id === piece!.id && !isPreviewMode ? 'bg-primary/20' : 'bg-secondary')}>
                                              <span className="font-semibold text-sm truncate">{piece!.name}</span>
@@ -752,7 +760,7 @@ export default function ForgePage() {
                                     </div>
                                     {activePiece ? (
                                         <>
-                                        {activePiece.modularImageUrl2 && (
+                                        {'slot' in activePiece && activePiece.modularImageUrl2 && (
                                             <div className="space-y-2 p-2 border rounded-md">
                                                 <Label className="flex items-center gap-2"><Layers/> Editing Layer</Label>
                                                 <div className="grid grid-cols-2 gap-2">
@@ -761,45 +769,29 @@ export default function ForgePage() {
                                                 </div>
                                             </div>
                                         )}
-
-                                        {editingLayer === 'primary' && activePrimaryTransform ? (
-                                             <div className="space-y-4 animate-in fade-in-50">
+                                        {activeTransform && (
+                                            <div className="space-y-4 animate-in fade-in-50">
                                                 <div className="space-y-2">
-                                                    <Label htmlFor="x-pos">X Position: {activePrimaryTransform.x.toFixed(2)}%</Label>
-                                                    <Slider id="x-pos" value={[activePrimaryTransform.x]} onValueChange={([val]) => handleSliderChange('x', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
+                                                    <Label htmlFor="x-pos">X Position: {activeTransform.x.toFixed(2)}%</Label>
+                                                    <Slider id="x-pos" value={[activeTransform.x]} onValueChange={([val]) => handleSliderChange('x', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label htmlFor="y-pos">Y Position: {activePrimaryTransform.y.toFixed(2)}%</Label>
-                                                    <Slider id="y-pos" value={[activePrimaryTransform.y]} onValueChange={([val]) => handleSliderChange('y', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
+                                                    <Label htmlFor="y-pos">Y Position: {activeTransform.y.toFixed(2)}%</Label>
+                                                    <Slider id="y-pos" value={[activeTransform.y]} onValueChange={([val]) => handleSliderChange('y', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label htmlFor="scale">Scale: {activePrimaryTransform.scale}%</Label>
-                                                    <Slider id="scale" value={[activePrimaryTransform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={200} step={0.5} disabled={isPreviewMode}/>
-                                                </div>
-                                            </div>
-                                        ) : editingLayer === 'secondary' && activeSecondaryTransform ? (
-                                             <div className="space-y-4 animate-in fade-in-50">
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="x2-pos">X2 Position: {activeSecondaryTransform.x.toFixed(2)}%</Label>
-                                                    <Slider id="x2-pos" value={[activeSecondaryTransform.x]} onValueChange={([val]) => handleSliderChange('x2', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="y2-pos">Y2 Position: {activeSecondaryTransform.y.toFixed(2)}%</Label>
-                                                    <Slider id="y2-pos" value={[activeSecondaryTransform.y]} onValueChange={([val]) => handleSliderChange('y2', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="scale2">Scale 2: {activeSecondaryTransform.scale}%</Label>
-                                                    <Slider id="scale2" value={[activeSecondaryTransform.scale]} onValueChange={([val]) => handleSliderChange('scale2', val)} min={10} max={200} step={0.5} disabled={isPreviewMode}/>
+                                                    <Label htmlFor="scale">Scale: {activeTransform.scale}%</Label>
+                                                    <Slider id="scale" value={[activeTransform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={200} step={0.5} disabled={isPreviewMode}/>
                                                 </div>
                                             </div>
-                                        ) : null}
+                                        )}
                                         </>
                                     ) : (
                                         <p className="text-sm text-muted-foreground text-center">Select an equipped piece to adjust it.</p>
                                     )}
                                 </CardContent>
                                  <CardFooter className="flex-col gap-2 items-stretch">
-                                    {activePiece && <Button size="sm" variant="outline" onClick={() => setActivePiece(null)} disabled={!activePiece}>
+                                    {activePiece && <Button size="sm" variant="outline" onClick={() => setActivePiece(null)}>
                                         <X className="mr-2 h-4 w-4"/> Clear Active Piece
                                     </Button>}
                                     <Button onClick={handleSetCustomAvatar} disabled={isSettingAvatar}>

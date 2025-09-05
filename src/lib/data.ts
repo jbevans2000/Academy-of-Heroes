@@ -52,6 +52,13 @@ export type Student = {
     equippedBodyId?: string; // The ID of the base body model
     equippedHairstyleId?: string;
     equippedHairstyleColor?: string; // The URL of the specific color variation
+    equippedHairstyleTransforms?: { // Student-specific overrides for hairstyle positions
+        [bodyId: string]: {
+            x: number;
+            y: number;
+            scale: number;
+        }
+    };
     armorTransforms?: { // Student-specific overrides for armor positions
         [armorId: string]: {
             [bodyId: string]: {
