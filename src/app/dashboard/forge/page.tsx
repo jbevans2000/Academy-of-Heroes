@@ -35,6 +35,8 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CharacterCanvas } from '@/components/dashboard/character-canvas';
+import { avatarData } from '@/lib/avatars';
+import { UserCheck } from 'lucide-react';
 
 
 export default function ForgePage() {
@@ -68,6 +70,9 @@ export default function ForgePage() {
         feetId: null as string | null,
     });
     
+    // NEW: State to handle static avatar selection
+    const [selectedStaticAvatarUrl, setSelectedStaticAvatarUrl] = useState<string | null>(null);
+
     // Sizer state
     const [activePiece, setActivePiece] = useState<ArmorPiece | Hairstyle | null>(null);
     const [localTransforms, setLocalTransforms] = useState<Student['armorTransforms']>({});
@@ -203,6 +208,7 @@ export default function ForgePage() {
     };
     
     const handleEquipItem = (item: ArmorPiece | Hairstyle) => {
+        setSelectedStaticAvatarUrl(null); // Clear static selection when customizing
         if ('slot' in item) { // It's an ArmorPiece
             const slotKey = `${item.slot}Id` as keyof typeof equipment;
             setEquipment(prev => ({
@@ -300,33 +306,6 @@ export default function ForgePage() {
 
     const handleMouseUp = () => setIsDragging(false);
 
-    const saveAppearance = async () => {
-        if (!user || !teacherUid) return false;
-        try {
-            const studentRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
-            await updateDoc(studentRef, {
-                equippedBodyId: equipment.bodyId,
-                equippedHairstyleId: equipment.hairstyleId,
-                equippedHairstyleColor: equipment.hairstyleColor,
-                equippedHairstyleTransforms: localHairstyleTransforms,
-                backgroundUrl: equipment.backgroundUrl,
-                equippedHeadId: equipment.headId,
-                equippedShouldersId: equipment.shouldersId,
-                equippedChestId: equipment.chestId,
-                equippedHandsId: equipment.handsId,
-                equippedLegsId: equipment.legsId,
-                equippedFeetId: equipment.feetId,
-                armorTransforms: localTransforms,
-                armorTransforms2: localTransforms2,
-            });
-            return true;
-        } catch (error) {
-            console.error("Error saving appearance:", error);
-            toast({ variant: 'destructive', title: "Save Failed", description: "Could not save your new look." });
-            return false;
-        }
-    };
-
     const handleUnequipAll = () => {
         setEquipment(prev => ({
             ...prev,
@@ -334,6 +313,7 @@ export default function ForgePage() {
             hairstyleId: null, hairstyleColor: null,
             headId: null, shouldersId: null, chestId: null, handsId: null, legsId: null, feetId: null,
         }));
+        setSelectedStaticAvatarUrl(null);
         setActivePiece(null);
         toast({ title: "Appearance Cleared", description: "All armor and hairstyle have been removed."});
     };
@@ -353,23 +333,44 @@ export default function ForgePage() {
     const handleSetCustomAvatar = async () => {
         if (!teacherUid || !user) return;
         setIsSettingAvatar(true);
-        
-        const saved = await saveAppearance();
-        if (!saved) {
-             setIsSettingAvatar(false);
-             return;
-        }
 
         try {
             const studentRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
-            await updateDoc(studentRef, { useCustomAvatar: true });
+            let updates: Partial<Student> = {};
+
+            if (selectedStaticAvatarUrl) {
+                updates = {
+                    useCustomAvatar: false,
+                    avatarUrl: selectedStaticAvatarUrl
+                };
+            } else {
+                 updates = {
+                    useCustomAvatar: true,
+                    equippedBodyId: equipment.bodyId,
+                    equippedHairstyleId: equipment.hairstyleId,
+                    equippedHairstyleColor: equipment.hairstyleColor,
+                    equippedHairstyleTransforms: localHairstyleTransforms,
+                    backgroundUrl: equipment.backgroundUrl,
+                    equippedHeadId: equipment.headId,
+                    equippedShouldersId: equipment.shouldersId,
+                    equippedChestId: equipment.chestId,
+                    equippedHandsId: equipment.handsId,
+                    equippedLegsId: equipment.legsId,
+                    equippedFeetId: equipment.feetId,
+                    armorTransforms: localTransforms,
+                    armorTransforms2: localTransforms2,
+                };
+            }
+            
+            await updateDoc(studentRef, updates);
             setIsAvatarSetDialogOpen(true);
+
         } catch (error) {
-            console.error("Error setting custom avatar flag:", error);
+            console.error("Error setting avatar:", error);
             toast({ variant: 'destructive', title: 'Failed to Set Avatar', description: 'Could not update your avatar preference.' });
+        } finally {
+            setIsSettingAvatar(false);
         }
-        
-        setIsSettingAvatar(false);
     };
     
     const armorSlotOrder: ArmorSlot[] = ['head', 'shoulders', 'chest', 'hands', 'legs', 'feet'];
@@ -413,6 +414,58 @@ export default function ForgePage() {
         return ((activeTransform.scale - (baseScale * 0.5)) / baseScale) * 100;
 
     }, [activeTransform, activePiece, equipment.bodyId, editingLayer]);
+
+    const handleStaticAvatarClick = (url: string) => {
+        setSelectedStaticAvatarUrl(url);
+        // Unequip all items when a static avatar is chosen
+        setEquipment(prev => ({
+            ...prev,
+            hairstyleId: null, hairstyleColor: null,
+            headId: null, shouldersId: null, chestId: null, handsId: null, legsId: null, feetId: null,
+        }));
+    };
+
+    const renderStaticAvatarGroups = () => {
+        if (!student) return null;
+
+        const { class: studentClass, level = 1 } = student;
+        const classAvatars = avatarData[studentClass];
+        if (!classAvatars) return <p>No avatars available for your class.</p>;
+
+        const unlockedLevels = Object.keys(classAvatars)
+            .map(Number)
+            .filter(l => l <= level)
+            .sort((a,b) => a-b);
+        
+        return unlockedLevels.map(lvl => (
+            <div key={lvl} className="mb-6">
+                <h3 className="text-2xl font-bold font-headline mb-4">Level {lvl} Avatars</h3>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
+                    {classAvatars[lvl].map((url: string, index: number) => {
+                        const isCurrentlySelected = selectedStaticAvatarUrl === url;
+                        return (
+                            <div 
+                                key={`${lvl}-${index}`} 
+                                className={cn(
+                                    "relative p-2 border-4 rounded-lg cursor-pointer transition-all duration-300 hover:scale-110",
+                                    isCurrentlySelected ? 'border-primary ring-4 ring-primary/50' : 'border-transparent hover:border-primary/50'
+                                )}
+                                onClick={() => handleStaticAvatarClick(url)}
+                            >
+                                <Image src={url} alt={`Avatar level ${lvl} - ${index + 1}`} width={200} height={200} className="w-full h-auto rounded-md object-cover" />
+                                 {isCurrentlySelected && (
+                                    <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
+                                        <UserCheck className="h-4 w-4" />
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    })}
+                </div>
+            </div>
+        ));
+    };
+
     
     if (isLoading || !student) {
         return <div className="flex items-center justify-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>
@@ -425,7 +478,7 @@ export default function ForgePage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Avatar Set!</AlertDialogTitle>
                         <AlertDialogDescription>
-                           Your custom look is now your main avatar!
+                           Your new look is now your main avatar!
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -447,7 +500,7 @@ export default function ForgePage() {
                                 The Armory
                              </Button>
                              <Button variant="secondary" onClick={handleUnequipAll}><ShirtIcon className="mr-2 h-4 w-4" />Unequip All</Button>
-                            <Button variant="default" onClick={handleSetCustomAvatar} disabled={isSettingAvatar}>
+                            <Button variant="default" onClick={handleSetCustomAvatar} disabled={isSettingAvatar || (!selectedStaticAvatarUrl && !equipment.bodyId)}>
                                 {isSettingAvatar ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Camera className="mr-2 h-4 w-4" />}
                                 Set as Custom Avatar
                             </Button>
@@ -458,7 +511,7 @@ export default function ForgePage() {
                         <Hammer className="h-4 w-4" />
                         <AlertTitle>Welcome to The Forge!</AlertTitle>
                         <AlertDescription>
-                           Here you can mix and match your owned armor pieces and hairstyles. Visit the Armory to buy new pieces. When you're happy with your look, click "Set as Custom Avatar".
+                           Here you can mix and match your owned armor pieces, hairstyles, and backgrounds. Or, choose a pre-made static avatar below. When you're happy with your look, click "Set as Custom Avatar".
                         </AlertDescription>
                     </Alert>
 
@@ -587,19 +640,23 @@ export default function ForgePage() {
                            <div
                                 className="relative w-full aspect-square bg-gray-700 rounded-lg p-2"
                             >
-                                <CharacterCanvas 
-                                    student={student}
-                                    equipment={equipment}
-                                    allHairstyles={hairstyles}
-                                    allArmor={ownedArmor}
-                                    onMouseDown={handleMouseDown}
-                                    activePieceId={activePiece?.id || null}
-                                    editingLayer={editingLayer}
-                                    isPreviewMode={isPreviewMode}
-                                    localHairstyleTransforms={localHairstyleTransforms}
-                                    localArmorTransforms={localTransforms}
-                                    localArmorTransforms2={localTransforms2}
-                                />
+                                {selectedStaticAvatarUrl ? (
+                                    <Image src={selectedStaticAvatarUrl} alt="Selected Static Avatar" layout="fill" className="object-contain"/>
+                                ) : (
+                                    <CharacterCanvas 
+                                        student={student}
+                                        equipment={equipment}
+                                        allHairstyles={hairstyles}
+                                        allArmor={ownedArmor}
+                                        onMouseDown={handleMouseDown}
+                                        activePieceId={activePiece?.id || null}
+                                        editingLayer={editingLayer}
+                                        isPreviewMode={isPreviewMode}
+                                        localHairstyleTransforms={localHairstyleTransforms}
+                                        localArmorTransforms={localTransforms}
+                                        localArmorTransforms2={localTransforms2}
+                                    />
+                                )}
                                 <div className="absolute top-0 right-0 h-full p-2 z-20">
                                     <Collapsible
                                         open={isControlsOpen}
@@ -671,6 +728,17 @@ export default function ForgePage() {
                                 </Button>
                             </div>
                         </div>
+                     </div>
+                     <div className="mt-8">
+                         <Card>
+                             <CardHeader>
+                                 <CardTitle>Or, Choose a Pre-Made Look</CardTitle>
+                                 <CardDescription>Select one of your unlocked static avatars. This will unequip any custom items.</CardDescription>
+                             </CardHeader>
+                             <CardContent>
+                                {renderStaticAvatarGroups()}
+                             </CardContent>
+                         </Card>
                      </div>
                  </div>
             </main>

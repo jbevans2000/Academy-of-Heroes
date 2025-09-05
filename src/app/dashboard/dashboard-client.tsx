@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -227,7 +226,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                         Songs and Stories
                     </Button>
                 </Link>
-                <Link href="/dashboard/avatars" passHref className="w-full">
+                <Link href="/dashboard/forge" passHref className="w-full">
                     <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90">
                         Change Avatar
                     </Button>
