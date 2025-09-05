@@ -13,6 +13,7 @@ export function getFirebaseAdminApp(): App {
   // to authenticate on Google Cloud services.
   const app = initializeApp({
     credential: applicationDefault(),
+    storageBucket: 'academy-heroes-mziuf.appspot.com'
   });
 
   return app;
