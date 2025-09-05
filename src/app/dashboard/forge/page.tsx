@@ -50,7 +50,7 @@ const slotZIndex: Record<ArmorSlot, number> = {
 };
 
 const baseBodyUrls = [
-    { id: 'body_1', name: 'Base Body 1', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(1).png?alt=media&token=8ff364fe-6a96-4ace-b4e8-f011c87f725f', width: 500, height: 500 },
+    { id: 'body_1', name: 'Base Body 1', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(1).png?alt=media&token=8ff364fe-6a96-4ace-b4e8-f011c87f725f', thumbnailUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBase%20Body%20Thumbnails%2Ftn_BaseBody%20(1).png?alt=media&token=2ad06857-89b9-4460-bf28-43b4ac0ffda2', width: 500, height: 500 },
     { id: 'body_2', name: 'Base Body 2', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(2).png?alt=media&token=c41b2cae-9f42-43c5-bd3c-e33d316c0a78', width: 500, height: 500 },
     { id: 'body_3', name: 'Base Body 3', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(3).png?alt=media&token=f345fe77-f7e5-4d76-b42e-5154db5d9777', width: 500, height: 500 },
     { id: 'body_4', name: 'Base Body 4', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(4).png?alt=media&token=202e80bd-ed73-41d6-b60e-8992740545d4', width: 500, height: 500 },
@@ -326,6 +326,10 @@ export default function ForgePage() {
     const handleBodySelect = (bodyId: string) => {
         setEquipment(prev => ({...prev, bodyId}));
         setActivePiece(null);
+        // Reset local transforms when body changes
+        setLocalTransforms({});
+        setLocalTransforms2({});
+        setLocalHairstyleTransforms({});
     }
     
     const handleEquipItem = (item: ArmorPiece | Hairstyle) => {
@@ -360,7 +364,6 @@ export default function ForgePage() {
         };
 
         const baseScale = getBaseScale();
-        // The slider's 0-100 range corresponds to a 0.5x-1.5x multiplier of the base scale. 50 is the 1x multiplier.
         const newScale = baseScale * (0.5 + (value / 100));
 
         const updateTransform = (prev: any) => {
@@ -833,15 +836,6 @@ export default function ForgePage() {
                                                         )}
                                                     </CardContent>
                                                 </ScrollArea>
-                                                 <CardFooter className="p-2">
-                                                    <div className="flex flex-col gap-2 w-full">
-                                                        <Button variant="outline" onClick={handleUnequipAll}>Unequip All</Button>
-                                                        <Button onClick={handleSetCustomAvatar} disabled={isSettingAvatar}>
-                                                            {isSettingAvatar ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Camera className="mr-2 h-4 w-4" />}
-                                                            Set as Custom Avatar
-                                                        </Button>
-                                                    </div>
-                                                </CardFooter>
                                             </Card>
                                         </CollapsibleContent>
                                     </Collapsible>
