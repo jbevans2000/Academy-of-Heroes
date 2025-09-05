@@ -1,5 +1,5 @@
-import { initializeApp, getApp, getApps, type App } from 'firebase-admin/app';
-import { credential } from 'firebase-admin';
+
+import { initializeApp, getApp, getApps, type App, applicationDefault } from 'firebase-admin/app';
 
 // It's safe to call this multiple times; it will return the existing app instance
 // on subsequent calls.
@@ -8,11 +8,11 @@ export function getFirebaseAdminApp(): App {
     return getApp();
   }
 
-  // When running in a Google Cloud environment (like Cloud Run or App Hosting),
-  // providing the projectId ensures the SDK unambiguously uses the correct
-  // service account credentials for that project.
+  // Explicitly use the Application Default Credentials provided by the
+  // App Hosting environment. This is the standard and most reliable way
+  // to authenticate on Google Cloud services.
   const app = initializeApp({
-    projectId: 'academy-heroes-mziuf',
+    credential: applicationDefault(),
   });
 
   return app;
