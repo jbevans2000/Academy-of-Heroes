@@ -25,6 +25,16 @@ import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import * as htmlToImage from 'html-to-image';
 import { v4 as uuidv4 } from 'uuid';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 
 const slotZIndex: Record<ArmorSlot, number> = {
@@ -170,6 +180,7 @@ export default function ForgePage() {
 
     // Dialog State
     const [isArmoryOpen, setIsArmoryOpen] = useState(false);
+    const [isConfirmingAvatar, setIsConfirmingAvatar] = useState(false);
 
     // Equipment State
     const [selectedBodyId, setSelectedBodyId] = useState<string | null>(null);
@@ -428,6 +439,7 @@ export default function ForgePage() {
             toast({ variant: 'destructive', title: 'Failed to Set Avatar', description: 'Could not capture or upload the avatar image.' });
         } finally {
             setIsSettingAvatar(false);
+            setIsConfirmingAvatar(false);
         }
     };
 
@@ -466,6 +478,22 @@ export default function ForgePage() {
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
+            <AlertDialog open={isConfirmingAvatar} onOpenChange={setIsConfirmingAvatar}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Did You Save Your Avatar's Appearance?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            For the best results, make sure you've saved your appearance first. This ensures your avatar matches your equipped items.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setIsConfirmingAvatar(false)}>No, let me save</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleSetCustomAvatar} disabled={isSettingAvatar}>
+                            {isSettingAvatar ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Yes, Set Avatar'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
             {student && <ArmoryDialog isOpen={isArmoryOpen} onOpenChange={setIsArmoryOpen} student={student} allArmor={allArmor} />}
             <DashboardHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
@@ -689,7 +717,7 @@ export default function ForgePage() {
                                     {activePiece && <Button size="sm" variant="outline" onClick={() => setActivePiece(null)} disabled={!activePiece}>
                                         <X className="mr-2 h-4 w-4"/> Clear Active Piece
                                     </Button>}
-                                    <Button onClick={handleSetCustomAvatar} disabled={isSettingAvatar}>
+                                    <Button onClick={() => setIsConfirmingAvatar(true)} disabled={isSettingAvatar}>
                                         {isSettingAvatar ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Camera className="mr-2 h-4 w-4" />}
                                         Set as Custom Avatar
                                     </Button>
