@@ -11,7 +11,7 @@ import type { Student } from '@/lib/data';
 import type { ArmorPiece, Hairstyle, BaseBody, ArmorSlot } from '@/lib/forge';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Loader2, RotateCcw, Hammer, Edit, Trash2, Layers, Eye, Camera, X } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, RotateCcw, Hammer, Edit, Trash2, Layers, Eye, Camera, X, Shirt, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -423,7 +423,30 @@ export default function ForgePage() {
         setLocalTransforms({});
         setLocalTransforms2({});
         toast({ title: "Appearance Reset", description: "Your canvas has been cleared. Don't forget to save when you're done!"});
-    }
+    };
+
+    const handleUnequipAll = () => {
+        setSelectedHead(null);
+        setSelectedShoulders(null);
+        setSelectedChest(null);
+        setSelectedHands(null);
+        setSelectedLegs(null);
+        setSelectedFeet(null);
+        setActivePiece(null);
+        toast({ title: "Armor Unequipped", description: "All armor pieces have been removed."});
+    };
+
+    const handleBodyCycle = (direction: 'next' | 'prev') => {
+        if (baseBodies.length === 0 || !selectedBodyId) return;
+        const currentIndex = baseBodies.findIndex(b => b.id === selectedBodyId);
+        let nextIndex;
+        if (direction === 'next') {
+            nextIndex = (currentIndex + 1) % baseBodies.length;
+        } else {
+            nextIndex = (currentIndex - 1 + baseBodies.length) % baseBodies.length;
+        }
+        setSelectedBodyId(baseBodies[nextIndex].id);
+    };
 
     const handleSetCustomAvatar = async () => {
         setIsConfirmingAvatar(true);
@@ -514,7 +537,7 @@ export default function ForgePage() {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogAction onClick={() => { window.location.href = '/dashboard' }}>
+                        <AlertDialogAction onClick={() => { router.push('/dashboard') }}>
                             Return to Dashboard
                         </AlertDialogAction>
                     </AlertDialogFooter>
@@ -541,7 +564,7 @@ export default function ForgePage() {
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                  <div className="w-full max-w-7xl mx-auto space-y-4">
                      <div className="flex justify-between items-center">
-                        <Button variant="outline" onClick={() => { window.location.reload() }}><ArrowLeft className="mr-2 h-4 w-4"/> Back to Dashboard</Button>
+                        <Button variant="outline" onClick={() => router.push('/dashboard')}><ArrowLeft className="mr-2 h-4 w-4"/> Back to Dashboard</Button>
                         <div className="flex gap-2">
                              <Button onClick={() => setIsArmoryOpen(true)}>
                                 <Hammer className="mr-2 h-4 w-4"/>
@@ -652,7 +675,7 @@ export default function ForgePage() {
                         </Card>
 
                         {/* Column 2: Canvas */}
-                        <div className="lg:col-span-1 flex items-center justify-center bg-gray-700 rounded-lg p-2">
+                        <div className="lg:col-span-1 flex flex-col items-center justify-center bg-gray-700 rounded-lg p-2">
                              <CharacterCanvas 
                                 ref={canvasRef}
                                 student={{...student, armorTransforms: localTransforms, armorTransforms2: localTransforms2}}
@@ -675,19 +698,23 @@ export default function ForgePage() {
                                 isPreviewMode={isPreviewMode}
                                 backgroundUrl={selectedBackgroundUrl}
                             />
+                            <div className="flex justify-between items-center w-full max-w-sm mt-2">
+                                <Button variant="outline" onClick={() => handleBodyCycle('prev')}>
+                                    <ArrowLeft className="h-5 w-5" />
+                                </Button>
+                                <span className="font-semibold text-white">Body Type</span>
+                                 <Button variant="outline" onClick={() => handleBodyCycle('next')}>
+                                    <ArrowRight className="h-5 w-5" />
+                                </Button>
+                            </div>
                         </div>
 
                         {/* Column 3: Controls */}
                         <div className="lg:col-span-1 space-y-4">
                              <Card>
-                                <CardHeader>
-                                     <div className="flex justify-between items-center">
-                                        <CardTitle>Equipped Pieces</CardTitle>
-                                        <div className="flex items-center space-x-2">
-                                            <Label htmlFor="preview-mode" className="flex items-center gap-1 cursor-pointer"><Eye className="h-4 w-4"/> Preview</Label>
-                                            <Switch id="preview-mode" checked={isPreviewMode} onCheckedChange={setIsPreviewMode} />
-                                        </div>
-                                    </div>
+                                <CardHeader className="flex flex-row justify-between items-center">
+                                    <CardTitle>Equipped Pieces</CardTitle>
+                                    <Button variant="secondary" size="sm" onClick={handleUnequipAll}>Unequip All</Button>
                                 </CardHeader>
                                 <CardContent className="space-y-2">
                                      {[selectedHead, selectedShoulders, selectedChest, selectedHands, selectedLegs, selectedFeet].filter(Boolean).length === 0 && <p className="text-sm text-muted-foreground">Select armor from the library to equip it.</p>}
@@ -708,53 +735,57 @@ export default function ForgePage() {
                                     <CardDescription>Click a piece to adjust its position and scale.</CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-6">
-                                        {activePiece ? (
-                                            <>
-                                            {activePiece.modularImageUrl2 && (
-                                                <div className="space-y-2 p-2 border rounded-md">
-                                                    <Label className="flex items-center gap-2"><Layers/> Editing Layer</Label>
-                                                    <div className="grid grid-cols-2 gap-2">
-                                                        <Button variant={editingLayer === 'primary' ? 'default' : 'outline'} onClick={() => setEditingLayer('primary')} disabled={isPreviewMode}>Primary</Button>
-                                                        <Button variant={editingLayer === 'secondary' ? 'default' : 'outline'} onClick={() => setEditingLayer('secondary')} disabled={isPreviewMode}>Secondary</Button>
-                                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <Label htmlFor="preview-mode" className="flex items-center gap-1 cursor-pointer"><Eye className="h-4 w-4"/> Preview</Label>
+                                        <Switch id="preview-mode" checked={isPreviewMode} onCheckedChange={setIsPreviewMode} />
+                                    </div>
+                                    {activePiece ? (
+                                        <>
+                                        {activePiece.modularImageUrl2 && (
+                                            <div className="space-y-2 p-2 border rounded-md">
+                                                <Label className="flex items-center gap-2"><Layers/> Editing Layer</Label>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <Button variant={editingLayer === 'primary' ? 'default' : 'outline'} onClick={() => setEditingLayer('primary')} disabled={isPreviewMode}>Primary</Button>
+                                                    <Button variant={editingLayer === 'secondary' ? 'default' : 'outline'} onClick={() => setEditingLayer('secondary')} disabled={isPreviewMode}>Secondary</Button>
                                                 </div>
-                                            )}
-
-                                            {editingLayer === 'primary' && activePrimaryTransform ? (
-                                                 <div className="space-y-4 animate-in fade-in-50">
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor="x-pos">X Position: {activePrimaryTransform.x.toFixed(2)}%</Label>
-                                                        <Slider id="x-pos" value={[activePrimaryTransform.x]} onValueChange={([val]) => handleSliderChange('x', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor="y-pos">Y Position: {activePrimaryTransform.y.toFixed(2)}%</Label>
-                                                        <Slider id="y-pos" value={[activePrimaryTransform.y]} onValueChange={([val]) => handleSliderChange('y', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor="scale">Scale: {activePrimaryTransform.scale}%</Label>
-                                                        <Slider id="scale" value={[activePrimaryTransform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={200} step={0.5} disabled={isPreviewMode}/>
-                                                    </div>
-                                                </div>
-                                            ) : editingLayer === 'secondary' && activeSecondaryTransform ? (
-                                                 <div className="space-y-4 animate-in fade-in-50">
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor="x2-pos">X2 Position: {activeSecondaryTransform.x.toFixed(2)}%</Label>
-                                                        <Slider id="x2-pos" value={[activeSecondaryTransform.x]} onValueChange={([val]) => handleSliderChange('x2', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor="y2-pos">Y2 Position: {activeSecondaryTransform.y.toFixed(2)}%</Label>
-                                                        <Slider id="y2-pos" value={[activeSecondaryTransform.y]} onValueChange={([val]) => handleSliderChange('y2', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor="scale2">Scale 2: {activeSecondaryTransform.scale}%</Label>
-                                                        <Slider id="scale2" value={[activeSecondaryTransform.scale]} onValueChange={([val]) => handleSliderChange('scale2', val)} min={10} max={200} step={0.5} disabled={isPreviewMode}/>
-                                                    </div>
-                                                </div>
-                                            ) : null}
-                                            </>
-                                        ) : (
-                                            <p className="text-sm text-muted-foreground text-center">Select an equipped piece to adjust it.</p>
+                                            </div>
                                         )}
+
+                                        {editingLayer === 'primary' && activePrimaryTransform ? (
+                                             <div className="space-y-4 animate-in fade-in-50">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="x-pos">X Position: {activePrimaryTransform.x.toFixed(2)}%</Label>
+                                                    <Slider id="x-pos" value={[activePrimaryTransform.x]} onValueChange={([val]) => handleSliderChange('x', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="y-pos">Y Position: {activePrimaryTransform.y.toFixed(2)}%</Label>
+                                                    <Slider id="y-pos" value={[activePrimaryTransform.y]} onValueChange={([val]) => handleSliderChange('y', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="scale">Scale: {activePrimaryTransform.scale}%</Label>
+                                                    <Slider id="scale" value={[activePrimaryTransform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={200} step={0.5} disabled={isPreviewMode}/>
+                                                </div>
+                                            </div>
+                                        ) : editingLayer === 'secondary' && activeSecondaryTransform ? (
+                                             <div className="space-y-4 animate-in fade-in-50">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="x2-pos">X2 Position: {activeSecondaryTransform.x.toFixed(2)}%</Label>
+                                                    <Slider id="x2-pos" value={[activeSecondaryTransform.x]} onValueChange={([val]) => handleSliderChange('x2', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="y2-pos">Y2 Position: {activeSecondaryTransform.y.toFixed(2)}%</Label>
+                                                    <Slider id="y2-pos" value={[activeSecondaryTransform.y]} onValueChange={([val]) => handleSliderChange('y2', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="scale2">Scale 2: {activeSecondaryTransform.scale}%</Label>
+                                                    <Slider id="scale2" value={[activeSecondaryTransform.scale]} onValueChange={([val]) => handleSliderChange('scale2', val)} min={10} max={200} step={0.5} disabled={isPreviewMode}/>
+                                                </div>
+                                            </div>
+                                        ) : null}
+                                        </>
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground text-center">Select an equipped piece to adjust it.</p>
+                                    )}
                                 </CardContent>
                                  <CardFooter className="flex-col gap-2 items-stretch">
                                     {activePiece && <Button size="sm" variant="outline" onClick={() => setActivePiece(null)} disabled={!activePiece}>
