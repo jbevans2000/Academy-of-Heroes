@@ -102,7 +102,7 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, {
             onMouseMove={onMouseMove}
             onMouseUp={onMouseUp}
             onMouseLeave={onMouseUp}
-            className="relative w-96 h-96 shadow-inner overflow-hidden"
+            className="relative w-full h-full shadow-inner overflow-hidden"
             id="character-canvas-container" // ID for html-to-image
         >
             {backgroundUrl && (
@@ -162,8 +162,8 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, {
                             <div
                                 onMouseDown={handleMouseDownPrimary}
                                 className={cn(
-                                    "absolute pointer-events-auto",
-                                    isPreviewMode ? "cursor-default" : "cursor-move",
+                                    "absolute",
+                                    isPreviewMode ? "cursor-default pointer-events-none" : "cursor-move pointer-events-auto",
                                     !isActive && !isPreviewMode && "opacity-75"
                                 )}
                                 style={{
@@ -180,8 +180,8 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, {
                                 <div
                                     onMouseDown={handleMouseDownSecondary}
                                     className={cn(
-                                        "absolute pointer-events-auto",
-                                        isPreviewMode ? "cursor-default" : "cursor-move",
+                                        "absolute",
+                                        isPreviewMode ? "cursor-default pointer-events-none" : "cursor-move pointer-events-auto",
                                         !isActive && !isPreviewMode && "opacity-75"
                                     )}
                                     style={{
@@ -529,10 +529,6 @@ export default function ForgePage() {
     const ownedArmor = allArmor.filter(armor => student?.ownedArmorIds?.includes(armor.id));
     const armorSlotOrder: ArmorSlot[] = ['head', 'shoulders', 'chest', 'hands', 'legs', 'feet'];
 
-    const equippedPieces = useMemo(() => {
-        return [selectedHead, selectedShoulders, selectedChest, selectedHands, selectedLegs, selectedFeet].filter(Boolean) as ArmorPiece[];
-    }, [selectedHead, selectedShoulders, selectedChest, selectedHands, selectedLegs, selectedFeet]);
-
     const armorBySlot = useMemo(() => {
         const slots: Record<ArmorSlot, ArmorPiece[]> = { head: [], shoulders: [], chest: [], hands: [], legs: [], feet: [] };
         ownedArmor.forEach(piece => {
@@ -605,219 +601,101 @@ export default function ForgePage() {
                                 <Hammer className="mr-2 h-4 w-4"/>
                                 The Armory
                              </Button>
-                             <Button variant="secondary" onClick={handleReset} disabled={isSaving || isSettingAvatar}><RotateCcw className="mr-2 h-4 w-4"/>Reset Appearance</Button>
                              <Button onClick={handleSave} disabled={isSaving || isSettingAvatar}>
                                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4" />}
                                 Save Appearance
                              </Button>
                         </div>
                     </div>
-                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Column 1: Equipment Selection */}
-                        <Card className="h-[80vh] flex flex-col">
-                            <CardHeader>
-                                <CardTitle>The Forge</CardTitle>
-                                <CardDescription>Select your equipment.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex-grow overflow-hidden">
+                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        {/* Column 1: Forge and Backgrounds */}
+                        <div className="lg:col-span-3 space-y-4">
+                            <Card className="h-auto flex flex-col">
+                                <CardHeader>
+                                    <CardTitle>The Forge</CardTitle>
+                                    <CardDescription>Select your equipment.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="flex-grow overflow-hidden">
                                     <Tabs defaultValue="body" className="w-full h-full flex flex-col">
-                                    <TabsList className="grid w-full grid-cols-4">
-                                        <TabsTrigger value="body">Body</TabsTrigger>
-                                        <TabsTrigger value="hair">Hair</TabsTrigger>
-                                        <TabsTrigger value="hair-color" disabled={!selectedHairstyle}>Color</TabsTrigger>
-                                        <TabsTrigger value="armor">Armor</TabsTrigger>
-                                    </TabsList>
-                                    <ScrollArea className="flex-grow mt-4">
-                                        <TabsContent value="body" className="p-1">
+                                        <TabsList className="grid w-full grid-cols-4">
+                                            <TabsTrigger value="body">Body</TabsTrigger>
+                                            <TabsTrigger value="hair">Hair</TabsTrigger>
+                                            <TabsTrigger value="hair-color" disabled={!selectedHairstyle}>Color</TabsTrigger>
+                                            <TabsTrigger value="armor">Armor</TabsTrigger>
+                                        </TabsList>
+                                        <ScrollArea className="flex-grow mt-4 max-h-[65vh]">
+                                            <TabsContent value="body" className="p-1">
                                                 <div className="grid grid-cols-3 gap-2">
-                                                {baseBodyUrls.map(item => (
-                                                    <Card 
-                                                        key={item.id} 
-                                                        className={cn( "cursor-pointer hover:border-primary", selectedBodyId === item.id && "border-2 border-primary" )}
-                                                        onClick={() => setSelectedBodyId(item.id)} >
-                                                        <CardContent className="p-1 aspect-square">
-                                                            <Image src={item.imageUrl} alt={item.name} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
-                                                        </CardContent>
-                                                    </Card>
-                                                ))}
-                                            </div>
-                                        </TabsContent>
-                                        <TabsContent value="hair" className="p-1">
-                                            <div className="grid grid-cols-3 gap-2">
-                                                {hairstyles.map(item => (
-                                                    <Card 
-                                                        key={item.id} 
-                                                        className={cn( "cursor-pointer hover:border-primary", selectedHairstyleId === item.id && "border-2 border-primary" )}
-                                                        onClick={() => handleEquipHairstyle(item)}
-                                                    >
-                                                        <CardContent className="p-1 aspect-square">
-                                                            <Image src={item.baseImageUrl} alt={item.styleName} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
-                                                        </CardContent>
-                                                    </Card>
-                                                ))}
-                                            </div>
-                                        </TabsContent>
-                                        <TabsContent value="hair-color" className="p-1">
-                                            {selectedHairstyle && (
-                                                <div className="grid grid-cols-5 gap-2">
-                                                    {selectedHairstyle.colors.map((color, index) => (
-                                                        <div 
-                                                            key={index} 
-                                                            className={cn("h-16 w-16 rounded-md border-2 cursor-pointer", selectedHairstyleColor === color.imageUrl ? "border-primary ring-2 ring-primary" : "border-transparent")}
-                                                            onClick={() => setSelectedHairstyleColor(color.imageUrl)} >
-                                                            <Image src={color.imageUrl} alt={`Color ${index+1}`} width={64} height={64} className="w-full h-full object-contain rounded-sm bg-secondary" />
-                                                        </div>
+                                                    {baseBodyUrls.map(item => (
+                                                        <Card 
+                                                            key={item.id} 
+                                                            className={cn( "cursor-pointer hover:border-primary", selectedBodyId === item.id && "border-2 border-primary" )}
+                                                            onClick={() => setSelectedBodyId(item.id)} >
+                                                            <CardContent className="p-1 aspect-square">
+                                                                <Image src={item.imageUrl} alt={item.name} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                                                            </CardContent>
+                                                        </Card>
                                                     ))}
                                                 </div>
-                                            )}
-                                        </TabsContent>
-                                        <TabsContent value="armor" className="p-1 space-y-4">
-                                            {armorSlotOrder.map(slot => (
-                                                <div key={slot}>
-                                                    <h4 className="capitalize font-semibold mb-2 text-center border-b pb-1">{slot}</h4>
-                                                    <div className="grid grid-cols-3 gap-2">
-                                                        {armorBySlot[slot].length === 0 ? (
-                                                            <p className="text-muted-foreground text-sm col-span-3 text-center py-2">No items owned for this slot.</p>
-                                                        ) : (
-                                                            armorBySlot[slot].map(item => {
-                                                                const isEquipped = [selectedHead, selectedShoulders, selectedChest, selectedHands, selectedLegs, selectedFeet].some(p => p?.id === item.id);
-                                                                return (
-                                                                    <Card 
-                                                                        key={item.id} 
-                                                                        className={cn("cursor-pointer hover:border-primary", isEquipped && "border-2 border-primary")}
-                                                                        onClick={() => handleEquipArmor(item)} >
-                                                                        <CardContent className="p-1 aspect-square">
-                                                                            <Image src={item.imageUrl} alt={item.name} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
-                                                                        </CardContent>
-                                                                    </Card>
-                                                                )
-                                                            })
-                                                        )}
+                                            </TabsContent>
+                                            <TabsContent value="hair" className="p-1">
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    {hairstyles.map(item => (
+                                                        <Card 
+                                                            key={item.id} 
+                                                            className={cn( "cursor-pointer hover:border-primary", selectedHairstyleId === item.id && "border-2 border-primary" )}
+                                                            onClick={() => handleEquipHairstyle(item)}
+                                                        >
+                                                            <CardContent className="p-1 aspect-square">
+                                                                <Image src={item.baseImageUrl} alt={item.styleName} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                                                            </CardContent>
+                                                        </Card>
+                                                    ))}
+                                                </div>
+                                            </TabsContent>
+                                            <TabsContent value="hair-color" className="p-1">
+                                                {selectedHairstyle && (
+                                                    <div className="grid grid-cols-5 gap-2">
+                                                        {selectedHairstyle.colors.map((color, index) => (
+                                                            <div 
+                                                                key={index} 
+                                                                className={cn("h-16 w-16 rounded-md border-2 cursor-pointer", selectedHairstyleColor === color.imageUrl ? "border-primary ring-2 ring-primary" : "border-transparent")}
+                                                                onClick={() => setSelectedHairstyleColor(color.imageUrl)} >
+                                                                <Image src={color.imageUrl} alt={`Color ${index+1}`} width={64} height={64} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                                                            </div>
+                                                        ))}
                                                     </div>
-                                                </div>
-                                            ))}
-                                        </TabsContent>
-                                    </ScrollArea>
-                                </Tabs>
-                            </CardContent>
-                        </Card>
-
-                        {/* Column 2: Canvas */}
-                        <div className="lg:col-span-1 flex flex-col items-center justify-center bg-gray-700 rounded-lg p-2">
-                             <CharacterCanvas 
-                                ref={canvasRef}
-                                student={{...student, equippedHairstyleTransforms: localHairstyleTransforms, armorTransforms: localTransforms, armorTransforms2: localTransforms2}}
-                                baseBody={baseBodyUrls.find(b => b.id === selectedBodyId) || null}
-                                equipment={{ 
-                                    hairstyle: selectedHairstyle, 
-                                    hairstyleColor: selectedHairstyleColor,
-                                    hairstyleTransforms: localHairstyleTransforms,
-                                    head: selectedHead,
-                                    shoulders: selectedShoulders,
-                                    chest: selectedChest,
-                                    hands: selectedHands,
-                                    legs: selectedLegs,
-                                    feet: selectedFeet,
-                                }}
-                                onMouseDown={handleMouseDown}
-                                onMouseMove={handleMouseMove}
-                                onMouseUp={handleMouseUp}
-                                activePieceId={activePiece?.id || null}
-                                editingLayer={editingLayer}
-                                isPreviewMode={isPreviewMode}
-                                backgroundUrl={selectedBackgroundUrl}
-                            />
-                            <div className="flex justify-between items-center w-full max-w-sm mt-2">
-                                <Button variant="outline" onClick={() => handleBodyCycle('prev')}>
-                                    <ArrowLeft className="h-5 w-5" />
-                                </Button>
-                                <span className="font-semibold text-white">Body Type</span>
-                                 <Button variant="outline" onClick={() => handleBodyCycle('next')}>
-                                    <ArrowRight className="h-5 w-5" />
-                                </Button>
-                            </div>
-                        </div>
-
-                        {/* Column 3: Controls */}
-                        <div className="lg:col-span-1 space-y-4">
-                             <Card>
-                                <CardHeader className="flex flex-row justify-between items-center">
-                                    <CardTitle>Equipped Pieces</CardTitle>
-                                    <Button variant="secondary" size="sm" onClick={handleUnequipAll}>Unequip All</Button>
-                                </CardHeader>
-                                <CardContent className="space-y-2">
-                                     {equippedPieces.length === 0 && !selectedHairstyle && <p className="text-sm text-muted-foreground">Select pieces from the library to equip them.</p>}
-                                     {selectedHairstyle && (
-                                         <div className={cn("flex items-center justify-between p-2 rounded-md", activePiece?.id === selectedHairstyle.id && !isPreviewMode ? 'bg-primary/20' : 'bg-secondary')}>
-                                             <span className="font-semibold text-sm truncate">{selectedHairstyle.styleName}</span>
-                                             <div className="flex gap-1">
-                                                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setActivePiece(selectedHairstyle)} disabled={isPreviewMode}><Edit className="h-4 w-4" /></Button>
-                                                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleEquipHairstyle(selectedHairstyle)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                                             </div>
-                                         </div>
-                                     )}
-                                     {equippedPieces.map(piece => (
-                                         <div key={piece!.id} className={cn("flex items-center justify-between p-2 rounded-md", activePiece?.id === piece!.id && !isPreviewMode ? 'bg-primary/20' : 'bg-secondary')}>
-                                             <span className="font-semibold text-sm truncate">{piece!.name}</span>
-                                             <div className="flex gap-1">
-                                                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setActivePiece(piece)} disabled={isPreviewMode}><Edit className="h-4 w-4" /></Button>
-                                                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleEquipArmor(piece!)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                                             </div>
-                                         </div>
-                                     ))}
+                                                )}
+                                            </TabsContent>
+                                            <TabsContent value="armor" className="p-1 space-y-4">
+                                                {armorSlotOrder.map(slot => (
+                                                    <div key={slot}>
+                                                        <h4 className="capitalize font-semibold mb-2 text-center border-b pb-1">{slot}</h4>
+                                                        <div className="grid grid-cols-3 gap-2">
+                                                            {armorBySlot[slot].length === 0 ? (
+                                                                <p className="text-muted-foreground text-sm col-span-3 text-center py-2">No items owned for this slot.</p>
+                                                            ) : (
+                                                                armorBySlot[slot].map(item => {
+                                                                    const isEquipped = [selectedHead, selectedShoulders, selectedChest, selectedHands, selectedLegs, selectedFeet].some(p => p?.id === item.id);
+                                                                    return (
+                                                                        <Card 
+                                                                            key={item.id} 
+                                                                            className={cn("cursor-pointer hover:border-primary", isEquipped && "border-2 border-primary")}
+                                                                            onClick={() => handleEquipArmor(item)} >
+                                                                            <CardContent className="p-1 aspect-square">
+                                                                                <Image src={item.imageUrl} alt={item.name} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                                                                            </CardContent>
+                                                                        </Card>
+                                                                    )
+                                                                })
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </TabsContent>
+                                        </ScrollArea>
+                                    </Tabs>
                                 </CardContent>
-                            </Card>
-                             <Card>
-                                <CardHeader>
-                                    <CardTitle>Controls</CardTitle>
-                                    <CardDescription>Click a piece to adjust its position and scale.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-6">
-                                    <div className="flex items-center space-x-2">
-                                        <Label htmlFor="preview-mode" className="flex items-center gap-1 cursor-pointer"><Eye className="h-4 w-4"/> Preview</Label>
-                                        <Switch id="preview-mode" checked={isPreviewMode} onCheckedChange={setIsPreviewMode} />
-                                    </div>
-                                    {activePiece ? (
-                                        <>
-                                        {'slot' in activePiece && activePiece.modularImageUrl2 && (
-                                            <div className="space-y-2 p-2 border rounded-md">
-                                                <Label className="flex items-center gap-2"><Layers/> Editing Layer</Label>
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    <Button variant={editingLayer === 'primary' ? 'default' : 'outline'} onClick={() => setEditingLayer('primary')} disabled={isPreviewMode}>Primary</Button>
-                                                    <Button variant={editingLayer === 'secondary' ? 'default' : 'outline'} onClick={() => setEditingLayer('secondary')} disabled={isPreviewMode}>Secondary</Button>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {activeTransform && (
-                                            <div className="space-y-4 animate-in fade-in-50">
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="x-pos">X Position: {activeTransform.x.toFixed(2)}%</Label>
-                                                    <Slider id="x-pos" value={[activeTransform.x]} onValueChange={([val]) => handleSliderChange('x', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="y-pos">Y Position: {activeTransform.y.toFixed(2)}%</Label>
-                                                    <Slider id="y-pos" value={[activeTransform.y]} onValueChange={([val]) => handleSliderChange('y', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="scale">Scale: {activeTransform.scale}%</Label>
-                                                    <Slider id="scale" value={[activeTransform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={200} step={0.5} disabled={isPreviewMode}/>
-                                                </div>
-                                            </div>
-                                        )}
-                                        </>
-                                    ) : (
-                                        <p className="text-sm text-muted-foreground text-center">Select an equipped piece to adjust it.</p>
-                                    )}
-                                </CardContent>
-                                 <CardFooter className="flex-col gap-2 items-stretch">
-                                    {activePiece && <Button size="sm" variant="outline" onClick={() => setActivePiece(null)}>
-                                        <X className="mr-2 h-4 w-4"/> Clear Active Piece
-                                    </Button>}
-                                    <Button onClick={handleSetCustomAvatar} disabled={isSettingAvatar}>
-                                        {isSettingAvatar ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Camera className="mr-2 h-4 w-4" />}
-                                        Set as Custom Avatar
-                                    </Button>
-                                </CardFooter>
                             </Card>
                             <Card>
                                 <CardHeader><CardTitle>Backgrounds</CardTitle></CardHeader>
@@ -848,6 +726,99 @@ export default function ForgePage() {
                                     </div>
                                 </CardContent>
                             </Card>
+                        </div>
+                        
+                        {/* Column 2: Canvas and Controls */}
+                        <div className="lg:col-span-9 grid grid-cols-1 lg:grid-cols-4 gap-6">
+                            <div className="lg:col-span-3 flex flex-col items-center justify-center bg-gray-700 rounded-lg p-2">
+                                <div className="w-full aspect-square relative">
+                                    <CharacterCanvas 
+                                        ref={canvasRef}
+                                        student={{...student, equippedHairstyleTransforms: localHairstyleTransforms, armorTransforms: localTransforms, armorTransforms2: localTransforms2}}
+                                        baseBody={baseBodyUrls.find(b => b.id === selectedBodyId) || null}
+                                        equipment={{ 
+                                            hairstyle: selectedHairstyle, 
+                                            hairstyleColor: selectedHairstyleColor,
+                                            hairstyleTransforms: localHairstyleTransforms,
+                                            head: selectedHead,
+                                            shoulders: selectedShoulders,
+                                            chest: selectedChest,
+                                            hands: selectedHands,
+                                            legs: selectedLegs,
+                                            feet: selectedFeet,
+                                        }}
+                                        onMouseDown={handleMouseDown}
+                                        onMouseMove={handleMouseMove}
+                                        onMouseUp={handleMouseUp}
+                                        activePieceId={activePiece?.id || null}
+                                        editingLayer={editingLayer}
+                                        isPreviewMode={isPreviewMode}
+                                        backgroundUrl={selectedBackgroundUrl}
+                                    />
+                                </div>
+                                <div className="flex justify-between items-center w-full max-w-sm mt-2">
+                                    <Button variant="outline" onClick={() => handleBodyCycle('prev')}>
+                                        <ArrowLeft className="h-5 w-5" />
+                                    </Button>
+                                    <span className="font-semibold text-white">Body Type</span>
+                                    <Button variant="outline" onClick={() => handleBodyCycle('next')}>
+                                        <ArrowRight className="h-5 w-5" />
+                                    </Button>
+                                </div>
+                            </div>
+                            
+                            <div className="lg:col-span-1 space-y-4">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Controls</CardTitle>
+                                        <CardDescription>Click a piece to adjust its position and scale.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-6">
+                                        <div className="flex items-center justify-between">
+                                            <Label htmlFor="preview-mode" className="flex items-center gap-1 cursor-pointer"><Eye className="h-4 w-4"/> Preview</Label>
+                                            <Switch id="preview-mode" checked={isPreviewMode} onCheckedChange={setIsPreviewMode} />
+                                        </div>
+                                         <Button variant="secondary" size="sm" className="w-full" onClick={handleUnequipAll}>Unequip All</Button>
+                                        {activePiece ? (
+                                            <>
+                                            {'slot' in activePiece && activePiece.modularImageUrl2 && (
+                                                <div className="space-y-2 p-2 border rounded-md">
+                                                    <Label className="flex items-center gap-2"><Layers/> Editing Layer</Label>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <Button variant={editingLayer === 'primary' ? 'default' : 'outline'} onClick={() => setEditingLayer('primary')} disabled={isPreviewMode}>Primary</Button>
+                                                        <Button variant={editingLayer === 'secondary' ? 'default' : 'outline'} onClick={() => setEditingLayer('secondary')} disabled={isPreviewMode}>Secondary</Button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {activeTransform && (
+                                                <div className="space-y-4 animate-in fade-in-50">
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor="x-pos">X Position: {activeTransform.x.toFixed(2)}%</Label>
+                                                        <Slider id="x-pos" value={[activeTransform.x]} onValueChange={([val]) => handleSliderChange('x', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor="y-pos">Y Position: {activeTransform.y.toFixed(2)}%</Label>
+                                                        <Slider id="y-pos" value={[activeTransform.y]} onValueChange={([val]) => handleSliderChange('y', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor="scale">Scale: {activeTransform.scale}%</Label>
+                                                        <Slider id="scale" value={[activeTransform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={200} step={0.5} disabled={isPreviewMode}/>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            </>
+                                        ) : (
+                                            <p className="text-sm text-muted-foreground text-center">Select an equipped piece to adjust it.</p>
+                                        )}
+                                    </CardContent>
+                                    <CardFooter className="flex-col gap-2 items-stretch">
+                                        <Button onClick={handleSetCustomAvatar} disabled={isSettingAvatar}>
+                                            {isSettingAvatar ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Camera className="mr-2 h-4 w-4" />}
+                                            Set as Custom Avatar
+                                        </Button>
+                                    </CardFooter>
+                                </Card>
+                            </div>
                         </div>
                      </div>
                  </div>
