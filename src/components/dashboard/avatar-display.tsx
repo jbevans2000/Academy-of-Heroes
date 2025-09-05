@@ -27,7 +27,7 @@ export function AvatarDisplay({ avatarSrc, avatarHint, useCustomAvatar }: Avatar
                     src={avatarSrc}
                     alt="Custom student avatar"
                     fill
-                    className="object-contain"
+                    className="object-cover"
                     data-ai-hint="character"
                     priority
                 />
