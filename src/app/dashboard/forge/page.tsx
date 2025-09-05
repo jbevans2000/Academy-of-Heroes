@@ -48,7 +48,6 @@ export default function ForgePage() {
     const [hairstyles, setHairstyles] = useState<Hairstyle[]>([]);
     const [allArmor, setAllArmor] = useState<ArmorPiece[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
     const [isSettingAvatar, setIsSettingAvatar] = useState(false);
 
     // Dialog State
@@ -301,9 +300,8 @@ export default function ForgePage() {
 
     const handleMouseUp = () => setIsDragging(false);
 
-    const handleSave = async () => {
+    const saveAppearance = async () => {
         if (!user || !teacherUid) return false;
-        setIsSaving(true);
         try {
             const studentRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
             await updateDoc(studentRef, {
@@ -321,15 +319,11 @@ export default function ForgePage() {
                 armorTransforms: localTransforms,
                 armorTransforms2: localTransforms2,
             });
-            setIsPreviewMode(true);
-            toast({ title: "Appearance Saved!", description: "Your hero's new look has been saved." });
             return true;
         } catch (error) {
             console.error("Error saving appearance:", error);
             toast({ variant: 'destructive', title: "Save Failed", description: "Could not save your new look." });
             return false;
-        } finally {
-            setIsSaving(false);
         }
     };
 
@@ -360,20 +354,19 @@ export default function ForgePage() {
         if (!teacherUid || !user) return;
         setIsSettingAvatar(true);
         
-        // First, save any pending changes.
-        const saved = await handleSave();
+        const saved = await saveAppearance();
+        if (!saved) {
+             setIsSettingAvatar(false);
+             return;
+        }
 
-        // Only proceed if the save was successful.
-        if (saved) {
-            try {
-                // Now, set the useCustomAvatar flag.
-                const studentRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
-                await updateDoc(studentRef, { useCustomAvatar: true });
-                setIsAvatarSetDialogOpen(true);
-            } catch (error) {
-                console.error("Error setting custom avatar flag:", error);
-                toast({ variant: 'destructive', title: 'Failed to Set Avatar', description: 'Could not update your avatar preference.' });
-            }
+        try {
+            const studentRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
+            await updateDoc(studentRef, { useCustomAvatar: true });
+            setIsAvatarSetDialogOpen(true);
+        } catch (error) {
+            console.error("Error setting custom avatar flag:", error);
+            toast({ variant: 'destructive', title: 'Failed to Set Avatar', description: 'Could not update your avatar preference.' });
         }
         
         setIsSettingAvatar(false);
@@ -454,14 +447,10 @@ export default function ForgePage() {
                                 The Armory
                              </Button>
                              <Button variant="secondary" onClick={handleUnequipAll}><ShirtIcon className="mr-2 h-4 w-4" />Unequip All</Button>
-                            <Button variant="secondary" onClick={handleSetCustomAvatar} disabled={isSaving || isSettingAvatar}>
+                            <Button variant="default" onClick={handleSetCustomAvatar} disabled={isSettingAvatar}>
                                 {isSettingAvatar ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Camera className="mr-2 h-4 w-4" />}
                                 Set as Custom Avatar
                             </Button>
-                             <Button onClick={handleSave} disabled={isSaving || isSettingAvatar}>
-                                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4" />}
-                                Save Appearance
-                             </Button>
                         </div>
                     </div>
 
@@ -469,7 +458,7 @@ export default function ForgePage() {
                         <Hammer className="h-4 w-4" />
                         <AlertTitle>Welcome to The Forge!</AlertTitle>
                         <AlertDescription>
-                           Here you can mix and match your owned armor pieces and hairstyles. Visit the Armory to buy new pieces. When you're happy with your look, click "Save Appearance". To use this look as your main avatar on the dashboard, click "Set as Custom Avatar".
+                           Here you can mix and match your owned armor pieces and hairstyles. Visit the Armory to buy new pieces. When you're happy with your look, click "Set as Custom Avatar".
                         </AlertDescription>
                     </Alert>
 
