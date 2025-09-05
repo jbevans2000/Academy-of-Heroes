@@ -344,6 +344,19 @@ export default function ForgePage() {
             case 'feet': setSelectedFeet(equipLogic); break;
         }
     };
+
+    const handleEquipHairstyle = (hair: Hairstyle) => {
+        if (selectedHairstyleId === hair.id) {
+            setSelectedHairstyleId(null);
+            setSelectedHairstyleColor(null);
+            if (activePiece?.id === hair.id) {
+                setActivePiece(null);
+            }
+        } else {
+            setSelectedHairstyleId(hair.id);
+            setSelectedHairstyleColor(hair.colors?.[0]?.imageUrl || null);
+        }
+    };
     
     const handleSliderChange = (type: 'x' | 'y' | 'scale', value: number) => {
         if (!activePiece || !selectedBodyId) return;
@@ -627,18 +640,8 @@ export default function ForgePage() {
                                                     <Card 
                                                         key={item.id} 
                                                         className={cn( "cursor-pointer hover:border-primary", selectedHairstyleId === item.id && "border-2 border-primary" )}
-                                                        onClick={() => {
-                                                            if(selectedHairstyleId === item.id) {
-                                                                setSelectedHairstyleId(null);
-                                                                setSelectedHairstyleColor(null);
-                                                                setActivePiece(null);
-                                                            } else {
-                                                                setSelectedHairstyleId(item.id);
-                                                                setSelectedHairstyleColor(item.colors?.[0]?.imageUrl || null);
-                                                                setActivePiece(item);
-                                                                setEditingLayer('primary'); // Reset to primary when selecting hair
-                                                            }
-                                                        }} >
+                                                        onClick={() => handleEquipHairstyle(item)}
+                                                    >
                                                         <CardContent className="p-1 aspect-square">
                                                             <Image src={item.baseImageUrl} alt={item.styleName} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
                                                         </CardContent>
@@ -735,12 +738,13 @@ export default function ForgePage() {
                                     <Button variant="secondary" size="sm" onClick={handleUnequipAll}>Unequip All</Button>
                                 </CardHeader>
                                 <CardContent className="space-y-2">
-                                     {[selectedHead, selectedShoulders, selectedChest, selectedHands, selectedLegs, selectedFeet].filter(Boolean).length === 0 && !selectedHairstyle && <p className="text-sm text-muted-foreground">Select pieces from the library to equip them.</p>}
+                                     {equippedPieces.length === 0 && !selectedHairstyle && <p className="text-sm text-muted-foreground">Select pieces from the library to equip them.</p>}
                                      {selectedHairstyle && (
                                          <div className={cn("flex items-center justify-between p-2 rounded-md", activePiece?.id === selectedHairstyle.id && !isPreviewMode ? 'bg-primary/20' : 'bg-secondary')}>
                                              <span className="font-semibold text-sm truncate">{selectedHairstyle.styleName}</span>
                                              <div className="flex gap-1">
                                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setActivePiece(selectedHairstyle)} disabled={isPreviewMode}><Edit className="h-4 w-4" /></Button>
+                                                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleEquipHairstyle(selectedHairstyle)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                                              </div>
                                          </div>
                                      )}
