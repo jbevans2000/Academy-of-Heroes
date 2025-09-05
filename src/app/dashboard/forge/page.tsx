@@ -92,85 +92,90 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, {
             onMouseMove={onMouseMove}
             onMouseUp={onMouseUp}
             onMouseLeave={onMouseUp}
-            className="relative w-96 h-96 bg-cover bg-center shadow-inner"
+            className="relative w-96 h-96 shadow-inner overflow-hidden"
             id="character-canvas-container" // ID for html-to-image
-            style={{ backgroundImage: backgroundUrl ? `url(${backgroundUrl})` : 'none' }}
         >
-            <Image src={baseBody.imageUrl} alt="Base Body" fill className="object-contain" priority />
-            
-            {hairstyleColor && (
-                <div
-                    className="absolute pointer-events-none"
-                    style={{
-                        top: `${hairstyleTransform.y}%`,
-                        left: `${hairstyleTransform.x}%`,
-                        width: `${hairstyleTransform.scale}%`,
-                        transform: 'translate(-50%, -50%)',
-                        zIndex: 10
-                    }}
-                >
-                    <Image src={hairstyleColor} alt="Hairstyle" width={500} height={500} className="object-contain" />
-                </div>
+            {backgroundUrl && (
+                <Image src={backgroundUrl} alt="Selected Background" fill className="object-cover z-0" />
             )}
+
+            <div className="relative w-full h-full z-10">
+                <Image src={baseBody.imageUrl} alt="Base Body" fill className="object-contain" priority />
             
-             {equippedArmor.map(piece => {
-                if (!piece) return null;
+                {hairstyleColor && (
+                    <div
+                        className="absolute pointer-events-none"
+                        style={{
+                            top: `${hairstyleTransform.y}%`,
+                            left: `${hairstyleTransform.x}%`,
+                            width: `${hairstyleTransform.scale}%`,
+                            transform: 'translate(-50%, -50%)',
+                            zIndex: 10
+                        }}
+                    >
+                        <Image src={hairstyleColor} alt="Hairstyle" width={500} height={500} className="object-contain" />
+                    </div>
+                )}
                 
-                const customTransform = student.armorTransforms?.[piece.id]?.[baseBody!.id];
-                const defaultTransform = piece.transforms?.[baseBody!.id] || { x: 50, y: 50, scale: 40 };
-                const transform = customTransform || defaultTransform;
-                
-                const customTransform2 = student.armorTransforms2?.[piece.id]?.[baseBody!.id];
-                const defaultTransform2 = piece.transforms2?.[baseBody!.id] || { x: 50, y: 50, scale: 40 };
-                const transform2 = customTransform2 || defaultTransform2;
+                {equippedArmor.map(piece => {
+                    if (!piece) return null;
+                    
+                    const customTransform = student.armorTransforms?.[piece.id]?.[baseBody!.id];
+                    const defaultTransform = piece.transforms?.[baseBody!.id] || { x: 50, y: 50, scale: 40 };
+                    const transform = customTransform || defaultTransform;
+                    
+                    const customTransform2 = student.armorTransforms2?.[piece.id]?.[baseBody!.id];
+                    const defaultTransform2 = piece.transforms2?.[baseBody!.id] || { x: 50, y: 50, scale: 40 };
+                    const transform2 = customTransform2 || defaultTransform2;
 
-                const zIndex = slotZIndex[piece.slot] || 1;
-                const isActive = piece.id === activePieceId;
+                    const zIndex = slotZIndex[piece.slot] || 1;
+                    const isActive = piece.id === activePieceId;
 
-                const handleMouseDown = onMouseDown ? (e: React.MouseEvent<HTMLDivElement>) => onMouseDown(e, piece, 'primary') : undefined;
-                const handleMouseDown2 = onMouseDown ? (e: React.MouseEvent<HTMLDivElement>) => onMouseDown(e, piece, 'secondary') : undefined;
+                    const handleMouseDown = onMouseDown ? (e: React.MouseEvent<HTMLDivElement>) => onMouseDown(e, piece, 'primary') : undefined;
+                    const handleMouseDown2 = onMouseDown ? (e: React.MouseEvent<HTMLDivElement>) => onMouseDown(e, piece, 'secondary') : undefined;
 
-                return (
-                    <React.Fragment key={piece.id}>
-                        <div
-                            onMouseDown={handleMouseDown}
-                            className={cn(
-                                "absolute pointer-events-auto",
-                                isPreviewMode ? "cursor-default" : "cursor-move",
-                                !isActive && !isPreviewMode && "opacity-75"
-                            )}
-                            style={{
-                                top: `${transform.y}%`,
-                                left: `${transform.x}%`,
-                                width: `${transform.scale}%`,
-                                transform: 'translate(-50%, -50%)',
-                                zIndex: isPreviewMode ? zIndex : (isActive && editingLayer === 'primary' ? 20 : zIndex),
-                            }}
-                        >
-                            <Image src={piece.modularImageUrl} alt={piece.name} width={500} height={500} className="object-contain pointer-events-none" />
-                        </div>
-                        {piece.modularImageUrl2 && (
-                             <div
-                                onMouseDown={handleMouseDown2}
+                    return (
+                        <React.Fragment key={piece.id}>
+                            <div
+                                onMouseDown={handleMouseDown}
                                 className={cn(
                                     "absolute pointer-events-auto",
                                     isPreviewMode ? "cursor-default" : "cursor-move",
                                     !isActive && !isPreviewMode && "opacity-75"
                                 )}
                                 style={{
-                                    top: `${transform2.y}%`,
-                                    left: `${transform2.x}%`,
-                                    width: `${transform2.scale}%`,
+                                    top: `${transform.y}%`,
+                                    left: `${transform.x}%`,
+                                    width: `${transform.scale}%`,
                                     transform: 'translate(-50%, -50%)',
-                                    zIndex: isPreviewMode ? zIndex : (isActive && editingLayer === 'secondary' ? 20 : zIndex),
+                                    zIndex: isPreviewMode ? zIndex : (isActive && editingLayer === 'primary' ? 20 : zIndex),
                                 }}
                             >
-                                <Image src={piece.modularImageUrl2} alt={`${piece.name} (secondary)`} width={500} height={500} className="object-contain pointer-events-none" />
+                                <Image src={piece.modularImageUrl} alt={piece.name} width={500} height={500} className="object-contain pointer-events-none" />
                             </div>
-                        )}
-                    </React.Fragment>
-                );
-            })}
+                            {piece.modularImageUrl2 && (
+                                <div
+                                    onMouseDown={handleMouseDown2}
+                                    className={cn(
+                                        "absolute pointer-events-auto",
+                                        isPreviewMode ? "cursor-default" : "cursor-move",
+                                        !isActive && !isPreviewMode && "opacity-75"
+                                    )}
+                                    style={{
+                                        top: `${transform2.y}%`,
+                                        left: `${transform2.x}%`,
+                                        width: `${transform2.scale}%`,
+                                        transform: 'translate(-50%, -50%)',
+                                        zIndex: isPreviewMode ? zIndex : (isActive && editingLayer === 'secondary' ? 20 : zIndex),
+                                    }}
+                                >
+                                    <Image src={piece.modularImageUrl2} alt={`${piece.name} (secondary)`} width={500} height={500} className="object-contain pointer-events-none" />
+                                </div>
+                            )}
+                        </React.Fragment>
+                    );
+                })}
+            </div>
         </div>
     );
 });
@@ -518,13 +523,13 @@ export default function ForgePage() {
             <AlertDialog open={isConfirmingAvatar} onOpenChange={setIsConfirmingAvatar}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Set this as your new Avatar?</AlertDialogTitle>
+                        <AlertDialogTitle>Did You Save Your Appearance?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will take a snapshot of your currently displayed character to use as your avatar across the game.
+                           Make sure you have saved your current look before setting it as your avatar. Unsaved changes will not be captured.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel onClick={() => setIsConfirmingAvatar(false)}>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel onClick={() => setIsConfirmingAvatar(false)}>No, Go Back</AlertDialogCancel>
                         <AlertDialogAction onClick={proceedWithAvatarSet} disabled={isSettingAvatar}>
                             {isSettingAvatar ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Yes, Set Avatar'}
                         </AlertDialogAction>
@@ -536,7 +541,7 @@ export default function ForgePage() {
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                  <div className="w-full max-w-7xl mx-auto space-y-4">
                      <div className="flex justify-between items-center">
-                        <Button variant="outline" onClick={() => { window.location.href = '/dashboard' }}><ArrowLeft className="mr-2 h-4 w-4"/> Back to Dashboard</Button>
+                        <Button variant="outline" onClick={() => { window.location.reload() }}><ArrowLeft className="mr-2 h-4 w-4"/> Back to Dashboard</Button>
                         <div className="flex gap-2">
                              <Button onClick={() => setIsArmoryOpen(true)}>
                                 <Hammer className="mr-2 h-4 w-4"/>
