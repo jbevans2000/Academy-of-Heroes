@@ -397,7 +397,9 @@ export default function ForgePage() {
     };
     
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece | Hairstyle, layer: 'primary' | 'secondary') => {
-        if (isPreviewMode) return;
+        if (isPreviewMode) {
+            setIsPreviewMode(false);
+        }
         e.preventDefault();
         setActivePiece(piece);
         setEditingLayer(layer);
