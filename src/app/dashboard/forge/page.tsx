@@ -46,18 +46,6 @@ const slotZIndex: Record<ArmorSlot, number> = {
     hands: 5,
 };
 
-const backgroundPlaceholders = [
-    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_35_11%20AM.png?alt=media&token=8a2dfda2-01b8-404d-a399-46289bd84759',
-    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_36_06%20AM.png?alt=media&token=4fd59bf0-be44-4430-8c37-faf50966727e',
-    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_37_19%20AM.png?alt=media&token=eb2b1216-589d-4255-b895-34b916b1430c',
-    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_38_56%20AM.png?alt=media&token=7e424757-f1cb-42a2-8496-93339ff16de4',
-    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_41_06%20AM.png?alt=media&token=91ad076b-39f3-4284-8320-e6d79aabcc3f',
-    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_44_32%20AM.png?alt=media&token=d5326450-62b5-48ad-a4b4-bd9a68964cd0',
-    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_46_44%20AM.png?alt=media&token=512c4aa1-144a-49cd-a6cc-884ce163ebde',
-    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_50_59%20AM.png?alt=media&token=45e11f7c-40de-4da9-9c17-ebce834beee7',
-    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2006_03_10%20AM.png?alt=media&token=bb987156-6f34-489e-8d2c-a5b6349cd808',
-]
-
 const CharacterCanvas = React.forwardRef<HTMLDivElement, {
     student: Student | null;
     equipment: any;
@@ -121,11 +109,19 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, {
                     if (!piece) return null;
                     
                     const customTransform = student.armorTransforms?.[piece.id]?.[baseBody!.id];
-                    const defaultTransform = piece.transforms?.[baseBody!.id] || { x: 50, y: 50, scale: 40 };
+                    
+                    // New fallback logic
+                    const firstAvailableDefaultTransform = piece.transforms ? Object.values(piece.transforms)[0] : null;
+                    const defaultTransform = piece.transforms?.[baseBody!.id] || firstAvailableDefaultTransform || { x: 50, y: 50, scale: 40 };
+                    
                     const transform = customTransform || defaultTransform;
                     
                     const customTransform2 = student.armorTransforms2?.[piece.id]?.[baseBody!.id];
-                    const defaultTransform2 = piece.transforms2?.[baseBody!.id] || { x: 50, y: 50, scale: 40 };
+
+                    // New fallback logic for second layer
+                    const firstAvailableDefaultTransform2 = piece.transforms2 ? Object.values(piece.transforms2)[0] : null;
+                    const defaultTransform2 = piece.transforms2?.[baseBody!.id] || firstAvailableDefaultTransform2 || { x: 50, y: 50, scale: 40 };
+
                     const transform2 = customTransform2 || defaultTransform2;
 
                     const zIndex = slotZIndex[piece.slot] || 1;
@@ -801,7 +797,17 @@ export default function ForgePage() {
                                 <CardHeader><CardTitle>Backgrounds</CardTitle></CardHeader>
                                 <CardContent>
                                     <div className="grid grid-cols-3 gap-2">
-                                        {backgroundPlaceholders.map((url, i) => (
+                                        {[
+                                            'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_35_11%20AM.png?alt=media&token=8a2dfda2-01b8-404d-a399-46289bd84759',
+                                            'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_36_06%20AM.png?alt=media&token=4fd59bf0-be44-4430-8c37-faf50966727e',
+                                            'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_37_19%20AM.png?alt=media&token=eb2b1216-589d-4255-b895-34b916b1430c',
+                                            'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_38_56%20AM.png?alt=media&token=7e424757-f1cb-42a2-8496-93339ff16de4',
+                                            'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_41_06%20AM.png?alt=media&token=91ad076b-39f3-4284-8320-e6d79aabcc3f',
+                                            'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_44_32%20AM.png?alt=media&token=d5326450-62b5-48ad-a4b4-bd9a68964cd0',
+                                            'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_46_44%20AM.png?alt=media&token=512c4aa1-144a-49cd-a6cc-884ce163ebde',
+                                            'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_50_59%20AM.png?alt=media&token=45e11f7c-40de-4da9-9c17-ebce834beee7',
+                                            'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2006_03_10%20AM.png?alt=media&token=bb987156-6f34-489e-8d2c-a5b6349cd808',
+                                        ].map((url, i) => (
                                             <div 
                                                 key={i} 
                                                 className={cn(
