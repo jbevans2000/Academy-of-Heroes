@@ -387,33 +387,37 @@ export default function ForgePage() {
     }
 
     const handleSetCustomAvatar = async () => {
-        if (!canvasRef.current || !teacherUid || !user) return;
-
+        const canvasElement = canvasRef.current;
+        if (!canvasElement || !teacherUid || !user) return;
+    
         // Force preview mode on for a clean capture
         if (!isPreviewMode) {
             setIsPreviewMode(true);
             await new Promise(resolve => setTimeout(resolve, 50));
         }
-
+    
         setIsSettingAvatar(true);
+        const originalStyle = canvasElement.style.cssText;
+        canvasElement.style.width = '500px';
+        canvasElement.style.height = '500px';
+    
         try {
-            const canvas = await html2canvas(canvasRef.current, {
+            const canvas = await html2canvas(canvasElement, {
                 backgroundColor: null,
                 logging: false,
                 useCORS: true,
+                width: 500,
+                height: 500,
             });
             const imageDataUrl = canvas.toDataURL('image/png');
-
+    
             const storage = getStorage(app);
             const imagePath = `custom-avatars/${teacherUid}/${user.uid}/${uuidv4()}.png`;
             const storageRef = ref(storage, imagePath);
-
-            // This uploads the image data URL directly.
-            // Firebase SDK handles the conversion from data URL string to blob.
+    
             const snapshot = await uploadString(storageRef, imageDataUrl, 'data_url');
             const downloadUrl = await getDownloadURL(snapshot.ref);
-
-            // Update Firestore with the new public URL
+    
             const studentRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
             await updateDoc(studentRef, {
                 avatarUrl: downloadUrl,
@@ -421,12 +425,13 @@ export default function ForgePage() {
             });
             
             toast({ title: 'Avatar Set!', description: 'Your custom look is now your main avatar.' });
-             setStudent(prev => prev ? {...prev, avatarUrl: downloadUrl, useCustomAvatar: true} : null);
-
+            setStudent(prev => prev ? {...prev, avatarUrl: downloadUrl, useCustomAvatar: true} : null);
+    
         } catch (error: any) {
             console.error("Error setting custom avatar:", error);
             toast({ variant: 'destructive', title: 'Failed to Set Avatar', description: error.message });
         } finally {
+            canvasElement.style.cssText = originalStyle;
             setIsSettingAvatar(false);
             if (!isPreviewMode) {
                 setIsPreviewMode(false);
