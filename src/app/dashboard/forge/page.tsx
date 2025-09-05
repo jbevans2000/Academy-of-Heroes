@@ -499,7 +499,7 @@ export default function ForgePage() {
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                  <div className="w-full max-w-7xl mx-auto space-y-4">
                      <div className="flex justify-between items-center">
-                        <Button variant="outline" onClick={() => window.location.href = '/dashboard'}><ArrowLeft className="mr-2 h-4 w-4"/> Back to Dashboard</Button>
+                        <Button variant="outline" onClick={() => window.location.reload(true)}><ArrowLeft className="mr-2 h-4 w-4"/> Back to Dashboard</Button>
                         <div className="flex gap-2">
                              <Button onClick={() => setIsArmoryOpen(true)}>
                                 <Hammer className="mr-2 h-4 w-4"/>
