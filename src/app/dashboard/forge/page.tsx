@@ -46,6 +46,26 @@ const slotZIndex: Record<ArmorSlot, number> = {
     hands: 5,
 };
 
+const baseBodyUrls = [
+    { id: 'body_1', name: 'Base Body 1', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(1).png?alt=media&token=8ff364fe-6a96-4ace-b4e8-f011c87f725f', width: 500, height: 500 },
+    { id: 'body_2', name: 'Base Body 2', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(2).png?alt=media&token=c41b2cae-9f42-43c5-bd3c-e33d316c0a78', width: 500, height: 500 },
+    { id: 'body_3', name: 'Base Body 3', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(3).png?alt=media&token=f345fe77-f7e5-4d76-b42e-5154db5d9777', width: 500, height: 500 },
+    { id: 'body_4', name: 'Base Body 4', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(4).png?alt=media&token=202e80bd-ed73-41d6-b60e-8992740545d4', width: 500, height: 500 },
+    { id: 'body_5', name: 'Base Body 5', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(5).png?alt=media&token=a1132f06-6b2a-46af-95b3-b7b489d6f68b', width: 500, height: 500 },
+    { id: 'body_6', name: 'Base Body 6', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(6).png?alt=media&token=1fbc2b95-d1fd-4662-b3ae-57e6d004a6fe', width: 500, height: 500 },
+    { id: 'body_7', name: 'Base Body 7', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(7).png?alt=media&token=0070e4e9-f0cc-443b-bc1b-7679d7b7225b', width: 500, height: 500 },
+    { id: 'body_8', name: 'Base Body 8', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(8).png?alt=media&token=91503537-a701-412c-a082-8d969d99eb84', width: 500, height: 500 },
+    { id: 'body_9', name: 'Base Body 9', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody_Transparent_v2.png?alt=media&token=1f3248d5-d6bf-4b1d-b970-e6deef1ea3f7', width: 500, height: 500 },
+    { id: 'body_10', name: 'Anime Base Body 1', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FAnimeBaseBody%20(1).png?alt=media&token=f738966c-d40a-454a-8e4a-78bf19d972be', width: 500, height: 500 },
+    { id: 'body_11', name: 'Anime Base Body 2', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FAnimeBaseBody%20(2).png?alt=media&token=2fb0768c-e206-48f2-9a7a-a4b0cbd74e10', width: 500, height: 500 },
+    { id: 'body_12', name: 'Anime Base Body 3', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FAnimeBaseBody%20(3).png?alt=media&token=2cdd0a22-2a98-42db-a5ba-95f6fef671b2', width: 500, height: 500 },
+    { id: 'body_13', name: 'Anime Base Body 4', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FAnimeBaseBody%20(4).png?alt=media&token=c4ff0eed-e391-40c6-bd95-962ca3aa22b4', width: 500, height: 500 },
+    { id: 'body_14', name: 'Anime Base Body 5', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FAnimeBaseBody%20(5).png?alt=media&token=4dfb98f7-c94d-48a6-97fe-4d13a9d3ed7b', width: 500, height: 500 },
+    { id: 'body_15', name: 'Anime Base Body 6', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FAnimeBaseBody%20(6).png?alt=media&token=598124f6-d00e-4287-9669-cac51093f303', width: 500, height: 500 },
+    { id: 'body_16', name: 'Anime Base Body 7', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FAnimeBaseBody%20(7).png?alt=media&token=639029aa-edee-4084-aab2-738f41d41a73', width: 500, height: 500 },
+    { id: 'body_17', name: 'Anime Base Body 8', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FAnimeBaseBody%20(8).png?alt=media&token=61445a4e-5b6a-4bb5-bce1-090c2976262e', width: 500, height: 500 },
+];
+
 const CharacterCanvas = React.forwardRef<HTMLDivElement, {
     student: Student | null;
     equipment: any;
@@ -186,7 +206,6 @@ export default function ForgePage() {
     const [user, setUser] = useState<User | null>(null);
     const [student, setStudent] = useState<Student | null>(null);
     const [teacherUid, setTeacherUid] = useState<string | null>(null);
-    const [baseBodies, setBaseBodies] = useState<BaseBody[]>([]);
     const [hairstyles, setHairstyles] = useState<Hairstyle[]>([]);
     const [allArmor, setAllArmor] = useState<ArmorPiece[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -258,10 +277,6 @@ export default function ForgePage() {
         
         const fetchCosmetics = async () => {
              try {
-                const bodiesSnap = await getDocs(collection(db, 'baseBodies'));
-                const bodiesData = bodiesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as BaseBody)).sort((a: any, b: any) => a.order - b.order);
-                setBaseBodies(bodiesData);
-                
                 const hairQuery = query(collection(db, 'hairstyles'), where('isPublished', '==', true));
                 const hairSnap = await getDocs(hairQuery);
                 setHairstyles(hairSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hairstyle)));
@@ -286,8 +301,8 @@ export default function ForgePage() {
     }, [user, teacherUid, toast]);
     
     const setInitialEquipment = useCallback(() => {
-        if (student && allArmor.length > 0 && baseBodies.length > 0) {
-            setSelectedBodyId(student.equippedBodyId || baseBodies[0]?.id || null);
+        if (student && allArmor.length > 0 && baseBodyUrls.length > 0) {
+            setSelectedBodyId(student.equippedBodyId || baseBodyUrls[0]?.id || null);
             setSelectedHairstyleId(student.equippedHairstyleId || null);
             setSelectedHairstyleColor(student.equippedHairstyleColor || null);
             setSelectedBackgroundUrl(student.backgroundUrl || null);
@@ -300,7 +315,7 @@ export default function ForgePage() {
             setLocalTransforms(student.armorTransforms || {});
             setLocalTransforms2(student.armorTransforms2 || {});
         }
-    }, [student, allArmor, baseBodies]);
+    }, [student, allArmor]);
 
     useEffect(() => {
         setInitialEquipment();
@@ -405,7 +420,7 @@ export default function ForgePage() {
     const handleReset = () => {
         // This clears the current state, but doesn't save it.
         // The appearance will revert to the last saved state on next load.
-        setSelectedBodyId(baseBodies[0]?.id || null);
+        setSelectedBodyId(baseBodyUrls[0]?.id || null);
         setSelectedHairstyleId(null);
         setSelectedHairstyleColor(null);
         setSelectedBackgroundUrl(null);
@@ -433,15 +448,15 @@ export default function ForgePage() {
     };
 
     const handleBodyCycle = (direction: 'next' | 'prev') => {
-        if (baseBodies.length === 0 || !selectedBodyId) return;
-        const currentIndex = baseBodies.findIndex(b => b.id === selectedBodyId);
+        if (baseBodyUrls.length === 0 || !selectedBodyId) return;
+        const currentIndex = baseBodyUrls.findIndex(b => b.id === selectedBodyId);
         let nextIndex;
         if (direction === 'next') {
-            nextIndex = (currentIndex + 1) % baseBodies.length;
+            nextIndex = (currentIndex + 1) % baseBodyUrls.length;
         } else {
-            nextIndex = (currentIndex - 1 + baseBodies.length) % baseBodies.length;
+            nextIndex = (currentIndex - 1 + baseBodyUrls.length) % baseBodyUrls.length;
         }
-        setSelectedBodyId(baseBodies[nextIndex].id);
+        setSelectedBodyId(baseBodyUrls[nextIndex].id);
     };
 
     const handleSetCustomAvatar = async () => {
@@ -591,7 +606,7 @@ export default function ForgePage() {
                                     <ScrollArea className="flex-grow mt-4">
                                         <TabsContent value="body" className="p-1">
                                                 <div className="grid grid-cols-3 gap-2">
-                                                {baseBodies.map(item => (
+                                                {baseBodyUrls.map(item => (
                                                     <Card 
                                                         key={item.id} 
                                                         className={cn( "cursor-pointer hover:border-primary", selectedBodyId === item.id && "border-2 border-primary" )}
@@ -675,7 +690,7 @@ export default function ForgePage() {
                              <CharacterCanvas 
                                 ref={canvasRef}
                                 student={{...student, armorTransforms: localTransforms, armorTransforms2: localTransforms2}}
-                                baseBody={baseBodies.find(b => b.id === selectedBodyId) || null}
+                                baseBody={baseBodyUrls.find(b => b.id === selectedBodyId) || null}
                                 equipment={{ 
                                     hairstyle: selectedHairstyle, 
                                     hairstyleColor: selectedHairstyleColor,
