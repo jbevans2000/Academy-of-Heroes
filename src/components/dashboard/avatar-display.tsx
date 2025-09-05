@@ -1,47 +1,84 @@
 
+
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-import type { ClassType } from '@/lib/data';
+import type { Student } from '@/lib/data';
+import { CharacterCanvas } from './character-canvas';
+import { collection, onSnapshot, query, where, doc, getDoc, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useEffect, useState } from 'react';
+import type { Hairstyle, ArmorPiece } from '@/lib/forge';
+
 
 interface AvatarDisplayProps {
-  avatarSrc: string;
-  avatarHint: ClassType | string;
-  useCustomAvatar?: boolean;
+  student: Student;
 }
 
-export function AvatarDisplay({ avatarSrc, avatarHint, useCustomAvatar }: AvatarDisplayProps) {
+export function AvatarDisplay({ student }: AvatarDisplayProps) {
+  const [allHairstyles, setAllHairstyles] = useState<Hairstyle[]>([]);
+  const [allArmor, setAllArmor] = useState<ArmorPiece[]>([]);
 
   const avatarBorderColor = {
     Mage: 'border-blue-600',
     Healer: 'border-green-500',
     Guardian: 'border-amber-500',
     '': 'border-transparent',
-  }[avatarHint as ClassType] || 'border-transparent';
+  }[student.class] || 'border-transparent';
+  
+  useEffect(() => {
+    const fetchAssets = async () => {
+        const hairQuery = query(collection(db, 'hairstyles'));
+        const unsubHair = onSnapshot(hairQuery, (snapshot) => {
+            setAllHairstyles(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hairstyle)));
+        });
 
-  // Cache-busting: Append a unique query string to the image URL to force re-fetch.
-  const cacheBustedSrc = `${avatarSrc}?t=${new Date().getTime()}`;
+        const armorQuery = query(collection(db, 'armorPieces'));
+        const unsubArmor = onSnapshot(armorQuery, (snapshot) => {
+            setAllArmor(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ArmorPiece)));
+        });
+
+        return () => {
+            unsubHair();
+            unsubArmor();
+        };
+    };
+    fetchAssets();
+  }, []);
 
   return (
     <div className="flex justify-center items-center py-4">
-        {useCustomAvatar ? (
+        {student.useCustomAvatar ? (
              <div className={cn("relative w-96 h-96", avatarBorderColor)}>
-                 <Image
-                    src={cacheBustedSrc}
-                    alt="Custom student avatar"
-                    fill
-                    className="object-cover"
-                    data-ai-hint="character"
-                    priority
-                />
+                <CharacterCanvas
+                    student={student}
+                    equipment={{
+                        bodyId: student.equippedBodyId || null,
+                        hairstyleId: student.equippedHairstyleId || null,
+                        hairstyleColor: student.equippedHairstyleColor || null,
+                        backgroundUrl: student.backgroundUrl || null,
+                        headId: student.equippedHeadId || null,
+                        shouldersId: student.equippedShouldersId || null,
+                        chestId: student.equippedChestId || null,
+                        handsId: student.equippedHandsId || null,
+                        legsId: student.equippedLegsId || null,
+                        feetId: student.equippedFeetId || null,
+                    }}
+                    allHairstyles={allHairstyles}
+                    allArmor={allArmor}
+                    isPreviewMode={true}
+                    localHairstyleTransforms={student.equippedHairstyleTransforms}
+                    localArmorTransforms={student.armorTransforms}
+                    localArmorTransforms2={student.armorTransforms2}
+                 />
              </div>
         ) : (
              <div className={cn("relative w-96 h-96 border-8 bg-black/20 p-2 shadow-inner", avatarBorderColor)}>
                 <Image
-                    src={avatarSrc}
+                    src={student.avatarUrl}
                     alt="Selected avatar"
                     fill
                     className="object-contain drop-shadow-[0_5px_15px_rgba(0,0,0,0.3)] transition-all duration-500"
-                    data-ai-hint={avatarHint}
+                    data-ai-hint={student.class}
                     priority
                 />
             </div>

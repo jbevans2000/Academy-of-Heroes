@@ -204,8 +204,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
         <div className="mx-auto max-w-4xl space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             <AvatarDisplay
-              avatarSrc={student.avatarUrl}
-              avatarHint={student.class}
+              student={student}
             />
             <div className="grid grid-cols-2 gap-4">
                 <Link href="/dashboard/map" passHref className="col-span-2">
@@ -288,4 +287,3 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
     </>
   );
 }
-

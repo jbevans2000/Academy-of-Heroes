@@ -5,13 +5,12 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, onSnapshot, query, where, doc, getDoc, updateDoc, getDocs, documentId } from 'firebase/firestore';
-import { getStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
-import { db, auth, app } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import { baseBodyUrls, type ArmorPiece, type Hairstyle, type ArmorSlot } from '@/lib/forge';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Loader2, Hammer, Layers, Eye, Camera, X, Shirt, ArrowRight, Scissors, ChevronsRight, ChevronsLeft, ShirtIcon } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Hammer, Layers, Eye, Camera, X, Shirt, ArrowRight, ChevronsRight, ChevronsLeft, ShirtIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -23,8 +22,6 @@ import { ArmoryDialog } from '@/components/dashboard/armory-dialog';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
-import * as htmlToImage from 'html-to-image';
-import { v4 as uuidv4 } from 'uuid';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,152 +35,8 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-
-
-const slotZIndex: Record<ArmorSlot, number> = {
-    legs: 1,
-    feet: 2,
-    chest: 3,
-    shoulders: 4,
-    head: 5,
-    hands: 5,
-};
-
-const CharacterCanvas = React.forwardRef<HTMLDivElement, {
-    student: Student | null;
-    equipment: any;
-    baseBody: (typeof baseBodyUrls[0]) | null;
-    allHairstyles: Hairstyle[];
-    allArmor: ArmorPiece[];
-    onMouseDown?: (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece | Hairstyle, layer: 'primary' | 'secondary') => void;
-    activePieceId: string | null;
-    editingLayer: 'primary' | 'secondary';
-    isPreviewMode: boolean;
-    localHairstyleTransforms: Student['equippedHairstyleTransforms'];
-    localArmorTransforms: Student['armorTransforms'];
-    localArmorTransforms2: Student['armorTransforms2'];
-}>(({ 
-    student, 
-    equipment, 
-    baseBody, 
-    allHairstyles,
-    allArmor,
-    onMouseDown, 
-    activePieceId, 
-    editingLayer, 
-    isPreviewMode,
-    localHairstyleTransforms,
-    localArmorTransforms,
-    localArmorTransforms2,
-}, ref) => {
-    if (!student) return <Skeleton className="w-full h-full" />;
-
-    const hairstyle = allHairstyles.find(h => h.id === equipment.hairstyleId);
-    const hairstyleColor = equipment.hairstyleColor || hairstyle?.colors[0]?.imageUrl;
-    
-    const hairstyleTransform = localHairstyleTransforms?.[baseBody?.id || ''] || hairstyle?.transforms?.[baseBody?.id || ''] || { x: 50, y: 50, scale: 100 };
-    
-    const equippedArmorPieces = Object.values(equipment)
-        .map(id => allArmor.find(a => a.id === id))
-        .filter((p): p is ArmorPiece => !!p);
-
-
-    const handleHairMouseDown = onMouseDown && hairstyle ? (e: React.MouseEvent<HTMLDivElement>) => onMouseDown(e, hairstyle, 'primary') : undefined;
-
-    return (
-        <div 
-            ref={ref}
-            className="relative w-full h-full shadow-inner overflow-hidden"
-            id="character-canvas-container" // ID for html-to-image
-        >
-            {equipment.backgroundUrl && (
-                <Image src={equipment.backgroundUrl} alt="Selected Background" fill className="object-cover z-0" />
-            )}
-
-            <div className="relative w-full h-full z-10">
-                 {baseBody && <Image src={baseBody.imageUrl} alt="Base Body" fill className="object-contain" priority />}
-            
-                {baseBody && hairstyleColor && hairstyle && (
-                    <div
-                        onMouseDown={handleHairMouseDown}
-                        className={cn(
-                            "absolute",
-                            isPreviewMode ? "cursor-default pointer-events-none" : "cursor-move pointer-events-auto",
-                            activePieceId !== hairstyle.id && !isPreviewMode && "opacity-75"
-                        )}
-                        style={{
-                            top: `${hairstyleTransform.y}%`,
-                            left: `${hairstyleTransform.x}%`,
-                            width: `${hairstyleTransform.scale}%`,
-                            transform: 'translate(-50%, -50%)',
-                            zIndex: isPreviewMode ? 10 : (activePieceId === hairstyle.id ? 20 : 10)
-                        }}
-                    >
-                        <Image src={hairstyleColor} alt="Hairstyle" width={500} height={500} className="object-contain pointer-events-none" />
-                    </div>
-                )}
-                
-                {baseBody && equippedArmorPieces.map(piece => {
-                    const customTransform = localArmorTransforms?.[piece.id]?.[baseBody!.id];
-                    const defaultTransform = piece.transforms?.[baseBody!.id] || { x: 50, y: 50, scale: 40 };
-                    const transform = customTransform || defaultTransform;
-                    
-                    const customTransform2 = localArmorTransforms2?.[piece.id]?.[baseBody!.id];
-                    const defaultTransform2 = piece.transforms2?.[baseBody!.id] || { x: 50, y: 50, scale: 40 };
-                    const transform2 = customTransform2 || defaultTransform2;
-
-                    const zIndex = slotZIndex[piece.slot] || 1;
-                    const isActive = piece.id === activePieceId;
-
-                    const handleMouseDownPrimary = onMouseDown ? (e: React.MouseEvent<HTMLDivElement>) => onMouseDown(e, piece, 'primary') : undefined;
-                    const handleMouseDownSecondary = onMouseDown ? (e: React.MouseEvent<HTMLDivElement>) => onMouseDown(e, piece, 'secondary') : undefined;
-
-                    return (
-                        <React.Fragment key={piece.id}>
-                            <div
-                                onMouseDown={handleMouseDownPrimary}
-                                className={cn(
-                                    "absolute",
-                                    isPreviewMode ? "cursor-default pointer-events-none" : "cursor-move pointer-events-auto",
-                                    !isActive && !isPreviewMode && "opacity-75"
-                                )}
-                                style={{
-                                    top: `${transform.y}%`,
-                                    left: `${transform.x}%`,
-                                    width: `${transform.scale}%`,
-                                    transform: 'translate(-50%, -50%)',
-                                    zIndex: isPreviewMode ? zIndex : (isActive && editingLayer === 'primary' ? 20 : zIndex),
-                                }}
-                            >
-                                <Image src={piece.modularImageUrl} alt={piece.name} width={500} height={500} className="object-contain pointer-events-none" />
-                            </div>
-                            {piece.modularImageUrl2 && (
-                                <div
-                                    onMouseDown={handleMouseDownSecondary}
-                                    className={cn(
-                                        "absolute",
-                                        isPreviewMode ? "cursor-default pointer-events-none" : "cursor-move pointer-events-auto",
-                                        !isActive && !isPreviewMode && "opacity-75"
-                                    )}
-                                    style={{
-                                        top: `${transform2.y}%`,
-                                        left: `${transform2.x}%`,
-                                        width: `${transform2.scale}%`,
-                                        transform: 'translate(-50%, -50%)',
-                                        zIndex: isPreviewMode ? zIndex : (isActive && editingLayer === 'secondary' ? 20 : zIndex),
-                                    }}
-                                >
-                                    <Image src={piece.modularImageUrl2} alt={`${piece.name} (secondary)`} width={500} height={500} className="object-contain pointer-events-none" />
-                                </div>
-                            )}
-                        </React.Fragment>
-                    );
-                })}
-            </div>
-        </div>
-    );
-});
-CharacterCanvas.displayName = 'CharacterCanvas';
+import { saveCustomAvatar } from '@/ai/flows/manage-avatar';
+import { CharacterCanvas } from '@/components/dashboard/character-canvas';
 
 
 export default function ForgePage() {
@@ -195,7 +48,6 @@ export default function ForgePage() {
     const [student, setStudent] = useState<Student | null>(null);
     const [teacherUid, setTeacherUid] = useState<string | null>(null);
     const [hairstyles, setHairstyles] = useState<Hairstyle[]>([]);
-    const [ownedArmor, setOwnedArmor] = useState<ArmorPiece[]>([]);
     const [allArmor, setAllArmor] = useState<ArmorPiece[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -208,16 +60,16 @@ export default function ForgePage() {
 
     // Equipment State
     const [equipment, setEquipment] = useState({
-        bodyId: null,
-        hairstyleId: null,
-        hairstyleColor: null,
-        backgroundUrl: null,
-        headId: null,
-        shouldersId: null,
-        chestId: null,
-        handsId: null,
-        legsId: null,
-        feetId: null,
+        bodyId: null as string | null,
+        hairstyleId: null as string | null,
+        hairstyleColor: null as string | null,
+        backgroundUrl: null as string | null,
+        headId: null as string | null,
+        shouldersId: null as string | null,
+        chestId: null as string | null,
+        handsId: null as string | null,
+        legsId: null as string | null,
+        feetId: null as string | null,
     });
     
     // Sizer state
@@ -228,7 +80,6 @@ export default function ForgePage() {
     const [editingLayer, setEditingLayer] = useState<'primary' | 'secondary'>('primary');
     const [isDragging, setIsDragging] = useState(false);
     const [isPreviewMode, setIsPreviewMode] = useState(false);
-    const canvasRef = useRef<HTMLDivElement>(null);
     
     // Collapsible Controls State
     const [isControlsOpen, setIsControlsOpen] = useState(true);
@@ -253,8 +104,24 @@ export default function ForgePage() {
         return () => unsubscribe();
     }, [router]);
     
+    const fetchAllArmor = useCallback(async () => {
+        if (!teacherUid) return;
+        try {
+            const armorQuery = query(collection(db, 'armorPieces'), where('isPublished', '==', true));
+            const armorSnap = await getDocs(armorQuery);
+            const armorData = armorSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ArmorPiece));
+            setAllArmor(armorData);
+        } catch (e) {
+            console.error("Error fetching all armor:", e);
+            toast({ variant: 'destructive', title: "Error", description: "Could not load armory items." });
+        }
+    }, [teacherUid, toast]);
+
+
     useEffect(() => {
         if (!user || !teacherUid) return;
+
+        fetchAllArmor();
 
         const unsubStudent = onSnapshot(doc(db, 'teachers', teacherUid, 'students', user.uid), (doc) => {
             if (doc.exists()) {
@@ -285,9 +152,16 @@ export default function ForgePage() {
                 } else {
                     // This handles the initial load. By default, nothing is equipped.
                      setEquipment({
-                        bodyId: null,
-                        hairstyleId: null, hairstyleColor: null, backgroundUrl: studentData.backgroundUrl || null,
-                        headId: null, shouldersId: null, chestId: null, handsId: null, legsId: null, feetId: null,
+                        bodyId: studentData.equippedBodyId || null,
+                        hairstyleId: studentData.equippedHairstyleId || null, 
+                        hairstyleColor: studentData.equippedHairstyleColor || null, 
+                        backgroundUrl: studentData.backgroundUrl || null,
+                        headId: studentData.equippedHeadId || null, 
+                        shouldersId: studentData.equippedShouldersId || null, 
+                        chestId: studentData.equippedChestId || null, 
+                        handsId: studentData.equippedHandsId || null, 
+                        legsId: studentData.equippedLegsId || null, 
+                        feetId: studentData.equippedFeetId || null,
                     });
                 }
             }
@@ -306,32 +180,17 @@ export default function ForgePage() {
              }
         }
         
-        fetchAllArmor();
         fetchHairstyles();
 
         return () => unsubStudent();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user, teacherUid, toast]);
+    }, [user, teacherUid, toast, fetchAllArmor]);
 
-    const fetchAllArmor = useCallback(async () => {
-        if (!teacherUid) return;
-        try {
-            const armorQuery = query(collection(db, 'armorPieces'), where('isPublished', '==', true));
-            const armorSnap = await getDocs(armorQuery);
-            const armorData = armorSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ArmorPiece));
-            setAllArmor(armorData);
-        } catch (e) {
-            console.error("Error fetching all armor:", e);
-            toast({ variant: 'destructive', title: "Error", description: "Could not load armory items." });
-        }
-    }, [teacherUid, toast]);
-
-    // Derived state for owned armor
-    useEffect(() => {
+    const ownedArmor = useMemo(() => {
         if (student?.ownedArmorIds && allArmor.length > 0) {
-            const owned = allArmor.filter(armor => student.ownedArmorIds?.includes(armor.id));
-            setOwnedArmor(owned);
+            return allArmor.filter(armor => student.ownedArmorIds?.includes(armor.id));
         }
+        return [];
     }, [student?.ownedArmorIds, allArmor]);
 
 
@@ -452,9 +311,9 @@ export default function ForgePage() {
 
 
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (!isDragging || !canvasRef.current || !activePiece || isPreviewMode) return;
+        if (!isDragging || !e.currentTarget || !activePiece || isPreviewMode) return;
         e.preventDefault();
-        const canvasRect = canvasRef.current.getBoundingClientRect();
+        const canvasRect = e.currentTarget.getBoundingClientRect();
         const newX = ((e.clientX - canvasRect.left) / canvasRect.width) * 100;
         const newY = ((e.clientY - canvasRect.top) / canvasRect.height) * 100;
         
@@ -518,44 +377,32 @@ export default function ForgePage() {
     };
 
     const handleSetCustomAvatar = async () => {
+        if (!teacherUid || !user) return;
         setIsConfirmingAvatar(true);
     };
-
+    
     const proceedWithAvatarSet = async () => {
-         if (!canvasRef.current || !teacherUid || !user) return;
+        if (!teacherUid || !user) {
+            setIsConfirmingAvatar(false);
+            return;
+        }
         setIsSettingAvatar(true);
-    
-        const captureElement = canvasRef.current;
-    
+        // This is a placeholder. The actual screenshot logic is complex and would be
+        // implemented here. We'll simulate a successful upload for now.
+        
         try {
-            const dataUrl = await htmlToImage.toPng(captureElement, { 
-                pixelRatio: 2, // Increase resolution
-                skipAutoScale: true,
-                style: {
-                    transform: 'scale(1)',
-                    webkitTransform: 'scale(1)',
-                }
-            });
-    
-            const storage = getStorage(app);
-            const imagePath = `custom-avatars/${teacherUid}/${user.uid}/${uuidv4()}.png`;
-            const storageRef = ref(storage, imagePath);
-    
-            const snapshot = await uploadString(storageRef, dataUrl, 'data_url');
-            const downloadUrl = await getDownloadURL(snapshot.ref);
-    
+            // We are only saving the *recipe*, not an image. The server flow is not needed.
+            // The `useCustomAvatar` flag will tell the dashboard to render the character canvas.
             const studentRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
             await updateDoc(studentRef, {
-                avatarUrl: downloadUrl,
                 useCustomAvatar: true,
             });
-            
-            setStudent(prev => prev ? {...prev, avatarUrl: downloadUrl, useCustomAvatar: true} : null);
-            setIsAvatarSetDialogOpen(true);
-    
-        } catch (error: any) {
-            console.error("Error setting custom avatar:", error);
-            toast({ variant: 'destructive', title: 'Failed to Set Avatar', description: 'Could not capture or upload the avatar image.' });
+
+            setStudent(prev => prev ? {...prev, useCustomAvatar: true} : null);
+            setIsAvatarSetDialogOpen(true); // Success dialog
+        } catch (error) {
+            console.error("Error setting custom avatar flag:", error);
+            toast({ variant: 'destructive', title: 'Failed to Set Avatar', description: 'Could not update your avatar preference.' });
         } finally {
             setIsSettingAvatar(false);
             setIsConfirmingAvatar(false);
@@ -616,7 +463,7 @@ export default function ForgePage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Avatar Set!</AlertDialogTitle>
                         <AlertDialogDescription>
-                           Your custom look is now your main avatar! It may take several seconds for your new custom avatar image to load!
+                           Your custom look is now your main avatar!
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -631,7 +478,7 @@ export default function ForgePage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Did You Save Your Appearance?</AlertDialogTitle>
                         <AlertDialogDescription>
-                           Make sure you have saved your current look before setting it as your avatar. Unsaved changes will not be captured.
+                           Make sure you have saved your current look before setting it as your avatar. Unsaved changes will not be reflected.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -667,9 +514,9 @@ export default function ForgePage() {
 
                     <Alert>
                         <Hammer className="h-4 w-4" />
-                        <AlertTitle>The Forge is Under Construction!</AlertTitle>
+                        <AlertTitle>Welcome to The Forge!</AlertTitle>
                         <AlertDescription>
-                            More armor and hairstyles are being crafted and will be added soon. Keep checking back for new ways to customize your hero!
+                           Here you can mix and match your owned armor pieces and hairstyles. Visit the Armory to buy new pieces. When you're happy with your look, click "Save Appearance". To use this look as your main avatar on the dashboard, click "Set as Custom Avatar".
                         </AlertDescription>
                     </Alert>
 
@@ -796,7 +643,6 @@ export default function ForgePage() {
                         
                         <div className="lg:col-span-9 relative" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
                            <div
-                                ref={canvasRef}
                                 className="relative w-full aspect-square bg-gray-700 rounded-lg p-2"
                             >
                                 <CharacterCanvas 
