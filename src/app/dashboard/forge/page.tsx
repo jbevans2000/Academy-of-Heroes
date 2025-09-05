@@ -34,8 +34,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
-import { saveCustomAvatar } from '@/ai/flows/manage-avatar';
 import { CharacterCanvas } from '@/components/dashboard/character-canvas';
 
 
@@ -55,7 +53,6 @@ export default function ForgePage() {
 
     // Dialog State
     const [isArmoryOpen, setIsArmoryOpen] = useState(false);
-    const [isConfirmingAvatar, setIsConfirmingAvatar] = useState(false);
     const [isAvatarSetDialogOpen, setIsAvatarSetDialogOpen] = useState(false);
 
     // Equipment State
@@ -132,38 +129,19 @@ export default function ForgePage() {
                 setLocalTransforms2(studentData.armorTransforms2 || {});
                 setLocalHairstyleTransforms(studentData.equippedHairstyleTransforms || {});
 
-                // Set equipment based on saved data only if a body was already selected
-                // This prevents loading equipment on initial page load before a body is chosen
-                if (equipment.bodyId) {
-                     if (studentData.equippedBodyId === equipment.bodyId) {
-                        setEquipment({
-                            bodyId: studentData.equippedBodyId,
-                            hairstyleId: studentData.equippedHairstyleId || null,
-                            hairstyleColor: studentData.equippedHairstyleColor || null,
-                            backgroundUrl: studentData.backgroundUrl || null,
-                            headId: studentData.equippedHeadId || null,
-                            shouldersId: studentData.equippedShouldersId || null,
-                            chestId: studentData.equippedChestId || null,
-                            handsId: studentData.equippedHandsId || null,
-                            legsId: studentData.equippedLegsId || null,
-                            feetId: studentData.equippedFeetId || null,
-                        });
-                    }
-                } else {
-                    // This handles the initial load. By default, nothing is equipped.
-                     setEquipment({
-                        bodyId: studentData.equippedBodyId || null,
-                        hairstyleId: studentData.equippedHairstyleId || null, 
-                        hairstyleColor: studentData.equippedHairstyleColor || null, 
-                        backgroundUrl: studentData.backgroundUrl || null,
-                        headId: studentData.equippedHeadId || null, 
-                        shouldersId: studentData.equippedShouldersId || null, 
-                        chestId: studentData.equippedChestId || null, 
-                        handsId: studentData.equippedHandsId || null, 
-                        legsId: studentData.equippedLegsId || null, 
-                        feetId: studentData.equippedFeetId || null,
-                    });
-                }
+                // Set equipment based on saved data
+                setEquipment({
+                    bodyId: studentData.equippedBodyId || null,
+                    hairstyleId: studentData.equippedHairstyleId || null,
+                    hairstyleColor: studentData.equippedHairstyleColor || null,
+                    backgroundUrl: studentData.backgroundUrl || null,
+                    headId: studentData.equippedHeadId || null,
+                    shouldersId: studentData.equippedShouldersId || null,
+                    chestId: studentData.equippedChestId || null,
+                    handsId: studentData.equippedHandsId || null,
+                    legsId: studentData.equippedLegsId || null,
+                    feetId: studentData.equippedFeetId || null,
+                });
             }
         });
         
@@ -324,7 +302,7 @@ export default function ForgePage() {
     const handleMouseUp = () => setIsDragging(false);
 
     const handleSave = async () => {
-        if (!user || !teacherUid) return;
+        if (!user || !teacherUid) return false;
         setIsSaving(true);
         try {
             const studentRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
@@ -345,9 +323,11 @@ export default function ForgePage() {
             });
             setIsPreviewMode(true);
             toast({ title: "Appearance Saved!", description: "Your hero's new look has been saved." });
+            return true;
         } catch (error) {
             console.error("Error saving appearance:", error);
             toast({ variant: 'destructive', title: "Save Failed", description: "Could not save your new look." });
+            return false;
         } finally {
             setIsSaving(false);
         }
@@ -378,38 +358,27 @@ export default function ForgePage() {
 
     const handleSetCustomAvatar = async () => {
         if (!teacherUid || !user) return;
-        setIsConfirmingAvatar(true);
+        setIsSettingAvatar(true);
+        
+        // First, save any pending changes.
+        const saved = await handleSave();
+
+        // Only proceed if the save was successful.
+        if (saved) {
+            try {
+                // Now, set the useCustomAvatar flag.
+                const studentRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
+                await updateDoc(studentRef, { useCustomAvatar: true });
+                setIsAvatarSetDialogOpen(true);
+            } catch (error) {
+                console.error("Error setting custom avatar flag:", error);
+                toast({ variant: 'destructive', title: 'Failed to Set Avatar', description: 'Could not update your avatar preference.' });
+            }
+        }
+        
+        setIsSettingAvatar(false);
     };
     
-    const proceedWithAvatarSet = async () => {
-        if (!teacherUid || !user) {
-            setIsConfirmingAvatar(false);
-            return;
-        }
-        setIsSettingAvatar(true);
-        // This is a placeholder. The actual screenshot logic is complex and would be
-        // implemented here. We'll simulate a successful upload for now.
-        
-        try {
-            // We are only saving the *recipe*, not an image. The server flow is not needed.
-            // The `useCustomAvatar` flag will tell the dashboard to render the character canvas.
-            const studentRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
-            await updateDoc(studentRef, {
-                useCustomAvatar: true,
-            });
-
-            setStudent(prev => prev ? {...prev, useCustomAvatar: true} : null);
-            setIsAvatarSetDialogOpen(true); // Success dialog
-        } catch (error) {
-            console.error("Error setting custom avatar flag:", error);
-            toast({ variant: 'destructive', title: 'Failed to Set Avatar', description: 'Could not update your avatar preference.' });
-        } finally {
-            setIsSettingAvatar(false);
-            setIsConfirmingAvatar(false);
-        }
-    }
-
-
     const armorSlotOrder: ArmorSlot[] = ['head', 'shoulders', 'chest', 'hands', 'legs', 'feet'];
 
     const armorBySlot = useMemo(() => {
@@ -473,22 +442,6 @@ export default function ForgePage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-            <AlertDialog open={isConfirmingAvatar} onOpenChange={setIsConfirmingAvatar}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Did You Save Your Appearance?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                           Make sure you have saved your current look before setting it as your avatar. Unsaved changes will not be reflected.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel onClick={() => setIsConfirmingAvatar(false)}>No, Go Back</AlertDialogCancel>
-                        <AlertDialogAction onClick={proceedWithAvatarSet} disabled={isSettingAvatar}>
-                            {isSettingAvatar ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Yes, Set Avatar'}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
             {student && <ArmoryDialog isOpen={isArmoryOpen} onOpenChange={setIsArmoryOpen} student={student} allArmor={allArmor} />}
             <DashboardHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
@@ -501,7 +454,7 @@ export default function ForgePage() {
                                 The Armory
                              </Button>
                              <Button variant="secondary" onClick={handleUnequipAll}><ShirtIcon className="mr-2 h-4 w-4" />Unequip All</Button>
-                            <Button variant="secondary" onClick={handleSetCustomAvatar} disabled={isSettingAvatar}>
+                            <Button variant="secondary" onClick={handleSetCustomAvatar} disabled={isSaving || isSettingAvatar}>
                                 {isSettingAvatar ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Camera className="mr-2 h-4 w-4" />}
                                 Set as Custom Avatar
                             </Button>
@@ -647,7 +600,6 @@ export default function ForgePage() {
                             >
                                 <CharacterCanvas 
                                     student={student}
-                                    baseBody={baseBodyUrls.find(b => b.id === equipment.bodyId) || null}
                                     equipment={equipment}
                                     allHairstyles={hairstyles}
                                     allArmor={ownedArmor}
