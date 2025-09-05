@@ -55,8 +55,8 @@ const baseBodyUrls = [
     { id: 'body_3', name: 'Base Body 3', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(3).png?alt=media&token=f345fe77-f7e5-4d76-b42e-5154db5d9777', thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBase%20Body%20Thumbnails%2Ftn_BaseBody%20(3).png?alt=media&token=09db2f80-988d-47bb-8b65-920bed22376c", width: 500, height: 500 },
     { id: 'body_4', name: 'Base Body 4', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(4).png?alt=media&token=202e80bd-ed73-41d6-b60e-8992740545d4', thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBase%20Body%20Thumbnails%2Ftn_BaseBody%20(4).png?alt=media&token=be01aa77-2778-4b19-99bf-1cfcabc6f9d5", width: 500, height: 500 },
     { id: 'body_5', name: 'Base Body 5', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(5).png?alt=media&token=a1132f06-6b2a-46af-95b3-b7b489d6f68b', thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBase%20Body%20Thumbnails%2Ftn_BaseBody%20(5).png?alt=media&token=1fd317a1-7b6d-4065-a747-de7797484697", width: 500, height: 500 },
-    { id: 'body_6', name: 'Base Body 6', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(6).png?alt=media&token=1fbc2b95-d1fd-4662-b3ae-57e6d004a6fe', width: 500, height: 500 },
-    { id: 'body_7', name: 'Base Body 7', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(7).png?alt=media&token=0070e4e9-f0cc-443b-bc1b-7679d7b7225b', thumbnailUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBase%20Body%20Thumbnails%2Ftn_AnimeBaseBody%20(7).png?alt=media&token=4a50ae95-7add-45fd-8ced-3bb6fc1fb4e4', width: 500, height: 500 },
+    { id: 'body_6', name: 'Base Body 6', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(6).png?alt=media&token=1fbc2b95-d1fd-4662-b3ae-57e6d004a6fe', thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBase%20Body%20Thumbnails%2Ftn_BaseBody%20(6).png?alt=media&token=e7871390-ea11-4de8-8b2e-441889879f9b", width: 500, height: 500 },
+    { id: 'body_7', name: 'Base Body 7', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(7).png?alt=media&token=0070e4e9-f0cc-443b-bc1b-7679d7b7225b', thumbnailUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBase%20Body%20Thumbnails%2Ftn_BaseBody%20(7).png?alt=media&token=4a50ae95-7add-45fd-8ced-3bb6fc1fb4e4', width: 500, height: 500 },
     { id: 'body_10', name: 'Anime Base Body 1', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FAnimeBaseBody%20(1).png?alt=media&token=f738966c-d40a-454a-8e4a-78bf19d972be', thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBase%20Body%20Thumbnails%2Ftn_AnimeBaseBody%20(1).png?alt=media&token=6d582c6b-55ad-4b13-af13-e73a0573a635", width: 500, height: 500 },
     { id: 'body_11', name: 'Anime Base Body 2', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FAnimeBaseBody%20(2).png?alt=media&token=2fb0768c-e206-48f2-9a7a-a4b0cbd74e10', thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBase%20Body%20Thumbnails%2Ftn_AnimeBaseBody%20(2).png?alt=media&token=945747e0-90ce-43f1-ab6c-6e560d9f649e", width: 500, height: 500 },
     { id: 'body_12', name: 'Anime Base Body 3', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FAnimeBaseBody%20(3).png?alt=media&token=2cdd0a22-2a98-42db-a5ba-95f6fef671b2', thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBase%20Body%20Thumbnails%2Ftn_AnimeBaseBody%20(3).png?alt=media&token=ff2cda97-5bf2-4a3c-96ec-c90a299d786a", width: 500, height: 500 },
@@ -143,13 +143,11 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, {
                 
                 {equippedArmorPieces.map(piece => {
                     const customTransform = localArmorTransforms?.[piece.id]?.[baseBody!.id];
-                    const firstAvailableDefaultTransform = piece.transforms ? Object.values(piece.transforms)[0] : null;
-                    const defaultTransform = piece.transforms?.[baseBody!.id] || firstAvailableDefaultTransform || { x: 50, y: 50, scale: 40 };
+                    const defaultTransform = piece.transforms?.[baseBody!.id] || { x: 50, y: 50, scale: 40 };
                     const transform = customTransform || defaultTransform;
                     
                     const customTransform2 = localArmorTransforms2?.[piece.id]?.[baseBody!.id];
-                    const firstAvailableDefaultTransform2 = piece.transforms2 ? Object.values(piece.transforms2)[0] : null;
-                    const defaultTransform2 = piece.transforms2?.[baseBody!.id] || firstAvailableDefaultTransform2 || { x: 50, y: 50, scale: 40 };
+                    const defaultTransform2 = piece.transforms2?.[baseBody!.id] || { x: 50, y: 50, scale: 40 };
                     const transform2 = customTransform2 || defaultTransform2;
 
                     const zIndex = slotZIndex[piece.slot] || 1;
@@ -547,8 +545,7 @@ export default function ForgePage() {
             const armorTransforms = editingLayer === 'primary' ? localTransforms : localTransforms2;
             const defaultTransforms = editingLayer === 'primary' ? activePiece.transforms : activePiece.transforms2;
             const customTransform = armorTransforms?.[activePiece.id]?.[equipment.bodyId];
-            const firstAvailableDefaultTransform = defaultTransforms ? Object.values(defaultTransforms)[0] : null;
-            const defaultTransform = defaultTransforms?.[equipment.bodyId] || firstAvailableDefaultTransform || { x: 50, y: 50, scale: 40 };
+            const defaultTransform = defaultTransforms?.[equipment.bodyId] || { x: 50, y: 50, scale: 40 };
             return customTransform || defaultTransform;
         } else { // Hairstyle
             return localHairstyleTransforms?.[equipment.bodyId] || activePiece.transforms?.[equipment.bodyId] || { x: 50, y: 50, scale: 100 };
