@@ -66,7 +66,7 @@ export default function ChangeAvatarPage() {
   }, [router]);
 
   const handleAvatarClick = (url: string) => {
-    if (url === student?.avatarUrl) return; // Don't open dialog for the current avatar
+    if (url === student?.avatarUrl && !student?.useCustomAvatar) return; // Don't open dialog for the current static avatar
     setAvatarToConfirm(url);
     setIsConfirming(true);
   };
@@ -80,12 +80,17 @@ export default function ChangeAvatarPage() {
 
     try {
         const studentRef = doc(db, 'teachers', student.teacherUid, 'students', student.uid);
-        await updateDoc(studentRef, { avatarUrl: avatarToConfirm });
+        // Set the new static avatar URL AND disable the custom avatar flag
+        await updateDoc(studentRef, { 
+            avatarUrl: avatarToConfirm,
+            useCustomAvatar: false 
+        });
         toast({
             title: 'Avatar Updated!',
             description: 'Your hero has a new look.',
         });
-        setStudent(prev => prev ? { ...prev, avatarUrl: avatarToConfirm } : null);
+        // Update local state for immediate feedback, though redirecting is fine too
+        setStudent(prev => prev ? { ...prev, avatarUrl: avatarToConfirm, useCustomAvatar: false } : null);
         router.push('/dashboard');
     } catch (error) {
         toast({
@@ -117,23 +122,26 @@ export default function ChangeAvatarPage() {
         <div key={lvl}>
             <h3 className="text-2xl font-bold font-headline mb-4">Level {lvl} Avatars</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {classAvatars[lvl].map((url: string, index: number) => (
-                    <div 
-                        key={`${lvl}-${index}`} 
-                        className={cn(
-                            "relative p-2 border-4 rounded-lg cursor-pointer transition-all duration-300 hover:scale-110",
-                            student.avatarUrl === url ? 'border-primary ring-4 ring-primary/50' : 'border-transparent hover:border-primary/50'
-                        )}
-                        onClick={() => handleAvatarClick(url)}
-                    >
-                        <Image src={url} alt={`Avatar level ${lvl} - ${index + 1}`} width={200} height={200} className="w-full h-auto rounded-md object-cover" />
-                         {student.avatarUrl === url && (
-                            <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
-                                <UserCheck className="h-4 w-4" />
-                            </div>
-                        )}
-                    </div>
-                ))}
+                {classAvatars[lvl].map((url: string, index: number) => {
+                    const isCurrentlySelected = student.avatarUrl === url && !student.useCustomAvatar;
+                    return (
+                        <div 
+                            key={`${lvl}-${index}`} 
+                            className={cn(
+                                "relative p-2 border-4 rounded-lg cursor-pointer transition-all duration-300 hover:scale-110",
+                                isCurrentlySelected ? 'border-primary ring-4 ring-primary/50' : 'border-transparent hover:border-primary/50'
+                            )}
+                            onClick={() => handleAvatarClick(url)}
+                        >
+                            <Image src={url} alt={`Avatar level ${lvl} - ${index + 1}`} width={200} height={200} className="w-full h-auto rounded-md object-cover" />
+                             {isCurrentlySelected && (
+                                <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
+                                    <UserCheck className="h-4 w-4" />
+                                </div>
+                            )}
+                        </div>
+                    )
+                })}
             </div>
              <hr className="my-6" />
         </div>
@@ -152,8 +160,12 @@ export default function ChangeAvatarPage() {
     );
   }
 
-  const nextUnlockLevel = student.level + 1;
-  const isMaxLevel = student.level >= 20;
+  const nextUnlockLevel = Object.keys(avatarData[student.class] || {})
+    .map(Number)
+    .filter(l => l > student.level)
+    .sort((a, b) => a - b)[0];
+
+  const isMaxLevelForAvatars = !nextUnlockLevel;
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -161,20 +173,20 @@ export default function ChangeAvatarPage() {
             <AlertDialogContent className="max-w-2xl">
                 <AlertDialogHeader className="items-center">
                     <AlertDialogTitle>Set this as your new Avatar?</AlertDialogTitle>
-                    <div className="relative w-[500px] h-[500px] my-4">
+                    <div className="relative w-64 h-64 my-4">
                         {avatarToConfirm && (
                             <Image src={avatarToConfirm} alt="Avatar to confirm" fill className="object-contain rounded-lg" />
                         )}
                     </div>
                     <AlertDialogDescription>
-                       This will become your new look across the realm.
+                       This will become your new look across the realm, replacing your custom one.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction onClick={handleConfirmSave} disabled={isSaving}>
                         {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                        Change Your Avatar Image
+                        Change Avatar Image
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
@@ -193,7 +205,7 @@ export default function ChangeAvatarPage() {
                     <CardHeader>
                         <CardTitle className="text-3xl font-headline">Choose Your Avatar</CardTitle>
                         <CardDescription>
-                            {isMaxLevel 
+                            {isMaxLevelForAvatars
                                 ? "You have unlocked all avatar images! You have ascended!" 
                                 : `Select from any of your unlocked looks. New avatars unlock at Level ${nextUnlockLevel}!`}
                         </CardDescription>
