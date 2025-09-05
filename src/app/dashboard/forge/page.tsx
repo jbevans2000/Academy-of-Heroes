@@ -459,8 +459,10 @@ export default function ForgePage() {
         setSelectedHands(null);
         setSelectedLegs(null);
         setSelectedFeet(null);
+        setSelectedHairstyleId(null);
+        setSelectedHairstyleColor(null);
         setActivePiece(null);
-        toast({ title: "Armor Unequipped", description: "All armor pieces have been removed."});
+        toast({ title: "Appearance Cleared", description: "All armor and hairstyle have been removed."});
     };
 
     const handleBodyCycle = (direction: 'next' | 'prev') => {
