@@ -5,7 +5,8 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, onSnapshot, query, where, doc, getDoc, updateDoc, getDocs } from 'firebase/firestore';
-import { db, auth } from '@/lib/firebase';
+import { getStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
+import { db, auth, app } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import type { ArmorPiece, Hairstyle, BaseBody, ArmorSlot } from '@/lib/forge';
 import { DashboardHeader } from '@/components/dashboard/header';
@@ -23,7 +24,7 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import html2canvas from 'html2canvas';
-import { saveCustomAvatar } from '@/ai/flows/manage-avatar';
+import { v4 as uuidv4 } from 'uuid';
 
 
 const slotZIndex: Record<ArmorSlot, number> = {
@@ -391,40 +392,42 @@ export default function ForgePage() {
         // Force preview mode on for a clean capture
         if (!isPreviewMode) {
             setIsPreviewMode(true);
-            // Wait for the DOM to update
             await new Promise(resolve => setTimeout(resolve, 50));
         }
 
         setIsSettingAvatar(true);
         try {
             const canvas = await html2canvas(canvasRef.current, {
-                backgroundColor: null, // Transparent background
+                backgroundColor: null,
                 logging: false,
                 useCORS: true,
             });
             const imageDataUrl = canvas.toDataURL('image/png');
 
-            const result = await saveCustomAvatar({
-                teacherUid,
-                studentUid: user.uid,
-                imageDataUrl,
+            const storage = getStorage(app);
+            const imagePath = `custom-avatars/${teacherUid}/${user.uid}/${uuidv4()}.png`;
+            const storageRef = ref(storage, imagePath);
+
+            // This uploads the image data URL directly.
+            // Firebase SDK handles the conversion from data URL string to blob.
+            const snapshot = await uploadString(storageRef, imageDataUrl, 'data_url');
+            const downloadUrl = await getDownloadURL(snapshot.ref);
+
+            // Update Firestore with the new public URL
+            const studentRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
+            await updateDoc(studentRef, {
+                avatarUrl: downloadUrl,
+                useCustomAvatar: true,
             });
             
-            if (result.success) {
-                toast({ title: 'Avatar Set!', description: 'Your custom look is now your main avatar.' });
-                 // Optionally, immediately update the student state if you want faster UI feedback
-                if (result.newAvatarUrl) {
-                    setStudent(prev => prev ? {...prev, avatarUrl: result.newAvatarUrl, useCustomAvatar: true} : null);
-                }
-            } else {
-                throw new Error(result.error || 'Failed to save avatar.');
-            }
+            toast({ title: 'Avatar Set!', description: 'Your custom look is now your main avatar.' });
+             setStudent(prev => prev ? {...prev, avatarUrl: downloadUrl, useCustomAvatar: true} : null);
 
         } catch (error: any) {
+            console.error("Error setting custom avatar:", error);
             toast({ variant: 'destructive', title: 'Failed to Set Avatar', description: error.message });
         } finally {
             setIsSettingAvatar(false);
-            // Revert preview mode if we changed it
             if (!isPreviewMode) {
                 setIsPreviewMode(false);
             }
