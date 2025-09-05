@@ -36,18 +36,17 @@ const slotZIndex: Record<ArmorSlot, number> = {
     hands: 5,
 };
 
-const CharacterCanvas = ({ student, equipment, baseBody, onMouseDown, canvasRef, onMouseMove, onMouseUp, activePieceId, editingLayer, isPreviewMode }: {
+const CharacterCanvas = React.forwardRef<HTMLDivElement, {
     student: Student | null;
     equipment: any;
     baseBody: BaseBody | null;
-    onMouseDown: (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece, layer: 'primary' | 'secondary') => void;
-    canvasRef: React.RefObject<HTMLDivElement>;
-    onMouseMove: (e: React.MouseEvent<HTMLDivElement>) => void;
-    onMouseUp: () => void;
+    onMouseDown?: (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece, layer: 'primary' | 'secondary') => void;
+    onMouseMove?: (e: React.MouseEvent<HTMLDivElement>) => void;
+    onMouseUp?: () => void;
     activePieceId: string | null;
     editingLayer: 'primary' | 'secondary';
     isPreviewMode: boolean;
-}) => {
+}>(({ student, equipment, baseBody, onMouseDown, onMouseMove, onMouseUp, activePieceId, editingLayer, isPreviewMode }, ref) => {
     if (!student || !baseBody) return <Skeleton className="w-full h-full" />;
 
     const hairstyle = equipment.hairstyle as Hairstyle | null;
@@ -66,7 +65,7 @@ const CharacterCanvas = ({ student, equipment, baseBody, onMouseDown, canvasRef,
 
     return (
         <div 
-            ref={canvasRef}
+            ref={ref}
             onMouseMove={onMouseMove}
             onMouseUp={onMouseUp}
             onMouseLeave={onMouseUp}
@@ -104,10 +103,13 @@ const CharacterCanvas = ({ student, equipment, baseBody, onMouseDown, canvasRef,
                 const zIndex = slotZIndex[piece.slot] || 1;
                 const isActive = piece.id === activePieceId;
 
+                const handleMouseDown = onMouseDown ? (e: React.MouseEvent<HTMLDivElement>) => onMouseDown(e, piece, 'primary') : undefined;
+                const handleMouseDown2 = onMouseDown ? (e: React.MouseEvent<HTMLDivElement>) => onMouseDown(e, piece, 'secondary') : undefined;
+
                 return (
                     <React.Fragment key={piece.id}>
                         <div
-                            onMouseDown={(e) => isPreviewMode ? undefined : onMouseDown(e, piece, 'primary')}
+                            onMouseDown={handleMouseDown}
                             className={cn(
                                 "absolute pointer-events-auto",
                                 isPreviewMode ? "cursor-default" : "cursor-move",
@@ -125,7 +127,7 @@ const CharacterCanvas = ({ student, equipment, baseBody, onMouseDown, canvasRef,
                         </div>
                         {piece.modularImageUrl2 && (
                              <div
-                                onMouseDown={(e) => isPreviewMode ? undefined : onMouseDown(e, piece, 'secondary')}
+                                onMouseDown={handleMouseDown2}
                                 className={cn(
                                     "absolute pointer-events-auto",
                                     isPreviewMode ? "cursor-default" : "cursor-move",
@@ -147,7 +149,8 @@ const CharacterCanvas = ({ student, equipment, baseBody, onMouseDown, canvasRef,
             })}
         </div>
     );
-};
+});
+CharacterCanvas.displayName = 'CharacterCanvas';
 
 
 export default function ForgePage() {
@@ -387,26 +390,22 @@ export default function ForgePage() {
     }
 
     const handleSetCustomAvatar = async () => {
-        const canvasElement = canvasRef.current;
-        if (!canvasElement || !teacherUid || !user) return;
-    
-        const originalPreviewState = isPreviewMode;
-        if (!isPreviewMode) {
-            setIsPreviewMode(true);
-            await new Promise(resolve => setTimeout(resolve, 50)); 
-        }
-    
+        if (!canvasRef.current || !teacherUid || !user) return;
         setIsSettingAvatar(true);
+
+        const captureElement = canvasRef.current;
         
-        setTimeout(async () => {
-            try {
-                const canvas = await html2canvas(canvasElement, {
-                    backgroundColor: null,
-                    logging: false,
-                    useCORS: true,
-                });
-                const imageDataUrl = canvas.toDataURL('image/png');
-        
+        html2canvas(captureElement, {
+            backgroundColor: null,
+            logging: false,
+            useCORS: true,
+            width: 500, // Fixed width
+            height: 500, // Fixed height
+            windowWidth: 500,
+            windowHeight: 500,
+        }).then(async (canvas) => {
+            const imageDataUrl = canvas.toDataURL('image/png', 1.0);
+             try {
                 const storage = getStorage(app);
                 const imagePath = `custom-avatars/${teacherUid}/${user.uid}/${uuidv4()}.png`;
                 const storageRef = ref(storage, imagePath);
@@ -428,11 +427,8 @@ export default function ForgePage() {
                 toast({ variant: 'destructive', title: 'Failed to Set Avatar', description: error.message });
             } finally {
                 setIsSettingAvatar(false);
-                if (!originalPreviewState) {
-                    setIsPreviewMode(false); 
-                }
             }
-        }, 100);
+        });
     };
 
 
@@ -588,6 +584,7 @@ export default function ForgePage() {
                         {/* Column 2: Canvas */}
                         <div className="lg:col-span-1 flex items-center justify-center">
                              <CharacterCanvas 
+                                ref={canvasRef}
                                 student={{...student, armorTransforms: localTransforms, armorTransforms2: localTransforms2}}
                                 baseBody={baseBodies.find(b => b.id === selectedBodyId) || null}
                                 equipment={{ 
@@ -601,7 +598,6 @@ export default function ForgePage() {
                                     feet: selectedFeet,
                                 }}
                                 onMouseDown={handleMouseDown}
-                                canvasRef={canvasRef}
                                 onMouseMove={handleMouseMove}
                                 onMouseUp={handleMouseUp}
                                 activePieceId={activePiece?.id || null}
