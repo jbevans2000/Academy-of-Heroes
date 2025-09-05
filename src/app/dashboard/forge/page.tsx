@@ -260,26 +260,39 @@ export default function ForgePage() {
             if (doc.exists()) {
                 const studentData = { uid: doc.id, ...doc.data() } as Student;
                 setStudent(studentData);
-                // Initialize equipment state from student data once
-                setEquipment({
-                    bodyId: null, // Start with no body selected
-                    hairstyleId: studentData.equippedHairstyleId || null,
-                    hairstyleColor: studentData.equippedHairstyleColor || null,
-                    backgroundUrl: studentData.backgroundUrl || null,
-                    headId: studentData.equippedHeadId || null,
-                    shouldersId: studentData.equippedShouldersId || null,
-                    chestId: studentData.equippedChestId || null,
-                    handsId: studentData.equippedHandsId || null,
-                    legsId: studentData.equippedLegsId || null,
-                    feetId: studentData.equippedFeetId || null,
-                });
+                // Initialize local transforms from student data
                 setLocalTransforms(studentData.armorTransforms || {});
                 setLocalTransforms2(studentData.armorTransforms2 || {});
                 setLocalHairstyleTransforms(studentData.equippedHairstyleTransforms || {});
+
+                // Set equipment based on saved data only if a body was already selected
+                // This prevents loading equipment on initial page load before a body is chosen
+                if (equipment.bodyId) {
+                     if (studentData.equippedBodyId === equipment.bodyId) {
+                        setEquipment({
+                            bodyId: studentData.equippedBodyId,
+                            hairstyleId: studentData.equippedHairstyleId || null,
+                            hairstyleColor: studentData.equippedHairstyleColor || null,
+                            backgroundUrl: studentData.backgroundUrl || null,
+                            headId: studentData.equippedHeadId || null,
+                            shouldersId: studentData.equippedShouldersId || null,
+                            chestId: studentData.equippedChestId || null,
+                            handsId: studentData.equippedHandsId || null,
+                            legsId: studentData.equippedLegsId || null,
+                            feetId: studentData.equippedFeetId || null,
+                        });
+                    }
+                } else {
+                    // This handles the initial load. By default, nothing is equipped.
+                     setEquipment({
+                        bodyId: null,
+                        hairstyleId: null, hairstyleColor: null, backgroundUrl: studentData.backgroundUrl || null,
+                        headId: null, shouldersId: null, chestId: null, handsId: null, legsId: null, feetId: null,
+                    });
+                }
             }
         });
         
-        // Fetch all published hairstyles
         const fetchHairstyles = async () => {
              try {
                 const hairQuery = query(collection(db, 'hairstyles'), where('isPublished', '==', true));
@@ -300,8 +313,7 @@ export default function ForgePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user, teacherUid, toast]);
 
-     // Fetch all armor to have it ready for ownership checks and equipping
-    const fetchAllArmor = async () => {
+    const fetchAllArmor = useCallback(async () => {
         if (!teacherUid) return;
         try {
             const armorQuery = query(collection(db, 'armorPieces'), where('isPublished', '==', true));
@@ -312,7 +324,7 @@ export default function ForgePage() {
             console.error("Error fetching all armor:", e);
             toast({ variant: 'destructive', title: "Error", description: "Could not load armory items." });
         }
-    };
+    }, [teacherUid, toast]);
 
     // Derived state for owned armor
     useEffect(() => {
@@ -324,9 +336,35 @@ export default function ForgePage() {
 
 
     const handleBodySelect = (bodyId: string) => {
-        setEquipment(prev => ({...prev, bodyId}));
+        if (!student) return;
+
+        // If this body is the one with the saved equipment, load it.
+        if (student.equippedBodyId === bodyId) {
+             setEquipment({
+                bodyId: student.equippedBodyId,
+                hairstyleId: student.equippedHairstyleId || null,
+                hairstyleColor: student.equippedHairstyleColor || null,
+                backgroundUrl: student.backgroundUrl || null,
+                headId: student.equippedHeadId || null,
+                shouldersId: student.equippedShouldersId || null,
+                chestId: student.equippedChestId || null,
+                handsId: student.equippedHandsId || null,
+                legsId: student.equippedLegsId || null,
+                feetId: student.equippedFeetId || null,
+            });
+        } else {
+            // Otherwise, clear everything except the new body and background
+            setEquipment(prev => ({
+                bodyId: bodyId,
+                backgroundUrl: prev.backgroundUrl, // Keep background
+                hairstyleId: null, hairstyleColor: null,
+                headId: null, shouldersId: null, chestId: null, handsId: null, legsId: null, feetId: null,
+            }));
+        }
+
         setActivePiece(null);
-    }
+        setIsPreviewMode(false);
+    };
     
     const handleEquipItem = (item: ArmorPiece | Hairstyle) => {
         if ('slot' in item) { // It's an ArmorPiece
