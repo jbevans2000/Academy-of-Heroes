@@ -46,6 +46,18 @@ const slotZIndex: Record<ArmorSlot, number> = {
     hands: 5,
 };
 
+const backgroundPlaceholders = [
+    'https://picsum.photos/seed/bg1/400/400',
+    'https://picsum.photos/seed/bg2/400/400',
+    'https://picsum.photos/seed/bg3/400/400',
+    'https://picsum.photos/seed/bg4/400/400',
+    'https://picsum.photos/seed/bg5/400/400',
+    'https://picsum.photos/seed/bg6/400/400',
+    'https://picsum.photos/seed/bg7/400/400',
+    'https://picsum.photos/seed/bg8/400/400',
+    'https://picsum.photos/seed/bg9/400/400',
+]
+
 const CharacterCanvas = React.forwardRef<HTMLDivElement, {
     student: Student | null;
     equipment: any;
@@ -56,7 +68,8 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, {
     activePieceId: string | null;
     editingLayer: 'primary' | 'secondary';
     isPreviewMode: boolean;
-}>(({ student, equipment, baseBody, onMouseDown, onMouseMove, onMouseUp, activePieceId, editingLayer, isPreviewMode }, ref) => {
+    backgroundUrl: string | null;
+}>(({ student, equipment, baseBody, onMouseDown, onMouseMove, onMouseUp, activePieceId, editingLayer, isPreviewMode, backgroundUrl }, ref) => {
     if (!student || !baseBody) return <Skeleton className="w-full h-full" />;
 
     const hairstyle = equipment.hairstyle as Hairstyle | null;
@@ -79,8 +92,9 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, {
             onMouseMove={onMouseMove}
             onMouseUp={onMouseUp}
             onMouseLeave={onMouseUp}
-            className="relative w-96 h-96"
+            className="relative w-96 h-96 bg-cover bg-center shadow-inner"
             id="character-canvas-container" // ID for html-to-image
+            style={{ backgroundImage: backgroundUrl ? `url(${backgroundUrl})` : 'none' }}
         >
             <Image src={baseBody.imageUrl} alt="Base Body" fill className="object-contain" priority />
             
@@ -193,6 +207,7 @@ export default function ForgePage() {
     const [selectedHands, setSelectedHands] = useState<ArmorPiece | null>(null);
     const [selectedLegs, setSelectedLegs] = useState<ArmorPiece | null>(null);
     const [selectedFeet, setSelectedFeet] = useState<ArmorPiece | null>(null);
+    const [selectedBackgroundUrl, setSelectedBackgroundUrl] = useState<string | null>(null);
     
     // Sizer state
     const [activePiece, setActivePiece] = useState<ArmorPiece | null>(null);
@@ -274,6 +289,7 @@ export default function ForgePage() {
             setSelectedBodyId(student.equippedBodyId || baseBodies[0]?.id || null);
             setSelectedHairstyleId(student.equippedHairstyleId || null);
             setSelectedHairstyleColor(student.equippedHairstyleColor || null);
+            setSelectedBackgroundUrl(student.backgroundUrl || null);
             setSelectedHead(allArmor.find(a => a.id === student.equippedHeadId) || null);
             setSelectedShoulders(allArmor.find(a => a.id === student.equippedShouldersId) || null);
             setSelectedChest(allArmor.find(a => a.id === student.equippedChestId) || null);
@@ -365,6 +381,7 @@ export default function ForgePage() {
                 equippedBodyId: selectedBodyId,
                 equippedHairstyleId: selectedHairstyleId,
                 equippedHairstyleColor: selectedHairstyleColor,
+                backgroundUrl: selectedBackgroundUrl,
                 equippedHeadId: selectedHead?.id || '',
                 equippedShouldersId: selectedShoulders?.id || '',
                 equippedChestId: selectedChest?.id || '',
@@ -374,8 +391,8 @@ export default function ForgePage() {
                 armorTransforms: localTransforms,
                 armorTransforms2: localTransforms2,
             });
+            setIsPreviewMode(true);
             toast({ title: "Appearance Saved!", description: "Your hero's new look has been saved." });
-            setIsPreviewMode(true); // Automatically turn on preview mode
         } catch (error) {
             console.error("Error saving appearance:", error);
             toast({ variant: 'destructive', title: "Save Failed", description: "Could not save your new look." });
@@ -390,6 +407,7 @@ export default function ForgePage() {
         setSelectedBodyId(baseBodies[0]?.id || null);
         setSelectedHairstyleId(null);
         setSelectedHairstyleColor(null);
+        setSelectedBackgroundUrl(null);
         setSelectedHead(null);
         setSelectedShoulders(null);
         setSelectedChest(null);
@@ -487,7 +505,7 @@ export default function ForgePage() {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogAction onClick={() => window.location.href = '/dashboard'}>
+                        <AlertDialogAction onClick={() => { window.location.href = '/dashboard' }}>
                             Return to Dashboard
                         </AlertDialogAction>
                     </AlertDialogFooter>
@@ -514,7 +532,7 @@ export default function ForgePage() {
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                  <div className="w-full max-w-7xl mx-auto space-y-4">
                      <div className="flex justify-between items-center">
-                        <Button variant="outline" onClick={() => window.location.href = '/dashboard'}><ArrowLeft className="mr-2 h-4 w-4"/> Back to Dashboard</Button>
+                        <Button variant="outline" onClick={() => { window.location.href = '/dashboard'; }}><ArrowLeft className="mr-2 h-4 w-4"/> Back to Dashboard</Button>
                         <div className="flex gap-2">
                              <Button onClick={() => setIsArmoryOpen(true)}>
                                 <Hammer className="mr-2 h-4 w-4"/>
@@ -625,7 +643,7 @@ export default function ForgePage() {
                         </Card>
 
                         {/* Column 2: Canvas */}
-                        <div className="lg:col-span-1 flex items-center justify-center">
+                        <div className="lg:col-span-1 flex items-center justify-center bg-gray-700 rounded-lg p-2">
                              <CharacterCanvas 
                                 ref={canvasRef}
                                 student={{...student, armorTransforms: localTransforms, armorTransforms2: localTransforms2}}
@@ -646,6 +664,7 @@ export default function ForgePage() {
                                 activePieceId={activePiece?.id || null}
                                 editingLayer={editingLayer}
                                 isPreviewMode={isPreviewMode}
+                                backgroundUrl={selectedBackgroundUrl}
                             />
                         </div>
 
@@ -737,6 +756,25 @@ export default function ForgePage() {
                                         Set as Custom Avatar
                                     </Button>
                                 </CardFooter>
+                            </Card>
+                            <Card>
+                                <CardHeader><CardTitle>Backgrounds</CardTitle></CardHeader>
+                                <CardContent>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {backgroundPlaceholders.map((url, i) => (
+                                            <div 
+                                                key={i} 
+                                                className={cn(
+                                                    "border-2 p-1 rounded-md cursor-pointer hover:border-primary",
+                                                    selectedBackgroundUrl === url && "border-primary ring-2 ring-primary"
+                                                )}
+                                                onClick={() => setSelectedBackgroundUrl(url)}
+                                            >
+                                                <Image src={url} alt={`Background ${i+1}`} width={100} height={100} className="w-full h-auto object-cover bg-gray-200 rounded-sm" data-ai-hint="fantasy background" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </CardContent>
                             </Card>
                         </div>
                      </div>
