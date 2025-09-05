@@ -9,11 +9,10 @@ export function getFirebaseAdminApp(): App {
   }
 
   // Explicitly use the Application Default Credentials provided by the
-  // App Hosting environment. This is the standard and most reliable way
-  // to authenticate on Google Cloud services.
+  // App Hosting environment and specify the correct storage bucket.
   const app = initializeApp({
     credential: applicationDefault(),
-    storageBucket: 'academy-heroes-mziuf.appspot.com'
+    storageBucket: 'academy-heroes-mziuf.firebasestorage.app'
   });
 
   return app;
