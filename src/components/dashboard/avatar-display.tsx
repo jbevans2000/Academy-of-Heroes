@@ -18,13 +18,15 @@ export function AvatarDisplay({ avatarSrc, avatarHint, useCustomAvatar }: Avatar
     '': 'border-transparent',
   }[avatarHint as ClassType] || 'border-transparent';
 
+  // Cache-busting: Append a unique query string to the image URL to force re-fetch.
+  const cacheBustedSrc = `${avatarSrc}?t=${new Date().getTime()}`;
 
   return (
     <div className="flex justify-center items-center py-4">
         {useCustomAvatar ? (
              <div className={cn("relative w-96 h-96", avatarBorderColor)}>
                  <Image
-                    src={avatarSrc}
+                    src={cacheBustedSrc}
                     alt="Custom student avatar"
                     fill
                     className="object-cover"
