@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
 
 
 const slotZIndex: Record<ArmorSlot, number> = {
@@ -384,10 +385,18 @@ export default function ForgePage() {
         if (isPreviewMode) setIsPreviewMode(false);
         e.preventDefault();
         e.stopPropagation();
-        setActivePiece(piece);
+        
+        // This is the fix. The logic was checking the wrong array.
+        if ('slot' in piece) { // It's an ArmorPiece
+            setActivePiece(allArmor.find(a => a.id === piece.id) || null);
+        } else { // It's a Hairstyle
+            setActivePiece(hairstyles.find(h => h.id === piece.id) || null);
+        }
+
         setEditingLayer(layer);
         setIsDragging(true);
     };
+
 
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!isDragging || !canvasRef.current || !activePiece || isPreviewMode) return;
@@ -727,71 +736,73 @@ export default function ForgePage() {
                                     localArmorTransforms={localTransforms}
                                     localArmorTransforms2={localTransforms2}
                                 />
-                                 <Collapsible
-                                    open={isControlsOpen}
-                                    onOpenChange={setIsControlsOpen}
-                                    className="absolute top-0 right-0 h-full p-2 z-20"
-                                >
-                                    <CollapsibleTrigger asChild>
-                                        <Button variant="secondary" size="icon" className="absolute top-2 -left-12">
-                                            {isControlsOpen ? <ChevronsRight /> : <ChevronsLeft />}
-                                        </Button>
-                                    </CollapsibleTrigger>
-                                     <CollapsibleContent asChild>
-                                        <Card className="w-64 h-full bg-background/80 backdrop-blur-sm flex flex-col">
-                                            <CardHeader>
-                                                <CardTitle>Controls</CardTitle>
-                                                <div className="flex items-center space-x-2 pt-2">
-                                                    <Label htmlFor="preview-mode" className="flex items-center gap-1 cursor-pointer"><Eye className="h-4 w-4"/> Preview</Label>
-                                                    <Switch id="preview-mode" checked={isPreviewMode} onCheckedChange={setIsPreviewMode} />
-                                                </div>
-                                            </CardHeader>
-                                            <ScrollArea className="flex-grow">
-                                                <CardContent className="space-y-4">
-                                                    {activePiece ? (
-                                                        <div className="space-y-4">
-                                                            <p className="font-bold text-center">Editing: <span className="text-primary">{'styleName' in activePiece ? activePiece.styleName : activePiece.name}</span></p>
-                                                            {'slot' in activePiece && activePiece.modularImageUrl2 && (
-                                                                <div className="space-y-2 p-2 border rounded-md">
-                                                                    <Label className="flex items-center gap-2"><Layers/> Editing Layer</Label>
-                                                                    <div className="grid grid-cols-2 gap-2">
-                                                                        <Button variant={editingLayer === 'primary' ? 'default' : 'outline'} onClick={() => setEditingLayer('primary')} disabled={isPreviewMode}>Primary</Button>
-                                                                        <Button variant={editingLayer === 'secondary' ? 'default' : 'outline'} onClick={() => setEditingLayer('secondary')} disabled={isPreviewMode}>Secondary</Button>
+                                <div className="absolute top-0 right-0 h-full p-2 z-20">
+                                    <Collapsible
+                                        open={isControlsOpen}
+                                        onOpenChange={setIsControlsOpen}
+                                        className="relative h-full"
+                                    >
+                                        <CollapsibleTrigger asChild>
+                                            <Button variant="secondary" size="icon" className="absolute top-0 -left-12">
+                                                {isControlsOpen ? <ChevronsRight /> : <ChevronsLeft />}
+                                            </Button>
+                                        </CollapsibleTrigger>
+                                        <CollapsibleContent asChild>
+                                            <Card className="w-64 h-full bg-background/80 backdrop-blur-sm flex flex-col">
+                                                <CardHeader>
+                                                    <CardTitle>Controls</CardTitle>
+                                                    <div className="flex items-center space-x-2 pt-2">
+                                                        <Label htmlFor="preview-mode" className="flex items-center gap-1 cursor-pointer"><Eye className="h-4 w-4"/> Preview</Label>
+                                                        <Switch id="preview-mode" checked={isPreviewMode} onCheckedChange={setIsPreviewMode} />
+                                                    </div>
+                                                </CardHeader>
+                                                <ScrollArea className="flex-grow">
+                                                    <CardContent className="space-y-4">
+                                                        {activePiece ? (
+                                                            <div className="space-y-4">
+                                                                <p className="font-bold text-center">Editing: <span className="text-primary">{'styleName' in activePiece ? activePiece.styleName : activePiece.name}</span></p>
+                                                                {'slot' in activePiece && activePiece.modularImageUrl2 && (
+                                                                    <div className="space-y-2 p-2 border rounded-md">
+                                                                        <Label className="flex items-center gap-2"><Layers/> Editing Layer</Label>
+                                                                        <div className="grid grid-cols-2 gap-2">
+                                                                            <Button variant={editingLayer === 'primary' ? 'default' : 'outline'} onClick={() => setEditingLayer('primary')} disabled={isPreviewMode}>Primary</Button>
+                                                                            <Button variant={editingLayer === 'secondary' ? 'default' : 'outline'} onClick={() => setEditingLayer('secondary')} disabled={isPreviewMode}>Secondary</Button>
+                                                                        </div>
                                                                     </div>
-                                                                </div>
-                                                            )}
-                                                            {activeTransform && (
-                                                                <div className="space-y-4 animate-in fade-in-50">
-                                                                    <div className="space-y-2">
-                                                                        <Label htmlFor="x-pos">X Position: {activeTransform.x.toFixed(2)}%</Label>
-                                                                        <Slider id="x-pos" value={[activeTransform.x]} onValueChange={([val]) => handleSliderChange('x', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
+                                                                )}
+                                                                {activeTransform && (
+                                                                    <div className="space-y-4 animate-in fade-in-50">
+                                                                        <div className="space-y-2">
+                                                                            <Label htmlFor="x-pos">X Position: {activeTransform.x.toFixed(2)}%</Label>
+                                                                            <Slider id="x-pos" value={[activeTransform.x]} onValueChange={([val]) => handleSliderChange('x', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            <Label htmlFor="y-pos">Y Position: {activeTransform.y.toFixed(2)}%</Label>
+                                                                            <Slider id="y-pos" value={[activeTransform.y]} onValueChange={([val]) => handleSliderChange('y', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            <Label htmlFor="scale">Scale: {activeTransform.scale}%</Label>
+                                                                            <Slider id="scale" value={[activeTransform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={200} step={0.5} disabled={isPreviewMode}/>
+                                                                        </div>
                                                                     </div>
-                                                                    <div className="space-y-2">
-                                                                        <Label htmlFor="y-pos">Y Position: {activeTransform.y.toFixed(2)}%</Label>
-                                                                        <Slider id="y-pos" value={[activeTransform.y]} onValueChange={([val]) => handleSliderChange('y', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
-                                                                    </div>
-                                                                    <div className="space-y-2">
-                                                                        <Label htmlFor="scale">Scale: {activeTransform.scale}%</Label>
-                                                                        <Slider id="scale" value={[activeTransform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={200} step={0.5} disabled={isPreviewMode}/>
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    ) : (
-                                                        <p className="text-sm text-muted-foreground text-center">Click a piece on the canvas to select it.</p>
-                                                    )}
-                                                </CardContent>
-                                            </ScrollArea>
-                                            <CardFooter className="flex-col gap-2 items-stretch p-2">
-                                                <Button variant="outline" size="sm" onClick={handleUnequipAll}>Unequip All</Button>
-                                                <Button onClick={handleSetCustomAvatar} disabled={isSettingAvatar}>
-                                                    {isSettingAvatar ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Camera className="mr-2 h-4 w-4" />}
-                                                    Set as Custom Avatar
-                                                </Button>
-                                            </CardFooter>
-                                        </Card>
-                                    </CollapsibleContent>
-                                </Collapsible>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <p className="text-sm text-muted-foreground text-center">Click a piece on the canvas to select it.</p>
+                                                        )}
+                                                    </CardContent>
+                                                </ScrollArea>
+                                                 <CardFooter className="flex-col gap-2 items-stretch p-2">
+                                                    <Button variant="outline" size="sm" onClick={handleUnequipAll}>Unequip All</Button>
+                                                    <Button onClick={handleSetCustomAvatar} disabled={isSettingAvatar}>
+                                                        {isSettingAvatar ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Camera className="mr-2 h-4 w-4" />}
+                                                        Set as Custom Avatar
+                                                    </Button>
+                                                </CardFooter>
+                                            </Card>
+                                        </CollapsibleContent>
+                                    </Collapsible>
+                                </div>
                            </div>
                              <div className="flex justify-between items-center w-full max-w-sm mt-2 mx-auto">
                                 <Button variant="outline" onClick={() => handleBodyCycle('prev')}>
