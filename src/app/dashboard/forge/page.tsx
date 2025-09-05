@@ -344,40 +344,40 @@ export default function ForgePage() {
     
     const handleSliderChange = (type: 'x' | 'y' | 'scale', value: number) => {
         if (!activePiece || !equipment.bodyId) return;
+        
+        const bodyId = equipment.bodyId;
 
         if ('slot' in activePiece) { // It's an ArmorPiece
-            const bodyId = equipment.bodyId;
-            if (editingLayer === 'primary') {
-                setLocalTransforms(prev => ({
+            const isPrimary = editingLayer === 'primary';
+            const stateSetter = isPrimary ? setLocalTransforms : setLocalTransforms2;
+            const currentTransforms = isPrimary ? localTransforms : localTransforms2;
+            const defaultTransforms = isPrimary ? activePiece.transforms : activePiece.transforms2;
+
+            stateSetter(prev => {
+                const currentPieceTransforms = prev[activePiece.id] || {};
+                const currentBodyTransform = currentPieceTransforms[bodyId] || defaultTransforms?.[bodyId] || {x:50, y:50, scale:40};
+                return {
                     ...prev,
                     [activePiece.id]: {
-                        ...prev?.[activePiece.id],
+                        ...currentPieceTransforms,
                         [bodyId]: {
-                            ...(prev?.[activePiece.id]?.[bodyId] || activePiece.transforms?.[bodyId] || {x:50, y:50, scale:40}),
+                            ...currentBodyTransform,
                             [type]: value
                         }
                     }
-                }));
-            } else { // Handle secondary transforms for armor
-                 setLocalTransforms2(prev => ({
-                    ...prev,
-                    [activePiece.id]: {
-                        ...prev?.[activePiece.id],
-                        [bodyId]: {
-                            ...(prev?.[activePiece.id]?.[bodyId] || activePiece.transforms2?.[bodyId] || {x:50, y:50, scale:40}),
-                            [type]: value
-                        }
-                    }
-                }));
-            }
+                }
+            });
+
         } else { // It's a Hairstyle
-             setLocalHairstyleTransforms(prev => ({
+             setLocalHairstyleTransforms(prev => {
+                const currentBodyTransform = prev[bodyId] || activePiece.transforms?.[bodyId] || {x:50, y:50, scale:100};
+                return {
                  ...prev,
-                 [equipment.bodyId!]: {
-                     ...(prev?.[equipment.bodyId!] || activePiece.transforms?.[equipment.bodyId!] || {x:50, y:50, scale:100}),
+                 [bodyId]: {
+                     ...currentBodyTransform,
                      [type]: value,
                  }
-             }));
+             }});
         }
     };
     
@@ -386,13 +386,7 @@ export default function ForgePage() {
         e.preventDefault();
         e.stopPropagation();
         
-        // This is the fix. The logic was checking the wrong array.
-        if ('slot' in piece) { // It's an ArmorPiece
-            setActivePiece(allArmor.find(a => a.id === piece.id) || null);
-        } else { // It's a Hairstyle
-            setActivePiece(hairstyles.find(h => h.id === piece.id) || null);
-        }
-
+        setActivePiece(piece);
         setEditingLayer(layer);
         setIsDragging(true);
     };
@@ -527,7 +521,10 @@ export default function ForgePage() {
         if ('slot' in activePiece) { // Armor
             const armorTransforms = editingLayer === 'primary' ? localTransforms : localTransforms2;
             const defaultTransforms = editingLayer === 'primary' ? activePiece.transforms : activePiece.transforms2;
-            return armorTransforms?.[activePiece.id]?.[equipment.bodyId] || defaultTransforms?.[equipment.bodyId] || { x: 50, y: 50, scale: 40 };
+            const customTransform = armorTransforms?.[activePiece.id]?.[equipment.bodyId];
+            const firstAvailableDefaultTransform = defaultTransforms ? Object.values(defaultTransforms)[0] : null;
+            const defaultTransform = defaultTransforms?.[equipment.bodyId] || firstAvailableDefaultTransform || { x: 50, y: 50, scale: 40 };
+            return customTransform || defaultTransform;
         } else { // Hairstyle
             return localHairstyleTransforms?.[equipment.bodyId] || activePiece.transforms?.[equipment.bodyId] || { x: 50, y: 50, scale: 100 };
         }
