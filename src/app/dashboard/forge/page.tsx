@@ -57,14 +57,14 @@ const baseBodyUrls = [
     { id: 'body_5', name: 'Base Body 5', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(5).png?alt=media&token=a1132f06-6b2a-46af-95b3-b7b489d6f68b', width: 500, height: 500 },
     { id: 'body_6', name: 'Base Body 6', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(6).png?alt=media&token=1fbc2b95-d1fd-4662-b3ae-57e6d004a6fe', width: 500, height: 500 },
     { id: 'body_7', name: 'Base Body 7', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBaseBody%20(7).png?alt=media&token=0070e4e9-f0cc-443b-bc1b-7679d7b7225b', width: 500, height: 500 },
-    { id: 'body_10', name: 'Anime Base Body 1', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FAnimeBaseBody%20(1).png?alt=media&token=f738966c-d40a-454a-8e4a-78bf19d972be', width: 500, height: 500 },
-    { id: 'body_11', name: 'Anime Base Body 2', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FAnimeBaseBody%20(2).png?alt=media&token=2fb0768c-e206-48f2-9a7a-a4b0cbd74e10', width: 500, height: 500 },
-    { id: 'body_12', name: 'Anime Base Body 3', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FAnimeBaseBody%20(3).png?alt=media&token=2cdd0a22-2a98-42db-a5ba-95f6fef671b2', width: 500, height: 500 },
-    { id: 'body_13', name: 'Anime Base Body 4', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FAnimeBaseBody%20(4).png?alt=media&token=c4ff0eed-e391-40c6-bd95-962ca3aa22b4', width: 500, height: 500 },
-    { id: 'body_14', name: 'Anime Base Body 5', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FAnimeBaseBody%20(5).png?alt=media&token=4dfb98f7-c94d-48a6-97fe-4d13a9d3ed7b', width: 500, height: 500 },
-    { id: 'body_15', name: 'Anime Base Body 6', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FAnimeBaseBody%20(6).png?alt=media&token=598124f6-d00e-4287-9669-cac51093f303', width: 500, height: 500 },
-    { id: 'body_16', name: 'Anime Base Body 7', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FAnimeBaseBody%20(7).png?alt=media&token=639029aa-edee-4084-aab2-738f41d41a73', width: 500, height: 500 },
-    { id: 'body_17', name: 'Anime Base Body 8', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FAnimeBaseBody%20(8).png?alt=media&token=61445a4e-5b6a-4bb5-bce1-090c2976262e', width: 500, height: 500 },
+    { id: 'body_10', name: 'Anime Base Body 1', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FAnimeBaseBody%20(1).png?alt=media&token=f738966c-d40a-454a-8e4a-78bf19d972be', thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBase%20Body%20Thumbnails%2Ftn_AnimeBaseBody%20(1).png?alt=media&token=6d582c6b-55ad-4b13-af13-e73a0573a635", width: 500, height: 500 },
+    { id: 'body_11', name: 'Anime Base Body 2', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FAnimeBaseBody%20(2).png?alt=media&token=2fb0768c-e206-48f2-9a7a-a4b0cbd74e10', thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBase%20Body%20Thumbnails%2Ftn_AnimeBaseBody%20(2).png?alt=media&token=945747e0-90ce-43f1-ab6c-6e560d9f649e", width: 500, height: 500 },
+    { id: 'body_12', name: 'Anime Base Body 3', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FAnimeBaseBody%20(3).png?alt=media&token=2cdd0a22-2a98-42db-a5ba-95f6fef671b2', thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBase%20Body%20Thumbnails%2Ftn_AnimeBaseBody%20(3).png?alt=media&token=ff2cda97-5bf2-4a3c-96ec-c90a299d786a", width: 500, height: 500 },
+    { id: 'body_13', name: 'Anime Base Body 4', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FAnimeBaseBody%20(4).png?alt=media&token=c4ff0eed-e391-40c6-bd95-962ca3aa22b4', thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBase%20Body%20Thumbnails%2Ftn_AnimeBaseBody%20(4).png?alt=media&token=f2f6966f-f9ca-4ad4-bed6-e081a7f6aff8", width: 500, height: 500 },
+    { id: 'body_14', name: 'Anime Base Body 5', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FAnimeBaseBody%20(5).png?alt=media&token=4dfb98f7-c94d-48a6-97fe-4d13a9d3ed7b', thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBase%20Body%20Thumbnails%2Ftn_AnimeBaseBody%20(5).png?alt=media&token=6166d0f6-4f69-422f-bbb3-745424c9e4ca", width: 500, height: 500 },
+    { id: 'body_15', name: 'Anime Base Body 6', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FAnimeBaseBody%20(6).png?alt=media&token=598124f6-d00e-4287-9669-cac51093f303', thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBase%20Body%20Thumbnails%2Ftn_AnimeBaseBody%20(6).png?alt=media&token=2d3c90b8-4c9d-4edc-916b-c7a381ee3cda", width: 500, height: 500 },
+    { id: 'body_16', name: 'Anime Base Body 7', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FAnimeBaseBody%20(7).png?alt=media&token=639029aa-edee-4084-aab2-738f41d41a73', thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBase%20Body%20Thumbnails%2Ftn_AnimeBaseBody%20(7).png?alt=media&token=4a50ae95-7add-45fd-8ced-3bb6fc1fb4e4", width: 500, height: 500 },
+    { id: 'body_17', name: 'Anime Base Body 8', imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FAnimeBaseBody%20(8).png?alt=media&token=61445a4e-5b6a-4bb5-bce1-090c2976262e', thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FBase%20Bodies%2FBase%20Body%20Thumbnails%2Ftn_AnimeBaseBody%20(8).png?alt=media&token=a97dc45e-e0cd-4083-a32d-6867cd2b5dad", width: 500, height: 500 },
 ];
 
 const CharacterCanvas = React.forwardRef<HTMLDivElement, {
@@ -623,6 +623,11 @@ export default function ForgePage() {
                                 <Hammer className="mr-2 h-4 w-4"/>
                                 The Armory
                              </Button>
+                             <Button variant="outline" onClick={handleUnequipAll}>Unequip All</Button>
+                             <Button onClick={handleSetCustomAvatar} disabled={isSettingAvatar}>
+                                {isSettingAvatar ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Camera className="mr-2 h-4 w-4" />}
+                                Set as Custom Avatar
+                             </Button>
                              <Button onClick={handleSave} disabled={isSaving || isSettingAvatar}>
                                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4" />}
                                 Save Appearance
@@ -662,7 +667,7 @@ export default function ForgePage() {
                                                             className={cn( "cursor-pointer hover:border-primary", equipment.bodyId === item.id && "border-2 border-primary" )}
                                                             onClick={() => handleBodySelect(item.id)} >
                                                             <CardContent className="p-1 aspect-square">
-                                                                <Image src={item.imageUrl} alt={item.name} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                                                                <Image src={item.thumbnailUrl || item.imageUrl} alt={item.name} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
                                                             </CardContent>
                                                         </Card>
                                                     ))}
@@ -677,7 +682,7 @@ export default function ForgePage() {
                                                             onClick={() => handleEquipItem(item)}
                                                         >
                                                             <CardContent className="p-1 aspect-square">
-                                                                <Image src={item.baseImageUrl} alt={item.styleName} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                                                                <Image src={item.thumbnailUrl || item.baseImageUrl} alt={item.styleName} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
                                                             </CardContent>
                                                         </Card>
                                                     ))}
@@ -691,7 +696,7 @@ export default function ForgePage() {
                                                                 key={index} 
                                                                 className={cn("h-16 w-16 rounded-md border-2 cursor-pointer", equipment.hairstyleColor === color.imageUrl ? "border-primary ring-2 ring-primary" : "border-transparent")}
                                                                 onClick={() => setEquipment(prev => ({...prev, hairstyleColor: color.imageUrl}))} >
-                                                                <Image src={color.imageUrl} alt={`Color ${index+1}`} width={64} height={64} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                                                                <Image src={color.thumbnailUrl || color.imageUrl} alt={`Color ${index+1}`} width={64} height={64} className="w-full h-full object-contain rounded-sm bg-secondary" />
                                                             </div>
                                                         ))}
                                                     </div>
@@ -714,7 +719,7 @@ export default function ForgePage() {
                                                                             className={cn("cursor-pointer hover:border-primary", isEquipped && "border-2 border-primary")}
                                                                             onClick={() => handleEquipItem(item)} >
                                                                             <CardContent className="p-1 aspect-square">
-                                                                                <Image src={item.imageUrl} alt={item.name} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                                                                                <Image src={item.thumbnailUrl || item.imageUrl} alt={item.name} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
                                                                             </CardContent>
                                                                         </Card>
                                                                     )
@@ -834,13 +839,6 @@ export default function ForgePage() {
                                                         )}
                                                     </CardContent>
                                                 </ScrollArea>
-                                                <CardFooter className="flex-col gap-2 items-stretch p-2 mt-auto">
-                                                    <Button variant="outline" size="sm" onClick={handleUnequipAll}>Unequip All</Button>
-                                                    <Button onClick={handleSetCustomAvatar} disabled={isSettingAvatar}>
-                                                        {isSettingAvatar ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Camera className="mr-2 h-4 w-4" />}
-                                                        Set as Custom Avatar
-                                                    </Button>
-                                                </CardFooter>
                                             </Card>
                                         </CollapsibleContent>
                                     </Collapsible>
