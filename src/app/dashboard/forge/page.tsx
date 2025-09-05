@@ -70,7 +70,7 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, {
     student: Student | null;
     equipment: any;
     baseBody: BaseBody | null;
-    onMouseDown?: (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece, layer: 'primary' | 'secondary') => void;
+    onMouseDown?: (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece | Hairstyle, layer: 'primary' | 'secondary') => void;
     onMouseMove?: (e: React.MouseEvent<HTMLDivElement>) => void;
     onMouseUp?: () => void;
     activePieceId: string | null;
@@ -94,6 +94,8 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, {
         equipment.feet,
     ].filter(Boolean);
 
+    const handleHairMouseDown = onMouseDown && hairstyle ? (e: React.MouseEvent<HTMLDivElement>) => onMouseDown(e, hairstyle, 'primary') : undefined;
+
     return (
         <div 
             ref={ref}
@@ -110,18 +112,23 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, {
             <div className="relative w-full h-full z-10">
                 <Image src={baseBody.imageUrl} alt="Base Body" fill className="object-contain" priority />
             
-                {hairstyleColor && (
+                {hairstyleColor && hairstyle && (
                     <div
-                        className="absolute pointer-events-none"
+                        onMouseDown={handleHairMouseDown}
+                        className={cn(
+                            "absolute",
+                            isPreviewMode ? "cursor-default pointer-events-none" : "cursor-move pointer-events-auto",
+                            activePieceId !== hairstyle.id && !isPreviewMode && "opacity-75"
+                        )}
                         style={{
                             top: `${hairstyleTransform.y}%`,
                             left: `${hairstyleTransform.x}%`,
                             width: `${hairstyleTransform.scale}%`,
                             transform: 'translate(-50%, -50%)',
-                            zIndex: 10
+                            zIndex: isPreviewMode ? 10 : (activePieceId === hairstyle.id ? 20 : 10)
                         }}
                     >
-                        <Image src={hairstyleColor} alt="Hairstyle" width={500} height={500} className="object-contain" />
+                        <Image src={hairstyleColor} alt="Hairstyle" width={500} height={500} className="object-contain pointer-events-none" />
                     </div>
                 )}
                 
@@ -376,7 +383,7 @@ export default function ForgePage() {
         }
     };
     
-    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece, layer: 'primary' | 'secondary') => {
+    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece | Hairstyle, layer: 'primary' | 'secondary') => {
         if (isPreviewMode) return;
         e.preventDefault();
         setActivePiece(piece);
