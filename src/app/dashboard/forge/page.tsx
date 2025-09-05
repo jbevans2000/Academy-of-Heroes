@@ -70,7 +70,7 @@ const baseBodyUrls = [
 const CharacterCanvas = React.forwardRef<HTMLDivElement, {
     student: Student | null;
     equipment: any;
-    baseBody: BaseBody | null;
+    baseBody: (typeof baseBodyUrls[0]) | null;
     allHairstyles: Hairstyle[];
     allArmor: ArmorPiece[];
     onMouseDown?: (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece | Hairstyle, layer: 'primary' | 'secondary') => void;
@@ -325,10 +325,6 @@ export default function ForgePage() {
 
     const handleBodySelect = (bodyId: string) => {
         setEquipment(prev => ({...prev, bodyId}));
-        // Reset transforms when a new body is selected
-        setLocalTransforms({});
-        setLocalTransforms2({});
-        setLocalHairstyleTransforms({});
         setActivePiece(null);
     }
     
@@ -349,7 +345,7 @@ export default function ForgePage() {
         }
     };
     
-    const handleSliderChange = (type: 'x' | 'y' | 'scale' | 'slider', value: number) => {
+    const handleSliderChange = (type: 'x' | 'y' | 'slider', value: number) => {
         if (!activePiece || !equipment.bodyId) return;
 
         const bodyId = equipment.bodyId;
@@ -364,8 +360,8 @@ export default function ForgePage() {
         };
 
         const baseScale = getBaseScale();
-        // The slider's 0-100 range corresponds to a 0x-2x multiplier of the base scale. 50 is the 1x multiplier.
-        const newScale = baseScale * (value / 50);
+        // The slider's 0-100 range corresponds to a 0.5x-1.5x multiplier of the base scale. 50 is the 1x multiplier.
+        const newScale = baseScale * (0.5 + (value / 100));
 
         const updateTransform = (prev: any) => {
             const currentPieceTransforms = prev[activePiece.id] || {};
@@ -378,8 +374,7 @@ export default function ForgePage() {
             switch(type) {
                 case 'x': newTransform.x = value; break;
                 case 'y': newTransform.y = value; break;
-                case 'scale': newTransform.scale = value; break; // Direct scale for dragging
-                case 'slider': newTransform.scale = newScale; break; // Relative scale for slider
+                case 'slider': newTransform.scale = newScale; break;
             }
             return {
                 ...prev,
@@ -396,7 +391,6 @@ export default function ForgePage() {
               switch(type) {
                 case 'x': newTransform.x = value; break;
                 case 'y': newTransform.y = value; break;
-                case 'scale': newTransform.scale = value; break;
                 case 'slider': newTransform.scale = newScale; break;
             }
             return { ...prev, [bodyId]: newTransform };
@@ -571,7 +565,7 @@ export default function ForgePage() {
         };
 
         const baseScale = getBaseScale();
-        return (activeTransform.scale / baseScale) * 50;
+        return ((activeTransform.scale - (baseScale * 0.5)) / baseScale) * 100;
 
     }, [activeTransform, activePiece, equipment.bodyId, editingLayer]);
     
@@ -828,7 +822,7 @@ export default function ForgePage() {
                                                                             <Slider id="y-pos" value={[activeTransform.y]} onValueChange={([val]) => handleSliderChange('y', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
                                                                         </div>
                                                                         <div className="space-y-2">
-                                                                            <Label htmlFor="scale">Scale: {activeScaleForSlider.toFixed(2)}%</Label>
+                                                                            <Label htmlFor="scale">Scale Modifier</Label>
                                                                             <Slider id="scale" value={[activeScaleForSlider]} onValueChange={([val]) => handleSliderChange('slider', val)} min={0} max={100} step={0.5} disabled={isPreviewMode}/>
                                                                         </div>
                                                                     </div>
@@ -839,6 +833,15 @@ export default function ForgePage() {
                                                         )}
                                                     </CardContent>
                                                 </ScrollArea>
+                                                 <CardFooter className="p-2">
+                                                    <div className="flex flex-col gap-2 w-full">
+                                                        <Button variant="outline" onClick={handleUnequipAll}>Unequip All</Button>
+                                                        <Button onClick={handleSetCustomAvatar} disabled={isSettingAvatar}>
+                                                            {isSettingAvatar ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Camera className="mr-2 h-4 w-4" />}
+                                                            Set as Custom Avatar
+                                                        </Button>
+                                                    </div>
+                                                </CardFooter>
                                             </Card>
                                         </CollapsibleContent>
                                     </Collapsible>

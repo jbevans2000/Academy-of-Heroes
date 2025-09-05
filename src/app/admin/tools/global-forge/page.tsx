@@ -108,12 +108,12 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
     const { toast } = useToast();
     const [formData, setFormData] = useState<Partial<ArmorPiece>>({});
     const [isSaving, setIsSaving] = useState(false);
-    const [isUploading, setIsUploading] = useState<'display' | 'modular' | 'modular2' | null>(null);
+    const [isUploading, setIsUploading] = useState<'display' | 'modular' | 'modular2' | 'thumbnail' | null>(null);
     
     useEffect(() => {
         if (isOpen) {
             setFormData(armor || {
-                name: '', description: '', imageUrl: '', modularImageUrl: '', modularImageUrl2: '', slot: 'head',
+                name: '', description: '', imageUrl: '', thumbnailUrl: '', modularImageUrl: '', modularImageUrl2: '', slot: 'head',
                 classRequirement: 'Any', levelRequirement: 1, goldCost: 0, isPublished: false, setName: ''
             });
         }
@@ -128,7 +128,7 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
         handleInputChange('setName', finalValue);
     }
 
-    const handleFileUpload = async (file: File | null, type: 'display' | 'modular' | 'modular2') => {
+    const handleFileUpload = async (file: File | null, type: 'display' | 'modular' | 'modular2' | 'thumbnail') => {
         if (!file || !teacherUid) return;
         setIsUploading(type);
         try {
@@ -141,7 +141,9 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
             let fieldToUpdate: keyof ArmorPiece;
             if (type === 'display') fieldToUpdate = 'imageUrl';
             else if (type === 'modular') fieldToUpdate = 'modularImageUrl';
-            else fieldToUpdate = 'modularImageUrl2';
+            else if (type === 'modular2') fieldToUpdate = 'modularImageUrl2';
+            else fieldToUpdate = 'thumbnailUrl';
+
 
             handleInputChange(fieldToUpdate, downloadUrl);
             toast({ title: `Image for ${type} uploaded.` });
@@ -213,6 +215,12 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
                         <Input type="file" onChange={e => handleFileUpload(e.target.files?.[0] || null, 'display')} disabled={isUploading === 'display'} />
                         {isUploading === 'display' && <Loader2 className="animate-spin" />}
                         {formData.imageUrl && <NextImage src={formData.imageUrl} alt="Display" width={80} height={80} className="rounded-md border" />}
+                    </div>
+                     <div className="p-4 border rounded-md space-y-2">
+                        <Label>Thumbnail Image</Label>
+                        <Input type="file" onChange={e => handleFileUpload(e.target.files?.[0] || null, 'thumbnail')} disabled={isUploading === 'thumbnail'} />
+                        {isUploading === 'thumbnail' && <Loader2 className="animate-spin" />}
+                        {formData.thumbnailUrl && <NextImage src={formData.thumbnailUrl} alt="Thumbnail" width={80} height={80} className="rounded-md border" />}
                     </div>
 
                      <div className="p-4 border rounded-md space-y-2">
@@ -291,13 +299,13 @@ const HairstyleEditorDialog = ({ isOpen, onOpenChange, hairstyle, teacherUid }: 
     teacherUid: string;
 }) => {
     const { toast } = useToast();
-    const [formData, setFormData] = useState<Partial<Hairstyle>>({ styleName: '', baseImageUrl: '', colors: [], transforms: {}, isPublished: false });
+    const [formData, setFormData] = useState<Partial<Hairstyle>>({ styleName: '', baseImageUrl: '', thumbnailUrl: '', colors: [], transforms: {}, isPublished: false });
     const [isSaving, setIsSaving] = useState(false);
     const [isUploading, setIsUploading] = useState<string | null>(null);
 
     useEffect(() => {
         if (isOpen) {
-            setFormData(hairstyle || { styleName: '', baseImageUrl: '', colors: [], transforms: {}, isPublished: false });
+            setFormData(hairstyle || { styleName: '', baseImageUrl: '', thumbnailUrl: '', colors: [], transforms: {}, isPublished: false });
         }
     }, [isOpen, hairstyle]);
 
@@ -310,38 +318,38 @@ const HairstyleEditorDialog = ({ isOpen, onOpenChange, hairstyle, teacherUid }: 
         newColors.splice(index, 1);
         handleInputChange('colors', newColors);
     }
+    
+    const handleColorNameChange = (index: number, name: string) => {
+        const newColors = [...(formData.colors || [])];
+        newColors[index] = { ...newColors[index], name };
+        handleInputChange('colors', newColors);
+    }
 
-    const handleFileUpload = async (files: FileList | null, type: 'base' | 'color') => {
+    const handleFileUpload = async (files: FileList | null, type: 'base' | 'thumbnail' | 'color' | `color-thumbnail-${number}`, colorIndex?: number) => {
         if (!files || files.length === 0 || !teacherUid) return;
         
-        const uploadKey = `upload-${type}`;
+        const file = files[0];
+        const uploadKey = `upload-${type}${colorIndex !== undefined ? `-${colorIndex}` : ''}`;
         setIsUploading(uploadKey);
         
         try {
-            if (type === 'base' && files.length === 1) {
-                const file = files[0];
-                const storage = getStorage(app);
-                const imageId = uuidv4();
-                const storageRef = ref(storage, `hairstyles/${teacherUid}/${imageId}`);
-                await uploadBytes(storageRef, file);
-                const downloadUrl = await getDownloadURL(storageRef);
-                handleInputChange('baseImageUrl', downloadUrl);
-                toast({ title: "Base image uploaded successfully." });
-            } else if (type === 'color') {
-                const uploadPromises = Array.from(files).map(async (file) => {
-                    const storage = getStorage(app);
-                    const imageId = uuidv4();
-                    const storageRef = ref(storage, `hairstyles/${teacherUid}/${imageId}`);
-                    await uploadBytes(storageRef, file);
-                    return await getDownloadURL(storageRef);
-                });
+            const storage = getStorage(app);
+            const imageId = uuidv4();
+            const storageRef = ref(storage, `hairstyles/${teacherUid}/${imageId}`);
+            await uploadBytes(storageRef, file);
+            const downloadUrl = await getDownloadURL(storageRef);
 
-                const urls = await Promise.all(uploadPromises);
-                const newColorObjects = urls.map(url => ({ imageUrl: url, name: 'Default Color' })); // Add a default name
-
-                setFormData(prev => ({...prev, colors: [...(prev.colors || []), ...newColorObjects]}));
-                toast({ title: `${files.length} color variation(s) uploaded.` });
+            if (type === 'base') handleInputChange('baseImageUrl', downloadUrl);
+            else if (type === 'thumbnail') handleInputChange('thumbnailUrl', downloadUrl);
+            else if (type === 'color') {
+                 setFormData(prev => ({...prev, colors: [...(prev.colors || []), { imageUrl: downloadUrl, name: 'New Color'}]}));
+            } else if (type.startsWith('color-thumbnail-') && colorIndex !== undefined) {
+                 const newColors = [...(formData.colors || [])];
+                 newColors[colorIndex] = { ...newColors[colorIndex], thumbnailUrl: downloadUrl };
+                 handleInputChange('colors', newColors);
             }
+
+            toast({ title: "Upload successful." });
         } catch (error) {
             toast({ variant: 'destructive', title: 'Upload Failed' });
         } finally {
@@ -375,7 +383,7 @@ const HairstyleEditorDialog = ({ isOpen, onOpenChange, hairstyle, teacherUid }: 
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>{formData.id ? 'Edit' : 'Create'} Hairstyle</DialogTitle>
                 </DialogHeader>
@@ -385,27 +393,43 @@ const HairstyleEditorDialog = ({ isOpen, onOpenChange, hairstyle, teacherUid }: 
                             <Label htmlFor="style-name">Style Name</Label>
                             <Input id="style-name" value={formData.styleName || ''} onChange={e => handleInputChange('styleName', e.target.value)} />
                         </div>
-                        <div className="p-4 border rounded-md space-y-2">
-                            <Label>Base Image (for Sizing Tool)</Label>
-                            <Input type="file" onChange={e => handleFileUpload(e.target.files, 'base')} disabled={isUploading === 'upload-base'} />
-                            {isUploading === 'upload-base' && <Loader2 className="animate-spin" />}
-                            {formData.baseImageUrl && <NextImage src={formData.baseImageUrl} alt="Base" width={80} height={80} className="rounded-md border bg-gray-200" />}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="p-4 border rounded-md space-y-2">
+                                <Label>Base Image (for Sizing)</Label>
+                                <Input type="file" onChange={e => handleFileUpload(e.target.files, 'base')} disabled={isUploading === 'upload-base'} />
+                                {isUploading === 'upload-base' && <Loader2 className="animate-spin" />}
+                                {formData.baseImageUrl && <NextImage src={formData.baseImageUrl} alt="Base" width={80} height={80} className="rounded-md border bg-gray-200" />}
+                            </div>
+                            <div className="p-4 border rounded-md space-y-2">
+                                <Label>Thumbnail Image (for List)</Label>
+                                <Input type="file" onChange={e => handleFileUpload(e.target.files, 'thumbnail')} disabled={isUploading === 'upload-thumbnail'} />
+                                {isUploading === 'upload-thumbnail' && <Loader2 className="animate-spin" />}
+                                {formData.thumbnailUrl && <NextImage src={formData.thumbnailUrl} alt="Thumbnail" width={80} height={80} className="rounded-md border bg-gray-200" />}
+                            </div>
                         </div>
 
                         <div className="p-4 border rounded-md space-y-4">
                             <h4 className="font-semibold">Color Variations</h4>
                             <div>
                                 <Label htmlFor="color-upload" className={cn(buttonVariants({variant: 'outline'}), "cursor-pointer")}>
-                                   <Upload className="h-4 w-4 mr-2"/> Upload Color Variations
+                                   <Upload className="h-4 w-4 mr-2"/> Upload New Color
                                 </Label>
-                                <Input id="color-upload" type="file" multiple onChange={e => handleFileUpload(e.target.files, 'color')} disabled={isUploading === 'upload-color'} className="hidden"/>
-                                 {isUploading === 'upload-color' && <Loader2 className="animate-spin mt-2" />}
+                                <Input id="color-upload" type="file" onChange={e => handleFileUpload(e.target.files, 'color')} className="hidden"/>
                             </div>
-                            <div className="grid grid-cols-4 gap-2">
+                            <div className="space-y-4">
                                 {formData.colors?.map((color, index) => (
-                                    <div key={index} className="relative group">
-                                        <NextImage src={color.imageUrl} alt={`Color ${index + 1}`} width={100} height={100} className="rounded-md border bg-gray-200" />
-                                        <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removeColor(index)}><X className="h-4 w-4" /></Button>
+                                    <div key={index} className="flex items-start gap-4 p-2 border rounded-md">
+                                        <div className="flex-shrink-0">
+                                            <NextImage src={color.imageUrl} alt={`Color ${index + 1}`} width={100} height={100} className="rounded-md border bg-gray-200" />
+                                        </div>
+                                        <div className="flex-grow space-y-2">
+                                            <Label htmlFor={`color-name-${index}`}>Color Name</Label>
+                                            <Input id={`color-name-${index}`} value={color.name || ''} onChange={(e) => handleColorNameChange(index, e.target.value)} />
+                                            <Label>Thumbnail</Label>
+                                            <Input type="file" onChange={e => handleFileUpload(e.target.files, `color-thumbnail-${index}`, index)} />
+                                            {color.thumbnailUrl && <NextImage src={color.thumbnailUrl} alt="Color Thumbnail" width={50} height={50} className="rounded-md border bg-gray-200" />}
+                                        </div>
+                                        <Button variant="ghost" size="icon" onClick={() => removeColor(index)}><X className="h-4 w-4" /></Button>
                                     </div>
                                 ))}
                             </div>

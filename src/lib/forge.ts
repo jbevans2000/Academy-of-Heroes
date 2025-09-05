@@ -1,5 +1,4 @@
 
-
 export interface BaseBody {
     id: string;
     name: string;
@@ -12,7 +11,12 @@ export interface Hairstyle {
     id: string;
     styleName: string;
     baseImageUrl: string; // The single image used for sizing
-    colors: { imageUrl: string; }[]; // An array for all color variations
+    thumbnailUrl?: string; // Thumbnail for the main style selector
+    colors: { 
+        imageUrl: string;
+        thumbnailUrl?: string; // Thumbnail for the color swatch
+        name: string;
+    }[]; // An array for all color variations
     transforms: {
         [bodyId: string]: {
             x: number;
@@ -32,6 +36,7 @@ export interface ArmorPiece {
     name: string;
     description: string;
     imageUrl: string; // This will be the display/icon image
+    thumbnailUrl?: string; // Thumbnail for selection lists
     modularImageUrl: string; // This is the image for the character overlay (e.g., left glove)
     modularImageUrl2?: string; // Optional second image for pairs (e.g., right glove)
     slot: ArmorSlot;
