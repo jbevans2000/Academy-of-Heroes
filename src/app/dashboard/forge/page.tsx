@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
 const slotZIndex: Record<ArmorSlot, number> = {
@@ -601,6 +602,15 @@ export default function ForgePage() {
                              </Button>
                         </div>
                     </div>
+
+                    <Alert>
+                        <Hammer className="h-4 w-4" />
+                        <AlertTitle>The Forge is Under Construction!</AlertTitle>
+                        <AlertDescription>
+                            More armor and hairstyles are being crafted and will be added soon. Keep checking back for new ways to customize your hero!
+                        </AlertDescription>
+                    </Alert>
+
                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                         <div className="lg:col-span-3 flex flex-col gap-6">
                             <Card className="h-auto flex flex-col">
@@ -613,7 +623,7 @@ export default function ForgePage() {
                                         <TabsList className="grid w-full grid-cols-4">
                                             <TabsTrigger value="body">Body</TabsTrigger>
                                             <TabsTrigger value="hair">Hair</TabsTrigger>
-                                            <TabsTrigger value="hair-color" disabled={!selectedHairstyle}>Color</TabsTrigger>
+                                            <TabsTrigger value="hair-color" disabled={!selectedHairstyleId}>Color</TabsTrigger>
                                             <TabsTrigger value="armor">Armor</TabsTrigger>
                                         </TabsList>
                                         <ScrollArea className="flex-grow mt-4 max-h-[65vh]">
@@ -828,3 +838,4 @@ export default function ForgePage() {
         </div>
     );
 }
+
