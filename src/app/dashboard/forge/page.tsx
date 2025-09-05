@@ -181,6 +181,7 @@ export default function ForgePage() {
     // Dialog State
     const [isArmoryOpen, setIsArmoryOpen] = useState(false);
     const [isConfirmingAvatar, setIsConfirmingAvatar] = useState(false);
+    const [isAvatarSetDialogOpen, setIsAvatarSetDialogOpen] = useState(false);
 
     // Equipment State
     const [selectedBodyId, setSelectedBodyId] = useState<string | null>(null);
@@ -412,7 +413,6 @@ export default function ForgePage() {
                 pixelRatio: 2, // Increase resolution
                 skipAutoScale: true,
                 style: {
-                    // Important: Ensure transforms are not weirdly scaled by the library
                     transform: 'scale(1)',
                     webkitTransform: 'scale(1)',
                 }
@@ -431,8 +431,8 @@ export default function ForgePage() {
                 useCustomAvatar: true,
             });
             
-            toast({ title: 'Avatar Set!', description: 'Your custom look is now your main avatar.' });
             setStudent(prev => prev ? {...prev, avatarUrl: downloadUrl, useCustomAvatar: true} : null);
+            setIsAvatarSetDialogOpen(true);
     
         } catch (error: any) {
             console.error("Error setting custom avatar:", error);
@@ -478,6 +478,21 @@ export default function ForgePage() {
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
+             <AlertDialog open={isAvatarSetDialogOpen} onOpenChange={setIsAvatarSetDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Avatar Set!</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Your custom look is now your main avatar! You may have to reload your dashboard page 2-3 times for your changes to take effect!
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogAction onClick={() => window.location.href = '/dashboard'}>
+                            Return to Dashboard
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
             <AlertDialog open={isConfirmingAvatar} onOpenChange={setIsConfirmingAvatar}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
