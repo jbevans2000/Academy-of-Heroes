@@ -400,43 +400,46 @@ export default function ForgePage() {
         const originalStyle = canvasElement.style.cssText;
         canvasElement.style.width = '500px';
         canvasElement.style.height = '500px';
-    
-        try {
-            const canvas = await html2canvas(canvasElement, {
-                backgroundColor: null,
-                logging: false,
-                useCORS: true,
-                width: 500,
-                height: 500,
-            });
-            const imageDataUrl = canvas.toDataURL('image/png');
-    
-            const storage = getStorage(app);
-            const imagePath = `custom-avatars/${teacherUid}/${user.uid}/${uuidv4()}.png`;
-            const storageRef = ref(storage, imagePath);
-    
-            const snapshot = await uploadString(storageRef, imageDataUrl, 'data_url');
-            const downloadUrl = await getDownloadURL(snapshot.ref);
-    
-            const studentRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
-            await updateDoc(studentRef, {
-                avatarUrl: downloadUrl,
-                useCustomAvatar: true,
-            });
-            
-            toast({ title: 'Avatar Set!', description: 'Your custom look is now your main avatar.' });
-            setStudent(prev => prev ? {...prev, avatarUrl: downloadUrl, useCustomAvatar: true} : null);
-    
-        } catch (error: any) {
-            console.error("Error setting custom avatar:", error);
-            toast({ variant: 'destructive', title: 'Failed to Set Avatar', description: error.message });
-        } finally {
-            canvasElement.style.cssText = originalStyle;
-            setIsSettingAvatar(false);
-            if (!isPreviewMode) {
-                setIsPreviewMode(false);
+        
+        // This timeout ensures the style change has been rendered before we capture
+        setTimeout(async () => {
+            try {
+                const canvas = await html2canvas(canvasElement, {
+                    backgroundColor: null,
+                    logging: false,
+                    useCORS: true,
+                    width: 500,
+                    height: 500,
+                });
+                const imageDataUrl = canvas.toDataURL('image/png');
+        
+                const storage = getStorage(app);
+                const imagePath = `custom-avatars/${teacherUid}/${user.uid}/${uuidv4()}.png`;
+                const storageRef = ref(storage, imagePath);
+        
+                const snapshot = await uploadString(storageRef, imageDataUrl, 'data_url');
+                const downloadUrl = await getDownloadURL(snapshot.ref);
+        
+                const studentRef = doc(db, 'teachers', teacherUid!, 'students', user.uid);
+                await updateDoc(studentRef, {
+                    avatarUrl: downloadUrl,
+                    useCustomAvatar: true,
+                });
+                
+                toast({ title: 'Avatar Set!', description: 'Your custom look is now your main avatar.' });
+                setStudent(prev => prev ? {...prev, avatarUrl: downloadUrl, useCustomAvatar: true} : null);
+        
+            } catch (error: any) {
+                console.error("Error setting custom avatar:", error);
+                toast({ variant: 'destructive', title: 'Failed to Set Avatar', description: error.message });
+            } finally {
+                canvasElement.style.cssText = originalStyle; // Restore original styles
+                setIsSettingAvatar(false);
+                if (!isPreviewMode) {
+                    setIsPreviewMode(false); // Restore preview mode state if it was off initially
+                }
             }
-        }
+        }, 50); // Small delay to allow for repaint
     };
 
 
