@@ -23,7 +23,7 @@ import { ArmoryDialog } from '@/components/dashboard/armory-dialog';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
-import html2canvas from 'html2canvas';
+import * as htmlToImage from 'html-to-image';
 import { v4 as uuidv4 } from 'uuid';
 
 
@@ -70,7 +70,7 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, {
             onMouseUp={onMouseUp}
             onMouseLeave={onMouseUp}
             className="relative w-96 h-96"
-            id="character-canvas-container" // ID for html2canvas
+            id="character-canvas-container" // ID for html-to-image
         >
             <Image src={baseBody.imageUrl} alt="Base Body" fill className="object-contain" priority />
             
@@ -392,43 +392,42 @@ export default function ForgePage() {
     const handleSetCustomAvatar = async () => {
         if (!canvasRef.current || !teacherUid || !user) return;
         setIsSettingAvatar(true);
-
+    
         const captureElement = canvasRef.current;
-        
-        html2canvas(captureElement, {
-            backgroundColor: null,
-            logging: false,
-            useCORS: true,
-            width: 500, // Fixed width
-            height: 500, // Fixed height
-            windowWidth: 500,
-            windowHeight: 500,
-        }).then(async (canvas) => {
-            const imageDataUrl = canvas.toDataURL('image/png', 1.0);
-             try {
-                const storage = getStorage(app);
-                const imagePath = `custom-avatars/${teacherUid}/${user.uid}/${uuidv4()}.png`;
-                const storageRef = ref(storage, imagePath);
-        
-                const snapshot = await uploadString(storageRef, imageDataUrl, 'data_url');
-                const downloadUrl = await getDownloadURL(snapshot.ref);
-        
-                const studentRef = doc(db, 'teachers', teacherUid!, 'students', user.uid);
-                await updateDoc(studentRef, {
-                    avatarUrl: downloadUrl,
-                    useCustomAvatar: true,
-                });
-                
-                toast({ title: 'Avatar Set!', description: 'Your custom look is now your main avatar.' });
-                setStudent(prev => prev ? {...prev, avatarUrl: downloadUrl, useCustomAvatar: true} : null);
-        
-            } catch (error: any) {
-                console.error("Error setting custom avatar:", error);
-                toast({ variant: 'destructive', title: 'Failed to Set Avatar', description: error.message });
-            } finally {
-                setIsSettingAvatar(false);
-            }
-        });
+    
+        try {
+            const dataUrl = await htmlToImage.toPng(captureElement, { 
+                pixelRatio: 2, // Increase resolution
+                skipAutoScale: true,
+                style: {
+                    // Important: Ensure transforms are not weirdly scaled by the library
+                    transform: 'scale(1)',
+                    webkitTransform: 'scale(1)',
+                }
+            });
+    
+            const storage = getStorage(app);
+            const imagePath = `custom-avatars/${teacherUid}/${user.uid}/${uuidv4()}.png`;
+            const storageRef = ref(storage, imagePath);
+    
+            const snapshot = await uploadString(storageRef, dataUrl, 'data_url');
+            const downloadUrl = await getDownloadURL(snapshot.ref);
+    
+            const studentRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
+            await updateDoc(studentRef, {
+                avatarUrl: downloadUrl,
+                useCustomAvatar: true,
+            });
+            
+            toast({ title: 'Avatar Set!', description: 'Your custom look is now your main avatar.' });
+            setStudent(prev => prev ? {...prev, avatarUrl: downloadUrl, useCustomAvatar: true} : null);
+    
+        } catch (error: any) {
+            console.error("Error setting custom avatar:", error);
+            toast({ variant: 'destructive', title: 'Failed to Set Avatar', description: 'Could not capture or upload the avatar image.' });
+        } finally {
+            setIsSettingAvatar(false);
+        }
     };
 
 
