@@ -525,6 +525,10 @@ export default function ForgePage() {
     const ownedArmor = allArmor.filter(armor => student?.ownedArmorIds?.includes(armor.id));
     const armorSlotOrder: ArmorSlot[] = ['head', 'shoulders', 'chest', 'hands', 'legs', 'feet'];
 
+    const equippedPieces = useMemo(() => {
+        return [selectedHead, selectedShoulders, selectedChest, selectedHands, selectedLegs, selectedFeet].filter(Boolean) as ArmorPiece[];
+    }, [selectedHead, selectedShoulders, selectedChest, selectedHands, selectedLegs, selectedFeet]);
+
     const armorBySlot = useMemo(() => {
         const slots: Record<ArmorSlot, ArmorPiece[]> = { head: [], shoulders: [], chest: [], hands: [], legs: [], feet: [] };
         ownedArmor.forEach(piece => {
@@ -748,7 +752,7 @@ export default function ForgePage() {
                                              </div>
                                          </div>
                                      )}
-                                     {[selectedHead, selectedShoulders, selectedChest, selectedHands, selectedLegs, selectedFeet].filter(Boolean).map(piece => (
+                                     {equippedPieces.map(piece => (
                                          <div key={piece!.id} className={cn("flex items-center justify-between p-2 rounded-md", activePiece?.id === piece!.id && !isPreviewMode ? 'bg-primary/20' : 'bg-secondary')}>
                                              <span className="font-semibold text-sm truncate">{piece!.name}</span>
                                              <div className="flex gap-1">
