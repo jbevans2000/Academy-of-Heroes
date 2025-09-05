@@ -9,9 +9,11 @@ export function getFirebaseAdminApp(): App {
   }
 
   // When running in a Google Cloud environment (like Cloud Run or App Hosting),
-  // a parameter-less initializeApp() automatically uses the
-  // default credentials of the service account associated with the resource.
-  const app = initializeApp();
+  // providing the projectId ensures the SDK unambiguously uses the correct
+  // service account credentials for that project.
+  const app = initializeApp({
+    projectId: 'academy-heroes-mziuf',
+  });
 
   return app;
 }
