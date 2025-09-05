@@ -355,28 +355,51 @@ export default function ForgePage() {
 
             stateSetter(prev => {
                 const currentPieceTransforms = prev[activePiece.id] || {};
-                const currentBodyTransform = currentPieceTransforms[bodyId] || defaultTransforms?.[bodyId] || {x:50, y:50, scale:40};
+                const baseTransform = currentPieceTransforms[bodyId] || defaultTransforms?.[bodyId] || {x:50, y:50, scale:40};
+                
+                const newTransform = { ...baseTransform };
+                
+                switch(type) {
+                    case 'x':
+                        newTransform.x = value;
+                        break;
+                    case 'y':
+                        newTransform.y = value;
+                        break;
+                    case 'scale':
+                        newTransform.scale = value;
+                        break;
+                }
+                
                 return {
                     ...prev,
                     [activePiece.id]: {
                         ...currentPieceTransforms,
-                        [bodyId]: {
-                            ...currentBodyTransform,
-                            [type]: value
-                        }
-                    }
-                }
+                        [bodyId]: newTransform,
+                    },
+                };
             });
 
         } else { // It's a Hairstyle
              setLocalHairstyleTransforms(prev => {
-                const currentBodyTransform = prev[bodyId] || activePiece.transforms?.[bodyId] || {x:50, y:50, scale:100};
+                const baseTransform = prev[bodyId] || activePiece.transforms?.[bodyId] || {x:50, y:50, scale:100};
+                 const newTransform = { ...baseTransform };
+
+                switch(type) {
+                    case 'x':
+                        newTransform.x = value;
+                        break;
+                    case 'y':
+                        newTransform.y = value;
+                        break;
+                    case 'scale':
+                        newTransform.scale = value;
+                        break;
+                }
+
                 return {
                  ...prev,
-                 [bodyId]: {
-                     ...currentBodyTransform,
-                     [type]: value,
-                 }
+                 [bodyId]: newTransform,
              }});
         }
     };
@@ -789,7 +812,7 @@ export default function ForgePage() {
                                                         )}
                                                     </CardContent>
                                                 </ScrollArea>
-                                                 <CardFooter className="flex-col gap-2 items-stretch p-2">
+                                                 <CardFooter className="flex-col gap-2 items-stretch p-2 mt-auto">
                                                     <Button variant="outline" size="sm" onClick={handleUnequipAll}>Unequip All</Button>
                                                     <Button onClick={handleSetCustomAvatar} disabled={isSettingAvatar}>
                                                         {isSettingAvatar ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Camera className="mr-2 h-4 w-4" />}
@@ -817,3 +840,4 @@ export default function ForgePage() {
         </div>
     );
 }
+
