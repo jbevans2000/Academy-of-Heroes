@@ -70,7 +70,7 @@ const CharacterCanvas = ({ student, equipment, baseBody, onMouseDown, canvasRef,
             onMouseMove={onMouseMove}
             onMouseUp={onMouseUp}
             onMouseLeave={onMouseUp}
-            className="relative w-full max-w-[500px] aspect-square"
+            className="relative w-96 h-96"
             id="character-canvas-container" // ID for html2canvas
         >
             <Image src={baseBody.imageUrl} alt="Base Body" fill className="object-contain" priority />
@@ -390,28 +390,20 @@ export default function ForgePage() {
         const canvasElement = canvasRef.current;
         if (!canvasElement || !teacherUid || !user) return;
     
-        // Force preview mode on for a clean capture and store the original state
         const originalPreviewState = isPreviewMode;
         if (!isPreviewMode) {
             setIsPreviewMode(true);
-            // Wait for React to re-render in preview mode
             await new Promise(resolve => setTimeout(resolve, 50)); 
         }
     
         setIsSettingAvatar(true);
-        const originalStyle = canvasElement.style.cssText;
-        canvasElement.style.width = '500px';
-        canvasElement.style.height = '500px';
         
-        // This timeout ensures the style change has been rendered before we capture
         setTimeout(async () => {
             try {
                 const canvas = await html2canvas(canvasElement, {
                     backgroundColor: null,
                     logging: false,
                     useCORS: true,
-                    width: 500,
-                    height: 500,
                 });
                 const imageDataUrl = canvas.toDataURL('image/png');
         
@@ -435,14 +427,12 @@ export default function ForgePage() {
                 console.error("Error setting custom avatar:", error);
                 toast({ variant: 'destructive', title: 'Failed to Set Avatar', description: error.message });
             } finally {
-                canvasElement.style.cssText = originalStyle; // Restore original styles
                 setIsSettingAvatar(false);
-                // Restore original preview mode state
                 if (!originalPreviewState) {
                     setIsPreviewMode(false); 
                 }
             }
-        }, 100); // Increased delay to be safer
+        }, 100);
     };
 
 
@@ -500,7 +490,7 @@ export default function ForgePage() {
                     </div>
                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Column 1: Equipment Selection */}
-                        <Card className="h-[75vh] flex flex-col">
+                        <Card className="h-[80vh] flex flex-col">
                             <CardHeader>
                                 <CardTitle>The Forge</CardTitle>
                                 <CardDescription>Select your equipment.</CardDescription>
@@ -596,32 +586,28 @@ export default function ForgePage() {
                         </Card>
 
                         {/* Column 2: Canvas */}
-                        <div className="lg:col-span-1">
-                            <Card className="h-[75vh]">
-                                <CardContent className="h-full p-4 flex items-center justify-center">
-                                     <CharacterCanvas 
-                                        student={{...student, armorTransforms: localTransforms, armorTransforms2: localTransforms2}}
-                                        baseBody={baseBodies.find(b => b.id === selectedBodyId) || null}
-                                        equipment={{ 
-                                            hairstyle: selectedHairstyle, 
-                                            hairstyleColor: selectedHairstyleColor,
-                                            head: selectedHead,
-                                            shoulders: selectedShoulders,
-                                            chest: selectedChest,
-                                            hands: selectedHands,
-                                            legs: selectedLegs,
-                                            feet: selectedFeet,
-                                        }}
-                                        onMouseDown={handleMouseDown}
-                                        canvasRef={canvasRef}
-                                        onMouseMove={handleMouseMove}
-                                        onMouseUp={handleMouseUp}
-                                        activePieceId={activePiece?.id || null}
-                                        editingLayer={editingLayer}
-                                        isPreviewMode={isPreviewMode}
-                                    />
-                                </CardContent>
-                            </Card>
+                        <div className="lg:col-span-1 flex items-center justify-center">
+                             <CharacterCanvas 
+                                student={{...student, armorTransforms: localTransforms, armorTransforms2: localTransforms2}}
+                                baseBody={baseBodies.find(b => b.id === selectedBodyId) || null}
+                                equipment={{ 
+                                    hairstyle: selectedHairstyle, 
+                                    hairstyleColor: selectedHairstyleColor,
+                                    head: selectedHead,
+                                    shoulders: selectedShoulders,
+                                    chest: selectedChest,
+                                    hands: selectedHands,
+                                    legs: selectedLegs,
+                                    feet: selectedFeet,
+                                }}
+                                onMouseDown={handleMouseDown}
+                                canvasRef={canvasRef}
+                                onMouseMove={handleMouseMove}
+                                onMouseUp={handleMouseUp}
+                                activePieceId={activePiece?.id || null}
+                                editingLayer={editingLayer}
+                                isPreviewMode={isPreviewMode}
+                            />
                         </div>
 
                         {/* Column 3: Controls */}
