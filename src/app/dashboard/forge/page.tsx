@@ -73,13 +73,11 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, {
     equipment: any;
     baseBody: BaseBody | null;
     onMouseDown?: (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece | Hairstyle, layer: 'primary' | 'secondary') => void;
-    onMouseMove?: (e: React.MouseEvent<HTMLDivElement>) => void;
-    onMouseUp?: () => void;
     activePieceId: string | null;
     editingLayer: 'primary' | 'secondary';
     isPreviewMode: boolean;
     backgroundUrl: string | null;
-}>(({ student, equipment, baseBody, onMouseDown, onMouseMove, onMouseUp, activePieceId, editingLayer, isPreviewMode, backgroundUrl }, ref) => {
+}>(({ student, equipment, baseBody, onMouseDown, activePieceId, editingLayer, isPreviewMode, backgroundUrl }, ref) => {
     if (!student || !baseBody) return <Skeleton className="w-full h-full" />;
 
     const hairstyle = equipment.hairstyle as Hairstyle | null;
@@ -101,9 +99,6 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, {
     return (
         <div 
             ref={ref}
-            onMouseMove={onMouseMove}
-            onMouseUp={onMouseUp}
-            onMouseLeave={onMouseUp}
             className="relative w-full h-full shadow-inner overflow-hidden"
             id="character-canvas-container" // ID for html-to-image
         >
@@ -138,19 +133,13 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, {
                     if (!piece) return null;
                     
                     const customTransform = student.armorTransforms?.[piece.id]?.[baseBody!.id];
-                    
-                    // New fallback logic
                     const firstAvailableDefaultTransform = piece.transforms ? Object.values(piece.transforms)[0] : null;
                     const defaultTransform = piece.transforms?.[baseBody!.id] || firstAvailableDefaultTransform || { x: 50, y: 50, scale: 40 };
-                    
                     const transform = customTransform || defaultTransform;
                     
                     const customTransform2 = student.armorTransforms2?.[piece.id]?.[baseBody!.id];
-
-                    // New fallback logic for second layer
                     const firstAvailableDefaultTransform2 = piece.transforms2 ? Object.values(piece.transforms2)[0] : null;
                     const defaultTransform2 = piece.transforms2?.[baseBody!.id] || firstAvailableDefaultTransform2 || { x: 50, y: 50, scale: 40 };
-
                     const transform2 = customTransform2 || defaultTransform2;
 
                     const zIndex = slotZIndex[piece.slot] || 1;
@@ -406,6 +395,7 @@ export default function ForgePage() {
             setIsPreviewMode(false);
         }
         e.preventDefault();
+        e.stopPropagation();
         setActivePiece(piece);
         setEditingLayer(layer);
         setIsDragging(true);
@@ -557,7 +547,7 @@ export default function ForgePage() {
         }
     }, [activePiece, selectedBodyId, localTransforms, localTransforms2, localHairstyleTransforms, editingLayer]);
     
-    const equippedPieces: (ArmorPiece | Hairstyle)[] = [selectedHead, selectedShoulders, selectedChest, selectedHands, selectedLegs, selectedFeet, selectedHairstyle].filter(Boolean) as (ArmorPiece | Hairstyle)[];
+    const equippedArmorPieces = [selectedHead, selectedShoulders, selectedChest, selectedHands, selectedLegs, selectedFeet].filter(Boolean) as ArmorPiece[];
 
     if (isLoading || !student) {
         return <div className="flex items-center justify-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>
@@ -615,7 +605,7 @@ export default function ForgePage() {
                     </div>
                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                         {/* Column 1: Forge and Backgrounds */}
-                        <div className="lg:col-span-3 space-y-4">
+                        <div className="lg:col-span-3 flex flex-col gap-6">
                             <Card className="h-auto flex flex-col">
                                 <CardHeader>
                                     <CardTitle>The Forge</CardTitle>
@@ -682,7 +672,7 @@ export default function ForgePage() {
                                                                 <p className="text-muted-foreground text-sm col-span-3 text-center py-2">No items owned for this slot.</p>
                                                             ) : (
                                                                 armorBySlot[slot].map(item => {
-                                                                    const isEquipped = equippedPieces.some(p => p.id === item.id);
+                                                                    const isEquipped = equippedArmorPieces.some(p => p.id === item.id);
                                                                     return (
                                                                         <Card 
                                                                             key={item.id} 
@@ -703,7 +693,7 @@ export default function ForgePage() {
                                     </Tabs>
                                 </CardContent>
                             </Card>
-                            <Card>
+                             <Card>
                                 <CardHeader><CardTitle>Backgrounds</CardTitle></CardHeader>
                                 <CardContent>
                                     <div className="grid grid-cols-3 gap-2">
@@ -734,11 +724,12 @@ export default function ForgePage() {
                             </Card>
                         </div>
                         
-                        {/* Column 2: Canvas and Controls */}
-                        <div className="lg:col-span-9 flex flex-col gap-6 relative">
-                            <div className="flex-grow flex flex-col items-center justify-center bg-gray-700 rounded-lg p-2 aspect-square">
+                        <div className="lg:col-span-9 relative" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
+                            <div
+                                ref={canvasRef}
+                                className="relative w-full aspect-square bg-gray-700 rounded-lg p-2"
+                            >
                                 <CharacterCanvas 
-                                    ref={canvasRef}
                                     student={{...student, equippedHairstyleTransforms: localHairstyleTransforms, armorTransforms: localTransforms, armorTransforms2: localTransforms2}}
                                     baseBody={baseBodyUrls.find(b => b.id === selectedBodyId) || null}
                                     equipment={{ 
@@ -753,28 +744,25 @@ export default function ForgePage() {
                                         feet: selectedFeet,
                                     }}
                                     onMouseDown={handleMouseDown}
-                                    onMouseMove={handleMouseMove}
-                                    onMouseUp={handleMouseUp}
                                     activePieceId={activePiece?.id || null}
                                     editingLayer={editingLayer}
                                     isPreviewMode={isPreviewMode}
                                     backgroundUrl={selectedBackgroundUrl}
                                 />
-                                <div className="flex justify-between items-center w-full max-w-sm mt-2">
-                                    <Button variant="outline" onClick={() => handleBodyCycle('prev')}>
-                                        <ArrowLeft className="h-5 w-5" />
-                                    </Button>
-                                    <span className="font-semibold text-white">Body Type</span>
-                                    <Button variant="outline" onClick={() => handleBodyCycle('next')}>
-                                        <ArrowRight className="h-5 w-5" />
-                                    </Button>
-                                </div>
                             </div>
-                            
-                            <Collapsible
+                            <div className="flex justify-between items-center w-full max-w-sm mt-2 mx-auto">
+                                <Button variant="outline" onClick={() => handleBodyCycle('prev')}>
+                                    <ArrowLeft className="h-5 w-5" />
+                                </Button>
+                                <span className="font-semibold">{baseBodyUrls.find(b => b.id === selectedBodyId)?.name || 'Body Type'}</span>
+                                <Button variant="outline" onClick={() => handleBodyCycle('next')}>
+                                    <ArrowRight className="h-5 w-5" />
+                                </Button>
+                            </div>
+                             <Collapsible
                                 open={isControlsOpen}
                                 onOpenChange={setIsControlsOpen}
-                                className="absolute top-0 right-0 h-full p-2"
+                                className="absolute top-0 right-0 h-full p-2 z-20"
                             >
                                 <CollapsibleTrigger asChild>
                                     <Button variant="secondary" size="icon" className="absolute top-2 -left-12">
@@ -794,23 +782,9 @@ export default function ForgePage() {
                                         </CardHeader>
                                         <ScrollArea className="flex-grow">
                                             <CardContent className="space-y-4">
-                                                {/* Equipped Pieces Section */}
-                                                 <div className="space-y-2">
-                                                     <h4 className="font-semibold border-b pb-1">Equipped</h4>
-                                                     {equippedPieces.length === 0 && <p className="text-sm text-muted-foreground">No items equipped.</p>}
-                                                     {equippedPieces.map(piece => (
-                                                         <div key={piece.id} className={cn("flex items-center justify-between p-2 rounded-md", piece.id === activePiece?.id && !isPreviewMode ? 'bg-primary/20' : 'bg-secondary')}>
-                                                             <span className="font-semibold text-sm truncate">{'styleName' in piece ? piece.styleName : piece.name}</span>
-                                                             <div className="flex gap-1">
-                                                                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setActivePiece(piece)} disabled={isPreviewMode}><Edit className="h-4 w-4" /></Button>
-                                                             </div>
-                                                         </div>
-                                                     ))}
-                                                 </div>
-                                                 {/* Controls Section */}
                                                 {activePiece ? (
                                                     <div className="space-y-4">
-                                                        <Separator/>
+                                                        <p className="font-bold text-center">Editing: <span className="text-primary">{'styleName' in activePiece ? activePiece.styleName : activePiece.name}</span></p>
                                                         {'slot' in activePiece && activePiece.modularImageUrl2 && (
                                                             <div className="space-y-2 p-2 border rounded-md">
                                                                 <Label className="flex items-center gap-2"><Layers/> Editing Layer</Label>
@@ -838,7 +812,7 @@ export default function ForgePage() {
                                                         )}
                                                     </div>
                                                 ) : (
-                                                    <p className="text-sm text-muted-foreground text-center">Select an equipped piece to adjust it.</p>
+                                                    <p className="text-sm text-muted-foreground text-center">Click a piece on the canvas to select it.</p>
                                                 )}
                                             </CardContent>
                                         </ScrollArea>
@@ -858,3 +832,4 @@ export default function ForgePage() {
         </div>
     );
 }
+
