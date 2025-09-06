@@ -10,7 +10,7 @@ import type { Student } from '@/lib/data';
 import { baseBodyUrls, type ArmorPiece, type Hairstyle, type ArmorSlot } from '@/lib/forge';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Loader2, Hammer, Layers, Eye, Camera, X, Shirt, ArrowRight, ChevronsRight, ChevronsLeft, ShirtIcon, UserCheck } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Hammer, Layers, Eye, Camera, X, Shirt, ArrowRight, ChevronsRight, ChevronsLeft, ShirtIcon, UserCheck, ChevronDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -56,7 +56,7 @@ export default function ForgePage() {
     const [isAvatarSetDialogOpen, setIsAvatarSetDialogOpen] = useState(false);
 
     // Equipment State
-    const [equipment, setEquipment] = useState({
+    const [equipment, setEquipment = useState({
         bodyId: null as string | null,
         hairstyleId: null as string | null,
         hairstyleColor: null as string | null,
@@ -69,19 +69,19 @@ export default function ForgePage() {
         feetId: null as string | null,
     });
     
-    const [selectedStaticAvatarUrl, setSelectedStaticAvatarUrl] = useState<string | null>(null);
+    const [selectedStaticAvatarUrl, setSelectedStaticAvatarUrl = useState<string | null>(null);
 
     // Sizer state
-    const [activePiece, setActivePiece] = useState<ArmorPiece | Hairstyle | null>(null);
-    const [localHairstyleTransforms, setLocalHairstyleTransforms] = useState<Student['equippedHairstyleTransforms']>({});
-    const [localArmorTransforms, setLocalArmorTransforms] = useState<Student['armorTransforms']>({});
-    const [localArmorTransforms2, setLocalArmorTransforms2] = useState<Student['armorTransforms2']>({});
-    const [editingLayer, setEditingLayer] = useState<'primary' | 'secondary'>('primary');
-    const [isDragging, setIsDragging] = useState(false);
-    const [isPreviewMode, setIsPreviewMode] = useState(false);
+    const [activePiece, setActivePiece = useState<ArmorPiece | Hairstyle | null>(null);
+    const [localHairstyleTransforms, setLocalHairstyleTransforms = useState<Student['equippedHairstyleTransforms']>({});
+    const [localArmorTransforms, setLocalArmorTransforms = useState<Student['armorTransforms']>({});
+    const [localArmorTransforms2, setLocalArmorTransforms2 = useState<Student['armorTransforms2']>({});
+    const [editingLayer, setEditingLayer = useState<'primary' | 'secondary'>('primary');
+    const [isDragging, setIsDragging = useState(false);
+    const [isPreviewMode, setIsPreviewMode = useState(false);
     
     // Collapsible Controls State
-    const [isControlsOpen, setIsControlsOpen] = useState(true);
+    const [isControlsOpen, setIsControlsOpen = useState(true);
 
 
     useEffect(() => {
@@ -439,31 +439,36 @@ export default function ForgePage() {
             .sort((a,b) => a-b);
         
         return unlockedLevels.map(lvl => (
-            <div key={lvl} className="mb-6">
-                <h3 className="text-2xl font-bold font-headline mb-4">Level {lvl} Avatars</h3>
-                <div className="grid grid-cols-4 sm:grid-cols-8 gap-4">
-                    {classAvatars[lvl].map((url: string, index: number) => {
-                        const isCurrentlySelected = selectedStaticAvatarUrl === url;
-                        return (
-                            <div 
-                                key={`${lvl}-${index}`} 
-                                className={cn(
-                                    "relative p-2 border-4 rounded-lg cursor-pointer transition-all duration-300 hover:scale-105 aspect-[3/4]",
-                                    isCurrentlySelected ? 'border-primary ring-4 ring-primary/50' : 'border-transparent hover:border-primary/50'
-                                )}
-                                onClick={() => handleStaticAvatarClick(url)}
-                            >
-                                <Image src={url} alt={`Avatar level ${lvl} - ${index + 1}`} fill className="w-full h-full rounded-md object-cover" />
-                                 {isCurrentlySelected && (
-                                    <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
-                                        <UserCheck className="h-4 w-4" />
-                                    </div>
-                                )}
-                            </div>
-                        )
-                    })}
-                </div>
-            </div>
+             <Collapsible key={lvl} className="w-full border-b">
+                <CollapsibleTrigger className="flex justify-between items-center w-full p-4 hover:bg-muted/50">
+                    <h3 className="text-2xl font-bold font-headline">Level {lvl} Avatars</h3>
+                    <ChevronDown className="h-6 w-6 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                    <div className="grid grid-cols-4 sm:grid-cols-8 gap-4 p-4">
+                        {classAvatars[lvl].map((url: string, index: number) => {
+                            const isCurrentlySelected = selectedStaticAvatarUrl === url;
+                            return (
+                                <div 
+                                    key={`${lvl}-${index}`} 
+                                    className={cn(
+                                        "relative border-4 rounded-lg cursor-pointer transition-all duration-300 hover:scale-105 aspect-[3/4]",
+                                        isCurrentlySelected ? 'border-primary ring-4 ring-primary/50' : 'border-transparent hover:border-primary/50'
+                                    )}
+                                    onClick={() => handleStaticAvatarClick(url)}
+                                >
+                                    <Image src={url} alt={`Avatar level ${lvl} - ${index + 1}`} fill className="w-full h-full rounded-md object-cover" />
+                                     {isCurrentlySelected && (
+                                        <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
+                                            <UserCheck className="h-4 w-4" />
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        })}
+                    </div>
+                </CollapsibleContent>
+            </Collapsible>
         ));
     };
 
@@ -745,6 +750,8 @@ export default function ForgePage() {
         </div>
     );
 }
+
+    
 
     
 
