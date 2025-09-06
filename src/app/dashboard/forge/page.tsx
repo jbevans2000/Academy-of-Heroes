@@ -146,7 +146,7 @@ export default function ForgePage() {
                 });
                 
                 // Determine if the last saved avatar was static or custom
-                if (studentData.avatarUrl && !studentData.equippedBodyId) {
+                if (studentData.avatarUrl && !studentData.useCustomAvatar) {
                     setSelectedStaticAvatarUrl(studentData.avatarUrl);
                 } else {
                     setSelectedStaticAvatarUrl(null);
@@ -382,6 +382,8 @@ export default function ForgePage() {
         return slots;
     }, [ownedArmor]);
     
+    const hairstyle = useMemo(() => hairstyles.find(h => h.id === equipment.hairstyleId), [hairstyles, equipment.hairstyleId]);
+    
     const activeTransform = useMemo(() => {
         if (!activePiece || !equipment.bodyId) return null;
         if ('slot' in activePiece) { // Armor
@@ -614,6 +616,7 @@ export default function ForgePage() {
                                             'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_38_56%20AM.png?alt=media&token=7e424757-f1cb-42a2-8496-93339ff16de4',
                                             'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_41_06%20AM.png?alt=media&token=91ad076b-39f3-4284-8320-e6d79aabcc3f',
                                             'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_44_32%20AM.png?alt=media&token=d5326450-62b5-48ad-a4b4-bd9a68964cd0',
+                                            'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-07b697e9-e16a-401c-9e91-79ead990b2f4.jpg?alt=media&token=f87c0edc-3042-4b55-a2a2-bb67de99ef36',
                                             'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2Fenvato-labs-ai-6a2c2621-0c53-4e44-93c4-338b97587840.jpg?alt=media&token=487d6092-959c-4610-85f0-80252b4129b8',
                                             'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_46_44%20AM.png?alt=media&token=512c4aa1-14a4-49cd-a6cc-884ce163ebde',
                                             'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_50_59%20AM.png?alt=media&token=45e11f7c-40de-4da9-9c17-ebce834beee7',
