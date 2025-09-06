@@ -391,9 +391,9 @@ export default function ForgePage() {
             const defaultTransform = defaultTransforms?.[equipment.bodyId] || { x: 50, y: 50, scale: 40 };
             return customTransform || defaultTransform;
         } else { // Hairstyle
-            return localHairstyleTransforms?.[equipment.bodyId] || activePiece.transforms?.[equipment.bodyId] || { x: 50, y: 50, scale: 100 };
+            return localHairstyleTransforms?.[equipment.bodyId] || hairstyle?.transforms?.[equipment.bodyId] || { x: 50, y: 50, scale: 100 };
         }
-    }, [activePiece, equipment.bodyId, localArmorTransforms, localArmorTransforms2, localHairstyleTransforms, editingLayer]);
+    }, [activePiece, equipment.bodyId, localArmorTransforms, localArmorTransforms2, localHairstyleTransforms, editingLayer, hairstyle]);
 
     const activeScaleForSlider = useMemo(() => {
         if (!activeTransform || !activePiece || !equipment.bodyId) return 50;
@@ -403,14 +403,14 @@ export default function ForgePage() {
                 const defaultTransforms = editingLayer === 'primary' ? activePiece.transforms : activePiece.transforms2;
                 return defaultTransforms?.[equipment.bodyId as string]?.scale || Object.values(defaultTransforms || {})[0]?.scale || 40;
             } else { // Hairstyle
-                return activePiece.transforms?.[equipment.bodyId as string]?.scale || Object.values(activePiece.transforms || {})[0]?.scale || 100;
+                return hairstyle?.transforms?.[equipment.bodyId as string]?.scale || Object.values(hairstyle?.transforms || {})[0]?.scale || 100;
             }
         };
 
         const baseScale = getBaseScale();
         return ((activeTransform.scale - (baseScale * 0.5)) / baseScale) * 100;
 
-    }, [activeTransform, activePiece, equipment.bodyId, editingLayer]);
+    }, [activeTransform, activePiece, equipment.bodyId, editingLayer, hairstyle]);
 
     const handleStaticAvatarClick = (url: string) => {
         setSelectedStaticAvatarUrl(url);
