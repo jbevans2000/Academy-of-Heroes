@@ -226,11 +226,6 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                         Songs and Stories
                     </Button>
                 </Link>
-                <Link href="/dashboard/forge" passHref className="w-full">
-                    <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90">
-                        Change Avatar
-                    </Button>
-                </Link>
                 <Button size="lg" className="col-span-2 w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleCheckCompany} disabled={isLoadingCompany}>
                     {isLoadingCompany ? <Loader2 className="mr-4 h-8 w-8 animate-spin"/> : <Briefcase className="mr-4 h-8 w-8" />}
                     Check Company
