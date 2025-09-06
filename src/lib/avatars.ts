@@ -56,14 +56,14 @@ export const avatarData: ClassAvatarData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%204%20(8).png?alt=media&token=7668dcd4-e045-4d64-8234-3a890f89789a'
     ],
     5: [
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%205%20(1).jpg?alt=media&token=ba3cfec4-10f9-4a96-8f5d-990a67180d77',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%205%20(2).jpg?alt=media&token=7b2bfdb8-83d5-4f40-85b6-7b9901256212',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%205%20(3).jpg?alt=media&token=4e0bc35c-0fc1-4c6d-83a0-da79ba73db8a',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%205%20(4).jpg?alt=media&token=5b3ab539-8fd6-42d8-84ef-ed0890e414df',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%205%20(5).jpg?alt=media&token=b8e3b140-cca8-4496-8081-8089c472cc90',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%205%20(6).jpg?alt=media&token=60087323-fe68-47d8-a7e8-53a9319a503a',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%205%20(7).jpg?alt=media&token=3a66dc62-7c79-4443-b76a-48b6d5321393',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%205%20(8).jpg?alt=media&token=86e3099a-d378-4dc6-9e65-2523d4f9b120'
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%205%20(1).png?alt=media&token=3b71a0de-9ea0-44fc-96dd-a254213861b9',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%205%20(2).png?alt=media&token=01bf6d0d-bfe8-4b08-95d8-93564123e384',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%205%20(3).png?alt=media&token=288f1d6f-abd1-4b1b-a564-09b0825bd62e',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%205%20(4).png?alt=media&token=5d079bbe-2801-4aa4-91ea-2e74bcedf1a1',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%205%20(5).png?alt=media&token=7bd7d2ca-0099-4070-99cf-af75a074d7e2',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%205%20(6).png?alt=media&token=35af8f04-e6de-4e22-9144-7813d7e8ab69',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%205%20(7).png?alt=media&token=f45b74ba-e7c5-41fc-8b3e-9edeab81a7fc',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%205%20(8).png?alt=media&token=ac3a704c-55b6-4649-b5c7-0db445e49368'
     ],
     6: [
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(2).png?alt=media&token=df808f43-65a8-458d-8407-a9e79c52c057',
