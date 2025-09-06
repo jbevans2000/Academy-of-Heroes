@@ -226,6 +226,12 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                         Songs and Stories
                     </Button>
                 </Link>
+                 <Link href="/dashboard/forge" passHref className="w-full">
+                    <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90">
+                        <Hammer className="mr-4 h-8 w-8" />
+                        The Forge
+                    </Button>
+                </Link>
                 <Button size="lg" className="col-span-2 w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleCheckCompany} disabled={isLoadingCompany}>
                     {isLoadingCompany ? <Loader2 className="mr-4 h-8 w-8 animate-spin"/> : <Briefcase className="mr-4 h-8 w-8" />}
                     Check Company
@@ -250,18 +256,6 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                           </Button>
                       </Link>
                       
-                      <Link href="/dashboard/forge" passHref>
-                          <Button variant="outline" className="h-auto py-4 px-8 border-2 border-gray-600 bg-gray-500/10 hover:bg-gray-500/20">
-                              <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
-                                  <Hammer className="h-12 w-12 text-gray-400" />
-                                  <div>
-                                      <h3 className="text-xl font-bold">The Forge</h3>
-                                      <p className="text-muted-foreground">Equip your Avatar!</p>
-                                  </div>
-                              </div>
-                          </Button>
-                      </Link>
-
                       <Link href="/dashboard/inventory" passHref>
                           <Button variant="outline" className="h-auto py-4 px-8 border-2 border-purple-600 bg-purple-500/10 hover:bg-purple-500/20">
                               <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
