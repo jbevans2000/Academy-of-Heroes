@@ -438,19 +438,19 @@ export default function ForgePage() {
         return unlockedLevels.map(lvl => (
             <div key={lvl} className="mb-6">
                 <h3 className="text-2xl font-bold font-headline mb-4">Level {lvl} Avatars</h3>
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
+                <div className="grid grid-cols-4 sm:grid-cols-8 gap-4">
                     {classAvatars[lvl].map((url: string, index: number) => {
                         const isCurrentlySelected = selectedStaticAvatarUrl === url;
                         return (
                             <div 
                                 key={`${lvl}-${index}`} 
                                 className={cn(
-                                    "relative p-2 border-4 rounded-lg cursor-pointer transition-all duration-300 hover:scale-110",
+                                    "relative p-2 border-4 rounded-lg cursor-pointer transition-all duration-300 hover:scale-105 aspect-[3/4]",
                                     isCurrentlySelected ? 'border-primary ring-4 ring-primary/50' : 'border-transparent hover:border-primary/50'
                                 )}
                                 onClick={() => handleStaticAvatarClick(url)}
                             >
-                                <Image src={url} alt={`Avatar level ${lvl} - ${index + 1}`} width={200} height={200} className="w-full h-auto rounded-md object-cover" />
+                                <Image src={url} alt={`Avatar level ${lvl} - ${index + 1}`} fill className="w-full h-full rounded-md object-cover" />
                                  {isCurrentlySelected && (
                                     <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
                                         <UserCheck className="h-4 w-4" />
@@ -614,6 +614,7 @@ export default function ForgePage() {
                                             'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_38_56%20AM.png?alt=media&token=7e424757-f1cb-42a2-8496-93339ff16de4',
                                             'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_41_06%20AM.png?alt=media&token=91ad076b-39f3-4284-8320-e6d79aabcc3f',
                                             'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_44_32%20AM.png?alt=media&token=d5326450-62b5-48ad-a4b4-bd9a68964cd0',
+                                            'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2Fenvato-labs-ai-6a2c2621-0c53-4e44-93c4-338b97587840.jpg?alt=media&token=487d6092-959c-4610-85f0-80252b4129b8',
                                             'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_46_44%20AM.png?alt=media&token=512c4aa1-14a4-49cd-a6cc-884ce163ebde',
                                             'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_50_59%20AM.png?alt=media&token=45e11f7c-40de-4da9-9c17-ebce834beee7',
                                             'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2006_03_10%20AM.png?alt=media&token=bb987156-6f34-489e-8d2c-a5b6349cd808',
@@ -641,7 +642,7 @@ export default function ForgePage() {
                                 <CharacterCanvas
                                     student={student}
                                     equipment={equipment}
-                                    allHairstyles={hairstyles}
+                                    allHairstyles={allHairstyles}
                                     allArmor={ownedArmor}
                                     onMouseDown={handleMouseDown}
                                     activePieceId={activePiece?.id || null}
