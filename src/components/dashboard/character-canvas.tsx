@@ -33,6 +33,7 @@ interface CharacterCanvasProps {
     };
     allHairstyles: Hairstyle[];
     allArmor: ArmorPiece[];
+    selectedStaticAvatarUrl?: string | null;
     onMouseDown?: (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece | Hairstyle, layer: 'primary' | 'secondary') => void;
     activePieceId?: string | null;
     editingLayer?: 'primary' | 'secondary';
@@ -47,6 +48,7 @@ export const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasP
     equipment, 
     allHairstyles,
     allArmor,
+    selectedStaticAvatarUrl,
     onMouseDown, 
     activePieceId, 
     editingLayer = 'primary', 
@@ -76,89 +78,98 @@ export const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasP
             className="relative w-full h-full shadow-inner overflow-hidden"
             id="character-canvas-container"
         >
+            {/* Always render the background first */}
             {equipment.backgroundUrl && (
                 <Image src={equipment.backgroundUrl} alt="Selected Background" fill className="object-cover z-0" />
             )}
 
             <div className="relative w-full h-full z-10">
-                 {baseBody && <Image src={baseBody.imageUrl} alt="Base Body" fill className="object-contain" priority />}
+                {/* Then, render the static avatar if selected */}
+                {selectedStaticAvatarUrl ? (
+                    <Image src={selectedStaticAvatarUrl} alt="Selected Static Avatar" layout="fill" className="object-contain"/>
+                ) : (
+                    <>
+                        {/* Or, render the custom character components */}
+                        {baseBody && <Image src={baseBody.imageUrl} alt="Base Body" fill className="object-contain" priority />}
             
-                {baseBody && hairstyleColor && hairstyle && (
-                    <div
-                        onMouseDown={handleHairMouseDown}
-                        className={cn(
-                            "absolute",
-                            isPreviewMode ? "cursor-default pointer-events-none" : "cursor-move pointer-events-auto",
-                            activePieceId !== hairstyle.id && !isPreviewMode && "opacity-75"
-                        )}
-                        style={{
-                            top: `${hairstyleTransform.y}%`,
-                            left: `${hairstyleTransform.x}%`,
-                            width: `${hairstyleTransform.scale}%`,
-                            transform: 'translate(-50%, -50%)',
-                            zIndex: isPreviewMode ? 10 : (activePieceId === hairstyle.id ? 20 : 10)
-                        }}
-                    >
-                        <Image src={hairstyleColor} alt="Hairstyle" width={500} height={500} className="object-contain pointer-events-none" />
-                    </div>
-                )}
-                
-                {baseBody && equippedArmorPieces.map(piece => {
-                    const customTransform = localArmorTransforms?.[piece.id]?.[baseBody!.id];
-                    const defaultTransform = piece.transforms?.[baseBody!.id] || { x: 50, y: 50, scale: 40 };
-                    const transform = customTransform || defaultTransform;
-                    
-                    const customTransform2 = localArmorTransforms2?.[piece.id]?.[baseBody!.id];
-                    const defaultTransform2 = piece.transforms2?.[baseBody!.id] || { x: 50, y: 50, scale: 40 };
-                    const transform2 = customTransform2 || defaultTransform2;
-
-                    const zIndex = slotZIndex[piece.slot] || 1;
-                    const isActive = piece.id === activePieceId;
-
-                    const handleMouseDownPrimary = onMouseDown ? (e: React.MouseEvent<HTMLDivElement>) => onMouseDown(e, piece, 'primary') : undefined;
-                    const handleMouseDownSecondary = onMouseDown ? (e: React.MouseEvent<HTMLDivElement>) => onMouseDown(e, piece, 'secondary') : undefined;
-
-                    return (
-                        <React.Fragment key={piece.id}>
+                        {baseBody && hairstyleColor && hairstyle && (
                             <div
-                                onMouseDown={handleMouseDownPrimary}
+                                onMouseDown={handleHairMouseDown}
                                 className={cn(
                                     "absolute",
                                     isPreviewMode ? "cursor-default pointer-events-none" : "cursor-move pointer-events-auto",
-                                    !isActive && !isPreviewMode && "opacity-75"
+                                    activePieceId !== hairstyle.id && !isPreviewMode && "opacity-75"
                                 )}
                                 style={{
-                                    top: `${transform.y}%`,
-                                    left: `${transform.x}%`,
-                                    width: `${transform.scale}%`,
+                                    top: `${hairstyleTransform.y}%`,
+                                    left: `${hairstyleTransform.x}%`,
+                                    width: `${hairstyleTransform.scale}%`,
                                     transform: 'translate(-50%, -50%)',
-                                    zIndex: isPreviewMode ? zIndex : (isActive && editingLayer === 'primary' ? 20 : zIndex),
+                                    zIndex: isPreviewMode ? 10 : (activePieceId === hairstyle.id ? 20 : 10)
                                 }}
                             >
-                                <Image src={piece.modularImageUrl} alt={piece.name} width={500} height={500} className="object-contain pointer-events-none" />
+                                <Image src={hairstyleColor} alt="Hairstyle" width={500} height={500} className="object-contain pointer-events-none" />
                             </div>
-                            {piece.modularImageUrl2 && (
-                                <div
-                                    onMouseDown={handleMouseDownSecondary}
-                                    className={cn(
-                                        "absolute",
-                                        isPreviewMode ? "cursor-default pointer-events-none" : "cursor-move pointer-events-auto",
-                                        !isActive && !isPreviewMode && "opacity-75"
+                        )}
+                        
+                        {baseBody && equippedArmorPieces.map(piece => {
+                            const customTransform = localArmorTransforms?.[piece.id]?.[baseBody!.id];
+                            const defaultTransform = piece.transforms?.[baseBody!.id] || { x: 50, y: 50, scale: 40 };
+                            const transform = customTransform || defaultTransform;
+                            
+                            const customTransform2 = localArmorTransforms2?.[piece.id]?.[baseBody!.id];
+                            const defaultTransform2 = piece.transforms2?.[baseBody!.id] || { x: 50, y: 50, scale: 40 };
+                            const transform2 = customTransform2 || defaultTransform2;
+
+                            const zIndex = slotZIndex[piece.slot] || 1;
+                            const isActive = piece.id === activePieceId;
+
+                            const handleMouseDownPrimary = onMouseDown ? (e: React.MouseEvent<HTMLDivElement>) => onMouseDown(e, piece, 'primary') : undefined;
+                            const handleMouseDownSecondary = onMouseDown ? (e: React.MouseEvent<HTMLDivElement>) => onMouseDown(e, piece, 'secondary') : undefined;
+
+                            return (
+                                <React.Fragment key={piece.id}>
+                                    <div
+                                        onMouseDown={handleMouseDownPrimary}
+                                        className={cn(
+                                            "absolute",
+                                            isPreviewMode ? "cursor-default pointer-events-none" : "cursor-move pointer-events-auto",
+                                            !isActive && !isPreviewMode && "opacity-75"
+                                        )}
+                                        style={{
+                                            top: `${transform.y}%`,
+                                            left: `${transform.x}%`,
+                                            width: `${transform.scale}%`,
+                                            transform: 'translate(-50%, -50%)',
+                                            zIndex: isPreviewMode ? zIndex : (isActive && editingLayer === 'primary' ? 20 : zIndex),
+                                        }}
+                                    >
+                                        <Image src={piece.modularImageUrl} alt={piece.name} width={500} height={500} className="object-contain pointer-events-none" />
+                                    </div>
+                                    {piece.modularImageUrl2 && (
+                                        <div
+                                            onMouseDown={handleMouseDownSecondary}
+                                            className={cn(
+                                                "absolute",
+                                                isPreviewMode ? "cursor-default pointer-events-none" : "cursor-move pointer-events-auto",
+                                                !isActive && !isPreviewMode && "opacity-75"
+                                            )}
+                                            style={{
+                                                top: `${transform2.y}%`,
+                                                left: `${transform2.x}%`,
+                                                width: `${transform2.scale}%`,
+                                                transform: 'translate(-50%, -50%)',
+                                                zIndex: isPreviewMode ? zIndex : (isActive && editingLayer === 'secondary' ? 20 : zIndex),
+                                            }}
+                                        >
+                                            <Image src={piece.modularImageUrl2} alt={`${piece.name} (secondary)`} width={500} height={500} className="object-contain pointer-events-none" />
+                                        </div>
                                     )}
-                                    style={{
-                                        top: `${transform2.y}%`,
-                                        left: `${transform2.x}%`,
-                                        width: `${transform2.scale}%`,
-                                        transform: 'translate(-50%, -50%)',
-                                        zIndex: isPreviewMode ? zIndex : (isActive && editingLayer === 'secondary' ? 20 : zIndex),
-                                    }}
-                                >
-                                    <Image src={piece.modularImageUrl2} alt={`${piece.name} (secondary)`} width={500} height={500} className="object-contain pointer-events-none" />
-                                </div>
-                            )}
-                        </React.Fragment>
-                    );
-                })}
+                                </React.Fragment>
+                            );
+                        })}
+                    </>
+                )}
             </div>
         </div>
     );

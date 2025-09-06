@@ -45,9 +45,11 @@ export function AvatarDisplay({ student }: AvatarDisplayProps) {
     fetchAssets();
   }, []);
 
+  const showCustomCharacter = student.equippedBodyId && !student.avatarUrl;
+
   return (
     <div className="flex justify-center items-center py-4">
-        {student.useCustomAvatar ? (
+        {showCustomCharacter ? (
              <div className={cn("relative w-96 h-96", avatarBorderColor)}>
                 <CharacterCanvas
                     student={student}
@@ -73,11 +75,12 @@ export function AvatarDisplay({ student }: AvatarDisplayProps) {
              </div>
         ) : (
              <div className={cn("relative w-96 h-96 border-8 bg-black/20 p-2 shadow-inner", avatarBorderColor)}>
+                {student.backgroundUrl && <Image src={student.backgroundUrl} alt="background" fill className="object-cover" />}
                 <Image
-                    src={student.avatarUrl}
+                    src={student.avatarUrl || 'https://placehold.co/400x400.png'}
                     alt="Selected avatar"
                     fill
-                    className="object-contain drop-shadow-[0_5px_15px_rgba(0,0,0,0.3)] transition-all duration-500"
+                    className="object-contain drop-shadow-[0_5px_15px_rgba(0,0,0,0.3)] transition-all duration-500 z-10"
                     data-ai-hint={student.class}
                     priority
                 />

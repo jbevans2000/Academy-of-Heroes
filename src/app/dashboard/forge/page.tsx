@@ -10,7 +10,7 @@ import type { Student } from '@/lib/data';
 import { baseBodyUrls, type ArmorPiece, type Hairstyle, type ArmorSlot } from '@/lib/forge';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Loader2, Hammer, Layers, Eye, Camera, X, Shirt, ArrowRight, ChevronsRight, ChevronsLeft, ShirtIcon } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Hammer, Layers, Eye, Camera, X, Shirt, ArrowRight, ChevronsRight, ChevronsLeft, ShirtIcon, UserCheck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -36,7 +36,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CharacterCanvas } from '@/components/dashboard/character-canvas';
 import { avatarData } from '@/lib/avatars';
-import { UserCheck } from 'lucide-react';
 
 
 export default function ForgePage() {
@@ -70,14 +69,13 @@ export default function ForgePage() {
         feetId: null as string | null,
     });
     
-    // NEW: State to handle static avatar selection
     const [selectedStaticAvatarUrl, setSelectedStaticAvatarUrl] = useState<string | null>(null);
 
     // Sizer state
     const [activePiece, setActivePiece] = useState<ArmorPiece | Hairstyle | null>(null);
-    const [localTransforms, setLocalTransforms] = useState<Student['armorTransforms']>({});
-    const [localTransforms2, setLocalTransforms2] = useState<Student['armorTransforms2']>({});
     const [localHairstyleTransforms, setLocalHairstyleTransforms] = useState<Student['equippedHairstyleTransforms']>({});
+    const [localArmorTransforms, setLocalArmorTransforms] = useState<Student['armorTransforms']>({});
+    const [localArmorTransforms2, setLocalArmorTransforms2] = useState<Student['armorTransforms2']>({});
     const [editingLayer, setEditingLayer] = useState<'primary' | 'secondary'>('primary');
     const [isDragging, setIsDragging] = useState(false);
     const [isPreviewMode, setIsPreviewMode] = useState(false);
@@ -129,9 +127,9 @@ export default function ForgePage() {
                 const studentData = { uid: doc.id, ...doc.data() } as Student;
                 setStudent(studentData);
                 // Initialize local transforms from student data
-                setLocalTransforms(studentData.armorTransforms || {});
-                setLocalTransforms2(studentData.armorTransforms2 || {});
                 setLocalHairstyleTransforms(studentData.equippedHairstyleTransforms || {});
+                setLocalArmorTransforms(studentData.armorTransforms || {});
+                setLocalArmorTransforms2(studentData.armorTransforms2 || {});
 
                 // Set equipment based on saved data
                 setEquipment({
@@ -146,6 +144,13 @@ export default function ForgePage() {
                     legsId: studentData.equippedLegsId || null,
                     feetId: studentData.equippedFeetId || null,
                 });
+                
+                // Determine if the last saved avatar was static or custom
+                if (studentData.avatarUrl && !studentData.equippedBodyId) {
+                    setSelectedStaticAvatarUrl(studentData.avatarUrl);
+                } else {
+                    setSelectedStaticAvatarUrl(null);
+                }
             }
         });
         
@@ -178,33 +183,8 @@ export default function ForgePage() {
 
     const handleBodySelect = (bodyId: string) => {
         if (!student) return;
-
-        // If this body is the one with the saved equipment, load it.
-        if (student.equippedBodyId === bodyId) {
-             setEquipment({
-                bodyId: student.equippedBodyId,
-                hairstyleId: student.equippedHairstyleId || null,
-                hairstyleColor: student.equippedHairstyleColor || null,
-                backgroundUrl: student.backgroundUrl || null,
-                headId: student.equippedHeadId || null,
-                shouldersId: student.equippedShouldersId || null,
-                chestId: student.equippedChestId || null,
-                handsId: student.equippedHandsId || null,
-                legsId: student.equippedLegsId || null,
-                feetId: student.equippedFeetId || null,
-            });
-        } else {
-            // Otherwise, clear everything except the new body and background
-            setEquipment(prev => ({
-                bodyId: bodyId,
-                backgroundUrl: prev.backgroundUrl, // Keep background
-                hairstyleId: null, hairstyleColor: null,
-                headId: null, shouldersId: null, chestId: null, handsId: null, legsId: null, feetId: null,
-            }));
-        }
-
-        setActivePiece(null);
-        setIsPreviewMode(false);
+        setEquipment(prev => ({ ...prev, bodyId }));
+        setSelectedStaticAvatarUrl(null);
     };
     
     const handleEquipItem = (item: ArmorPiece | Hairstyle) => {
@@ -276,7 +256,7 @@ export default function ForgePage() {
         };
 
         if ('slot' in activePiece) { // ArmorPiece
-            (editingLayer === 'primary' ? setLocalTransforms : setLocalTransforms2)(updateTransform);
+            (editingLayer === 'primary' ? setLocalArmorTransforms : setLocalArmorTransforms2)(updateTransform);
         } else { // Hairstyle
             setLocalHairstyleTransforms(updateHairTransform);
         }
@@ -311,6 +291,7 @@ export default function ForgePage() {
             ...prev,
             bodyId: null, // Clear the body as well
             hairstyleId: null, hairstyleColor: null,
+            backgroundUrl: null,
             headId: null, shouldersId: null, chestId: null, handsId: null, legsId: null, feetId: null,
         }));
         setSelectedStaticAvatarUrl(null);
@@ -330,7 +311,7 @@ export default function ForgePage() {
         handleBodySelect(baseBodyUrls[nextIndex].id);
     };
 
-    const handleSetCustomAvatar = async () => {
+    const handleSetAvatar = async () => {
         if (!teacherUid || !user) return;
         setIsSettingAvatar(true);
 
@@ -339,13 +320,29 @@ export default function ForgePage() {
             let updates: Partial<Student> = {};
 
             if (selectedStaticAvatarUrl) {
+                // If a static avatar is selected, save its URL and clear custom fields
                 updates = {
-                    useCustomAvatar: false,
-                    avatarUrl: selectedStaticAvatarUrl
+                    avatarUrl: selectedStaticAvatarUrl,
+                    backgroundUrl: equipment.backgroundUrl || '', // Keep background
+                    useCustomAvatar: false, // Explicitly set to false
+                    equippedBodyId: '',
+                    equippedHairstyleId: '',
+                    equippedHairstyleColor: '',
+                    equippedHairstyleTransforms: {},
+                    equippedHeadId: '',
+                    equippedShouldersId: '',
+                    equippedChestId: '',
+                    equippedHandsId: '',
+                    equippedLegsId: '',
+                    equippedFeetId: '',
+                    armorTransforms: {},
+                    armorTransforms2: {},
                 };
             } else {
+                 // If a custom character is built, save the recipe and clear the static URL
                  updates = {
-                    useCustomAvatar: true,
+                    avatarUrl: '', 
+                    useCustomAvatar: true, // Explicitly set to true
                     equippedBodyId: equipment.bodyId,
                     equippedHairstyleId: equipment.hairstyleId,
                     equippedHairstyleColor: equipment.hairstyleColor,
@@ -357,8 +354,8 @@ export default function ForgePage() {
                     equippedHandsId: equipment.handsId,
                     equippedLegsId: equipment.legsId,
                     equippedFeetId: equipment.feetId,
-                    armorTransforms: localTransforms,
-                    armorTransforms2: localTransforms2,
+                    armorTransforms: localArmorTransforms,
+                    armorTransforms2: localArmorTransforms2,
                 };
             }
             
@@ -388,7 +385,7 @@ export default function ForgePage() {
     const activeTransform = useMemo(() => {
         if (!activePiece || !equipment.bodyId) return null;
         if ('slot' in activePiece) { // Armor
-            const armorTransforms = editingLayer === 'primary' ? localTransforms : localTransforms2;
+            const armorTransforms = editingLayer === 'primary' ? localArmorTransforms : localArmorTransforms2;
             const defaultTransforms = editingLayer === 'primary' ? activePiece.transforms : activePiece.transforms2;
             const customTransform = armorTransforms?.[activePiece.id]?.[equipment.bodyId];
             const defaultTransform = defaultTransforms?.[equipment.bodyId] || { x: 50, y: 50, scale: 40 };
@@ -396,7 +393,7 @@ export default function ForgePage() {
         } else { // Hairstyle
             return localHairstyleTransforms?.[equipment.bodyId] || activePiece.transforms?.[equipment.bodyId] || { x: 50, y: 50, scale: 100 };
         }
-    }, [activePiece, equipment.bodyId, localTransforms, localTransforms2, localHairstyleTransforms, editingLayer]);
+    }, [activePiece, equipment.bodyId, localArmorTransforms, localArmorTransforms2, localHairstyleTransforms, editingLayer]);
 
     const activeScaleForSlider = useMemo(() => {
         if (!activeTransform || !activePiece || !equipment.bodyId) return 50;
@@ -420,6 +417,7 @@ export default function ForgePage() {
         // Unequip all items when a static avatar is chosen
         setEquipment(prev => ({
             ...prev,
+            bodyId: null,
             hairstyleId: null, hairstyleColor: null,
             headId: null, shouldersId: null, chestId: null, handsId: null, legsId: null, feetId: null,
         }));
@@ -500,7 +498,7 @@ export default function ForgePage() {
                                 The Armory
                              </Button>
                              <Button variant="secondary" onClick={handleUnequipAll}><ShirtIcon className="mr-2 h-4 w-4" />Unequip All</Button>
-                            <Button variant="default" onClick={handleSetCustomAvatar} disabled={isSettingAvatar || (!selectedStaticAvatarUrl && !equipment.bodyId)}>
+                            <Button variant="default" onClick={handleSetAvatar} disabled={isSettingAvatar || (!selectedStaticAvatarUrl && !equipment.bodyId)}>
                                 {isSettingAvatar ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Camera className="mr-2 h-4 w-4" />}
                                 Set as Custom Avatar
                             </Button>
@@ -616,7 +614,7 @@ export default function ForgePage() {
                                             'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_38_56%20AM.png?alt=media&token=7e424757-f1cb-42a2-8496-93339ff16de4',
                                             'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_41_06%20AM.png?alt=media&token=91ad076b-39f3-4284-8320-e6d79aabcc3f',
                                             'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_44_32%20AM.png?alt=media&token=d5326450-62b5-48ad-a4b4-bd9a68964cd0',
-                                            'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_46_44%20AM.png?alt=media&token=512c4aa1-144a-49cd-a6cc-884ce163ebde',
+                                            'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_46_44%20AM.png?alt=media&token=512c4aa1-14a4-49cd-a6cc-884ce163ebde',
                                             'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_50_59%20AM.png?alt=media&token=45e11f7c-40de-4da9-9c17-ebce834beee7',
                                             'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2006_03_10%20AM.png?alt=media&token=bb987156-6f34-489e-8d2c-a5b6349cd808',
                                         ].map((url, i) => (
@@ -640,23 +638,20 @@ export default function ForgePage() {
                            <div
                                 className="relative w-full aspect-square bg-gray-700 rounded-lg p-2"
                             >
-                                {selectedStaticAvatarUrl ? (
-                                    <Image src={selectedStaticAvatarUrl} alt="Selected Static Avatar" layout="fill" className="object-contain"/>
-                                ) : (
-                                    <CharacterCanvas 
-                                        student={student}
-                                        equipment={equipment}
-                                        allHairstyles={hairstyles}
-                                        allArmor={ownedArmor}
-                                        onMouseDown={handleMouseDown}
-                                        activePieceId={activePiece?.id || null}
-                                        editingLayer={editingLayer}
-                                        isPreviewMode={isPreviewMode}
-                                        localHairstyleTransforms={localHairstyleTransforms}
-                                        localArmorTransforms={localTransforms}
-                                        localArmorTransforms2={localTransforms2}
-                                    />
-                                )}
+                                <CharacterCanvas
+                                    student={student}
+                                    equipment={equipment}
+                                    allHairstyles={hairstyles}
+                                    allArmor={ownedArmor}
+                                    onMouseDown={handleMouseDown}
+                                    activePieceId={activePiece?.id || null}
+                                    editingLayer={editingLayer}
+                                    isPreviewMode={isPreviewMode}
+                                    localHairstyleTransforms={localHairstyleTransforms}
+                                    localArmorTransforms={localArmorTransforms}
+                                    localArmorTransforms2={localArmorTransforms2}
+                                    selectedStaticAvatarUrl={selectedStaticAvatarUrl}
+                                />
                                 <div className="absolute top-0 right-0 h-full p-2 z-20">
                                     <Collapsible
                                         open={isControlsOpen}
