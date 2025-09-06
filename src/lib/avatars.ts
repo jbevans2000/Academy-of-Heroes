@@ -95,12 +95,12 @@ export const avatarData: ClassAvatarData = {
     1: [
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%201%20(1).png?alt=media&token=18efe50c-2220-48e8-80ca-1b5423920f7a',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%201%20(2).png?alt=media&token=49b9461b-60bf-4491-ab73-382ccdda28db',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FLevel%201%20Healer%20(3).jpg?alt=media&token=0fa0b048-9404-44de-a2de-aa75056f44ad',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FLevel%201%20Healer%20(4).jpg?alt=media&token=a1b41d23-1e1d-4271-a417-ded15607ed45',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FLevel%201%20Healer%20(5).jpg?alt=media&token=17f39687-3ff5-4d2b-baf7-5e0cb7eee218',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FLevel%201%20Healer%20(6).jpg?alt=media&token=453263d7-ab0b-4759-a4d7-ca39a9ac2133',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FLevel%201%20Healer%20(7).jpg?alt=media&token=9a139455-a617-4453-b904-d86c2345af32',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FLevel%201%20Healer%20(8).jpg?alt=media&token=c4a5ae5c-6259-44c5-acea-ca45f0f19db1'
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2010_31_59%20PM.png?alt=media&token=c067aadf-2132-4285-9a7c-19d2b490c01c',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2010_23_21%20PM.png?alt=media&token=d31894c3-448a-4c65-8a8a-69f4b4a98f30',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2010_23_00%20PM.png?alt=media&token=b7389a98-20f7-446a-b0a9-2ee9a45f7271',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2010_22_55%20PM.png?alt=media&token=1025f449-86eb-45ed-aaec-6bba9988de40',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2010_22_51%20PM.png?alt=media&token=f95429ac-ce42-4a7c-a08c-cc5605910b3b',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2010_12_32%20PM.png?alt=media&token=37674059-1352-4467-8a68-c173925c7364'
     ],
     2: [
         'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%202%20(1).jpg?alt=media&token=ec205d05-ed0d-4c37-a1cb-3b06edd532e4',
@@ -246,3 +246,4 @@ export const avatarData: ClassAvatarData = {
 };
 
     
+
