@@ -642,7 +642,7 @@ export default function ForgePage() {
                                 <CharacterCanvas
                                     student={student}
                                     equipment={equipment}
-                                    allHairstyles={allHairstyles}
+                                    allHairstyles={hairstyles}
                                     allArmor={ownedArmor}
                                     onMouseDown={handleMouseDown}
                                     activePieceId={activePiece?.id || null}
