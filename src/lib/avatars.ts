@@ -179,14 +179,14 @@ export const avatarData: ClassAvatarData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level1%20(8).png?alt=media&token=e150925a-e51f-4fb3-a372-2d6179756e84'
     ],
     2: [
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%202%20(1).jpg?alt=media&token=1689ed00-9d7b-4f11-8cc5-33c92d3a3130',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%202%20(2).jpg?alt=media&token=c9b28e67-89e2-4399-aa95-659c81db8c07',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%202%20(3).jpg?alt=media&token=b9ad0f3f-2675-45fc-bde9-b3ba89fcd055',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%202%20(4).jpg?alt=media&token=f8eb4f32-6874-4823-b5be-22ecd6b1ec49',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%202%20(5).jpg?alt=media&token=100f07ca-069f-4425-baee-7d6653011450',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%202%20(6).jpg?alt=media&token=1d46da5e-69f5-4721-a2f4-1cfcdcc9463d',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%202%20(7).jpg?alt=media&token=8941fa94-b80a-4357-9cea-7c49d79825a9',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%202%2Mage%20Level%202%20(8).jpg?alt=media&token=b6abe374-ea1e-4587-96e1-815e09149d5c'
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%202%20(1).png?alt=media&token=d73e7d79-9c42-4cb9-b170-90b658c6766e',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%202%20(2).png?alt=media&token=ad474977-07bc-4e5f-ab76-110e751ec4f4',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%202%20(3).png?alt=media&token=0aeeb047-215a-4417-bb6b-1a250ad4ee91',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%202%20(4).png?alt=media&token=9ff6ca14-c9a0-4ea5-9787-eea1146edd25',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%202%20(5).png?alt=media&token=2cf9deea-09be-4004-9b05-63628a38dc19',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%202%20(6).png?alt=media&token=57cc392d-ead9-4994-afbc-84dba2bc6990',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%202%20(7).png?alt=media&token=70cb0610-5753-4b16-916c-d728d59419ef',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%202%20(8).png?alt=media&token=6ec3a3ec-c230-48ec-b573-2df8792a1b4f'
     ],
     3: [
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMAge%20Level%203%20(1).jpg?alt=media&token=ced1f636-fd40-42b8-a285-c805dd898260',
