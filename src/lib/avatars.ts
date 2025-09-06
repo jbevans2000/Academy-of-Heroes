@@ -133,14 +133,14 @@ export const avatarData: ClassAvatarData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%204%20(9).png?alt=media&token=436658e2-451c-4ee8-ad45-aedeebe3fddb'
     ],
     5: [
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FLevel%205%20Healers%20(1).png?alt=media&token=540479ca-fb8a-411d-82de-69858e5862a2',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FLevel%205%20Healers%20(2).png?alt=media&token=8d74c53d-a69b-402e-abe3-2df6cd5cc821',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FLevel%205%20Healers%20(3).png?alt=media&token=bd3a0b43-a5a6-4d99-9c0f-f957f5056be5',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FLevel%205%20Healers%20(4).png?alt=media&token=1ec1bc6f-3898-4cc4-927c-221a8961d28c',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FLevel%205%20Healers%20(5).png?alt=media&token=2c1b94d3-8b7a-450a-8a53-2b6cad5de8e5',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FLevel%205%20Healers%20(6).png?alt=media&token=8b0d5c6d-b5ea-4775-9fcb-9aaff1c10bbb',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FLevel%205%20Healers%20(7).png?alt=media&token=0beeed2e-3c1c-4c7c-a520-875ff362683f',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FLevel%205%20Healers%20(8).png?alt=media&token=ae08c651-b463-47df-8010-01b95754bf01'
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FLevel%205%20Healers%20(1).png?alt=media&token=87780d29-32eb-4472-9e3a-7620c556de20',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FLevel%205%20Healers%20(2).png?alt=media&token=f42d0f89-6920-4677-ad0a-9ce61179586a',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FLevel%205%20Healers%20(3).png?alt=media&token=8f17a5f5-9e42-4c65-9e61-f41aa41d1dbb',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FLevel%205%20Healers%20(4).png?alt=media&token=4392fd83-455f-45ad-ad21-65ae501b5988',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FLevel%205%20Healers%20(5).png?alt=media&token=4ad1237f-6b8b-456e-9ba3-38afe40be485',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FLevel%205%20Healers%20(6).png?alt=media&token=597fe779-75ef-4863-a761-89c78b214a30',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FLevel%205%20Healers%20(7).png?alt=media&token=74fef29a-1960-4f93-966a-d709f7b1be67',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FLevel%205%20Healers%20(8).png?alt=media&token=dd93e024-34d2-4ee2-b8ba-2e89874e0a49'
     ],
     6: [
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%206%20(4).png?alt=media&token=52ee7415-d8db-4a50-b3e8-0776d30edca8',
@@ -250,5 +250,7 @@ export const avatarData: ClassAvatarData = {
 
 
 
+
+    
 
     
