@@ -56,7 +56,7 @@ export default function ForgePage() {
     const [isAvatarSetDialogOpen, setIsAvatarSetDialogOpen] = useState(false);
 
     // Equipment State
-    const [equipment, setEquipment = useState({
+    const [equipment, setEquipment] = useState({
         bodyId: null as string | null,
         hairstyleId: null as string | null,
         hairstyleColor: null as string | null,
@@ -69,19 +69,19 @@ export default function ForgePage() {
         feetId: null as string | null,
     });
     
-    const [selectedStaticAvatarUrl, setSelectedStaticAvatarUrl = useState<string | null>(null);
+    const [selectedStaticAvatarUrl, setSelectedStaticAvatarUrl] = useState<string | null>(null);
 
     // Sizer state
-    const [activePiece, setActivePiece = useState<ArmorPiece | Hairstyle | null>(null);
-    const [localHairstyleTransforms, setLocalHairstyleTransforms = useState<Student['equippedHairstyleTransforms']>({});
-    const [localArmorTransforms, setLocalArmorTransforms = useState<Student['armorTransforms']>({});
-    const [localArmorTransforms2, setLocalArmorTransforms2 = useState<Student['armorTransforms2']>({});
-    const [editingLayer, setEditingLayer = useState<'primary' | 'secondary'>('primary');
-    const [isDragging, setIsDragging = useState(false);
-    const [isPreviewMode, setIsPreviewMode = useState(false);
+    const [activePiece, setActivePiece] = useState<ArmorPiece | Hairstyle | null>(null);
+    const [localHairstyleTransforms, setLocalHairstyleTransforms] = useState<Student['equippedHairstyleTransforms']>({});
+    const [localArmorTransforms, setLocalArmorTransforms] = useState<Student['armorTransforms']>({});
+    const [localArmorTransforms2, setLocalArmorTransforms2] = useState<Student['armorTransforms2']>({});
+    const [editingLayer, setEditingLayer] = useState<'primary' | 'secondary'>('primary');
+    const [isDragging, setIsDragging] = useState(false);
+    const [isPreviewMode, setIsPreviewMode] = useState(false);
     
     // Collapsible Controls State
-    const [isControlsOpen, setIsControlsOpen = useState(true);
+    const [isControlsOpen, setIsControlsOpen] = useState(true);
 
 
     useEffect(() => {
@@ -750,9 +750,3 @@ export default function ForgePage() {
         </div>
     );
 }
-
-    
-
-    
-
-    
