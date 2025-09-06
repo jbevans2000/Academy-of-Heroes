@@ -1,4 +1,5 @@
 
+      
 import type { ClassType } from './data';
 
 type AvatarCollection = {
@@ -66,14 +67,14 @@ export const avatarData: ClassAvatarData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%205%20(8).png?alt=media&token=ac3a704c-55b6-4649-b5c7-0db445e49368'
     ],
     6: [
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(2).png?alt=media&token=df808f43-65a8-458d-8407-a9e79c52c057',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(3).png?alt=media&token=8baddac0-ccf3-47c0-9a20-845c7ba4de26',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(7).png?alt=media&token=f334879d-cfb7-4026-8c68-f823f57228cf',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(6).png?alt=media&token=14750532-ab4a-4ee1-bfa2-9ed4f5c27c10',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(4).png?alt=media&token=563dedcd-3c22-4c05-970f-8506449ec25b',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(1).png?alt=media&token=bee3fcf6-814b-4b83-a2f3-933944a56be0',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(5).png?alt=media&token=4b4dffe7-e4d1-4eac-8888-57aa6751ff9b',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%206%20(8).png?alt=media&token=b74c725b-927f-4dc6-9523-c42035015063'
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%206%20(1).png?alt=media&token=c356b711-8146-4ee4-9336-c5cd4bed6aa8',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%206%20(2).png?alt=media&token=59372f2f-9a30-439b-a0de-94f264f6ad59',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%206%20(3).png?alt=media&token=4d1e48f0-6337-429e-90fe-3f1d7b10ddce',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%206%20(4).png?alt=media&token=0d602273-a85b-4876-bfbf-800ff6dca6e1',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%206%20(5).png?alt=media&token=e0a423b9-abf8-4edd-95e5-11c9488fac5a',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%206%20(6).png?alt=media&token=208077ae-1b95-4380-8d48-075d411aa59d',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%206%20(7).png?alt=media&token=1b162009-00ac-4c9a-96da-62ef45cca914',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%206%20(8).png?alt=media&token=e5f7f607-e110-4b9b-9c66-50ed4fb2f932'
     ],
     7: generatePlaceholders(8, 'dragon knight'),
     8: generatePlaceholders(8, 'royal guard'),
@@ -243,3 +244,5 @@ export const avatarData: ClassAvatarData = {
     20: generatePlaceholders(8, 'ascended mage'),
   },
 };
+
+    
