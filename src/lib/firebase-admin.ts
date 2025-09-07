@@ -1,6 +1,4 @@
 
-'use server';
-
 import { initializeApp, getApp, getApps, type App, applicationDefault } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
 
