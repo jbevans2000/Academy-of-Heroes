@@ -352,14 +352,13 @@ export default function AdminDashboardPage() {
             
             await uploadBytes(storageRef, glbFile);
             
-            // This is the key change: use getDownloadURL from the client SDK.
             const url = await getDownloadURL(storageRef);
             setDownloadUrl(url);
 
             toast({ title: 'Upload Successful', description: 'Public URL generated. You can now test fetching it.' });
         } catch (error: any) {
-            console.error("GLB Upload/Sign Error:", error);
-            toast({ variant: 'destructive', title: 'Operation Failed', description: error.message || 'Could not upload the file or get a URL.' });
+            console.error("GLB Upload Error:", error);
+            toast({ variant: 'destructive', title: 'Operation Failed', description: 'Could not upload the file or get its URL.' });
         } finally {
             setIsUploading(false);
         }
@@ -715,7 +714,7 @@ export default function AdminDashboardPage() {
                             <AlertDialogFooter>
                                 <AlertDialogCancel disabled={isDeletingTeacher}>Cancel</AlertDialogCancel>
                                 <AlertDialogAction onClick={handleDeleteTeacher} disabled={isDeletingTeacher} className="bg-destructive hover:bg-destructive/90">
-                                    {isDeletingTeacher ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Yes, Permanently Delete Teacher'}
+                                    {isDeletingTeacher ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Yes, Permanently Delete Teacher'}
                                 </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
@@ -725,3 +724,5 @@ export default function AdminDashboardPage() {
         </div>
     );
 }
+
+    
