@@ -39,6 +39,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { Label } from '@/components/ui/label';
 
 interface Teacher {
     id: string;
@@ -712,5 +713,3 @@ export default function AdminDashboardPage() {
         </div>
     );
 }
-
-    
