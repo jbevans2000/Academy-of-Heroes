@@ -494,6 +494,8 @@ export default function ForgePage() {
         .map(id => allArmor.find(a => a.id === id)?.modelUrl)
         .filter(Boolean) as string[];
     
+    const is3dViewAvailable = !!equipment.bodyId && (!!bodyModelUrl || !!hairModelUrl || armorModelUrls.length > 0);
+
     if (isLoading || !student) {
         return <div className="flex items-center justify-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>
     }
@@ -670,7 +672,7 @@ export default function ForgePage() {
                                <Tabs defaultValue="2d" value={viewMode} onValueChange={(value) => setViewMode(value as '2d' | '3d')} className="w-full">
                                     <TabsList>
                                         <TabsTrigger value="2d">2D View</TabsTrigger>
-                                        <TabsTrigger value="3d" disabled={!bodyModelUrl}>3D View</TabsTrigger>
+                                        <TabsTrigger value="3d" disabled={!is3dViewAvailable}>3D View</TabsTrigger>
                                     </TabsList>
                                 </Tabs>
                             </div>
@@ -694,7 +696,7 @@ export default function ForgePage() {
                                             selectedStaticAvatarUrl={selectedStaticAvatarUrl}
                                         />
                                     </Suspense>
-                                ) : bodyModelUrl ? (
+                                ) : is3dViewAvailable ? (
                                     <Suspense fallback={<CharacterViewerFallback />}>
                                         <CharacterViewer3D 
                                             bodyUrl={bodyModelUrl}
@@ -704,7 +706,7 @@ export default function ForgePage() {
                                     </Suspense>
                                 ) : (
                                     <div className="flex items-center justify-center h-full text-center text-white">
-                                        <p>3D model for this body type is not available.</p>
+                                        <p>Select a Base Body and an item with a 3D model to enable 3D View.</p>
                                     </div>
                                 )}
 
@@ -796,5 +798,3 @@ export default function ForgePage() {
         </div>
     );
 }
-
-    
