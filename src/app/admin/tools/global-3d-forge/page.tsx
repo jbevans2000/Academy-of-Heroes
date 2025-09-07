@@ -44,7 +44,8 @@ const AssetUploader = ({ asset, collectionName, onUploadSuccess }: { asset: (Arm
         setIsUploading(true);
         try {
             const storage = getStorage(app);
-            const storagePath = `${collectionName}-models/${teacher.uid}/${uuidv4()}_${file.name}`;
+            // Use a more specific path to avoid collisions
+            const storagePath = `${collectionName}-models/${teacher.uid}/${asset.id}_${file.name}`;
             const storageRef = ref(storage, storagePath);
             const metadata = { contentType: 'model/gltf-binary' };
 
@@ -80,7 +81,7 @@ export default function Global3DForgePage() {
     const [user, setUser] = useState<User | null>(null);
     const [armorPieces, setArmorPieces] = useState<ArmorPiece[]>([]);
     const [hairstyles, setHairstyles] = useState<Hairstyle[]>([]);
-    const [baseBodies, setBaseBodies] = useState<BaseBody[]>(baseBodyUrls); // This is static for now
+    const [baseBodies, setBaseBodies] = useState<BaseBody[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -102,20 +103,26 @@ export default function Global3DForgePage() {
     
     useEffect(() => {
         if (!user) return;
-        const armorQuery = collection(db, 'armorPieces');
-        const unsubArmor = onSnapshot(armorQuery, (snapshot) => {
+
+        const unsubArmor = onSnapshot(collection(db, 'armorPieces'), (snapshot) => {
             setArmorPieces(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ArmorPiece)));
-            setIsLoading(false);
         });
         
-        const hairstylesQuery = collection(db, 'hairstyles');
-        const unsubHairstyles = onSnapshot(hairstylesQuery, (snapshot) => {
+        const unsubHairstyles = onSnapshot(collection(db, 'hairstyles'), (snapshot) => {
             setHairstyles(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hairstyle)));
+        });
+
+        // Now fetch base bodies from Firestore
+        const unsubBaseBodies = onSnapshot(collection(db, 'baseBodies'), (snapshot) => {
+            const bodies = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BaseBody));
+            setBaseBodies(bodies.sort((a: any, b: any) => a.order - b.order));
+            setIsLoading(false);
         });
 
         return () => {
             unsubArmor();
             unsubHairstyles();
+            unsubBaseBodies();
         };
     }, [user]);
 
@@ -208,7 +215,7 @@ export default function Global3DForgePage() {
                                                                 <span>Model Uploaded</span>
                                                             </div>
                                                         ) : (
-                                                            <p className="text-sm text-muted-foreground">Model managed manually.</p>
+                                                             <AssetUploader asset={body} collectionName="baseBodies" onUploadSuccess={() => {}} />
                                                         )}
                                                     </div>
                                                 </Card>
