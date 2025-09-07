@@ -5,18 +5,21 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, getDocs, doc, getDoc, query, orderBy, updateDoc } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { db, auth } from '@/lib/firebase';
+import { db, auth, app } from '@/lib/firebase';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { v4 as uuidv4 } from 'uuid';
 import { AdminHeader } from '@/components/admin/admin-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { getGlobalSettings, updateGlobalSettings } from '@/ai/flows/manage-settings';
 import { deleteFeedback } from '@/ai/flows/submit-feedback';
 import { moderateStudent } from '@/ai/flows/manage-student';
 import { deleteTeacher } from '@/ai/flows/manage-teacher';
-import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown } from 'lucide-react';
+import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -86,6 +89,13 @@ export default function AdminDashboardPage() {
     // State for deleting teachers
     const [teacherToDelete, setTeacherToDelete] = useState<Teacher | null>(null);
     const [isDeletingTeacher, setIsDeletingTeacher] = useState(false);
+
+    // State for Phase Zero Permissions Verifier
+    const [glbFile, setGlbFile] = useState<File | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const [downloadUrl, setDownloadUrl] = useState('');
+    const [fetchStatus, setFetchStatus] = useState<{ok: boolean, status: number} | null>(null);
+    const [isFetching, setIsFetching] = useState(false);
 
     const router = useRouter();
     const { toast } = useToast();
@@ -328,6 +338,46 @@ export default function AdminDashboardPage() {
             setTeacherToDelete(null);
         }
     }
+    
+    // --- Phase Zero Functions ---
+    const handleGlbUpload = async () => {
+        if (!glbFile || !user) return;
+        setIsUploading(true);
+        setFetchStatus(null);
+        setDownloadUrl('');
+        try {
+            const storage = getStorage(app);
+            const filePath = `permission-test-models/${user.uid}/${uuidv4()}_${glbFile.name}`;
+            const storageRef = ref(storage, filePath);
+            
+            await uploadBytes(storageRef, glbFile);
+            const url = await getDownloadURL(storageRef);
+
+            setDownloadUrl(url);
+            toast({ title: 'Upload Successful', description: 'GLB file uploaded. You can now test fetching it.' });
+        } catch (error: any) {
+            console.error("GLB Upload Error:", error);
+            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload the GLB file.' });
+        } finally {
+            setIsUploading(false);
+        }
+    };
+    
+    const handleTestFetch = async () => {
+        if (!downloadUrl) return;
+        setIsFetching(true);
+        setFetchStatus(null);
+        try {
+            const response = await fetch(downloadUrl);
+            setFetchStatus({ ok: response.ok, status: response.status });
+        } catch (error) {
+            console.error("Fetch Test Error:", error);
+            toast({ variant: 'destructive', title: 'Fetch Error', description: 'An error occurred while trying to fetch the file.'});
+            setFetchStatus({ ok: false, status: 0 });
+        } finally {
+            setIsFetching(false);
+        }
+    };
 
 
     if (isLoading || !user) {
@@ -353,6 +403,45 @@ export default function AdminDashboardPage() {
             <main className="flex-1 p-4 md:p-6 lg:p-8 grid gap-6 md:grid-cols-3 lg:grid-cols-4">
                  
                  <div className="lg:col-span-3 space-y-6">
+                    {/* Phase Zero Card */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><TestTube2 className="h-6 w-6 text-primary" /> [Phase Zero] Permissions Verifier</CardTitle>
+                            <CardDescription>A temporary tool to verify that .glb files can be uploaded and fetched correctly.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <label htmlFor="glb-upload" className="font-medium">1. Upload a .glb file</label>
+                                <div className="flex items-center gap-2">
+                                    <Input id="glb-upload" type="file" accept=".glb" onChange={(e) => setGlbFile(e.target.files?.[0] || null)} />
+                                    <Button onClick={handleGlbUpload} disabled={isUploading || !glbFile}>
+                                        {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                                        Upload
+                                    </Button>
+                                </div>
+                            </div>
+                            {downloadUrl && (
+                                <div className="space-y-2">
+                                    <label className="font-medium">2. Test the Generated URL</label>
+                                    <div className="p-2 border rounded-md bg-secondary break-all text-xs font-mono">{downloadUrl}</div>
+                                    <Button onClick={handleTestFetch} disabled={isFetching}>
+                                        {isFetching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                        Test Fetch
+                                    </Button>
+                                </div>
+                            )}
+                            {fetchStatus && (
+                                 <div className={cn(
+                                     "p-4 rounded-md font-bold text-lg flex items-center gap-2",
+                                     fetchStatus.ok ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                                 )}>
+                                    {fetchStatus.ok ? <CheckCircle /> : <XCircle />}
+                                    Fetch {fetchStatus.ok ? 'Succeeded' : 'Failed'}! Status: {fetchStatus.status}
+                                 </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
                     <Collapsible>
                         <Card>
                             <CollapsibleTrigger asChild>
