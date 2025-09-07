@@ -6,6 +6,7 @@ import { Canvas, useLoader } from '@react-three/fiber';
 import { OrbitControls, useGLTF } from '@react-three/drei';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as THREE from 'three';
+import { Loader2 } from 'lucide-react';
 
 interface ModelProps {
     url: string;
