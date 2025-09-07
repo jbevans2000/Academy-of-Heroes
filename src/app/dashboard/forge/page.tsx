@@ -8,7 +8,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, onSnapshot, query, where, doc, getDoc, updateDoc, getDocs, documentId } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
-import { baseBodyUrls, type ArmorPiece, type Hairstyle, type ArmorSlot, type BaseBody } from '@/lib/forge';
+import { baseBodyUrls, type ArmorPiece, type Hairstyle, type BaseBody } from '@/lib/forge';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Save, Loader2, Hammer, Layers, Eye, Camera, X, Shirt, ArrowRight, ChevronsRight, ChevronsLeft, ShirtIcon, UserCheck, ChevronDown, Wand2 } from 'lucide-react';
@@ -487,8 +487,9 @@ export default function ForgePage() {
             </Collapsible>
         ));
     };
-
-    const bodyModelUrl = equipment.bodyId ? allBodies.find(b => b.id === equipment.bodyId)?.modelUrl : null;
+    
+    const selectedBodyName = equipment.bodyId ? baseBodyUrls.find(b => b.id === equipment.bodyId)?.name : null;
+    const bodyModelUrl = selectedBodyName ? allBodies.find(b => b.name === selectedBodyName)?.modelUrl : null;
     const hairModelUrl = equipment.hairstyleId ? allHairstyles.find(h => h.id === equipment.hairstyleId)?.modelUrl : null;
     
     const equippedArmorIds = [equipment.headId, equipment.shouldersId, equipment.chestId, equipment.handsId, equipment.legsId, equipment.feetId];
