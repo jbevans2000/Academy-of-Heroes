@@ -490,11 +490,13 @@ export default function ForgePage() {
 
     const bodyModelUrl = equipment.bodyId ? allBodies.find(b => b.id === equipment.bodyId)?.modelUrl : null;
     const hairModelUrl = equipment.hairstyleId ? allHairstyles.find(h => h.id === equipment.hairstyleId)?.modelUrl : null;
-    const armorModelUrls = Object.values(equipment)
-        .map(id => allArmor.find(a => a.id === id)?.modelUrl)
-        .filter(Boolean) as string[];
     
-    const is3dViewAvailable = !!equipment.bodyId && (!!bodyModelUrl || !!hairModelUrl || armorModelUrls.length > 0);
+    const equippedArmorIds = [equipment.headId, equipment.shouldersId, equipment.chestId, equipment.handsId, equipment.legsId, equipment.feetId];
+    const armorModelUrls = allArmor
+        .filter(a => equippedArmorIds.includes(a.id) && a.modelUrl)
+        .map(a => a.modelUrl) as string[];
+
+    const is3dViewAvailable = !!bodyModelUrl || !!hairModelUrl || armorModelUrls.length > 0;
 
     if (isLoading || !student) {
         return <div className="flex items-center justify-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>
