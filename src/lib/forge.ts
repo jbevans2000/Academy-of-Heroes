@@ -6,6 +6,7 @@ export interface BaseBody {
     thumbnailUrl: string;
     width: number;
     height: number;
+    modelUrl?: string;
 }
 
 export const baseBodyUrls: BaseBody[] = [
@@ -32,10 +33,12 @@ export interface Hairstyle {
     styleName: string;
     baseImageUrl: string; // The single image used for sizing
     thumbnailUrl?: string; // Thumbnail for the main style selector
+    modelUrl?: string; // URL for the 3D .glb model
     colors: { 
         imageUrl: string;
         thumbnailUrl?: string; // Thumbnail for the color swatch
         name: string;
+        textureUrl?: string; // URL for the 3D model's color texture
     }[]; // An array for all color variations
     transforms: {
         [bodyId: string]: {
@@ -57,6 +60,7 @@ export interface ArmorPiece {
     description: string;
     imageUrl: string; // This will be the display/icon image
     thumbnailUrl?: string; // Thumbnail for selection lists
+    modelUrl?: string; // URL for the 3D .glb model
     modularImageUrl: string; // This is the image for the character overlay (e.g., left glove)
     modularImageUrl2?: string; // Optional second image for pairs (e.g., right glove)
     slot: ArmorSlot;

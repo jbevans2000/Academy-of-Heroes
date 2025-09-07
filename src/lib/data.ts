@@ -24,6 +24,7 @@ export type Student = {
     characterName: string;
     class: ClassType;
     avatarUrl: string; // Will store static avatar URL
+    useCustomAvatar?: boolean; // Flag to indicate if the avatar is custom built
     backgroundUrl: string;
     xp: number;
     gold: number;
@@ -151,4 +152,29 @@ export const classData = {
     backgrounds: [],
     baseStats: { hp: 6, mp: 15 },
   },
+};
+
+// This type was missing from your original data.ts but is used in dashboard-client.tsx
+// I am adding it here to maintain consistency and resolve potential type errors.
+export type QuestHub = {
+  id: string;
+  name: string;
+  worldMapUrl: string;
+  hubOrder: number;
+  coordinates: {
+    x: number;
+    y: number;
+  };
+};
+
+// This type was also missing, adding it for consistency.
+export type Chapter = {
+  id: string;
+  hubId: string;
+  title: string;
+  chapterNumber: number;
+  coordinates: {
+    x: number;
+    y: number;
+  };
 };
