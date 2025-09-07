@@ -1,5 +1,5 @@
 
-import { initializeApp, getApp, getApps, type App, applicationDefault } from 'firebase-admin/app';
+import { initializeApp, getApp, getApps, type App } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
 
 
@@ -10,9 +10,9 @@ function initializeAdminApp(): App {
     return getApp();
   }
 
-  // Use the simplest initialization. The environment should provide the credentials.
+  // Explicitly initialize with the project ID to avoid environment issues.
   const app = initializeApp({
-    credential: applicationDefault(),
+    projectId: 'academy-heroes-mziuf',
     storageBucket: 'academy-heroes-mziuf.firebasestorage.app'
   });
 
