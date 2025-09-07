@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { collection, getDocs, doc, getDoc, query, orderBy, updateDoc } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth, app } from '@/lib/firebase';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref, uploadBytes } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { AdminHeader } from '@/components/admin/admin-header';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -350,15 +350,26 @@ export default function AdminDashboardPage() {
             const storage = getStorage(app);
             const storageRef = ref(storage, filePath);
             await uploadBytes(storageRef, glbFile);
+            
+            // 2. Call our new API route to get a signed URL
+            const response = await fetch('/api/generate-signed-url', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filePath }),
+            });
 
-            // 2. Get the download URL, just like for images
-            const url = await getDownloadURL(storageRef);
-            setDownloadUrl(url);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to generate signed URL.');
+            }
 
-            toast({ title: 'Upload Successful', description: 'Download URL generated. You can now test fetching it.' });
+            const { signedUrl } = await response.json();
+            setDownloadUrl(signedUrl);
+
+            toast({ title: 'Upload Successful', description: 'Signed URL generated. You can now test fetching it.' });
         } catch (error: any) {
             console.error("GLB Upload/Sign Error:", error);
-            toast({ variant: 'destructive', title: 'Operation Failed', description: error.message || 'Could not upload the file or get a download URL.' });
+            toast({ variant: 'destructive', title: 'Operation Failed', description: error.message || 'Could not upload the file or get a signed URL.' });
         } finally {
             setIsUploading(false);
         }
@@ -409,7 +420,7 @@ export default function AdminDashboardPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><TestTube2 className="h-6 w-6 text-primary" /> [Phase Zero] Permissions Verifier</CardTitle>
-                            <CardDescription>A temporary tool to verify that .glb files can be uploaded and fetched correctly using download URLs.</CardDescription>
+                            <CardDescription>A temporary tool to verify that .glb files can be uploaded and fetched correctly using a server-side signed URL.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
@@ -418,13 +429,13 @@ export default function AdminDashboardPage() {
                                     <Input id="glb-upload" type="file" accept=".glb" onChange={(e) => setGlbFile(e.target.files?.[0] || null)} />
                                     <Button onClick={handleGlbUpload} disabled={isUploading || !glbFile}>
                                         {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                                        Upload & Get Download URL
+                                        Upload & Get Signed URL
                                     </Button>
                                 </div>
                             </div>
                             {downloadUrl && (
                                 <div className="space-y-2">
-                                    <label className="font-medium">2. Test the Generated Download URL</label>
+                                    <label className="font-medium">2. Test the Generated Signed URL</label>
                                     <div className="p-2 border rounded-md bg-secondary break-all text-xs font-mono">{downloadUrl}</div>
                                     <Button onClick={handleTestFetch} disabled={isFetching}>
                                         {isFetching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
