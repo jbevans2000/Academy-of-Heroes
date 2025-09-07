@@ -14,7 +14,9 @@ interface ModelProps {
 }
 
 function Model({ url, onLoad }: ModelProps) {
-    const { scene } = useLoader(GLTFLoader, url);
+    // Use the proxy API route to fetch the model
+    const proxyUrl = `/api/fetch-glb?url=${encodeURIComponent(url)}`;
+    const { scene } = useLoader(GLTFLoader, proxyUrl);
     const sceneRef = useRef<THREE.Group>();
 
     // We need a memoized version to prevent re-cloning on every render
