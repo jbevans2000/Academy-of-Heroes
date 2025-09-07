@@ -91,9 +91,9 @@ export default function AdminDashboardPage() {
     const [isDeletingTeacher, setIsDeletingTeacher] = useState(false);
 
     // State for Phase Zero Permissions Verifier
-    const [testUrl, setTestUrl] = useState('');
+    const [testFile, setTestFile] = useState<File | null>(null);
     const [fetchStatus, setFetchStatus] = useState<{ok: boolean, status: number} | null>(null);
-    const [isFetching, setIsFetching] = useState(false);
+    const [isTesting, setIsTesting] = useState(false);
 
     const router = useRouter();
     const { toast } = useToast();
@@ -337,23 +337,42 @@ export default function AdminDashboardPage() {
         }
     }
 
-    const handleTestFetch = async () => {
-        if (!testUrl) {
-            toast({ variant: 'destructive', title: 'No URL', description: 'Please enter a URL to test.'});
+    const handleTestPermissions = async () => {
+        if (!testFile || !user) {
+            toast({ variant: 'destructive', title: 'No File', description: 'Please select a .glb file to test.'});
             return;
-        };
-        setIsFetching(true);
+        }
+        setIsTesting(true);
         setFetchStatus(null);
         try {
-            const response = await fetch(testUrl);
+            const storage = getStorage(app);
+            const storagePath = `permission-test-models/${user.uid}/${uuidv4()}_${testFile.name}`;
+            const storageRef = ref(storage, storagePath);
+
+            // CRITICAL: Set the correct MIME type for the .glb file on upload.
+            const metadata = { contentType: 'model/gltf-binary' };
+
+            await uploadBytes(storageRef, testFile, metadata);
+            const downloadUrl = await getDownloadURL(storageRef);
+            
+            // Now, attempt to fetch the file with the correct URL.
+            const response = await fetch(downloadUrl);
             setFetchStatus({ ok: response.ok, status: response.status });
-             toast({ title: 'Fetch Complete', description: `Request finished with status: ${response.status}` });
-        } catch (error) {
-            console.error("Fetch Test Error:", error);
-            toast({ variant: 'destructive', title: 'Fetch Error', description: 'An error occurred while trying to fetch the file. Check browser console for CORS errors.'});
+
+            if(response.ok) {
+                 toast({ title: 'Fetch Succeeded!', description: `Successfully fetched the file with status: ${response.status}` });
+            } else {
+                 toast({ variant: 'destructive', title: 'Fetch Failed', description: `Received status: ${response.status}. The file may not be publicly accessible.`});
+            }
+        } catch (error: any) {
+            console.error("Permission Test Error:", error);
+            const errorMessage = error.code === 'storage/unauthorized' 
+                ? 'Storage security rules are preventing access.'
+                : error.message || 'An unknown error occurred.';
+            toast({ variant: 'destructive', title: 'Permission Test Error', description: `Could not upload or fetch the file. ${errorMessage}` });
             setFetchStatus({ ok: false, status: 0 });
         } finally {
-            setIsFetching(false);
+            setIsTesting(false);
         }
     };
 
@@ -385,22 +404,21 @@ export default function AdminDashboardPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><TestTube2 className="h-6 w-6 text-primary" /> [Phase Zero] Permissions Verifier</CardTitle>
-                            <CardDescription>A temporary tool to verify that a direct URL to a .glb file can be fetched correctly.</CardDescription>
+                            <CardDescription>A temporary tool to verify that a .glb file can be uploaded with public permissions and then fetched correctly.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <label htmlFor="url-input" className="font-medium">1. Paste URL to test</label>
+                           <div className="space-y-2">
+                                <Label htmlFor="glb-file-input" className="font-medium">1. Select a .glb file to upload</Label>
                                 <Input 
-                                    id="url-input" 
-                                    type="text" 
-                                    placeholder="https://firebasestorage.googleapis.com/..." 
-                                    value={testUrl}
-                                    onChange={(e) => setTestUrl(e.target.value)}
+                                    id="glb-file-input"
+                                    type="file"
+                                    accept=".glb"
+                                    onChange={(e) => setTestFile(e.target.files ? e.target.files[0] : null)}
                                 />
-                            </div>
-                            <Button onClick={handleTestFetch} disabled={isFetching || !testUrl}>
-                                {isFetching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                Test Fetch
+                           </div>
+                            <Button onClick={handleTestPermissions} disabled={isTesting || !testFile}>
+                                {isTesting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                Upload & Test Fetch
                             </Button>
                             {fetchStatus && (
                                  <div className={cn(
@@ -694,3 +712,5 @@ export default function AdminDashboardPage() {
         </div>
     );
 }
+
+    
