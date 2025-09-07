@@ -86,7 +86,16 @@ export const avatarData: ClassAvatarData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%207%20%20-%20Ice%20Knight%20(7).png?alt=media&token=8340576a-7ffd-4b46-a4ac-88af9dde2335',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%207%20%20-%20Ice%20Knight%20(8).png?alt=media&token=4f687dc8-ce3e-41d5-88ec-977af50d672c'
     ],
-    8: generatePlaceholders(8, 'royal guard'),
+    8: [
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%208%20(7).png?alt=media&token=2d17dea0-5f64-48a4-9e58-4aad6c12b33e',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%208%20(8).png?alt=media&token=b59cf803-c061-4558-bd12-eb8f0a19adc4',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%208%20-%20Amazon%20(1).png?alt=media&token=2a78af70-d09c-421f-8bcd-b3c694719768',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%208%20-%20Amazon%20(2).png?alt=media&token=49d360c6-b113-4d6d-a7dd-d5855bcab9b0',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%208%20-%20Amazon%20(3).png?alt=media&token=2a2f4981-9670-4b97-a149-2a7bbdaf838b',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%208%20-%20Amazon%20(4).png?alt=media&token=e6452cd7-7345-4be5-b359-f60829a43026',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%208%20-%20Amazon%20(5).png?alt=media&token=207944c0-51a1-4bff-b91c-08aa73f14703',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%208%20-%20Amazon%20(6).png?alt=media&token=b93fd5ff-d66c-437f-a184-dd308c05df06'
+    ],
     9: generatePlaceholders(8, 'templar knight'),
     10: generatePlaceholders(8, 'divine guardian'),
     11: generatePlaceholders(8, 'crystal guardian'),
@@ -263,6 +272,7 @@ export const avatarData: ClassAvatarData = {
     
 
     
+
 
 
 
