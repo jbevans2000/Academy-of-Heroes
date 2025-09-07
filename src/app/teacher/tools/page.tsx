@@ -4,7 +4,7 @@
 import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Timer, Volume2, Users, Dices, Wrench, Swords, ScrollText, DatabaseZap, Sparkles, ImageIcon, Archive, Edit, Diamond } from 'lucide-react';
+import { ArrowLeft, Timer, Volume2, Users, Dices, Wrench, Swords, ScrollText, DatabaseZap, Sparkles, ImageIcon, Archive, Edit, Diamond, Box } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
@@ -72,11 +72,18 @@ const tools = [
 
 const adminTools = [
      {
-        title: 'Global Forge',
-        description: 'Create and manage all cosmetic items like armor and hairstyles.',
+        title: 'Global 2D Forge',
+        description: 'Create and manage all 2D cosmetic items like armor and hairstyles.',
         icon: <Diamond className="h-10 w-10 text-primary" />,
         path: '/admin/tools/global-forge',
         bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-a2624b42-7576-444f-8012-6188e7f1d441.jpg?alt=media&token=96357608-7264-4458-963d-b4b6006e8b7c'
+    },
+     {
+        title: 'Global 3D Forge',
+        description: 'Upload and manage all .glb 3D models for assets.',
+        icon: <Box className="h-10 w-10 text-primary" />,
+        path: '/admin/tools/global-3d-forge',
+        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-4f51e3c8-a9f8-4177-84f9-b88f3430541e.jpg?alt=media&token=3b3104e1-e129-4598-a3f2-8951214e217d'
     },
     {
         title: 'Hair Sizer',
