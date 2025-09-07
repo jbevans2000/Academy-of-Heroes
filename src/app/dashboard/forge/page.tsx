@@ -490,7 +490,7 @@ export default function ForgePage() {
     
     const selectedBodyName = equipment.bodyId ? baseBodyUrls.find(b => b.id === equipment.bodyId)?.name : null;
     const bodyModelUrl = selectedBodyName ? allBodies.find(b => b.name === selectedBodyName)?.modelUrl : null;
-    const hairModelUrl = equipment.hairstyleId ? allHairstyles.find(h => h.id === equipment.hairstyleId)?.modelUrl : null;
+    const hairModelUrl = equipment.hairstyleId ? hairstyles.find(h => h.id === equipment.hairstyleId)?.modelUrl : null;
     
     const equippedArmorIds = [equipment.headId, equipment.shouldersId, equipment.chestId, equipment.handsId, equipment.legsId, equipment.feetId];
     const armorModelUrls = allArmor
@@ -670,7 +670,7 @@ export default function ForgePage() {
                             </Card>
                         </div>
                         
-                        <div className="lg:col-span-9 relative" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
+                        <div className="lg:col-span-9 relative" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
                             <div className="absolute top-2 left-2 z-20 bg-background/80 p-1 rounded-md">
                                <Tabs defaultValue="2d" value={viewMode} onValueChange={(value) => setViewMode(value as '2d' | '3d')} className="w-full">
                                     <TabsList>
@@ -681,6 +681,7 @@ export default function ForgePage() {
                             </div>
                            <div
                                 className="relative w-full aspect-square bg-gray-700 rounded-lg p-2"
+                                onMouseMove={handleMouseMove}
                             >
                                 {viewMode === '2d' ? (
                                     <Suspense fallback={<CharacterViewerFallback />}>
