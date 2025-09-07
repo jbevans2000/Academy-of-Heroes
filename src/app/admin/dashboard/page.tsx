@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { collection, getDocs, doc, getDoc, query, orderBy, updateDoc } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth, app } from '@/lib/firebase';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref, uploadBytes } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { AdminHeader } from '@/components/admin/admin-header';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -19,6 +19,7 @@ import { getGlobalSettings, updateGlobalSettings } from '@/ai/flows/manage-setti
 import { deleteFeedback } from '@/ai/flows/submit-feedback';
 import { moderateStudent } from '@/ai/flows/manage-student';
 import { deleteTeacher } from '@/ai/flows/manage-teacher';
+import { getSignedUrlForAsset } from '@/ai/flows/manage-assets';
 import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle } from 'lucide-react';
 import {
   AlertDialog,
@@ -339,25 +340,24 @@ export default function AdminDashboardPage() {
         }
     }
     
-    // --- Phase Zero Functions ---
     const handleGlbUpload = async () => {
         if (!glbFile || !user) return;
         setIsUploading(true);
         setFetchStatus(null);
         setDownloadUrl('');
+        const filePath = `permission-test-models/${user.uid}/${uuidv4()}_${glbFile.name}`;
         try {
             const storage = getStorage(app);
-            const filePath = `permission-test-models/${user.uid}/${uuidv4()}_${glbFile.name}`;
             const storageRef = ref(storage, filePath);
             
             await uploadBytes(storageRef, glbFile);
-            const url = await getDownloadURL(storageRef);
+            const url = await getSignedUrlForAsset(filePath);
 
             setDownloadUrl(url);
-            toast({ title: 'Upload Successful', description: 'GLB file uploaded. You can now test fetching it.' });
+            toast({ title: 'Upload Successful', description: 'Signed URL generated. You can now test fetching it.' });
         } catch (error: any) {
-            console.error("GLB Upload Error:", error);
-            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload the GLB file.' });
+            console.error("GLB Upload/Sign Error:", error);
+            toast({ variant: 'destructive', title: 'Operation Failed', description: 'Could not upload the file or get a signed URL.' });
         } finally {
             setIsUploading(false);
         }
@@ -370,9 +370,10 @@ export default function AdminDashboardPage() {
         try {
             const response = await fetch(downloadUrl);
             setFetchStatus({ ok: response.ok, status: response.status });
+             toast({ title: 'Fetch Complete', description: `Request finished with status: ${response.status}` });
         } catch (error) {
             console.error("Fetch Test Error:", error);
-            toast({ variant: 'destructive', title: 'Fetch Error', description: 'An error occurred while trying to fetch the file.'});
+            toast({ variant: 'destructive', title: 'Fetch Error', description: 'An error occurred while trying to fetch the file. Check browser console for CORS errors.'});
             setFetchStatus({ ok: false, status: 0 });
         } finally {
             setIsFetching(false);
@@ -407,7 +408,7 @@ export default function AdminDashboardPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><TestTube2 className="h-6 w-6 text-primary" /> [Phase Zero] Permissions Verifier</CardTitle>
-                            <CardDescription>A temporary tool to verify that .glb files can be uploaded and fetched correctly.</CardDescription>
+                            <CardDescription>A temporary tool to verify that .glb files can be uploaded and fetched correctly using signed URLs.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
@@ -416,13 +417,13 @@ export default function AdminDashboardPage() {
                                     <Input id="glb-upload" type="file" accept=".glb" onChange={(e) => setGlbFile(e.target.files?.[0] || null)} />
                                     <Button onClick={handleGlbUpload} disabled={isUploading || !glbFile}>
                                         {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                                        Upload
+                                        Upload & Get Signed URL
                                     </Button>
                                 </div>
                             </div>
                             {downloadUrl && (
                                 <div className="space-y-2">
-                                    <label className="font-medium">2. Test the Generated URL</label>
+                                    <label className="font-medium">2. Test the Generated Signed URL</label>
                                     <div className="p-2 border rounded-md bg-secondary break-all text-xs font-mono">{downloadUrl}</div>
                                     <Button onClick={handleTestFetch} disabled={isFetching}>
                                         {isFetching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
