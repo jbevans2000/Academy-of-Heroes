@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import type { Student } from "@/lib/data";
 import { StatsCard } from "@/components/dashboard/stats-card";
 import { AvatarDisplay } from "@/components/dashboard/avatar-display";
@@ -31,6 +31,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import { ChallengeDialog } from '@/components/dashboard/challenge-dialog';
 import { getDuelSettings } from '@/ai/flows/manage-duels';
+import { CharacterViewer3D, CharacterViewerFallback } from '@/components/dashboard/character-viewer-3d';
+
 
 interface DashboardClientProps {
   student: Student;
@@ -201,6 +203,18 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
 
       <div className="p-4 md:p-6 lg:p-8">
         <div className="mx-auto max-w-4xl space-y-6">
+          {/* Phase 2 Test Component */}
+          <div className="border-4 border-dashed border-primary p-4 rounded-lg">
+            <h3 className="text-center font-bold text-lg mb-2">[Phase 2 Test] 3D Viewer</h3>
+            <div className="w-full h-96 bg-gray-800 rounded-md">
+              <Suspense fallback={<CharacterViewerFallback />}>
+                <CharacterViewer3D 
+                  bodyUrl="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/baseBodies-models%2Fidl6dc7GX1UWUf6FJcn2XdZ2Hpp2%2FKu7tDPRtOg22jAA2ogf3_Anime_Base_Body_4.glb?alt=media&token=2ec249e4-0a97-4b4a-a181-21d90f9de92d"
+                />
+              </Suspense>
+            </div>
+          </div>
+          {/* End Phase 2 Test Component */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             <AvatarDisplay
               student={student}
