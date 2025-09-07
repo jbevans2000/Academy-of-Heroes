@@ -14,7 +14,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'File path is required.' }, { status: 400 });
     }
 
-    const bucket = getStorage().bucket();
+    // Explicitly specify the bucket name
+    const bucket = getStorage().bucket('academy-heroes-mziuf.firebasestorage.app');
     const file = bucket.file(filePath);
 
     // Set the expiration date for the signed URL.
