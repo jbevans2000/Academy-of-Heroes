@@ -19,7 +19,7 @@ import { getGlobalSettings, updateGlobalSettings } from '@/ai/flows/manage-setti
 import { deleteFeedback } from '@/ai/flows/submit-feedback';
 import { moderateStudent } from '@/ai/flows/manage-student';
 import { deleteTeacher } from '@/ai/flows/manage-teacher';
-import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -582,7 +582,12 @@ export default function AdminDashboardPage() {
                         <CardContent className="space-y-2">
                              <Button className="w-full justify-start" asChild>
                                 <Link href="/admin/tools/global-forge">
-                                    <Diamond className="mr-2 h-4 w-4" /> Global Forge
+                                    <Diamond className="mr-2 h-4 w-4" /> Global 2D Forge
+                                </Link>
+                            </Button>
+                            <Button className="w-full justify-start" asChild>
+                                <Link href="/admin/tools/global-3d-forge">
+                                    <Box className="mr-2 h-4 w-4" /> Global 3D Forge
                                 </Link>
                             </Button>
                             <Button className="w-full justify-start" asChild>
