@@ -1,16 +1,17 @@
 
+
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef, Suspense, lazy } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, onSnapshot, query, where, doc, getDoc, updateDoc, getDocs, documentId } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
-import { baseBodyUrls, type ArmorPiece, type Hairstyle, type ArmorSlot } from '@/lib/forge';
+import { baseBodyUrls, type ArmorPiece, type Hairstyle, type ArmorSlot, type BaseBody } from '@/lib/forge';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Loader2, Hammer, Layers, Eye, Camera, X, Shirt, ArrowRight, ChevronsRight, ChevronsLeft, ShirtIcon, UserCheck, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Hammer, Layers, Eye, Camera, X, Shirt, ArrowRight, ChevronsRight, ChevronsLeft, ShirtIcon, UserCheck, ChevronDown, Wand2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -34,9 +35,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CharacterCanvas } from '@/components/dashboard/character-canvas';
 import { avatarData } from '@/lib/avatars';
+import { CharacterViewerFallback } from '@/components/dashboard/character-viewer-3d';
 
+const CharacterViewer3D = lazy(() => import('@/components/dashboard/character-viewer-3d').then(module => ({ default: module.CharacterViewer3D })));
+const CharacterCanvas = lazy(() => import('@/components/dashboard/character-canvas').then(module => ({ default: module.CharacterCanvas })));
 
 export default function ForgePage() {
     const router = useRouter();
@@ -48,6 +51,7 @@ export default function ForgePage() {
     const [teacherUid, setTeacherUid] = useState<string | null>(null);
     const [hairstyles, setHairstyles] = useState<Hairstyle[]>([]);
     const [allArmor, setAllArmor] = useState<ArmorPiece[]>([]);
+    const [allBodies, setAllBodies] = useState<BaseBody[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSettingAvatar, setIsSettingAvatar] = useState(false);
 
@@ -82,6 +86,8 @@ export default function ForgePage() {
     
     // Collapsible Controls State
     const [isControlsOpen, setIsControlsOpen] = useState(true);
+
+    const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
 
 
     useEffect(() => {
@@ -154,11 +160,18 @@ export default function ForgePage() {
             }
         });
         
+        let unsubs: (()=>void)[] = [];
         const fetchHairstyles = async () => {
              try {
                 const hairQuery = query(collection(db, 'hairstyles'), where('isPublished', '==', true));
-                const hairSnap = await getDocs(hairQuery);
-                setHairstyles(hairSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hairstyle)));
+                unsubs.push(onSnapshot(hairQuery, (snapshot) => {
+                    setHairstyles(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hairstyle)));
+                }));
+                const bodiesQuery = query(collection(db, 'baseBodies'));
+                 unsubs.push(onSnapshot(bodiesQuery, (snapshot) => {
+                    setAllBodies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BaseBody)));
+                }));
+
              } catch (e) {
                 console.error("Error fetching hairstyles:", e);
                 toast({ variant: 'destructive', title: "Error", description: "Could not load hairstyles." });
@@ -169,7 +182,10 @@ export default function ForgePage() {
         
         fetchHairstyles();
 
-        return () => unsubStudent();
+        return () => {
+            unsubStudent();
+            unsubs.forEach(unsub => unsub());
+        };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user, teacherUid, toast, fetchAllArmor]);
 
@@ -472,6 +488,11 @@ export default function ForgePage() {
         ));
     };
 
+    const bodyModelUrl = equipment.bodyId ? allBodies.find(b => b.id === equipment.bodyId)?.modelUrl : null;
+    const hairModelUrl = equipment.hairstyleId ? allHairstyles.find(h => h.id === equipment.hairstyleId)?.modelUrl : null;
+    const armorModelUrls = Object.values(equipment)
+        .map(id => allArmor.find(a => a.id === id)?.modelUrl)
+        .filter(Boolean) as string[];
     
     if (isLoading || !student) {
         return <div className="flex items-center justify-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>
@@ -514,7 +535,7 @@ export default function ForgePage() {
                     </div>
 
                     <Alert>
-                        <Hammer className="h-4 w-4" />
+                        <Wand2 className="h-4 w-4" />
                         <AlertTitle>Welcome to The Forge!</AlertTitle>
                         <AlertDescription>
                            Here you can mix and match your owned armor pieces, hairstyles, and backgrounds. Or, choose from a pre-made avatar below. When you're happy with your look, click "Set as Custom Avatar".
@@ -645,23 +666,48 @@ export default function ForgePage() {
                         </div>
                         
                         <div className="lg:col-span-9 relative" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
+                            <div className="absolute top-2 left-2 z-20 bg-background/80 p-1 rounded-md">
+                               <Tabs defaultValue="2d" value={viewMode} onValueChange={(value) => setViewMode(value as '2d' | '3d')} className="w-full">
+                                    <TabsList>
+                                        <TabsTrigger value="2d">2D View</TabsTrigger>
+                                        <TabsTrigger value="3d" disabled={!bodyModelUrl}>3D View</TabsTrigger>
+                                    </TabsList>
+                                </Tabs>
+                            </div>
                            <div
                                 className="relative w-full aspect-square bg-gray-700 rounded-lg p-2"
                             >
-                                <CharacterCanvas
-                                    student={student}
-                                    equipment={equipment}
-                                    allHairstyles={hairstyles}
-                                    allArmor={ownedArmor}
-                                    onMouseDown={handleMouseDown}
-                                    activePieceId={activePiece?.id || null}
-                                    editingLayer={editingLayer}
-                                    isPreviewMode={isPreviewMode}
-                                    localHairstyleTransforms={localHairstyleTransforms}
-                                    localArmorTransforms={localArmorTransforms}
-                                    localArmorTransforms2={localArmorTransforms2}
-                                    selectedStaticAvatarUrl={selectedStaticAvatarUrl}
-                                />
+                                {viewMode === '2d' ? (
+                                    <Suspense fallback={<CharacterViewerFallback />}>
+                                         <CharacterCanvas
+                                            student={student}
+                                            equipment={equipment}
+                                            allHairstyles={hairstyles}
+                                            allArmor={ownedArmor}
+                                            onMouseDown={handleMouseDown}
+                                            activePieceId={activePiece?.id || null}
+                                            editingLayer={editingLayer}
+                                            isPreviewMode={isPreviewMode}
+                                            localHairstyleTransforms={localHairstyleTransforms}
+                                            localArmorTransforms={localArmorTransforms}
+                                            localArmorTransforms2={localArmorTransforms2}
+                                            selectedStaticAvatarUrl={selectedStaticAvatarUrl}
+                                        />
+                                    </Suspense>
+                                ) : bodyModelUrl ? (
+                                    <Suspense fallback={<CharacterViewerFallback />}>
+                                        <CharacterViewer3D 
+                                            bodyUrl={bodyModelUrl}
+                                            armorUrls={armorModelUrls}
+                                            hairUrl={hairModelUrl}
+                                        />
+                                    </Suspense>
+                                ) : (
+                                    <div className="flex items-center justify-center h-full text-center text-white">
+                                        <p>3D model for this body type is not available.</p>
+                                    </div>
+                                )}
+
                                 <div className="absolute top-0 right-0 h-full p-2 z-20">
                                     <Collapsible
                                         open={isControlsOpen}

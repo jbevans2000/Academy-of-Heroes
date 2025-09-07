@@ -1,14 +1,20 @@
 
 
+'use client';
+
+import React, { Suspense, lazy } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import type { Student } from '@/lib/data';
-import { CharacterCanvas } from './character-canvas';
-import { collection, onSnapshot, query, where, doc, getDoc, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useEffect, useState } from 'react';
-import type { Hairstyle, ArmorPiece } from '@/lib/forge';
+import type { Hairstyle, ArmorPiece, BaseBody } from '@/lib/forge';
+import { CharacterViewerFallback } from './character-viewer-3d';
 
+const CharacterViewer3D = lazy(() =>
+  import('./character-viewer-3d').then(module => ({ default: module.CharacterViewer3D }))
+);
 
 interface AvatarDisplayProps {
   student: Student;
@@ -17,7 +23,8 @@ interface AvatarDisplayProps {
 export function AvatarDisplay({ student }: AvatarDisplayProps) {
   const [allHairstyles, setAllHairstyles] = useState<Hairstyle[]>([]);
   const [allArmor, setAllArmor] = useState<ArmorPiece[]>([]);
-
+  const [allBodies, setAllBodies] = useState<BaseBody[]>([]);
+  
   const avatarBorderColor = {
     Mage: 'border-blue-600',
     Healer: 'border-green-500',
@@ -26,52 +33,56 @@ export function AvatarDisplay({ student }: AvatarDisplayProps) {
   }[student.class] || 'border-transparent';
   
   useEffect(() => {
+    let unsubs: (() => void)[] = [];
     const fetchAssets = async () => {
-        const hairQuery = query(collection(db, 'hairstyles'));
-        const unsubHair = onSnapshot(hairQuery, (snapshot) => {
+        const hairQuery = collection(db, 'hairstyles');
+        unsubs.push(onSnapshot(hairQuery, (snapshot) => {
             setAllHairstyles(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hairstyle)));
-        });
+        }));
 
-        const armorQuery = query(collection(db, 'armorPieces'));
-        const unsubArmor = onSnapshot(armorQuery, (snapshot) => {
+        const armorQuery = collection(db, 'armorPieces');
+        unsubs.push(onSnapshot(armorQuery, (snapshot) => {
             setAllArmor(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ArmorPiece)));
-        });
-
-        return () => {
-            unsubHair();
-            unsubArmor();
-        };
+        }));
+        
+        const bodiesQuery = collection(db, 'baseBodies');
+        unsubs.push(onSnapshot(bodiesQuery, (snapshot) => {
+            setAllBodies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BaseBody)));
+        }));
     };
     fetchAssets();
+
+    return () => {
+        unsubs.forEach(unsub => unsub());
+    };
   }, []);
 
-  const showCustomCharacter = student.equippedBodyId && !student.avatarUrl;
+  const showCustomCharacter = student.useCustomAvatar;
+
+  // Find the URLs for the 3D models
+  const bodyModelUrl = showCustomCharacter ? allBodies.find(b => b.id === student.equippedBodyId)?.modelUrl : null;
+  const hairModelUrl = showCustomCharacter ? allHairstyles.find(h => h.id === student.equippedHairstyleId)?.modelUrl : null;
+  
+  const armorModelUrls = showCustomCharacter ? [
+    allArmor.find(a => a.id === student.equippedHeadId)?.modelUrl,
+    allArmor.find(a => a.id === student.equippedShouldersId)?.modelUrl,
+    allArmor.find(a => a.id === student.equippedChestId)?.modelUrl,
+    allArmor.find(a => a.id === student.equippedHandsId)?.modelUrl,
+    allArmor.find(a => a.id === student.equippedLegsId)?.modelUrl,
+    allArmor.find(a => a.id === student.equippedFeetId)?.modelUrl,
+  ].filter(Boolean) : [];
 
   return (
     <div className="flex justify-center items-center py-4">
-        {showCustomCharacter ? (
+        {showCustomCharacter && bodyModelUrl ? (
              <div className={cn("relative w-96 h-96", avatarBorderColor)}>
-                <CharacterCanvas
-                    student={student}
-                    equipment={{
-                        bodyId: student.equippedBodyId || null,
-                        hairstyleId: student.equippedHairstyleId || null,
-                        hairstyleColor: student.equippedHairstyleColor || null,
-                        backgroundUrl: student.backgroundUrl || null,
-                        headId: student.equippedHeadId || null,
-                        shouldersId: student.equippedShouldersId || null,
-                        chestId: student.equippedChestId || null,
-                        handsId: student.equippedHandsId || null,
-                        legsId: student.equippedLegsId || null,
-                        feetId: student.equippedFeetId || null,
-                    }}
-                    allHairstyles={allHairstyles}
-                    allArmor={allArmor}
-                    isPreviewMode={true}
-                    localHairstyleTransforms={student.equippedHairstyleTransforms}
-                    localArmorTransforms={student.armorTransforms}
-                    localArmorTransforms2={student.armorTransforms2}
-                 />
+                <Suspense fallback={<CharacterViewerFallback />}>
+                    <CharacterViewer3D 
+                        bodyUrl={bodyModelUrl}
+                        armorUrls={armorModelUrls}
+                        hairUrl={hairModelUrl}
+                    />
+                </Suspense>
              </div>
         ) : (
              <div className={cn("relative w-96 h-96 border-8 bg-black/20 p-2 shadow-inner", avatarBorderColor)}>
