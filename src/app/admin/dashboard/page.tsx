@@ -19,7 +19,6 @@ import { getGlobalSettings, updateGlobalSettings } from '@/ai/flows/manage-setti
 import { deleteFeedback } from '@/ai/flows/submit-feedback';
 import { moderateStudent } from '@/ai/flows/manage-student';
 import { deleteTeacher } from '@/ai/flows/manage-teacher';
-import { getSignedUrlForAsset } from '@/ai/flows/manage-assets';
 import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle } from 'lucide-react';
 import {
   AlertDialog,
@@ -347,17 +346,30 @@ export default function AdminDashboardPage() {
         setDownloadUrl('');
         const filePath = `permission-test-models/${user.uid}/${uuidv4()}_${glbFile.name}`;
         try {
+            // 1. Upload the file
             const storage = getStorage(app);
             const storageRef = ref(storage, filePath);
-            
             await uploadBytes(storageRef, glbFile);
-            const url = await getSignedUrlForAsset(filePath);
 
+            // 2. Call the new API route to get a signed URL
+            const response = await fetch('/api/generate-signed-url', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filePath }),
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to get signed URL from API.');
+            }
+
+            const { url } = await response.json();
             setDownloadUrl(url);
+
             toast({ title: 'Upload Successful', description: 'Signed URL generated. You can now test fetching it.' });
         } catch (error: any) {
             console.error("GLB Upload/Sign Error:", error);
-            toast({ variant: 'destructive', title: 'Operation Failed', description: 'Could not upload the file or get a signed URL.' });
+            toast({ variant: 'destructive', title: 'Operation Failed', description: error.message || 'Could not upload the file or get a signed URL.' });
         } finally {
             setIsUploading(false);
         }
@@ -723,3 +735,5 @@ export default function AdminDashboardPage() {
         </div>
     );
 }
+
+    
