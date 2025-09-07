@@ -15,7 +15,6 @@ import { Label } from '@/components/ui/label';
 import { ArrowLeft, Loader2, Upload, Box, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ArmorPiece, Hairstyle, BaseBody } from '@/lib/forge';
-import { baseBodyUrls } from '@/lib/forge';
 import { v4 as uuidv4 } from 'uuid';
 import NextImage from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -68,6 +67,12 @@ const AssetUploader = ({ asset, collectionName, onUploadSuccess }: { asset: (Arm
 
     return (
         <div className="flex items-center gap-2">
+            {'modelUrl' in asset && asset.modelUrl && !file && (
+                 <div className="flex items-center gap-2 text-green-600">
+                    <CheckCircle className="h-5 w-5"/>
+                    <span>Model Uploaded</span>
+                </div>
+            )}
             <Input id={`upload-${asset.id}`} type="file" accept=".glb" onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)} className="flex-grow text-xs" />
             <Button size="sm" onClick={handleUpload} disabled={!file || isUploading}>
                 {isUploading ? <Loader2 className="h-4 w-4 animate-spin"/> : <Upload className="h-4 w-4"/>}
@@ -160,14 +165,7 @@ export default function Global3DForgePage() {
                                                         <span className="font-semibold">{piece.name}</span>
                                                     </div>
                                                     <div className="col-span-2">
-                                                        {piece.modelUrl ? (
-                                                            <div className="flex items-center gap-2 text-green-600">
-                                                                <CheckCircle className="h-5 w-5"/>
-                                                                <span>Model Uploaded</span>
-                                                            </div>
-                                                        ) : (
-                                                            <AssetUploader asset={piece} collectionName="armorPieces" onUploadSuccess={() => {}} />
-                                                        )}
+                                                        <AssetUploader asset={piece} collectionName="armorPieces" onUploadSuccess={() => {}} />
                                                     </div>
                                                 </Card>
                                             ))}
@@ -185,14 +183,7 @@ export default function Global3DForgePage() {
                                                         <span className="font-semibold">{style.styleName}</span>
                                                     </div>
                                                     <div className="col-span-2">
-                                                        {style.modelUrl ? (
-                                                            <div className="flex items-center gap-2 text-green-600">
-                                                                <CheckCircle className="h-5 w-5"/>
-                                                                <span>Model Uploaded</span>
-                                                            </div>
-                                                        ) : (
-                                                            <AssetUploader asset={style} collectionName="hairstyles" onUploadSuccess={() => {}} />
-                                                        )}
+                                                        <AssetUploader asset={style} collectionName="hairstyles" onUploadSuccess={() => {}} />
                                                     </div>
                                                 </Card>
                                             ))}
@@ -209,14 +200,7 @@ export default function Global3DForgePage() {
                                                         <span className="font-semibold">{body.name}</span>
                                                     </div>
                                                     <div className="col-span-2">
-                                                         {body.modelUrl ? (
-                                                            <div className="flex items-center gap-2 text-green-600">
-                                                                <CheckCircle className="h-5 w-5"/>
-                                                                <span>Model Uploaded</span>
-                                                            </div>
-                                                        ) : (
-                                                             <AssetUploader asset={body} collectionName="baseBodies" onUploadSuccess={() => {}} />
-                                                        )}
+                                                         <AssetUploader asset={body} collectionName="baseBodies" onUploadSuccess={() => {}} />
                                                     </div>
                                                 </Card>
                                             ))}
