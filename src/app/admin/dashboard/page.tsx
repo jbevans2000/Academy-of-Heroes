@@ -91,9 +91,7 @@ export default function AdminDashboardPage() {
     const [isDeletingTeacher, setIsDeletingTeacher] = useState(false);
 
     // State for Phase Zero Permissions Verifier
-    const [glbFile, setGlbFile] = useState<File | null>(null);
-    const [isUploading, setIsUploading] = useState(false);
-    const [downloadUrl, setDownloadUrl] = useState('');
+    const [testUrl, setTestUrl] = useState('');
     const [fetchStatus, setFetchStatus] = useState<{ok: boolean, status: number} | null>(null);
     const [isFetching, setIsFetching] = useState(false);
 
@@ -338,38 +336,16 @@ export default function AdminDashboardPage() {
             setTeacherToDelete(null);
         }
     }
-    
-    const handleGlbUpload = async () => {
-        if (!glbFile || !user) return;
-        setIsUploading(true);
-        setFetchStatus(null);
-        setDownloadUrl('');
-        
-        try {
-            const storage = getStorage(app);
-            const filePath = `permission-test-models/${user.uid}/${uuidv4()}_${glbFile.name}`;
-            const storageRef = ref(storage, filePath);
-            
-            await uploadBytes(storageRef, glbFile);
-            
-            const url = await getDownloadURL(storageRef);
-            setDownloadUrl(url);
 
-            toast({ title: 'Upload Successful', description: 'Public URL generated. You can now test fetching it.' });
-        } catch (error: any) {
-            console.error("GLB Upload Error:", error);
-            toast({ variant: 'destructive', title: 'Operation Failed', description: 'Could not upload the file or get its URL.' });
-        } finally {
-            setIsUploading(false);
-        }
-    };
-    
     const handleTestFetch = async () => {
-        if (!downloadUrl) return;
+        if (!testUrl) {
+            toast({ variant: 'destructive', title: 'No URL', description: 'Please enter a URL to test.'});
+            return;
+        };
         setIsFetching(true);
         setFetchStatus(null);
         try {
-            const response = await fetch(downloadUrl);
+            const response = await fetch(testUrl);
             setFetchStatus({ ok: response.ok, status: response.status });
              toast({ title: 'Fetch Complete', description: `Request finished with status: ${response.status}` });
         } catch (error) {
@@ -409,29 +385,23 @@ export default function AdminDashboardPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><TestTube2 className="h-6 w-6 text-primary" /> [Phase Zero] Permissions Verifier</CardTitle>
-                            <CardDescription>A temporary tool to verify that .glb files can be uploaded and fetched correctly using the client-side SDK.</CardDescription>
+                            <CardDescription>A temporary tool to verify that a direct URL to a .glb file can be fetched correctly.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
-                                <label htmlFor="glb-upload" className="font-medium">1. Upload a .glb file</label>
-                                <div className="flex items-center gap-2">
-                                    <Input id="glb-upload" type="file" accept=".glb" onChange={(e) => setGlbFile(e.target.files?.[0] || null)} />
-                                    <Button onClick={handleGlbUpload} disabled={isUploading || !glbFile}>
-                                        {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                                        Upload & Get URL
-                                    </Button>
-                                </div>
+                                <label htmlFor="url-input" className="font-medium">1. Paste URL to test</label>
+                                <Input 
+                                    id="url-input" 
+                                    type="text" 
+                                    placeholder="https://firebasestorage.googleapis.com/..." 
+                                    value={testUrl}
+                                    onChange={(e) => setTestUrl(e.target.value)}
+                                />
                             </div>
-                            {downloadUrl && (
-                                <div className="space-y-2">
-                                    <label className="font-medium">2. Test the Generated URL</label>
-                                    <div className="p-2 border rounded-md bg-secondary break-all text-xs font-mono">{downloadUrl}</div>
-                                    <Button onClick={handleTestFetch} disabled={isFetching}>
-                                        {isFetching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                        Test Fetch
-                                    </Button>
-                                </div>
-                            )}
+                            <Button onClick={handleTestFetch} disabled={isFetching || !testUrl}>
+                                {isFetching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                Test Fetch
+                            </Button>
                             {fetchStatus && (
                                  <div className={cn(
                                      "p-4 rounded-md font-bold text-lg flex items-center gap-2",
@@ -724,5 +694,3 @@ export default function AdminDashboardPage() {
         </div>
     );
 }
-
-    
