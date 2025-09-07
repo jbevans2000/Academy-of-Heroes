@@ -651,7 +651,7 @@ export default function ForgePage() {
                                 <CharacterCanvas
                                     student={student}
                                     equipment={equipment}
-                                    allHairstyles={hairstyles}
+                                    allHairstyles={allHairstyles}
                                     allArmor={ownedArmor}
                                     onMouseDown={handleMouseDown}
                                     activePieceId={activePiece?.id || null}
@@ -737,7 +737,7 @@ export default function ForgePage() {
                      <div className="mt-8">
                          <Card>
                              <CardHeader>
-                                 <CardTitle>Or, Choose a Pre-Made Look</CardTitle>
+                                 <CardTitle>Or, Choose from a Pre-Made Avatar You Have Unlocked!</CardTitle>
                                  <CardDescription>Select one of your unlocked static avatars. This will unequip any custom items.</CardDescription>
                              </CardHeader>
                              <CardContent>
