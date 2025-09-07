@@ -346,31 +346,27 @@ export default function AdminDashboardPage() {
         setIsTesting(true);
         setFetchStatus(null);
         try {
+            // 1. Upload the file with correct metadata
             const storage = getStorage(app);
             const storagePath = `permission-test-models/${user.uid}/${uuidv4()}_${testFile.name}`;
             const storageRef = ref(storage, storagePath);
-
-            // CRITICAL: Set the correct MIME type for the .glb file on upload.
             const metadata = { contentType: 'model/gltf-binary' };
-
             await uploadBytes(storageRef, testFile, metadata);
             const downloadUrl = await getDownloadURL(storageRef);
             
-            // Now, attempt to fetch the file with the correct URL.
-            const response = await fetch(downloadUrl);
+            // 2. Fetch the file via our server-side API proxy
+            const response = await fetch(`/api/fetch-glb?url=${encodeURIComponent(downloadUrl)}`);
             setFetchStatus({ ok: response.ok, status: response.status });
 
             if(response.ok) {
                  toast({ title: 'Fetch Succeeded!', description: `Successfully fetched the file with status: ${response.status}` });
             } else {
-                 toast({ variant: 'destructive', title: 'Fetch Failed', description: `Received status: ${response.status}. The file may not be publicly accessible.`});
+                 toast({ variant: 'destructive', title: 'Fetch Failed', description: `Received status: ${response.status}. The file may not be publicly accessible or the API route failed.`});
             }
         } catch (error: any) {
             console.error("Permission Test Error:", error);
-            const errorMessage = error.code === 'storage/unauthorized' 
-                ? 'Storage security rules are preventing access.'
-                : error.message || 'An unknown error occurred.';
-            toast({ variant: 'destructive', title: 'Permission Test Error', description: `Could not upload or fetch the file. ${errorMessage}` });
+            const errorMessage = error.message || 'An unknown error occurred during upload or fetch.';
+            toast({ variant: 'destructive', title: 'Permission Test Error', description: `Could not complete the test. ${errorMessage}` });
             setFetchStatus({ ok: false, status: 0 });
         } finally {
             setIsTesting(false);
