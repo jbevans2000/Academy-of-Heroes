@@ -84,6 +84,10 @@ const backgroundImages = [
         imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%206%2C%202025%2C%2008_22_43%20AM.png?alt=media&token=89b71b1f-9561-462b-8a43-3a2ada321f4a', 
         thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2Ftn_ChatGPT%20Image%20Sep%206%2C%202025%2C%2008_22_43%20AM.png?alt=media&token=12f8c93e-1761-44ca-8812-c27b192f8720" 
     },
+    {
+        imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%207%2C%202025%2C%2008_49_38%20PM.png?alt=media&token=bad70011-31ff-477e-9dd3-74f78b2fc7a5',
+        thumbnailUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2Ftn_ChatGPT%20Image%20Sep%207%2C%202025%2C%2008_49_38%20PM.png?alt=media&token=bd5733f6-ce97-40e6-912e-6769148ee928'
+    }
 ];
 
 

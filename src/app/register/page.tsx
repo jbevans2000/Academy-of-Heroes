@@ -20,7 +20,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { classData, type ClassType } from '@/lib/data';
+import type { ClassType } from '@/lib/data';
+import { avatarData } from '@/lib/avatars';
 import { getGlobalSettings } from '@/ai/flows/manage-settings';
 import { createStudentDocuments } from '@/ai/flows/create-student';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
@@ -317,7 +318,7 @@ export default function RegisterPage() {
                         <Label className="text-lg font-semibold">Choose Your Avatar</Label>
                         <Card className="mt-2 p-4 bg-secondary/50">
                         <div className="grid grid-cols-4 gap-4">
-                            {classData[selectedClass].avatars.map((avatar, index) => (
+                            {avatarData[selectedClass]?.[1]?.map((avatar: string, index: number) => (
                             <Tooltip key={index} delayDuration={100}>
                                 <TooltipTrigger asChild>
                                 <div
