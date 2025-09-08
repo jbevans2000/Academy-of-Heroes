@@ -10,7 +10,7 @@ import type { Student } from '@/lib/data';
 import { type ArmorPiece, type Hairstyle, type BaseBody, type ArmorSlot } from '@/lib/forge';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Loader2, Hammer, Layers, Eye, Camera, X, Shirt, ArrowRight, ChevronsRight, ChevronsLeft, ShirtIcon, UserCheck, ChevronDown, Wand2, Scaling, Orbit } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Hammer, Layers, Eye, Camera, X, Shirt, ArrowRight, ChevronsRight, ChevronsLeft, ShirtIcon, UserCheck, ChevronDown, Wand2, Scaling, Orbit, Scissors } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -564,6 +564,11 @@ export default function ForgePage() {
     }, [allArmor, equipment]);
     
     const is3dViewAvailable = !!bodyModelUrl;
+    
+    const equippedArmorPieces = Object.values(equipment)
+        .map(id => allArmor.find(a => a.id === id))
+        .filter((p): p is ArmorPiece => !!p);
+
 
     if (isLoading || !student) {
         return <div className="flex items-center justify-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>
@@ -748,6 +753,7 @@ export default function ForgePage() {
                                             onTransformUpdate={handle3DTransformUpdate}
                                             armorTransforms={local3DArmorTransforms}
                                             hairTransform={local3DHairstyleTransforms}
+                                            onPieceClick={handlePieceClick}
                                             activePieceId={activePiece?.id || null}
                                             isOrbitControlsEnabled={isOrbitControlsEnabled}
                                         />
@@ -780,6 +786,33 @@ export default function ForgePage() {
                                                 </CardHeader>
                                                 <ScrollArea className="flex-grow">
                                                     <CardContent className="space-y-4">
+                                                        <Card>
+                                                            <CardHeader className="p-2">
+                                                                <CardTitle className="text-sm">Equipped Pieces</CardTitle>
+                                                            </CardHeader>
+                                                            <CardContent className="space-y-2 p-2">
+                                                                {hairstyle && (
+                                                                    <div className={cn("flex items-center justify-between p-2 rounded-md", activePiece?.id === hairstyle.id && !isPreviewMode ? 'bg-primary/20' : 'bg-secondary')}>
+                                                                        <span className="font-semibold text-sm truncate flex items-center gap-2"><Scissors className="h-4 w-4"/>{hairstyle.styleName}</span>
+                                                                        <div className="flex gap-1">
+                                                                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handlePieceClick(hairstyle)} disabled={isPreviewMode}><Edit className="h-4 w-4" /></Button>
+                                                                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleEquipItem(hairstyle)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                {equippedArmorPieces.map(piece => (
+                                                                    <div key={piece.id} className={cn("flex items-center justify-between p-2 rounded-md", activePiece?.id === piece.id && !isPreviewMode ? 'bg-primary/20' : 'bg-secondary')}>
+                                                                        <span className="font-semibold text-sm truncate">{piece.name}</span>
+                                                                        <div className="flex gap-1">
+                                                                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handlePieceClick(piece)} disabled={isPreviewMode}><Edit className="h-4 w-4" /></Button>
+                                                                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleEquipItem(piece)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                                {equippedArmorPieces.length === 0 && !hairstyle && <p className="text-sm text-muted-foreground text-center">Nothing equipped.</p>}
+                                                            </CardContent>
+                                                        </Card>
+
                                                         {viewMode === '3d' && (
                                                             <div className="flex items-center space-x-2">
                                                                 <Label htmlFor="orbit-controls" className="flex items-center gap-1 cursor-pointer"><Orbit className="h-4 w-4"/> Rotate</Label>
