@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Loader2, Save, Box, Orbit, Scaling, Edit, Trash2, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { ArmorPiece, Hairstyle, BaseBody } from '@/lib/forge';
+import type { ArmorPiece, Hairstyle, BaseBody, HairstyleColor } from '@/lib/forge';
 import NextImage from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -51,7 +51,7 @@ export default function Global3DForgeSizerPage() {
     const [hairstyleTransform, setHairstyleTransform] = useState<{ scale: number; position: [number, number, number] } | null>(null);
 
     // Upload State
-    const [assetToUploadFor, setAssetToUploadFor] = useState<{id: string, type: 'armor' | 'hair'} | null>(null);
+    const [assetToUploadFor, setAssetToUploadFor] = useState<{id: string, type: 'armor' | 'hair' | 'body' | 'hairColor', colorIndex?: number} | null>(null);
     const [glbFile, setGlbFile] = useState<File | null>(null);
     const [isUploading, setIsUploading] = useState(false);
 
@@ -190,24 +190,67 @@ export default function Global3DForgeSizerPage() {
         }
         setIsUploading(true);
         try {
-            const storage = getStorage(app);
-            const path = assetToUploadFor.type === 'armor' ? 'armor-models' : 'hairstyle-models';
-            const glbRef = storageRef(storage, `${path}/${user.uid}/${assetToUploadFor.id}.glb`);
+            const { type, id, colorIndex } = assetToUploadFor;
+            let path = '';
+            let collectionName = '';
+            let fieldName = 'modelUrl';
+            let docRef;
+
+            switch (type) {
+                case 'armor':
+                    path = 'armor-models';
+                    collectionName = 'armorPieces';
+                    docRef = doc(db, collectionName, id);
+                    break;
+                case 'hair':
+                    path = 'hairstyle-models';
+                    collectionName = 'hairstyles';
+                    docRef = doc(db, collectionName, id);
+                    break;
+                case 'body':
+                    path = 'basebody-models';
+                    collectionName = 'baseBodies';
+                    docRef = doc(db, collectionName, id);
+                    break;
+                case 'hairColor':
+                    path = 'haircolor-models';
+                    collectionName = 'hairstyles';
+                    docRef = doc(db, collectionName, id);
+                    const hairDoc = await getDoc(docRef);
+                    if (!hairDoc.exists()) throw new Error("Hairstyle not found");
+                    const hairData = hairDoc.data() as Hairstyle;
+                    const newColors = [...hairData.colors];
+                    if (colorIndex !== undefined && newColors[colorIndex]) {
+                        // This will be handled differently after upload
+                    } else {
+                        throw new Error("Invalid color index");
+                    }
+                    break;
+                default:
+                    throw new Error("Invalid asset type for upload");
+            }
             
+            const glbRef = storageRef(storage, `${path}/${user.uid}/${uuidv4()}.glb`);
             const metadata = { contentType: 'model/gltf-binary' };
             await uploadBytes(glbRef, glbFile, metadata);
             const downloadUrl = await getDownloadURL(glbRef);
 
-            const collectionName = assetToUploadFor.type === 'armor' ? 'armorPieces' : 'hairstyles';
-            const docRef = doc(db, collectionName, assetToUploadFor.id);
-            await updateDoc(docRef, { modelUrl: downloadUrl });
+            if (type === 'hairColor') {
+                const hairDoc = await getDoc(docRef);
+                const hairData = hairDoc.data() as Hairstyle;
+                const newColors = [...hairData.colors];
+                newColors[colorIndex!].modelUrl = downloadUrl;
+                await updateDoc(docRef, { colors: newColors });
+            } else {
+                await updateDoc(docRef, { [fieldName]: downloadUrl });
+            }
 
             toast({ title: 'Model Uploaded!', description: `The 3D model for the selected asset has been saved.` });
             setAssetToUploadFor(null);
             setGlbFile(null);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error uploading model:", error);
-            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload the 3D model.' });
+            toast({ variant: 'destructive', title: 'Upload Failed', description: error.message || 'Could not upload the 3D model.' });
         } finally {
             setIsUploading(false);
         }
@@ -229,6 +272,23 @@ export default function Global3DForgeSizerPage() {
             .filter(a => a.modelUrl)
             .map(a => ({ id: a.id, url: a.modelUrl! }));
     }, [equippedArmor]);
+    
+    const getSelectedAssetName = () => {
+        if (!assetToUploadFor) return 'None';
+        const { type, id, colorIndex } = assetToUploadFor;
+        switch (type) {
+            case 'armor': return allArmor.find(a => a.id === id)?.name;
+            case 'hair': return allHairstyles.find(h => h.id === id)?.styleName;
+            case 'body': return allBodies.find(b => b.id === id)?.name;
+            case 'hairColor': 
+                const hair = allHairstyles.find(h => h.id === id);
+                if (hair && colorIndex !== undefined) {
+                    return `${hair.styleName} - ${hair.colors[colorIndex].name}`;
+                }
+                return 'Unknown Color';
+            default: return 'None';
+        }
+    }
 
     if (isLoading || !user) {
         return <div className="flex items-center justify-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>
@@ -256,6 +316,8 @@ export default function Global3DForgeSizerPage() {
                                 <TabsList>
                                     <TabsTrigger value="armor-upload">Armor</TabsTrigger>
                                     <TabsTrigger value="hair-upload">Hairstyles</TabsTrigger>
+                                    <TabsTrigger value="body-upload">Bodies</TabsTrigger>
+                                    <TabsTrigger value="hair-color-upload">Hair Colors</TabsTrigger>
                                 </TabsList>
                                 <ScrollArea className="h-48 mt-2">
                                     <TabsContent value="armor-upload">
@@ -272,10 +334,29 @@ export default function Global3DForgeSizerPage() {
                                             </div>
                                         ))}
                                     </TabsContent>
+                                    <TabsContent value="body-upload">
+                                        {allBodies.map(body => (
+                                            <div key={body.id} className={cn("p-2 my-1 rounded-md cursor-pointer", assetToUploadFor?.id === body.id && 'bg-primary/20')} onClick={() => setAssetToUploadFor({id: body.id, type: 'body'})}>
+                                                {body.name} {body.modelUrl && '✓'}
+                                            </div>
+                                        ))}
+                                    </TabsContent>
+                                    <TabsContent value="hair-color-upload">
+                                        {allHairstyles.map(style => (
+                                            <div key={style.id} className="p-2 my-1">
+                                                <p className="font-semibold">{style.styleName}</p>
+                                                {style.colors.map((color, index) => (
+                                                    <div key={`${style.id}-${index}`} className={cn("p-2 my-1 ml-4 rounded-md cursor-pointer", assetToUploadFor?.id === style.id && assetToUploadFor?.colorIndex === index && 'bg-primary/20')} onClick={() => setAssetToUploadFor({id: style.id, type: 'hairColor', colorIndex: index})}>
+                                                        {color.name} {color.modelUrl && '✓'}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ))}
+                                    </TabsContent>
                                 </ScrollArea>
                             </Tabs>
                             <div className="space-y-2">
-                                <Label>Selected Asset: <span className="font-bold">{assetToUploadFor ? (allArmor.find(a=>a.id===assetToUploadFor.id)?.name || allHairstyles.find(h=>h.id===assetToUploadFor.id)?.styleName) : 'None'}</span></Label>
+                                <Label>Selected Asset: <span className="font-bold">{getSelectedAssetName()}</span></Label>
                                 <Input type="file" accept=".glb" onChange={(e) => setGlbFile(e.target.files ? e.target.files[0] : null)} disabled={isUploading || !assetToUploadFor}/>
                                 <Button onClick={handleModelUpload} disabled={isUploading || !glbFile || !assetToUploadFor}>
                                     {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4" />} Upload & Save Model

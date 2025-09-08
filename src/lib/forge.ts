@@ -1,4 +1,5 @@
 
+
 export interface BaseBody {
     id: string;
     name: string;
@@ -8,18 +9,21 @@ export interface BaseBody {
     order?: number; // Add order for sorting
 }
 
+export type HairstyleColor = { 
+    imageUrl: string;
+    thumbnailUrl?: string;
+    name: string;
+    textureUrl?: string; // URL for the 2D texture (optional)
+    modelUrl?: string; // URL for the 3D model for this specific color
+};
+
 export interface Hairstyle {
     id: string;
     styleName: string;
     baseImageUrl: string; // The single image used for sizing
     thumbnailUrl?: string; // Thumbnail for the main style selector
-    modelUrl?: string; // URL for the 3D .glb model
-    colors: { 
-        imageUrl: string;
-        thumbnailUrl?: string; // Thumbnail for the color swatch
-        name: string;
-        textureUrl?: string; // URL for the 3D model's color texture
-    }[]; // An array for all color variations
+    modelUrl?: string; // URL for the 3D .glb model (main/default)
+    colors: HairstyleColor[]; // An array for all color variations
     transforms: { // For 2D sizing
         [bodyId: string]: {
             x: number;
