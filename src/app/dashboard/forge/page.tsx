@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback, useRef, Suspense, lazy } from 'react';
@@ -832,7 +831,7 @@ export default function ForgePage() {
                                                                  {viewMode === '3d' && (
                                                                     <div className="space-y-2 animate-in fade-in-50">
                                                                         <Label htmlFor="3d-scale" className="flex items-center gap-1"><Scaling className="h-4 w-4"/> 3D Scale: {active3DScale.toFixed(2)}x</Label>
-                                                                        <Slider id="3d-scale" value={[active3DScale]} onValueChange={([val]) => handle3DScaleChange(val)} min={0.5} max={1.5} step={0.01}/>
+                                                                        <Slider id="3d-scale" value={[active3DScale]} onValueChange={([val]) => handle3DScaleChange(val)} min={0.1} max={2} step={0.01}/>
                                                                     </div>
                                                                 )}
                                                             </div>
