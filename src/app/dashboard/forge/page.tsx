@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback, useRef, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, onSnapshot, query, where, doc, getDoc, updateDoc, getDocs, documentId, orderBy } from 'firebase/firestore';
@@ -37,7 +37,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { avatarData } from '@/lib/avatars';
 import { CharacterViewerFallback } from '@/components/dashboard/character-viewer-3d';
 
-const CharacterViewer3D = lazy(() => import('@/components/dashboard/character-viewer-3d').then(module => ({ default: module.CharacterViewer3D })));
 const CharacterCanvas = lazy(() => import('@/components/dashboard/character-canvas').then(module => ({ default: module.CharacterCanvas })));
 
 export default function ForgePage() {
@@ -79,20 +78,13 @@ export default function ForgePage() {
     const [localHairstyleTransforms, setLocalHairstyleTransforms] = useState<Student['equippedHairstyleTransforms']>({});
     const [localArmorTransforms, setLocalArmorTransforms] = useState<Student['armorTransforms']>({});
     const [localArmorTransforms2, setLocalArmorTransforms2] = useState<Student['armorTransforms2']>({});
-    const [local3DArmorTransforms, setLocal3DArmorTransforms] = useState<Student['equippedArmorTransforms']>({});
-    const [local3DHairstyleTransforms, setLocal3DHairstyleTransforms] = useState<Student['equippedHairstyle3DTransforms']>({});
-
-
+    
     const [editingLayer, setEditingLayer] = useState<'primary' | 'secondary'>('primary');
     const [isDragging, setIsDragging] = useState(false);
     const [isPreviewMode, setIsPreviewMode] = useState(false);
     
     // Collapsible Controls State
     const [isControlsOpen, setIsControlsOpen] = useState(true);
-
-    const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
-    const [isOrbitControlsEnabled, setIsOrbitControlsEnabled] = useState(true);
-
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -141,8 +133,6 @@ export default function ForgePage() {
                 setLocalHairstyleTransforms(studentData.equippedHairstyleTransforms || {});
                 setLocalArmorTransforms(studentData.armorTransforms || {});
                 setLocalArmorTransforms2(studentData.armorTransforms2 || {});
-                setLocal3DArmorTransforms(studentData.equippedArmorTransforms || {});
-                setLocal3DHairstyleTransforms(studentData.equippedHairstyle3DTransforms || {});
 
                 // Set equipment based on saved data
                 setEquipment({
@@ -288,12 +278,7 @@ export default function ForgePage() {
     
     const handlePieceClick = (piece: ArmorPiece | Hairstyle | null) => {
         if (isPreviewMode) return;
-        if (!piece) {
-            setActivePiece(null);
-            return;
-        }
-        
-        setActivePiece(current => current?.id === piece.id ? null : piece);
+        setActivePiece(current => current?.id === piece?.id ? null : piece);
     };
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece | Hairstyle, layer: 'primary' | 'secondary') => {
@@ -389,7 +374,6 @@ export default function ForgePage() {
                     equippedHairstyleId: equipment.hairstyleId,
                     equippedHairstyleColor: equipment.hairstyleColor,
                     equippedHairstyleTransforms: localHairstyleTransforms,
-                    equippedHairstyle3DTransforms: local3DHairstyleTransforms,
                     backgroundUrl: equipment.backgroundUrl,
                     equippedHeadId: equipment.headId,
                     equippedShouldersId: equipment.shouldersId,
@@ -399,7 +383,6 @@ export default function ForgePage() {
                     equippedFeetId: equipment.feetId,
                     armorTransforms: localArmorTransforms,
                     armorTransforms2: localArmorTransforms2,
-                    equippedArmorTransforms: local3DArmorTransforms,
                 };
             }
             
@@ -457,45 +440,6 @@ export default function ForgePage() {
 
     }, [activeTransform, activePiece, equipment.bodyId, editingLayer, hairstyle]);
     
-    const active3DScale = useMemo(() => {
-        if (!activePiece || viewMode !== '3d') return 1;
-        if ('slot' in activePiece) { // Armor
-            return local3DArmorTransforms?.[activePiece.id]?.scale ?? 1;
-        } else { // Hairstyle
-            return local3DHairstyleTransforms?.scale ?? 1;
-        }
-    }, [activePiece, viewMode, local3DArmorTransforms, local3DHairstyleTransforms]);
-
-    const handle3DScaleChange = (value: number) => {
-        if (!activePiece) return;
-        if ('slot' in activePiece) { // Armor
-            setLocal3DArmorTransforms(prev => ({
-                ...prev,
-                [activePiece.id]: { ...(prev[activePiece.id] || { position: [0,0,0] }), scale: value }
-            }));
-        } else { // Hairstyle
-            setLocal3DHairstyleTransforms(prev => ({
-                ...(prev || { position: [0,0,0], scale: 1 }),
-                scale: value
-            }));
-        }
-    };
-
-    const handle3DTransformUpdate = (pieceId: string, position: [number, number, number]) => {
-         if (pieceId === hairstyle?.id) {
-            setLocal3DHairstyleTransforms(prev => ({
-                ...(prev || { scale: 1 }),
-                position
-            }));
-        } else {
-            setLocal3DArmorTransforms(prev => ({
-                ...prev,
-                [pieceId]: { ...(prev[pieceId] || { scale: 1 }), position }
-            }));
-        }
-    }
-
-
     const handleStaticAvatarClick = (url: string) => {
         setSelectedStaticAvatarUrl(url);
         // Unequip all items when a static avatar is chosen
@@ -552,18 +496,6 @@ export default function ForgePage() {
             </Collapsible>
         ));
     };
-    
-    const bodyModelUrl = equipment.bodyId ? allBodies.find(b => b.id === equipment.bodyId)?.modelUrl : null;
-    const hairModelUrl = equipment.hairstyleId ? allHairstyles.find(h => h.id === equipment.hairstyleId)?.modelUrl : null;
-    
-    const armorPiecesWithModels = useMemo(() => {
-        const equippedIds = [equipment.headId, equipment.shouldersId, equipment.chestId, equipment.handsId, equipment.legsId, equipment.feetId];
-        return allArmor
-            .filter(a => equippedIds.includes(a.id) && a.modelUrl)
-            .map(a => ({ id: a.id, url: a.modelUrl! }));
-    }, [allArmor, equipment]);
-    
-    const is3dViewAvailable = !!bodyModelUrl;
     
     const equippedArmorPieces = Object.values(equipment)
         .map(id => allArmor.find(a => a.id === id))
@@ -713,56 +645,27 @@ export default function ForgePage() {
                         </div>
                         
                         <div className="lg:col-span-9 relative" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
-                            <div className="absolute top-2 left-2 z-20 bg-background/80 p-1 rounded-md">
-                               <Tabs defaultValue="2d" value={viewMode} onValueChange={(value) => setViewMode(value as '2d' | '3d')} className="w-full">
-                                    <TabsList>
-                                        <TabsTrigger value="2d">2D View</TabsTrigger>
-                                        <TabsTrigger value="3d" disabled={!is3dViewAvailable}>3D View</TabsTrigger>
-                                    </TabsList>
-                                </Tabs>
-                            </div>
                            <div
                                 className="relative w-full aspect-square bg-gray-700 rounded-lg p-2"
                                 onMouseMove={handleMouseMove}
                             >
-                                {viewMode === '2d' && allBodies && allBodies.length > 0 ? (
-                                    <Suspense fallback={<CharacterViewerFallback />}>
-                                         <CharacterCanvas
-                                            student={student}
-                                            allBodies={allBodies}
-                                            equipment={equipment}
-                                            allHairstyles={allHairstyles}
-                                            allArmor={ownedArmor}
-                                            onMouseDown={handleMouseDown}
-                                            activePieceId={activePiece?.id || null}
-                                            editingLayer={editingLayer}
-                                            isPreviewMode={isPreviewMode}
-                                            localHairstyleTransforms={localHairstyleTransforms}
-                                            localArmorTransforms={localArmorTransforms}
-                                            localArmorTransforms2={localArmorTransforms2}
-                                            selectedStaticAvatarUrl={selectedStaticAvatarUrl}
-                                        />
-                                    </Suspense>
-                                ) : viewMode === '3d' && is3dViewAvailable ? (
-                                    <Suspense fallback={<CharacterViewerFallback />}>
-                                        <CharacterViewer3D 
-                                            bodyUrl={bodyModelUrl}
-                                            armorPieces={armorPiecesWithModels}
-                                            hairUrl={hairModelUrl}
-                                            hairId={hairstyle?.id || null}
-                                            onTransformUpdate={handle3DTransformUpdate}
-                                            armorTransforms={local3DArmorTransforms}
-                                            hairTransform={local3DHairstyleTransforms}
-                                            onPieceClick={handlePieceClick}
-                                            activePieceId={activePiece?.id || null}
-                                            isOrbitControlsEnabled={isOrbitControlsEnabled}
-                                        />
-                                    </Suspense>
-                                ) : (
-                                    <div className="flex items-center justify-center h-full text-center text-white">
-                                        <p>Select a Base Body and an item with a 3D model to enable 3D View.</p>
-                                    </div>
-                                )}
+                                <Suspense fallback={<CharacterViewerFallback />}>
+                                     <CharacterCanvas
+                                        student={student}
+                                        allBodies={allBodies}
+                                        equipment={equipment}
+                                        allHairstyles={allHairstyles}
+                                        allArmor={ownedArmor}
+                                        onMouseDown={handleMouseDown}
+                                        activePieceId={activePiece?.id || null}
+                                        editingLayer={editingLayer}
+                                        isPreviewMode={isPreviewMode}
+                                        localHairstyleTransforms={localHairstyleTransforms}
+                                        localArmorTransforms={localArmorTransforms}
+                                        localArmorTransforms2={localArmorTransforms2}
+                                        selectedStaticAvatarUrl={selectedStaticAvatarUrl}
+                                    />
+                                </Suspense>
 
                                 <div className="absolute top-0 right-0 h-full p-2 z-20">
                                     <Collapsible
@@ -813,48 +716,32 @@ export default function ForgePage() {
                                                             </CardContent>
                                                         </Card>
 
-                                                        {viewMode === '3d' && (
-                                                            <div className="flex items-center space-x-2">
-                                                                <Label htmlFor="orbit-controls" className="flex items-center gap-1 cursor-pointer"><Orbit className="h-4 w-4"/> Rotate</Label>
-                                                                <Switch id="orbit-controls" checked={isOrbitControlsEnabled} onCheckedChange={setIsOrbitControlsEnabled} />
-                                                            </div>
-                                                        )}
                                                         {activePiece ? (
                                                             <div className="space-y-4">
                                                                 <p className="font-bold text-center">Editing: <span className="text-primary">{'styleName' in activePiece ? activePiece.styleName : activePiece.name}</span></p>
-                                                                {viewMode === '2d' && (
-                                                                     <>
-                                                                        {'slot' in activePiece && activePiece.modularImageUrl2 && (
-                                                                            <div className="space-y-2 p-2 border rounded-md">
-                                                                                <Label className="flex items-center gap-2"><Layers/> Editing Layer</Label>
-                                                                                <div className="grid grid-cols-2 gap-2">
-                                                                                    <Button variant={editingLayer === 'primary' ? 'default' : 'outline'} onClick={() => setEditingLayer('primary')} disabled={isPreviewMode}>Primary</Button>
-                                                                                    <Button variant={editingLayer === 'secondary' ? 'default' : 'outline'} onClick={() => setEditingLayer('secondary')} disabled={isPreviewMode}>Secondary</Button>
-                                                                                </div>
-                                                                            </div>
-                                                                        )}
-                                                                        {activeTransform && (
-                                                                            <div className="space-y-4 animate-in fade-in-50">
-                                                                                <div className="space-y-2">
-                                                                                    <Label htmlFor="x-pos">X Position: {activeTransform.x.toFixed(2)}%</Label>
-                                                                                    <Slider id="x-pos" value={[activeTransform.x]} onValueChange={([val]) => handleSliderChange('x', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
-                                                                                </div>
-                                                                                <div className="space-y-2">
-                                                                                    <Label htmlFor="y-pos">Y Position: {activeTransform.y.toFixed(2)}%</Label>
-                                                                                    <Slider id="y-pos" value={[activeTransform.y]} onValueChange={([val]) => handleSliderChange('y', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
-                                                                                </div>
-                                                                                <div className="space-y-2">
-                                                                                    <Label htmlFor="scale">Scale Modifier</Label>
-                                                                                    <Slider id="scale" value={[activeScaleForSlider]} onValueChange={([val]) => handleSliderChange('slider', val)} min={0} max={100} step={0.5} disabled={isPreviewMode}/>
-                                                                                </div>
-                                                                            </div>
-                                                                        )}
-                                                                    </>
+                                                                {'slot' in activePiece && activePiece.modularImageUrl2 && (
+                                                                    <div className="space-y-2 p-2 border rounded-md">
+                                                                        <Label className="flex items-center gap-2"><Layers/> Editing Layer</Label>
+                                                                        <div className="grid grid-cols-2 gap-2">
+                                                                            <Button variant={editingLayer === 'primary' ? 'default' : 'outline'} onClick={() => setEditingLayer('primary')} disabled={isPreviewMode}>Primary</Button>
+                                                                            <Button variant={editingLayer === 'secondary' ? 'default' : 'outline'} onClick={() => setEditingLayer('secondary')} disabled={isPreviewMode}>Secondary</Button>
+                                                                        </div>
+                                                                    </div>
                                                                 )}
-                                                                 {viewMode === '3d' && (
-                                                                    <div className="space-y-2 animate-in fade-in-50">
-                                                                        <Label htmlFor="3d-scale" className="flex items-center gap-1"><Scaling className="h-4 w-4"/> 3D Scale: {active3DScale.toFixed(2)}x</Label>
-                                                                        <Slider id="3d-scale" value={[active3DScale]} onValueChange={([val]) => handle3DScaleChange(val)} min={0.1} max={2} step={0.01}/>
+                                                                {activeTransform && (
+                                                                    <div className="space-y-4 animate-in fade-in-50">
+                                                                        <div className="space-y-2">
+                                                                            <Label htmlFor="x-pos">X Position: {activeTransform.x.toFixed(2)}%</Label>
+                                                                            <Slider id="x-pos" value={[activeTransform.x]} onValueChange={([val]) => handleSliderChange('x', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            <Label htmlFor="y-pos">Y Position: {activeTransform.y.toFixed(2)}%</Label>
+                                                                            <Slider id="y-pos" value={[activeTransform.y]} onValueChange={([val]) => handleSliderChange('y', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            <Label htmlFor="scale">Scale Modifier</Label>
+                                                                            <Slider id="scale" value={[activeScaleForSlider]} onValueChange={([val]) => handleSliderChange('slider', val)} min={0} max={100} step={0.5} disabled={isPreviewMode}/>
+                                                                        </div>
                                                                     </div>
                                                                 )}
                                                             </div>
@@ -897,5 +784,3 @@ export default function ForgePage() {
         </div>
     );
 }
-
-    

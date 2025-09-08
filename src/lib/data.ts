@@ -1,5 +1,4 @@
 
-
 export type ClassType = 'Guardian' | 'Healer' | 'Mage' | '';
 
 export type Company = {
@@ -60,10 +59,6 @@ export type Student = {
             scale: number;
         }
     };
-    equippedHairstyle3DTransforms?: { 
-        scale: number;
-        position: [number, number, number];
-    };
     armorTransforms?: { // Student-specific overrides for armor positions
         [armorId: string]: {
             [bodyId: string]: {
@@ -80,12 +75,6 @@ export type Student = {
                 y: number;
                 scale: number;
             }
-        }
-    };
-    equippedArmorTransforms?: { // For 3D model scaling and positioning
-        [armorId: string]: {
-            scale: number;
-            position: [number, number, number];
         }
     };
     questApprovalRequired?: boolean; // Student-specific override
@@ -163,29 +152,4 @@ export const classData = {
     backgrounds: [],
     baseStats: { hp: 6, mp: 15 },
   },
-};
-
-// This type was missing from your original data.ts but is used in dashboard-client.tsx
-// I am adding it here to maintain consistency and resolve potential type errors.
-export type QuestHub = {
-  id: string;
-  name: string;
-  worldMapUrl: string;
-  hubOrder: number;
-  coordinates: {
-    x: number;
-    y: number;
-  };
-};
-
-// This type was also missing, adding it for consistency.
-export type Chapter = {
-  id: string;
-  hubId: string;
-  title: string;
-  chapterNumber: number;
-  coordinates: {
-    x: number;
-    y: number;
-  };
 };

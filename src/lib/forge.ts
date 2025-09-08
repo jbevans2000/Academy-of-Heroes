@@ -1,5 +1,4 @@
 
-
 export interface BaseBody {
     id: string;
     name: string;
@@ -21,12 +20,16 @@ export interface Hairstyle {
         name: string;
         textureUrl?: string; // URL for the 3D model's color texture
     }[]; // An array for all color variations
-    transforms: {
+    transforms: { // For 2D sizing
         [bodyId: string]: {
             x: number;
             y: number;
             scale: number;
         }
+    };
+    equippedHairstyle3DTransforms?: { // For 3D sizing - saved on the asset
+        scale: number;
+        position: [number, number, number];
     };
     isPublished: boolean;
     createdAt?: any;
@@ -49,18 +52,24 @@ export interface ArmorPiece {
     levelRequirement: number;
     goldCost: number;
     setName?: string; 
-    transforms: {
+    transforms: { // For 2D primary image
         [bodyId: string]: {
             x: number;
             y: number;
             scale: number;
         }
     };
-     transforms2?: { // Transforms for the second modular image
+     transforms2?: { // For 2D secondary image
         [bodyId: string]: {
             x: number;
             y: number;
             scale: number;
+        }
+    };
+    equippedArmorTransforms?: { // For 3D model scaling and positioning - saved on the asset
+        [armorId: string]: {
+            scale: number;
+            position: [number, number, number];
         }
     };
     isPublished: boolean;

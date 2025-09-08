@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { Suspense, lazy } from 'react';
@@ -12,11 +11,7 @@ import { useEffect, useState, useMemo } from 'react';
 import type { Hairstyle, ArmorPiece, BaseBody } from '@/lib/forge';
 import { CharacterViewerFallback } from './character-viewer-3d';
 
-const CharacterViewer3D = lazy(() =>
-  import('./character-viewer-3d').then(module => ({ default: module.CharacterViewer3D }))
-);
 const CharacterCanvas = lazy(() => import('@/components/dashboard/character-canvas').then(module => ({ default: module.CharacterCanvas })));
-
 
 interface AvatarDisplayProps {
   student: Student;
@@ -74,35 +69,9 @@ export function AvatarDisplay({ student }: AvatarDisplayProps) {
       feetId: student.equippedFeetId,
   };
 
-  // Find the URLs for the 3D models
-  const bodyModelUrl = showCustomCharacter ? allBodies.find(b => b.id === student.equippedBodyId)?.modelUrl : null;
-  const hairModelUrl = showCustomCharacter ? allHairstyles.find(h => h.id === student.equippedHairstyleId)?.modelUrl : null;
-  
-  const armorPiecesWithModels = useMemo(() => {
-    if (!showCustomCharacter) return [];
-    const equippedIds = [student.equippedHeadId, student.equippedShouldersId, student.equippedChestId, student.equippedHandsId, student.equippedLegsId, student.equippedFeetId];
-    return allArmor
-        .filter(a => equippedIds.includes(a.id) && a.modelUrl)
-        .map(a => ({ id: a.id, url: a.modelUrl! }));
-  }, [allArmor, student, showCustomCharacter]);
-
   return (
     <div className="flex justify-center items-center py-4">
-        {showCustomCharacter && bodyModelUrl ? (
-             <div className={cn("relative w-96 h-96", avatarBorderColor)}>
-                <Suspense fallback={<CharacterViewerFallback />}>
-                    <CharacterViewer3D 
-                        bodyUrl={bodyModelUrl}
-                        armorPieces={armorPiecesWithModels}
-                        hairUrl={hairModelUrl}
-                        armorTransforms={student.equippedArmorTransforms}
-                        hairTransform={student.equippedHairstyle3DTransforms}
-                        onTransformUpdate={() => {}} // No-op in display-only mode
-                        activePieceId={null}
-                    />
-                </Suspense>
-             </div>
-        ) : showCustomCharacter && equipment.bodyId && allBodies.length > 0 ? (
+        {showCustomCharacter && equipment.bodyId && allBodies.length > 0 ? (
             <div className={cn("relative w-96 h-96 border-8 bg-black/20 p-2 shadow-inner", avatarBorderColor)}>
                 <Suspense fallback={<CharacterViewerFallback />}>
                     <CharacterCanvas 

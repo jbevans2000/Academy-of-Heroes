@@ -1,9 +1,9 @@
 
 'use client';
 
-import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { Canvas, useLoader, useThree } from '@react-three/fiber';
-import { OrbitControls, useGLTF } from '@react-three/drei';
+import React, { Suspense, useEffect, useMemo, useRef } from 'react';
+import { Canvas, useLoader } from '@react-three/fiber';
+import { OrbitControls } from '@react-three/drei';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as THREE from 'three';
 import { Loader2 } from 'lucide-react';
@@ -58,17 +58,16 @@ function Model({ url, pieceId, scale, position = [0, 0, 0], onLoad }: ModelProps
     );
 }
 
-useGLTF.preload(GLTFLoader as any);
-
 interface CharacterViewer3DProps {
     bodyUrl: string | null;
     armorPieces?: { id: string; url: string; }[];
     hairUrl?: string | null;
-    hairId?: string | null; // Pass the actual ID of the hair
+    hairId?: string | null; 
     armorTransforms?: { [armorId: string]: { scale: number; position: [number, number, number] } };
-    hairTransform?: { scale: number; position: [number, number, number] };
+    hairTransform?: { scale: number; position: [number, number, number] } | null;
     onTransformUpdate: (pieceId: string, position: [number, number, number]) => void;
     activePieceId: string | null;
+    onPieceClick: (piece: { id: string } | null) => void;
     isOrbitControlsEnabled?: boolean;
 }
 
@@ -81,6 +80,7 @@ export function CharacterViewer3D({
     hairTransform, 
     onTransformUpdate, 
     activePieceId,
+    onPieceClick,
     isOrbitControlsEnabled = true 
 }: CharacterViewer3DProps) {
     const skeletonRef = useRef<THREE.Skeleton | null>(null);
@@ -105,9 +105,17 @@ export function CharacterViewer3D({
             });
         }
     };
+    
+    const handleCanvasClick = (event: any) => {
+        // If the click didn't hit any object, deselect the active piece.
+        if (event.intersections.length === 0 && onPieceClick) {
+            onPieceClick(null);
+        }
+    };
+
 
     return (
-        <Canvas shadows camera={{ position: [0, 1, 2.5], fov: 50 }}>
+        <Canvas shadows camera={{ position: [0, 1, 2.5], fov: 50 }} onClick={handleCanvasClick}>
             <ambientLight intensity={1.5} />
             <directionalLight
                 position={[5, 5, 5]}
