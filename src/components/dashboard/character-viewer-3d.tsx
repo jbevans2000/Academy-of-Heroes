@@ -114,8 +114,8 @@ export function CharacterViewer3D({
     };
 
     const handleCanvasClick = (event: any) => {
-        // If the click didn't hit any object, deselect the active piece.
-        if (event.intersections.length === 0 && onPieceClick) {
+        // If the click is on the background (not on any model object), deselect the active piece
+        if (!event.object && onPieceClick) {
             onPieceClick(null);
         }
     };
