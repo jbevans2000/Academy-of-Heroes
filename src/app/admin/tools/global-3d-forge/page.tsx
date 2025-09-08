@@ -91,22 +91,24 @@ export default function Global3DForgeSizerPage() {
         });
 
         return () => { unsubArmor(); unsubHairstyles(); unsubBaseBodies(); };
-    }, [user, selectedBody]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user]);
 
     // Effect to load transforms when selections change
     useEffect(() => {
+        if (!selectedBody) return;
         const newArmorTransforms: typeof armorTransforms = {};
         equippedArmor.forEach(piece => {
-            newArmorTransforms[piece.id] = piece.equippedArmorTransforms?.[piece.id] || { scale: 1, position: [0, 0, 0] };
+            newArmorTransforms[piece.id] = piece.transforms3D?.[selectedBody.id] || { scale: 1, position: [0, 0, 0] };
         });
         setArmorTransforms(newArmorTransforms);
         
         if (equippedHairstyle) {
-            setHairstyleTransform(equippedHairstyle.equippedHairstyle3DTransforms || { scale: 1, position: [0, 0, 0] });
+            setHairstyleTransform(equippedHairstyle.transforms3D?.[selectedBody.id] || { scale: 1, position: [0, 0, 0] });
         } else {
             setHairstyleTransform(null);
         }
-    }, [equippedArmor, equippedHairstyle]);
+    }, [equippedArmor, equippedHairstyle, selectedBody]);
 
 
     const handleEquipArmor = (piece: ArmorPiece) => {
@@ -154,24 +156,22 @@ export default function Global3DForgeSizerPage() {
     };
 
     const handleSaveTransform = async () => {
-        if (!user || !activePiece) {
-            toast({ variant: 'destructive', title: 'Error', description: 'No active piece selected to save.' });
+        if (!user || !activePiece || !selectedBody) {
+            toast({ variant: 'destructive', title: 'Error', description: 'No active piece or body selected.' });
             return;
         }
         setIsSaving(true);
         try {
             if ('slot' in activePiece) { // Armor
                 const armorRef = doc(db, 'armorPieces', activePiece.id);
+                const transformToSave = armorTransforms[activePiece.id];
                 await updateDoc(armorRef, {
-                    equippedArmorTransforms: {
-                        ...activePiece.equippedArmorTransforms,
-                        [activePiece.id]: armorTransforms[activePiece.id]
-                    }
+                    [`transforms3D.${selectedBody.id}`]: transformToSave
                 });
             } else { // Hairstyle
                 const hairRef = doc(db, 'hairstyles', activePiece.id);
                 await updateDoc(hairRef, {
-                    equippedHairstyle3DTransforms: hairstyleTransform
+                     [`transforms3D.${selectedBody.id}`]: hairstyleTransform
                 });
             }
             toast({ title: 'Transform Saved!', description: `The 3D position and scale for ${'styleName' in activePiece ? activePiece.styleName : activePiece.name} has been saved globally.` });
@@ -266,7 +266,16 @@ export default function Global3DForgeSizerPage() {
     }, [activePiece, armorTransforms, hairstyleTransform]);
 
     const bodyModelUrl = selectedBody?.modelUrl;
-    const hairModelUrl = equippedHairstyle?.modelUrl;
+    
+    const equippedHairColorModelUrl = useMemo(() => {
+        if (!equippedHairstyle) return equippedHairstyle?.modelUrl;
+        const color = equippedHairstyle.colors.find(c => c.imageUrl === student.equippedHairstyleColor);
+        return color?.modelUrl || equippedHairstyle.modelUrl;
+    }, [equippedHairstyle, student.equippedHairstyleColor]);
+    
+    const hairModelUrl = equippedHairColorModelUrl;
+
+
     const armorPiecesWithModels = useMemo(() => {
         return equippedArmor
             .filter(a => a.modelUrl)
@@ -289,6 +298,10 @@ export default function Global3DForgeSizerPage() {
             default: return 'None';
         }
     }
+    
+    const student = useMemo(() => ({
+        equippedHairstyleColor: equippedHairstyle?.colors[0]?.imageUrl
+    }), [equippedHairstyle]);
 
     if (isLoading || !user) {
         return <div className="flex items-center justify-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>

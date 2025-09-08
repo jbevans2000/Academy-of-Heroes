@@ -31,9 +31,11 @@ export interface Hairstyle {
             scale: number;
         }
     };
-    equippedHairstyle3DTransforms?: { // For 3D sizing - saved on the asset
-        scale: number;
-        position: [number, number, number];
+    transforms3D?: { // For 3D sizing - saved on the asset
+        [bodyId: string]: {
+            scale: number;
+            position: [number, number, number];
+        }
     };
     isPublished: boolean;
     createdAt?: any;
@@ -70,8 +72,8 @@ export interface ArmorPiece {
             scale: number;
         }
     };
-    equippedArmorTransforms?: { // For 3D model scaling and positioning - saved on the asset
-        [armorId: string]: {
+    transforms3D?: { // For 3D model scaling and positioning - saved on the asset
+        [bodyId: string]: {
             scale: number;
             position: [number, number, number];
         }
