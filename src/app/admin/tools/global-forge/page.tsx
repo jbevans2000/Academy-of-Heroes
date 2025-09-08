@@ -774,8 +774,8 @@ export default function GlobalForgePage() {
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             Back to Admin Dashboard
                         </Button>
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                             <div className="lg:col-span-1 space-y-6">
+                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                            <div className="space-y-6">
                                 <Card>
                                     <CardHeader className="flex-row justify-between items-start">
                                         <div>
@@ -785,9 +785,9 @@ export default function GlobalForgePage() {
                                         <Button size="sm" onClick={handleNewBody}><PlusCircle className="mr-2 h-4 w-4" /> Create Body</Button>
                                     </CardHeader>
                                     <CardContent>
-                                        <ScrollArea className="h-[60vh]">
+                                        <ScrollArea className="h-[30vh]">
                                         {isLoading ? (
-                                            <Skeleton className="h-64" />
+                                            <Skeleton className="h-full" />
                                         ) : baseBodies.length === 0 ? (
                                             <p className="text-center text-muted-foreground py-10">No base bodies created yet.</p>
                                         ) : (
@@ -809,69 +809,6 @@ export default function GlobalForgePage() {
                                         </ScrollArea>
                                     </CardContent>
                                 </Card>
-                            </div>
-
-                             {/* ARMOR & HAIRSTYLE MANAGEMENT */}
-                            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <Card>
-                                    <CardHeader className="flex-row justify-between items-start">
-                                        <div>
-                                            <CardTitle className="flex items-center gap-2"><Diamond className="text-primary"/> Armor Management</CardTitle>
-                                            <CardDescription>Manage all armor pieces available in the game.</CardDescription>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <Button onClick={() => setIsSetCreatorOpen(true)} variant="secondary"><PlusCircle className="mr-2 h-4 w-4" /> Create Set</Button>
-                                            <Button onClick={handleNewArmor}><PlusCircle className="mr-2 h-4 w-4" /> Create Armor</Button>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <ScrollArea className="h-[60vh]">
-                                        {isLoading ? (
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <Skeleton className="h-64" /> <Skeleton className="h-64" />
-                                            </div>
-                                        ) : armorPieces.length === 0 ? (
-                                            <p className="text-center text-muted-foreground py-10">The forge is empty. Create your first armor piece!</p>
-                                        ) : (
-                                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                                                {armorPieces.map(piece => (
-                                                    <Card key={piece.id} className="flex flex-col relative">
-                                                        <div className="absolute top-2 left-2 z-10">
-                                                            {piece.isPublished ? (
-                                                                <div className="flex items-center gap-1 bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full border border-green-300">
-                                                                    <Eye className="h-3 w-3" />
-                                                                    Published
-                                                                </div>
-                                                            ) : (
-                                                                <div className="flex items-center gap-1 bg-gray-100 text-gray-800 text-xs font-semibold px-2 py-1 rounded-full border border-gray-300">
-                                                                    <EyeOff className="h-3 w-3" />
-                                                                    Hidden
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        <CardHeader className="items-center">
-                                                            <div className="w-24 h-24 relative bg-secondary rounded-md">
-                                                                <NextImage src={piece.thumbnailUrl || piece.imageUrl || ''} alt={piece.name} fill className="object-contain p-1" />
-                                                            </div>
-                                                        </CardHeader>
-                                                        <CardContent className="flex-grow text-center space-y-1">
-                                                            <p className="font-bold">{piece.name}</p>
-                                                            {piece.setName && <p className="text-xs font-semibold text-primary">{piece.setName}</p>}
-                                                            <p className="text-sm text-muted-foreground">{piece.classRequirement} - {piece.slot}</p>
-                                                            <p className="text-sm">Lvl {piece.levelRequirement} / {piece.goldCost}g</p>
-                                                        </CardContent>
-                                                        <CardFooter className="p-2 flex gap-1">
-                                                            <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditArmor(piece)}><Edit className="mr-1 h-3 w-3" /> Edit</Button>
-                                                            <Button variant="destructive" size="sm" onClick={() => setArmorToDelete(piece)}><Trash2 className="h-3 w-3" /></Button>
-                                                        </CardFooter>
-                                                    </Card>
-                                                ))}
-                                            </div>
-                                        )}
-                                        </ScrollArea>
-                                    </CardContent>
-                                </Card>
-
                                 <Card>
                                     <CardHeader className="flex-row justify-between items-start">
                                         <div>
@@ -926,6 +863,66 @@ export default function GlobalForgePage() {
                                     </CardContent>
                                 </Card>
                             </div>
+                            <div className="lg:col-span-1">
+                               <Card>
+                                    <CardHeader className="flex-row justify-between items-start">
+                                        <div>
+                                            <CardTitle className="flex items-center gap-2"><Diamond className="text-primary"/> Armor Management</CardTitle>
+                                            <CardDescription>Manage all armor pieces available in the game.</CardDescription>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <Button onClick={() => setIsSetCreatorOpen(true)} variant="secondary"><PlusCircle className="mr-2 h-4 w-4" /> Create Set</Button>
+                                            <Button onClick={handleNewArmor}><PlusCircle className="mr-2 h-4 w-4" /> Create Armor</Button>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <ScrollArea className="h-[105vh]">
+                                        {isLoading ? (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <Skeleton className="h-64" /> <Skeleton className="h-64" />
+                                            </div>
+                                        ) : armorPieces.length === 0 ? (
+                                            <p className="text-center text-muted-foreground py-10">The forge is empty. Create your first armor piece!</p>
+                                        ) : (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-4">
+                                                {armorPieces.map(piece => (
+                                                    <Card key={piece.id} className="flex flex-col relative">
+                                                        <div className="absolute top-2 left-2 z-10">
+                                                            {piece.isPublished ? (
+                                                                <div className="flex items-center gap-1 bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full border border-green-300">
+                                                                    <Eye className="h-3 w-3" />
+                                                                    Published
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex items-center gap-1 bg-gray-100 text-gray-800 text-xs font-semibold px-2 py-1 rounded-full border border-gray-300">
+                                                                    <EyeOff className="h-3 w-3" />
+                                                                    Hidden
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <CardHeader className="items-center">
+                                                            <div className="w-24 h-24 relative bg-secondary rounded-md">
+                                                                <NextImage src={piece.thumbnailUrl || piece.imageUrl || ''} alt={piece.name} fill className="object-contain p-1" />
+                                                            </div>
+                                                        </CardHeader>
+                                                        <CardContent className="flex-grow text-center space-y-1">
+                                                            <p className="font-bold">{piece.name}</p>
+                                                            {piece.setName && <p className="text-xs font-semibold text-primary">{piece.setName}</p>}
+                                                            <p className="text-sm text-muted-foreground">{piece.classRequirement} - {piece.slot}</p>
+                                                            <p className="text-sm">Lvl {piece.levelRequirement} / {piece.goldCost}g</p>
+                                                        </CardContent>
+                                                        <CardFooter className="p-2 flex gap-1">
+                                                            <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditArmor(piece)}><Edit className="mr-1 h-3 w-3" /> Edit</Button>
+                                                            <Button variant="destructive" size="sm" onClick={() => setArmorToDelete(piece)}><Trash2 className="h-3 w-3" /></Button>
+                                                        </CardFooter>
+                                                    </Card>
+                                                ))}
+                                            </div>
+                                        )}
+                                        </ScrollArea>
+                                    </CardContent>
+                                </Card>
+                            </div>
                         </div>
                     </div>
                 </main>
@@ -933,5 +930,3 @@ export default function GlobalForgePage() {
         </>
     )
 }
-
-    
