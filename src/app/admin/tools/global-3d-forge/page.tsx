@@ -4,13 +4,15 @@
 import { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { db, auth } from '@/lib/firebase';
+import { db, auth, app } from '@/lib/firebase';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { collection, onSnapshot, doc, getDoc, updateDoc, query, orderBy } from 'firebase/firestore';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Loader2, Save, Box, Orbit, Scaling, Edit, Trash2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { ArrowLeft, Loader2, Save, Box, Orbit, Scaling, Edit, Trash2, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ArmorPiece, Hairstyle, BaseBody } from '@/lib/forge';
 import NextImage from 'next/image';
@@ -46,6 +48,11 @@ export default function Global3DForgeSizerPage() {
     // Transform State
     const [armorTransforms, setArmorTransforms] = useState<{ [id: string]: { scale: number; position: [number, number, number] } }>({});
     const [hairstyleTransform, setHairstyleTransform] = useState<{ scale: number; position: [number, number, number] } | null>(null);
+
+    // Upload State
+    const [assetToUploadFor, setAssetToUploadFor] = useState<{id: string, type: 'armor' | 'hair'} | null>(null);
+    const [glbFile, setGlbFile] = useState<File | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -175,6 +182,36 @@ export default function Global3DForgeSizerPage() {
         }
     };
 
+    const handleModelUpload = async () => {
+        if (!user || !glbFile || !assetToUploadFor) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Please select an asset and a .glb file.' });
+            return;
+        }
+        setIsUploading(true);
+        try {
+            const storage = getStorage(app);
+            const path = assetToUploadFor.type === 'armor' ? 'armor-models' : 'hairstyle-models';
+            const glbRef = storageRef(storage, `${path}/${user.uid}/${assetToUploadFor.id}.glb`);
+            
+            const metadata = { contentType: 'model/gltf-binary' };
+            await uploadBytes(glbRef, glbFile, metadata);
+            const downloadUrl = await getDownloadURL(glbRef);
+
+            const collectionName = assetToUploadFor.type === 'armor' ? 'armorPieces' : 'hairstyles';
+            const docRef = doc(db, collectionName, assetToUploadFor.id);
+            await updateDoc(docRef, { modelUrl: downloadUrl });
+
+            toast({ title: 'Model Uploaded!', description: `The 3D model for the selected asset has been saved.` });
+            setAssetToUploadFor(null);
+            setGlbFile(null);
+        } catch (error) {
+            console.error("Error uploading model:", error);
+            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload the 3D model.' });
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
     const active3DScale = useMemo(() => {
         if (!activePiece) return 1;
         if ('slot' in activePiece) {
@@ -211,6 +248,40 @@ export default function Global3DForgeSizerPage() {
                             Save Active Piece Transform
                         </Button>
                      </div>
+                     <Card>
+                        <CardHeader><CardTitle>Upload 3D Models (.glb)</CardTitle><CardDescription>Select an asset and upload its corresponding 3D model file.</CardDescription></CardHeader>
+                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Tabs defaultValue="armor-upload">
+                                <TabsList>
+                                    <TabsTrigger value="armor-upload">Armor</TabsTrigger>
+                                    <TabsTrigger value="hair-upload">Hairstyles</TabsTrigger>
+                                </TabsList>
+                                <ScrollArea className="h-48 mt-2">
+                                    <TabsContent value="armor-upload">
+                                        {allArmor.map(piece => (
+                                            <div key={piece.id} className={cn("p-2 my-1 rounded-md cursor-pointer", assetToUploadFor?.id === piece.id && 'bg-primary/20')} onClick={() => setAssetToUploadFor({id: piece.id, type: 'armor'})}>
+                                                {piece.name} {piece.modelUrl && '✓'}
+                                            </div>
+                                        ))}
+                                    </TabsContent>
+                                    <TabsContent value="hair-upload">
+                                         {allHairstyles.map(style => (
+                                            <div key={style.id} className={cn("p-2 my-1 rounded-md cursor-pointer", assetToUploadFor?.id === style.id && 'bg-primary/20')} onClick={() => setAssetToUploadFor({id: style.id, type: 'hair'})}>
+                                                {style.styleName} {style.modelUrl && '✓'}
+                                            </div>
+                                        ))}
+                                    </TabsContent>
+                                </ScrollArea>
+                            </Tabs>
+                            <div className="space-y-2">
+                                <Label>Selected Asset: <span className="font-bold">{assetToUploadFor ? (allArmor.find(a=>a.id===assetToUploadFor.id)?.name || allHairstyles.find(h=>h.id===assetToUploadFor.id)?.styleName) : 'None'}</span></Label>
+                                <Input type="file" accept=".glb" onChange={(e) => setGlbFile(e.target.files ? e.target.files[0] : null)} disabled={isUploading || !assetToUploadFor}/>
+                                <Button onClick={handleModelUpload} disabled={isUploading || !glbFile || !assetToUploadFor}>
+                                    {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4" />} Upload & Save Model
+                                </Button>
+                            </div>
+                        </CardContent>
+                     </Card>
                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                         <div className="lg:col-span-3 space-y-4">
                             {/* Library of assets */}
@@ -296,4 +367,5 @@ export default function Global3DForgeSizerPage() {
             </main>
         </div>
     )
-}
+
+    
