@@ -35,6 +35,8 @@ function Model({ url, pieceId, scale, position = [0, 0, 0], onClick, onLoad }: M
                 }
             }
         });
+        // Also tag the top-level object
+        clone.userData.pieceId = pieceId;
         return clone;
     }, [scene, pieceId]);
 
