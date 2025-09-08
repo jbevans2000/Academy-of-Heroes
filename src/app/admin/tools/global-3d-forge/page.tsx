@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Loader2, Save, Box, Orbit, Scaling, Edit, Trash2, Upload } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Box, Orbit, Scaling, Edit, Trash2, Upload, Scissors, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ArmorPiece, Hairstyle, BaseBody, HairstyleColor } from '@/lib/forge';
 import NextImage from 'next/image';
@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { CharacterViewerFallback } from '@/components/dashboard/character-viewer-3d';
 import { v4 as uuidv4 } from 'uuid';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const CharacterViewer3D = lazy(() => import('@/components/dashboard/character-viewer-3d').then(module => ({ default: module.CharacterViewer3D })));
 
@@ -47,6 +48,7 @@ export default function Global3DForgeSizerPage() {
     const [activePiece, setActivePiece] = useState<ArmorPiece | Hairstyle | null>(null);
     const [isOrbitControlsEnabled, setIsOrbitControlsEnabled] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isControlsOpen, setIsControlsOpen] = useState(true);
     
     // Transform State
     const [armorTransforms, setArmorTransforms] = useState<{ [id: string]: { scale: number; position: [number, number, number] } }>({});
@@ -120,7 +122,6 @@ export default function Global3DForgeSizerPage() {
                 if (activePiece?.id === piece.id) setActivePiece(null);
                 return prev.filter(p => p.id !== piece.id);
             }
-            // Allow multiple pieces
             return [...prev, piece];
         });
     }
@@ -196,55 +197,41 @@ export default function Global3DForgeSizerPage() {
         try {
             const { type, id, colorIndex } = assetToUploadFor;
             let path = '';
-            let collectionName = '';
             let docRef;
 
             switch (type) {
                 case 'armor':
                     path = 'armor-models';
-                    collectionName = 'armorPieces';
-                    docRef = doc(db, collectionName, id);
+                    docRef = doc(db, 'armorPieces', id);
                     break;
                 case 'hair':
                     path = 'hairstyle-models';
-                    collectionName = 'hairstyles';
-                    docRef = doc(db, collectionName, id);
+                    docRef = doc(db, 'hairstyles', id);
                     break;
                 case 'body':
                     path = 'basebody-models';
-                    collectionName = 'baseBodies';
-                    docRef = doc(db, collectionName, id);
+                    docRef = doc(db, 'baseBodies', id);
                     break;
                 case 'hairColor':
                     path = 'haircolor-models';
-                    collectionName = 'hairstyles';
-                    docRef = doc(db, collectionName, id);
-                    const hairDoc = await getDoc(docRef);
-                    if (!hairDoc.exists()) throw new Error("Hairstyle not found");
-                    const hairData = hairDoc.data() as Hairstyle;
-                    const newColors = [...hairData.colors];
-                    if (colorIndex !== undefined && newColors[colorIndex]) {
-                        // This will be handled differently after upload
-                    } else {
-                        throw new Error("Invalid color index");
-                    }
+                    docRef = doc(db, 'hairstyles', id);
                     break;
                 default:
                     throw new Error("Invalid asset type for upload");
             }
             
-            const glbRef = storageRef(storage, `${path}/${user.uid}/${uuidv4()}.glb`);
+            const glbRef = storageRef(app.storage, `${path}/${user.uid}/${uuidv4()}.glb`);
             const metadata = { contentType: 'model/gltf-binary' };
             await uploadBytes(glbRef, glbFile, metadata);
             const downloadUrl = await getDownloadURL(glbRef);
 
-            if (type === 'hairColor' && colorIndex !== undefined) {
+            if (type === 'hairColor' && colorIndex !== undefined && docRef) {
                 const hairDoc = await getDoc(docRef);
                 const hairData = hairDoc.data() as Hairstyle;
                 const newColors = [...hairData.colors];
                 newColors[colorIndex].modelUrl = downloadUrl;
                 await updateDoc(docRef, { colors: newColors });
-            } else {
+            } else if (docRef) {
                 await updateDoc(docRef, { modelUrl: downloadUrl });
             }
 
@@ -269,7 +256,6 @@ export default function Global3DForgeSizerPage() {
     }, [activePiece, armorTransforms, hairstyleTransform]);
 
     const bodyModelUrl = selectedBody?.modelUrl;
-    
     const hairModelUrl = selectedHairstyleColor?.modelUrl || equippedHairstyle?.modelUrl;
 
     const armorPiecesWithModels = useMemo(() => {
@@ -303,16 +289,13 @@ export default function Global3DForgeSizerPage() {
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
             <TeacherHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
-                <div className="w-full max-w-7xl mx-auto space-y-4">
+                <div className="w-full max-w-screen-2xl mx-auto space-y-4">
                      <div className="flex justify-between items-center">
                         <Button variant="outline" onClick={() => router.push('/admin/dashboard')}>
                             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Admin Dashboard
                         </Button>
                         <h1 className="text-2xl font-bold">Global 3D Forge</h1>
-                        <Button onClick={handleSaveTransform} disabled={isSaving || !activePiece}>
-                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                            Save Active Piece Transform
-                        </Button>
+                        <div/>
                      </div>
                      <Card>
                         <CardHeader><CardTitle>Upload 3D Models (.glb)</CardTitle><CardDescription>Select an asset and upload its corresponding 3D model file.</CardDescription></CardHeader>
@@ -412,10 +395,10 @@ export default function Global3DForgeSizerPage() {
                                         {equippedHairstyle && (
                                             <div className="mt-4">
                                                 <Label className="font-semibold">Colors for {equippedHairstyle.styleName}</Label>
-                                                <RadioGroup value={selectedHairstyleColor?.imageUrl} onValueChange={(val) => setSelectedHairstyleColor(equippedHairstyle.colors.find(c => c.imageUrl === val) || null)} className="mt-2 grid grid-cols-5 gap-2">
+                                                <RadioGroup value={selectedHairstyleColor?.modelUrl} onValueChange={(val) => setSelectedHairstyleColor(equippedHairstyle.colors.find(c => c.modelUrl === val) || null)} className="mt-2 grid grid-cols-5 gap-2">
                                                     {equippedHairstyle.colors.map((color, index) => (
                                                         <div key={index}>
-                                                            <RadioGroupItem value={color.imageUrl} id={`${equippedHairstyle.id}-${index}`} className="peer sr-only"/>
+                                                            <RadioGroupItem value={color.modelUrl || color.imageUrl} id={`${equippedHairstyle.id}-${index}`} className="peer sr-only"/>
                                                             <Label htmlFor={`${equippedHairstyle.id}-${index}`} className="block cursor-pointer rounded-md border-2 border-muted bg-popover p-1 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
                                                                 <NextImage src={color.thumbnailUrl || color.imageUrl} alt={color.name} width={50} height={50} className="w-full h-auto object-contain bg-gray-200 rounded-sm"/>
                                                             </Label>
@@ -444,27 +427,67 @@ export default function Global3DForgeSizerPage() {
                                         isOrbitControlsEnabled={isOrbitControlsEnabled}
                                     />
                                 </Suspense>
+                                <div className="absolute top-0 right-0 h-full p-2 z-20">
+                                    <Collapsible
+                                        open={isControlsOpen}
+                                        onOpenChange={setIsControlsOpen}
+                                        className="relative h-full"
+                                    >
+                                        <CollapsibleTrigger asChild>
+                                            <Button variant="secondary" size="icon" className="absolute top-0 -left-12">
+                                                {isControlsOpen ? <ChevronsRight /> : <ChevronsLeft />}
+                                            </Button>
+                                        </CollapsibleTrigger>
+                                        <CollapsibleContent asChild>
+                                            <Card className="w-64 h-full bg-background/80 backdrop-blur-sm flex flex-col">
+                                                <CardHeader>
+                                                    <CardTitle>Controls</CardTitle>
+                                                </CardHeader>
+                                                <ScrollArea className="flex-grow">
+                                                    <CardContent className="space-y-4">
+                                                        <div className="flex items-center space-x-2">
+                                                            <Label htmlFor="orbit-controls" className="flex items-center gap-1 cursor-pointer"><Orbit className="h-4 w-4"/> Rotate</Label>
+                                                            <Switch id="orbit-controls" checked={isOrbitControlsEnabled} onCheckedChange={setIsOrbitControlsEnabled} />
+                                                        </div>
+
+                                                        <Card>
+                                                            <CardHeader className="p-2"><CardTitle className="text-sm">Equipped</CardTitle></CardHeader>
+                                                            <CardContent className="p-2 space-y-1">
+                                                                 {equippedHairstyle && (
+                                                                     <div className={cn("flex items-center justify-between p-2 rounded-md", activePiece?.id === equippedHairstyle.id && "bg-primary/20")}>
+                                                                        <span className="font-semibold text-sm truncate flex items-center gap-2"><Scissors className="h-4 w-4"/>{equippedHairstyle.styleName}</span>
+                                                                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setActivePiece(equippedHairstyle)}><Edit className="h-4 w-4" /></Button>
+                                                                     </div>
+                                                                 )}
+                                                                {equippedArmor.map(piece => (
+                                                                    <div key={piece.id} className={cn("flex items-center justify-between p-2 rounded-md", activePiece?.id === piece.id && "bg-primary/20")}>
+                                                                        <span className="font-semibold text-sm truncate">{piece.name}</span>
+                                                                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setActivePiece(piece)}><Edit className="h-4 w-4" /></Button>
+                                                                    </div>
+                                                                ))}
+                                                            </CardContent>
+                                                        </Card>
+
+                                                        {activePiece ? (
+                                                            <div className="space-y-2 animate-in fade-in-50">
+                                                                <p>Editing: <span className="font-bold text-primary">{'styleName' in activePiece ? activePiece.styleName : activePiece.name}</span></p>
+                                                                <Label htmlFor="3d-scale" className="flex items-center gap-1"><Scaling className="h-4 w-4"/> 3D Scale: {active3DScale.toFixed(2)}x</Label>
+                                                                <Slider id="3d-scale" value={[active3DScale]} onValueChange={([val]) => handle3DScaleChange(val)} min={0.1} max={3} step={0.01}/>
+                                                                <Button className="w-full" onClick={handleSaveTransform} disabled={isSaving}>
+                                                                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                                                    Save Transform
+                                                                </Button>
+                                                            </div>
+                                                        ) : (
+                                                            <p className="text-sm text-muted-foreground text-center">Select an equipped piece to edit its transform.</p>
+                                                        )}
+                                                    </CardContent>
+                                                </ScrollArea>
+                                            </Card>
+                                        </CollapsibleContent>
+                                    </Collapsible>
+                                </div>
                             </div>
-                            <Card className="mt-4">
-                                <CardHeader>
-                                    <CardTitle>Controls</CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="flex items-center space-x-2">
-                                        <Label htmlFor="orbit-controls" className="flex items-center gap-1 cursor-pointer"><Orbit className="h-4 w-4"/> Rotate</Label>
-                                        <Switch id="orbit-controls" checked={isOrbitControlsEnabled} onCheckedChange={setIsOrbitControlsEnabled} />
-                                    </div>
-                                    {activePiece ? (
-                                        <div className="space-y-2 animate-in fade-in-50">
-                                            <p>Editing: <span className="font-bold text-primary">{'styleName' in activePiece ? activePiece.styleName : activePiece.name}</span></p>
-                                            <Label htmlFor="3d-scale" className="flex items-center gap-1"><Scaling className="h-4 w-4"/> 3D Scale: {active3DScale.toFixed(2)}x</Label>
-                                            <Slider id="3d-scale" value={[active3DScale]} onValueChange={([val]) => handle3DScaleChange(val)} min={0.1} max={3} step={0.01}/>
-                                        </div>
-                                    ) : (
-                                        <p className="text-sm text-muted-foreground">Click a model in the viewer to select it for editing.</p>
-                                    )}
-                                </CardContent>
-                            </Card>
                         </div>
                      </div>
                 </div>
@@ -472,4 +495,3 @@ export default function Global3DForgeSizerPage() {
         </div>
     );
 }
-
