@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback, useRef, Suspense, lazy } from 'react';
@@ -49,7 +48,7 @@ export default function ForgePage() {
     const [user, setUser] = useState<User | null>(null);
     const [student, setStudent] = useState<Student | null>(null);
     const [teacherUid, setTeacherUid] = useState<string | null>(null);
-    const [hairstyles, setHairstyles] = useState<Hairstyle[]>([]);
+    const [hairstyles, setAllHairstyles] = useState<Hairstyle[]>([]);
     const [allArmor, setAllArmor] = useState<ArmorPiece[]>([]);
     const [allBodies, setAllBodies] = useState<BaseBody[]>([]);
     const [isLoading, setIsLoading] = useState(true);
