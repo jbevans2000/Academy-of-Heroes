@@ -280,20 +280,3 @@ export const avatarData: ClassAvatarData = {
     20: generatePlaceholders(8, 'ascended mage'),
   },
 };
-
-    
-
-
-
-
-
-    
-
-    
-
-
-
-
-
-
-
