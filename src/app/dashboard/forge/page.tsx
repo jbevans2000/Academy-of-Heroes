@@ -11,7 +11,7 @@ import type { Student } from '@/lib/data';
 import { baseBodyUrls, type ArmorPiece, type Hairstyle, type BaseBody } from '@/lib/forge';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Loader2, Hammer, Layers, Eye, Camera, X, Shirt, ArrowRight, ChevronsRight, ChevronsLeft, ShirtIcon, UserCheck, ChevronDown, Wand2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Hammer, Layers, Eye, Camera, X, Shirt, ArrowRight, ChevronsRight, ChevronsLeft, ShirtIcon, UserCheck, ChevronDown, Wand2, Scaling } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -80,6 +80,8 @@ export default function ForgePage() {
     const [localHairstyleTransforms, setLocalHairstyleTransforms] = useState<Student['equippedHairstyleTransforms']>({});
     const [localArmorTransforms, setLocalArmorTransforms] = useState<Student['armorTransforms']>({});
     const [localArmorTransforms2, setLocalArmorTransforms2] = useState<Student['armorTransforms2']>({});
+    const [local3DArmorTransforms, setLocal3DArmorTransforms] = useState<Student['equippedArmorTransforms']>({});
+
     const [editingLayer, setEditingLayer] = useState<'primary' | 'secondary'>('primary');
     const [isDragging, setIsDragging] = useState(false);
     const [isPreviewMode, setIsPreviewMode] = useState(false);
@@ -136,6 +138,7 @@ export default function ForgePage() {
                 setLocalHairstyleTransforms(studentData.equippedHairstyleTransforms || {});
                 setLocalArmorTransforms(studentData.armorTransforms || {});
                 setLocalArmorTransforms2(studentData.armorTransforms2 || {});
+                setLocal3DArmorTransforms(studentData.equippedArmorTransforms || {});
 
                 // Set equipment based on saved data
                 setEquipment({
@@ -355,6 +358,7 @@ export default function ForgePage() {
                     equippedFeetId: '',
                     armorTransforms: {},
                     armorTransforms2: {},
+                    equippedArmorTransforms: {},
                 };
             } else {
                  // If a custom character is built, save the recipe and clear the static URL
@@ -374,6 +378,7 @@ export default function ForgePage() {
                     equippedFeetId: equipment.feetId,
                     armorTransforms: localArmorTransforms,
                     armorTransforms2: localArmorTransforms2,
+                    equippedArmorTransforms: local3DArmorTransforms,
                 };
             }
             
@@ -430,6 +435,20 @@ export default function ForgePage() {
         return ((activeTransform.scale - (baseScale * 0.5)) / baseScale) * 100;
 
     }, [activeTransform, activePiece, equipment.bodyId, editingLayer, hairstyle]);
+    
+    const active3DScale = useMemo(() => {
+        if (!activePiece || viewMode !== '3d') return 1;
+        return local3DArmorTransforms?.[activePiece.id]?.scale ?? 1;
+    }, [activePiece, viewMode, local3DArmorTransforms]);
+
+    const handle3DScaleChange = (value: number) => {
+        if (!activePiece) return;
+        setLocal3DArmorTransforms(prev => ({
+            ...prev,
+            [activePiece.id]: { scale: value }
+        }));
+    };
+
 
     const handleStaticAvatarClick = (url: string) => {
         setSelectedStaticAvatarUrl(url);
@@ -490,14 +509,18 @@ export default function ForgePage() {
     
     const selectedBodyName = equipment.bodyId ? baseBodyUrls.find(b => b.id === equipment.bodyId)?.name : null;
     const bodyModelUrl = selectedBodyName ? allBodies.find(b => b.name === selectedBodyName)?.modelUrl : null;
+    
     const hairModelUrl = equipment.hairstyleId ? hairstyles.find(h => h.id === equipment.hairstyleId)?.modelUrl : null;
     
     const equippedArmorIds = [equipment.headId, equipment.shouldersId, equipment.chestId, equipment.handsId, equipment.legsId, equipment.feetId];
-    const armorModelUrls = allArmor
-        .filter(a => equippedArmorIds.includes(a.id) && a.modelUrl)
-        .map(a => a.modelUrl) as string[];
-
-    const is3dViewAvailable = !!bodyModelUrl || !!hairModelUrl || armorModelUrls.length > 0;
+    
+    const armorPiecesWithModels = useMemo(() => {
+        return allArmor
+            .filter(a => equippedArmorIds.includes(a.id) && a.modelUrl)
+            .map(a => ({ id: a.id, url: a.modelUrl! }));
+    }, [allArmor, equippedArmorIds]);
+    
+    const is3dViewAvailable = !!bodyModelUrl;
 
     if (isLoading || !student) {
         return <div className="flex items-center justify-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>
@@ -637,37 +660,6 @@ export default function ForgePage() {
                                     </Tabs>
                                 </CardContent>
                             </Card>
-                            <Card>
-                                <CardHeader><CardTitle>Backgrounds</CardTitle></CardHeader>
-                                <CardContent>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {[
-                                            'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_35_11%20AM.png?alt=media&token=8a2dfda2-01b8-404d-a399-46289bd84759',
-                                            'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_36_06%20AM.png?alt=media&token=4fd59bf0-be44-4430-8c37-faf50966727e',
-                                            'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_37_19%20AM.png?alt=media&token=eb2b1216-589d-4255-b895-34b916b1430c',
-                                            'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_38_56%20AM.png?alt=media&token=7e424757-f1cb-42a2-8496-93339ff16de4',
-                                            'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_41_06%20AM.png?alt=media&token=91ad076b-39f3-4284-8320-e6d79aabcc3f',
-                                            'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_44_32%20AM.png?alt=media&token=d5326450-62b5-48ad-a4b4-bd9a68964cd0',
-                                            'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_46_44%20AM.png?alt=media&token=bb41a39a-a149-4f26-9e38-0669a861f00e',
-                                            'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%206%2C%202025%2C%2008_20_40%20AM.png?alt=media&token=0603790b-3a9e-454c-be2c-4a06f08fd2a9',
-                                            'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%206%2C%202025%2C%2008_22_43%20AM.png?alt=media&token=89b71b1f-9561-462b-8a43-3a2ada321f4a',
-                                            'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_50_59%20AM.png?alt=media&token=45e11f7c-40de-4da9-9c17-ebce834beee7',
-                                            'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Avatar%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2006_03_10%20AM.png?alt=media&token=bb987156-6f34-489e-8d2c-a5b6349cd808',
-                                        ].map((url, i) => (
-                                            <div 
-                                                key={i} 
-                                                className={cn(
-                                                    "border-2 p-1 rounded-md cursor-pointer hover:border-primary",
-                                                    equipment.backgroundUrl === url && "border-primary ring-2 ring-primary"
-                                                )}
-                                                onClick={() => setEquipment(prev => ({...prev, backgroundUrl: url}))}
-                                            >
-                                                <Image src={url} alt={`Background ${i+1}`} width={100} height={100} className="w-full h-auto object-cover bg-gray-200 rounded-sm" data-ai-hint="fantasy background" />
-                                            </div>
-                                        ))}
-                                    </div>
-                                </CardContent>
-                            </Card>
                         </div>
                         
                         <div className="lg:col-span-9 relative" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
@@ -704,8 +696,10 @@ export default function ForgePage() {
                                     <Suspense fallback={<CharacterViewerFallback />}>
                                         <CharacterViewer3D 
                                             bodyUrl={bodyModelUrl}
-                                            armorUrls={armorModelUrls}
+                                            armorPieces={armorPiecesWithModels}
                                             hairUrl={hairModelUrl}
+                                            onPieceClick={setActivePiece}
+                                            transforms={local3DArmorTransforms}
                                         />
                                     </Suspense>
                                 ) : (
@@ -739,29 +733,39 @@ export default function ForgePage() {
                                                         {activePiece ? (
                                                             <div className="space-y-4">
                                                                 <p className="font-bold text-center">Editing: <span className="text-primary">{'styleName' in activePiece ? activePiece.styleName : activePiece.name}</span></p>
-                                                                {'slot' in activePiece && activePiece.modularImageUrl2 && (
-                                                                    <div className="space-y-2 p-2 border rounded-md">
-                                                                        <Label className="flex items-center gap-2"><Layers/> Editing Layer</Label>
-                                                                        <div className="grid grid-cols-2 gap-2">
-                                                                            <Button variant={editingLayer === 'primary' ? 'default' : 'outline'} onClick={() => setEditingLayer('primary')} disabled={isPreviewMode}>Primary</Button>
-                                                                            <Button variant={editingLayer === 'secondary' ? 'default' : 'outline'} onClick={() => setEditingLayer('secondary')} disabled={isPreviewMode}>Secondary</Button>
-                                                                        </div>
-                                                                    </div>
+                                                                {viewMode === '2d' && (
+                                                                     <>
+                                                                        {'slot' in activePiece && activePiece.modularImageUrl2 && (
+                                                                            <div className="space-y-2 p-2 border rounded-md">
+                                                                                <Label className="flex items-center gap-2"><Layers/> Editing Layer</Label>
+                                                                                <div className="grid grid-cols-2 gap-2">
+                                                                                    <Button variant={editingLayer === 'primary' ? 'default' : 'outline'} onClick={() => setEditingLayer('primary')} disabled={isPreviewMode}>Primary</Button>
+                                                                                    <Button variant={editingLayer === 'secondary' ? 'default' : 'outline'} onClick={() => setEditingLayer('secondary')} disabled={isPreviewMode}>Secondary</Button>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                        {activeTransform && (
+                                                                            <div className="space-y-4 animate-in fade-in-50">
+                                                                                <div className="space-y-2">
+                                                                                    <Label htmlFor="x-pos">X Position: {activeTransform.x.toFixed(2)}%</Label>
+                                                                                    <Slider id="x-pos" value={[activeTransform.x]} onValueChange={([val]) => handleSliderChange('x', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
+                                                                                </div>
+                                                                                <div className="space-y-2">
+                                                                                    <Label htmlFor="y-pos">Y Position: {activeTransform.y.toFixed(2)}%</Label>
+                                                                                    <Slider id="y-pos" value={[activeTransform.y]} onValueChange={([val]) => handleSliderChange('y', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
+                                                                                </div>
+                                                                                <div className="space-y-2">
+                                                                                    <Label htmlFor="scale">Scale Modifier</Label>
+                                                                                    <Slider id="scale" value={[activeScaleForSlider]} onValueChange={([val]) => handleSliderChange('slider', val)} min={0} max={100} step={0.5} disabled={isPreviewMode}/>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                    </>
                                                                 )}
-                                                                {activeTransform && (
-                                                                    <div className="space-y-4 animate-in fade-in-50">
-                                                                        <div className="space-y-2">
-                                                                            <Label htmlFor="x-pos">X Position: {activeTransform.x.toFixed(2)}%</Label>
-                                                                            <Slider id="x-pos" value={[activeTransform.x]} onValueChange={([val]) => handleSliderChange('x', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
-                                                                        </div>
-                                                                        <div className="space-y-2">
-                                                                            <Label htmlFor="y-pos">Y Position: {activeTransform.y.toFixed(2)}%</Label>
-                                                                            <Slider id="y-pos" value={[activeTransform.y]} onValueChange={([val]) => handleSliderChange('y', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
-                                                                        </div>
-                                                                        <div className="space-y-2">
-                                                                            <Label htmlFor="scale">Scale Modifier</Label>
-                                                                            <Slider id="scale" value={[activeScaleForSlider]} onValueChange={([val]) => handleSliderChange('slider', val)} min={0} max={100} step={0.5} disabled={isPreviewMode}/>
-                                                                        </div>
+                                                                 {viewMode === '3d' && (
+                                                                    <div className="space-y-2 animate-in fade-in-50">
+                                                                        <Label htmlFor="3d-scale" className="flex items-center gap-1"><Scaling className="h-4 w-4"/> 3D Scale: {active3DScale.toFixed(2)}x</Label>
+                                                                        <Slider id="3d-scale" value={[active3DScale]} onValueChange={([val]) => handle3DScaleChange(val)} min={0.5} max={1.5} step={0.01}/>
                                                                     </div>
                                                                 )}
                                                             </div>

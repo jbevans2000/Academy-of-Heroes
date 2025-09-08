@@ -1,8 +1,9 @@
 
+
 'use client';
 
 import React, { Suspense, useEffect, useMemo, useRef } from 'react';
-import { Canvas, useLoader } from '@react-three/fiber';
+import { Canvas, useLoader, useThree } from '@react-three/fiber';
 import { OrbitControls, useGLTF } from '@react-three/drei';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as THREE from 'three';
@@ -10,24 +11,23 @@ import { Loader2 } from 'lucide-react';
 
 interface ModelProps {
     url: string;
+    pieceId: string;
+    scale: number;
+    onClick?: (pieceId: string) => void;
     onLoad?: (scene: THREE.Group) => void;
 }
 
-function Model({ url, onLoad }: ModelProps) {
-    // Use the proxy API route to fetch the model
+function Model({ url, pieceId, scale, onClick, onLoad }: ModelProps) {
     const proxyUrl = `/api/fetch-glb?url=${encodeURIComponent(url)}`;
     const { scene } = useLoader(GLTFLoader, proxyUrl);
-    const sceneRef = useRef<THREE.Group>();
 
-    // We need a memoized version to prevent re-cloning on every render
     const clonedScene = useMemo(() => {
         const clone = scene.clone(true);
-        // This traverse is necessary to enable shadows and correct material properties
         clone.traverse((child) => {
             if (child instanceof THREE.Mesh) {
                 child.castShadow = true;
                 child.receiveShadow = true;
-                // You might need more material adjustments here depending on your models
+                child.userData.pieceId = pieceId; // Tag mesh with piece ID for clicking
                 if (child.material instanceof THREE.MeshStandardMaterial) {
                     child.material.metalness = 0.5;
                     child.material.roughness = 0.6;
@@ -35,7 +35,7 @@ function Model({ url, onLoad }: ModelProps) {
             }
         });
         return clone;
-    }, [scene]);
+    }, [scene, pieceId]);
 
     useEffect(() => {
         if (clonedScene && onLoad) {
@@ -43,19 +43,29 @@ function Model({ url, onLoad }: ModelProps) {
         }
     }, [clonedScene, onLoad]);
 
-    return <primitive ref={sceneRef} object={clonedScene} />;
+    return (
+        <primitive 
+            object={clonedScene}
+            scale={scale}
+            onClick={(e) => {
+                e.stopPropagation();
+                if(onClick) onClick(pieceId);
+            }}
+        />
+    );
 }
 
-// Preload the GLTFLoader so it's cached
 useGLTF.preload(GLTFLoader as any);
 
 interface CharacterViewer3DProps {
     bodyUrl: string | null;
-    armorUrls?: (string | null | undefined)[];
+    armorPieces?: { id: string; url: string; }[];
     hairUrl?: string | null;
+    onPieceClick?: (pieceId: string) => void;
+    transforms?: { [armorId: string]: { scale: number; } };
 }
 
-export function CharacterViewer3D({ bodyUrl, armorUrls = [], hairUrl }: CharacterViewer3DProps) {
+export function CharacterViewer3D({ bodyUrl, armorPieces = [], hairUrl, onPieceClick, transforms = {} }: CharacterViewer3DProps) {
     const skeletonRef = useRef<THREE.Skeleton | null>(null);
 
     const handleBodyLoad = (bodyScene: THREE.Group) => {
@@ -78,7 +88,6 @@ export function CharacterViewer3D({ bodyUrl, armorUrls = [], hairUrl }: Characte
         }
     };
 
-
     return (
         <Canvas shadows camera={{ position: [0, 1, 2.5], fov: 50 }}>
             <ambientLight intensity={1.5} />
@@ -91,11 +100,18 @@ export function CharacterViewer3D({ bodyUrl, armorUrls = [], hairUrl }: Characte
             />
             <spotLight position={[-5, 5, -5]} angle={0.3} penumbra={0.3} intensity={2} castShadow />
             <Suspense fallback={null}>
-                {bodyUrl && <Model url={bodyUrl} onLoad={handleBodyLoad} />}
-                {armorUrls.filter(Boolean).map(url => (
-                    url && <Model key={url} url={url} onLoad={handleEquipmentLoad} />
+                {bodyUrl && <Model url={bodyUrl} pieceId="body" scale={1} onClick={onPieceClick} onLoad={handleBodyLoad} />}
+                {armorPieces.map(piece => (
+                    <Model 
+                        key={piece.id} 
+                        url={piece.url} 
+                        pieceId={piece.id}
+                        scale={transforms[piece.id]?.scale ?? 1}
+                        onClick={onPieceClick} 
+                        onLoad={handleEquipmentLoad} 
+                    />
                 ))}
-                {hairUrl && <Model url={hairUrl} onLoad={handleEquipmentLoad} />}
+                {hairUrl && <Model url={hairUrl} pieceId="hair" scale={1} onClick={onPieceClick} onLoad={handleEquipmentLoad} />}
             </Suspense>
             <OrbitControls target={[0, 1, 0]} />
         </Canvas>

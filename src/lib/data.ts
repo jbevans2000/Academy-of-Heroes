@@ -1,4 +1,5 @@
 
+
 export type ClassType = 'Guardian' | 'Healer' | 'Mage' | '';
 
 export type Company = {
@@ -75,6 +76,11 @@ export type Student = {
                 y: number;
                 scale: number;
             }
+        }
+    };
+    equippedArmorTransforms?: { // New: For 3D model scaling
+        [armorId: string]: {
+            scale: number;
         }
     };
     questApprovalRequired?: boolean; // Student-specific override
