@@ -44,7 +44,6 @@ export default function Global3DForgeSizerPage() {
     const [selectedBody, setSelectedBody] = useState<BaseBody | null>(null);
     const [equippedArmor, setEquippedArmor] = useState<ArmorPiece[]>([]);
     const [equippedHairstyle, setEquippedHairstyle] = useState<Hairstyle | null>(null);
-    const [selectedHairstyleColor, setSelectedHairstyleColor] = useState<HairstyleColor | null>(null);
     const [activePiece, setActivePiece] = useState<ArmorPiece | Hairstyle | null>(null);
     const [isOrbitControlsEnabled, setIsOrbitControlsEnabled] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -129,11 +128,9 @@ export default function Global3DForgeSizerPage() {
     const handleEquipHairstyle = (style: Hairstyle) => {
         if (equippedHairstyle?.id === style.id) {
             setEquippedHairstyle(null);
-            setSelectedHairstyleColor(null);
             if(activePiece?.id === style.id) setActivePiece(null);
         } else {
             setEquippedHairstyle(style);
-            setSelectedHairstyleColor(style.colors[0] || null);
         }
     }
 
@@ -227,10 +224,12 @@ export default function Global3DForgeSizerPage() {
 
             if (type === 'hairColor' && colorIndex !== undefined && docRef) {
                 const hairDoc = await getDoc(docRef);
-                const hairData = hairDoc.data() as Hairstyle;
-                const newColors = [...hairData.colors];
-                newColors[colorIndex].modelUrl = downloadUrl;
-                await updateDoc(docRef, { colors: newColors });
+                if (hairDoc.exists()) {
+                    const hairData = hairDoc.data() as Hairstyle;
+                    const newColors = [...hairData.colors];
+                    newColors[colorIndex].modelUrl = downloadUrl;
+                    await updateDoc(docRef, { colors: newColors });
+                }
             } else if (docRef) {
                 await updateDoc(docRef, { modelUrl: downloadUrl });
             }
@@ -256,7 +255,7 @@ export default function Global3DForgeSizerPage() {
     }, [activePiece, armorTransforms, hairstyleTransform]);
 
     const bodyModelUrl = selectedBody?.modelUrl;
-    const hairModelUrl = selectedHairstyleColor?.modelUrl || equippedHairstyle?.modelUrl;
+    const hairModelUrl = equippedHairstyle?.modelUrl;
 
     const armorPiecesWithModels = useMemo(() => {
         return equippedArmor
@@ -392,21 +391,6 @@ export default function Global3DForgeSizerPage() {
                                                 </div>
                                             ))}
                                         </div>
-                                        {equippedHairstyle && (
-                                            <div className="mt-4">
-                                                <Label className="font-semibold">Colors for {equippedHairstyle.styleName}</Label>
-                                                <RadioGroup value={selectedHairstyleColor?.modelUrl} onValueChange={(val) => setSelectedHairstyleColor(equippedHairstyle.colors.find(c => c.modelUrl === val) || null)} className="mt-2 grid grid-cols-5 gap-2">
-                                                    {equippedHairstyle.colors.map((color, index) => (
-                                                        <div key={index}>
-                                                            <RadioGroupItem value={color.modelUrl || color.imageUrl} id={`${equippedHairstyle.id}-${index}`} className="peer sr-only"/>
-                                                            <Label htmlFor={`${equippedHairstyle.id}-${index}`} className="block cursor-pointer rounded-md border-2 border-muted bg-popover p-1 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-                                                                <NextImage src={color.thumbnailUrl || color.imageUrl} alt={color.name} width={50} height={50} className="w-full h-auto object-contain bg-gray-200 rounded-sm"/>
-                                                            </Label>
-                                                        </div>
-                                                    ))}
-                                                </RadioGroup>
-                                            </div>
-                                        )}
                                     </ScrollArea>
                                 </TabsContent>
                             </Tabs>
@@ -495,3 +479,5 @@ export default function Global3DForgeSizerPage() {
         </div>
     );
 }
+
+    
