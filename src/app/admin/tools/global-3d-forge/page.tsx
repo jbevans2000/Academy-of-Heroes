@@ -24,6 +24,7 @@ import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { CharacterViewerFallback } from '@/components/dashboard/character-viewer-3d';
 import { v4 as uuidv4 } from 'uuid';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const CharacterViewer3D = lazy(() => import('@/components/dashboard/character-viewer-3d').then(module => ({ default: module.CharacterViewer3D })));
 
@@ -42,6 +43,7 @@ export default function Global3DForgeSizerPage() {
     const [selectedBody, setSelectedBody] = useState<BaseBody | null>(null);
     const [equippedArmor, setEquippedArmor] = useState<ArmorPiece[]>([]);
     const [equippedHairstyle, setEquippedHairstyle] = useState<Hairstyle | null>(null);
+    const [selectedHairstyleColor, setSelectedHairstyleColor] = useState<HairstyleColor | null>(null);
     const [activePiece, setActivePiece] = useState<ArmorPiece | Hairstyle | null>(null);
     const [isOrbitControlsEnabled, setIsOrbitControlsEnabled] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -126,9 +128,11 @@ export default function Global3DForgeSizerPage() {
     const handleEquipHairstyle = (style: Hairstyle) => {
         if (equippedHairstyle?.id === style.id) {
             setEquippedHairstyle(null);
+            setSelectedHairstyleColor(null);
             if(activePiece?.id === style.id) setActivePiece(null);
         } else {
             setEquippedHairstyle(style);
+            setSelectedHairstyleColor(style.colors[0] || null);
         }
     }
 
@@ -193,7 +197,6 @@ export default function Global3DForgeSizerPage() {
             const { type, id, colorIndex } = assetToUploadFor;
             let path = '';
             let collectionName = '';
-            let fieldName = 'modelUrl';
             let docRef;
 
             switch (type) {
@@ -235,14 +238,14 @@ export default function Global3DForgeSizerPage() {
             await uploadBytes(glbRef, glbFile, metadata);
             const downloadUrl = await getDownloadURL(glbRef);
 
-            if (type === 'hairColor') {
+            if (type === 'hairColor' && colorIndex !== undefined) {
                 const hairDoc = await getDoc(docRef);
                 const hairData = hairDoc.data() as Hairstyle;
                 const newColors = [...hairData.colors];
-                newColors[colorIndex!].modelUrl = downloadUrl;
+                newColors[colorIndex].modelUrl = downloadUrl;
                 await updateDoc(docRef, { colors: newColors });
             } else {
-                await updateDoc(docRef, { [fieldName]: downloadUrl });
+                await updateDoc(docRef, { modelUrl: downloadUrl });
             }
 
             toast({ title: 'Model Uploaded!', description: `The 3D model for the selected asset has been saved.` });
@@ -267,14 +270,7 @@ export default function Global3DForgeSizerPage() {
 
     const bodyModelUrl = selectedBody?.modelUrl;
     
-    const equippedHairColorModelUrl = useMemo(() => {
-        if (!equippedHairstyle) return equippedHairstyle?.modelUrl;
-        const color = equippedHairstyle.colors.find(c => c.imageUrl === student.equippedHairstyleColor);
-        return color?.modelUrl || equippedHairstyle.modelUrl;
-    }, [equippedHairstyle, student.equippedHairstyleColor]);
-    
-    const hairModelUrl = equippedHairColorModelUrl;
-
+    const hairModelUrl = selectedHairstyleColor?.modelUrl || equippedHairstyle?.modelUrl;
 
     const armorPiecesWithModels = useMemo(() => {
         return equippedArmor
@@ -299,10 +295,6 @@ export default function Global3DForgeSizerPage() {
         }
     }
     
-    const student = useMemo(() => ({
-        equippedHairstyleColor: equippedHairstyle?.colors[0]?.imageUrl
-    }), [equippedHairstyle]);
-
     if (isLoading || !user) {
         return <div className="flex items-center justify-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>
     }
@@ -395,8 +387,8 @@ export default function Global3DForgeSizerPage() {
                                     <TabsTrigger value="armor">Armor</TabsTrigger>
                                     <TabsTrigger value="hairstyles">Hairstyles</TabsTrigger>
                                 </TabsList>
-                                <ScrollArea className="h-[55vh] mt-2">
-                                    <TabsContent value="armor" className="p-1">
+                                <TabsContent value="armor">
+                                    <ScrollArea className="h-[55vh] mt-2 p-1">
                                         <div className="grid grid-cols-3 gap-2">
                                             {allArmor.map(piece => (
                                                 <div key={piece.id} className={cn("border p-1 rounded-md cursor-pointer hover:border-primary", equippedArmor.some(p => p.id === piece.id) && "border-primary ring-2 ring-primary")} onClick={() => handleEquipArmor(piece)}>
@@ -405,8 +397,10 @@ export default function Global3DForgeSizerPage() {
                                                 </div>
                                             ))}
                                         </div>
-                                    </TabsContent>
-                                    <TabsContent value="hairstyles" className="p-1">
+                                    </ScrollArea>
+                                </TabsContent>
+                                <TabsContent value="hairstyles">
+                                     <ScrollArea className="h-[55vh] mt-2 p-1">
                                          <div className="grid grid-cols-3 gap-2">
                                             {allHairstyles.map(style => (
                                                 <div key={style.id} className={cn("border p-1 rounded-md cursor-pointer hover:border-primary", equippedHairstyle?.id === style.id && "border-primary ring-2 ring-primary")} onClick={() => handleEquipHairstyle(style)}>
@@ -415,8 +409,23 @@ export default function Global3DForgeSizerPage() {
                                                 </div>
                                             ))}
                                         </div>
-                                    </TabsContent>
-                                </ScrollArea>
+                                        {equippedHairstyle && (
+                                            <div className="mt-4">
+                                                <Label className="font-semibold">Colors for {equippedHairstyle.styleName}</Label>
+                                                <RadioGroup value={selectedHairstyleColor?.imageUrl} onValueChange={(val) => setSelectedHairstyleColor(equippedHairstyle.colors.find(c => c.imageUrl === val) || null)} className="mt-2 grid grid-cols-5 gap-2">
+                                                    {equippedHairstyle.colors.map((color, index) => (
+                                                        <div key={index}>
+                                                            <RadioGroupItem value={color.imageUrl} id={`${equippedHairstyle.id}-${index}`} className="peer sr-only"/>
+                                                            <Label htmlFor={`${equippedHairstyle.id}-${index}`} className="block cursor-pointer rounded-md border-2 border-muted bg-popover p-1 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                                                                <NextImage src={color.thumbnailUrl || color.imageUrl} alt={color.name} width={50} height={50} className="w-full h-auto object-contain bg-gray-200 rounded-sm"/>
+                                                            </Label>
+                                                        </div>
+                                                    ))}
+                                                </RadioGroup>
+                                            </div>
+                                        )}
+                                    </ScrollArea>
+                                </TabsContent>
                             </Tabs>
                         </div>
                         <div className="lg:col-span-9 relative">
@@ -431,7 +440,7 @@ export default function Global3DForgeSizerPage() {
                                         hairTransform={hairstyleTransform}
                                         onTransformUpdate={handle3DTransformUpdate}
                                         activePieceId={activePiece?.id || null}
-                                        onPieceClick={setActivePiece}
+                                        onPieceClick={(piece) => setActivePiece(allHairstyles.find(h => h.id === piece?.id) || allArmor.find(a => a.id === piece?.id) || null)}
                                         isOrbitControlsEnabled={isOrbitControlsEnabled}
                                     />
                                 </Suspense>
@@ -463,3 +472,4 @@ export default function Global3DForgeSizerPage() {
         </div>
     );
 }
+

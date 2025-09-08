@@ -13,7 +13,6 @@ export type HairstyleColor = {
     imageUrl: string;
     thumbnailUrl?: string;
     name: string;
-    textureUrl?: string; // URL for the 2D texture (optional)
     modelUrl?: string; // URL for the 3D model for this specific color
 };
 
@@ -81,3 +80,4 @@ export interface ArmorPiece {
     isPublished: boolean;
     createdAt?: any;
 }
+
