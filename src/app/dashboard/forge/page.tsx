@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback, useRef, Suspense, lazy } from 'react';
@@ -48,7 +49,7 @@ export default function ForgePage() {
     const [user, setUser] = useState<User | null>(null);
     const [student, setStudent] = useState<Student | null>(null);
     const [teacherUid, setTeacherUid] = useState<string | null>(null);
-    const [hairstyles, setAllHairstyles] = useState<Hairstyle[]>([]);
+    const [allHairstyles, setAllHairstyles] = useState<Hairstyle[]>([]);
     const [allArmor, setAllArmor] = useState<ArmorPiece[]>([]);
     const [allBodies, setAllBodies] = useState<BaseBody[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -131,6 +132,7 @@ export default function ForgePage() {
 
         fetchAllArmor();
 
+        let unsubs: (()=>void)[] = [];
         const unsubStudent = onSnapshot(doc(db, 'teachers', teacherUid, 'students', user.uid), (doc) => {
             if (doc.exists()) {
                 const studentData = { uid: doc.id, ...doc.data() } as Student;
@@ -164,8 +166,8 @@ export default function ForgePage() {
                 }
             }
         });
+        unsubs.push(unsubStudent);
         
-        let unsubs: (()=>void)[] = [];
         const fetchHairstyles = async () => {
              try {
                 const hairQuery = query(collection(db, 'hairstyles'), where('isPublished', '==', true));
@@ -188,7 +190,6 @@ export default function ForgePage() {
         fetchHairstyles();
 
         return () => {
-            unsubStudent();
             unsubs.forEach(unsub => unsub());
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -226,7 +227,7 @@ export default function ForgePage() {
         }
     };
     
-    const hairstyle = useMemo(() => hairstyles.find(h => h.id === equipment.hairstyleId), [hairstyles, equipment.hairstyleId]);
+    const hairstyle = useMemo(() => allHairstyles.find(h => h.id === equipment.hairstyleId), [allHairstyles, equipment.hairstyleId]);
 
     const handleSliderChange = (type: 'x' | 'y' | 'slider', value: number) => {
         if (!activePiece || !equipment.bodyId) return;
@@ -476,12 +477,29 @@ export default function ForgePage() {
         if ('slot' in activePiece) { // Armor
             setLocal3DArmorTransforms(prev => ({
                 ...prev,
-                [activePiece.id]: { scale: value }
+                [activePiece.id]: { ...(prev[activePiece.id] || { position: [0,0,0] }), scale: value }
             }));
         } else { // Hairstyle
-            setLocal3DHairstyleTransforms({ scale: value });
+            setLocal3DHairstyleTransforms(prev => ({
+                ...(prev || { position: [0,0,0] }),
+                scale: value
+            }));
         }
     };
+
+    const handle3DTransformUpdate = (pieceId: string, position: [number, number, number]) => {
+         if (pieceId === 'hair') {
+            setLocal3DHairstyleTransforms(prev => ({
+                ...(prev || { scale: 1 }),
+                position
+            }));
+        } else {
+            setLocal3DArmorTransforms(prev => ({
+                ...prev,
+                [pieceId]: { ...(prev[pieceId] || { scale: 1 }), position }
+            }));
+        }
+    }
 
 
     const handleStaticAvatarClick = (url: string) => {
@@ -618,22 +636,24 @@ export default function ForgePage() {
                                         </TabsList>
                                         <ScrollArea className="flex-grow mt-4 max-h-[65vh]">
                                             <TabsContent value="body" className="p-1">
-                                                <div className="grid grid-cols-3 gap-2">
-                                                    {allBodies.length > 0 ? allBodies.map(item => (
-                                                        <Card 
-                                                            key={item.id} 
-                                                            className={cn( "cursor-pointer hover:border-primary", equipment.bodyId === item.id && "border-2 border-primary" )}
-                                                            onClick={() => handleBodySelect(item.id)} >
-                                                            <CardContent className="p-1 aspect-square">
-                                                                <Image src={item.thumbnailUrl || item.imageUrl} alt={item.name} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
-                                                            </CardContent>
-                                                        </Card>
-                                                    )) : <p className="text-muted-foreground text-sm col-span-3 text-center py-2">No base bodies found.</p>}
-                                                </div>
+                                                {allBodies && allBodies.length > 0 ? (
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        {allBodies.map(item => (
+                                                            <Card 
+                                                                key={item.id} 
+                                                                className={cn( "cursor-pointer hover:border-primary", equipment.bodyId === item.id && "border-2 border-primary" )}
+                                                                onClick={() => handleBodySelect(item.id)} >
+                                                                <CardContent className="p-1 aspect-square">
+                                                                    <Image src={item.thumbnailUrl || item.imageUrl} alt={item.name} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                                                                </CardContent>
+                                                            </Card>
+                                                        ))}
+                                                    </div>
+                                                ) : <p className="text-muted-foreground text-sm col-span-3 text-center py-2">No base bodies found.</p>}
                                             </TabsContent>
                                             <TabsContent value="hair" className="p-1">
                                                 <div className="grid grid-cols-3 gap-2">
-                                                    {hairstyles.map(item => (
+                                                    {allHairstyles.map(item => (
                                                         <Card 
                                                             key={item.id} 
                                                             className={cn( "cursor-pointer hover:border-primary", equipment.hairstyleId === item.id && "border-2 border-primary" )}
@@ -706,13 +726,13 @@ export default function ForgePage() {
                                 className="relative w-full aspect-square bg-gray-700 rounded-lg p-2"
                                 onMouseMove={handleMouseMove}
                             >
-                                {viewMode === '2d' && allBodies.length > 0 ? (
+                                {viewMode === '2d' && allBodies && allBodies.length > 0 ? (
                                     <Suspense fallback={<CharacterViewerFallback />}>
                                          <CharacterCanvas
                                             student={student}
                                             allBodies={allBodies}
                                             equipment={equipment}
-                                            allHairstyles={hairstyles}
+                                            allHairstyles={allHairstyles}
                                             allArmor={ownedArmor}
                                             onMouseDown={handleMouseDown}
                                             activePieceId={activePiece?.id || null}
@@ -724,7 +744,7 @@ export default function ForgePage() {
                                             selectedStaticAvatarUrl={selectedStaticAvatarUrl}
                                         />
                                     </Suspense>
-                                ) : is3dViewAvailable ? (
+                                ) : viewMode === '3d' && is3dViewAvailable ? (
                                     <Suspense fallback={<CharacterViewerFallback />}>
                                         <CharacterViewer3D 
                                             bodyUrl={bodyModelUrl}
@@ -733,6 +753,8 @@ export default function ForgePage() {
                                             onPieceClick={handlePieceClick}
                                             armorTransforms={local3DArmorTransforms}
                                             hairTransform={local3DHairstyleTransforms}
+                                            onTransformUpdate={handle3DTransformUpdate}
+                                            activePieceId={activePiece?.id || null}
                                         />
                                     </Suspense>
                                 ) : (

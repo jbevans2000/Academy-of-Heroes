@@ -60,8 +60,9 @@ export type Student = {
             scale: number;
         }
     };
-    equippedHairstyle3DTransforms?: { // New: For 3D hairstyle scaling
+    equippedHairstyle3DTransforms?: { 
         scale: number;
+        position: [number, number, number];
     };
     armorTransforms?: { // Student-specific overrides for armor positions
         [armorId: string]: {
@@ -81,9 +82,10 @@ export type Student = {
             }
         }
     };
-    equippedArmorTransforms?: { // New: For 3D model scaling
+    equippedArmorTransforms?: { // For 3D model scaling and positioning
         [armorId: string]: {
             scale: number;
+            position: [number, number, number];
         }
     };
     questApprovalRequired?: boolean; // Student-specific override

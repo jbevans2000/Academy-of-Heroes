@@ -95,15 +95,19 @@ export function AvatarDisplay({ student }: AvatarDisplayProps) {
                         bodyUrl={bodyModelUrl}
                         armorPieces={armorPiecesWithModels}
                         hairUrl={hairModelUrl}
-                        transforms={student.equippedArmorTransforms}
+                        armorTransforms={student.equippedArmorTransforms}
+                        hairTransform={student.equippedHairstyle3DTransforms}
+                        onTransformUpdate={() => {}} // No-op in display-only mode
+                        activePieceId={null}
                     />
                 </Suspense>
              </div>
-        ) : showCustomCharacter && equipment.bodyId ? (
+        ) : showCustomCharacter && equipment.bodyId && allBodies.length > 0 ? (
             <div className={cn("relative w-96 h-96 border-8 bg-black/20 p-2 shadow-inner", avatarBorderColor)}>
                 <Suspense fallback={<CharacterViewerFallback />}>
                     <CharacterCanvas 
                         student={student}
+                        allBodies={allBodies}
                         equipment={equipment}
                         allHairstyles={allHairstyles}
                         allArmor={allArmor}

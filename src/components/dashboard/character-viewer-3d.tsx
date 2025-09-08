@@ -2,22 +2,24 @@
 
 'use client';
 
-import React, { Suspense, useEffect, useMemo, useRef } from 'react';
+import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useLoader, useThree } from '@react-three/fiber';
 import { OrbitControls, useGLTF } from '@react-three/drei';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as THREE from 'three';
 import { Loader2 } from 'lucide-react';
+import { CharacterController } from './character-controller';
 
 interface ModelProps {
     url: string;
     pieceId: string;
     scale: number;
+    position?: [number, number, number];
     onClick?: (pieceId: string) => void;
     onLoad?: (scene: THREE.Group) => void;
 }
 
-function Model({ url, pieceId, scale, onClick, onLoad }: ModelProps) {
+function Model({ url, pieceId, scale, position = [0, 0, 0], onClick, onLoad }: ModelProps) {
     const proxyUrl = `/api/fetch-glb?url=${encodeURIComponent(url)}`;
     const { scene } = useLoader(GLTFLoader, proxyUrl);
 
@@ -47,6 +49,7 @@ function Model({ url, pieceId, scale, onClick, onLoad }: ModelProps) {
         <primitive 
             object={clonedScene}
             scale={scale}
+            position={position}
             onClick={(e) => {
                 e.stopPropagation();
                 if(onClick) onClick(pieceId);
@@ -62,11 +65,13 @@ interface CharacterViewer3DProps {
     armorPieces?: { id: string; url: string; }[];
     hairUrl?: string | null;
     onPieceClick?: (pieceId: string) => void;
-    armorTransforms?: { [armorId: string]: { scale: number; } };
-    hairTransform?: { scale: number; };
+    armorTransforms?: { [armorId: string]: { scale: number; position: [number, number, number] } };
+    hairTransform?: { scale: number; position: [number, number, number] };
+    onTransformUpdate: (pieceId: string, position: [number, number, number]) => void;
+    activePieceId: string | null;
 }
 
-export function CharacterViewer3D({ bodyUrl, armorPieces = [], hairUrl, onPieceClick, armorTransforms = {}, hairTransform }: CharacterViewer3DProps) {
+export function CharacterViewer3D({ bodyUrl, armorPieces = [], hairUrl, onPieceClick, armorTransforms = {}, hairTransform, onTransformUpdate, activePieceId }: CharacterViewer3DProps) {
     const skeletonRef = useRef<THREE.Skeleton | null>(null);
 
     const handleBodyLoad = (bodyScene: THREE.Group) => {
@@ -101,18 +106,30 @@ export function CharacterViewer3D({ bodyUrl, armorPieces = [], hairUrl, onPieceC
             />
             <spotLight position={[-5, 5, -5]} angle={0.3} penumbra={0.3} intensity={2} castShadow />
             <Suspense fallback={null}>
-                {bodyUrl && <Model url={bodyUrl} pieceId="body" scale={1} onClick={onPieceClick} onLoad={handleBodyLoad} />}
-                {armorPieces.map(piece => (
-                    <Model 
-                        key={piece.id} 
-                        url={piece.url} 
-                        pieceId={piece.id}
-                        scale={armorTransforms[piece.id]?.scale ?? 1}
-                        onClick={onPieceClick} 
-                        onLoad={handleEquipmentLoad} 
-                    />
-                ))}
-                {hairUrl && <Model url={hairUrl} pieceId="hair" scale={hairTransform?.scale ?? 1} onClick={onPieceClick} onLoad={handleEquipmentLoad} />}
+                <CharacterController onTransformUpdate={onTransformUpdate} activePieceId={activePieceId}>
+                    {bodyUrl && <Model url={bodyUrl} pieceId="body" scale={1} onClick={onPieceClick} onLoad={handleBodyLoad} />}
+                    {armorPieces.map(piece => (
+                        <Model 
+                            key={piece.id} 
+                            url={piece.url} 
+                            pieceId={piece.id}
+                            scale={armorTransforms[piece.id]?.scale ?? 1}
+                            position={armorTransforms[piece.id]?.position ?? [0,0,0]}
+                            onClick={onPieceClick} 
+                            onLoad={handleEquipmentLoad} 
+                        />
+                    ))}
+                    {hairUrl && (
+                        <Model 
+                            url={hairUrl}
+                            pieceId="hair" 
+                            scale={hairTransform?.scale ?? 1} 
+                            position={hairTransform?.position ?? [0,0,0]}
+                            onClick={onPieceClick} 
+                            onLoad={handleEquipmentLoad} 
+                        />
+                    )}
+                </CharacterController>
             </Suspense>
             <OrbitControls target={[0, 1, 0]} />
         </Canvas>
