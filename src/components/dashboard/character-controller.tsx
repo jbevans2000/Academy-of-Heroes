@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useRef, useEffect } from 'react';
@@ -21,6 +20,7 @@ export function CharacterController({ children, activePieceId, onTransformUpdate
     const plane = useRef(new THREE.Plane(new THREE.Vector3(0, 0, 1), 0));
     const isDragging = useRef(false);
     const selectedObject = useRef<THREE.Object3D | null>(null);
+    const offset = useRef(new THREE.Vector3()); // To store the offset from the object's center to the click point
 
     useEffect(() => {
         const handleMouseDown = (event: MouseEvent) => {
@@ -30,25 +30,30 @@ export function CharacterController({ children, activePieceId, onTransformUpdate
             mouse.current.y = -(event.clientY / window.innerHeight) * 2 + 1;
             raycaster.current.setFromCamera(mouse.current, camera);
             
-            // This flag will help select the correct nested object
             let found = false;
             scene.traverse((obj) => {
-                // Important: Don't re-select if already found in traversal
-                if(found) return;
-
-                if(obj.userData.pieceId === activePieceId) {
+                if (found) return;
+                if (obj.userData.pieceId === activePieceId) {
                     selectedObject.current = obj;
-                    found = true; // Mark as found
+                    found = true;
                 }
             });
 
             if (selectedObject.current) {
-                isDragging.current = true;
-                if(controlsRef.current) controlsRef.current.enabled = false;
-                plane.current.setFromNormalAndCoplanarPoint(
-                    camera.getWorldDirection(plane.current.normal),
-                    selectedObject.current.position
-                );
+                const intersects = raycaster.current.intersectObject(selectedObject.current, true);
+                if (intersects.length > 0) {
+                    isDragging.current = true;
+                    if(controlsRef.current) controlsRef.current.enabled = false;
+                    
+                    // Set the plane to intersect at the object's current position, facing the camera
+                    plane.current.setFromNormalAndCoplanarPoint(
+                        camera.getWorldDirection(plane.current.normal),
+                        selectedObject.current.position
+                    );
+
+                    // Calculate the offset
+                    offset.current.copy(intersects[0].point).sub(selectedObject.current.position);
+                }
             }
         };
 
@@ -70,7 +75,9 @@ export function CharacterController({ children, activePieceId, onTransformUpdate
             const intersectionPoint = new THREE.Vector3();
             raycaster.current.ray.intersectPlane(plane.current, intersectionPoint);
 
-            const newPosition: [number, number, number] = [intersectionPoint.x, intersectionPoint.y, intersectionPoint.z];
+            // Apply the offset to get the new position for the object's center
+            const newPositionVec = intersectionPoint.sub(offset.current);
+            const newPosition: [number, number, number] = [newPositionVec.x, newPositionVec.y, newPositionVec.z];
             
             onTransformUpdate(selectedObject.current.userData.pieceId, newPosition);
         };
