@@ -286,31 +286,22 @@ export default function ForgePage() {
         }
     };
     
-    const handlePieceClick = (pieceId: string | null) => {
+    const handlePieceClick = (piece: ArmorPiece | Hairstyle | null) => {
         if (isPreviewMode) return;
-        if (!pieceId || pieceId === 'body') {
+        if (!piece) {
             setActivePiece(null);
             return;
         }
         
-        const armor = allArmor.find(a => a.id === pieceId);
-        if (armor) {
-            setActivePiece(armor);
-            return;
-        }
-
-        const hair = allHairstyles.find(h => h.id === pieceId);
-        if(hair) {
-            setActivePiece(hair);
-        }
+        setActivePiece(current => current?.id === piece.id ? null : piece);
     };
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece | Hairstyle, layer: 'primary' | 'secondary') => {
-        if (isPreviewMode) setIsPreviewMode(false);
+        if (isPreviewMode || activePiece?.id !== piece.id) return;
+        
         e.preventDefault();
         e.stopPropagation();
         
-        setActivePiece(piece);
         setEditingLayer(layer);
         setIsDragging(true);
     };
@@ -754,10 +745,9 @@ export default function ForgePage() {
                                             armorPieces={armorPiecesWithModels}
                                             hairUrl={hairModelUrl}
                                             hairId={hairstyle?.id || null}
-                                            onPieceClick={handlePieceClick}
+                                            onTransformUpdate={handle3DTransformUpdate}
                                             armorTransforms={local3DArmorTransforms}
                                             hairTransform={local3DHairstyleTransforms}
-                                            onTransformUpdate={handle3DTransformUpdate}
                                             activePieceId={activePiece?.id || null}
                                             isOrbitControlsEnabled={isOrbitControlsEnabled}
                                         />
@@ -836,7 +826,7 @@ export default function ForgePage() {
                                                                 )}
                                                             </div>
                                                         ) : (
-                                                            <p className="text-sm text-muted-foreground text-center">Click a piece on the canvas to select it.</p>
+                                                            <p className="text-sm text-muted-foreground text-center">Select an equipped piece to see its controls.</p>
                                                         )}
                                                     </CardContent>
                                                 </ScrollArea>

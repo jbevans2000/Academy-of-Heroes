@@ -14,11 +14,10 @@ interface ModelProps {
     pieceId: string;
     scale: number;
     position?: [number, number, number];
-    onClick?: (pieceId: string) => void;
     onLoad?: (scene: THREE.Group) => void;
 }
 
-function Model({ url, pieceId, scale, position = [0, 0, 0], onClick, onLoad }: ModelProps) {
+function Model({ url, pieceId, scale, position = [0, 0, 0], onLoad }: ModelProps) {
     const proxyUrl = `/api/fetch-glb?url=${encodeURIComponent(url)}`;
     const { scene } = useLoader(GLTFLoader, proxyUrl);
 
@@ -55,10 +54,6 @@ function Model({ url, pieceId, scale, position = [0, 0, 0], onClick, onLoad }: M
             object={clonedScene}
             scale={scale}
             position={position}
-            onClick={(e) => {
-                e.stopPropagation();
-                if(onClick) onClick(pieceId);
-            }}
         />
     );
 }
@@ -70,7 +65,6 @@ interface CharacterViewer3DProps {
     armorPieces?: { id: string; url: string; }[];
     hairUrl?: string | null;
     hairId?: string | null; // Pass the actual ID of the hair
-    onPieceClick?: (pieceId: string | null) => void;
     armorTransforms?: { [armorId: string]: { scale: number; position: [number, number, number] } };
     hairTransform?: { scale: number; position: [number, number, number] };
     onTransformUpdate: (pieceId: string, position: [number, number, number]) => void;
@@ -83,7 +77,6 @@ export function CharacterViewer3D({
     armorPieces = [], 
     hairUrl,
     hairId, 
-    onPieceClick, 
     armorTransforms = {}, 
     hairTransform, 
     onTransformUpdate, 
@@ -113,15 +106,8 @@ export function CharacterViewer3D({
         }
     };
 
-    const handleCanvasClick = (event: any) => {
-        // If the click is on the background (not on any model object), deselect the active piece
-        if (!event.object && onPieceClick) {
-            onPieceClick(null);
-        }
-    };
-
     return (
-        <Canvas shadows camera={{ position: [0, 1, 2.5], fov: 50 }} onClick={handleCanvasClick}>
+        <Canvas shadows camera={{ position: [0, 1, 2.5], fov: 50 }}>
             <ambientLight intensity={1.5} />
             <directionalLight
                 position={[5, 5, 5]}
@@ -133,7 +119,7 @@ export function CharacterViewer3D({
             <spotLight position={[-5, 5, -5]} angle={0.3} penumbra={0.3} intensity={2} castShadow />
             <Suspense fallback={null}>
                 <CharacterController onTransformUpdate={onTransformUpdate} activePieceId={activePieceId} controlsRef={controlsRef}>
-                    {bodyUrl && <Model url={bodyUrl} pieceId="body" scale={1} onClick={onPieceClick} onLoad={handleBodyLoad} />}
+                    {bodyUrl && <Model url={bodyUrl} pieceId="body" scale={1} onLoad={handleBodyLoad} />}
                     {armorPieces.map(piece => (
                         <Model 
                             key={piece.id} 
@@ -141,7 +127,6 @@ export function CharacterViewer3D({
                             pieceId={piece.id}
                             scale={armorTransforms[piece.id]?.scale ?? 1}
                             position={armorTransforms[piece.id]?.position ?? [0,0,0]}
-                            onClick={onPieceClick} 
                             onLoad={handleEquipmentLoad} 
                         />
                     ))}
@@ -151,7 +136,6 @@ export function CharacterViewer3D({
                             pieceId={hairId} 
                             scale={hairTransform?.scale ?? 1} 
                             position={hairTransform?.position ?? [0,0,0]}
-                            onClick={onPieceClick} 
                             onLoad={handleEquipmentLoad} 
                         />
                     )}
