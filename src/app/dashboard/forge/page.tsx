@@ -11,7 +11,7 @@ import type { Student } from '@/lib/data';
 import { type ArmorPiece, type Hairstyle, type BaseBody, type ArmorSlot } from '@/lib/forge';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Loader2, Hammer, Layers, Eye, Camera, X, Shirt, ArrowRight, ChevronsRight, ChevronsLeft, ShirtIcon, UserCheck, ChevronDown, Wand2, Scaling } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Hammer, Layers, Eye, Camera, X, Shirt, ArrowRight, ChevronsRight, ChevronsLeft, ShirtIcon, UserCheck, ChevronDown, Wand2, Scaling, Orbit } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -92,6 +92,7 @@ export default function ForgePage() {
     const [isControlsOpen, setIsControlsOpen] = useState(true);
 
     const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
+    const [isOrbitControlsEnabled, setIsOrbitControlsEnabled] = useState(true);
 
 
     useEffect(() => {
@@ -755,6 +756,7 @@ export default function ForgePage() {
                                             hairTransform={local3DHairstyleTransforms}
                                             onTransformUpdate={handle3DTransformUpdate}
                                             activePieceId={activePiece?.id || null}
+                                            isOrbitControlsEnabled={isOrbitControlsEnabled}
                                         />
                                     </Suspense>
                                 ) : (
@@ -785,6 +787,12 @@ export default function ForgePage() {
                                                 </CardHeader>
                                                 <ScrollArea className="flex-grow">
                                                     <CardContent className="space-y-4">
+                                                        {viewMode === '3d' && (
+                                                            <div className="flex items-center space-x-2">
+                                                                <Label htmlFor="orbit-controls" className="flex items-center gap-1 cursor-pointer"><Orbit className="h-4 w-4"/> Rotate</Label>
+                                                                <Switch id="orbit-controls" checked={isOrbitControlsEnabled} onCheckedChange={setIsOrbitControlsEnabled} />
+                                                            </div>
+                                                        )}
                                                         {activePiece ? (
                                                             <div className="space-y-4">
                                                                 <p className="font-bold text-center">Editing: <span className="text-primary">{'styleName' in activePiece ? activePiece.styleName : activePiece.name}</span></p>

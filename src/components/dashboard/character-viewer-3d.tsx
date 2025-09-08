@@ -69,10 +69,22 @@ interface CharacterViewer3DProps {
     hairTransform?: { scale: number; position: [number, number, number] };
     onTransformUpdate: (pieceId: string, position: [number, number, number]) => void;
     activePieceId: string | null;
+    isOrbitControlsEnabled?: boolean;
 }
 
-export function CharacterViewer3D({ bodyUrl, armorPieces = [], hairUrl, onPieceClick, armorTransforms = {}, hairTransform, onTransformUpdate, activePieceId }: CharacterViewer3DProps) {
+export function CharacterViewer3D({ 
+    bodyUrl, 
+    armorPieces = [], 
+    hairUrl, 
+    onPieceClick, 
+    armorTransforms = {}, 
+    hairTransform, 
+    onTransformUpdate, 
+    activePieceId,
+    isOrbitControlsEnabled = true 
+}: CharacterViewer3DProps) {
     const skeletonRef = useRef<THREE.Skeleton | null>(null);
+    const controlsRef = useRef<any>(null);
 
     const handleBodyLoad = (bodyScene: THREE.Group) => {
         let skeleton: THREE.Skeleton | null = null;
@@ -106,7 +118,7 @@ export function CharacterViewer3D({ bodyUrl, armorPieces = [], hairUrl, onPieceC
             />
             <spotLight position={[-5, 5, -5]} angle={0.3} penumbra={0.3} intensity={2} castShadow />
             <Suspense fallback={null}>
-                <CharacterController onTransformUpdate={onTransformUpdate} activePieceId={activePieceId}>
+                <CharacterController onTransformUpdate={onTransformUpdate} activePieceId={activePieceId} controlsRef={controlsRef}>
                     {bodyUrl && <Model url={bodyUrl} pieceId="body" scale={1} onClick={onPieceClick} onLoad={handleBodyLoad} />}
                     {armorPieces.map(piece => (
                         <Model 
@@ -131,7 +143,7 @@ export function CharacterViewer3D({ bodyUrl, armorPieces = [], hairUrl, onPieceC
                     )}
                 </CharacterController>
             </Suspense>
-            <OrbitControls target={[0, 1, 0]} />
+            <OrbitControls ref={controlsRef} enabled={isOrbitControlsEnabled} target={[0, 1, 0]} />
         </Canvas>
     );
 }

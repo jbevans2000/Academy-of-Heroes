@@ -3,16 +3,18 @@
 'use client';
 
 import React, { useRef, useEffect } from 'react';
-import { useThree, useFrame } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
+import { OrbitControls } from '@react-three/drei';
 
 interface CharacterControllerProps {
     children: React.ReactNode;
     activePieceId: string | null;
     onTransformUpdate: (pieceId: string, position: [number, number, number]) => void;
+    controlsRef: React.RefObject<any>; // Using any to avoid complex OrbitControls type issues
 }
 
-export function CharacterController({ children, activePieceId, onTransformUpdate }: CharacterControllerProps) {
+export function CharacterController({ children, activePieceId, onTransformUpdate, controlsRef }: CharacterControllerProps) {
     const { camera, scene, gl } = useThree();
     const raycaster = useRef(new THREE.Raycaster());
     const mouse = useRef(new THREE.Vector2());
@@ -36,6 +38,7 @@ export function CharacterController({ children, activePieceId, onTransformUpdate
 
             if (selectedObject.current) {
                 isDragging.current = true;
+                if(controlsRef.current) controlsRef.current.enabled = false;
                 plane.current.setFromNormalAndCoplanarPoint(
                     camera.getWorldDirection(plane.current.normal),
                     selectedObject.current.position
@@ -45,6 +48,7 @@ export function CharacterController({ children, activePieceId, onTransformUpdate
 
         const handleMouseUp = () => {
             isDragging.current = false;
+            if(controlsRef.current) controlsRef.current.enabled = true;
             selectedObject.current = null;
         };
 
@@ -73,7 +77,7 @@ export function CharacterController({ children, activePieceId, onTransformUpdate
             domElement.removeEventListener('mouseup', handleMouseUp);
             domElement.removeEventListener('mousemove', handleMouseMove);
         };
-    }, [activePieceId, camera, scene, gl.domElement, onTransformUpdate]);
+    }, [activePieceId, camera, scene, gl.domElement, onTransformUpdate, controlsRef]);
 
     return <>{children}</>;
 }
