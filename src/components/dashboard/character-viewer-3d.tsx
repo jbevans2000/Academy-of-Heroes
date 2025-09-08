@@ -66,7 +66,7 @@ interface CharacterViewer3DProps {
     armorPieces?: { id: string; url: string; }[];
     hairUrl?: string | null;
     hairId?: string | null; // Pass the actual ID of the hair
-    onPieceClick?: (pieceId: string) => void;
+    onPieceClick?: (pieceId: string | null) => void;
     armorTransforms?: { [armorId: string]: { scale: number; position: [number, number, number] } };
     hairTransform?: { scale: number; position: [number, number, number] };
     onTransformUpdate: (pieceId: string, position: [number, number, number]) => void;
@@ -109,8 +109,15 @@ export function CharacterViewer3D({
         }
     };
 
+    const handleCanvasClick = (event: any) => {
+        // If the click is on the background (not on any model object), deselect the active piece
+        if (event.eventObject.type === 'Scene' && onPieceClick) {
+            onPieceClick(null);
+        }
+    };
+
     return (
-        <Canvas shadows camera={{ position: [0, 1, 2.5], fov: 50 }}>
+        <Canvas shadows camera={{ position: [0, 1, 2.5], fov: 50 }} onClick={handleCanvasClick}>
             <ambientLight intensity={1.5} />
             <directionalLight
                 position={[5, 5, 5]}

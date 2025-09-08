@@ -286,9 +286,9 @@ export default function ForgePage() {
         }
     };
     
-    const handlePieceClick = (pieceId: string) => {
+    const handlePieceClick = (pieceId: string | null) => {
         if (isPreviewMode) return;
-        if (pieceId === 'body') {
+        if (!pieceId || pieceId === 'body') {
             setActivePiece(null);
             return;
         }
