@@ -297,11 +297,12 @@ export default function ForgePage() {
     };
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece | Hairstyle, layer: 'primary' | 'secondary') => {
-        if (isPreviewMode || activePiece?.id !== piece.id) return;
+        if (isPreviewMode) return;
         
         e.preventDefault();
         e.stopPropagation();
-        
+
+        setActivePiece(piece);
         setEditingLayer(layer);
         setIsDragging(true);
     };
@@ -512,11 +513,6 @@ export default function ForgePage() {
         ));
     };
     
-    const equippedArmorPieces = Object.values(equipment)
-        .map(id => allArmor.find(a => a.id === id))
-        .filter((p): p is ArmorPiece => !!p);
-
-
     if (isLoading || !student) {
         return <div className="flex items-center justify-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>
     }
@@ -716,33 +712,6 @@ export default function ForgePage() {
                                                 </CardHeader>
                                                 <ScrollArea className="flex-grow">
                                                     <CardContent className="space-y-4">
-                                                        <Card>
-                                                            <CardHeader className="p-2">
-                                                                <CardTitle className="text-sm">Equipped Pieces</CardTitle>
-                                                            </CardHeader>
-                                                            <CardContent className="space-y-2 p-2">
-                                                                {hairstyle && (
-                                                                    <div className={cn("flex items-center justify-between p-2 rounded-md", activePiece?.id === hairstyle.id && !isPreviewMode ? 'bg-primary/20' : 'bg-secondary')}>
-                                                                        <span className="font-semibold text-sm truncate flex items-center gap-2"><Scissors className="h-4 w-4"/>{hairstyle.styleName}</span>
-                                                                        <div className="flex gap-1">
-                                                                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handlePieceClick(hairstyle)} disabled={isPreviewMode}><Edit className="h-4 w-4" /></Button>
-                                                                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleEquipItem(hairstyle)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                                {equippedArmorPieces.map(piece => (
-                                                                    <div key={piece.id} className={cn("flex items-center justify-between p-2 rounded-md", activePiece?.id === piece.id && !isPreviewMode ? 'bg-primary/20' : 'bg-secondary')}>
-                                                                        <span className="font-semibold text-sm truncate">{piece.name}</span>
-                                                                        <div className="flex gap-1">
-                                                                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handlePieceClick(piece)} disabled={isPreviewMode}><Edit className="h-4 w-4" /></Button>
-                                                                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleEquipItem(piece)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
-                                                                {equippedArmorPieces.length === 0 && !hairstyle && <p className="text-sm text-muted-foreground text-center">Nothing equipped.</p>}
-                                                            </CardContent>
-                                                        </Card>
-
                                                         {activePiece ? (
                                                             <div className="space-y-4">
                                                                 <p className="font-bold text-center">Editing: <span className="text-primary">{'styleName' in activePiece ? activePiece.styleName : activePiece.name}</span></p>
@@ -811,3 +780,4 @@ export default function ForgePage() {
         </div>
     );
 }
+
