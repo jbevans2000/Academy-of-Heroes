@@ -29,10 +29,16 @@ export function CharacterController({ children, activePieceId, onTransformUpdate
             mouse.current.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.current.y = -(event.clientY / window.innerHeight) * 2 + 1;
             raycaster.current.setFromCamera(mouse.current, camera);
-
+            
+            // This flag will help select the correct nested object
+            let found = false;
             scene.traverse((obj) => {
+                // Important: Don't re-select if already found in traversal
+                if(found) return;
+
                 if(obj.userData.pieceId === activePieceId) {
                     selectedObject.current = obj;
+                    found = true; // Mark as found
                 }
             });
 
@@ -47,9 +53,11 @@ export function CharacterController({ children, activePieceId, onTransformUpdate
         };
 
         const handleMouseUp = () => {
-            isDragging.current = false;
-            if(controlsRef.current) controlsRef.current.enabled = true;
-            selectedObject.current = null;
+            if (isDragging.current) {
+                isDragging.current = false;
+                if(controlsRef.current) controlsRef.current.enabled = true;
+                selectedObject.current = null;
+            }
         };
 
         const handleMouseMove = (event: MouseEvent) => {
