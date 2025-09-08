@@ -663,7 +663,7 @@ export default function ForgePage() {
                                 </CardHeader>
                                 <CardContent>
                                     <ScrollArea className="h-48">
-                                    <div className="grid grid-cols-2 gap-2">
+                                    <div className="grid grid-cols-3 gap-2">
                                         {backgroundImages.map(bg => (
                                             <div key={bg} className={cn("border p-1 rounded-md cursor-pointer hover:border-primary", equipment.backgroundUrl === bg && "border-primary ring-2 ring-primary")} onClick={() => setEquipment(prev => ({...prev, backgroundUrl: bg}))}>
                                                 <Image src={bg} alt="Background" width={150} height={100} className="w-full h-auto object-cover rounded-sm" />
