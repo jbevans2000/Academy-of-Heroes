@@ -657,10 +657,8 @@ export default function ForgePage() {
                                     </Tabs>
                                 </CardContent>
                             </Card>
-                             <Card>
-                                <CardHeader>
-                                    <CardTitle>Backgrounds</CardTitle>
-                                </CardHeader>
+                            <Card>
+                                <CardHeader><CardTitle>Backgrounds</CardTitle></CardHeader>
                                 <CardContent>
                                     <div className="grid grid-cols-3 gap-2">
                                         {backgroundImages.map(bg => (
