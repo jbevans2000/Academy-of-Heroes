@@ -23,6 +23,7 @@ import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { CharacterViewerFallback } from '@/components/dashboard/character-viewer-3d';
+import { v4 as uuidv4 } from 'uuid';
 
 const CharacterViewer3D = lazy(() => import('@/components/dashboard/character-viewer-3d').then(module => ({ default: module.CharacterViewer3D })));
 
@@ -366,6 +367,5 @@ export default function Global3DForgeSizerPage() {
                 </div>
             </main>
         </div>
-    )
-
-    
+    );
+}
