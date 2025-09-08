@@ -111,7 +111,7 @@ export function CharacterViewer3D({
 
     const handleCanvasClick = (event: any) => {
         // If the click is on the background (not on any model object), deselect the active piece
-        if (event.eventObject.type === 'Scene' && onPieceClick) {
+        if (event.object && event.object.type === 'Scene' && onPieceClick) {
             onPieceClick(null);
         }
     };
