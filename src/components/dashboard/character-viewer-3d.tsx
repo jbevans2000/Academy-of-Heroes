@@ -65,6 +65,7 @@ interface CharacterViewer3DProps {
     bodyUrl: string | null;
     armorPieces?: { id: string; url: string; }[];
     hairUrl?: string | null;
+    hairId?: string | null; // Pass the actual ID of the hair
     onPieceClick?: (pieceId: string) => void;
     armorTransforms?: { [armorId: string]: { scale: number; position: [number, number, number] } };
     hairTransform?: { scale: number; position: [number, number, number] };
@@ -76,7 +77,8 @@ interface CharacterViewer3DProps {
 export function CharacterViewer3D({ 
     bodyUrl, 
     armorPieces = [], 
-    hairUrl, 
+    hairUrl,
+    hairId, 
     onPieceClick, 
     armorTransforms = {}, 
     hairTransform, 
@@ -132,10 +134,10 @@ export function CharacterViewer3D({
                             onLoad={handleEquipmentLoad} 
                         />
                     ))}
-                    {hairUrl && (
+                    {hairUrl && hairId && (
                         <Model 
                             url={hairUrl}
-                            pieceId="hair" 
+                            pieceId={hairId} 
                             scale={hairTransform?.scale ?? 1} 
                             position={hairTransform?.position ?? [0,0,0]}
                             onClick={onPieceClick} 

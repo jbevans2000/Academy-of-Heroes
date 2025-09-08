@@ -293,13 +293,16 @@ export default function ForgePage() {
             setActivePiece(null);
             return;
         }
-        if (pieceId === 'hair') {
-            setActivePiece(hairstyle || null);
-            return;
-        }
+        
         const armor = allArmor.find(a => a.id === pieceId);
         if (armor) {
             setActivePiece(armor);
+            return;
+        }
+
+        const hair = allHairstyles.find(h => h.id === pieceId);
+        if(hair) {
+            setActivePiece(hair);
         }
     };
 
@@ -489,7 +492,7 @@ export default function ForgePage() {
     };
 
     const handle3DTransformUpdate = (pieceId: string, position: [number, number, number]) => {
-         if (pieceId === 'hair') {
+         if (pieceId === hairstyle?.id) {
             setLocal3DHairstyleTransforms(prev => ({
                 ...(prev || { scale: 1 }),
                 position
@@ -751,6 +754,7 @@ export default function ForgePage() {
                                             bodyUrl={bodyModelUrl}
                                             armorPieces={armorPiecesWithModels}
                                             hairUrl={hairModelUrl}
+                                            hairId={hairstyle?.id || null}
                                             onPieceClick={handlePieceClick}
                                             armorTransforms={local3DArmorTransforms}
                                             hairTransform={local3DHairstyleTransforms}
