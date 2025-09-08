@@ -8,7 +8,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, onSnapshot, query, where, doc, getDoc, updateDoc, getDocs, documentId } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
-import { baseBodyUrls, type ArmorPiece, type Hairstyle, type BaseBody } from '@/lib/forge';
+import { baseBodyUrls, type ArmorPiece, type Hairstyle, type BaseBody, type ArmorSlot } from '@/lib/forge';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Save, Loader2, Hammer, Layers, Eye, Camera, X, Shirt, ArrowRight, ChevronsRight, ChevronsLeft, ShirtIcon, UserCheck, ChevronDown, Wand2, Scaling } from 'lucide-react';
@@ -283,6 +283,21 @@ export default function ForgePage() {
         }
     };
     
+    const handlePieceClick = (pieceId: string) => {
+        if(pieceId === 'body') {
+            setActivePiece(null); // Or handle body selection differently
+            return;
+        }
+        if(pieceId === 'hair') {
+            setActivePiece(hairstyle || null);
+            return;
+        }
+        const armor = allArmor.find(a => a.id === pieceId);
+        if (armor) {
+            setActivePiece(armor);
+        }
+    };
+
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece | Hairstyle, layer: 'primary' | 'secondary') => {
         if (isPreviewMode) setIsPreviewMode(false);
         e.preventDefault();
@@ -321,15 +336,21 @@ export default function ForgePage() {
     };
 
     const handleBodyCycle = (direction: 'next' | 'prev') => {
-        if (baseBodyUrls.length === 0 || !equipment.bodyId) return;
-        const currentIndex = baseBodyUrls.findIndex(b => b.id === equipment.bodyId);
+        if (allBodies.length === 0) return;
+        const selectableBodies = allBodies.filter(body => baseBodyUrls.some(bbu => bbu.name === body.name));
+        if (selectableBodies.length === 0) return;
+        
+        const currentIndex = equipment.bodyId ? selectableBodies.findIndex(b => b.id === equipment.bodyId) : -1;
         let nextIndex;
-        if (direction === 'next') {
-            nextIndex = (currentIndex + 1) % baseBodyUrls.length;
+
+        if(currentIndex === -1) {
+            nextIndex = 0; // Start from the first one if none is selected
+        } else if (direction === 'next') {
+            nextIndex = (currentIndex + 1) % selectableBodies.length;
         } else {
-            nextIndex = (currentIndex - 1 + baseBodyUrls.length) % baseBodyUrls.length;
+            nextIndex = (currentIndex - 1 + selectableBodies.length) % selectableBodies.length;
         }
-        handleBodySelect(baseBodyUrls[nextIndex].id);
+        handleBodySelect(selectableBodies[nextIndex].id);
     };
 
     const handleSetAvatar = async () => {
@@ -507,18 +528,15 @@ export default function ForgePage() {
         ));
     };
     
-    const selectedBodyName = equipment.bodyId ? baseBodyUrls.find(b => b.id === equipment.bodyId)?.name : null;
-    const bodyModelUrl = selectedBodyName ? allBodies.find(b => b.name === selectedBodyName)?.modelUrl : null;
-    
+    const bodyModelUrl = equipment.bodyId ? allBodies.find(b => b.id === equipment.bodyId)?.modelUrl : null;
     const hairModelUrl = equipment.hairstyleId ? hairstyles.find(h => h.id === equipment.hairstyleId)?.modelUrl : null;
     
-    const equippedArmorIds = [equipment.headId, equipment.shouldersId, equipment.chestId, equipment.handsId, equipment.legsId, equipment.feetId];
-    
     const armorPiecesWithModels = useMemo(() => {
+        const equippedIds = [equipment.headId, equipment.shouldersId, equipment.chestId, equipment.handsId, equipment.legsId, equipment.feetId];
         return allArmor
-            .filter(a => equippedArmorIds.includes(a.id) && a.modelUrl)
+            .filter(a => equippedIds.includes(a.id) && a.modelUrl)
             .map(a => ({ id: a.id, url: a.modelUrl! }));
-    }, [allArmor, equippedArmorIds]);
+    }, [allArmor, equipment]);
     
     const is3dViewAvailable = !!bodyModelUrl;
 
@@ -588,7 +606,7 @@ export default function ForgePage() {
                                         <ScrollArea className="flex-grow mt-4 max-h-[65vh]">
                                             <TabsContent value="body" className="p-1">
                                                 <div className="grid grid-cols-3 gap-2">
-                                                    {baseBodyUrls.map(item => (
+                                                    {allBodies.map(item => (
                                                         <Card 
                                                             key={item.id} 
                                                             className={cn( "cursor-pointer hover:border-primary", equipment.bodyId === item.id && "border-2 border-primary" )}
@@ -698,7 +716,7 @@ export default function ForgePage() {
                                             bodyUrl={bodyModelUrl}
                                             armorPieces={armorPiecesWithModels}
                                             hairUrl={hairModelUrl}
-                                            onPieceClick={setActivePiece}
+                                            onPieceClick={handlePieceClick}
                                             transforms={local3DArmorTransforms}
                                         />
                                     </Suspense>
@@ -779,15 +797,17 @@ export default function ForgePage() {
                                     </Collapsible>
                                 </div>
                            </div>
-                             <div className="flex justify-between items-center w-full max-w-sm mt-2 mx-auto">
-                                <Button variant="outline" onClick={() => handleBodyCycle('prev')}>
-                                    <ArrowLeft className="h-5 w-5" />
-                                </Button>
-                                <span className="font-semibold">{baseBodyUrls.find(b => b.id === equipment.bodyId)?.name || 'Body Type'}</span>
-                                <Button variant="outline" onClick={() => handleBodyCycle('next')}>
-                                    <ArrowRight className="h-5 w-5" />
-                                </Button>
-                            </div>
+                           {equipment.bodyId && (
+                                <div className="flex justify-between items-center w-full max-w-sm mt-2 mx-auto">
+                                    <Button variant="outline" onClick={() => handleBodyCycle('prev')}>
+                                        <ArrowLeft className="h-5 w-5" />
+                                    </Button>
+                                    <span className="font-semibold">{allBodies.find(b => b.id === equipment.bodyId)?.name || 'Body Type'}</span>
+                                    <Button variant="outline" onClick={() => handleBodyCycle('next')}>
+                                        <ArrowRight className="h-5 w-5" />
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                      </div>
                      <div className="mt-8">
