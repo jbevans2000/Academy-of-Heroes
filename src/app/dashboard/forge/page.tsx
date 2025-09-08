@@ -693,10 +693,11 @@ export default function ForgePage() {
                                 className="relative w-full aspect-square bg-gray-700 rounded-lg p-2"
                                 onMouseMove={handleMouseMove}
                             >
-                                {viewMode === '2d' ? (
+                                {viewMode === '2d' && allBodies.length > 0 ? (
                                     <Suspense fallback={<CharacterViewerFallback />}>
                                          <CharacterCanvas
                                             student={student}
+                                            allBodies={allBodies}
                                             equipment={equipment}
                                             allHairstyles={hairstyles}
                                             allArmor={ownedArmor}
