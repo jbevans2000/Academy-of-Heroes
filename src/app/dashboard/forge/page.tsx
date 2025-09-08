@@ -168,7 +168,7 @@ export default function ForgePage() {
         });
         unsubs.push(unsubStudent);
         
-        const fetchHairstyles = async () => {
+        const fetchHairstylesAndBodies = async () => {
              try {
                 const hairQuery = query(collection(db, 'hairstyles'), where('isPublished', '==', true));
                 unsubs.push(onSnapshot(hairQuery, (snapshot) => {
@@ -180,14 +180,14 @@ export default function ForgePage() {
                 }));
 
              } catch (e) {
-                console.error("Error fetching hairstyles:", e);
-                toast({ variant: 'destructive', title: "Error", description: "Could not load hairstyles." });
+                console.error("Error fetching assets:", e);
+                toast({ variant: 'destructive', title: "Error", description: "Could not load hairstyles or bodies." });
              } finally {
                 setIsLoading(false);
              }
         }
         
-        fetchHairstyles();
+        fetchHairstylesAndBodies();
 
         return () => {
             unsubs.forEach(unsub => unsub());
@@ -274,8 +274,8 @@ export default function ForgePage() {
               switch(type) {
                 case 'x': newTransform.x = value; break;
                 case 'y': newTransform.y = value; break;
-                case 'slider': newTransform.scale = newScale; break;
-            }
+                case 'slider': newTransform.scale = newScale; break
+              }
             return { ...prev, [bodyId]: newTransform };
         };
 
@@ -481,7 +481,7 @@ export default function ForgePage() {
             }));
         } else { // Hairstyle
             setLocal3DHairstyleTransforms(prev => ({
-                ...(prev || { position: [0,0,0] }),
+                ...(prev || { position: [0,0,0], scale: 1 }),
                 scale: value
             }));
         }
@@ -560,7 +560,7 @@ export default function ForgePage() {
     };
     
     const bodyModelUrl = equipment.bodyId ? allBodies.find(b => b.id === equipment.bodyId)?.modelUrl : null;
-    const hairModelUrl = equipment.hairstyleId ? hairstyles.find(h => h.id === equipment.hairstyleId)?.modelUrl : null;
+    const hairModelUrl = equipment.hairstyleId ? allHairstyles.find(h => h.id === equipment.hairstyleId)?.modelUrl : null;
     
     const armorPiecesWithModels = useMemo(() => {
         const equippedIds = [equipment.headId, equipment.shouldersId, equipment.chestId, equipment.handsId, equipment.legsId, equipment.feetId];
@@ -667,9 +667,9 @@ export default function ForgePage() {
                                                 </div>
                                             </TabsContent>
                                             <TabsContent value="hair-color" className="p-1">
-                                                {hairstyles.find(h => h.id === equipment.hairstyleId) && (
+                                                {allHairstyles.find(h => h.id === equipment.hairstyleId) && (
                                                     <div className="grid grid-cols-5 gap-2">
-                                                        {hairstyles.find(h => h.id === equipment.hairstyleId)!.colors.map((color, index) => (
+                                                        {allHairstyles.find(h => h.id === equipment.hairstyleId)!.colors.map((color, index) => (
                                                             <div 
                                                                 key={index} 
                                                                 className={cn("h-16 w-16 rounded-md border-2 cursor-pointer", equipment.hairstyleColor === color.imageUrl ? "border-primary ring-2 ring-primary" : "border-transparent")}
