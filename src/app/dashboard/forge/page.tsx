@@ -39,6 +39,14 @@ import { CharacterViewerFallback } from '@/components/dashboard/character-viewer
 
 const CharacterCanvas = lazy(() => import('@/components/dashboard/character-canvas').then(module => ({ default: module.CharacterCanvas })));
 
+const backgroundImages = [
+    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/backgrounds%2Fforest_path.jpg?alt=media&token=23a9d2b6-51c3-4158-963d-49d5a9a4e8d3',
+    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/backgrounds%2Fmagic_library.jpg?alt=media&token=54747af3-953b-417c-a496-03c2ab22a36a',
+    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/backgrounds%2Fmountain_top.jpg?alt=media&token=262c5c99-0e78-4357-89a1-5f5c6b659a72',
+    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/backgrounds%2Fcastle_hall.jpg?alt=media&token=3e4828b8-07e5-4d7a-8f1e-8427f71b9c9f',
+];
+
+
 export default function ForgePage() {
     const router = useRouter();
     const { toast } = useToast();
@@ -640,6 +648,22 @@ export default function ForgePage() {
                                             </TabsContent>
                                         </ScrollArea>
                                     </Tabs>
+                                </CardContent>
+                            </Card>
+                             <Card>
+                                <CardHeader>
+                                    <CardTitle>Backgrounds</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <ScrollArea className="h-48">
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {backgroundImages.map(bg => (
+                                            <div key={bg} className={cn("border p-1 rounded-md cursor-pointer hover:border-primary", equipment.backgroundUrl === bg && "border-primary ring-2 ring-primary")} onClick={() => setEquipment(prev => ({...prev, backgroundUrl: bg}))}>
+                                                <Image src={bg} alt="Background" width={150} height={100} className="w-full h-auto object-cover rounded-sm" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                    </ScrollArea>
                                 </CardContent>
                             </Card>
                         </div>
