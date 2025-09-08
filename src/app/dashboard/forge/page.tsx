@@ -37,7 +37,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { avatarData } from '@/lib/avatars';
 import { CharacterViewerFallback } from '@/components/dashboard/character-viewer-3d';
 
-const CharacterCanvas = lazy(() => import('@/components/dashboard/character-canvas').then(module => ({ default: module.CharacterCanvas })));
+const CharacterCanvas = lazy(() => import('@/components/dashboard/character-canvas'));
 
 const backgroundImages = [
     { 

@@ -255,7 +255,7 @@ export default function RegisterPage() {
                     <Input
                         id="password"
                         type={showPassword ? 'text' : 'password'}
-                        placeholder="Choose a secure password"
+                        placeholder="Choose a secure password (at least 6 characters)"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         disabled={isLoading}

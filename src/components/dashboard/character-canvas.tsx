@@ -45,7 +45,7 @@ interface CharacterCanvasProps {
     localArmorTransforms2?: Student['armorTransforms2'];
 }
 
-export const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>(({ 
+const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>(({ 
     student, 
     allBodies,
     equipment, 
@@ -178,3 +178,5 @@ export const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasP
     );
 });
 CharacterCanvas.displayName = 'CharacterCanvas';
+
+export default CharacterCanvas;
