@@ -32,6 +32,10 @@ function Model({ url, pieceId, scale, position = [0, 0, 0], onClick, onLoad }: M
                 if (child.material instanceof THREE.MeshStandardMaterial) {
                     child.material.metalness = 0.5;
                     child.material.roughness = 0.6;
+                    // Apply polygon offset to prevent z-fighting
+                    child.material.polygonOffset = true;
+                    child.material.polygonOffsetFactor = -1.0;
+                    child.material.polygonOffsetUnits = -1.0;
                 }
             }
         });
@@ -110,8 +114,8 @@ export function CharacterViewer3D({
     };
 
     const handleCanvasClick = (event: any) => {
-        // If the click is on the background (not on any model object), deselect the active piece
-        if (event.object && event.object.type === 'Scene' && onPieceClick) {
+        // If the click didn't hit any object, deselect the active piece.
+        if (event.intersections.length === 0 && onPieceClick) {
             onPieceClick(null);
         }
     };
