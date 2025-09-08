@@ -40,17 +40,50 @@ import { CharacterViewerFallback } from '@/components/dashboard/character-viewer
 const CharacterCanvas = lazy(() => import('@/components/dashboard/character-canvas').then(module => ({ default: module.CharacterCanvas })));
 
 const backgroundImages = [
-    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_35_11%20AM.png?alt=media&token=e85c1eab-8d7d-489b-9660-97dd4d618143',
-    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_36_06%20AM.png?alt=media&token=6fa93f4d-d38a-4aab-9fa4-db58a783f922',
-    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_37_19%20AM.png?alt=media&token=c182700f-596e-45ae-a2b1-8fd1fb76ea4b',
-    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_38_56%20AM.png?alt=media&token=611389e4-5e91-4e47-85bd-6dc89e4957c4',
-    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_41_06%20AM.png?alt=media&token=6dc40884-e3ae-408c-9d9a-81c0fe58a146',
-    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_44_32%20AM.png?alt=media&token=d0cbf0d6-d3c6-4cd9-914f-c586cf7a3ad2',
-    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_46_44%20AM.png?alt=media&token=bb41a39a-a149-4f26-9e38-0669a861f00e',
-    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_50_59%20AM.png?alt=media&token=f347764f-d604-401a-ab3e-6e06fa859fea',
-    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2006_03_10%20AM.png?alt=media&token=988bea5a-567b-416d-b85f-0348a65e27f5',
-    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%206%2C%202025%2C%2008_20_40%20AM.png?alt=media&token=0603790b-3a9e-454c-be2c-4a06f08fd2a9',
-    'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%206%2C%202025%2C%2008_22_43%20AM.png?alt=media&token=89b71b1f-9561-462b-8a43-3a2ada321f4a',
+    { 
+        imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_35_11%20AM.png?alt=media&token=e85c1eab-8d7d-489b-9660-97dd4d618143', 
+        thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2Ftn_ChatGPT%20Image%20Sep%205%2C%202025%2C%2005_35_11%20AM.png?alt=media&token=c84759a6-45f6-4d70-8591-a46d89fd9445" 
+    },
+    { 
+        imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_36_06%20AM.png?alt=media&token=6fa93f4d-d38a-4aab-9fa4-db58a783f922', 
+        thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2Ftn_ChatGPT%20Image%20Sep%205%2C%202025%2C%2005_36_06%20AM.png?alt=media&token=d4a6e787-36c7-47e3-8caa-f1637bf3a6df" 
+    },
+    { 
+        imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_37_19%20AM.png?alt=media&token=c182700f-596e-45ae-a2b1-8fd1fb76ea4b', 
+        thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2Ftn_ChatGPT%20Image%20Sep%205%2C%202025%2C%2005_37_19%20AM.png?alt=media&token=7d870cf6-eb75-47d2-9c9c-d9bee26fa93e" 
+    },
+    { 
+        imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_38_56%20AM.png?alt=media&token=611389e4-5e91-4e47-85bd-6dc89e4957c4', 
+        thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2Ftn_ChatGPT%20Image%20Sep%205%2C%202025%2C%2005_38_56%20AM.png?alt=media&token=8b20421b-ce00-4840-a600-8a05f7633041" 
+    },
+    { 
+        imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_41_06%20AM.png?alt=media&token=6dc40884-e3ae-408c-9d9a-81c0fe58a146', 
+        thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2Ftn_ChatGPT%20Image%20Sep%205%2C%202025%2C%2005_41_06%20AM.png?alt=media&token=0feffa03-770c-4c12-8537-58b91e72380f" 
+    },
+    { 
+        imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_44_32%20AM.png?alt=media&token=d0cbf0d6-d3c6-4cd9-914f-c586cf7a3ad2', 
+        thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2Ftn_ChatGPT%20Image%20Sep%205%2C%202025%2C%2005_44_32%20AM.png?alt=media&token=5971c433-ba17-4dfa-b901-2484940463fb" 
+    },
+    { 
+        imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_46_44%20AM.png?alt=media&token=bb41a39a-a149-4f26-9e38-0669a861f00e', 
+        thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2Ftn_ChatGPT%20Image%20Sep%205%2C%202025%2C%2005_46_44%20AM.png?alt=media&token=97824d50-9adb-48e1-8cbd-4e7818770a31" 
+    },
+    { 
+        imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2005_50_59%20AM.png?alt=media&token=f347764f-d604-401a-ab3e-6e06fa859fea', 
+        thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2Ftn_ChatGPT%20Image%20Sep%205%2C%202025%2C%2005_50_59%20AM.png?alt=media&token=22f7def7-cd52-440e-90a5-93e8c1908692" 
+    },
+    { 
+        imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%205%2C%202025%2C%2006_03_10%20AM.png?alt=media&token=988bea5a-567b-416d-b85f-0348a65e27f5', 
+        thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2Ftn_ChatGPT%20Image%20Sep%205%2C%202025%2C%2006_03_10%20AM.png?alt=media&token=f66fb5de-0f44-41c3-af34-476fad6ea526" 
+    },
+    { 
+        imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%206%2C%202025%2C%2008_20_40%20AM.png?alt=media&token=0603790b-3a9e-454c-be2c-4a06f08fd2a9', 
+        thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2Ftn_ChatGPT%20Image%20Sep%206%2C%202025%2C%2008_20_40%20AM.png?alt=media&token=46ff93b6-6e92-431d-8247-dbb59fa0d8f3" 
+    },
+    { 
+        imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2FChatGPT%20Image%20Sep%206%2C%202025%2C%2008_22_43%20AM.png?alt=media&token=89b71b1f-9561-462b-8a43-3a2ada321f4a', 
+        thumbnailUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Modular%20Sets%2FModular%20Backgrounds%2Ftn_ChatGPT%20Image%20Sep%206%2C%202025%2C%2008_22_43%20AM.png?alt=media&token=12f8c93e-1761-44ca-8812-c27b192f8720" 
+    },
 ];
 
 
@@ -653,16 +686,16 @@ export default function ForgePage() {
                                     </Tabs>
                                 </CardContent>
                             </Card>
-                            <Card>
-                                <CardHeader><CardTitle>Backgrounds</CardTitle></CardHeader>
-                                <CardContent>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {backgroundImages.map(bg => (
-                                            <div key={bg} className={cn("border p-1 rounded-md cursor-pointer hover:border-primary", equipment.backgroundUrl === bg && "border-primary ring-2 ring-primary")} onClick={() => setEquipment(prev => ({...prev, backgroundUrl: bg}))}>
-                                                <Image src={bg} alt="Background" width={150} height={100} className="w-full h-auto object-cover rounded-sm" />
-                                            </div>
-                                        ))}
-                                    </div>
+                             <Card>
+                                <CardHeader>
+                                    <CardTitle>Backgrounds</CardTitle>
+                                </CardHeader>
+                                <CardContent className="grid grid-cols-3 gap-2">
+                                    {backgroundImages.map((bg, index) => (
+                                        <div key={index} className={cn("border p-1 rounded-md cursor-pointer hover:border-primary", equipment.backgroundUrl === bg.imageUrl && "border-primary ring-2 ring-primary")} onClick={() => setEquipment(prev => ({...prev, backgroundUrl: bg.imageUrl}))}>
+                                            <Image src={bg.thumbnailUrl} alt="Background" width={150} height={100} className="w-full h-auto object-cover rounded-sm" />
+                                        </div>
+                                    ))}
                                 </CardContent>
                             </Card>
                         </div>
@@ -712,6 +745,9 @@ export default function ForgePage() {
                                                 </CardHeader>
                                                 <ScrollArea className="flex-grow">
                                                     <CardContent className="space-y-4">
+                                                        <div className="space-y-1">
+                                                          <p className="text-sm text-muted-foreground">Click a piece on the canvas to select it for editing.</p>
+                                                        </div>
                                                         {activePiece ? (
                                                             <div className="space-y-4">
                                                                 <p className="font-bold text-center">Editing: <span className="text-primary">{'styleName' in activePiece ? activePiece.styleName : activePiece.name}</span></p>
@@ -780,4 +816,3 @@ export default function ForgePage() {
         </div>
     );
 }
-
