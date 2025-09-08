@@ -5,10 +5,10 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, Suspense, lazy } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, onSnapshot, query, where, doc, getDoc, updateDoc, getDocs, documentId } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc, getDoc, updateDoc, getDocs, documentId, orderBy } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
-import { baseBodyUrls, type ArmorPiece, type Hairstyle, type BaseBody, type ArmorSlot } from '@/lib/forge';
+import { type ArmorPiece, type Hairstyle, type BaseBody, type ArmorSlot } from '@/lib/forge';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Save, Loader2, Hammer, Layers, Eye, Camera, X, Shirt, ArrowRight, ChevronsRight, ChevronsLeft, ShirtIcon, UserCheck, ChevronDown, Wand2, Scaling } from 'lucide-react';
@@ -170,7 +170,7 @@ export default function ForgePage() {
                 unsubs.push(onSnapshot(hairQuery, (snapshot) => {
                     setHairstyles(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hairstyle)));
                 }));
-                const bodiesQuery = query(collection(db, 'baseBodies'));
+                const bodiesQuery = query(collection(db, 'baseBodies'), orderBy('order'));
                  unsubs.push(onSnapshot(bodiesQuery, (snapshot) => {
                     setAllBodies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BaseBody)));
                 }));
@@ -285,7 +285,7 @@ export default function ForgePage() {
     
     const handlePieceClick = (pieceId: string) => {
         if(pieceId === 'body') {
-            setActivePiece(null); // Or handle body selection differently
+            setActivePiece(null); 
             return;
         }
         if(pieceId === 'hair') {
@@ -337,7 +337,7 @@ export default function ForgePage() {
 
     const handleBodyCycle = (direction: 'next' | 'prev') => {
         if (allBodies.length === 0) return;
-        const selectableBodies = allBodies.filter(body => baseBodyUrls.some(bbu => bbu.name === body.name));
+        const selectableBodies = allBodies;
         if (selectableBodies.length === 0) return;
         
         const currentIndex = equipment.bodyId ? selectableBodies.findIndex(b => b.id === equipment.bodyId) : -1;

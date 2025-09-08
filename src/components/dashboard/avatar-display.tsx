@@ -6,15 +6,17 @@ import React, { Suspense, lazy } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import type { Student } from '@/lib/data';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import type { Hairstyle, ArmorPiece, BaseBody } from '@/lib/forge';
 import { CharacterViewerFallback } from './character-viewer-3d';
 
 const CharacterViewer3D = lazy(() =>
   import('./character-viewer-3d').then(module => ({ default: module.CharacterViewer3D }))
 );
+const CharacterCanvas = lazy(() => import('@/components/dashboard/character-canvas').then(module => ({ default: module.CharacterCanvas })));
+
 
 interface AvatarDisplayProps {
   student: Student;
@@ -45,7 +47,7 @@ export function AvatarDisplay({ student }: AvatarDisplayProps) {
             setAllArmor(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ArmorPiece)));
         }));
         
-        const bodiesQuery = collection(db, 'baseBodies');
+        const bodiesQuery = query(collection(db, 'baseBodies'), orderBy('order'));
         unsubs.push(onSnapshot(bodiesQuery, (snapshot) => {
             setAllBodies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BaseBody)));
         }));
@@ -59,18 +61,30 @@ export function AvatarDisplay({ student }: AvatarDisplayProps) {
 
   const showCustomCharacter = student.useCustomAvatar;
 
+  const equipment = {
+      bodyId: student.equippedBodyId,
+      hairstyleId: student.equippedHairstyleId,
+      hairstyleColor: student.equippedHairstyleColor,
+      backgroundUrl: student.backgroundUrl,
+      headId: student.equippedHeadId,
+      shouldersId: student.equippedShouldersId,
+      chestId: student.equippedChestId,
+      handsId: student.equippedHandsId,
+      legsId: student.equippedLegsId,
+      feetId: student.equippedFeetId,
+  };
+
   // Find the URLs for the 3D models
   const bodyModelUrl = showCustomCharacter ? allBodies.find(b => b.id === student.equippedBodyId)?.modelUrl : null;
   const hairModelUrl = showCustomCharacter ? allHairstyles.find(h => h.id === student.equippedHairstyleId)?.modelUrl : null;
   
-  const armorModelUrls = showCustomCharacter ? [
-    allArmor.find(a => a.id === student.equippedHeadId)?.modelUrl,
-    allArmor.find(a => a.id === student.equippedShouldersId)?.modelUrl,
-    allArmor.find(a => a.id === student.equippedChestId)?.modelUrl,
-    allArmor.find(a => a.id === student.equippedHandsId)?.modelUrl,
-    allArmor.find(a => a.id === student.equippedLegsId)?.modelUrl,
-    allArmor.find(a => a.id === student.equippedFeetId)?.modelUrl,
-  ].filter(Boolean) : [];
+  const armorPiecesWithModels = useMemo(() => {
+    if (!showCustomCharacter) return [];
+    const equippedIds = [student.equippedHeadId, student.equippedShouldersId, student.equippedChestId, student.equippedHandsId, student.equippedLegsId, student.equippedFeetId];
+    return allArmor
+        .filter(a => equippedIds.includes(a.id) && a.modelUrl)
+        .map(a => ({ id: a.id, url: a.modelUrl! }));
+  }, [allArmor, student, showCustomCharacter]);
 
   return (
     <div className="flex justify-center items-center py-4">
@@ -79,11 +93,27 @@ export function AvatarDisplay({ student }: AvatarDisplayProps) {
                 <Suspense fallback={<CharacterViewerFallback />}>
                     <CharacterViewer3D 
                         bodyUrl={bodyModelUrl}
-                        armorUrls={armorModelUrls}
+                        armorPieces={armorPiecesWithModels}
                         hairUrl={hairModelUrl}
+                        transforms={student.equippedArmorTransforms}
                     />
                 </Suspense>
              </div>
+        ) : showCustomCharacter && equipment.bodyId ? (
+            <div className={cn("relative w-96 h-96 border-8 bg-black/20 p-2 shadow-inner", avatarBorderColor)}>
+                <Suspense fallback={<CharacterViewerFallback />}>
+                    <CharacterCanvas 
+                        student={student}
+                        equipment={equipment}
+                        allHairstyles={allHairstyles}
+                        allArmor={allArmor}
+                        isPreviewMode={true} // This is a read-only view
+                        localHairstyleTransforms={student.equippedHairstyleTransforms}
+                        localArmorTransforms={student.armorTransforms}
+                        localArmorTransforms2={student.armorTransforms2}
+                    />
+                </Suspense>
+            </div>
         ) : (
              <div className={cn("relative w-96 h-96 border-8 bg-black/20 p-2 shadow-inner", avatarBorderColor)}>
                 {student.backgroundUrl && <Image src={student.backgroundUrl} alt="background" fill className="object-cover" />}

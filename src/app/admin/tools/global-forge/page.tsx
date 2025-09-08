@@ -14,10 +14,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Diamond, Loader2, Upload, X, Save, PlusCircle, Edit, Trash2, Scissors, CheckCircle, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Diamond, Loader2, Upload, X, Save, PlusCircle, Edit, Trash2, Scissors, CheckCircle, Eye, EyeOff, Box } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { addArmorPiece, updateArmorPiece, deleteArmorPiece } from '@/ai/flows/manage-forge';
-import type { ArmorPiece, ArmorSlot, ArmorClassRequirement, Hairstyle } from '@/lib/forge';
+import type { ArmorPiece, ArmorSlot, ArmorClassRequirement, Hairstyle, BaseBody } from '@/lib/forge';
 import { v4 as uuidv4 } from 'uuid';
 import NextImage from 'next/image';
 import { cn } from '@/lib/utils';
@@ -95,7 +95,6 @@ const SetCreatorDialog = ({ isOpen, onOpenChange, teacherUid, onSetCreated }: {
         </Dialog>
     )
 }
-
 
 const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, existingSetNames }: {
     isOpen: boolean;
@@ -452,6 +451,115 @@ const HairstyleEditorDialog = ({ isOpen, onOpenChange, hairstyle, teacherUid }: 
     );
 };
 
+const BaseBodyEditorDialog = ({ isOpen, onOpenChange, body, onSave }: {
+    isOpen: boolean;
+    onOpenChange: (isOpen: boolean) => void;
+    body: Partial<BaseBody> | null;
+    onSave: () => void;
+}) => {
+    const { toast } = useToast();
+    const [formData, setFormData] = useState<Partial<BaseBody>>({});
+    const [isSaving, setIsSaving] = useState(false);
+    const [isUploading, setIsUploading] = useState<'main' | 'thumbnail' | null>(null);
+    const [teacher, setTeacher] = useState<User | null>(null);
+
+    useEffect(() => {
+        onAuthStateChanged(auth, user => user && setTeacher(user));
+    }, []);
+
+    useEffect(() => {
+        if (isOpen) {
+            setFormData(body || { name: '', order: 0, imageUrl: '', thumbnailUrl: '' });
+        }
+    }, [isOpen, body]);
+
+    const handleInputChange = (field: keyof BaseBody, value: any) => {
+        setFormData(prev => ({...prev, [field]: value}));
+    };
+
+    const handleFileUpload = async (file: File | null, type: 'main' | 'thumbnail') => {
+        if (!file || !teacher) return;
+        setIsUploading(type);
+        try {
+            const storage = getStorage(app);
+            const imageId = uuidv4();
+            const storageRef = ref(storage, `base-bodies/${teacher.uid}/${imageId}_${type}`);
+            await uploadBytes(storageRef, file);
+            const downloadUrl = await getDownloadURL(storageRef);
+            
+            handleInputChange(type === 'main' ? 'imageUrl' : 'thumbnailUrl', downloadUrl);
+            toast({ title: `Image for ${type} uploaded.` });
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Upload Failed' });
+        } finally {
+            setIsUploading(null);
+        }
+    };
+
+    const handleSave = async () => {
+        if (!formData.name || !formData.imageUrl || !formData.thumbnailUrl || formData.order === undefined) {
+            toast({ variant: 'destructive', title: 'Missing Fields' });
+            return;
+        }
+        setIsSaving(true);
+        try {
+            const collectionRef = collection(db, 'baseBodies');
+            if (formData.id) {
+                const docRef = doc(collectionRef, formData.id);
+                await updateDoc(docRef, formData);
+            } else {
+                await addDoc(collectionRef, { ...formData, createdAt: serverTimestamp() });
+            }
+            toast({ title: formData.id ? 'Base Body Updated' : 'Base Body Created' });
+            onSave();
+            onOpenChange(false);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Save Failed', description: error.message });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>{formData.id ? 'Edit' : 'Create'} Base Body</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                     <div className="space-y-2">
+                        <Label htmlFor="body-name">Name</Label>
+                        <Input id="body-name" value={formData.name || ''} onChange={e => handleInputChange('name', e.target.value)} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="body-order">Display Order</Label>
+                        <Input id="body-order" type="number" value={formData.order ?? ''} onChange={e => handleInputChange('order', Number(e.target.value))} />
+                    </div>
+                     <div className="p-4 border rounded-md space-y-2">
+                        <Label>Main Image</Label>
+                        <Input type="file" onChange={e => handleFileUpload(e.target.files?.[0] || null, 'main')} disabled={isUploading === 'main'} />
+                        {isUploading === 'main' && <Loader2 className="animate-spin" />}
+                        {formData.imageUrl && <NextImage src={formData.imageUrl} alt="Main" width={80} height={80} className="rounded-md border bg-secondary" />}
+                    </div>
+                    <div className="p-4 border rounded-md space-y-2">
+                        <Label>Thumbnail Image</Label>
+                        <Input type="file" onChange={e => handleFileUpload(e.target.files?.[0] || null, 'thumbnail')} disabled={isUploading === 'thumbnail'} />
+                        {isUploading === 'thumbnail' && <Loader2 className="animate-spin" />}
+                        {formData.thumbnailUrl && <NextImage src={formData.thumbnailUrl} alt="Thumbnail" width={80} height={80} className="rounded-md border bg-secondary" />}
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={handleSave} disabled={isSaving}>
+                        {isSaving ? <Loader2 className="mr-2 animate-spin" /> : <Save className="mr-2" />}
+                        Save
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 
 // --- MAIN PAGE COMPONENT ---
 
@@ -461,10 +569,11 @@ export default function GlobalForgePage() {
     const [user, setUser] = useState<User | null>(null);
     const [armorPieces, setArmorPieces] = useState<ArmorPiece[]>([]);
     const [hairstyles, setHairstyles] = useState<Hairstyle[]>([]);
+    const [baseBodies, setBaseBodies] = useState<BaseBody[]>([]);
     const [armorSets, setArmorSets] = useState<{id: string, name: string}[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Armor Dialog state
+    // Dialog state
     const [isArmorEditorOpen, setIsArmorEditorOpen] = useState(false);
     const [editingArmor, setEditingArmor] = useState<Partial<ArmorPiece> | null>(null);
     const [armorToDelete, setArmorToDelete] = useState<ArmorPiece | null>(null);
@@ -478,6 +587,12 @@ export default function GlobalForgePage() {
     const [editingHairstyle, setEditingHairstyle] = useState<Partial<Hairstyle> | null>(null);
     const [hairstyleToDelete, setHairstyleToDelete] = useState<Hairstyle | null>(null);
     const [isDeletingHairstyle, setIsDeletingHairstyle] = useState(false);
+
+    // Base Body Dialog state
+    const [isBodyEditorOpen, setIsBodyEditorOpen] = useState(false);
+    const [editingBody, setEditingBody] = useState<Partial<BaseBody> | null>(null);
+    const [bodyToDelete, setBodyToDelete] = useState<BaseBody | null>(null);
+    const [isDeletingBody, setIsDeletingBody] = useState(false);
 
     const existingSetNames = useMemo(() => {
         return armorSets.map(s => s.name).sort((a, b) => a.localeCompare(b));
@@ -503,25 +618,31 @@ export default function GlobalForgePage() {
     
     useEffect(() => {
         if (!user) return;
-        const armorQuery = collection(db, 'armorPieces');
-        const unsubArmor = onSnapshot(armorQuery, (snapshot) => {
-            setArmorPieces(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ArmorPiece)));
-            setIsLoading(false);
-        });
         
-        const hairstylesQuery = collection(db, 'hairstyles');
-        const unsubHairstyles = onSnapshot(hairstylesQuery, (snapshot) => {
-            setHairstyles(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hairstyle)));
-        });
+        const createSnapshotListener = (collectionName: string, setter: Function, sortField?: string) => {
+            const queryRef = sortField 
+                ? query(collection(db, collectionName), orderBy(sortField))
+                : collection(db, collectionName);
+            return onSnapshot(queryRef, (snapshot) => {
+                setter(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            });
+        };
 
+        const unsubArmor = createSnapshotListener('armorPieces', setArmorPieces, 'createdAt');
+        const unsubHairstyles = createSnapshotListener('hairstyles', setHairstyles, 'createdAt');
+        const unsubBaseBodies = createSnapshotListener('baseBodies', setBaseBodies, 'order');
+        
         const setsQuery = collection(db, 'teachers', user.uid, 'armorSets');
         const unsubSets = onSnapshot(setsQuery, (snapshot) => {
             setArmorSets(snapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name })));
         });
 
+        setIsLoading(false);
+
         return () => {
             unsubArmor();
             unsubHairstyles();
+            unsubBaseBodies();
             unsubSets();
         };
     }, [user]);
@@ -562,6 +683,23 @@ export default function GlobalForgePage() {
         }
     };
 
+    // --- Base Body Functions ---
+    const handleNewBody = () => { setEditingBody(null); setIsBodyEditorOpen(true); };
+    const handleEditBody = (body: BaseBody) => { setEditingBody(body); setIsBodyEditorOpen(true); };
+    const handleDeleteBody = async () => {
+        if (!bodyToDelete) return;
+        setIsDeletingBody(true);
+        try {
+            await deleteDoc(doc(db, 'baseBodies', bodyToDelete.id));
+            toast({ title: 'Base Body Deleted' });
+            setBodyToDelete(null);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Delete Failed', description: error.message });
+        } finally {
+            setIsDeletingBody(false);
+        }
+    };
+
 
     return (
         <>
@@ -584,6 +722,12 @@ export default function GlobalForgePage() {
                 onOpenChange={setIsHairstyleEditorOpen}
                 hairstyle={editingHairstyle}
                 teacherUid={user.uid}
+            />}
+             {user && <BaseBodyEditorDialog 
+                isOpen={isBodyEditorOpen}
+                onOpenChange={setIsBodyEditorOpen}
+                body={editingBody}
+                onSave={() => { /* Listener will update UI */}}
             />}
             <AlertDialog open={!!armorToDelete} onOpenChange={() => setArmorToDelete(null)}>
                 <AlertDialogContent>
@@ -609,130 +753,179 @@ export default function GlobalForgePage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+            <AlertDialog open={!!bodyToDelete} onOpenChange={() => setBodyToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader><AlertDialogTitle>Delete {bodyToDelete?.name}?</AlertDialogTitle></AlertDialogHeader>
+                    <AlertDialogDescription>This will permanently remove this base body. This cannot be undone.</AlertDialogDescription>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteBody} disabled={isDeletingBody} className="bg-destructive hover:bg-destructive/90">
+                            {isDeletingBody && <Loader2 className="animate-spin mr-2" />} Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
             <div className="flex min-h-screen w-full flex-col bg-muted/40">
                 <TeacherHeader />
                 <main className="flex-1 p-4 md:p-6 lg:p-8">
-                    <div className="w-full max-w-6xl mx-auto space-y-6">
+                    <div className="w-full max-w-7xl mx-auto space-y-6">
                         <Button variant="outline" onClick={() => router.push('/admin/dashboard')}>
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             Back to Admin Dashboard
                         </Button>
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                             {/* ARMOR MANAGEMENT */}
-                            <Card>
-                                <CardHeader className="flex-row justify-between items-start">
-                                    <div>
-                                        <CardTitle className="flex items-center gap-2"><Diamond className="text-primary"/> Armor Management</CardTitle>
-                                        <CardDescription>Manage all armor pieces available in the game.</CardDescription>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <Button onClick={() => setIsSetCreatorOpen(true)} variant="secondary"><PlusCircle className="mr-2 h-4 w-4" /> Create Set</Button>
-                                        <Button onClick={handleNewArmor}><PlusCircle className="mr-2 h-4 w-4" /> Create Armor</Button>
-                                    </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <ScrollArea className="h-[60vh]">
-                                    {isLoading ? (
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <Skeleton className="h-64" /> <Skeleton className="h-64" />
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                             <div className="lg:col-span-1 space-y-6">
+                                <Card>
+                                    <CardHeader className="flex-row justify-between items-start">
+                                        <div>
+                                            <CardTitle className="flex items-center gap-2"><Box className="text-blue-500"/> Base Body Management</CardTitle>
+                                            <CardDescription>Manage the base models for characters.</CardDescription>
                                         </div>
-                                    ) : armorPieces.length === 0 ? (
-                                        <p className="text-center text-muted-foreground py-10">The forge is empty. Create your first armor piece!</p>
-                                    ) : (
-                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                            {armorPieces.map(piece => (
-                                                <Card key={piece.id} className="flex flex-col relative">
-                                                     <div className="absolute top-2 left-2 z-10">
-                                                        {piece.isPublished ? (
-                                                            <div className="flex items-center gap-1 bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full border border-green-300">
-                                                                <Eye className="h-3 w-3" />
-                                                                Published
-                                                            </div>
-                                                        ) : (
-                                                             <div className="flex items-center gap-1 bg-gray-100 text-gray-800 text-xs font-semibold px-2 py-1 rounded-full border border-gray-300">
-                                                                <EyeOff className="h-3 w-3" />
-                                                                Hidden
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <CardHeader className="items-center">
-                                                        <div className="w-24 h-24 relative bg-secondary rounded-md">
-                                                            <NextImage src={piece.imageUrl || ''} alt={piece.name} fill className="object-contain p-1" />
+                                        <Button size="sm" onClick={handleNewBody}><PlusCircle className="mr-2 h-4 w-4" /> Create Body</Button>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <ScrollArea className="h-[60vh]">
+                                        {isLoading ? (
+                                            <Skeleton className="h-64" />
+                                        ) : baseBodies.length === 0 ? (
+                                            <p className="text-center text-muted-foreground py-10">No base bodies created yet.</p>
+                                        ) : (
+                                             <div className="space-y-2">
+                                                {baseBodies.map(body => (
+                                                    <Card key={body.id} className="p-2 flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <NextImage src={body.thumbnailUrl || ''} alt={body.name} width={40} height={40} className="bg-secondary rounded-md object-contain"/>
+                                                            <span className="font-semibold">{body.name}</span>
                                                         </div>
-                                                    </CardHeader>
-                                                    <CardContent className="flex-grow text-center space-y-1">
-                                                        <p className="font-bold">{piece.name}</p>
-                                                        {piece.setName && <p className="text-xs font-semibold text-primary">{piece.setName}</p>}
-                                                        <p className="text-sm text-muted-foreground">{piece.classRequirement} - {piece.slot}</p>
-                                                        <p className="text-sm">Lvl {piece.levelRequirement} / {piece.goldCost}g</p>
-                                                    </CardContent>
-                                                    <CardFooter className="p-2 flex gap-1">
-                                                        <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditArmor(piece)}><Edit className="mr-1 h-3 w-3" /> Edit</Button>
-                                                        <Button variant="destructive" size="sm" onClick={() => setArmorToDelete(piece)}><Trash2 className="h-3 w-3" /></Button>
-                                                    </CardFooter>
-                                                </Card>
-                                            ))}
-                                        </div>
-                                    )}
-                                    </ScrollArea>
-                                </CardContent>
-                            </Card>
+                                                        <div className="flex gap-1">
+                                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditBody(body)}><Edit className="h-4 w-4"/></Button>
+                                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setBodyToDelete(body)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
+                                                        </div>
+                                                    </Card>
+                                                ))}
+                                            </div>
+                                        )}
+                                        </ScrollArea>
+                                    </CardContent>
+                                </Card>
+                            </div>
 
-                            {/* HAIRSTYLE MANAGEMENT */}
-                             <Card>
-                                <CardHeader className="flex-row justify-between items-start">
-                                    <div>
-                                        <CardTitle className="flex items-center gap-2"><Scissors className="text-pink-500"/> Hairstyle Management</CardTitle>
-                                        <CardDescription>Manage all hairstyle styles and their color variations.</CardDescription>
-                                    </div>
-                                    <Button onClick={handleNewHairstyle}><PlusCircle className="mr-2 h-4 w-4" /> Create Hairstyle</Button>
-                                </CardHeader>
-                                <CardContent>
-                                    <ScrollArea className="h-[60vh]">
-                                    {isLoading ? (
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <Skeleton className="h-64" /> <Skeleton className="h-64" />
+                             {/* ARMOR & HAIRSTYLE MANAGEMENT */}
+                            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <Card>
+                                    <CardHeader className="flex-row justify-between items-start">
+                                        <div>
+                                            <CardTitle className="flex items-center gap-2"><Diamond className="text-primary"/> Armor Management</CardTitle>
+                                            <CardDescription>Manage all armor pieces available in the game.</CardDescription>
                                         </div>
-                                    ) : hairstyles.length === 0 ? (
-                                        <p className="text-center text-muted-foreground py-10">No hairstyles created yet.</p>
-                                    ) : (
-                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                            {hairstyles.map(style => (
-                                                <Card key={style.id} className="flex flex-col relative">
-                                                    <div className="absolute top-2 left-2 z-10">
-                                                        {style.isPublished ? (
-                                                            <div className="flex items-center gap-1 bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full border border-green-300">
-                                                                <Eye className="h-3 w-3" />
-                                                                Published
-                                                            </div>
-                                                        ) : (
-                                                             <div className="flex items-center gap-1 bg-gray-100 text-gray-800 text-xs font-semibold px-2 py-1 rounded-full border border-gray-300">
-                                                                <EyeOff className="h-3 w-3" />
-                                                                Hidden
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <CardHeader className="items-center">
-                                                        <div className="w-24 h-24 relative bg-secondary rounded-md">
-                                                            <NextImage src={style.baseImageUrl || ''} alt={style.styleName} fill className="object-contain p-1" />
+                                        <div className="flex gap-2">
+                                            <Button onClick={() => setIsSetCreatorOpen(true)} variant="secondary"><PlusCircle className="mr-2 h-4 w-4" /> Create Set</Button>
+                                            <Button onClick={handleNewArmor}><PlusCircle className="mr-2 h-4 w-4" /> Create Armor</Button>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <ScrollArea className="h-[60vh]">
+                                        {isLoading ? (
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <Skeleton className="h-64" /> <Skeleton className="h-64" />
+                                            </div>
+                                        ) : armorPieces.length === 0 ? (
+                                            <p className="text-center text-muted-foreground py-10">The forge is empty. Create your first armor piece!</p>
+                                        ) : (
+                                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                                                {armorPieces.map(piece => (
+                                                    <Card key={piece.id} className="flex flex-col relative">
+                                                        <div className="absolute top-2 left-2 z-10">
+                                                            {piece.isPublished ? (
+                                                                <div className="flex items-center gap-1 bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full border border-green-300">
+                                                                    <Eye className="h-3 w-3" />
+                                                                    Published
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex items-center gap-1 bg-gray-100 text-gray-800 text-xs font-semibold px-2 py-1 rounded-full border border-gray-300">
+                                                                    <EyeOff className="h-3 w-3" />
+                                                                    Hidden
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                    </CardHeader>
-                                                    <CardContent className="flex-grow text-center space-y-1">
-                                                        <p className="font-bold">{style.styleName}</p>
-                                                        <p className="text-sm text-muted-foreground">{style.colors?.length || 0} color(s)</p>
-                                                    </CardContent>
-                                                    <CardFooter className="p-2 flex gap-1">
-                                                        <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditHairstyle(style)}><Edit className="mr-1 h-3 w-3" /> Edit</Button>
-                                                        <Button variant="destructive" size="sm" onClick={() => setHairstyleToDelete(style)}><Trash2 className="h-3 w-3" /></Button>
-                                                    </CardFooter>
-                                                </Card>
-                                            ))}
+                                                        <CardHeader className="items-center">
+                                                            <div className="w-24 h-24 relative bg-secondary rounded-md">
+                                                                <NextImage src={piece.thumbnailUrl || piece.imageUrl || ''} alt={piece.name} fill className="object-contain p-1" />
+                                                            </div>
+                                                        </CardHeader>
+                                                        <CardContent className="flex-grow text-center space-y-1">
+                                                            <p className="font-bold">{piece.name}</p>
+                                                            {piece.setName && <p className="text-xs font-semibold text-primary">{piece.setName}</p>}
+                                                            <p className="text-sm text-muted-foreground">{piece.classRequirement} - {piece.slot}</p>
+                                                            <p className="text-sm">Lvl {piece.levelRequirement} / {piece.goldCost}g</p>
+                                                        </CardContent>
+                                                        <CardFooter className="p-2 flex gap-1">
+                                                            <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditArmor(piece)}><Edit className="mr-1 h-3 w-3" /> Edit</Button>
+                                                            <Button variant="destructive" size="sm" onClick={() => setArmorToDelete(piece)}><Trash2 className="h-3 w-3" /></Button>
+                                                        </CardFooter>
+                                                    </Card>
+                                                ))}
+                                            </div>
+                                        )}
+                                        </ScrollArea>
+                                    </CardContent>
+                                </Card>
+
+                                <Card>
+                                    <CardHeader className="flex-row justify-between items-start">
+                                        <div>
+                                            <CardTitle className="flex items-center gap-2"><Scissors className="text-pink-500"/> Hairstyle Management</CardTitle>
+                                            <CardDescription>Manage hairstyle styles and color variations.</CardDescription>
                                         </div>
-                                    )}
-                                    </ScrollArea>
-                                </CardContent>
-                            </Card>
+                                        <Button onClick={handleNewHairstyle}><PlusCircle className="mr-2 h-4 w-4" /> Create Hairstyle</Button>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <ScrollArea className="h-[60vh]">
+                                        {isLoading ? (
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <Skeleton className="h-64" /> <Skeleton className="h-64" />
+                                            </div>
+                                        ) : hairstyles.length === 0 ? (
+                                            <p className="text-center text-muted-foreground py-10">No hairstyles created yet.</p>
+                                        ) : (
+                                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                                                {hairstyles.map(style => (
+                                                    <Card key={style.id} className="flex flex-col relative">
+                                                        <div className="absolute top-2 left-2 z-10">
+                                                            {style.isPublished ? (
+                                                                <div className="flex items-center gap-1 bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full border border-green-300">
+                                                                    <Eye className="h-3 w-3" />
+                                                                    Published
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex items-center gap-1 bg-gray-100 text-gray-800 text-xs font-semibold px-2 py-1 rounded-full border border-gray-300">
+                                                                    <EyeOff className="h-3 w-3" />
+                                                                    Hidden
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <CardHeader className="items-center">
+                                                            <div className="w-24 h-24 relative bg-secondary rounded-md">
+                                                                <NextImage src={style.thumbnailUrl || style.baseImageUrl || ''} alt={style.styleName} fill className="object-contain p-1" />
+                                                            </div>
+                                                        </CardHeader>
+                                                        <CardContent className="flex-grow text-center space-y-1">
+                                                            <p className="font-bold">{style.styleName}</p>
+                                                            <p className="text-sm text-muted-foreground">{style.colors?.length || 0} color(s)</p>
+                                                        </CardContent>
+                                                        <CardFooter className="p-2 flex gap-1">
+                                                            <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditHairstyle(style)}><Edit className="mr-1 h-3 w-3" /> Edit</Button>
+                                                            <Button variant="destructive" size="sm" onClick={() => setHairstyleToDelete(style)}><Trash2 className="h-3 w-3" /></Button>
+                                                        </CardFooter>
+                                                    </Card>
+                                                ))}
+                                            </div>
+                                        )}
+                                        </ScrollArea>
+                                    </CardContent>
+                                </Card>
+                            </div>
                         </div>
                     </div>
                 </main>

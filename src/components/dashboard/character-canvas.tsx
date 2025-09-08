@@ -5,7 +5,7 @@
 import React from 'react';
 import Image from 'next/image';
 import type { Student } from '@/lib/data';
-import { baseBodyUrls, type ArmorPiece, type Hairstyle, type ArmorSlot } from '@/lib/forge';
+import { type ArmorPiece, type Hairstyle, type ArmorSlot, type BaseBody } from '@/lib/forge';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -20,6 +20,7 @@ const slotZIndex: Record<ArmorSlot, number> = {
 
 interface CharacterCanvasProps {
     student: Student | null;
+    allBodies: BaseBody[]; // Pass all bodies
     equipment: {
         bodyId: string | null;
         hairstyleId: string | null;
@@ -46,6 +47,7 @@ interface CharacterCanvasProps {
 
 export const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>(({ 
     student, 
+    allBodies,
     equipment, 
     allHairstyles,
     allArmor,
@@ -60,7 +62,7 @@ export const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasP
 }, ref) => {
     if (!student) return <Skeleton className="w-full h-full" />;
     
-    const baseBody = baseBodyUrls.find(b => b.id === equipment.bodyId) || null;
+    const baseBody = allBodies.find(b => b.id === equipment.bodyId) || null;
 
     const hairstyle = allHairstyles.find(h => h.id === equipment.hairstyleId);
     const hairstyleColor = equipment.hairstyleColor || hairstyle?.colors[0]?.imageUrl;

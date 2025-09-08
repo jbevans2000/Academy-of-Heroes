@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, auth, app } from '@/lib/firebase';
-import { collection, onSnapshot, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, getDoc, updateDoc, query, orderBy } from 'firebase/firestore';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -118,9 +118,8 @@ export default function Global3DForgePage() {
         });
 
         // Now fetch base bodies from Firestore
-        const unsubBaseBodies = onSnapshot(collection(db, 'baseBodies'), (snapshot) => {
-            const bodies = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BaseBody));
-            setBaseBodies(bodies.sort((a: any, b: any) => a.order - b.order));
+        const unsubBaseBodies = onSnapshot(query(collection(db, 'baseBodies'), orderBy('order')), (snapshot) => {
+            setBaseBodies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BaseBody)));
             setIsLoading(false);
         });
 
