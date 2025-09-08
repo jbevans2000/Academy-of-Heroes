@@ -266,7 +266,16 @@ export const avatarData: ClassAvatarData = {
         'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%208%20(7).png?alt=media&token=63612edc-0460-4506-a011-54087cbcfe0f',
         'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%208%20(8).png?alt=media&token=505deabe-ba8a-4f53-bb42-15064cdf6929'
     ],
-    9: generatePlaceholders(8, 'ice mage'),
+    9: [
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%209%20(1).png?alt=media&token=c91d4672-4467-4600-b0be-c94a093a2ec3',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%209%20(2).png?alt=media&token=f8a32ab4-c92c-4554-bef7-898ed30d8009',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%209%20(3).png?alt=media&token=c311dd72-caaa-4963-a761-b2b83397754b',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%209%20(4).png?alt=media&token=603beed6-a730-4fda-820d-6809b2e491c3',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%209%20(5).png?alt=media&token=80614f42-874e-494a-8580-8c3c67eecc9e',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%209%20(6).png?alt=media&token=a4bebc61-3f8d-4721-a79a-3876128d57b7',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%209%20(7).png?alt=media&token=577e3203-a16b-4f7c-a2b1-c9411a572bec',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%209%20(8).png?alt=media&token=c43c4ef4-2859-41e3-b8ad-7412bfaebe55'
+    ],
     10: generatePlaceholders(8, 'archmage'),
     11: generatePlaceholders(8, 'crystal mage'),
     12: generatePlaceholders(8, 'shadow mage'),
@@ -280,3 +289,5 @@ export const avatarData: ClassAvatarData = {
     20: generatePlaceholders(8, 'ascended mage'),
   },
 };
+
+    
