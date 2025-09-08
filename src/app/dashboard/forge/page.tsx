@@ -81,6 +81,8 @@ export default function ForgePage() {
     const [localArmorTransforms, setLocalArmorTransforms] = useState<Student['armorTransforms']>({});
     const [localArmorTransforms2, setLocalArmorTransforms2] = useState<Student['armorTransforms2']>({});
     const [local3DArmorTransforms, setLocal3DArmorTransforms] = useState<Student['equippedArmorTransforms']>({});
+    const [local3DHairstyleTransforms, setLocal3DHairstyleTransforms] = useState<Student['equippedHairstyle3DTransforms']>({});
+
 
     const [editingLayer, setEditingLayer] = useState<'primary' | 'secondary'>('primary');
     const [isDragging, setIsDragging] = useState(false);
@@ -139,6 +141,7 @@ export default function ForgePage() {
                 setLocalArmorTransforms(studentData.armorTransforms || {});
                 setLocalArmorTransforms2(studentData.armorTransforms2 || {});
                 setLocal3DArmorTransforms(studentData.equippedArmorTransforms || {});
+                setLocal3DHairstyleTransforms(studentData.equippedHairstyle3DTransforms || {});
 
                 // Set equipment based on saved data
                 setEquipment({
@@ -168,7 +171,7 @@ export default function ForgePage() {
              try {
                 const hairQuery = query(collection(db, 'hairstyles'), where('isPublished', '==', true));
                 unsubs.push(onSnapshot(hairQuery, (snapshot) => {
-                    setHairstyles(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hairstyle)));
+                    setAllHairstyles(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hairstyle)));
                 }));
                 const bodiesQuery = query(collection(db, 'baseBodies'), orderBy('order'));
                  unsubs.push(onSnapshot(bodiesQuery, (snapshot) => {
@@ -284,11 +287,12 @@ export default function ForgePage() {
     };
     
     const handlePieceClick = (pieceId: string) => {
-        if(pieceId === 'body') {
-            setActivePiece(null); 
+        if (isPreviewMode) return;
+        if (pieceId === 'body') {
+            setActivePiece(null);
             return;
         }
-        if(pieceId === 'hair') {
+        if (pieceId === 'hair') {
             setActivePiece(hairstyle || null);
             return;
         }
@@ -371,6 +375,7 @@ export default function ForgePage() {
                     equippedHairstyleId: '',
                     equippedHairstyleColor: '',
                     equippedHairstyleTransforms: {},
+                    equippedHairstyle3DTransforms: {},
                     equippedHeadId: '',
                     equippedShouldersId: '',
                     equippedChestId: '',
@@ -390,6 +395,7 @@ export default function ForgePage() {
                     equippedHairstyleId: equipment.hairstyleId,
                     equippedHairstyleColor: equipment.hairstyleColor,
                     equippedHairstyleTransforms: localHairstyleTransforms,
+                    equippedHairstyle3DTransforms: local3DHairstyleTransforms,
                     backgroundUrl: equipment.backgroundUrl,
                     equippedHeadId: equipment.headId,
                     equippedShouldersId: equipment.shouldersId,
@@ -459,15 +465,23 @@ export default function ForgePage() {
     
     const active3DScale = useMemo(() => {
         if (!activePiece || viewMode !== '3d') return 1;
-        return local3DArmorTransforms?.[activePiece.id]?.scale ?? 1;
-    }, [activePiece, viewMode, local3DArmorTransforms]);
+        if ('slot' in activePiece) { // Armor
+            return local3DArmorTransforms?.[activePiece.id]?.scale ?? 1;
+        } else { // Hairstyle
+            return local3DHairstyleTransforms?.scale ?? 1;
+        }
+    }, [activePiece, viewMode, local3DArmorTransforms, local3DHairstyleTransforms]);
 
     const handle3DScaleChange = (value: number) => {
         if (!activePiece) return;
-        setLocal3DArmorTransforms(prev => ({
-            ...prev,
-            [activePiece.id]: { scale: value }
-        }));
+        if ('slot' in activePiece) { // Armor
+            setLocal3DArmorTransforms(prev => ({
+                ...prev,
+                [activePiece.id]: { scale: value }
+            }));
+        } else { // Hairstyle
+            setLocal3DHairstyleTransforms({ scale: value });
+        }
     };
 
 
@@ -606,7 +620,7 @@ export default function ForgePage() {
                                         <ScrollArea className="flex-grow mt-4 max-h-[65vh]">
                                             <TabsContent value="body" className="p-1">
                                                 <div className="grid grid-cols-3 gap-2">
-                                                    {allBodies.map(item => (
+                                                    {allBodies.length > 0 ? allBodies.map(item => (
                                                         <Card 
                                                             key={item.id} 
                                                             className={cn( "cursor-pointer hover:border-primary", equipment.bodyId === item.id && "border-2 border-primary" )}
@@ -615,7 +629,7 @@ export default function ForgePage() {
                                                                 <Image src={item.thumbnailUrl || item.imageUrl} alt={item.name} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
                                                             </CardContent>
                                                         </Card>
-                                                    ))}
+                                                    )) : <p className="text-muted-foreground text-sm col-span-3 text-center py-2">No base bodies found.</p>}
                                                 </div>
                                             </TabsContent>
                                             <TabsContent value="hair" className="p-1">
@@ -718,7 +732,8 @@ export default function ForgePage() {
                                             armorPieces={armorPiecesWithModels}
                                             hairUrl={hairModelUrl}
                                             onPieceClick={handlePieceClick}
-                                            transforms={local3DArmorTransforms}
+                                            armorTransforms={local3DArmorTransforms}
+                                            hairTransform={local3DHairstyleTransforms}
                                         />
                                     </Suspense>
                                 ) : (

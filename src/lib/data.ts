@@ -60,6 +60,9 @@ export type Student = {
             scale: number;
         }
     };
+    equippedHairstyle3DTransforms?: { // New: For 3D hairstyle scaling
+        scale: number;
+    };
     armorTransforms?: { // Student-specific overrides for armor positions
         [armorId: string]: {
             [bodyId: string]: {

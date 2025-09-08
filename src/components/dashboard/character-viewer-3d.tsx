@@ -62,10 +62,11 @@ interface CharacterViewer3DProps {
     armorPieces?: { id: string; url: string; }[];
     hairUrl?: string | null;
     onPieceClick?: (pieceId: string) => void;
-    transforms?: { [armorId: string]: { scale: number; } };
+    armorTransforms?: { [armorId: string]: { scale: number; } };
+    hairTransform?: { scale: number; };
 }
 
-export function CharacterViewer3D({ bodyUrl, armorPieces = [], hairUrl, onPieceClick, transforms = {} }: CharacterViewer3DProps) {
+export function CharacterViewer3D({ bodyUrl, armorPieces = [], hairUrl, onPieceClick, armorTransforms = {}, hairTransform }: CharacterViewer3DProps) {
     const skeletonRef = useRef<THREE.Skeleton | null>(null);
 
     const handleBodyLoad = (bodyScene: THREE.Group) => {
@@ -106,12 +107,12 @@ export function CharacterViewer3D({ bodyUrl, armorPieces = [], hairUrl, onPieceC
                         key={piece.id} 
                         url={piece.url} 
                         pieceId={piece.id}
-                        scale={transforms[piece.id]?.scale ?? 1}
+                        scale={armorTransforms[piece.id]?.scale ?? 1}
                         onClick={onPieceClick} 
                         onLoad={handleEquipmentLoad} 
                     />
                 ))}
-                {hairUrl && <Model url={hairUrl} pieceId="hair" scale={1} onClick={onPieceClick} onLoad={handleEquipmentLoad} />}
+                {hairUrl && <Model url={hairUrl} pieceId="hair" scale={hairTransform?.scale ?? 1} onClick={onPieceClick} onLoad={handleEquipmentLoad} />}
             </Suspense>
             <OrbitControls target={[0, 1, 0]} />
         </Canvas>
