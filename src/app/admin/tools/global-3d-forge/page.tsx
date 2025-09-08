@@ -407,7 +407,10 @@ export default function Global3DForgeSizerPage() {
                                         hairTransform={hairstyleTransform}
                                         onTransformUpdate={handle3DTransformUpdate}
                                         activePieceId={activePiece?.id || null}
-                                        onPieceClick={(piece) => setActivePiece(allHairstyles.find(h => h.id === piece?.id) || allArmor.find(a => a.id === piece?.id) || null)}
+                                        onPieceClick={(piece) => {
+                                            if (piece?.id === 'body') return;
+                                            setActivePiece(allHairstyles.find(h => h.id === piece?.id) || allArmor.find(a => a.id === piece?.id) || null)
+                                        }}
                                         isOrbitControlsEnabled={isOrbitControlsEnabled}
                                     />
                                 </Suspense>
@@ -480,4 +483,3 @@ export default function Global3DForgeSizerPage() {
     );
 }
 
-    
