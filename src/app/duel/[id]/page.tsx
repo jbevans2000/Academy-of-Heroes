@@ -307,75 +307,68 @@ export default function DuelPage() {
     
     const handleSubmitAnswer = useCallback(async (isTimeout = false) => {
         if ((!isTimeout && selectedAnswer === null) || !user || !duelRef || hasAnswered || !teacherUid || !duelSettings || !duel) return;
-    
+
         setHasAnswered(true);
-        
+
         try {
             await runTransaction(db, async (transaction) => {
                 const freshDuelSnap = await transaction.get(duelRef);
                 if (!freshDuelSnap.exists()) throw new Error("Duel document not found during transaction.");
-                
-                let duelData = freshDuelSnap.data() as DuelState;
-                
-                // If this is called by a timeout, check if another process already updated the state
-                if (isTimeout && duelData.answers?.[user.uid]?.length > duelData.currentQuestionIndex) {
-                    return; // Another client has already submitted for this user
+
+                const duelData = freshDuelSnap.data() as DuelState;
+                const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
+                const myAnswers = [...(duelData.answers?.[user.uid] || [])];
+                const opponentAnswers = [...(duelData.answers?.[opponentUid] || [])];
+
+                // If this is a timeout call, but the answer is already there, do nothing.
+                if (isTimeout && myAnswers.length > duelData.currentQuestionIndex) {
+                    return;
                 }
 
+                // Check if opponent has answered by now.
+                let opponentHasAnswered = opponentAnswers.length > duelData.currentQuestionIndex;
+
+                // Handle timer expiration case for opponent who might have disconnected.
+                const opponentTimedOut = !opponentHasAnswered && duelData.timerEndsAt && duelData.timerEndsAt.toDate() < new Date();
+                
+                // Determine this user's answer
                 const currentQuestion = duelData.questions![duelData.currentQuestionIndex];
                  if (!currentQuestion) {
                     // Fallback if questions run out in sudden death
-                    const userScore = duelData.answers![user.uid].filter(a => a === 1).length;
-                    const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
-                    const opponentScore = duelData.answers![opponentUid].filter(a => a === 1).length;
+                    const userScore = myAnswers.filter(a => a === 1).length;
+                    const opponentScore = opponentAnswers.filter(a => a === 1).length;
                     const winnerUid = userScore > opponentScore ? user.uid : opponentUid;
                     await handleDuelEnd(transaction, winnerUid, user.uid === winnerUid ? opponentUid : user.uid, false, true);
                     return;
                 }
-
                 const isCorrect = isTimeout ? false : selectedAnswer === currentQuestion.correctAnswerIndex;
-                
-                const myAnswers = [...(duelData.answers?.[user.uid] || [])];
                 myAnswers[duelData.currentQuestionIndex] = isCorrect ? 1 : 0;
-                transaction.update(duelRef, { [`answers.${user.uid}`]: myAnswers });
-    
-                const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
-                const opponentAnswers = duelData.answers?.[opponentUid] || [];
-                const opponentHasAnswered = opponentAnswers.length > duelData.currentQuestionIndex;
-    
-                let opponentTimedOut = false;
-                if (!opponentHasAnswered && duelData.timerEndsAt && duelData.timerEndsAt.toDate() < new Date()) {
-                    opponentTimedOut = true;
+                
+                // Update my answer first.
+                const myUpdate = { [`answers.${user.uid}`]: myAnswers };
+                transaction.update(duelRef, myUpdate);
+
+                // If opponent timed out, update their answer as well.
+                if (opponentTimedOut) {
+                    opponentAnswers[duelData.currentQuestionIndex] = 0;
+                    transaction.update(duelRef, { [`answers.${opponentUid}`]: opponentAnswers });
+                    opponentHasAnswered = true; // Now we can proceed
                 }
-    
-                if (opponentHasAnswered || opponentTimedOut) {
-                    const opponentFinalAnswers = [...opponentAnswers];
-                    if (opponentTimedOut) {
-                        opponentFinalAnswers[duelData.currentQuestionIndex] = 0;
-                        transaction.update(duelRef, { [`answers.${opponentUid}`]: opponentFinalAnswers });
-                    }
+                
+                if (opponentHasAnswered) {
+                    const myAnswerForRound = myAnswers[duelData.currentQuestionIndex];
+                    const opponentAnswerForRound = opponentAnswers[duelData.currentQuestionIndex];
 
-                    // Re-fetch duelData after potential update
-                    duelData = (await transaction.get(duelRef)).data() as DuelState;
-                    const myFinalAnswers = duelData.answers![user.uid];
-                    const opponentFinalAnswersNow = duelData.answers![opponentUid];
-
-                    const myAnswerForRound = myFinalAnswers[duelData.currentQuestionIndex];
-                    const opponentAnswerForRound = opponentFinalAnswersNow[duelData.currentQuestionIndex];
-    
                     if (duelData.status === 'sudden_death') {
                         if (myAnswerForRound === 1 && opponentAnswerForRound === 0) {
-                            // I win
                              await handleDuelEnd(transaction, user.uid, opponentUid, false);
                         } else if (myAnswerForRound === 0 && opponentAnswerForRound === 1) {
-                            // Opponent wins
                              await handleDuelEnd(transaction, opponentUid, user.uid, false);
                         } else {
-                            // Still a tie, continue sudden death
-                            transaction.update(duelRef, {
+                             transaction.update(duelRef, {
                                 status: 'sudden_death',
                                 timerEndsAt: null,
-                                resultEndsAt: Timestamp.fromMillis(Date.now() + 7000), // Longer pause for sudden death
+                                resultEndsAt: Timestamp.fromMillis(Date.now() + 7000),
                             });
                         }
                         return;
@@ -384,18 +377,17 @@ export default function DuelPage() {
                     const isLastRegularQuestion = duelData.currentQuestionIndex >= 9;
 
                     if (isLastRegularQuestion) {
-                        const userScore = myFinalAnswers.filter(a => a === 1).length;
-                        const opponentScore = opponentFinalAnswersNow.filter(a => a === 1).length;
-
+                        const userScore = myAnswers.filter(a => a === 1).length;
+                        const opponentScore = opponentAnswers.filter(a => a === 1).length;
+                        
                         if (userScore !== opponentScore) {
                             const winnerUid = userScore > opponentScore ? user.uid : opponentUid;
                             const loserUid = userScore > opponentScore ? opponentUid : user.uid;
                             await handleDuelEnd(transaction, winnerUid, loserUid, false);
                         } else {
-                            // It's a tie, enter sudden death
                              transaction.update(duelRef, {
                                 status: 'sudden_death',
-                                isDraw: true, // Mark that we entered sudden death
+                                isDraw: true,
                                 timerEndsAt: null,
                                 resultEndsAt: Timestamp.fromMillis(Date.now() + 7000),
                             });
@@ -407,7 +399,7 @@ export default function DuelPage() {
                             resultEndsAt: Timestamp.fromMillis(Date.now() + 5000),
                         });
                     }
-                } 
+                }
             });
         } catch (e) {
             console.error("Duel answer submission failed:", e);
