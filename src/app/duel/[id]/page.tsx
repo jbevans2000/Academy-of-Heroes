@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -397,7 +398,6 @@ export default function DuelPage() {
         fetchPlayersAndSettings();
     }, [duel, teacherUid]);
     
-    // New answer submission logic
     const handleSubmitAnswer = useCallback(async (isTimeout = false) => {
         if (!user || !duelRef || hasAnswered || !teacherUid || !duelSettings) return;
         if (!isTimeout && selectedAnswer === null) return;
@@ -419,20 +419,23 @@ export default function DuelPage() {
         newAnswers[duel.currentQuestionIndex] = myAnswerValue;
 
         try {
+            // This is a "blind write" - we don't need a transaction because we are not reading first.
             await updateDoc(duelRef, { [answerPath]: newAnswers });
             
-            // After successful write, check if it's time to process results
+            // After a short delay, check if we need to process results.
+            // This is to give the opponent's write a chance to go through.
             setTimeout(async () => {
                 const duelSnap = await getDoc(duelRef);
                 if (!duelSnap.exists()) return;
                 const duelData = duelSnap.data() as DuelState;
                 const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
 
+                // Check if the other player has also answered this round
                 if ((duelData.answers?.[opponentUid] || []).length > duelData.currentQuestionIndex) {
-                    // Opponent has also answered, process results
+                    // If so, process results.
                     await processRoundResults(duelData);
                 }
-            }, 2000); // 2-second delay to allow for opponent's answer
+            }, 2000); 
 
         } catch (e) {
             console.error("Duel answer submission failed:", e);
@@ -451,7 +454,7 @@ export default function DuelPage() {
             const freshDuelData = duelDoc.data() as DuelState;
             
             // Prevent re-processing
-            if(freshDuelData.status === 'round_result' || freshDuelData.status === 'sudden_death') return;
+            if(freshDuelData.status === 'round_result' || freshDuelData.status === 'sudden_death' || freshDuelData.status === 'finished') return;
 
             const myAnswers = freshDuelData.answers?.[user.uid] || [];
             const opponentUid = user.uid === freshDuelData.challengerUid ? freshDuelData.opponentUid : freshDuelData.challengerUid;
@@ -674,7 +677,7 @@ export default function DuelPage() {
 
         return (
             <div className="relative flex h-screen flex-col items-center justify-center text-white overflow-hidden">
-                 <div 
+                <div 
                     className="absolute inset-0 -z-10"
                     style={{
                         backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FVictory%20Page.png?alt=media&token=eb9314d1-7673-4987-9fdf-b46186275947')`,
@@ -683,31 +686,37 @@ export default function DuelPage() {
                         opacity: 0.25
                     }}
                 />
-                <audio src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/sounds%2Ffanfare-and-crowd-cheering-156213.mp3?alt=media&token=c81c4af2-675c-4444-a696-27d97b0a7081" autoPlay />
+                <audio src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Battle%20Music%2FVictory%20Theme.mp3?alt=media&token=846c832f-bd29-4ba4-8ad8-680eb8f1689a" autoPlay />
                 <div className="relative w-full flex justify-center items-center h-80">
-                    <div className="absolute w-64 h-80 animate-slide-in-left">
+                    <div className="absolute animate-slide-in-left">
+                        <div className="relative w-64 h-80">
+                            <Image
+                                src={challenger.avatarUrl}
+                                alt={challenger.characterName}
+                                layout="fill"
+                                className="object-contain"
+                            />
+                        </div>
+                    </div>
+                   <div className="absolute animate-slide-in-right">
+                    <div className="relative w-64 h-80">
                          <Image
-                            src={challenger.avatarUrl}
-                            alt={challenger.characterName}
+                            src={opponent.avatarUrl}
+                            alt={opponent.characterName}
                             layout="fill"
                             className="object-contain"
                         />
                     </div>
-                   <div className="absolute w-64 h-80 animate-slide-in-right">
-                     <Image
-                        src={opponent.avatarUrl}
-                        alt={opponent.characterName}
-                        layout="fill"
-                        className="object-contain"
-                    />
                    </div>
                 </div>
                 <div className="relative text-center animate-fade-in-late w-full px-4 mt-8">
-                    <h2 className="text-5xl font-headline font-bold text-yellow-400 text-shadow-lg">
-                        {isDraw ? "The Duel is a Draw!" : isTiebreaker ? `${winner.characterName} wins the tie-breaker!` : `${winner.characterName} is Victorious!`}
-                    </h2>
-                    <p className="text-xl mt-4 text-white/90">{rewardsMessage}</p>
-                    <Button className="mt-8" onClick={() => router.push('/dashboard')}>Return to Dashboard</Button>
+                     <div className="bg-black/70 inline-block p-8 rounded-lg">
+                        <h2 className="text-5xl font-headline font-bold text-yellow-400 text-shadow-lg">
+                            {isDraw ? "The Duel is a Draw!" : isTiebreaker ? `${winner.characterName} wins the tie-breaker!` : `${winner.characterName} is Victorious!`}
+                        </h2>
+                        <p className="text-xl mt-4 text-white/90">{rewardsMessage}</p>
+                        <Button className="mt-8" onClick={() => router.push('/dashboard')}>Return to Dashboard</Button>
+                    </div>
                 </div>
             </div>
         )
