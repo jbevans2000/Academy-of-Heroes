@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
@@ -402,12 +403,11 @@ export default function ForgePage() {
                 updates = {
                     avatarUrl: selectedStaticAvatarUrl,
                     backgroundUrl: equipment.backgroundUrl || '', // Keep background
-                    useCustomAvatar: false, // Explicitly set to false
+                    useCustomAvatar: false,
                     equippedBodyId: '',
                     equippedHairstyleId: '',
                     equippedHairstyleColor: '',
                     equippedHairstyleTransforms: {},
-                    equippedHairstyle3DTransforms: {},
                     equippedHeadId: '',
                     equippedShouldersId: '',
                     equippedChestId: '',
@@ -416,13 +416,14 @@ export default function ForgePage() {
                     equippedFeetId: '',
                     armorTransforms: {},
                     armorTransforms2: {},
-                    equippedArmorTransforms: {},
+                    equippedHairstyle3DTransforms: {}, // Clear 3D data
+                    equippedArmorTransforms: {}, // Clear 3D data
                 };
             } else {
                  // If a custom character is built, save the recipe and clear the static URL
                  updates = {
                     avatarUrl: '', 
-                    useCustomAvatar: true, // Explicitly set to true
+                    useCustomAvatar: true,
                     equippedBodyId: equipment.bodyId,
                     equippedHairstyleId: equipment.hairstyleId,
                     equippedHairstyleColor: equipment.hairstyleColor,
@@ -436,6 +437,8 @@ export default function ForgePage() {
                     equippedFeetId: equipment.feetId,
                     armorTransforms: localArmorTransforms,
                     armorTransforms2: localArmorTransforms2,
+                    equippedHairstyle3DTransforms: {}, // Clear 3D data
+                    equippedArmorTransforms: {}, // Clear 3D data
                 };
             }
             
