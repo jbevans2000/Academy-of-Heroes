@@ -57,7 +57,9 @@ const DuelPlayerCard = ({ player, answers, isCurrentUser }: { player: Student | 
     return (
         <Card className={cn("text-center bg-card/50", isCurrentUser && "border-primary ring-2 ring-primary")}>
             <CardHeader className="p-2">
-                 <Image src={player.avatarUrl} alt={player.characterName} width={100} height={100} className="mx-auto rounded-full border-4" />
+                 <div className="relative w-24 h-24 mx-auto rounded-full">
+                    <Image src={player.avatarUrl} alt={player.characterName} fill className="object-contain rounded-full" />
+                 </div>
                  <CardTitle>{player.characterName}</CardTitle>
             </CardHeader>
             <CardContent className="p-2 flex justify-center gap-2">
@@ -459,7 +461,7 @@ export default function DuelPage() {
                 const prevStatus = duel?.status;
                 const prevQuestionIndex = duel?.currentQuestionIndex;
                 
-                if (prevStatus !== 'active' && duelData.status === 'active') {
+                if (prevStatus !== 'active' && duelData.status === 'active' && (!duelData.questions || duelData.questions.length === 0)) {
                     handleDuelStart(duelData);
                 }
                 
@@ -609,17 +611,12 @@ export default function DuelPage() {
     const opponentAnswers = opponentUid && duel?.answers ? (duel.answers[opponentUid] || []) : [];
 
     useEffect(() => {
-        const shouldShow = duel?.status === 'active' && duel.currentQuestionIndex === 0;
-        if (shouldShow) {
-            // After the animation duration, show the question.
-            const timer = setTimeout(() => setShowQuestion(true), 4000); 
-            return () => clearTimeout(timer);
-        } else if (duel?.status === 'active') {
+        if (duel?.status === 'active') {
             setShowQuestion(true);
         } else {
             setShowQuestion(false);
         }
-    }, [duel?.status, duel?.currentQuestionIndex]);
+    }, [duel?.status]);
     
     if (isLoading || !duel) {
         return <div className="flex h-screen items-center justify-center bg-gray-900"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
