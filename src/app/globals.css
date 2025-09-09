@@ -78,18 +78,18 @@
   }
   @keyframes slide-in-left {
     from {
-      transform: translateX(-150%);
+      transform: translateX(-100vw);
     }
     to {
-      transform: translateX(-60%);
+      transform: translateX(-50%);
     }
   }
   @keyframes slide-in-right {
     from {
-      transform: translateX(150%);
+      transform: translateX(100vw);
     }
     to {
-      transform: translateX(60%);
+      transform: translateX(50%);
     }
   }
   @keyframes fade-in {

@@ -160,9 +160,9 @@ const AudioPlayer = ({ duel, musicUrl }: { duel: DuelState | null, musicUrl: str
         const audio = audioRef.current;
         if (!audio || !musicUrl) return;
 
-        const shouldPlay = duel?.status !== 'pending' && duel?.status !== 'finished' && duel?.status !== 'abandoned';
+        const isPlayableStatus = duel?.status !== 'pending' && duel?.status !== 'finished' && duel?.status !== 'abandoned';
 
-        if (shouldPlay && hasInteracted) {
+        if (isPlayableStatus && hasInteracted) {
             if (audio.src !== musicUrl) {
                 audio.src = musicUrl;
             }
@@ -680,11 +680,12 @@ export default function DuelPage() {
                         backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FVictory%20Page.png?alt=media&token=eb9314d1-7673-4987-9fdf-b46186275947')`,
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
+                        opacity: 0.25
                     }}
                 />
                 <audio src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/sounds%2Ffanfare-and-crowd-cheering-156213.mp3?alt=media&token=c81c4af2-675c-4444-a696-27d97b0a7081" autoPlay />
-                <div className="relative w-full max-w-4xl h-64 mt-[-10vh]">
-                    <div className="absolute w-64 h-64 animate-slide-in-left">
+                <div className="relative w-full flex justify-center items-center h-80">
+                    <div className="absolute w-64 h-80 animate-slide-in-left">
                          <Image
                             src={challenger.avatarUrl}
                             alt={challenger.characterName}
@@ -692,7 +693,7 @@ export default function DuelPage() {
                             className="object-contain"
                         />
                     </div>
-                   <div className="absolute w-64 h-64 animate-slide-in-right">
+                   <div className="absolute w-64 h-80 animate-slide-in-right">
                      <Image
                         src={opponent.avatarUrl}
                         alt={opponent.characterName}
