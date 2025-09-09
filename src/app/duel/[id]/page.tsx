@@ -114,6 +114,8 @@ const AudioPlayer = ({ duel, musicUrl, audioRef, onFirstInteraction }: {
     audioRef: React.RefObject<HTMLAudioElement>;
     onFirstInteraction: () => void;
 }) => {
+    const [volume, setVolume] = useState(20);
+
     useEffect(() => {
         const audio = audioRef.current;
         if (!audio || !musicUrl) return;
@@ -123,24 +125,26 @@ const AudioPlayer = ({ duel, musicUrl, audioRef, onFirstInteraction }: {
         if (isPlayableStatus) {
             if (audio.src !== musicUrl) {
                 audio.src = musicUrl;
+                 audio.volume = volume / 100;
             }
             audio.play().catch(e => console.error("Audio play failed:", e));
         } else {
             audio.pause();
         }
-    }, [duel?.status, musicUrl, audioRef]);
+    }, [duel?.status, musicUrl, audioRef, volume]);
 
     const getVolumeIcon = () => {
-        const audio = audioRef.current;
-        if (!audio || audio.muted || audio.volume === 0) return <VolumeX className="h-6 w-6" />;
-        if (audio.volume <= 0.5) return <Volume1 className="h-6 w-6" />;
+        if (volume === 0) return <VolumeX className="h-6 w-6" />;
+        if (volume <= 50) return <Volume1 className="h-6 w-6" />;
         return <VolumeIcon className="h-6 w-6" />;
     };
     
     const handleVolumeChange = (value: number[]) => {
         onFirstInteraction();
+        const newVolume = value[0];
+        setVolume(newVolume);
         if (audioRef.current) {
-            audioRef.current.volume = value[0] / 100;
+            audioRef.current.volume = newVolume / 100;
         }
     };
 
@@ -150,7 +154,7 @@ const AudioPlayer = ({ duel, musicUrl, audioRef, onFirstInteraction }: {
             <div className="flex items-center gap-2">
                 {getVolumeIcon()}
                 <Slider
-                    defaultValue={[20]}
+                    defaultValue={[volume]}
                     onValueChange={handleVolumeChange}
                     max={100}
                     step={1}
@@ -181,6 +185,7 @@ export default function DuelPage() {
     const [showInitialAnimation, setShowInitialAnimation] = useState(false);
     const audioRef = useRef<HTMLAudioElement>(null);
     const [hasInteracted, setHasInteracted] = useState(false);
+    const [showQuestion, setShowQuestion] = useState(false);
     
     const musicUrl = useMemo(() => {
         if (royaltyFreeTracks.length === 0) return '';
@@ -206,13 +211,19 @@ export default function DuelPage() {
 
     // Effect to hide animation after it plays
     useEffect(() => {
-        if (duel?.status === 'active' && showInitialAnimation) {
-            const timer = setTimeout(() => {
+        if (showInitialAnimation) {
+            const questionTimer = setTimeout(() => {
+                setShowQuestion(true);
+            }, 4000); // Wait for animation to finish
+            const animationTimer = setTimeout(() => {
                 setShowInitialAnimation(false);
-            }, 4000); // Match animation duration + pause
-            return () => clearTimeout(timer);
+            }, 5000); // Hide animation element after a bit more time
+            return () => {
+                clearTimeout(animationTimer);
+                clearTimeout(questionTimer);
+            }
         }
-    }, [duel?.status, showInitialAnimation]);
+    }, [showInitialAnimation]);
 
 
     useEffect(() => {
@@ -468,10 +479,11 @@ export default function DuelPage() {
                 if (prevQuestionIndex !== duelData.currentQuestionIndex) {
                     setHasAnswered(false);
                     setSelectedAnswer(null);
+                    setShowQuestion(true);
                 }
 
                 // Handle status changes
-                if (prevStatus !== 'active' && duelData.status === 'active') {
+                if (prevStatus !== 'active' && duelData.status === 'active' && duelData.currentQuestionIndex === 0) {
                     setShowInitialAnimation(true);
                     handleDuelStart(duelData);
                 } else if (prevStatus !== 'finished' && duelData.status === 'finished') {
@@ -507,6 +519,7 @@ export default function DuelPage() {
     useEffect(() => {
         if (!duelRef || (duel?.status !== 'round_result' && duel?.status !== 'sudden_death') || !duel.resultEndsAt) return;
         
+        setShowQuestion(false); // Hide question during result pop-up
         const isSuddenDeathNext = duel.status === 'sudden_death';
         const delay = isSuddenDeathNext ? 7000 : 5000;
 
@@ -812,7 +825,7 @@ export default function DuelPage() {
                 )}
 
 
-                {!showInitialAnimation && (
+                {showQuestion && (
                     <Card className="bg-card/80 backdrop-blur-sm animate-in fade-in-50">
                         <CardHeader className="text-center">
                             <CardTitle>Question {duel.currentQuestionIndex + 1}</CardTitle>
