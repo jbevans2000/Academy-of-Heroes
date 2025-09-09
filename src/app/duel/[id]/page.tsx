@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, onSnapshot, collection, query, where, getDocs, updateDoc, writeBatch, increment, deleteDoc, runTransaction, Timestamp, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
@@ -11,7 +11,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Swords, CheckCircle, XCircle, Trophy, Loader2, Shield, ArrowLeft, Hourglass, Info } from 'lucide-react';
+import { Swords, CheckCircle, XCircle, Trophy, Loader2, Shield, ArrowLeft, Hourglass, Info, VolumeX, Volume1, Volume2 as VolumeIcon } from 'lucide-react';
 import type { Student } from '@/lib/data';
 import type { DuelQuestion, DuelQuestionSection, DuelSettings } from '@/lib/duels';
 import { useToast } from '@/hooks/use-toast';
@@ -31,6 +31,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { royaltyFreeTracks } from '@/lib/music';
+import { Slider } from '@/components/ui/slider';
 
 
 interface DuelState {
@@ -94,6 +96,39 @@ const CountdownTimer = ({ expiryTimestamp }: { expiryTimestamp: Timestamp | unde
     );
 };
 
+function VolumeControl({ audioRef, onFirstInteraction }: { audioRef: React.RefObject<HTMLAudioElement>; onFirstInteraction: () => void; }) {
+    const [volume, setVolume] = useState(0); 
+
+    const handleVolumeChange = (value: number[]) => {
+        onFirstInteraction(); // Signal interaction on any slider move
+        const newVolume = value[0];
+        setVolume(newVolume);
+        if (audioRef.current) {
+            audioRef.current.volume = newVolume / 100;
+        }
+    };
+    
+    const getVolumeIcon = () => {
+        if (volume === 0) return <VolumeX className="h-6 w-6" />;
+        if (volume <= 50) return <Volume1 className="h-6 w-6" />;
+        return <VolumeIcon className="h-6 w-6" />;
+    };
+
+    return (
+        <div className="fixed bottom-4 right-4 z-50 w-48 p-4 rounded-lg bg-black/50 backdrop-blur-sm text-white">
+            <p className="text-xs text-center mb-1">Volume</p>
+            <div className="flex items-center gap-2">
+                {getVolumeIcon()}
+                <Slider
+                    value={[volume]}
+                    onValueChange={handleVolumeChange}
+                    max={100}
+                    step={1}
+                />
+            </div>
+        </div>
+    );
+}
 
 export default function DuelPage() {
     const router = useRouter();
@@ -114,6 +149,42 @@ export default function DuelPage() {
     const [isLeaving, setIsLeaving] = useState(false);
     const [showDeclinedDialog, setShowDeclinedDialog] = useState(false);
     
+    const audioRef = useRef<HTMLAudioElement>(null);
+    const [hasInteracted, setHasInteracted] = useState(false);
+    const musicUrl = useMemo(() => {
+        if (royaltyFreeTracks.length === 0) return '';
+        const randomIndex = Math.floor(Math.random() * royaltyFreeTracks.length);
+        return royaltyFreeTracks[randomIndex].url;
+    }, []);
+
+    const onFirstInteraction = () => {
+      if (!hasInteracted) {
+          setHasInteracted(true);
+          const audio = audioRef.current;
+          if (audio) {
+              audio.volume = 0.2; // Start at a reasonable volume
+              audio.play().catch(e => console.error("Audio play failed on interaction:", e));
+          }
+      }
+    };
+    
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio || !musicUrl) return;
+
+        const shouldPlay = duel?.status === 'active' || duel?.status === 'round_result' || duel?.status === 'sudden_death';
+
+        if (shouldPlay && hasInteracted) {
+            if (audio.src !== musicUrl) {
+                audio.src = musicUrl;
+            }
+            audio.play().catch(e => console.error("Audio play failed:", e));
+        } else {
+            audio.pause();
+        }
+    }, [duel?.status, musicUrl, hasInteracted]);
+
+
     const duelRef = useMemo(() => {
         if (!teacherUid || !duelId) return null;
         return doc(db, 'teachers', teacherUid, 'duels', duelId);
@@ -309,6 +380,7 @@ export default function DuelPage() {
         if ((!isTimeout && selectedAnswer === null) || !user || !duelRef || hasAnswered || !teacherUid || !duelSettings) return;
 
         setHasAnswered(true);
+        onFirstInteraction();
 
         try {
             await runTransaction(db, async (transaction) => {
@@ -316,25 +388,21 @@ export default function DuelPage() {
                 if (!freshDuelSnap.exists()) throw new Error("Duel document not found during transaction.");
                 
                 const duelData = freshDuelSnap.data() as DuelState;
-                const currentQuestion = duelData.questions?.[duelData.currentQuestionIndex];
-
-                if (!currentQuestion) {
-                    await handleDuelEnd(transaction, duelData.challengerUid, duelData.opponentUid, false, true); // End in draw if questions run out
-                    return;
-                }
-
                 const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
-                
-                // Determine my answer
-                const myAnswerIsCorrect = isTimeout ? false : selectedAnswer === currentQuestion.correctAnswerIndex;
-                const myAnswerValue = myAnswerIsCorrect ? 1 : 0;
-                
-                // Get opponent's answer from the current duel state
                 const opponentAnswers = duelData.answers?.[opponentUid] || [];
                 const hasOpponentAnswered = opponentAnswers.length > duelData.currentQuestionIndex;
 
                 const newAnswers = { ...(duelData.answers || {}) };
                 newAnswers[user.uid] = [...(newAnswers[user.uid] || [])];
+                
+                const currentQuestion = duelData.questions?.[duelData.currentQuestionIndex];
+                if (!currentQuestion) {
+                    await handleDuelEnd(transaction, duelData.challengerUid, duelData.opponentUid, false, true); 
+                    return;
+                }
+
+                const myAnswerIsCorrect = isTimeout ? false : selectedAnswer === currentQuestion.correctAnswerIndex;
+                const myAnswerValue = myAnswerIsCorrect ? 1 : 0;
                 newAnswers[user.uid][duelData.currentQuestionIndex] = myAnswerValue;
 
                 const updates: Partial<DuelState> = { answers: newAnswers };
@@ -342,7 +410,7 @@ export default function DuelPage() {
                 if (hasOpponentAnswered) {
                     const opponentAnswerValue = opponentAnswers[duelData.currentQuestionIndex];
                     
-                    if (duelData.isDraw) { // Sudden Death Logic
+                    if (duelData.isDraw) {
                         if (myAnswerValue === 1 && opponentAnswerValue === 0) {
                              await handleDuelEnd(transaction, user.uid, opponentUid, false);
                         } else if (myAnswerValue === 0 && opponentAnswerValue === 1) {
@@ -352,7 +420,7 @@ export default function DuelPage() {
                             updates.timerEndsAt = null;
                             updates.resultEndsAt = Timestamp.fromMillis(Date.now() + 7000);
                         }
-                    } else { // Regular round resolution
+                    } else {
                         const isLastRegularQuestion = duelData.currentQuestionIndex >= 9;
                         if (isLastRegularQuestion) {
                             const myFinalScore = newAnswers[user.uid].filter(a => a === 1).length;
@@ -396,11 +464,10 @@ export default function DuelPage() {
         const winnerData = winnerDoc.data();
         
         if (isDrawByExhaustion) {
-            // Both players get their cost back
             const refundAmount = duel.cost || 0;
             transaction.update(winnerRef, { gold: (winnerData.gold || 0) + refundAmount });
             transaction.update(loserRef, { gold: (loserDoc.data().gold || 0) + refundAmount });
-            transaction.update(duelRef, { status: 'finished', isDraw: true, winnerUid: null }); // No winner
+            transaction.update(duelRef, { status: 'finished', isDraw: true, winnerUid: null }); 
         } else {
             const duelCost = duel.cost || 0;
             const winnerFinalXp = (winnerData.xp || 0) + duelSettings.rewardXp;
@@ -429,7 +496,6 @@ export default function DuelPage() {
         if (!duel?.timerEndsAt || hasAnswered || (duel.status !== 'active' && duel.status !== 'sudden_death')) return;
 
         const timeout = setTimeout(async () => {
-             // Re-fetch duel state inside timeout to ensure we have the latest data
             if(!duelRef || !user) return;
             const duelSnap = await getDoc(duelRef);
             if (!duelSnap.exists()) return;
@@ -437,11 +503,10 @@ export default function DuelPage() {
             const currentDuelData = duelSnap.data() as DuelState;
             const myCurrentAnswers = currentDuelData.answers?.[user.uid] || [];
 
-            // If user has not answered the current question by the time timeout fires
             if (myCurrentAnswers.length <= currentDuelData.currentQuestionIndex) {
                 await handleSubmitAnswer(true);
             }
-        }, duel.timerEndsAt.toDate().getTime() - Date.now() + 500); // Add a small buffer
+        }, duel.timerEndsAt.toDate().getTime() - Date.now() + 500);
 
         return () => clearTimeout(timeout);
     }, [duel?.timerEndsAt, hasAnswered, duel?.status, duel?.currentQuestionIndex, handleSubmitAnswer, duelRef, user]);
@@ -619,6 +684,8 @@ export default function DuelPage() {
 
     return (
         <div className="flex h-screen flex-col items-center justify-center bg-gray-900 p-4 text-white">
+             <audio ref={audioRef} loop />
+             {musicUrl && <VolumeControl audioRef={audioRef} onFirstInteraction={onFirstInteraction} />}
              <div className="absolute top-4 left-4 z-10">
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -687,3 +754,4 @@ export default function DuelPage() {
         </div>
     )
 }
+
