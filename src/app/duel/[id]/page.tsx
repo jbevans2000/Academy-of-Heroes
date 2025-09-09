@@ -251,14 +251,6 @@ export default function DuelPage() {
         getTeacher();
     }, [user]);
 
-    const setPlayerDuelStatus = async (batch: any, playerUids: string[], inDuel: boolean) => {
-        if (!teacherUid) return;
-        playerUids.forEach(uid => {
-            const playerRef = doc(db, 'teachers', teacherUid, 'students', uid);
-            batch.update(playerRef, { inDuel });
-        });
-    };
-    
     const handleDuelEnd = useCallback(async (transaction: any, winnerUid: string, loserUid: string, isForfeit: boolean, isDrawByExhaustion = false) => {
         if (!duel || !teacherUid || !duelSettings || !duelRef) return;
 
@@ -302,6 +294,57 @@ export default function DuelPage() {
         const loserName = loserUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
         await logGameEvent(teacherUid, 'DUEL', `${winnerName} defeated ${loserName} in a duel.`);
     }, [duel, teacherUid, duelSettings, duelRef]);
+    
+    const processRoundResults = useCallback(async (duelData: DuelState) => {
+        if (!user || !duelRef || !teacherUid) return;
+
+        await runTransaction(db, async (transaction) => {
+            const duelDoc = await transaction.get(duelRef);
+            if (!duelDoc.exists()) throw new Error("Duel disappeared");
+            const freshDuelData = duelDoc.data() as DuelState;
+            
+            // Prevent re-processing
+            if(freshDuelData.status === 'round_result' || freshDuelData.status === 'sudden_death' || freshDuelData.status === 'finished') return;
+
+            const myAnswers = freshDuelData.answers?.[user.uid] || [];
+            const opponentUid = user.uid === freshDuelData.challengerUid ? freshDuelData.opponentUid : freshDuelData.challengerUid;
+            const opponentAnswers = freshDuelData.answers?.[opponentUid] || [];
+            
+            const updates: Partial<DuelState> = {};
+
+            if (freshDuelData.isDraw) {
+                if (myAnswers[freshDuelData.currentQuestionIndex] > opponentAnswers[freshDuelData.currentQuestionIndex]) {
+                    await handleDuelEnd(transaction, user.uid, opponentUid, false);
+                } else if (opponentAnswers[freshDuelData.currentQuestionIndex] > myAnswers[freshDuelData.currentQuestionIndex]) {
+                    await handleDuelEnd(transaction, opponentUid, user.uid, false);
+                } else {
+                    updates.status = 'sudden_death';
+                    updates.resultEndsAt = Timestamp.fromMillis(Date.now() + 7000);
+                }
+            } else {
+                const isLastRegularQuestion = freshDuelData.currentQuestionIndex >= 9;
+                if (isLastRegularQuestion) {
+                    const myFinalScore = myAnswers.filter(a => a === 1).length;
+                    const opponentFinalScore = opponentAnswers.filter(a => a === 1).length;
+                    if (myFinalScore !== opponentFinalScore) {
+                        const winnerUid = myFinalScore > opponentFinalScore ? user.uid : opponentUid;
+                        const loserUid = winnerUid === user.uid ? opponentUid : user.uid;
+                        await handleDuelEnd(transaction, winnerUid, loserUid, false);
+                    } else {
+                        updates.status = 'sudden_death';
+                        updates.isDraw = true;
+                        updates.resultEndsAt = Timestamp.fromMillis(Date.now() + 7000);
+                    }
+                } else {
+                    updates.status = 'round_result';
+                    updates.resultEndsAt = Timestamp.fromMillis(Date.now() + 5000);
+                }
+            }
+            if (Object.keys(updates).length > 0) {
+                transaction.update(duelRef, updates);
+            }
+        });
+    }, [user, duelRef, teacherUid, handleDuelEnd]);
 
     const handleDuelStart = useCallback(async (duelData: DuelState) => {
         if (!teacherUid || !duelRef) return;
@@ -369,57 +412,6 @@ export default function DuelPage() {
         }
     }, [teacherUid, duelRef, toast]);
     
-    const processRoundResults = useCallback(async (duelData: DuelState) => {
-        if (!user || !duelRef || !teacherUid) return;
-
-        await runTransaction(db, async (transaction) => {
-            const duelDoc = await transaction.get(duelRef);
-            if (!duelDoc.exists()) throw new Error("Duel disappeared");
-            const freshDuelData = duelDoc.data() as DuelState;
-            
-            // Prevent re-processing
-            if(freshDuelData.status === 'round_result' || freshDuelData.status === 'sudden_death' || freshDuelData.status === 'finished') return;
-
-            const myAnswers = freshDuelData.answers?.[user.uid] || [];
-            const opponentUid = user.uid === freshDuelData.challengerUid ? freshDuelData.opponentUid : freshDuelData.challengerUid;
-            const opponentAnswers = freshDuelData.answers?.[opponentUid] || [];
-            
-            const updates: Partial<DuelState> = {};
-
-            if (freshDuelData.isDraw) {
-                if (myAnswers[freshDuelData.currentQuestionIndex] > opponentAnswers[freshDuelData.currentQuestionIndex]) {
-                    await handleDuelEnd(transaction, user.uid, opponentUid, false);
-                } else if (opponentAnswers[freshDuelData.currentQuestionIndex] > myAnswers[freshDuelData.currentQuestionIndex]) {
-                    await handleDuelEnd(transaction, opponentUid, user.uid, false);
-                } else {
-                    updates.status = 'sudden_death';
-                    updates.resultEndsAt = Timestamp.fromMillis(Date.now() + 7000);
-                }
-            } else {
-                const isLastRegularQuestion = freshDuelData.currentQuestionIndex >= 9;
-                if (isLastRegularQuestion) {
-                    const myFinalScore = myAnswers.filter(a => a === 1).length;
-                    const opponentFinalScore = opponentAnswers.filter(a => a === 1).length;
-                    if (myFinalScore !== opponentFinalScore) {
-                        const winnerUid = myFinalScore > opponentFinalScore ? user.uid : opponentUid;
-                        const loserUid = winnerUid === user.uid ? opponentUid : user.uid;
-                        await handleDuelEnd(transaction, winnerUid, loserUid, false);
-                    } else {
-                        updates.status = 'sudden_death';
-                        updates.isDraw = true;
-                        updates.resultEndsAt = Timestamp.fromMillis(Date.now() + 7000);
-                    }
-                } else {
-                    updates.status = 'round_result';
-                    updates.resultEndsAt = Timestamp.fromMillis(Date.now() + 5000);
-                }
-            }
-            if (Object.keys(updates).length > 0) {
-                transaction.update(duelRef, updates);
-            }
-        });
-    }, [user, duelRef, teacherUid, handleDuelEnd]);
-
     const handleSubmitAnswer = useCallback(async (isTimeout = false) => {
         if (!user || !duelRef || hasAnswered || !teacherUid || !duelSettings || !duel) return;
         if (!isTimeout && selectedAnswer === null) return;
@@ -465,6 +457,14 @@ export default function DuelPage() {
         }, 1500); 
 
     }, [selectedAnswer, user, duelRef, hasAnswered, teacherUid, duelSettings, toast, duel, processRoundResults]);
+
+    const setPlayerDuelStatus = async (batch: any, playerUids: string[], inDuel: boolean) => {
+        if (!teacherUid) return;
+        playerUids.forEach(uid => {
+            const playerRef = doc(db, 'teachers', teacherUid, 'students', uid);
+            batch.update(playerRef, { inDuel });
+        });
+    };
     
     // Set up duel listener
     useEffect(() => {
@@ -476,6 +476,12 @@ export default function DuelPage() {
                 const prevStatus = duel?.status;
                 const prevQuestionIndex = duel?.currentQuestionIndex;
 
+                if (prevStatus !== 'active' && duelData.status === 'active') {
+                    handleDuelStart(duelData);
+                }
+                if (duelData.status === 'active' && duelData.currentQuestionIndex === 0 && prevQuestionIndex !== 0) {
+                    setShowInitialAnimation(true);
+                }
                 if (prevQuestionIndex !== duelData.currentQuestionIndex) {
                     setHasAnswered(false);
                     setSelectedAnswer(null);
@@ -483,12 +489,7 @@ export default function DuelPage() {
                 }
 
                 // Handle status changes
-                if (prevStatus !== 'active' && duelData.status === 'active') {
-                    handleDuelStart(duelData);
-                    if (duelData.currentQuestionIndex === 0) {
-                        setShowInitialAnimation(true);
-                    }
-                } else if (prevStatus !== 'finished' && duelData.status === 'finished') {
+                if (prevStatus !== 'finished' && duelData.status === 'finished') {
                     const batch = writeBatch(db);
                     await setPlayerDuelStatus(batch, [duelData.challengerUid, duelData.opponentUid], false);
                     await batch.commit();
@@ -692,29 +693,29 @@ export default function DuelPage() {
         if (isDraw) {
             rewardsMessage = `The duel ended in a draw after all questions were exhausted! Your entry fee of ${duel.cost} Gold has been refunded.`;
         } else if (winner && duelSettings) {
-            const winnerRewardText = `You have been awarded ${duelSettings.rewardXp} XP and ${duelSettings.rewardGold} Gold! Your entry fee of ${duel.cost} has been returned.`;
+            const winnerRewardText = `You have been awarded ${duelSettings.rewardXp} XP and ${duelSettings.rewardGold! > 0 ? duelSettings.rewardGold : 0} Gold! Your entry fee of ${duel.cost} has been returned.`;
             const loserRewardText = `Your entry fee of ${Math.floor((duel.cost || 0) / 2)} Gold has been refunded for valiantly completing the training exercise.`;
             rewardsMessage = user?.uid === winner.uid ? winnerRewardText : loserRewardText;
         }
 
         return (
              <div className="relative flex h-screen flex-col items-center justify-center p-4 text-white overflow-hidden">
-                <audio ref={audioRef} src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Battle%20Music%2FVictory%20Theme.mp3?alt=media&token=846c832f-bd29-4ba4-8ad8-680eb8f1689a" autoPlay loop />
+                <audio ref={audioRef} src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Battle%20Music%2FVictory%20Theme.mp3?alt=media&token=846c832f-bd29-4ba4-8ad8-680eb8f1689a" autoPlay loop />
                  <div
                     className="absolute inset-0 -z-10"
                     style={{
-                        backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FVictory%20Page.png?alt=media&token=eb9314d1-7673-4987-9fdf-b46186275947')`,
+                        backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FVictory%20Page.png?alt=media&token=eb9314d1-7673-4987-9fdf-b46186275947')`,
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                     }}
                 />
                  <div className="relative w-full flex justify-center items-center h-80">
-                    <div className="absolute animate-slide-in-left">
+                     <div className={cn("absolute animate-duel-slide-in-left-slow")}>
                         <div className="relative w-80 h-80">
                             <Image src={challenger.avatarUrl} alt={challenger.characterName} layout="fill" className="object-contain" />
                         </div>
                     </div>
-                   <div className="absolute animate-slide-in-right">
+                   <div className={cn("absolute animate-duel-slide-in-right-slow")}>
                     <div className="relative w-80 h-80">
                          <Image src={opponent.avatarUrl} alt={opponent.characterName} layout="fill" className="object-contain" />
                     </div>
@@ -813,12 +814,12 @@ export default function DuelPage() {
                 
                  {showInitialAnimation && challenger && opponent && (
                     <div className="relative h-80 mb-4 overflow-hidden flex items-center justify-center">
-                        <div className="absolute animate-duel-slide-in-left-slow">
+                        <div className={cn("absolute", showInitialAnimation && "animate-duel-slide-in-left-slow")}>
                             <div className="relative w-64 h-80">
                                 <Image src={challenger.avatarUrl} alt={challenger.characterName} layout="fill" className="object-contain" />
                             </div>
                         </div>
-                        <div className="absolute animate-duel-slide-in-right-slow">
+                        <div className={cn("absolute", showInitialAnimation && "animate-duel-slide-in-right-slow")}>
                             <div className="relative w-64 h-80">
                                 <Image src={opponent.avatarUrl} alt={opponent.characterName} layout="fill" className="object-contain" />
                             </div>
