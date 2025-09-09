@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -674,7 +673,7 @@ export default function DuelPage() {
         }
 
         return (
-            <div className="relative flex h-screen flex-col items-center justify-center bg-gray-900 text-white overflow-hidden">
+            <div className="relative flex h-screen flex-col items-center justify-center text-white overflow-hidden">
                  <div 
                     className="absolute inset-0 -z-10"
                     style={{
@@ -859,18 +858,3 @@ export default function DuelPage() {
         </div>
     )
 }
-
-    
-
-    
-
-
-
-
-
-
-
-
-
-
-
