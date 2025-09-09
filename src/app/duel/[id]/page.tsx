@@ -131,6 +131,7 @@ const AudioPlayer = ({ duel, musicUrl, audioRef, onFirstInteraction }: {
     }, [duel?.status, musicUrl, audioRef]);
 
     const getVolumeIcon = () => {
+        const audio = audioRef.current;
         if (!audio || audio.muted || audio.volume === 0) return <VolumeX className="h-6 w-6" />;
         if (audio.volume <= 0.5) return <Volume1 className="h-6 w-6" />;
         return <VolumeIcon className="h-6 w-6" />;
