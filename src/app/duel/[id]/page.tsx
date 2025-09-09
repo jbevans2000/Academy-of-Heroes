@@ -692,7 +692,7 @@ export default function DuelPage() {
 
         return (
              <div className="relative flex h-screen flex-col items-center justify-center p-4 text-white overflow-hidden">
-                <audio ref={audioRef} src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Battle%20Music%2FVictory%20Theme.mp3?alt=media&token=846c832f-bd29-4ba4-8ad8-680eb8f1689a" autoPlay loop />
+                <audio ref={audioRef} src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Battle%20Music%2FVictory%20Theme.mp3?alt=media&token=846c832f-bd29-4ba4-8ad8-680eb8f1689a" autoPlay loop />
                 <div
                     className="absolute inset-0 -z-10"
                     style={{
@@ -701,12 +701,14 @@ export default function DuelPage() {
                         backgroundPosition: 'center',
                     }}
                 />
-                 <div className="relative w-full flex justify-center items-center h-80">
-                     <div className="relative w-80 h-80">
-                         <Image src={winner.avatarUrl} alt={winner.characterName} layout="fill" className="object-contain" />
-                     </div>
-                </div>
-                <div className="relative text-center animate-fade-in-late w-full px-4 mt-8">
+                 {winner && (
+                     <div className="relative w-full flex justify-center items-center h-80">
+                         <div className="relative w-80 h-80">
+                             <Image src={winner.avatarUrl} alt={winner.characterName} layout="fill" className="object-contain" />
+                         </div>
+                    </div>
+                )}
+                <div className="relative text-center w-full px-4 mt-8">
                      <div className="bg-black/70 inline-block p-8 rounded-lg">
                         <h2 className="text-5xl font-headline font-bold text-yellow-400 text-shadow-lg">
                             {isDraw ? "The Duel is a Draw!" : isTiebreaker ? `${winner.characterName} wins the tie-breaker!` : `${winner.characterName} is Victorious!`}
