@@ -122,11 +122,13 @@ export function TeacherMessageCenter({
                                         selectedStudent?.uid === student.uid && "bg-accent"
                                     )}
                                 >
-                                    <p className="font-semibold">{student.characterName}</p>
+                                    <div className="flex items-center justify-between">
+                                        <p className="font-semibold">{student.characterName}</p>
+                                        {student.hasUnreadMessages && (
+                                            <div className="w-2.5 h-2.5 rounded-full bg-primary" />
+                                        )}
+                                    </div>
                                     <p className="text-sm text-muted-foreground">{student.studentName}</p>
-                                    {student.hasUnreadMessages && (
-                                        <div className="w-2.5 h-2.5 rounded-full bg-primary mt-1" />
-                                    )}
                                 </div>
                             ))}
                         </div>
@@ -152,7 +154,7 @@ export function TeacherMessageCenter({
                                                     <p>{msg.text}</p>
                                                 </div>
                                                 <p className="text-xs text-muted-foreground mt-1">
-                                                    {msg.timestamp ? formatDistanceToNow(new Date(msg.timestamp.seconds * 1000), { addSuffix: true }) : 'Sending...'}
+                                                     {msg.timestamp ? formatDistanceToNow(new Date(msg.timestamp.seconds * 1000), { addSuffix: true }) : 'Sending...'}
                                                 </p>
                                             </div>
                                         ))}

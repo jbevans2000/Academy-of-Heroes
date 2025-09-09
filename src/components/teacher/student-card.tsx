@@ -487,10 +487,21 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
                  </Tooltip>
                  {student.hasUnreadMessages && (
                     <Tooltip>
-                        <TooltipTrigger className="absolute bottom-2 right-2 z-10">
-                            <div className="w-3 h-3 rounded-full bg-red-500 ring-2 ring-white animate-pulse" />
+                        <TooltipTrigger asChild>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="absolute bottom-2 right-2 z-10 h-7 w-7"
+                                onClick={() => onSendMessage(student)}
+                            >
+                                <MessageSquare className="w-5 h-5 text-primary" />
+                                <span className="absolute top-0 right-0 flex h-2.5 w-2.5">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                                </span>
+                            </Button>
                         </TooltipTrigger>
-                        <TooltipContent>
+                         <TooltipContent>
                             <p>Unread Message</p>
                         </TooltipContent>
                     </Tooltip>
