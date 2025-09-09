@@ -106,20 +106,31 @@ export async function markMessagesAsRead(input: MarkMessagesAsReadInput): Promis
         const q = query(messagesRef, where('isRead', '==', false), where('sender', '==', reader === 'teacher' ? 'student' : 'teacher'));
         
         const unreadSnapshot = await getDocs(q);
-        if (unreadSnapshot.empty) {
-            return { success: true }; // No messages to mark as read
-        }
-        
         const batch = writeBatch(db);
-        unreadSnapshot.docs.forEach(doc => {
-            batch.update(doc.ref, { isRead: true });
-        });
+
+        if (!unreadSnapshot.empty) {
+            unreadSnapshot.docs.forEach(doc => {
+                batch.update(doc.ref, { isRead: true });
+            });
+        }
         
         // After marking, update the student's unread flag
         const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
         batch.update(studentRef, { hasUnreadMessages: false });
         
         await batch.commit();
+        
+        // After committing the reads, check if any other students have unread messages for the teacher.
+        if (reader === 'teacher') {
+            const allStudentsQuery = query(collection(db, 'teachers', teacherUid, 'students'), where('hasUnreadMessages', '==', true));
+            const remainingUnreadSnapshot = await getDocs(allStudentsQuery);
+            if (remainingUnreadSnapshot.empty) {
+                // If no other students have unread messages, clear the global teacher flag
+                const teacherRef = doc(db, 'teachers', teacherUid);
+                await updateDoc(teacherRef, { hasUnreadTeacherMessages: false });
+            }
+        }
+
 
         return { success: true };
     } catch (error: any) {
