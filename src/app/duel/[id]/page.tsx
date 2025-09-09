@@ -458,7 +458,7 @@ export default function DuelPage() {
                 const duelData = docSnap.data() as DuelState;
                 const prevStatus = duel?.status;
                 const prevQuestionIndex = duel?.currentQuestionIndex;
-
+                
                 if (prevStatus !== 'active' && duelData.status === 'active') {
                     handleDuelStart(duelData);
                 }
@@ -609,9 +609,10 @@ export default function DuelPage() {
     const opponentAnswers = opponentUid && duel?.answers ? (duel.answers[opponentUid] || []) : [];
 
     useEffect(() => {
-        const show = duel?.status === 'active' && duel?.currentQuestionIndex === 0;
-        if (show) {
-            const timer = setTimeout(() => setShowQuestion(true), 4000); // 4 seconds delay
+        const shouldShow = duel?.status === 'active' && duel.currentQuestionIndex === 0;
+        if (shouldShow) {
+            // After the animation duration, show the question.
+            const timer = setTimeout(() => setShowQuestion(true), 4000); 
             return () => clearTimeout(timer);
         } else if (duel?.status === 'active') {
             setShowQuestion(true);
@@ -701,16 +702,9 @@ export default function DuelPage() {
                     }}
                 />
                  <div className="relative w-full flex justify-center items-center h-80">
-                     <div className="absolute animate-duel-slide-in-left-slow">
-                        <div className="relative w-80 h-80">
-                            <Image src={challenger.avatarUrl} alt={challenger.characterName} layout="fill" className="object-contain" />
-                        </div>
-                    </div>
-                   <div className="absolute animate-duel-slide-in-right-slow">
-                    <div className="relative w-80 h-80">
-                         <Image src={opponent.avatarUrl} alt={opponent.characterName} layout="fill" className="object-contain" />
-                    </div>
-                   </div>
+                     <div className="relative w-80 h-80">
+                         <Image src={winner.avatarUrl} alt={winner.characterName} layout="fill" className="object-contain" />
+                     </div>
                 </div>
                 <div className="relative text-center animate-fade-in-late w-full px-4 mt-8">
                      <div className="bg-black/70 inline-block p-8 rounded-lg">
