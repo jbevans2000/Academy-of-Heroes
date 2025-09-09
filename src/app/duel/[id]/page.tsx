@@ -141,21 +141,13 @@ function VolumeControl({ audioRef, onFirstInteraction }: { audioRef: React.RefOb
     );
 }
 
-const AudioPlayer = ({ duel, musicUrl }: { duel: DuelState | null, musicUrl: string }) => {
-    const audioRef = useRef<HTMLAudioElement>(null);
-    const [hasInteracted, setHasInteracted] = useState(false);
-
-    const onFirstInteraction = () => {
-      if (!hasInteracted) {
-          setHasInteracted(true);
-          const audio = audioRef.current;
-          if (audio) {
-              audio.volume = 0.2; // Start at a reasonable volume
-              audio.play().catch(e => console.error("Audio play failed on interaction:", e));
-          }
-      }
-    };
-    
+const AudioPlayer = ({ duel, musicUrl, audioRef, onFirstInteraction, hasInteracted }: { 
+    duel: DuelState | null; 
+    musicUrl: string;
+    audioRef: React.RefObject<HTMLAudioElement>;
+    onFirstInteraction: () => void;
+    hasInteracted: boolean;
+}) => {
     useEffect(() => {
         const audio = audioRef.current;
         if (!audio || !musicUrl) return;
@@ -170,8 +162,7 @@ const AudioPlayer = ({ duel, musicUrl }: { duel: DuelState | null, musicUrl: str
         } else {
             audio.pause();
         }
-    }, [duel?.status, musicUrl, hasInteracted]);
-
+    }, [duel?.status, musicUrl, hasInteracted, audioRef]);
 
     return (
         <>
@@ -200,12 +191,25 @@ export default function DuelPage() {
     const [isLeaving, setIsLeaving] = useState(false);
     const [showDeclinedDialog, setShowDeclinedDialog] = useState(false);
     const [showInitialAnimation, setShowInitialAnimation] = useState(true);
+    const audioRef = useRef<HTMLAudioElement>(null);
+    const [hasInteracted, setHasInteracted] = useState(false);
     
     const musicUrl = useMemo(() => {
         if (royaltyFreeTracks.length === 0) return '';
         const randomIndex = Math.floor(Math.random() * royaltyFreeTracks.length);
         return royaltyFreeTracks[randomIndex].url;
     }, []);
+
+    const onFirstInteraction = () => {
+      if (!hasInteracted) {
+          setHasInteracted(true);
+          const audio = audioRef.current;
+          if (audio) {
+              audio.volume = 0.2; // Start at a reasonable volume
+              audio.play().catch(e => console.error("Audio play failed on interaction:", e));
+          }
+      }
+    };
 
     const duelRef = useMemo(() => {
         if (!teacherUid || !duelId) return null;
@@ -411,7 +415,8 @@ export default function DuelPage() {
     const handleSubmitAnswer = useCallback(async (isTimeout = false) => {
         if (!user || !duelRef || hasAnswered || !teacherUid || !duelSettings) return;
         if (!isTimeout && selectedAnswer === null) return;
-
+        
+        onFirstInteraction();
         setHasAnswered(true);
 
         const currentQuestion = duel?.questions?.[duel?.currentQuestionIndex];
@@ -802,7 +807,7 @@ export default function DuelPage() {
                     backgroundPosition: 'center',
                 }}
             />
-            <AudioPlayer duel={duel} musicUrl={musicUrl} />
+            <AudioPlayer duel={duel} musicUrl={musicUrl} audioRef={audioRef} onFirstInteraction={onFirstInteraction} hasInteracted={hasInteracted} />
              <div className="absolute top-4 left-4 z-10">
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
