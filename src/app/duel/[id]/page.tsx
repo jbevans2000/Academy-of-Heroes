@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -141,11 +142,10 @@ function VolumeControl({ audioRef, onFirstInteraction }: { audioRef: React.RefOb
     );
 }
 
-const AudioPlayer = ({ duel, musicUrl, audioRef, onFirstInteraction }: { 
+const AudioPlayer = ({ duel, musicUrl, audioRef }: { 
     duel: DuelState | null; 
     musicUrl: string;
     audioRef: React.RefObject<HTMLAudioElement>;
-    onFirstInteraction: () => void;
 }) => {
     useEffect(() => {
         const audio = audioRef.current;
@@ -163,12 +163,7 @@ const AudioPlayer = ({ duel, musicUrl, audioRef, onFirstInteraction }: {
         }
     }, [duel?.status, musicUrl, audioRef]);
 
-    return (
-        <>
-            <audio ref={audioRef} loop />
-            {musicUrl && <VolumeControl audioRef={audioRef} onFirstInteraction={onFirstInteraction} />}
-        </>
-    );
+    return <audio ref={audioRef} loop />;
 }
 
 export default function DuelPage() {
@@ -412,13 +407,13 @@ export default function DuelPage() {
     }, [duel, teacherUid]);
     
     const handleSubmitAnswer = useCallback(async (isTimeout = false) => {
-        if (!user || !duelRef || hasAnswered || !teacherUid || !duelSettings) return;
+        if (!user || !duelRef || hasAnswered || !teacherUid || !duelSettings || !duel) return;
         if (!isTimeout && selectedAnswer === null) return;
         
         onFirstInteraction();
         setHasAnswered(true);
 
-        const currentQuestion = duel?.questions?.[duel?.currentQuestionIndex];
+        const currentQuestion = duel.questions?.[duel.currentQuestionIndex];
         if (!currentQuestion) {
             console.error("No current question found!");
             return;
@@ -428,7 +423,7 @@ export default function DuelPage() {
         const myAnswerValue = myAnswerIsCorrect ? 1 : 0;
         
         const answerPath = `answers.${user.uid}`;
-        const currentAnswers = duel?.answers?.[user.uid] || [];
+        const currentAnswers = duel.answers?.[user.uid] || [];
         const newAnswers = [...currentAnswers];
         newAnswers[duel.currentQuestionIndex] = myAnswerValue;
 
@@ -454,7 +449,7 @@ export default function DuelPage() {
 
     }, [selectedAnswer, user, duelRef, hasAnswered, teacherUid, duelSettings, toast, duel]);
 
-    const processRoundResults = async (duelData: DuelState) => {
+    const processRoundResults = useCallback(async (duelData: DuelState) => {
         if (!user || !duelRef || !teacherUid) return;
 
         await runTransaction(db, async (transaction) => {
@@ -503,9 +498,9 @@ export default function DuelPage() {
                 transaction.update(duelRef, updates);
             }
         });
-    }
+    }, [user, duelRef, teacherUid, handleDuelEnd]);
 
-    const handleDuelEnd = async (transaction: any, winnerUid: string, loserUid: string, isForfeit: boolean, isDrawByExhaustion = false) => {
+    const handleDuelEnd = useCallback(async (transaction: any, winnerUid: string, loserUid: string, isForfeit: boolean, isDrawByExhaustion = false) => {
         if (!duel || !teacherUid || !duelSettings) return;
 
         const winnerRef = doc(db, 'teachers', teacherUid, 'students', winnerUid);
@@ -547,7 +542,7 @@ export default function DuelPage() {
         const winnerName = winnerUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
         const loserName = loserUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
         await logGameEvent(teacherUid, 'DUEL', `${winnerName} defeated ${loserName} in a duel.`);
-    };
+    }, [duel, teacherUid, duelSettings]);
 
     // Timer timeout effect
     useEffect(() => {
@@ -697,7 +692,6 @@ export default function DuelPage() {
                         backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FVictory%20Page.png?alt=media&token=eb9314d1-7673-4987-9fdf-b46186275947')`,
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
-                        opacity: 0.25,
                     }}
                 />
                 <audio src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Battle%20Music%2FVictory%20Theme.mp3?alt=media&token=846c832f-bd29-4ba4-8ad8-680eb8f1689a" autoPlay />
@@ -750,8 +744,8 @@ export default function DuelPage() {
         const myLastAnswerCorrect = currentUserAnswers[duel.currentQuestionIndex] === 1;
 
         return (
-             <div className="flex h-screen items-center justify-center bg-gray-900 text-white">
-                <Card className="text-center p-8 bg-card/80 backdrop-blur-sm animate-in fade-in-50">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in-50">
+                <Card className="text-center p-8 bg-card/80 text-white border-primary shadow-lg shadow-primary/50">
                     <CardHeader>
                         <CardTitle className="text-4xl">{duel.status === 'sudden_death' ? 'SUDDEN DEATH!' : `Round ${duel.currentQuestionIndex + 1} Over`}</CardTitle>
                         {myLastAnswerCorrect ? (
@@ -802,7 +796,9 @@ export default function DuelPage() {
                     backgroundPosition: 'center',
                 }}
             />
-            <AudioPlayer duel={duel} musicUrl={musicUrl} audioRef={audioRef} onFirstInteraction={onFirstInteraction} />
+            {musicUrl && <AudioPlayer duel={duel} musicUrl={musicUrl} audioRef={audioRef} />}
+            {musicUrl && <VolumeControl audioRef={audioRef} onFirstInteraction={onFirstInteraction} />}
+
              <div className="absolute top-4 left-4 z-10">
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -884,6 +880,33 @@ export default function DuelPage() {
                     </CardContent>
                 </Card>
             </div>
+             {(duel.status === 'round_result' || duel.status === 'sudden_death') && currentQuestion && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in-50">
+                    <Card className="text-center p-8 bg-card/80 text-white border-primary shadow-lg shadow-primary/50">
+                        <CardHeader>
+                            <CardTitle className="text-4xl">{duel.status === 'sudden_death' ? 'SUDDEN DEATH!' : `Round ${duel.currentQuestionIndex + 1} Over`}</CardTitle>
+                            {currentUserAnswers[duel.currentQuestionIndex] === 1 ? (
+                                <div className="flex items-center justify-center gap-2 text-2xl text-green-400 mt-2">
+                                    <CheckCircle /> You were correct!
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-center gap-2 text-2xl text-red-400 mt-2">
+                                    <XCircle /> You were incorrect!
+                                </div>
+                            )}
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                            <p className="text-muted-foreground">The correct answer was:</p>
+                            <p className="font-bold text-xl">{currentQuestion.answers[currentQuestion.correctAnswerIndex]}</p>
+                            <div className="pt-4">
+                                <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+                                <p className="text-sm text-muted-foreground">Next round starting soon...</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
         </div>
     )
 }
+
