@@ -184,7 +184,7 @@ export default function DuelPage() {
         const audio = audioRef.current;
         if (!audio || !musicUrl) return;
 
-        const shouldPlay = duel?.status === 'active' || duel?.status === 'round_result' || duel?.status === 'sudden_death';
+        const shouldPlay = duel?.status !== 'pending' && duel?.status !== 'finished' && duel?.status !== 'abandoned';
 
         if (shouldPlay && hasInteracted) {
             if (audio.src !== musicUrl) {
@@ -836,5 +836,6 @@ export default function DuelPage() {
     
 
     
+
 
 
