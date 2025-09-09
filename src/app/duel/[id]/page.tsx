@@ -141,12 +141,11 @@ function VolumeControl({ audioRef, onFirstInteraction }: { audioRef: React.RefOb
     );
 }
 
-const AudioPlayer = ({ duel, musicUrl, audioRef, onFirstInteraction, hasInteracted }: { 
+const AudioPlayer = ({ duel, musicUrl, audioRef, onFirstInteraction }: { 
     duel: DuelState | null; 
     musicUrl: string;
     audioRef: React.RefObject<HTMLAudioElement>;
     onFirstInteraction: () => void;
-    hasInteracted: boolean;
 }) => {
     useEffect(() => {
         const audio = audioRef.current;
@@ -154,7 +153,7 @@ const AudioPlayer = ({ duel, musicUrl, audioRef, onFirstInteraction, hasInteract
 
         const isPlayableStatus = duel?.status !== 'pending' && duel?.status !== 'finished' && duel?.status !== 'abandoned';
 
-        if (isPlayableStatus && hasInteracted) {
+        if (isPlayableStatus) {
             if (audio.src !== musicUrl) {
                 audio.src = musicUrl;
             }
@@ -162,7 +161,7 @@ const AudioPlayer = ({ duel, musicUrl, audioRef, onFirstInteraction, hasInteract
         } else {
             audio.pause();
         }
-    }, [duel?.status, musicUrl, hasInteracted, audioRef]);
+    }, [duel?.status, musicUrl, audioRef]);
 
     return (
         <>
@@ -520,8 +519,10 @@ export default function DuelPage() {
         
         if (isDrawByExhaustion) {
             const refundAmount = duel.cost || 0;
-            transaction.update(winnerRef, { gold: (winnerData.gold || 0) + refundAmount });
-            transaction.update(loserRef, { gold: (loserDoc.data().gold || 0) + refundAmount });
+            if (refundAmount > 0) {
+                transaction.update(winnerRef, { gold: (winnerData.gold || 0) + refundAmount });
+                transaction.update(loserRef, { gold: (loserDoc.data().gold || 0) + refundAmount });
+            }
             transaction.update(duelRef, { status: 'finished', isDraw: true, winnerUid: null }); 
         } else {
             const duelCost = duel.cost || 0;
@@ -532,8 +533,10 @@ export default function DuelPage() {
             
             if (!isForfeit) {
                 const refundAmount = Math.floor(duelCost / 2);
-                const loserData = loserDoc.data();
-                transaction.update(loserRef, { gold: (loserData.gold || 0) + refundAmount });
+                 if (refundAmount > 0) {
+                    const loserData = loserDoc.data();
+                    transaction.update(loserRef, { gold: (loserData.gold || 0) + refundAmount });
+                }
             }
             transaction.update(duelRef, { status: 'finished', winnerUid, isDraw: duel.isDraw ?? false });
         }
@@ -585,7 +588,9 @@ export default function DuelPage() {
                 const finalGold = (winnerData.gold || 0) + duelCost;
 
                 transaction.update(duelRef, { status: 'abandoned', winnerUid: opponentUid });
-                transaction.update(winnerRef, { gold: Math.max(0, finalGold) });
+                if (finalGold > 0) {
+                    transaction.update(winnerRef, { gold: finalGold });
+                }
             });
         } catch (error) {
             console.error("Error ending duel:", error);
@@ -672,14 +677,13 @@ export default function DuelPage() {
 
     if (duel.status === 'finished' && challenger && opponent) {
         const winner = duel.winnerUid === challenger.uid ? challenger : opponent;
-        const loser = duel.winnerUid === challenger.uid ? opponent : challenger;
         const isTiebreaker = duel.isDraw && duel.winnerUid !== null;
         const isDraw = duel.isDraw && duel.winnerUid === null;
 
         let rewardsMessage = '';
         if (isDraw) {
             rewardsMessage = `The duel ended in a draw after all questions were exhausted! Your entry fee of ${duel.cost} Gold has been refunded.`;
-        } else if (winner && loser && duelSettings) {
+        } else if (winner && duelSettings) {
             const winnerRewardText = `You have been awarded ${duelSettings.rewardXp} XP and ${duelSettings.rewardGold} Gold! Your entry fee of ${duel.cost} has been returned.`;
             const loserRewardText = `Your entry fee of ${Math.floor((duel.cost || 0) / 2)} Gold has been refunded for valiantly completing the training exercise.`;
             rewardsMessage = user.uid === winner.uid ? winnerRewardText : loserRewardText;
@@ -688,33 +692,24 @@ export default function DuelPage() {
         return (
             <div className="relative flex h-screen flex-col items-center justify-center text-white overflow-hidden">
                 <div 
-                    className="absolute inset-0 -z-10 bg-black/25"
+                    className="absolute inset-0 -z-10"
                     style={{
                         backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FVictory%20Page.png?alt=media&token=eb9314d1-7673-4987-9fdf-b46186275947')`,
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
+                        opacity: 0.25,
                     }}
                 />
                 <audio src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Battle%20Music%2FVictory%20Theme.mp3?alt=media&token=846c832f-bd29-4ba4-8ad8-680eb8f1689a" autoPlay />
                 <div className="relative w-full flex justify-center items-center h-80">
                     <div className="absolute animate-slide-in-left">
-                        <div className="relative w-64 h-80">
-                            <Image
-                                src={challenger.avatarUrl}
-                                alt={challenger.characterName}
-                                layout="fill"
-                                className="object-contain"
-                            />
+                        <div className="relative w-80 h-80">
+                            <Image src={challenger.avatarUrl} alt={challenger.characterName} layout="fill" className="object-contain" />
                         </div>
                     </div>
                    <div className="absolute animate-slide-in-right">
-                    <div className="relative w-64 h-80">
-                         <Image
-                            src={opponent.avatarUrl}
-                            alt={opponent.characterName}
-                            layout="fill"
-                            className="object-contain"
-                        />
+                    <div className="relative w-80 h-80">
+                         <Image src={opponent.avatarUrl} alt={opponent.characterName} layout="fill" className="object-contain" />
                     </div>
                    </div>
                 </div>
@@ -807,7 +802,7 @@ export default function DuelPage() {
                     backgroundPosition: 'center',
                 }}
             />
-            <AudioPlayer duel={duel} musicUrl={musicUrl} audioRef={audioRef} onFirstInteraction={onFirstInteraction} hasInteracted={hasInteracted} />
+            <AudioPlayer duel={duel} musicUrl={musicUrl} audioRef={audioRef} onFirstInteraction={onFirstInteraction} />
              <div className="absolute top-4 left-4 z-10">
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
