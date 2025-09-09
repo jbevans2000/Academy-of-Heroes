@@ -87,6 +87,18 @@ const CountdownTimer = ({ expiryTimestamp }: { expiryTimestamp: Timestamp | unde
 
         return () => clearInterval(interval);
     }, [expiryTimestamp]);
+    
+    const isUrgent = timeLeft <= 10 && timeLeft > 0;
+
+    if (isUrgent) {
+        return (
+             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center animate-in fade-in-50">
+                <div className="text-center animate-pulse">
+                    <p className="text-9xl font-bold font-mono text-destructive drop-shadow-[0_0_10px_rgba(255,0,0,0.8)]">{timeLeft}</p>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="flex items-center justify-center gap-2 text-2xl font-bold font-mono text-yellow-400">
@@ -335,7 +347,7 @@ export default function DuelPage() {
         });
 
         return () => unsubscribe();
-    // eslint-disable-next-line react-hooks-exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [duelRef, teacherUid, router, toast, handleDuelStart]);
     
     // Effect to handle advancing from the result screen
@@ -824,4 +836,5 @@ export default function DuelPage() {
     
 
     
+
 
