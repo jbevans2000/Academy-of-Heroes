@@ -626,7 +626,7 @@ export default function DuelPage() {
                         <CardDescription>Waiting for {duel.opponentName} to respond to your challenge.</CardDescription>
                         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mt-4 mx-auto" />
                     </CardContent>
-                    <CardFooter className="mt-4">
+                    <CardFooter className="mt-4 justify-center">
                          <Button variant="destructive" onClick={handleCancelDuel} disabled={isLeaving}>
                             {isLeaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
                             Cancel Duel
@@ -853,6 +853,7 @@ export default function DuelPage() {
     
 
     
+
 
 
 
