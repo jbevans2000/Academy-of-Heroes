@@ -377,23 +377,23 @@ export default function DuelPage() {
     }, [duel, teacherUid]);
     
     const handleSubmitAnswer = useCallback(async (isTimeout = false) => {
-        if ((!isTimeout && selectedAnswer === null) || !user || !duelRef || hasAnswered || !teacherUid || !duelSettings) return;
-
+        if (!user || !duelRef || hasAnswered || !teacherUid || !duelSettings) return;
+        if (!isTimeout && selectedAnswer === null) return;
+    
         setHasAnswered(true);
         onFirstInteraction();
-
+    
         try {
             await runTransaction(db, async (transaction) => {
                 const freshDuelSnap = await transaction.get(duelRef);
                 if (!freshDuelSnap.exists()) throw new Error("Duel document not found during transaction.");
-                
+    
                 const duelData = freshDuelSnap.data() as DuelState;
                 const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
                 
-                // Read from local state first, then from the fetched data
-                const opponentAnswers = duel?.answers?.[opponentUid] || freshDuelSnap.data().answers?.[opponentUid] || [];
+                const opponentAnswers = duelData.answers?.[opponentUid] || [];
                 const hasOpponentAnswered = opponentAnswers.length > duelData.currentQuestionIndex;
-
+    
                 const newAnswers = { ...(duelData.answers || {}) };
                 newAnswers[user.uid] = [...(newAnswers[user.uid] || [])];
                 
@@ -402,13 +402,13 @@ export default function DuelPage() {
                     await handleDuelEnd(transaction, duelData.challengerUid, duelData.opponentUid, false, true); 
                     return;
                 }
-
+    
                 const myAnswerIsCorrect = isTimeout ? false : selectedAnswer === currentQuestion.correctAnswerIndex;
                 const myAnswerValue = myAnswerIsCorrect ? 1 : 0;
                 newAnswers[user.uid][duelData.currentQuestionIndex] = myAnswerValue;
-
+    
                 const updates: Partial<DuelState> = { answers: newAnswers };
-
+    
                 if (hasOpponentAnswered) {
                     const opponentAnswerValue = opponentAnswers[duelData.currentQuestionIndex];
                     
@@ -451,7 +451,7 @@ export default function DuelPage() {
             console.error("Duel answer submission failed:", e);
             toast({ variant: "destructive", title: "Could Not Record Answer", description: "There was an error recording your answer." });
         }
-    }, [selectedAnswer, user, duelRef, hasAnswered, teacherUid, duelSettings, toast, duel]);
+    }, [selectedAnswer, user, duelRef, hasAnswered, teacherUid, duelSettings, toast]);
 
     const handleDuelEnd = async (transaction: any, winnerUid: string, loserUid: string, isForfeit: boolean, isDrawByExhaustion = false) => {
         if (!duel || !teacherUid || !duelSettings) return;
@@ -553,6 +553,19 @@ export default function DuelPage() {
         return <div className="flex h-screen items-center justify-center bg-gray-900"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
     }
 
+    if (duel.status === 'pending') {
+        return (
+            <div className="flex h-screen items-center justify-center bg-gray-900 text-white">
+                <Card className="text-center p-8 bg-card/80 backdrop-blur-sm">
+                    <Swords className="h-16 w-16 mx-auto text-primary" />
+                    <CardTitle className="text-4xl mt-4">Challenge Sent!</CardTitle>
+                    <CardDescription>Waiting for {duel.opponentName} to respond to your challenge.</CardDescription>
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mt-4 mx-auto" />
+                </Card>
+            </div>
+        )
+    }
+
     if (showDeclinedDialog) {
         return (
             <AlertDialog open={true} onOpenChange={() => {
@@ -577,14 +590,15 @@ export default function DuelPage() {
     if (duel.status === 'finished' && challenger && opponent) {
         const winner = duel.winnerUid === challenger.uid ? challenger : opponent;
         const loser = duel.winnerUid === challenger.uid ? opponent : challenger;
-        const isDraw = duel.isDraw && duel.winnerUid !== null;
+        const isTiebreaker = duel.isDraw && duel.winnerUid !== null;
+        const isDraw = duel.isDraw && duel.winnerUid === null;
 
         let rewardsMessage = '';
-        if (duel.isDraw && duel.winnerUid === null) {
+        if (isDraw) {
             rewardsMessage = `The duel ended in a draw after all questions were exhausted! Your entry fee of ${duel.cost} Gold has been refunded.`;
         } else if (winner && loser && duelSettings) {
             const winnerRewardText = `You have been awarded ${duelSettings.rewardXp} XP and ${duelSettings.rewardGold} Gold! Your entry fee of ${duel.cost} has been returned.`;
-            const loserRewardText = `Your entry fee of ${Math.floor((duel.cost || 0) / 2)} Gold has been refunded for finishing the duel.`;
+            const loserRewardText = `Your entry fee of ${Math.floor((duel.cost || 0) / 2)} Gold has been refunded for valiantly completing the training exercise.`;
             rewardsMessage = user.uid === winner.uid ? winnerRewardText : loserRewardText;
         }
 
@@ -609,7 +623,7 @@ export default function DuelPage() {
                 </div>
                 <div className="absolute bottom-1/4 left-1/2 -translate-x-1/2 text-center animate-fade-in-late w-full px-4">
                     <h2 className="text-5xl font-headline font-bold text-yellow-400 text-shadow-lg">
-                        {isDraw ? `${winner.characterName} wins the tie-breaker!` : `${winner.characterName} is Victorious!`}
+                        {isDraw ? "The Duel is a Draw!" : isTiebreaker ? `${winner.characterName} wins the tie-breaker!` : `${winner.characterName} is Victorious!`}
                     </h2>
                     <p className="text-xl mt-4 text-white/90">{rewardsMessage}</p>
                     <Button className="mt-8" onClick={() => router.push('/dashboard')}>Return to Dashboard</Button>
