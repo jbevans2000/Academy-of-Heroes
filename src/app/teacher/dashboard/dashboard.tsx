@@ -936,10 +936,10 @@ export default function Dashboard() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-            <TeacherMessageCenter
-                teacher={teacher}
-                students={students}
-                isOpen={isMessageCenterOpen}
+            <TeacherMessageCenter 
+                teacher={teacher} 
+                students={students} 
+                isOpen={isMessageCenterOpen} 
                 onOpenChange={setIsMessageCenterOpen}
                 initialStudent={initialStudentToView}
                 onConversationSelect={setInitialStudentToView}
