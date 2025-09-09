@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -388,13 +389,18 @@ export default function DuelPage() {
                 if (!freshDuelSnap.exists()) throw new Error("Duel document not found during transaction.");
     
                 const duelData = freshDuelSnap.data() as DuelState;
-                const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
                 
+                const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
                 const opponentAnswers = duelData.answers?.[opponentUid] || [];
                 const hasOpponentAnswered = opponentAnswers.length > duelData.currentQuestionIndex;
     
+                const myCurrentAnswers = duelData.answers?.[user.uid] || [];
+                if (myCurrentAnswers.length > duelData.currentQuestionIndex) {
+                    return; // Already answered
+                }
+    
                 const newAnswers = { ...(duelData.answers || {}) };
-                newAnswers[user.uid] = [...(newAnswers[user.uid] || [])];
+                newAnswers[user.uid] = [...myCurrentAnswers];
                 
                 const currentQuestion = duelData.questions?.[duelData.currentQuestionIndex];
                 if (!currentQuestion) {
@@ -544,6 +550,19 @@ export default function DuelPage() {
         }
     };
     
+    const handleCancelDuel = async () => {
+        if (!duelRef) return;
+        setIsLeaving(true);
+        try {
+            await deleteDoc(duelRef);
+            toast({ title: 'Challenge Cancelled', description: 'You have withdrawn your challenge.' });
+            router.push('/dashboard');
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not cancel the duel.' });
+            setIsLeaving(false);
+        }
+    }
+    
     const currentUserAnswers = user && duel?.answers ? (duel.answers[user.uid] || []) : [];
     const opponentUid = user?.uid === duel?.challengerUid ? duel?.opponentUid : duel?.challengerUid;
     const opponentAnswers = opponentUid && duel?.answers ? (duel.answers[opponentUid] || []) : [];
@@ -567,6 +586,12 @@ export default function DuelPage() {
                     <CardTitle className="text-4xl mt-4">Challenge Sent!</CardTitle>
                     <CardDescription>Waiting for {duel.opponentName} to respond to your challenge.</CardDescription>
                     <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mt-4 mx-auto" />
+                    <CardFooter className="mt-4">
+                        <Button variant="destructive" onClick={handleCancelDuel} disabled={isLeaving}>
+                            {isLeaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                            Cancel Duel
+                        </Button>
+                    </CardFooter>
                 </Card>
             </div>
         )
@@ -776,5 +801,7 @@ export default function DuelPage() {
         </div>
     )
 }
+
+    
 
     
