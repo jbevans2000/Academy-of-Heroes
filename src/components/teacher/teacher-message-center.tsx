@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -27,18 +28,22 @@ import { Label } from '../ui/label';
 
 interface TeacherMessageCenterProps {
     teacher: User | null;
-    isMessageOpen: boolean;
-    onMessageOpenChange: (isOpen: boolean) => void;
+    students: Student[];
+    isOpen: boolean;
+    onOpenChange: (isOpen: boolean) => void;
+    initialStudent: Student | null;
+    onConversationSelect: (student: Student | null) => void;
 }
 
 export function TeacherMessageCenter({ 
     teacher, 
-    isMessageOpen,
-    onMessageOpenChange
+    students,
+    isOpen,
+    onOpenChange,
+    initialStudent,
+    onConversationSelect,
 }: TeacherMessageCenterProps) {
     const { toast } = useToast();
-    const [students, setStudents] = useState<Student[]>([]);
-    const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
     
     // For bulk messages
     const [messageText, setMessageText] = useState('');
@@ -49,29 +54,26 @@ export function TeacherMessageCenter({
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (!teacher) return;
-        const studentsQuery = query(collection(db, 'teachers', teacher.uid, 'students'), where('isArchived', '!=', true), orderBy('isArchived'), orderBy('studentName'));
-        const unsubscribe = onSnapshot(studentsQuery, (snapshot) => {
-            setStudents(snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student)));
-        });
-        return () => unsubscribe();
-    }, [teacher]);
+        if (!isOpen) {
+            onConversationSelect(null); // Reset selected student when dialog closes
+        }
+    }, [isOpen, onConversationSelect]);
     
     useEffect(() => {
-        if (selectedStudent && teacher) {
-             const messagesQuery = query(collection(db, 'teachers', teacher.uid, 'students', selectedStudent.uid, 'messages'), orderBy('timestamp', 'asc'));
+        if (initialStudent && teacher) {
+             const messagesQuery = query(collection(db, 'teachers', teacher.uid, 'students', initialStudent.uid, 'messages'), orderBy('timestamp', 'asc'));
              const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
                 setCurrentThreadMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message)));
              });
              
              // Mark messages as read
-             markMessagesAsRead({ teacherUid: teacher.uid, studentUid: selectedStudent.uid, reader: 'teacher' });
+             markMessagesAsRead({ teacherUid: teacher.uid, studentUid: initialStudent.uid, reader: 'teacher' });
              
              return () => unsubscribe();
         } else {
             setCurrentThreadMessages([]);
         }
-    }, [selectedStudent, teacher]);
+    }, [initialStudent, teacher]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -81,13 +83,13 @@ export function TeacherMessageCenter({
     
     const handleSendMessage = async (e?: React.FormEvent) => {
         e?.preventDefault();
-        if (!teacher || !selectedStudent || !messageText.trim()) return;
+        if (!teacher || !initialStudent || !messageText.trim()) return;
 
         setIsSending(true);
         try {
             const result = await sendMessageToStudents({
                 teacherUid: teacher.uid,
-                studentUids: [selectedStudent.uid],
+                studentUids: [initialStudent.uid],
                 message: messageText,
             });
             if (result.success) {
@@ -103,7 +105,7 @@ export function TeacherMessageCenter({
     };
 
     return (
-        <Dialog open={isMessageOpen} onOpenChange={onMessageOpenChange}>
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-4xl h-[90vh] flex">
                 {/* Left Panel: Student List */}
                 <div className="w-1/3 border-r pr-4 flex flex-col">
@@ -116,10 +118,10 @@ export function TeacherMessageCenter({
                             {students.map(student => (
                                 <div 
                                     key={student.uid}
-                                    onClick={() => setSelectedStudent(student)}
+                                    onClick={() => onConversationSelect(student)}
                                     className={cn(
                                         "p-2 rounded-md cursor-pointer hover:bg-accent",
-                                        selectedStudent?.uid === student.uid && "bg-accent"
+                                        initialStudent?.uid === student.uid && "bg-accent"
                                     )}
                                 >
                                     <div className="flex items-center justify-between">
@@ -137,10 +139,10 @@ export function TeacherMessageCenter({
 
                 {/* Right Panel: Conversation View */}
                 <div className="w-2/3 flex flex-col">
-                   {selectedStudent ? (
+                   {initialStudent ? (
                         <>
                              <DialogHeader>
-                                <DialogTitle>Conversation with {selectedStudent.characterName}</DialogTitle>
+                                <DialogTitle>Conversation with {initialStudent.characterName}</DialogTitle>
                             </DialogHeader>
                              <div className="flex-grow overflow-hidden my-4">
                                 <ScrollArea className="h-full pr-4">
@@ -166,7 +168,7 @@ export function TeacherMessageCenter({
                                 <Textarea 
                                     value={messageText} 
                                     onChange={(e) => setMessageText(e.target.value)} 
-                                    placeholder={`Message ${selectedStudent.characterName}...`}
+                                    placeholder={`Message ${initialStudent.characterName}...`}
                                     rows={2}
                                     disabled={isSending}
                                 />

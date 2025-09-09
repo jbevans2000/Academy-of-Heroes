@@ -96,10 +96,8 @@ export default function Dashboard() {
 
   const { toast } = useToast();
   
-  // New state for single student messaging
   const [isMessageCenterOpen, setIsMessageCenterOpen] = useState(false);
-  const [isConversationViewOpen, setIsConversationViewOpen] = useState(false);
-  const [studentToMessage, setStudentToMessage] = useState<Student | null>(null);
+  const [initialStudentToView, setInitialStudentToView] = useState<Student | null>(null);
   
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async user => {
@@ -547,13 +545,8 @@ export default function Dashboard() {
   };
   
   const handleOpenMessageCenter = (student?: Student) => {
-    if (student) {
-        setStudentToMessage(student);
-        setIsConversationViewOpen(true);
-    } else {
-        setStudentToMessage(null);
-        setIsMessageCenterOpen(true);
-    }
+    setInitialStudentToView(student || null);
+    setIsMessageCenterOpen(true);
   };
   
   const handleRestoreAll = async (stat: 'hp' | 'mp') => {
@@ -944,15 +937,13 @@ export default function Dashboard() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-            <TeacherMessageCenter 
-                teacher={teacher} 
-                students={students} 
-                selectedStudentUids={selectedStudents}
-                isMessageOpen={isMessageCenterOpen}
-                onMessageOpenChange={setIsMessageCenterOpen}
-                isConversationViewOpen={isConversationViewOpen}
-                onConversationViewOpenChange={setIsConversationViewOpen}
-                studentToMessage={studentToMessage}
+            <TeacherMessageCenter
+                teacher={teacher}
+                students={students}
+                isOpen={isMessageCenterOpen}
+                onOpenChange={setIsMessageCenterOpen}
+                initialStudent={initialStudentToView}
+                onConversationSelect={setInitialStudentToView}
             />
             <SetQuestProgressDialog
                 isOpen={isQuestProgressOpen}
@@ -1018,7 +1009,7 @@ export default function Dashboard() {
                 onSendMessage={handleOpenMessageCenter}
                 hubs={hubs}
                 chapters={chapters}
-                onlineUids={onlineUids || []}
+                onlineUids={onlineUids}
             />
         ) : null}
       </main>
