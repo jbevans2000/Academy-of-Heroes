@@ -142,11 +142,10 @@ function VolumeControl({ audioRef, onFirstInteraction }: { audioRef: React.RefOb
     );
 }
 
-const AudioPlayer = ({ duel, musicUrl, audioRef, onFirstInteraction }: { 
+const AudioPlayer = ({ duel, musicUrl, audioRef }: { 
     duel: DuelState | null; 
     musicUrl: string;
     audioRef: React.RefObject<HTMLAudioElement>;
-    onFirstInteraction: () => void;
 }) => {
     useEffect(() => {
         const audio = audioRef.current;
@@ -691,14 +690,14 @@ export default function DuelPage() {
         return (
              <div className="relative flex h-screen flex-col items-center justify-center p-4 text-white overflow-hidden">
                  <div
-                    className="absolute inset-0 -z-10 bg-black/50"
+                    className="absolute inset-0 -z-10"
                     style={{
                         backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FVictory%20Page.png?alt=media&token=eb9314d1-7673-4987-9fdf-b46186275947')`,
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                     }}
                 />
-                <audio src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Battle%20Music%2FVictory%20Theme.mp3?alt=media&token=846c832f-bd29-4ba4-8ad8-680eb8f1689a" autoPlay />
+                <AudioPlayer duel={duel} musicUrl="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Battle%20Music%2FVictory%20Theme.mp3?alt=media&token=846c832f-bd29-4ba4-8ad8-680eb8f1689a" audioRef={audioRef} />
                  <div className="relative w-full flex justify-center items-center h-80">
                     <div className="absolute animate-slide-in-left">
                         <div className="relative w-80 h-80">
@@ -763,12 +762,12 @@ export default function DuelPage() {
              <div 
                 className="absolute inset-0 -z-10 bg-black/50"
                 style={{
-                    backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FDual%20Page%20Battle.png?alt=media&token=7db8be1d-0318-4dd5-b621-bf007d15dbf6')`,
+                    backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FDual%20Page%20Battle.png?alt=media&token=7db8be1d-0318-4dd5-b212-bf007d15dbf6')`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                 }}
             />
-            <audio ref={audioRef} src={musicUrl} loop />
+            <AudioPlayer duel={duel} musicUrl={musicUrl} audioRef={audioRef} />
             {musicUrl && <VolumeControl audioRef={audioRef} onFirstInteraction={onFirstInteraction} />}
 
              <div className="absolute top-4 left-4 z-10">
@@ -804,24 +803,24 @@ export default function DuelPage() {
                     <DuelPlayerCard player={opponent} answers={duel.answers?.[duel.opponentUid] || []} isCurrentUser={user?.uid === opponent?.uid} />
                 </div>
                 
-                {showInitialAnimation ? (
-                    <div className="relative w-full flex justify-center items-center h-80 mb-4 overflow-hidden">
-                        {challenger && (
-                            <div className="absolute animate-slide-in-left">
-                                <div className="relative w-64 h-80">
-                                    <Image src={challenger.avatarUrl} alt={challenger.characterName} layout="fill" className="object-contain" />
-                                </div>
+                <div className="relative h-80 mb-4 overflow-hidden flex items-center justify-center">
+                    {challenger && (
+                        <div className="absolute animate-slide-in-left">
+                            <div className="relative w-64 h-80">
+                                <Image src={challenger.avatarUrl} alt={challenger.characterName} layout="fill" className="object-contain" />
                             </div>
-                        )}
-                        {opponent && (
-                            <div className="absolute animate-slide-in-right">
-                                <div className="relative w-64 h-80">
-                                    <Image src={opponent.avatarUrl} alt={opponent.characterName} layout="fill" className="object-contain" />
-                                </div>
+                        </div>
+                    )}
+                    {opponent && (
+                        <div className="absolute animate-slide-in-right">
+                            <div className="relative w-64 h-80">
+                                <Image src={opponent.avatarUrl} alt={opponent.characterName} layout="fill" className="object-contain" />
                             </div>
-                        )}
-                    </div>
-                ) : (
+                        </div>
+                    )}
+                </div>
+
+                {!showInitialAnimation && (
                     <Card className="bg-card/80 backdrop-blur-sm animate-in fade-in-50">
                         <CardHeader className="text-center">
                             <CardTitle>Question {duel.currentQuestionIndex + 1}</CardTitle>
