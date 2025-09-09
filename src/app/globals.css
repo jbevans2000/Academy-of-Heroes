@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -72,14 +73,14 @@
     animation: slide-in-right 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
   }
   .animate-duel-slide-in-left {
-    animation: duel-slide-in-left 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    animation: duel-slide-in-left-slow 4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
   }
   .animate-duel-slide-in-right {
-    animation: duel-slide-in-right 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    animation: duel-slide-in-right-slow 4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
   }
   .animate-fade-in-late {
     animation: fade-in 1s ease-in forwards;
-    animation-delay: 1.5s;
+    animation-delay: 4s;
     opacity: 0;
   }
   @keyframes slide-in-left {
@@ -98,19 +99,31 @@
       transform: translateX(50%);
     }
   }
-  @keyframes duel-slide-in-left {
-    from {
+  @keyframes duel-slide-in-left-slow {
+    0% {
       transform: translateX(-100vw);
     }
-    to {
+    37.5% {
+      transform: translateX(-50%);
+    }
+    62.5% {
+      transform: translateX(-50%);
+    }
+    100% {
       transform: translateX(-50%);
     }
   }
-  @keyframes duel-slide-in-right {
-    from {
+  @keyframes duel-slide-in-right-slow {
+     0% {
       transform: translateX(100vw);
     }
-    to {
+    37.5% {
+      transform: translateX(50%);
+    }
+    62.5% {
+      transform: translateX(50%);
+    }
+    100% {
       transform: translateX(50%);
     }
   }

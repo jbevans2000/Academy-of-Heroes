@@ -108,44 +108,11 @@ const CountdownTimer = ({ expiryTimestamp }: { expiryTimestamp: Timestamp | unde
     );
 };
 
-function VolumeControl({ audioRef, onFirstInteraction }: { audioRef: React.RefObject<HTMLAudioElement>; onFirstInteraction: () => void; }) {
-    const [volume, setVolume] = useState(0); 
-
-    const handleVolumeChange = (value: number[]) => {
-        onFirstInteraction(); // Signal interaction on any slider move
-        const newVolume = value[0];
-        setVolume(newVolume);
-        if (audioRef.current) {
-            audioRef.current.volume = newVolume / 100;
-        }
-    };
-    
-    const getVolumeIcon = () => {
-        if (volume === 0) return <VolumeX className="h-6 w-6" />;
-        if (volume <= 50) return <Volume1 className="h-6 w-6" />;
-        return <VolumeIcon className="h-6 w-6" />;
-    };
-
-    return (
-        <div className="fixed bottom-4 right-4 z-50 w-48 p-4 rounded-lg bg-black/50 backdrop-blur-sm text-white">
-            <p className="text-xs text-center mb-1">Volume</p>
-            <div className="flex items-center gap-2">
-                {getVolumeIcon()}
-                <Slider
-                    value={[volume]}
-                    onValueChange={handleVolumeChange}
-                    max={100}
-                    step={1}
-                />
-            </div>
-        </div>
-    );
-}
-
-const AudioPlayer = ({ duel, musicUrl, audioRef }: { 
+const AudioPlayer = ({ duel, musicUrl, audioRef, onFirstInteraction }: { 
     duel: DuelState | null; 
     musicUrl: string;
     audioRef: React.RefObject<HTMLAudioElement>;
+    onFirstInteraction: () => void;
 }) => {
     useEffect(() => {
         const audio = audioRef.current;
@@ -163,7 +130,33 @@ const AudioPlayer = ({ duel, musicUrl, audioRef }: {
         }
     }, [duel?.status, musicUrl, audioRef]);
 
-    return <audio ref={audioRef} loop />;
+    const getVolumeIcon = () => {
+        if (!audio || audio.muted || audio.volume === 0) return <VolumeX className="h-6 w-6" />;
+        if (audio.volume <= 0.5) return <Volume1 className="h-6 w-6" />;
+        return <VolumeIcon className="h-6 w-6" />;
+    };
+    
+    const handleVolumeChange = (value: number[]) => {
+        onFirstInteraction();
+        if (audioRef.current) {
+            audioRef.current.volume = value[0] / 100;
+        }
+    };
+
+    return (
+         <div className="fixed bottom-4 right-4 z-50 w-48 p-4 rounded-lg bg-black/50 backdrop-blur-sm text-white">
+            <p className="text-xs text-center mb-1">Volume</p>
+            <div className="flex items-center gap-2">
+                {getVolumeIcon()}
+                <Slider
+                    defaultValue={[20]}
+                    onValueChange={handleVolumeChange}
+                    max={100}
+                    step={1}
+                />
+            </div>
+        </div>
+    );
 }
 
 export default function DuelPage() {
@@ -184,7 +177,7 @@ export default function DuelPage() {
     const [duelSettings, setDuelSettings] = useState<DuelSettings | null>(null);
     const [isLeaving, setIsLeaving] = useState(false);
     const [showDeclinedDialog, setShowDeclinedDialog] = useState(false);
-    const [showInitialAnimation, setShowInitialAnimation] = useState(true);
+    const [showInitialAnimation, setShowInitialAnimation] = useState(false);
     const audioRef = useRef<HTMLAudioElement>(null);
     const [hasInteracted, setHasInteracted] = useState(false);
     
@@ -212,13 +205,13 @@ export default function DuelPage() {
 
     // Effect to hide animation after it plays
     useEffect(() => {
-        if (duel?.status === 'active') {
+        if (duel?.status === 'active' && showInitialAnimation) {
             const timer = setTimeout(() => {
                 setShowInitialAnimation(false);
-            }, 2500); // Should match animation duration
+            }, 4000); // Match animation duration + pause
             return () => clearTimeout(timer);
         }
-    }, [duel?.status]);
+    }, [duel?.status, showInitialAnimation]);
 
 
     useEffect(() => {
@@ -478,6 +471,7 @@ export default function DuelPage() {
 
                 // Handle status changes
                 if (prevStatus !== 'active' && duelData.status === 'active') {
+                    setShowInitialAnimation(true);
                     handleDuelStart(duelData);
                 } else if (prevStatus !== 'finished' && duelData.status === 'finished') {
                     const batch = writeBatch(db);
@@ -689,6 +683,7 @@ export default function DuelPage() {
 
         return (
              <div className="relative flex h-screen flex-col items-center justify-center p-4 text-white overflow-hidden">
+                <audio ref={audioRef} src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Battle%20Music%2FVictory%20Theme.mp3?alt=media&token=846c832f-bd29-4ba4-8ad8-680eb8f1689a" autoPlay loop />
                  <div
                     className="absolute inset-0 -z-10"
                     style={{
@@ -697,7 +692,6 @@ export default function DuelPage() {
                         backgroundPosition: 'center',
                     }}
                 />
-                <AudioPlayer duel={duel} musicUrl="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Battle%20Music%2FVictory%20Theme.mp3?alt=media&token=846c832f-bd29-4ba4-8ad8-680eb8f1689a" audioRef={audioRef} />
                  <div className="relative w-full flex justify-center items-center h-80">
                     <div className="absolute animate-slide-in-left">
                         <div className="relative w-80 h-80">
@@ -765,8 +759,8 @@ export default function DuelPage() {
                 backgroundPosition: 'center',
             }}
         >
-            <AudioPlayer duel={duel} musicUrl={musicUrl} audioRef={audioRef} />
-            {musicUrl && <VolumeControl audioRef={audioRef} onFirstInteraction={onFirstInteraction} />}
+            <audio ref={audioRef} />
+            <AudioPlayer duel={duel} musicUrl={musicUrl} audioRef={audioRef} onFirstInteraction={onFirstInteraction} />
 
              <div className="absolute top-4 left-4 z-10">
                 <AlertDialog>
