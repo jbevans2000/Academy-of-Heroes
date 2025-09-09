@@ -12,40 +12,33 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, MessageSquare, Send } from 'lucide-react';
 import { sendMessageToStudents, markMessagesAsRead } from '@/ai/flows/manage-messages';
-import { onSnapshot, collection, query, orderBy } from 'firebase/firestore';
+import { onSnapshot, collection, query, orderBy, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Checkbox } from '../ui/checkbox';
+import { Label } from '../ui/label';
 
 interface TeacherMessageCenterProps {
     teacher: User | null;
-    students: Student[];
-    selectedStudentUids?: string[];
     isMessageOpen: boolean;
     onMessageOpenChange: (isOpen: boolean) => void;
-    isConversationViewOpen: boolean;
-    onConversationViewOpenChange: (isOpen: boolean) => void;
-    studentToMessage: Student | null;
 }
 
 export function TeacherMessageCenter({ 
     teacher, 
-    students, 
-    selectedStudentUids = [],
     isMessageOpen,
-    onMessageOpenChange,
-    isConversationViewOpen,
-    onConversationViewOpenChange,
-    studentToMessage
+    onMessageOpenChange
 }: TeacherMessageCenterProps) {
     const { toast } = useToast();
+    const [students, setStudents] = useState<Student[]>([]);
+    const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
     
     // For bulk messages
     const [messageText, setMessageText] = useState('');
@@ -54,47 +47,51 @@ export function TeacherMessageCenter({
     // For viewing conversations
     const [currentThreadMessages, setCurrentThreadMessages] = useState<Message[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    };
-
-    useEffect(scrollToBottom, [currentThreadMessages]);
 
     useEffect(() => {
-        if (isConversationViewOpen && studentToMessage && teacher) {
-             const messagesQuery = query(collection(db, 'teachers', teacher.uid, 'students', studentToMessage.uid, 'messages'), orderBy('timestamp', 'asc'));
+        if (!teacher) return;
+        const studentsQuery = query(collection(db, 'teachers', teacher.uid, 'students'), where('isArchived', '!=', true), orderBy('isArchived'), orderBy('studentName'));
+        const unsubscribe = onSnapshot(studentsQuery, (snapshot) => {
+            setStudents(snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student)));
+        });
+        return () => unsubscribe();
+    }, [teacher]);
+    
+    useEffect(() => {
+        if (selectedStudent && teacher) {
+             const messagesQuery = query(collection(db, 'teachers', teacher.uid, 'students', selectedStudent.uid, 'messages'), orderBy('timestamp', 'asc'));
              const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
                 setCurrentThreadMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message)));
              });
              
              // Mark messages as read
-             markMessagesAsRead({ teacherUid: teacher.uid, studentUid: studentToMessage.uid, reader: 'teacher' });
+             markMessagesAsRead({ teacherUid: teacher.uid, studentUid: selectedStudent.uid, reader: 'teacher' });
              
              return () => unsubscribe();
+        } else {
+            setCurrentThreadMessages([]);
         }
-    }, [isConversationViewOpen, studentToMessage, teacher]);
+    }, [selectedStudent, teacher]);
 
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
 
+    useEffect(scrollToBottom, [currentThreadMessages]);
+    
     const handleSendMessage = async (e?: React.FormEvent) => {
-        if (e) e.preventDefault();
-        const uidsToSend = studentToMessage ? [studentToMessage.uid] : selectedStudentUids;
+        e?.preventDefault();
+        if (!teacher || !selectedStudent || !messageText.trim()) return;
 
-        if (!teacher || uidsToSend.length === 0 || !messageText.trim()) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Please select students and write a message.' });
-            return;
-        }
         setIsSending(true);
         try {
             const result = await sendMessageToStudents({
                 teacherUid: teacher.uid,
-                studentUids: uidsToSend,
+                studentUids: [selectedStudent.uid],
                 message: messageText,
             });
             if (result.success) {
-                // Do not toast on success for a better chat experience, just clear the input.
                 setMessageText('');
-                // The dialog will no longer close automatically.
             } else {
                 throw new Error(result.error);
             }
@@ -104,92 +101,86 @@ export function TeacherMessageCenter({
             setIsSending(false);
         }
     };
-    
-    
-    const getRecipientDescription = () => {
-        if (selectedStudentUids.length === 1) {
-             const student = students.find(s => s.uid === selectedStudentUids[0]);
-             return `Your message will be sent to ${student?.characterName || '1 student'}.`;
-        }
-        if (selectedStudentUids.length > 1) {
-            return `Your message will be sent to the ${selectedStudentUids.length} selected students.`
-        }
-        return 'Select students from the dashboard to send them a message.';
-    }
 
     return (
-        <>
-            <Dialog open={isMessageOpen} onOpenChange={onMessageOpenChange}>
-                <DialogTrigger asChild>
-                     <Button disabled={selectedStudentUids.length === 0}>
-                        <MessageSquare className="mr-2 h-4 w-4" /> Message Selected ({selectedStudentUids.length})
-                    </Button>
-                </DialogTrigger>
-                <DialogContent>
+        <Dialog open={isMessageOpen} onOpenChange={onMessageOpenChange}>
+            <DialogContent className="max-w-4xl h-[90vh] flex">
+                {/* Left Panel: Student List */}
+                <div className="w-1/3 border-r pr-4 flex flex-col">
                     <DialogHeader>
-                        <DialogTitle>Send a Message</DialogTitle>
-                        <DialogDescription>
-                           {getRecipientDescription()}
-                        </DialogDescription>
+                        <DialogTitle>Message Center</DialogTitle>
+                         <DialogDescription>Select a student to view your conversation.</DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleSendMessage} className="py-4 space-y-4">
-                        <Textarea 
-                            value={messageText} 
-                            onChange={(e) => setMessageText(e.target.value)}
-                            placeholder="Type your message..."
-                            rows={5}
-                            disabled={isSending}
-                        />
-                        <DialogFooter>
-                            <Button variant="outline" type="button" onClick={() => onMessageOpenChange(false)}>Cancel</Button>
-                            <Button type="submit" disabled={isSending || selectedStudentUids.length === 0}>
-                                {isSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4"/>}
-                                Send Message
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
+                    <ScrollArea className="flex-grow mt-4">
+                        <div className="space-y-2">
+                            {students.map(student => (
+                                <div 
+                                    key={student.uid}
+                                    onClick={() => setSelectedStudent(student)}
+                                    className={cn(
+                                        "p-2 rounded-md cursor-pointer hover:bg-accent",
+                                        selectedStudent?.uid === student.uid && "bg-accent"
+                                    )}
+                                >
+                                    <p className="font-semibold">{student.characterName}</p>
+                                    <p className="text-sm text-muted-foreground">{student.studentName}</p>
+                                    {student.hasUnreadMessages && (
+                                        <div className="w-2.5 h-2.5 rounded-full bg-primary mt-1" />
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </ScrollArea>
+                </div>
 
-            <Dialog open={isConversationViewOpen} onOpenChange={onConversationViewOpenChange}>
-                <DialogContent className="max-w-xl h-[80vh] flex flex-col">
-                    <DialogHeader>
-                        <DialogTitle>Conversation with {studentToMessage?.characterName}</DialogTitle>
-                    </DialogHeader>
-                    <div className="flex-grow overflow-hidden">
-                       <ScrollArea className="h-full pr-4">
-                            <div className="space-y-4">
-                                {currentThreadMessages.map(msg => (
-                                     <div key={msg.id} className={cn("flex flex-col", msg.sender === 'teacher' ? 'items-end' : 'items-start')}>
-                                        <div className={cn(
-                                            "p-3 rounded-lg max-w-[80%]",
-                                            msg.sender === 'teacher' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
-                                        )}>
-                                            <p>{msg.text}</p>
-                                        </div>
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                            {msg.timestamp ? formatDistanceToNow(new Date(msg.timestamp.seconds * 1000), { addSuffix: true }) : 'Sending...'}
-                                        </p>
+                {/* Right Panel: Conversation View */}
+                <div className="w-2/3 flex flex-col">
+                   {selectedStudent ? (
+                        <>
+                             <DialogHeader>
+                                <DialogTitle>Conversation with {selectedStudent.characterName}</DialogTitle>
+                            </DialogHeader>
+                             <div className="flex-grow overflow-hidden my-4">
+                                <ScrollArea className="h-full pr-4">
+                                    <div className="space-y-4">
+                                        {currentThreadMessages.map(msg => (
+                                            <div key={msg.id} className={cn("flex flex-col", msg.sender === 'teacher' ? 'items-end' : 'items-start')}>
+                                                <div className={cn(
+                                                    "p-3 rounded-lg max-w-[80%]",
+                                                    msg.sender === 'teacher' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
+                                                )}>
+                                                    <p>{msg.text}</p>
+                                                </div>
+                                                <p className="text-xs text-muted-foreground mt-1">
+                                                    {msg.timestamp ? formatDistanceToNow(new Date(msg.timestamp.seconds * 1000), { addSuffix: true }) : 'Sending...'}
+                                                </p>
+                                            </div>
+                                        ))}
+                                        <div ref={messagesEndRef} />
                                     </div>
-                                ))}
-                                <div ref={messagesEndRef} />
+                                </ScrollArea>
                             </div>
-                        </ScrollArea>
-                    </div>
-                     <form onSubmit={handleSendMessage} className="flex gap-2 pt-4 border-t">
-                        <Textarea 
-                            value={messageText} 
-                            onChange={(e) => setMessageText(e.target.value)} 
-                            placeholder="Type your message..."
-                            rows={2}
-                            disabled={isSending}
-                        />
-                        <Button type="submit" disabled={isSending || !messageText.trim()}>
-                            {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                        </Button>
-                    </form>
-                </DialogContent>
-            </Dialog>
-        </>
+                            <form onSubmit={handleSendMessage} className="flex gap-2 pt-4 border-t">
+                                <Textarea 
+                                    value={messageText} 
+                                    onChange={(e) => setMessageText(e.target.value)} 
+                                    placeholder={`Message ${selectedStudent.characterName}...`}
+                                    rows={2}
+                                    disabled={isSending}
+                                />
+                                <Button type="submit" disabled={isSending || !messageText.trim()}>
+                                    {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                </Button>
+                            </form>
+                        </>
+                   ) : (
+                        <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                            <MessageSquare className="h-16 w-16 mb-4"/>
+                            <p>Select a student from the list to begin messaging.</p>
+                        </div>
+                   )}
+                </div>
+            </DialogContent>
+        </Dialog>
     );
 }

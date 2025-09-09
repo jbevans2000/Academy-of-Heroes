@@ -62,8 +62,11 @@ export async function sendMessageToTeacher(input: SendMessageToTeacherInput): Pr
     }
 
     try {
-        const messageRef = collection(db, 'teachers', teacherUid, 'students', studentUid, 'messages');
-        await addDoc(messageRef, {
+        const batch = writeBatch(db);
+        
+        // 1. Add the new message to the student's subcollection
+        const messageRef = doc(collection(db, 'teachers', teacherUid, 'students', studentUid, 'messages'));
+        batch.set(messageRef, {
             text: message,
             sender: 'student' as const,
             senderName: studentName, // Denormalize for teacher view
@@ -71,9 +74,15 @@ export async function sendMessageToTeacher(input: SendMessageToTeacherInput): Pr
             isRead: false,
         });
 
-        // Set the unread flag on the student document so the teacher UI can show it.
+        // 2. Set the unread flag on the student document so the teacher UI can show it.
         const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
-        await updateDoc(studentRef, { hasUnreadMessages: true });
+        batch.update(studentRef, { hasUnreadMessages: true });
+        
+        // 3. Set the global unread flag on the teacher document for the header notification
+        const teacherRef = doc(db, 'teachers', teacherUid);
+        batch.update(teacherRef, { hasUnreadTeacherMessages: true });
+
+        await batch.commit();
 
         return { success: true, message: 'Message sent to your Guild Leader!' };
     } catch (error: any) {
