@@ -323,6 +323,16 @@ export default function DuelPage() {
                 }
 
                 const currentQuestion = duelData.questions![duelData.currentQuestionIndex];
+                 if (!currentQuestion) {
+                    // Fallback if questions run out in sudden death
+                    const userScore = duelData.answers![user.uid].filter(a => a === 1).length;
+                    const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
+                    const opponentScore = duelData.answers![opponentUid].filter(a => a === 1).length;
+                    const winnerUid = userScore > opponentScore ? user.uid : opponentUid;
+                    await handleDuelEnd(transaction, winnerUid, user.uid === winnerUid ? opponentUid : user.uid, false, true);
+                    return;
+                }
+
                 const isCorrect = isTimeout ? false : selectedAnswer === currentQuestion.correctAnswerIndex;
                 
                 const myAnswers = [...(duelData.answers?.[user.uid] || [])];
@@ -405,7 +415,7 @@ export default function DuelPage() {
         }
     }, [selectedAnswer, user, duelRef, hasAnswered, teacherUid, duelSettings, toast, duel]);
 
-    const handleDuelEnd = async (transaction: any, winnerUid: string, loserUid: string, isForfeit: boolean) => {
+    const handleDuelEnd = async (transaction: any, winnerUid: string, loserUid: string, isForfeit: boolean, isDrawByExhaustion = false) => {
         if (!duel || !teacherUid || !duelSettings) return;
 
         const winnerRef = doc(db, 'teachers', teacherUid, 'students', winnerUid);
@@ -417,22 +427,29 @@ export default function DuelPage() {
 
         const winnerData = winnerDoc.data();
         
-        const duelCost = duel.cost || 0;
-        const winnerFinalXp = (winnerData.xp || 0) + duelSettings.rewardXp;
-        const winnerFinalGold = (winnerData.gold || 0) + duelSettings.rewardGold + (isForfeit ? 0 : duelCost);
-        
-        transaction.update(winnerRef, { xp: winnerFinalXp, gold: winnerFinalGold });
-        
-        if (!isForfeit) {
-            const refundAmount = Math.floor(duelCost / 2);
-            const loserData = loserDoc.data();
-            transaction.update(loserRef, { gold: (loserData.gold || 0) + refundAmount });
+        if (isDrawByExhaustion) {
+            // Both players get their cost back
+            const refundAmount = duel.cost || 0;
+            transaction.update(winnerRef, { gold: (winnerData.gold || 0) + refundAmount });
+            transaction.update(loserRef, { gold: (loserDoc.data().gold || 0) + refundAmount });
+            transaction.update(duelRef, { status: 'finished', isDraw: true, winnerUid: null }); // No winner
+        } else {
+            const duelCost = duel.cost || 0;
+            const winnerFinalXp = (winnerData.xp || 0) + duelSettings.rewardXp;
+            const winnerFinalGold = (winnerData.gold || 0) + duelSettings.rewardGold + (isForfeit ? 0 : duelCost);
+            
+            transaction.update(winnerRef, { xp: winnerFinalXp, gold: winnerFinalGold });
+            
+            if (!isForfeit) {
+                const refundAmount = Math.floor(duelCost / 2);
+                const loserData = loserDoc.data();
+                transaction.update(loserRef, { gold: (loserData.gold || 0) + refundAmount });
+            }
+            transaction.update(duelRef, { status: 'finished', winnerUid, isDraw: duel.isDraw });
         }
 
         transaction.update(winnerRef, { dailyDuelCount: increment(1) });
         transaction.update(loserRef, { dailyDuelCount: increment(1) });
-        
-        transaction.update(duelRef, { status: 'finished', winnerUid, isDraw: duel.isDraw });
 
         const winnerName = winnerUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
         const loserName = loserUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
@@ -700,6 +717,3 @@ export default function DuelPage() {
         </div>
     )
 }
-
-    
-
