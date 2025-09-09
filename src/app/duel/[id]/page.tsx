@@ -284,46 +284,36 @@ export default function DuelPage() {
         fetchPlayersAndSettings();
     }, [duel, teacherUid]);
     
-    // Timer timeout effect
-    useEffect(() => {
-        if (!duel?.timerEndsAt || hasAnswered || duel.status !== 'active') return;
+    const handleSubmitAnswer = useCallback(async (isTimeout = false) => {
+        if ((!isTimeout && selectedAnswer === null) || !user || !duelRef || hasAnswered || !teacherUid || !duelSettings) return;
 
-        const timeout = setTimeout(() => {
-            if (!hasAnswered) {
-                handleSubmitAnswer(true); // true indicates a timeout
-            }
-        }, duel.timerEndsAt.toDate().getTime() - Date.now());
+        setHasAnswered(true);
 
-        return () => clearTimeout(timeout);
-    }, [duel?.timerEndsAt, hasAnswered, duel?.status, duel?.currentQuestionIndex]);
-    
-    const handleSubmitAnswer = async (isTimeout = false) => {
-        if ((!isTimeout && selectedAnswer === null) || !user || !duel || hasAnswered || !teacherUid || !duelSettings || !duelRef) return;
-        
-        const currentQuestion = duel.questions![duel.currentQuestionIndex];
+        const currentQuestion = duel!.questions![duel!.currentQuestionIndex];
         const isCorrect = isTimeout ? false : selectedAnswer === currentQuestion.correctAnswerIndex;
 
-        const newAnswers = [...(duel.answers![user.uid] || [])];
-        newAnswers[duel.currentQuestionIndex] = isCorrect ? 1 : 0;
-        
-        setHasAnswered(true);
-        
-        const otherPlayerUid = user.uid === duel.challengerUid ? duel.opponentUid : duel.challengerUid;
-        const opponentHasAnswered = (duel.answers![otherPlayerUid] || []).length > duel.currentQuestionIndex;
-        
-        if (opponentHasAnswered) { // This is the second answer, so end the round/duel
-            if (duel.currentQuestionIndex >= 9) { // Last question
-                try {
-                    await runTransaction(db, async (transaction) => {
-                        const freshDuelSnap = await transaction.get(duelRef);
-                        if (!freshDuelSnap.exists()) throw new Error("Duel document not found during final transaction.");
-                        
-                        const finalDuelData = freshDuelSnap.data() as DuelState;
-                        const finalDuelAnswers = {...finalDuelData.answers};
-                        finalDuelAnswers[user.uid] = newAnswers;
+        try {
+            await runTransaction(db, async (transaction) => {
+                const freshDuelSnap = await transaction.get(duelRef);
+                if (!freshDuelSnap.exists()) throw new Error("Duel document not found during transaction.");
+                
+                const duelData = freshDuelSnap.data() as DuelState;
+                const newAnswers = [...(duelData.answers?.[user.uid] || [])];
+                newAnswers[duelData.currentQuestionIndex] = isCorrect ? 1 : 0;
 
-                        const userScore = finalDuelAnswers[user.uid].filter(a => a === 1).length;
-                        const opponentScore = finalDuelAnswers[otherPlayerUid].filter(a => a === 1).length;
+                const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
+                const opponentHasAnswered = (duelData.answers?.[opponentUid] || []).length > duelData.currentQuestionIndex;
+
+                if (opponentHasAnswered) {
+                    // This is the second answer, so end the round/duel
+                    if (duelData.currentQuestionIndex >= 9) { // Last question
+                        const finalAnswers = {
+                            ...duelData.answers,
+                            [user.uid]: newAnswers,
+                        };
+
+                        const userScore = finalAnswers[user.uid].filter(a => a === 1).length;
+                        const opponentScore = finalAnswers[opponentUid].filter(a => a === 1).length;
                         
                         let winnerUid = '';
                         let loserUid = '';
@@ -331,25 +321,19 @@ export default function DuelPage() {
 
                         if (userScore > opponentScore) {
                             winnerUid = user.uid;
-                            loserUid = otherPlayerUid;
+                            loserUid = opponentUid;
                         } else if (opponentScore > userScore) {
-                            winnerUid = otherPlayerUid;
+                            winnerUid = opponentUid;
                             loserUid = user.uid;
                         } else {
                             isDraw = true;
-                            if (Math.random() < 0.5) {
-                                winnerUid = user.uid;
-                                loserUid = otherPlayerUid;
-                            } else {
-                                winnerUid = otherPlayerUid;
-                                loserUid = user.uid;
-                            }
+                            winnerUid = Math.random() < 0.5 ? user.uid : opponentUid;
+                            loserUid = winnerUid === user.uid ? opponentUid : user.uid;
                         }
                         
                         const winnerRef = doc(db, 'teachers', teacherUid, 'students', winnerUid);
                         const loserRef = doc(db, 'teachers', teacherUid, 'students', loserUid);
                         
-                        // READS FIRST
                         const winnerDoc = await transaction.get(winnerRef);
                         const loserDoc = await transaction.get(loserRef);
                         if (!winnerDoc.exists() || !loserDoc.exists()) throw new Error("A duelist could not be found.");
@@ -357,20 +341,16 @@ export default function DuelPage() {
                         const winnerData = winnerDoc.data();
                         const loserData = loserDoc.data();
                         
-                        const duelCost = finalDuelData.cost || 0;
-
-                        // WRITES LAST
+                        const duelCost = duelData.cost || 0;
                         const winnerFinalXp = (winnerData.xp || 0) + duelSettings.rewardXp;
-                        const winnerFinalGold = (winnerData.gold || 0) + duelSettings.rewardGold;
+                        const winnerFinalGold = (winnerData.gold || 0) + duelSettings.rewardGold + (isDraw ? 0 : duelCost);
                         transaction.update(winnerRef, { xp: winnerFinalXp, gold: winnerFinalGold });
                         
                         if (isDraw) {
-                            const loserFinalGold = (loserData.gold || 0) + duelCost;
-                            transaction.update(loserRef, { gold: loserFinalGold });
+                            transaction.update(loserRef, { gold: (loserData.gold || 0) + duelCost });
                         } else {
-                            const refundAmount = Math.floor(duelCost / 2);
-                            const loserFinalGold = (loserData.gold || 0) + refundAmount;
-                            transaction.update(loserRef, { gold: loserFinalGold });
+                             const refundAmount = Math.floor(duelCost / 2);
+                             transaction.update(loserRef, { gold: (loserData.gold || 0) + refundAmount });
                         }
 
                         transaction.update(winnerRef, { dailyDuelCount: increment(1) });
@@ -383,25 +363,40 @@ export default function DuelPage() {
                             isDraw 
                         });
 
-                        const winnerName = winnerUid === finalDuelData.challengerUid ? finalDuelData.challengerName : finalDuelData.opponentName;
-                        const loserName = loserUid === finalDuelData.challengerUid ? finalDuelData.challengerName : finalDuelData.opponentName;
+                        const winnerName = winnerUid === duelData.challengerUid ? duelData.challengerName : duelData.opponentName;
+                        const loserName = loserUid === duelData.challengerUid ? duelData.challengerName : duelData.opponentName;
                         await logGameEvent(teacherUid, 'DUEL', `${winnerName} ${isDraw ? 'won a tie-breaker against' : 'defeated'} ${loserName} in a duel.`);
-                    });
-                } catch (e) {
-                     console.error("Duel end transaction failed:", e);
-                     toast({ variant: "destructive", title: "Error Ending Duel", description: "Could not finalize the duel." });
+
+                    } else { // Not the last question, advance to next
+                        transaction.update(duelRef, {
+                            [`answers.${user.uid}`]: newAnswers,
+                            currentQuestionIndex: duelData.currentQuestionIndex + 1,
+                            timerEndsAt: Timestamp.fromMillis(Date.now() + 60000)
+                        });
+                    }
+                } else { // This is the first answer, just submit it
+                    transaction.update(duelRef, { [`answers.${user.uid}`]: newAnswers });
                 }
-            } else { // Not the last question, advance to next
-                await updateDoc(duelRef, {
-                    [`answers.${user.uid}`]: newAnswers,
-                    currentQuestionIndex: duel.currentQuestionIndex + 1,
-                    timerEndsAt: Timestamp.fromMillis(Date.now() + 60000)
-                });
-            }
-        } else { // This is the first answer, just submit it
-            await updateDoc(duelRef, { [`answers.${user.uid}`]: newAnswers });
+            });
+        } catch (e) {
+            console.error("Duel answer submission failed:", e);
+            toast({ variant: "destructive", title: "Error Submitting Answer", description: "Could not record your answer." });
         }
-    };
+    }, [selectedAnswer, user, duel, hasAnswered, teacherUid, duelSettings, duelRef, toast]);
+    
+    // Timer timeout effect
+    useEffect(() => {
+        if (!duel?.timerEndsAt || hasAnswered || duel.status !== 'active') return;
+
+        const timeout = setTimeout(() => {
+            if (!hasAnswered) {
+                handleSubmitAnswer(true); // true indicates a timeout
+            }
+        }, duel.timerEndsAt.toDate().getTime() - Date.now());
+
+        return () => clearTimeout(timeout);
+    }, [duel?.timerEndsAt, hasAnswered, duel?.status, duel?.currentQuestionIndex, handleSubmitAnswer]);
+
 
     const handleEndDuel = async () => {
         if (!duel || !teacherUid || !duelSettings || !user || !duelRef) return;
