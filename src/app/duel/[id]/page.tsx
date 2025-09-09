@@ -674,25 +674,37 @@ export default function DuelPage() {
         }
 
         return (
-            <div className="relative flex h-screen items-center justify-center bg-gray-900 text-white overflow-hidden">
+            <div className="relative flex h-screen flex-col items-center justify-center bg-gray-900 text-white overflow-hidden">
+                 <div 
+                    className="absolute inset-0 -z-10"
+                    style={{
+                        backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FVictory%20Page.png?alt=media&token=eb9314d1-7673-4987-9fdf-b46186275947')`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                    }}
+                />
                 <audio src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/sounds%2Ffanfare-and-crowd-cheering-156213.mp3?alt=media&token=c81c4af2-675c-4444-a696-27d97b0a7081" autoPlay />
-                <div className="relative flex justify-center items-center w-full max-w-4xl h-64">
-                    <Image
-                        src={challenger.avatarUrl}
-                        alt={challenger.characterName}
-                        width={256}
-                        height={256}
-                        className="absolute animate-slide-in-left rounded-full border-8 border-white"
-                    />
-                    <Image
+                <div className="relative w-full max-w-4xl h-64 mt-[-10vh]">
+                    <div className="absolute w-64 h-64 animate-slide-in-left">
+                         <Image
+                            src={challenger.avatarUrl}
+                            alt={challenger.characterName}
+                            width={256}
+                            height={256}
+                            className="rounded-full border-8 border-white object-contain"
+                        />
+                    </div>
+                   <div className="absolute w-64 h-64 animate-slide-in-right">
+                     <Image
                         src={opponent.avatarUrl}
                         alt={opponent.characterName}
                         width={256}
                         height={256}
-                        className="absolute animate-slide-in-right rounded-full border-8 border-white"
+                        className="rounded-full border-8 border-white object-contain"
                     />
+                   </div>
                 </div>
-                <div className="absolute bottom-1/4 left-1/2 -translate-x-1/2 text-center animate-fade-in-late w-full px-4">
+                <div className="relative text-center animate-fade-in-late w-full px-4 mt-8">
                     <h2 className="text-5xl font-headline font-bold text-yellow-400 text-shadow-lg">
                         {isDraw ? "The Duel is a Draw!" : isTiebreaker ? `${winner.characterName} wins the tie-breaker!` : `${winner.characterName} is Victorious!`}
                     </h2>
@@ -853,6 +865,7 @@ export default function DuelPage() {
     
 
     
+
 
 
 
