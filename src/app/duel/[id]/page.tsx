@@ -34,7 +34,7 @@ import {
 
 
 interface DuelState {
-    status: 'pending' | 'active' | 'declined' | 'finished' | 'abandoned';
+    status: 'pending' | 'active' | 'round_result' | 'finished' | 'abandoned';
     challengerUid: string;
     opponentUid: string;
     challengerName: string;
@@ -47,6 +47,7 @@ interface DuelState {
     cost?: number;
     costsDeducted?: boolean; 
     timerEndsAt?: Timestamp;
+    resultEndsAt?: Timestamp | null; // For the 5-second result screen
 }
 
 const DuelPlayerCard = ({ player, answers, isCurrentUser }: { player: Student | null, answers: number[], isCurrentUser: boolean }) => {
@@ -264,6 +265,22 @@ export default function DuelPage() {
         return () => unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [duelRef, teacherUid, router, toast, handleDuelStart]);
+    
+    // Effect to handle advancing from the result screen
+    useEffect(() => {
+        if (!duelRef || duel?.status !== 'round_result' || !duel.resultEndsAt) return;
+
+        const timeout = setTimeout(async () => {
+            await updateDoc(duelRef, { 
+                status: 'active',
+                currentQuestionIndex: duel.currentQuestionIndex + 1,
+                timerEndsAt: Timestamp.fromMillis(Date.now() + 60000),
+                resultEndsAt: null,
+            });
+        }, 5000); // 5 seconds
+
+        return () => clearTimeout(timeout);
+    }, [duel?.status, duel?.resultEndsAt, duelRef, duel?.currentQuestionIndex]);
 
     // Fetch player data once duel is loaded
     useEffect(() => {
@@ -381,11 +398,12 @@ export default function DuelPage() {
                         const loserName = loserUid === duelData.challengerUid ? duelData.challengerName : duelData.opponentName;
                         await logGameEvent(teacherUid, 'DUEL', `${winnerName} ${isDraw ? 'won a tie-breaker against' : 'defeated'} ${loserName} in a duel.`);
 
-                    } else { // Not the last question, advance to next
-                        transaction.update(duelRef, {
-                             [`answers.${opponentUid}`]: opponentFinalAnswers,
-                            currentQuestionIndex: duelData.currentQuestionIndex + 1,
-                            timerEndsAt: Timestamp.fromMillis(Date.now() + 60000)
+                    } else { // Not the last question, show results
+                         transaction.update(duelRef, {
+                            [`answers.${opponentUid}`]: opponentFinalAnswers,
+                            status: 'round_result',
+                            timerEndsAt: null,
+                            resultEndsAt: Timestamp.fromMillis(Date.now() + 5000),
                         });
                     }
                 } 
@@ -537,6 +555,38 @@ export default function DuelPage() {
                     <CardDescription>{messageDescription}</CardDescription>
                     <CardContent>
                         <Button className="mt-4" onClick={() => router.push('/dashboard')}>Return to Dashboard</Button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+    
+    if (duel.status === 'round_result') {
+        const currentQuestion = duel.questions![duel.currentQuestionIndex];
+        const myLastAnswerCorrect = currentUserAnswers[duel.currentQuestionIndex] === 1;
+
+        return (
+             <div className="flex h-screen items-center justify-center bg-gray-900 text-white">
+                <Card className="text-center p-8 bg-card/80 backdrop-blur-sm animate-in fade-in-50">
+                    <CardHeader>
+                        <CardTitle className="text-4xl">Round {duel.currentQuestionIndex + 1} Over</CardTitle>
+                        {myLastAnswerCorrect ? (
+                            <div className="flex items-center justify-center gap-2 text-2xl text-green-400 mt-2">
+                                <CheckCircle /> You were correct!
+                            </div>
+                        ) : (
+                             <div className="flex items-center justify-center gap-2 text-2xl text-red-400 mt-2">
+                                <XCircle /> You were incorrect!
+                            </div>
+                        )}
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                        <p className="text-muted-foreground">The correct answer was:</p>
+                        <p className="font-bold text-xl">{currentQuestion.answers[currentQuestion.correctAnswerIndex]}</p>
+                        <div className="pt-4">
+                            <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+                            <p className="text-sm text-muted-foreground">Next round starting soon...</p>
+                        </div>
                     </CardContent>
                 </Card>
             </div>
