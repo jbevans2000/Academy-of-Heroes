@@ -142,32 +142,9 @@ function VolumeControl({ audioRef, onFirstInteraction }: { audioRef: React.RefOb
     );
 }
 
-export default function DuelPage() {
-    const router = useRouter();
-    const params = useParams();
-    const duelId = params.id as string;
-    const { toast } = useToast();
-    
-    const [user, setUser] = useState<User | null>(null);
-    const [duel, setDuel] = useState<DuelState | null>(null);
-    const [challenger, setChallenger] = useState<Student | null>(null);
-    const [opponent, setOpponent] = useState<Student | null>(null);
-    const [teacherUid, setTeacherUid] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    
-    const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-    const [hasAnswered, setHasAnswered] = useState(false);
-    const [duelSettings, setDuelSettings] = useState<DuelSettings | null>(null);
-    const [isLeaving, setIsLeaving] = useState(false);
-    const [showDeclinedDialog, setShowDeclinedDialog] = useState(false);
-    
+const AudioPlayer = ({ duel, musicUrl }: { duel: DuelState | null, musicUrl: string }) => {
     const audioRef = useRef<HTMLAudioElement>(null);
     const [hasInteracted, setHasInteracted] = useState(false);
-    const musicUrl = useMemo(() => {
-        if (royaltyFreeTracks.length === 0) return '';
-        const randomIndex = Math.floor(Math.random() * royaltyFreeTracks.length);
-        return royaltyFreeTracks[randomIndex].url;
-    }, []);
 
     const onFirstInteraction = () => {
       if (!hasInteracted) {
@@ -196,6 +173,39 @@ export default function DuelPage() {
         }
     }, [duel?.status, musicUrl, hasInteracted]);
 
+
+    return (
+        <>
+            <audio ref={audioRef} loop />
+            {musicUrl && <VolumeControl audioRef={audioRef} onFirstInteraction={onFirstInteraction} />}
+        </>
+    );
+}
+
+export default function DuelPage() {
+    const router = useRouter();
+    const params = useParams();
+    const duelId = params.id as string;
+    const { toast } = useToast();
+    
+    const [user, setUser] = useState<User | null>(null);
+    const [duel, setDuel] = useState<DuelState | null>(null);
+    const [challenger, setChallenger] = useState<Student | null>(null);
+    const [opponent, setOpponent] = useState<Student | null>(null);
+    const [teacherUid, setTeacherUid] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    
+    const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+    const [hasAnswered, setHasAnswered] = useState(false);
+    const [duelSettings, setDuelSettings] = useState<DuelSettings | null>(null);
+    const [isLeaving, setIsLeaving] = useState(false);
+    const [showDeclinedDialog, setShowDeclinedDialog] = useState(false);
+    
+    const musicUrl = useMemo(() => {
+        if (royaltyFreeTracks.length === 0) return '';
+        const randomIndex = Math.floor(Math.random() * royaltyFreeTracks.length);
+        return royaltyFreeTracks[randomIndex].url;
+    }, []);
 
     const duelRef = useMemo(() => {
         if (!teacherUid || !duelId) return null;
@@ -393,7 +403,6 @@ export default function DuelPage() {
         if (!isTimeout && selectedAnswer === null) return;
     
         setHasAnswered(true);
-        onFirstInteraction();
     
         try {
             await runTransaction(db, async (transaction) => {
@@ -610,7 +619,7 @@ export default function DuelPage() {
                         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mt-4 mx-auto" />
                     </CardContent>
                     <CardFooter className="mt-4">
-                        <Button variant="destructive" onClick={handleCancelDuel} disabled={isLeaving}>
+                         <Button variant="destructive" onClick={handleCancelDuel} disabled={isLeaving}>
                             {isLeaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
                             Cancel Duel
                         </Button>
@@ -763,8 +772,7 @@ export default function DuelPage() {
                 }}
             />
             <div className="absolute inset-0 bg-black/50 -z-10" />
-             <audio ref={audioRef} loop />
-             {musicUrl && <VolumeControl audioRef={audioRef} onFirstInteraction={onFirstInteraction} />}
+            <AudioPlayer duel={duel} musicUrl={musicUrl} />
              <div className="absolute top-4 left-4 z-10">
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -837,6 +845,7 @@ export default function DuelPage() {
     
 
     
+
 
 
 
