@@ -389,7 +389,9 @@ export default function DuelPage() {
                 
                 const duelData = freshDuelSnap.data() as DuelState;
                 const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
-                const opponentAnswers = duelData.answers?.[opponentUid] || [];
+                
+                // Read from local state first, then from the fetched data
+                const opponentAnswers = duel?.answers?.[opponentUid] || freshDuelSnap.data().answers?.[opponentUid] || [];
                 const hasOpponentAnswered = opponentAnswers.length > duelData.currentQuestionIndex;
 
                 const newAnswers = { ...(duelData.answers || {}) };
@@ -449,7 +451,7 @@ export default function DuelPage() {
             console.error("Duel answer submission failed:", e);
             toast({ variant: "destructive", title: "Could Not Record Answer", description: "There was an error recording your answer." });
         }
-    }, [selectedAnswer, user, duelRef, hasAnswered, teacherUid, duelSettings, toast]);
+    }, [selectedAnswer, user, duelRef, hasAnswered, teacherUid, duelSettings, toast, duel]);
 
     const handleDuelEnd = async (transaction: any, winnerUid: string, loserUid: string, isForfeit: boolean, isDrawByExhaustion = false) => {
         if (!duel || !teacherUid || !duelSettings) return;
@@ -572,46 +574,46 @@ export default function DuelPage() {
         )
     }
 
-    if (duel.status === 'pending') {
-        return (
-             <div className="flex h-screen items-center justify-center bg-gray-900 text-white">
-                <Card className="text-center p-8 bg-card/80 backdrop-blur-sm">
-                    <Hourglass className="h-16 w-16 mx-auto text-primary animate-spin" />
-                    <CardTitle className="text-4xl mt-4">Duel Pending...</CardTitle>
-                    <CardDescription>Waiting for {duel.challengerUid === user?.uid ? duel.opponentName : duel.challengerName} to respond to your challenge.</CardDescription>
-                </Card>
-            </div>
-        )
-    }
+    if (duel.status === 'finished' && challenger && opponent) {
+        const winner = duel.winnerUid === challenger.uid ? challenger : opponent;
+        const loser = duel.winnerUid === challenger.uid ? opponent : challenger;
+        const isDraw = duel.isDraw && duel.winnerUid !== null;
 
-    if (duel.status === 'finished') {
-        const winnerMessage = duel.winnerUid === user?.uid ? 'You are victorious!' : 'You have been defeated!';
-        
         let rewardsMessage = '';
-        
-        if (duel.isDraw && duel.winnerUid !== null) {
-            rewardsMessage = `You won the sudden death tie-breaker and have been awarded ${duelSettings?.rewardXp} XP and ${duelSettings?.rewardGold} Gold!`;
-        } else if (duel.isDraw && duel.winnerUid === null) {
-             rewardsMessage = `The duel ended in a draw after all questions were exhausted! Your entry fee of ${duel.cost} Gold has been refunded.`;
-        } else if (duel.winnerUid === user?.uid && duelSettings) {
-            rewardsMessage = `You have been awarded ${duelSettings.rewardXp} XP and ${duelSettings.rewardGold} Gold! Your entry fee of ${duel.cost} has been returned.`;
-        } else {
-             rewardsMessage = `Your entry fee of ${Math.floor((duel.cost || 0) / 2)} Gold has been refunded for finishing the duel.`;
+        if (duel.isDraw && duel.winnerUid === null) {
+            rewardsMessage = `The duel ended in a draw after all questions were exhausted! Your entry fee of ${duel.cost} Gold has been refunded.`;
+        } else if (winner && loser && duelSettings) {
+            const winnerRewardText = `You have been awarded ${duelSettings.rewardXp} XP and ${duelSettings.rewardGold} Gold! Your entry fee of ${duel.cost} has been returned.`;
+            const loserRewardText = `Your entry fee of ${Math.floor((duel.cost || 0) / 2)} Gold has been refunded for finishing the duel.`;
+            rewardsMessage = user.uid === winner.uid ? winnerRewardText : loserRewardText;
         }
 
         return (
-            <div className="flex h-screen items-center justify-center bg-gray-900 text-white">
-                <Card className="text-center p-8 bg-card/80 backdrop-blur-sm">
-                    <Trophy className="h-16 w-16 mx-auto text-yellow-400" />
-                    <CardTitle className="text-4xl mt-4">{winnerMessage}</CardTitle>
-                    <CardDescription>{rewardsMessage}</CardDescription>
-                    {duel.isDraw && duel.winnerUid !== user?.uid && (
-                        <p className="text-muted-foreground mt-2">(You lost the sudden death round.)</p>
-                    )}
-                    <CardContent>
-                        <Button className="mt-4" onClick={() => router.push('/dashboard')}>Return to Dashboard</Button>
-                    </CardContent>
-                </Card>
+            <div className="relative flex h-screen items-center justify-center bg-gray-900 text-white overflow-hidden">
+                <audio src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/sounds%2Ffanfare-and-crowd-cheering-156213.mp3?alt=media&token=c81c4af2-675c-4444-a696-27d97b0a7081" autoPlay />
+                <div className="relative flex justify-center items-center w-full max-w-4xl h-64">
+                    <Image
+                        src={challenger.avatarUrl}
+                        alt={challenger.characterName}
+                        width={256}
+                        height={256}
+                        className="absolute animate-slide-in-left rounded-full border-8 border-white"
+                    />
+                    <Image
+                        src={opponent.avatarUrl}
+                        alt={opponent.characterName}
+                        width={256}
+                        height={256}
+                        className="absolute animate-slide-in-right rounded-full border-8 border-white"
+                    />
+                </div>
+                <div className="absolute bottom-1/4 left-1/2 -translate-x-1/2 text-center animate-fade-in-late w-full px-4">
+                    <h2 className="text-5xl font-headline font-bold text-yellow-400 text-shadow-lg">
+                        {isDraw ? `${winner.characterName} wins the tie-breaker!` : `${winner.characterName} is Victorious!`}
+                    </h2>
+                    <p className="text-xl mt-4 text-white/90">{rewardsMessage}</p>
+                    <Button className="mt-8" onClick={() => router.push('/dashboard')}>Return to Dashboard</Button>
+                </div>
             </div>
         )
     }
@@ -754,4 +756,3 @@ export default function DuelPage() {
         </div>
     )
 }
-
