@@ -523,7 +523,7 @@ export default function DuelPage() {
                 const loserData = loserDoc.data();
                 transaction.update(loserRef, { gold: (loserData.gold || 0) + refundAmount });
             }
-            transaction.update(duelRef, { status: 'finished', winnerUid, isDraw: duel.isDraw });
+            transaction.update(duelRef, { status: 'finished', winnerUid, isDraw: duel.isDraw ?? false });
         }
 
         transaction.update(winnerRef, { dailyDuelCount: increment(1) });
@@ -853,6 +853,7 @@ export default function DuelPage() {
     
 
     
+
 
 
 
