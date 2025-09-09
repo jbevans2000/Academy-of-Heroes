@@ -55,7 +55,7 @@ interface DuelState {
 const DuelPlayerCard = ({ player, answers, isCurrentUser }: { player: Student | null, answers: number[], isCurrentUser: boolean }) => {
     if (!player) return <Skeleton className="h-24 w-full" />;
     return (
-        <Card className={cn("text-center", isCurrentUser && "border-primary ring-2 ring-primary")}>
+        <Card className={cn("text-center bg-card/50", isCurrentUser && "border-primary ring-2 ring-primary")}>
             <CardHeader className="p-2">
                  <Image src={player.avatarUrl} alt={player.characterName} width={100} height={100} className="mx-auto rounded-full border-4" />
                  <CardTitle>{player.characterName}</CardTitle>
@@ -853,6 +853,7 @@ export default function DuelPage() {
     
 
     
+
 
 
 
