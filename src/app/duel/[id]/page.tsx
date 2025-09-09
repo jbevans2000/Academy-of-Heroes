@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -225,6 +226,12 @@ export default function DuelPage() {
             if (docSnap.exists()) {
                 const duelData = docSnap.data() as DuelState;
                 const prevStatus = duel?.status;
+                const prevQuestionIndex = duel?.currentQuestionIndex;
+
+                if (prevQuestionIndex !== duelData.currentQuestionIndex) {
+                    setHasAnswered(false);
+                    setSelectedAnswer(null);
+                }
 
                 // Handle status changes
                 if (prevStatus !== 'active' && duelData.status === 'active') {
@@ -277,16 +284,6 @@ export default function DuelPage() {
         fetchPlayersAndSettings();
     }, [duel, teacherUid]);
     
-    // Check if current user has answered this question
-    useEffect(() => {
-        if (user && duel?.answers && duel.answers[user.uid] && duel.answers[user.uid].length > duel.currentQuestionIndex) {
-            setHasAnswered(true);
-        } else {
-            setHasAnswered(false);
-        }
-        setSelectedAnswer(null);
-    }, [user, duel]);
-    
     // Timer timeout effect
     useEffect(() => {
         if (!duel?.timerEndsAt || hasAnswered || duel.status !== 'active') return;
@@ -298,7 +295,6 @@ export default function DuelPage() {
         }, duel.timerEndsAt.toDate().getTime() - Date.now());
 
         return () => clearTimeout(timeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [duel?.timerEndsAt, hasAnswered, duel?.status, duel?.currentQuestionIndex]);
     
     const handleSubmitAnswer = async (isTimeout = false) => {
