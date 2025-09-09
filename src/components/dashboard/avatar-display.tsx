@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { Suspense, lazy } from 'react';
@@ -11,7 +12,7 @@ import { useEffect, useState, useMemo } from 'react';
 import type { Hairstyle, ArmorPiece, BaseBody } from '@/lib/forge';
 import { CharacterViewerFallback } from './character-viewer-3d';
 
-const CharacterCanvas = lazy(() => import('@/components/dashboard/character-canvas').then(module => ({ default: module.CharacterCanvas })));
+const CharacterCanvas = lazy(() => import('@/components/dashboard/character-canvas'));
 
 interface AvatarDisplayProps {
   student: Student;
