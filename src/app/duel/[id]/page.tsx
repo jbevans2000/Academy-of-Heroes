@@ -701,12 +701,12 @@ export default function DuelPage() {
                     }}
                 />
                  <div className="relative w-full flex justify-center items-center h-80">
-                     <div className={cn("absolute animate-duel-slide-in-left-slow")}>
+                     <div className="absolute animate-duel-slide-in-left-slow">
                         <div className="relative w-80 h-80">
                             <Image src={challenger.avatarUrl} alt={challenger.characterName} layout="fill" className="object-contain" />
                         </div>
                     </div>
-                   <div className={cn("absolute animate-duel-slide-in-right-slow")}>
+                   <div className="absolute animate-duel-slide-in-right-slow">
                     <div className="relative w-80 h-80">
                          <Image src={opponent.avatarUrl} alt={opponent.characterName} layout="fill" className="object-contain" />
                     </div>
