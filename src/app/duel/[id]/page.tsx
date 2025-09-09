@@ -398,93 +398,101 @@ export default function DuelPage() {
         fetchPlayersAndSettings();
     }, [duel, teacherUid]);
     
+    // New answer submission logic
     const handleSubmitAnswer = useCallback(async (isTimeout = false) => {
         if (!user || !duelRef || hasAnswered || !teacherUid || !duelSettings) return;
         if (!isTimeout && selectedAnswer === null) return;
-    
+
         setHasAnswered(true);
-    
+
+        const currentQuestion = duel?.questions?.[duel?.currentQuestionIndex];
+        if (!currentQuestion) {
+            console.error("No current question found!");
+            return;
+        }
+
+        const myAnswerIsCorrect = isTimeout ? false : selectedAnswer === currentQuestion.correctAnswerIndex;
+        const myAnswerValue = myAnswerIsCorrect ? 1 : 0;
+        
+        const answerPath = `answers.${user.uid}`;
+        const currentAnswers = duel?.answers?.[user.uid] || [];
+        const newAnswers = [...currentAnswers];
+        newAnswers[duel.currentQuestionIndex] = myAnswerValue;
+
         try {
-            await runTransaction(db, async (transaction) => {
-                const freshDuelSnap = await transaction.get(duelRef);
-                if (!freshDuelSnap.exists()) throw new Error("Duel document not found during transaction.");
-    
-                let duelData = freshDuelSnap.data() as DuelState;
-    
-                const myCurrentAnswers = duelData.answers?.[user.uid] || [];
-                if (myCurrentAnswers.length > duelData.currentQuestionIndex) {
-                    return; // Already answered
-                }
-    
-                const currentQuestion = duelData.questions?.[duelData.currentQuestionIndex];
-                if (!currentQuestion) {
-                    // This is the fallback if we run out of sudden death questions.
-                    const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
-                    await handleDuelEnd(transaction, user.uid, opponentUid, false, true); // True for draw
-                    return;
-                }
-    
-                const myAnswerIsCorrect = isTimeout ? false : selectedAnswer === currentQuestion.correctAnswerIndex;
-                const myAnswerValue = myAnswerIsCorrect ? 1 : 0;
-    
-                const newAnswersForUser = [...myCurrentAnswers];
-                newAnswersForUser[duelData.currentQuestionIndex] = myAnswerValue;
-                
-                const newAnswers = { ...(duelData.answers || {}) };
-                newAnswers[user.uid] = newAnswersForUser;
-    
-                // Update duelData in memory for the rest of the transaction
-                duelData = { ...duelData, answers: newAnswers };
-    
+            await updateDoc(duelRef, { [answerPath]: newAnswers });
+            
+            // After successful write, check if it's time to process results
+            setTimeout(async () => {
+                const duelSnap = await getDoc(duelRef);
+                if (!duelSnap.exists()) return;
+                const duelData = duelSnap.data() as DuelState;
                 const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
-                const opponentAnswers = duelData.answers?.[opponentUid] || [];
-                const hasOpponentAnswered = opponentAnswers.length > duelData.currentQuestionIndex;
-    
-                const updates: Partial<DuelState> = { answers: newAnswers };
-    
-                if (hasOpponentAnswered) {
-                    const opponentAnswerValue = opponentAnswers[duelData.currentQuestionIndex];
-    
-                    if (duelData.isDraw) {
-                        if (myAnswerValue === 1 && opponentAnswerValue === 0) {
-                            await handleDuelEnd(transaction, user.uid, opponentUid, false);
-                        } else if (myAnswerValue === 0 && opponentAnswerValue === 1) {
-                            await handleDuelEnd(transaction, opponentUid, user.uid, false);
-                        } else {
-                            updates.status = 'sudden_death';
-                            updates.timerEndsAt = null;
-                            updates.resultEndsAt = Timestamp.fromMillis(Date.now() + 7000);
-                        }
-                    } else {
-                        const isLastRegularQuestion = duelData.currentQuestionIndex >= 9;
-                        if (isLastRegularQuestion) {
-                            const myFinalScore = newAnswers[user.uid].filter(a => a === 1).length;
-                            const opponentFinalScore = opponentAnswers.filter(a => a === 1).length;
-                            if (myFinalScore !== opponentFinalScore) {
-                                const winnerUid = myFinalScore > opponentFinalScore ? user.uid : opponentUid;
-                                const loserUid = myFinalScore > opponentFinalScore ? opponentUid : user.uid;
-                                await handleDuelEnd(transaction, winnerUid, loserUid, false);
-                            } else {
-                                updates.status = 'sudden_death';
-                                updates.isDraw = true;
-                                updates.timerEndsAt = null;
-                                updates.resultEndsAt = Timestamp.fromMillis(Date.now() + 7000);
-                            }
-                        } else {
-                            updates.status = 'round_result';
-                            updates.timerEndsAt = null;
-                            updates.resultEndsAt = Timestamp.fromMillis(Date.now() + 5000);
-                        }
-                    }
+
+                if ((duelData.answers?.[opponentUid] || []).length > duelData.currentQuestionIndex) {
+                    // Opponent has also answered, process results
+                    await processRoundResults(duelData);
                 }
-                
-                transaction.update(duelRef, updates);
-            });
+            }, 2000); // 2-second delay to allow for opponent's answer
+
         } catch (e) {
             console.error("Duel answer submission failed:", e);
             toast({ variant: "destructive", title: "Could Not Record Answer", description: "There was an error recording your answer." });
+            setHasAnswered(false); // Allow retry
         }
-    }, [selectedAnswer, user, duelRef, hasAnswered, teacherUid, duelSettings, toast]);
+
+    }, [selectedAnswer, user, duelRef, hasAnswered, teacherUid, duelSettings, toast, duel]);
+
+    const processRoundResults = async (duelData: DuelState) => {
+        if (!user || !duelRef || !teacherUid) return;
+
+        await runTransaction(db, async (transaction) => {
+            const duelDoc = await transaction.get(duelRef);
+            if (!duelDoc.exists()) throw new Error("Duel disappeared");
+            const freshDuelData = duelDoc.data() as DuelState;
+            
+            // Prevent re-processing
+            if(freshDuelData.status === 'round_result' || freshDuelData.status === 'sudden_death') return;
+
+            const myAnswers = freshDuelData.answers?.[user.uid] || [];
+            const opponentUid = user.uid === freshDuelData.challengerUid ? freshDuelData.opponentUid : freshDuelData.challengerUid;
+            const opponentAnswers = freshDuelData.answers?.[opponentUid] || [];
+            
+            const updates: Partial<DuelState> = {};
+
+            if (freshDuelData.isDraw) {
+                if (myAnswers[freshDuelData.currentQuestionIndex] > opponentAnswers[freshDuelData.currentQuestionIndex]) {
+                    await handleDuelEnd(transaction, user.uid, opponentUid, false);
+                } else if (opponentAnswers[freshDuelData.currentQuestionIndex] > myAnswers[freshDuelData.currentQuestionIndex]) {
+                    await handleDuelEnd(transaction, opponentUid, user.uid, false);
+                } else {
+                    updates.status = 'sudden_death';
+                    updates.resultEndsAt = Timestamp.fromMillis(Date.now() + 7000);
+                }
+            } else {
+                const isLastRegularQuestion = freshDuelData.currentQuestionIndex >= 9;
+                if (isLastRegularQuestion) {
+                    const myFinalScore = myAnswers.filter(a => a === 1).length;
+                    const opponentFinalScore = opponentAnswers.filter(a => a === 1).length;
+                    if (myFinalScore !== opponentFinalScore) {
+                        const winnerUid = myFinalScore > opponentFinalScore ? user.uid : opponentUid;
+                        const loserUid = winnerUid === user.uid ? opponentUid : user.uid;
+                        await handleDuelEnd(transaction, winnerUid, loserUid, false);
+                    } else {
+                        updates.status = 'sudden_death';
+                        updates.isDraw = true;
+                        updates.resultEndsAt = Timestamp.fromMillis(Date.now() + 7000);
+                    }
+                } else {
+                    updates.status = 'round_result';
+                    updates.resultEndsAt = Timestamp.fromMillis(Date.now() + 5000);
+                }
+            }
+            if (Object.keys(updates).length > 0) {
+                transaction.update(duelRef, updates);
+            }
+        });
+    }
 
     const handleDuelEnd = async (transaction: any, winnerUid: string, loserUid: string, isForfeit: boolean, isDrawByExhaustion = false) => {
         if (!duel || !teacherUid || !duelSettings) return;
@@ -845,6 +853,7 @@ export default function DuelPage() {
     
 
     
+
 
 
 
