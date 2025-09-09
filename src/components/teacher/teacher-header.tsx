@@ -11,7 +11,6 @@ import { signOut, onAuthStateChanged, type User } from "firebase/auth";
 import { doc, getDoc, onSnapshot, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Bug, Lightbulb } from "lucide-react";
-import { TeacherMessageCenter } from './teacher-message-center';
 
 export function TeacherHeader() {
   const router = useRouter();
@@ -20,8 +19,6 @@ export function TeacherHeader() {
   const [isFeedbackPanelVisible, setIsFeedbackPanelVisible] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
   const [teacher, setTeacher] = useState<User | null>(null);
-  const [isMessageCenterOpen, setIsMessageCenterOpen] = useState(false);
-
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
@@ -78,23 +75,8 @@ export function TeacherHeader() {
         });
     }
   };
-  
-  const handleOpenMessageCenter = async () => {
-    setIsMessageCenterOpen(true);
-    if (teacher && hasUnread) {
-        const teacherRef = doc(db, 'teachers', teacher.uid);
-        await updateDoc(teacherRef, { hasUnreadTeacherMessages: false });
-        setHasUnread(false);
-    }
-  }
 
   return (
-    <>
-    {teacher && <TeacherMessageCenter 
-        teacher={teacher}
-        isMessageOpen={isMessageCenterOpen}
-        onMessageOpenChange={setIsMessageCenterOpen}
-    />}
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
       <Link href="/teacher/dashboard" className="flex items-center gap-2 font-semibold border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md px-3 py-2 transition-colors">
         <School className="h-6 w-6 text-primary" />
@@ -111,11 +93,6 @@ export function TeacherHeader() {
                 </Button>
             </>
         )}
-        <Button variant="outline" onClick={handleOpenMessageCenter} className="relative">
-            <MessageSquare className="mr-2 h-5 w-5" />
-            Message Center
-            {hasUnread && <span className="absolute top-1 right-1 flex h-3 w-3 rounded-full bg-red-600 animate-pulse" />}
-        </Button>
         {isAdmin && (
              <Button variant="secondary" onClick={() => router.push('/admin/dashboard')}>
                 <Shield className="mr-2 h-5 w-5" />
@@ -136,6 +113,5 @@ export function TeacherHeader() {
         </Button>
       </div>
     </header>
-    </>
   );
 }
