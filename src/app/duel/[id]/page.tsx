@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -134,7 +133,8 @@ const AudioPlayer = ({ duel, musicUrl, audioRef, onFirstInteraction }: {
     }, [duel?.status, musicUrl, audioRef, volume]);
 
     const getVolumeIcon = () => {
-        if (volume === 0) return <VolumeX className="h-6 w-6" />;
+        const audio = audioRef.current;
+        if (!audio || audio.muted || volume === 0) return <VolumeX className="h-6 w-6" />;
         if (volume <= 50) return <Volume1 className="h-6 w-6" />;
         return <VolumeIcon className="h-6 w-6" />;
     };
@@ -154,7 +154,7 @@ const AudioPlayer = ({ duel, musicUrl, audioRef, onFirstInteraction }: {
             <div className="flex items-center gap-2">
                 {getVolumeIcon()}
                 <Slider
-                    defaultValue={[volume]}
+                    value={[volume]}
                     onValueChange={handleVolumeChange}
                     max={100}
                     step={1}
@@ -483,9 +483,11 @@ export default function DuelPage() {
                 }
 
                 // Handle status changes
-                if (prevStatus !== 'active' && duelData.status === 'active' && duelData.currentQuestionIndex === 0) {
-                    setShowInitialAnimation(true);
+                if (prevStatus !== 'active' && duelData.status === 'active') {
                     handleDuelStart(duelData);
+                    if (duelData.currentQuestionIndex === 0) {
+                        setShowInitialAnimation(true);
+                    }
                 } else if (prevStatus !== 'finished' && duelData.status === 'finished') {
                     const batch = writeBatch(db);
                     await setPlayerDuelStatus(batch, [duelData.challengerUid, duelData.opponentUid], false);
@@ -811,12 +813,12 @@ export default function DuelPage() {
                 
                  {showInitialAnimation && challenger && opponent && (
                     <div className="relative h-80 mb-4 overflow-hidden flex items-center justify-center">
-                        <div className="absolute animate-duel-slide-in-left">
+                        <div className="absolute animate-duel-slide-in-left-slow">
                             <div className="relative w-64 h-80">
                                 <Image src={challenger.avatarUrl} alt={challenger.characterName} layout="fill" className="object-contain" />
                             </div>
                         </div>
-                        <div className="absolute animate-duel-slide-in-right">
+                        <div className="absolute animate-duel-slide-in-right-slow">
                             <div className="relative w-64 h-80">
                                 <Image src={opponent.avatarUrl} alt={opponent.characterName} layout="fill" className="object-contain" />
                             </div>
