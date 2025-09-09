@@ -142,10 +142,11 @@ function VolumeControl({ audioRef, onFirstInteraction }: { audioRef: React.RefOb
     );
 }
 
-const AudioPlayer = ({ duel, musicUrl, audioRef }: { 
+const AudioPlayer = ({ duel, musicUrl, audioRef, onFirstInteraction }: { 
     duel: DuelState | null; 
     musicUrl: string;
     audioRef: React.RefObject<HTMLAudioElement>;
+    onFirstInteraction: () => void;
 }) => {
     useEffect(() => {
         const audio = audioRef.current;
@@ -767,7 +768,7 @@ export default function DuelPage() {
                     backgroundPosition: 'center',
                 }}
             />
-            {musicUrl && <AudioPlayer duel={duel} musicUrl={musicUrl} audioRef={audioRef} />}
+            <audio ref={audioRef} src={musicUrl} loop />
             {musicUrl && <VolumeControl audioRef={audioRef} onFirstInteraction={onFirstInteraction} />}
 
              <div className="absolute top-4 left-4 z-10">
@@ -798,58 +799,61 @@ export default function DuelPage() {
                 <CountdownTimer expiryTimestamp={duel.timerEndsAt} />
             </div>
             <div className="w-full max-w-4xl">
-                {showInitialAnimation && challenger && opponent ? (
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                    <DuelPlayerCard player={challenger} answers={duel.answers?.[duel.challengerUid] || []} isCurrentUser={user?.uid === challenger?.uid} />
+                    <DuelPlayerCard player={opponent} answers={duel.answers?.[duel.opponentUid] || []} isCurrentUser={user?.uid === opponent?.uid} />
+                </div>
+                
+                {showInitialAnimation ? (
                     <div className="relative w-full flex justify-center items-center h-80 mb-4 overflow-hidden">
-                        <div className="absolute animate-slide-in-left">
-                            <div className="relative w-64 h-80">
-                                <Image src={challenger.avatarUrl} alt={challenger.characterName} layout="fill" className="object-contain" />
+                        {challenger && (
+                            <div className="absolute animate-slide-in-left">
+                                <div className="relative w-64 h-80">
+                                    <Image src={challenger.avatarUrl} alt={challenger.characterName} layout="fill" className="object-contain" />
+                                </div>
                             </div>
-                        </div>
-                        <div className="absolute animate-slide-in-right">
-                            <div className="relative w-64 h-80">
-                                <Image src={opponent.avatarUrl} alt={opponent.characterName} layout="fill" className="object-contain" />
+                        )}
+                        {opponent && (
+                            <div className="absolute animate-slide-in-right">
+                                <div className="relative w-64 h-80">
+                                    <Image src={opponent.avatarUrl} alt={opponent.characterName} layout="fill" className="object-contain" />
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 ) : (
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                        <DuelPlayerCard player={challenger} answers={duel.answers?.[duel.challengerUid] || []} isCurrentUser={user?.uid === challenger?.uid} />
-                        <DuelPlayerCard player={opponent} answers={duel.answers?.[duel.opponentUid] || []} isCurrentUser={user?.uid === opponent?.uid} />
-                    </div>
+                    <Card className="bg-card/80 backdrop-blur-sm animate-in fade-in-50">
+                        <CardHeader className="text-center">
+                            <CardTitle>Question {duel.currentQuestionIndex + 1}</CardTitle>
+                            <h2 className="text-2xl font-bold text-white pt-2">{currentQuestion?.text}</h2>
+                        </CardHeader>
+                        <CardContent>
+                            {hasAnswered ? (
+                                <div className="text-center text-white font-bold text-lg p-4 bg-black/30 rounded-md">
+                                    Your answer is locked in! Waiting for your opponent...
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {currentQuestion?.answers.map((answer, index) => (
+                                            <Button
+                                                key={index}
+                                                variant={selectedAnswer === index ? 'default' : 'outline'}
+                                                onClick={() => setSelectedAnswer(index)}
+                                                className="h-auto py-4"
+                                            >
+                                                {answer}
+                                            </Button>
+                                        ))}
+                                    </div>
+                                    <div className="text-center mt-4">
+                                        <Button onClick={() => handleSubmitAnswer()} disabled={selectedAnswer === null}>Submit</Button>
+                                    </div>
+                                </>
+                            )}
+                        </CardContent>
+                    </Card>
                 )}
-                
-                
-                <Card className="bg-card/80 backdrop-blur-sm">
-                    <CardHeader className="text-center">
-                        <CardTitle>Question {duel.currentQuestionIndex + 1}</CardTitle>
-                        <h2 className="text-2xl font-bold text-white pt-2">{currentQuestion?.text}</h2>
-                    </CardHeader>
-                    <CardContent>
-                        {hasAnswered ? (
-                            <div className="text-center text-white font-bold text-lg p-4 bg-black/30 rounded-md">
-                                Your answer is locked in! Waiting for your opponent...
-                            </div>
-                        ) : (
-                            <>
-                                <div className="grid grid-cols-2 gap-4">
-                                    {currentQuestion?.answers.map((answer, index) => (
-                                        <Button
-                                            key={index}
-                                            variant={selectedAnswer === index ? 'default' : 'outline'}
-                                            onClick={() => setSelectedAnswer(index)}
-                                            className="h-auto py-4"
-                                        >
-                                            {answer}
-                                        </Button>
-                                    ))}
-                                </div>
-                                <div className="text-center mt-4">
-                                     <Button onClick={() => handleSubmitAnswer()} disabled={selectedAnswer === null}>Submit</Button>
-                                </div>
-                            </>
-                        )}
-                    </CardContent>
-                </Card>
             </div>
              {(duel.status === 'round_result' || duel.status === 'sudden_death') && currentQuestion && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in-50">
