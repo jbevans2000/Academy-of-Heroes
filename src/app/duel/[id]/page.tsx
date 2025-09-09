@@ -315,72 +315,67 @@ export default function DuelPage() {
                 const freshDuelSnap = await transaction.get(duelRef);
                 if (!freshDuelSnap.exists()) throw new Error("Duel document not found during transaction.");
                 
-                let duelData = freshDuelSnap.data() as DuelState;
-                const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
+                const duelData = freshDuelSnap.data() as DuelState;
+                const currentQuestion = duelData.questions?.[duelData.currentQuestionIndex];
 
-                // Update my answer first
-                const myAnswers = [...(duelData.answers?.[user.uid] || [])];
-                
-                // If this is a timeout call, but the answer is already there, do nothing to my answers.
-                if (!(isTimeout && myAnswers.length > duelData.currentQuestionIndex)) {
-                     const currentQuestion = duelData.questions![duelData.currentQuestionIndex];
-                     const isCorrect = isTimeout ? false : selectedAnswer === currentQuestion.correctAnswerIndex;
-                     myAnswers[duelData.currentQuestionIndex] = isCorrect ? 1 : 0;
-                     const myUpdate = { [`answers.${user.uid}`]: myAnswers };
-                     transaction.update(duelRef, myUpdate);
+                if (!currentQuestion) {
+                    await handleDuelEnd(transaction, duelData.challengerUid, duelData.opponentUid, false, true); // End in draw if questions run out
+                    return;
                 }
 
-                // Refetch duel data after my update to ensure atomicity
-                const updatedDuelSnap = await transaction.get(duelRef);
-                duelData = updatedDuelSnap.data() as DuelState;
+                const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
                 
-                const opponentAnswers = [...(duelData.answers?.[opponentUid] || [])];
+                // Determine my answer
+                const myAnswerIsCorrect = isTimeout ? false : selectedAnswer === currentQuestion.correctAnswerIndex;
+                const myAnswerValue = myAnswerIsCorrect ? 1 : 0;
+                
+                // Get opponent's answer from the current duel state
+                const opponentAnswers = duelData.answers?.[opponentUid] || [];
                 const hasOpponentAnswered = opponentAnswers.length > duelData.currentQuestionIndex;
 
+                const newAnswers = { ...(duelData.answers || {}) };
+                newAnswers[user.uid] = [...(newAnswers[user.uid] || [])];
+                newAnswers[user.uid][duelData.currentQuestionIndex] = myAnswerValue;
+
+                const updates: Partial<DuelState> = { answers: newAnswers };
+
                 if (hasOpponentAnswered) {
-                    // Opponent already answered, resolve the round
-                    const myFinalAnswer = duelData.answers![user.uid][duelData.currentQuestionIndex];
-                    const opponentFinalAnswer = opponentAnswers[duelData.currentQuestionIndex];
+                    const opponentAnswerValue = opponentAnswers[duelData.currentQuestionIndex];
                     
                     if (duelData.isDraw) { // Sudden Death Logic
-                        if (myFinalAnswer === 1 && opponentFinalAnswer === 0) {
+                        if (myAnswerValue === 1 && opponentAnswerValue === 0) {
                              await handleDuelEnd(transaction, user.uid, opponentUid, false);
-                        } else if (myFinalAnswer === 0 && opponentFinalAnswer === 1) {
+                        } else if (myAnswerValue === 0 && opponentAnswerValue === 1) {
                              await handleDuelEnd(transaction, opponentUid, user.uid, false);
                         } else {
-                             transaction.update(duelRef, {
-                                status: 'sudden_death',
-                                timerEndsAt: null,
-                                resultEndsAt: Timestamp.fromMillis(Date.now() + 7000),
-                            });
+                            updates.status = 'sudden_death';
+                            updates.timerEndsAt = null;
+                            updates.resultEndsAt = Timestamp.fromMillis(Date.now() + 7000);
                         }
-                        return;
-                    }
-
-                    const isLastRegularQuestion = duelData.currentQuestionIndex >= 9;
-                    if (isLastRegularQuestion) {
-                        const myFinalScore = duelData.answers![user.uid].filter(a => a === 1).length;
-                        const opponentFinalScore = opponentAnswers.filter(a => a === 1).length;
-                        if (myFinalScore !== opponentFinalScore) {
-                            const winnerUid = myFinalScore > opponentFinalScore ? user.uid : opponentUid;
-                            const loserUid = myFinalScore > opponentFinalScore ? opponentUid : user.uid;
-                            await handleDuelEnd(transaction, winnerUid, loserUid, false);
+                    } else { // Regular round resolution
+                        const isLastRegularQuestion = duelData.currentQuestionIndex >= 9;
+                        if (isLastRegularQuestion) {
+                            const myFinalScore = newAnswers[user.uid].filter(a => a === 1).length;
+                            const opponentFinalScore = opponentAnswers.filter(a => a === 1).length;
+                            if (myFinalScore !== opponentFinalScore) {
+                                const winnerUid = myFinalScore > opponentFinalScore ? user.uid : opponentUid;
+                                const loserUid = myFinalScore > opponentFinalScore ? opponentUid : user.uid;
+                                await handleDuelEnd(transaction, winnerUid, loserUid, false);
+                            } else {
+                                updates.status = 'sudden_death';
+                                updates.isDraw = true;
+                                updates.timerEndsAt = null;
+                                updates.resultEndsAt = Timestamp.fromMillis(Date.now() + 7000);
+                            }
                         } else {
-                             transaction.update(duelRef, {
-                                status: 'sudden_death',
-                                isDraw: true,
-                                timerEndsAt: null,
-                                resultEndsAt: Timestamp.fromMillis(Date.now() + 7000),
-                            });
+                            updates.status = 'round_result';
+                            updates.timerEndsAt = null;
+                            updates.resultEndsAt = Timestamp.fromMillis(Date.now() + 5000);
                         }
-                    } else {
-                         transaction.update(duelRef, {
-                            status: 'round_result',
-                            timerEndsAt: null,
-                            resultEndsAt: Timestamp.fromMillis(Date.now() + 5000),
-                        });
                     }
                 }
+                
+                transaction.update(duelRef, updates);
             });
         } catch (e) {
             console.error("Duel answer submission failed:", e);
@@ -534,7 +529,7 @@ export default function DuelPage() {
         } else if (duel.isDraw && duel.winnerUid === null) {
              rewardsMessage = `The duel ended in a draw after all questions were exhausted! Your entry fee of ${duel.cost} Gold has been refunded.`;
         } else if (duel.winnerUid === user?.uid && duelSettings) {
-            rewardsMessage = `You have been awarded ${duelSettings.rewardXp} XP and ${duelSettings.rewardGold} Gold!`;
+            rewardsMessage = `You have been awarded ${duelSettings.rewardXp} XP and ${duelSettings.rewardGold} Gold! Your entry fee of ${duel.cost} has been returned.`;
         } else {
              rewardsMessage = `Your entry fee of ${Math.floor((duel.cost || 0) / 2)} Gold has been refunded for finishing the duel.`;
         }
