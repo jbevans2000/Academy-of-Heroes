@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -200,6 +199,7 @@ export default function DuelPage() {
     const [duelSettings, setDuelSettings] = useState<DuelSettings | null>(null);
     const [isLeaving, setIsLeaving] = useState(false);
     const [showDeclinedDialog, setShowDeclinedDialog] = useState(false);
+    const [showInitialAnimation, setShowInitialAnimation] = useState(true);
     
     const musicUrl = useMemo(() => {
         if (royaltyFreeTracks.length === 0) return '';
@@ -211,6 +211,16 @@ export default function DuelPage() {
         if (!teacherUid || !duelId) return null;
         return doc(db, 'teachers', teacherUid, 'duels', duelId);
     }, [teacherUid, duelId]);
+
+    // Effect to hide animation after it plays
+    useEffect(() => {
+        if (duel?.status === 'active') {
+            const timer = setTimeout(() => {
+                setShowInitialAnimation(false);
+            }, 1500); // Should match animation duration
+            return () => clearTimeout(timer);
+        }
+    }, [duel?.status]);
 
 
     useEffect(() => {
@@ -419,20 +429,15 @@ export default function DuelPage() {
         newAnswers[duel.currentQuestionIndex] = myAnswerValue;
 
         try {
-            // This is a "blind write" - we don't need a transaction because we are not reading first.
             await updateDoc(duelRef, { [answerPath]: newAnswers });
             
-            // After a short delay, check if we need to process results.
-            // This is to give the opponent's write a chance to go through.
             setTimeout(async () => {
                 const duelSnap = await getDoc(duelRef);
                 if (!duelSnap.exists()) return;
                 const duelData = duelSnap.data() as DuelState;
                 const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
 
-                // Check if the other player has also answered this round
                 if ((duelData.answers?.[opponentUid] || []).length > duelData.currentQuestionIndex) {
-                    // If so, process results.
                     await processRoundResults(duelData);
                 }
             }, 2000); 
@@ -678,12 +683,11 @@ export default function DuelPage() {
         return (
             <div className="relative flex h-screen flex-col items-center justify-center text-white overflow-hidden">
                 <div 
-                    className="absolute inset-0 -z-10"
+                    className="absolute inset-0 -z-10 bg-black/25"
                     style={{
                         backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FVictory%20Page.png?alt=media&token=eb9314d1-7673-4987-9fdf-b46186275947')`,
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
-                        opacity: 0.25
                     }}
                 />
                 <audio src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Battle%20Music%2FVictory%20Theme.mp3?alt=media&token=846c832f-bd29-4ba4-8ad8-680eb8f1689a" autoPlay />
@@ -791,14 +795,13 @@ export default function DuelPage() {
     return (
         <div className="relative flex h-screen flex-col items-center justify-center p-4 text-white">
              <div 
-                className="absolute inset-0 -z-10"
+                className="absolute inset-0 -z-10 bg-black/50"
                 style={{
                     backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FDual%20Page%20Battle.png?alt=media&token=7db8be1d-0318-4dd5-b621-bf007d15dbf6')`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                 }}
             />
-            <div className="absolute inset-0 bg-black/50 -z-10" />
             <AudioPlayer duel={duel} musicUrl={musicUrl} />
              <div className="absolute top-4 left-4 z-10">
                 <AlertDialog>
@@ -828,10 +831,26 @@ export default function DuelPage() {
                 <CountdownTimer expiryTimestamp={duel.timerEndsAt} />
             </div>
             <div className="w-full max-w-4xl">
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                    <DuelPlayerCard player={challenger} answers={duel.answers?.[duel.challengerUid] || []} isCurrentUser={user?.uid === challenger?.uid} />
-                    <DuelPlayerCard player={opponent} answers={duel.answers?.[duel.opponentUid] || []} isCurrentUser={user?.uid === opponent?.uid} />
-                </div>
+                {showInitialAnimation && challenger && opponent ? (
+                    <div className="relative w-full flex justify-center items-center h-80 mb-4 overflow-hidden">
+                        <div className="absolute animate-slide-in-left">
+                            <div className="relative w-64 h-80">
+                                <Image src={challenger.avatarUrl} alt={challenger.characterName} layout="fill" className="object-contain" />
+                            </div>
+                        </div>
+                        <div className="absolute animate-slide-in-right">
+                            <div className="relative w-64 h-80">
+                                <Image src={opponent.avatarUrl} alt={opponent.characterName} layout="fill" className="object-contain" />
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                        <DuelPlayerCard player={challenger} answers={duel.answers?.[duel.challengerUid] || []} isCurrentUser={user?.uid === challenger?.uid} />
+                        <DuelPlayerCard player={opponent} answers={duel.answers?.[duel.opponentUid] || []} isCurrentUser={user?.uid === opponent?.uid} />
+                    </div>
+                )}
+                
                 
                 <Card className="bg-card/80 backdrop-blur-sm">
                     <CardHeader className="text-center">
