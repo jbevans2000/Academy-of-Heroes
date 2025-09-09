@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -176,6 +177,7 @@ export default function DuelPage() {
     const [opponent, setOpponent] = useState<Student | null>(null);
     const [teacherUid, setTeacherUid] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [showQuestion, setShowQuestion] = useState(false);
     
     const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
     const [hasAnswered, setHasAnswered] = useState(false);
@@ -232,7 +234,7 @@ export default function DuelPage() {
         getTeacher();
     }, [user]);
 
-    const handleDuelEnd = useCallback(async (transaction: any, winnerUid: string, loserUid: string, isForfeit: boolean, isDrawByExhaustion = false) => {
+     const handleDuelEnd = useCallback(async (transaction: any, winnerUid: string, loserUid: string, isForfeit: boolean, isDrawByExhaustion = false) => {
         if (!duel || !teacherUid || !duelSettings || !duelRef) return;
 
         const winnerRef = doc(db, 'teachers', teacherUid, 'students', winnerUid);
@@ -275,7 +277,7 @@ export default function DuelPage() {
         const loserName = loserUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
         await logGameEvent(teacherUid, 'DUEL', `${winnerName} defeated ${loserName} in a duel.`);
     }, [duel, teacherUid, duelSettings, duelRef]);
-    
+
     const processRoundResults = useCallback(async (duelData: DuelState) => {
         if (!user || !duelRef || !teacherUid) return;
 
@@ -605,6 +607,18 @@ export default function DuelPage() {
     const currentUserAnswers = user && duel?.answers ? (duel.answers[user.uid] || []) : [];
     const opponentUid = user?.uid === duel?.challengerUid ? duel?.opponentUid : duel?.challengerUid;
     const opponentAnswers = opponentUid && duel?.answers ? (duel.answers[opponentUid] || []) : [];
+
+    useEffect(() => {
+        const show = duel?.status === 'active' && duel?.currentQuestionIndex === 0;
+        if (show) {
+            const timer = setTimeout(() => setShowQuestion(true), 4000); // 4 seconds delay
+            return () => clearTimeout(timer);
+        } else if (duel?.status === 'active') {
+            setShowQuestion(true);
+        } else {
+            setShowQuestion(false);
+        }
+    }, [duel?.status, duel?.currentQuestionIndex]);
     
     if (isLoading || !duel) {
         return <div className="flex h-screen items-center justify-center bg-gray-900"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
@@ -678,21 +692,21 @@ export default function DuelPage() {
         return (
              <div className="relative flex h-screen flex-col items-center justify-center p-4 text-white overflow-hidden">
                 <audio ref={audioRef} src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Battle%20Music%2FVictory%20Theme.mp3?alt=media&token=846c832f-bd29-4ba4-8ad8-680eb8f1689a" autoPlay loop />
-                 <div
+                <div
                     className="absolute inset-0 -z-10"
                     style={{
-                        backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FVictory%20Page.png?alt=media&token=eb9314d1-7673-4987-9fdf-b46186275947')`,
+                        backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FVictory%20Page.png?alt=media&token=eb9314d1-7673-4987-9fdf-b46186275947')`,
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                     }}
                 />
                  <div className="relative w-full flex justify-center items-center h-80">
-                     <div className={cn("absolute animate-slide-in-left")}>
+                     <div className={cn("absolute animate-duel-slide-in-left-slow")}>
                         <div className="relative w-80 h-80">
                             <Image src={challenger.avatarUrl} alt={challenger.characterName} layout="fill" className="object-contain" />
                         </div>
                     </div>
-                   <div className={cn("absolute animate-slide-in-right")}>
+                   <div className={cn("absolute animate-duel-slide-in-right-slow")}>
                     <div className="relative w-80 h-80">
                          <Image src={opponent.avatarUrl} alt={opponent.characterName} layout="fill" className="object-contain" />
                     </div>
@@ -783,7 +797,7 @@ export default function DuelPage() {
             <div className="absolute top-4 right-4 z-10">
                 <CountdownTimer expiryTimestamp={duel.timerEndsAt} />
             </div>
-            <div className="w-full max-w-4xl">
+            <div className={cn("w-full max-w-4xl transition-opacity duration-500", showQuestion ? 'opacity-100' : 'opacity-0')}>
                 <div className="grid grid-cols-2 gap-4 mb-4">
                     <DuelPlayerCard player={challenger} answers={duel.answers?.[duel.challengerUid] || []} isCurrentUser={user?.uid === challenger?.uid} />
                     <DuelPlayerCard player={opponent} answers={duel.answers?.[duel.opponentUid] || []} isCurrentUser={user?.uid === opponent?.uid} />
