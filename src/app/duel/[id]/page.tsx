@@ -689,18 +689,16 @@ export default function DuelPage() {
                          <Image
                             src={challenger.avatarUrl}
                             alt={challenger.characterName}
-                            width={256}
-                            height={256}
-                            className="rounded-full border-8 border-white object-contain"
+                            layout="fill"
+                            className="object-contain"
                         />
                     </div>
                    <div className="absolute w-64 h-64 animate-slide-in-right">
                      <Image
                         src={opponent.avatarUrl}
                         alt={opponent.characterName}
-                        width={256}
-                        height={256}
-                        className="rounded-full border-8 border-white object-contain"
+                        layout="fill"
+                        className="object-contain"
                     />
                    </div>
                 </div>
@@ -865,6 +863,7 @@ export default function DuelPage() {
     
 
     
+
 
 
 
