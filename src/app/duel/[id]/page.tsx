@@ -9,7 +9,7 @@ import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Swords, CheckCircle, XCircle, Trophy, Loader2, Shield, ArrowLeft, Hourglass, Info, VolumeX, Volume1, Volume2 as VolumeIcon } from 'lucide-react';
 import type { Student } from '@/lib/data';
@@ -582,10 +582,14 @@ export default function DuelPage() {
                 }}
             >
                 <Card className="text-center p-8 bg-card/80 backdrop-blur-sm">
-                    <Swords className="h-16 w-16 mx-auto text-primary" />
-                    <CardTitle className="text-4xl mt-4">Challenge Sent!</CardTitle>
-                    <CardDescription>Waiting for {duel.opponentName} to respond to your challenge.</CardDescription>
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mt-4 mx-auto" />
+                    <CardHeader>
+                        <Swords className="h-16 w-16 mx-auto text-primary" />
+                        <CardTitle className="text-4xl mt-4">Challenge Sent!</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <CardDescription>Waiting for {duel.opponentName} to respond to your challenge.</CardDescription>
+                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mt-4 mx-auto" />
+                    </CardContent>
                     <CardFooter className="mt-4">
                         <Button variant="destructive" onClick={handleCancelDuel} disabled={isLeaving}>
                             {isLeaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
