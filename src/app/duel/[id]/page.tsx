@@ -292,7 +292,6 @@ export default function DuelPage() {
         if (!duel?.timerEndsAt || hasAnswered || duel.status !== 'active') return;
 
         const timeout = setTimeout(() => {
-            // Check again inside timeout to ensure user didn't answer just before it fired
             if (!hasAnswered) {
                 handleSubmitAnswer(true); // true indicates a timeout
             }
@@ -300,7 +299,7 @@ export default function DuelPage() {
 
         return () => clearTimeout(timeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [duel?.timerEndsAt, hasAnswered, duel?.status]);
+    }, [duel?.timerEndsAt, hasAnswered, duel?.status, duel?.currentQuestionIndex]);
     
     const handleSubmitAnswer = async (isTimeout = false) => {
         if ((!isTimeout && selectedAnswer === null) || !user || !duel || hasAnswered || !teacherUid || !duelSettings || !duelRef) return;
