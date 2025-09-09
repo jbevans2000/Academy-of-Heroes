@@ -215,7 +215,7 @@ export default function DuelPage() {
         if (duel?.status === 'active') {
             const timer = setTimeout(() => {
                 setShowInitialAnimation(false);
-            }, 1500); // Should match animation duration
+            }, 2500); // Should match animation duration
             return () => clearTimeout(timer);
         }
     }, [duel?.status]);
@@ -758,15 +758,13 @@ export default function DuelPage() {
 
 
     return (
-        <div className="relative flex h-screen flex-col items-center justify-center p-4 text-white">
-             <div 
-                className="absolute inset-0 -z-10 bg-black/50"
-                style={{
-                    backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FDual%20Page%20Battle.png?alt=media&token=7db8be1d-0318-4dd5-b212-bf007d15dbf6')`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                }}
-            />
+        <div className="relative flex h-screen flex-col items-center justify-center p-4 text-white"
+            style={{
+                backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FDual%20Page%20Battle.png?alt=media&token=7db8be1d-0318-4dd5-b621-bf007d15dbf6')`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+            }}
+        >
             <AudioPlayer duel={duel} musicUrl={musicUrl} audioRef={audioRef} />
             {musicUrl && <VolumeControl audioRef={audioRef} onFirstInteraction={onFirstInteraction} />}
 
@@ -803,22 +801,21 @@ export default function DuelPage() {
                     <DuelPlayerCard player={opponent} answers={duel.answers?.[duel.opponentUid] || []} isCurrentUser={user?.uid === opponent?.uid} />
                 </div>
                 
-                <div className="relative h-80 mb-4 overflow-hidden flex items-center justify-center">
-                    {challenger && (
-                        <div className="absolute animate-slide-in-left">
+                 {showInitialAnimation && challenger && opponent && (
+                    <div className="relative h-80 mb-4 overflow-hidden flex items-center justify-center">
+                        <div className="absolute animate-duel-slide-in-left">
                             <div className="relative w-64 h-80">
                                 <Image src={challenger.avatarUrl} alt={challenger.characterName} layout="fill" className="object-contain" />
                             </div>
                         </div>
-                    )}
-                    {opponent && (
-                        <div className="absolute animate-slide-in-right">
+                        <div className="absolute animate-duel-slide-in-right">
                             <div className="relative w-64 h-80">
                                 <Image src={opponent.avatarUrl} alt={opponent.characterName} layout="fill" className="object-contain" />
                             </div>
                         </div>
-                    )}
-                </div>
+                    </div>
+                )}
+
 
                 {!showInitialAnimation && (
                     <Card className="bg-card/80 backdrop-blur-sm animate-in fade-in-50">

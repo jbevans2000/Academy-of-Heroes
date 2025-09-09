@@ -71,6 +71,12 @@
   .animate-slide-in-right {
     animation: slide-in-right 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
   }
+  .animate-duel-slide-in-left {
+    animation: duel-slide-in-left 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  }
+  .animate-duel-slide-in-right {
+    animation: duel-slide-in-right 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  }
   .animate-fade-in-late {
     animation: fade-in 1s ease-in forwards;
     animation-delay: 1.5s;
@@ -85,6 +91,22 @@
     }
   }
   @keyframes slide-in-right {
+    from {
+      transform: translateX(100vw);
+    }
+    to {
+      transform: translateX(50%);
+    }
+  }
+  @keyframes duel-slide-in-left {
+    from {
+      transform: translateX(-100vw);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  @keyframes duel-slide-in-right {
     from {
       transform: translateX(100vw);
     }
