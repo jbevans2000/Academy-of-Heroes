@@ -406,49 +406,50 @@ export default function DuelPage() {
         fetchPlayersAndSettings();
     }, [duel, teacherUid]);
     
-    const handleSubmitAnswer = useCallback(async (isTimeout = false) => {
-        if (!user || !duelRef || hasAnswered || !teacherUid || !duelSettings || !duel) return;
-        if (!isTimeout && selectedAnswer === null) return;
+    const handleDuelEnd = useCallback(async (transaction: any, winnerUid: string, loserUid: string, isForfeit: boolean, isDrawByExhaustion = false) => {
+        if (!duel || !teacherUid || !duelSettings) return;
+
+        const winnerRef = doc(db, 'teachers', teacherUid, 'students', winnerUid);
+        const loserRef = doc(db, 'teachers', teacherUid, 'students', loserUid);
         
-        onFirstInteraction();
-        setHasAnswered(true);
+        const winnerDoc = await transaction.get(winnerRef);
+        const loserDoc = await transaction.get(loserRef);
+        if (!winnerDoc.exists() || !loserDoc.exists()) throw new Error("A duelist could not be found.");
 
-        const currentQuestion = duel.questions?.[duel.currentQuestionIndex];
-        if (!currentQuestion) {
-            console.error("No current question found!");
-            return;
-        }
-
-        const myAnswerIsCorrect = isTimeout ? false : selectedAnswer === currentQuestion.correctAnswerIndex;
-        const myAnswerValue = myAnswerIsCorrect ? 1 : 0;
+        const winnerData = winnerDoc.data();
         
-        const answerPath = `answers.${user.uid}`;
-        const currentAnswers = duel.answers?.[user.uid] || [];
-        const newAnswers = [...currentAnswers];
-        newAnswers[duel.currentQuestionIndex] = myAnswerValue;
-
-        try {
-            await updateDoc(duelRef, { [answerPath]: newAnswers });
+        if (isDrawByExhaustion) {
+            const refundAmount = duel.cost || 0;
+            if (refundAmount > 0) {
+                transaction.update(winnerRef, { gold: (winnerData.gold || 0) + refundAmount });
+                transaction.update(loserRef, { gold: (loserDoc.data().gold || 0) + refundAmount });
+            }
+            transaction.update(duelRef, { status: 'finished', isDraw: true, winnerUid: null }); 
+        } else {
+            const duelCost = duel.cost || 0;
+            const winnerFinalXp = (winnerData.xp || 0) + duelSettings.rewardXp;
+            const winnerFinalGold = (winnerData.gold || 0) + duelSettings.rewardGold + (isForfeit ? 0 : duelCost);
             
-            setTimeout(async () => {
-                const duelSnap = await getDoc(duelRef);
-                if (!duelSnap.exists()) return;
-                const duelData = duelSnap.data() as DuelState;
-                const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
-
-                if ((duelData.answers?.[opponentUid] || []).length > duelData.currentQuestionIndex) {
-                    await processRoundResults(duelData);
+            transaction.update(winnerRef, { xp: winnerFinalXp, gold: winnerFinalGold });
+            
+            if (!isForfeit) {
+                const refundAmount = Math.floor(duelCost / 2);
+                 if (refundAmount > 0) {
+                    const loserData = loserDoc.data();
+                    transaction.update(loserRef, { gold: (loserData.gold || 0) + refundAmount });
                 }
-            }, 2000); 
-
-        } catch (e) {
-            console.error("Duel answer submission failed:", e);
-            toast({ variant: "destructive", title: "Could Not Record Answer", description: "There was an error recording your answer." });
-            setHasAnswered(false); // Allow retry
+            }
+            transaction.update(duelRef, { status: 'finished', winnerUid, isDraw: duel.isDraw ?? false });
         }
 
-    }, [selectedAnswer, user, duelRef, hasAnswered, teacherUid, duelSettings, toast, duel]);
+        transaction.update(winnerRef, { dailyDuelCount: increment(1) });
+        transaction.update(loserRef, { dailyDuelCount: increment(1) });
 
+        const winnerName = winnerUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
+        const loserName = loserUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
+        await logGameEvent(teacherUid, 'DUEL', `${winnerName} defeated ${loserName} in a duel.`);
+    }, [duel, teacherUid, duelSettings]);
+    
     const processRoundResults = useCallback(async (duelData: DuelState) => {
         if (!user || !duelRef || !teacherUid) return;
 
@@ -500,49 +501,49 @@ export default function DuelPage() {
         });
     }, [user, duelRef, teacherUid, handleDuelEnd]);
 
-    const handleDuelEnd = useCallback(async (transaction: any, winnerUid: string, loserUid: string, isForfeit: boolean, isDrawByExhaustion = false) => {
-        if (!duel || !teacherUid || !duelSettings) return;
-
-        const winnerRef = doc(db, 'teachers', teacherUid, 'students', winnerUid);
-        const loserRef = doc(db, 'teachers', teacherUid, 'students', loserUid);
+    const handleSubmitAnswer = useCallback(async (isTimeout = false) => {
+        if (!user || !duelRef || hasAnswered || !teacherUid || !duelSettings || !duel) return;
+        if (!isTimeout && selectedAnswer === null) return;
         
-        const winnerDoc = await transaction.get(winnerRef);
-        const loserDoc = await transaction.get(loserRef);
-        if (!winnerDoc.exists() || !loserDoc.exists()) throw new Error("A duelist could not be found.");
+        onFirstInteraction();
+        setHasAnswered(true);
 
-        const winnerData = winnerDoc.data();
-        
-        if (isDrawByExhaustion) {
-            const refundAmount = duel.cost || 0;
-            if (refundAmount > 0) {
-                transaction.update(winnerRef, { gold: (winnerData.gold || 0) + refundAmount });
-                transaction.update(loserRef, { gold: (loserDoc.data().gold || 0) + refundAmount });
-            }
-            transaction.update(duelRef, { status: 'finished', isDraw: true, winnerUid: null }); 
-        } else {
-            const duelCost = duel.cost || 0;
-            const winnerFinalXp = (winnerData.xp || 0) + duelSettings.rewardXp;
-            const winnerFinalGold = (winnerData.gold || 0) + duelSettings.rewardGold + (isForfeit ? 0 : duelCost);
-            
-            transaction.update(winnerRef, { xp: winnerFinalXp, gold: winnerFinalGold });
-            
-            if (!isForfeit) {
-                const refundAmount = Math.floor(duelCost / 2);
-                 if (refundAmount > 0) {
-                    const loserData = loserDoc.data();
-                    transaction.update(loserRef, { gold: (loserData.gold || 0) + refundAmount });
-                }
-            }
-            transaction.update(duelRef, { status: 'finished', winnerUid, isDraw: duel.isDraw ?? false });
+        const currentQuestion = duel.questions?.[duel.currentQuestionIndex];
+        if (!currentQuestion) {
+            console.error("No current question found!");
+            return;
         }
 
-        transaction.update(winnerRef, { dailyDuelCount: increment(1) });
-        transaction.update(loserRef, { dailyDuelCount: increment(1) });
+        const myAnswerIsCorrect = isTimeout ? false : selectedAnswer === currentQuestion.correctAnswerIndex;
+        const myAnswerValue = myAnswerIsCorrect ? 1 : 0;
+        
+        const answerPath = `answers.${user.uid}`;
+        const currentAnswers = duel.answers?.[user.uid] || [];
+        const newAnswers = [...currentAnswers];
+        newAnswers[duel.currentQuestionIndex] = myAnswerValue;
 
-        const winnerName = winnerUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
-        const loserName = loserUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
-        await logGameEvent(teacherUid, 'DUEL', `${winnerName} defeated ${loserName} in a duel.`);
-    }, [duel, teacherUid, duelSettings]);
+        try {
+            await updateDoc(duelRef, { [answerPath]: newAnswers });
+            
+            setTimeout(async () => {
+                const duelSnap = await getDoc(duelRef);
+                if (!duelSnap.exists()) return;
+                const duelData = duelSnap.data() as DuelState;
+                const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
+
+                if ((duelData.answers?.[opponentUid] || []).length > duelData.currentQuestionIndex) {
+                    await processRoundResults(duelData);
+                }
+            }, 2000); 
+
+        } catch (e) {
+            console.error("Duel answer submission failed:", e);
+            toast({ variant: "destructive", title: "Could Not Record Answer", description: "There was an error recording your answer." });
+            setHasAnswered(false); // Allow retry
+        }
+
+    }, [selectedAnswer, user, duelRef, hasAnswered, teacherUid, duelSettings, toast, duel, processRoundResults]);
+
 
     // Timer timeout effect
     useEffect(() => {
@@ -685,9 +686,9 @@ export default function DuelPage() {
         }
 
         return (
-            <div className="relative flex h-screen flex-col items-center justify-center text-white overflow-hidden">
-                <div 
-                    className="absolute inset-0 -z-10"
+             <div className="relative flex h-screen flex-col items-center justify-center p-4 text-white overflow-hidden">
+                 <div
+                    className="absolute inset-0 -z-10 bg-black/50"
                     style={{
                         backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FVictory%20Page.png?alt=media&token=eb9314d1-7673-4987-9fdf-b46186275947')`,
                         backgroundSize: 'cover',
@@ -695,7 +696,7 @@ export default function DuelPage() {
                     }}
                 />
                 <audio src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Battle%20Music%2FVictory%20Theme.mp3?alt=media&token=846c832f-bd29-4ba4-8ad8-680eb8f1689a" autoPlay />
-                <div className="relative w-full flex justify-center items-center h-80">
+                 <div className="relative w-full flex justify-center items-center h-80">
                     <div className="absolute animate-slide-in-left">
                         <div className="relative w-80 h-80">
                             <Image src={challenger.avatarUrl} alt={challenger.characterName} layout="fill" className="object-contain" />
@@ -909,4 +910,3 @@ export default function DuelPage() {
         </div>
     )
 }
-
