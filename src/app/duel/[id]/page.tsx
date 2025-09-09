@@ -92,7 +92,7 @@ const CountdownTimer = ({ expiryTimestamp }: { expiryTimestamp: Timestamp | unde
 
     if (isUrgent) {
         return (
-             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center animate-in fade-in-50">
+             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center animate-in fade-in-50 pointer-events-none">
                 <div className="text-center animate-pulse">
                     <p className="text-9xl font-bold font-mono text-destructive drop-shadow-[0_0_10px_rgba(255,0,0,0.8)]">{timeLeft}</p>
                 </div>
@@ -409,8 +409,9 @@ export default function DuelPage() {
     
                 const currentQuestion = duelData.questions?.[duelData.currentQuestionIndex];
                 if (!currentQuestion) {
+                    // This is the fallback if we run out of sudden death questions.
                     const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
-                    await handleDuelEnd(transaction, user.uid, opponentUid, false, true);
+                    await handleDuelEnd(transaction, user.uid, opponentUid, false, true); // True for draw
                     return;
                 }
     
@@ -836,6 +837,7 @@ export default function DuelPage() {
     
 
     
+
 
 
 
