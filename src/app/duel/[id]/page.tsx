@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -555,7 +554,14 @@ export default function DuelPage() {
 
     if (duel.status === 'pending') {
         return (
-            <div className="flex h-screen items-center justify-center bg-gray-900 text-white">
+            <div 
+                className="flex h-screen items-center justify-center text-white"
+                style={{
+                    backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fu6169617522_Widescreen_fantasy-style_image_of_a_training_and__3e2d56a1-f725-4687-b023-8b1b8edf404a_2%20(1).png?alt=media&token=0d8359d5-fa1f-417f-b56f-7483cac5455d')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                }}
+            >
                 <Card className="text-center p-8 bg-card/80 backdrop-blur-sm">
                     <Swords className="h-16 w-16 mx-auto text-primary" />
                     <CardTitle className="text-4xl mt-4">Challenge Sent!</CardTitle>
@@ -770,3 +776,5 @@ export default function DuelPage() {
         </div>
     )
 }
+
+    
