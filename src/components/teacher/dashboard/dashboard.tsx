@@ -62,6 +62,7 @@ interface TeacherData {
     className: string;
     classCode: string;
     pendingCleanupBattleId?: string;
+    hasUnreadTeacherMessages?: boolean;
 }
 
 type SortOrder = 'studentName' | 'characterName' | 'xp' | 'class' | 'company';
@@ -96,10 +97,8 @@ export default function Dashboard() {
 
   const { toast } = useToast();
   
-  // New state for single student messaging
   const [isMessageCenterOpen, setIsMessageCenterOpen] = useState(false);
-  const [isConversationViewOpen, setIsConversationViewOpen] = useState(false);
-  const [studentToMessage, setStudentToMessage] = useState<Student | null>(null);
+  const [initialStudentToView, setInitialStudentToView] = useState<Student | null>(null);
   
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async user => {
@@ -134,7 +133,6 @@ export default function Dashboard() {
 
     const teacherUid = teacher.uid;
     
-    // Fetch static teacher data once, but listen for changes to the cleanup flag
     const teacherRef = doc(db, 'teachers', teacherUid);
     const unsubTeacher = onSnapshot(teacherRef, (teacherSnap) => {
         if (teacherSnap.exists()) {
@@ -387,7 +385,6 @@ export default function Dashboard() {
           }
 
           await batch.commit();
-          // Real-time listener will update UI
           
           await logGameEvent(teacher!.uid, 'GAMEMASTER', `Bestowed ${amount} Gold to ${selectedStudents.length} student(s).`);
 
@@ -470,24 +467,19 @@ export default function Dashboard() {
       await batch.commit();
       
       await updateDoc(doc(db, 'students', uid), { approved: true });
-
-      // Real-time listeners will handle UI updates.
       
       await logGameEvent(teacher.uid, 'ACCOUNT', `${newStudent.studentName} (${newStudent.characterName}) was approved and joined the guild.`);
       toast({ title: "Hero Approved!", description: `${newStudent.characterName} has joined your guild.` });
     } else {
-      // If rejected, just delete the pending doc. Admin must manually delete from Auth.
       await deleteDoc(pendingStudentRef);
-      // Also delete the global student doc
       await deleteDoc(doc(db, 'students', uid));
 
       await logGameEvent(teacher.uid, 'ACCOUNT', `The application for ${pendingStudent.studentName} (${pendingStudent.characterName}) was rejected.`);
       toast({ title: "Request Rejected", description: `The request for ${pendingStudent.characterName} has been deleted. You may need to delete the user from Firebase Authentication manually if they should be prevented from re-registering.` });
     }
   
-    // UI will update from the listener
     if (pendingStudents.length === 1) {
-      setIsApprovalDialogOpen(false); // Close dialog if it was the last one
+      setIsApprovalDialogOpen(false);
     }
   };
 
@@ -495,12 +487,11 @@ export default function Dashboard() {
     if (!teacher) return;
     
     if (!isAutoCleanup) {
-        setIsAwarding(true); // Reuse the awarding loader state for the spinner
+        setIsAwarding(true);
     }
 
     const batch = writeBatch(db);
     try {
-        // 1. Clear student `inBattle` flags
         const studentsInBattleQuery = query(collection(db, 'teachers', teacher.uid, 'students'), where('inBattle', '==', true));
         const studentsInBattleSnapshot = await getDocs(studentsInBattleQuery);
         let studentCount = 0;
@@ -511,7 +502,6 @@ export default function Dashboard() {
             });
         }
 
-        // 2. Delete the `active-battle` document and its subcollections
         const liveBattleRef = doc(db, 'teachers', teacher.uid, 'liveBattles', 'active-battle');
         const subcollectionsToDelete = ['responses', 'powerActivations', 'battleLog', 'messages'];
         
@@ -524,7 +514,6 @@ export default function Dashboard() {
         }
         batch.delete(liveBattleRef);
 
-        // 3. Clear the cleanup flag from the teacher doc
         const teacherRef = doc(db, 'teachers', teacher.uid);
         batch.update(teacherRef, { pendingCleanupBattleId: null });
 
@@ -547,14 +536,17 @@ export default function Dashboard() {
   };
   
   const handleOpenMessageCenter = (student?: Student) => {
-    if (student) {
-        setStudentToMessage(student);
-        setIsConversationViewOpen(true);
-    } else {
-        setStudentToMessage(null);
-        setIsMessageCenterOpen(true);
-    }
+    setInitialStudentToView(student || null);
+    setIsMessageCenterOpen(true);
   };
+  
+    const handleCloseMessageCenter = async () => {
+        setIsMessageCenterOpen(false);
+        if (teacher && teacherData?.hasUnreadTeacherMessages) {
+            const teacherRef = doc(db, 'teachers', teacher.uid);
+            await updateDoc(teacherRef, { hasUnreadTeacherMessages: false });
+        }
+    };
   
   const handleRestoreAll = async (stat: 'hp' | 'mp') => {
       if (!teacher) return;
@@ -846,6 +838,11 @@ export default function Dashboard() {
                     Pending Approvals ({pendingStudents.length})
                 </Button>
             )}
+             <Button variant="outline" onClick={() => handleOpenMessageCenter()} className="relative text-black border-black">
+                <MessageSquare className="mr-2 h-5 w-5" />
+                Message Center
+                {teacherData?.hasUnreadTeacherMessages && <span className="absolute top-1 right-1 flex h-3 w-3 rounded-full bg-red-600 animate-pulse" />}
+            </Button>
 
             <Dialog open={isXpDialogOpen} onOpenChange={setIsXpDialogOpen}>
             <DialogTrigger asChild>
@@ -946,13 +943,11 @@ export default function Dashboard() {
             </AlertDialog>
             <TeacherMessageCenter 
                 teacher={teacher} 
-                students={students} 
-                selectedStudentUids={selectedStudents}
-                isMessageOpen={isMessageCenterOpen}
-                onMessageOpenChange={setIsMessageCenterOpen}
-                isConversationViewOpen={isConversationViewOpen}
-                onConversationViewOpenChange={setIsConversationViewOpen}
-                studentToMessage={studentToMessage}
+                students={students}
+                isOpen={isMessageCenterOpen}
+                onOpenChange={handleCloseMessageCenter}
+                initialStudent={initialStudentToView}
+                onConversationSelect={setInitialStudentToView}
             />
             <SetQuestProgressDialog
                 isOpen={isQuestProgressOpen}
@@ -1025,5 +1020,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
-    
