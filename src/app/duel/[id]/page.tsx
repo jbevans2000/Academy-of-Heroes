@@ -335,7 +335,7 @@ export default function DuelPage() {
         });
 
         return () => unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks-exhaustive-deps
     }, [duelRef, teacherUid, router, toast, handleDuelStart]);
     
     // Effect to handle advancing from the result screen
@@ -388,40 +388,46 @@ export default function DuelPage() {
                 const freshDuelSnap = await transaction.get(duelRef);
                 if (!freshDuelSnap.exists()) throw new Error("Duel document not found during transaction.");
     
-                const duelData = freshDuelSnap.data() as DuelState;
-                
-                const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
-                const opponentAnswers = duelData.answers?.[opponentUid] || [];
-                const hasOpponentAnswered = opponentAnswers.length > duelData.currentQuestionIndex;
+                let duelData = freshDuelSnap.data() as DuelState;
     
                 const myCurrentAnswers = duelData.answers?.[user.uid] || [];
                 if (myCurrentAnswers.length > duelData.currentQuestionIndex) {
                     return; // Already answered
                 }
     
-                const newAnswers = { ...(duelData.answers || {}) };
-                newAnswers[user.uid] = [...myCurrentAnswers];
-                
                 const currentQuestion = duelData.questions?.[duelData.currentQuestionIndex];
                 if (!currentQuestion) {
-                    await handleDuelEnd(transaction, duelData.challengerUid, duelData.opponentUid, false, true); 
+                    const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
+                    await handleDuelEnd(transaction, user.uid, opponentUid, false, true);
                     return;
                 }
     
                 const myAnswerIsCorrect = isTimeout ? false : selectedAnswer === currentQuestion.correctAnswerIndex;
                 const myAnswerValue = myAnswerIsCorrect ? 1 : 0;
-                newAnswers[user.uid][duelData.currentQuestionIndex] = myAnswerValue;
+    
+                const newAnswersForUser = [...myCurrentAnswers];
+                newAnswersForUser[duelData.currentQuestionIndex] = myAnswerValue;
+                
+                const newAnswers = { ...(duelData.answers || {}) };
+                newAnswers[user.uid] = newAnswersForUser;
+    
+                // Update duelData in memory for the rest of the transaction
+                duelData = { ...duelData, answers: newAnswers };
+    
+                const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
+                const opponentAnswers = duelData.answers?.[opponentUid] || [];
+                const hasOpponentAnswered = opponentAnswers.length > duelData.currentQuestionIndex;
     
                 const updates: Partial<DuelState> = { answers: newAnswers };
     
                 if (hasOpponentAnswered) {
                     const opponentAnswerValue = opponentAnswers[duelData.currentQuestionIndex];
-                    
+    
                     if (duelData.isDraw) {
                         if (myAnswerValue === 1 && opponentAnswerValue === 0) {
-                             await handleDuelEnd(transaction, user.uid, opponentUid, false);
+                            await handleDuelEnd(transaction, user.uid, opponentUid, false);
                         } else if (myAnswerValue === 0 && opponentAnswerValue === 1) {
-                             await handleDuelEnd(transaction, opponentUid, user.uid, false);
+                            await handleDuelEnd(transaction, opponentUid, user.uid, false);
                         } else {
                             updates.status = 'sudden_death';
                             updates.timerEndsAt = null;
@@ -734,7 +740,16 @@ export default function DuelPage() {
 
 
     return (
-        <div className="flex h-screen flex-col items-center justify-center bg-gray-900 p-4 text-white">
+        <div className="relative flex h-screen flex-col items-center justify-center p-4 text-white">
+             <div 
+                className="absolute inset-0 -z-10"
+                style={{
+                    backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FDual%20Page%20Battle.png?alt=media&token=7db8be1d-0318-4dd5-b621-bf007d15dbf6')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                }}
+            />
+            <div className="absolute inset-0 bg-black/50 -z-10" />
              <audio ref={audioRef} loop />
              {musicUrl && <VolumeControl audioRef={audioRef} onFirstInteraction={onFirstInteraction} />}
              <div className="absolute top-4 left-4 z-10">
@@ -809,3 +824,4 @@ export default function DuelPage() {
     
 
     
+
