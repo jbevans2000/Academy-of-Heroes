@@ -391,7 +391,7 @@ export default function ForgePage() {
     };
 
     const handleSetAvatar = async () => {
-        if (!teacherUid || !user) return;
+        if (!teacherUid || !user || !student) return;
         setIsSettingAvatar(true);
 
         try {
@@ -416,13 +416,12 @@ export default function ForgePage() {
                     equippedFeetId: '',
                     armorTransforms: {},
                     armorTransforms2: {},
-                    equippedHairstyle3DTransforms: {}, // Clear 3D data
-                    equippedArmorTransforms: {}, // Clear 3D data
                 };
             } else {
-                 // If a custom character is built, save the recipe and clear the static URL
+                 // If a custom character is built, save the recipe
+                 // CRITICAL: Do NOT clear avatarUrl. Leave the last static one for the teacher's view.
                  updates = {
-                    avatarUrl: '', 
+                    avatarUrl: student.avatarUrl,
                     useCustomAvatar: true,
                     equippedBodyId: equipment.bodyId,
                     equippedHairstyleId: equipment.hairstyleId,
@@ -437,8 +436,6 @@ export default function ForgePage() {
                     equippedFeetId: equipment.feetId,
                     armorTransforms: localArmorTransforms,
                     armorTransforms2: localArmorTransforms2,
-                    equippedHairstyle3DTransforms: {}, // Clear 3D data
-                    equippedArmorTransforms: {}, // Clear 3D data
                 };
             }
             
