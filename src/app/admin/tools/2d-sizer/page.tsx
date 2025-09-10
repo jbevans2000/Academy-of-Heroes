@@ -1,16 +1,16 @@
 
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
 import { doc, getDoc, collection, onSnapshot, updateDoc, query, orderBy } from 'firebase/firestore';
-import type { ArmorPiece, ArmorSlot, BaseBody } from '@/lib/forge';
+import type { ArmorPiece, ArmorSlot, BaseBody, Hairstyle } from '@/lib/forge';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Save, Layers, Trash2, Edit, Eye } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Layers, Trash2, Edit, Eye, Scissors } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
@@ -18,6 +18,8 @@ import { cn } from '@/lib/utils';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const slotZIndex: Record<ArmorSlot, number> = {
     legs: 1,
@@ -29,26 +31,27 @@ const slotZIndex: Record<ArmorSlot, number> = {
 };
 
 
-export default function ArmorSizerPage() {
+export default function SizerPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [user, setUser] = useState<User | null>(null);
 
     // Data State
     const [allArmorPieces, setAllArmorPieces] = useState<ArmorPiece[]>([]);
+    const [allHairstyles, setAllHairstyles] = useState<Hairstyle[]>([]);
     const [allBaseBodies, setAllBaseBodies] = useState<BaseBody[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
     // UI State
     const [selectedBody, setSelectedBody] = useState<BaseBody | null>(null);
-    const [equippedPieces, setEquippedPieces] = useState<ArmorPiece[]>([]);
+    const [equippedItems, setEquippedItems] = useState<(ArmorPiece | Hairstyle)[]>([]);
     const [activePieceId, setActivePieceId] = useState<string | null>(null);
     const [editingLayer, setEditingLayer] = useState<'primary' | 'secondary'>('primary');
     const [isPreviewMode, setIsPreviewMode] = useState(false);
     
     // Transform State
-    const [transforms, setTransforms] = useState<{ [pieceId: string]: { x: number; y: number; scale: number; x2: number; y2: number; scale2: number; } }>({});
+    const [transforms, setTransforms] = useState<{ [pieceId: string]: any }>({});
 
     const [isDragging, setIsDragging] = useState(false);
     const canvasRef = useRef<HTMLDivElement>(null);
@@ -81,6 +84,11 @@ export default function ArmorSizerPage() {
             setAllArmorPieces(pieces);
         });
         
+        const unsubHairstyles = onSnapshot(collection(db, 'hairstyles'), (snapshot) => {
+            const styles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hairstyle));
+            setAllHairstyles(styles);
+        });
+        
         const q = query(collection(db, 'baseBodies'), orderBy('order'));
         const unsubBodies = onSnapshot(q, (snapshot) => {
             const bodies = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BaseBody));
@@ -91,46 +99,47 @@ export default function ArmorSizerPage() {
 
         return () => {
              unsubArmor();
+             unsubHairstyles();
              unsubBodies();
         };
     }, [user]);
 
-    // Effect to update transform states when selected body or equipped pieces change
+    // Effect to update transform states when selected body or equipped items change
     useEffect(() => {
         if (!selectedBody) return;
 
         const newTransforms: typeof transforms = {};
-        equippedPieces.forEach(piece => {
-            const savedTransform = piece.transforms?.[selectedBody.id] || { x: 50, y: 50, scale: 100 };
-            const savedTransform2 = piece.transforms2?.[selectedBody.id] || { x: 50, y: 50, scale: 100 };
-            newTransforms[piece.id] = {
-                x: savedTransform.x,
-                y: savedTransform.y,
-                scale: savedTransform.scale,
-                x2: savedTransform2.x,
-                y2: savedTransform2.y,
-                scale2: savedTransform2.scale,
-            };
+        equippedItems.forEach(piece => {
+            if ('slot' in piece) { // Armor
+                const savedTransform = piece.transforms?.[selectedBody.id] || { x: 50, y: 50, scale: 40 };
+                const savedTransform2 = piece.transforms2?.[selectedBody.id] || { x: 50, y: 50, scale: 40 };
+                newTransforms[piece.id] = {
+                    x: savedTransform.x, y: savedTransform.y, scale: savedTransform.scale,
+                    x2: savedTransform2.x, y2: savedTransform2.y, scale2: savedTransform2.scale,
+                };
+            } else { // Hairstyle
+                 const savedTransform = piece.transforms?.[selectedBody.id] || { x: 50, y: 50, scale: 100 };
+                  newTransforms[piece.id] = { x: savedTransform.x, y: savedTransform.y, scale: savedTransform.scale };
+            }
         });
         setTransforms(newTransforms);
         
-    }, [equippedPieces, selectedBody]);
+    }, [equippedItems, selectedBody]);
     
     const activePiece = useMemo(() => {
-        return equippedPieces.find(p => p.id === activePieceId) || null;
-    }, [activePieceId, equippedPieces]);
+        return equippedItems.find(p => p.id === activePieceId) || null;
+    }, [activePieceId, equippedItems]);
 
     const activeTransform = activePieceId ? transforms[activePieceId] : null;
 
-    const handleArmorLibraryClick = (piece: ArmorPiece) => {
-        setEquippedPieces(prev => {
-            const isEquipped = prev.some(p => p.id === piece.id);
+    const handleItemLibraryClick = (item: ArmorPiece | Hairstyle) => {
+        setEquippedItems(prev => {
+            const isEquipped = prev.some(p => p.id === item.id);
             if (isEquipped) {
-                // If it's the active piece, deactivate it
-                if(activePieceId === piece.id) setActivePieceId(null);
-                return prev.filter(p => p.id !== piece.id);
+                if(activePieceId === item.id) setActivePieceId(null);
+                return prev.filter(p => p.id !== item.id);
             } else {
-                return [...prev, piece];
+                return [...prev, item];
             }
         });
     }
@@ -173,21 +182,28 @@ export default function ArmorSizerPage() {
 
     const handleSaveTransform = async () => {
         if (!activePiece || !selectedBody || !activeTransform) {
-            toast({ variant: 'destructive', title: 'Selection Missing', description: 'Please select a base body and an active armor piece to save.' });
+            toast({ variant: 'destructive', title: 'Selection Missing', description: 'Please select a base body and an active item to save.' });
             return;
         }
         setIsSaving(true);
         try {
-            const armorRef = doc(db, 'armorPieces', activePiece.id);
-            const updates: any = {
-                [`transforms.${selectedBody.id}`]: { x: activeTransform.x, y: activeTransform.y, scale: activeTransform.scale }
-            };
-            if(activePiece.modularImageUrl2) {
-                updates[`transforms2.${selectedBody.id}`] = { x: activeTransform.x2, y: activeTransform.y2, scale: activeTransform.scale2 };
+            if ('slot' in activePiece) { // Armor
+                const armorRef = doc(db, 'armorPieces', activePiece.id);
+                const updates: any = {
+                    [`transforms.${selectedBody.id}`]: { x: activeTransform.x, y: activeTransform.y, scale: activeTransform.scale }
+                };
+                if(activePiece.modularImageUrl2) {
+                    updates[`transforms2.${selectedBody.id}`] = { x: activeTransform.x2, y: activeTransform.y2, scale: activeTransform.scale2 };
+                }
+                await updateDoc(armorRef, updates);
+            } else { // Hairstyle
+                const hairRef = doc(db, 'hairstyles', activePiece.id);
+                 await updateDoc(hairRef, {
+                    [`transforms.${selectedBody.id}`]: { x: activeTransform.x, y: activeTransform.y, scale: activeTransform.scale }
+                });
             }
 
-            await updateDoc(armorRef, updates);
-            toast({ title: 'Transform Saved!', description: `Position for ${activePiece.name} on ${selectedBody.name} has been saved.` });
+            toast({ title: 'Transform Saved!', description: `Position for ${'styleName' in activePiece ? activePiece.styleName : activePiece.name} on ${selectedBody.name} has been saved.` });
         } catch (error) {
             console.error("Error saving transform:", error);
             toast({ variant: 'destructive', title: 'Save Failed', description: 'Could not save the transform.' });
@@ -213,7 +229,7 @@ export default function ArmorSizerPage() {
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             Back to Admin Dashboard
                         </Button>
-                         <h1 className="text-2xl font-bold">Armor Sizer</h1>
+                         <h1 className="text-2xl font-bold">2D Sizer</h1>
                          <Button onClick={handleSaveTransform} disabled={isSaving || !activePiece || isPreviewMode}>
                             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                             Save Active Piece
@@ -225,35 +241,47 @@ export default function ArmorSizerPage() {
                              <Card>
                                 <CardHeader><CardTitle>Base Bodies</CardTitle></CardHeader>
                                 <CardContent className="grid grid-cols-2 gap-2">
-                                    {allBaseBodies.map((body, i) => (
+                                    {allBaseBodies.map((body) => (
                                          <div key={body.id} className={cn("border p-1 rounded-md cursor-pointer hover:border-primary", selectedBody?.id === body.id && "border-primary ring-2 ring-primary")} onClick={() => setSelectedBody(body)}>
                                             <Image src={body.thumbnailUrl} alt={body.name} width={150} height={150} className="w-full h-auto object-contain bg-gray-200 rounded-sm" />
                                         </div>
                                     ))}
                                 </CardContent>
                             </Card>
-                            <Card>
-                                <CardHeader><CardTitle>Armor Pieces</CardTitle></CardHeader>
-                                <CardContent className="grid grid-cols-2 gap-2 max-h-[50vh] overflow-y-auto">
-                                    {isLoading && Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="w-full h-24" />)}
-                                    {allArmorPieces.length === 0 && !isLoading && (
-                                        <p className="col-span-2 text-sm text-muted-foreground">No armor pieces found. Create some in the Global Forge first.</p>
-                                    )}
-                                    {allArmorPieces.map(piece => (
-                                        <div 
-                                            key={piece.id} 
-                                            className={cn(
-                                                "border p-1 rounded-md cursor-pointer hover:border-primary", 
-                                                equippedPieces.some(p => p.id === piece.id) && "border-primary ring-2 ring-primary"
-                                            )}
-                                            onClick={() => handleArmorLibraryClick(piece)}
-                                        >
-                                            <Image src={piece.imageUrl} alt={piece.name} width={150} height={150} className="w-full h-auto object-contain bg-gray-200 rounded-sm" />
-                                             <p className="text-xs text-center mt-1 truncate">{piece.name}</p>
-                                        </div>
-                                    ))}
-                                </CardContent>
-                            </Card>
+                            <Tabs defaultValue="armor">
+                                <TabsList className="grid w-full grid-cols-2">
+                                    <TabsTrigger value="armor">Armor</TabsTrigger>
+                                    <TabsTrigger value="hairstyles">Hairstyles</TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="armor">
+                                    <ScrollArea className="h-[40vh] p-2 border rounded-md">
+                                        {allArmorPieces.map(piece => (
+                                            <div 
+                                                key={piece.id} 
+                                                className={cn( "p-1 my-1 rounded-md cursor-pointer hover:bg-muted flex items-center gap-2", equippedItems.some(p => p.id === piece.id) && "bg-primary/20")}
+                                                onClick={() => handleItemLibraryClick(piece)}
+                                            >
+                                                <Image src={piece.imageUrl} alt={piece.name} width={40} height={40} className="object-contain bg-gray-200 rounded-sm" />
+                                                <p className="text-xs font-semibold truncate">{piece.name}</p>
+                                            </div>
+                                        ))}
+                                    </ScrollArea>
+                                </TabsContent>
+                                <TabsContent value="hairstyles">
+                                     <ScrollArea className="h-[40vh] p-2 border rounded-md">
+                                         {allHairstyles.map(style => (
+                                            <div 
+                                                key={style.id} 
+                                                className={cn( "p-1 my-1 rounded-md cursor-pointer hover:bg-muted flex items-center gap-2", equippedItems.some(p => p.id === style.id) && "bg-primary/20")}
+                                                onClick={() => handleItemLibraryClick(style)}
+                                            >
+                                                <Image src={style.thumbnailUrl || style.baseImageUrl} alt={style.styleName} width={40} height={40} className="object-contain bg-gray-200 rounded-sm" />
+                                                <p className="text-xs font-semibold truncate">{style.styleName}</p>
+                                            </div>
+                                        ))}
+                                    </ScrollArea>
+                                </TabsContent>
+                            </Tabs>
                         </div>
                         {/* Canvas Panel */}
                         <div className="lg:col-span-2">
@@ -271,56 +299,53 @@ export default function ArmorSizerPage() {
                                    ) : (
                                        <p>Select a Base Body to begin.</p>
                                    )}
-                                    {equippedPieces.map(piece => {
-                                        const pieceTransforms = transforms[piece.id];
-                                        if (!pieceTransforms) return null;
-                                        const isActive = piece.id === activePieceId;
-                                        const zIndex = slotZIndex[piece.slot] || 1;
+                                    {equippedItems.map(item => {
+                                        const itemTransforms = transforms[item.id];
+                                        if (!itemTransforms) return null;
+                                        const isActive = item.id === activePieceId;
                                         
-                                        const isGenderedSlot = piece.slot === 'chest' || piece.slot === 'legs';
-                                        const primaryImageUrl = isGenderedSlot
-                                            ? (selectedBody?.gender === 'female' ? piece.modularImageUrlFemale : piece.modularImageUrlMale) || piece.modularImageUrlMale || piece.modularImageUrl
-                                            : piece.modularImageUrl;
+                                        if('slot' in item) { // Armor
+                                            const piece = item;
+                                            const zIndex = slotZIndex[piece.slot] || 1;
+                                            const isGenderedSlot = piece.slot === 'chest' || piece.slot === 'legs';
+                                            const primaryImageUrl = isGenderedSlot
+                                                ? (selectedBody?.gender === 'female' ? piece.modularImageUrlFemale : piece.modularImageUrlMale) || piece.modularImageUrlMale || piece.modularImageUrl
+                                                : piece.modularImageUrl;
 
-
-                                        return (
-                                        <React.Fragment key={piece.id}>
-                                            <div 
-                                                className={cn(
-                                                    "absolute cursor-move",
-                                                    isPreviewMode ? 'opacity-100 pointer-events-none' : (!isActive && 'opacity-50 pointer-events-none')
-                                                )}
-                                                style={{
-                                                    left: `${pieceTransforms.x}%`,
-                                                    top: `${pieceTransforms.y}%`,
-                                                    width: `${pieceTransforms.scale}%`,
-                                                    transform: 'translate(-50%, -50%)',
-                                                    zIndex: isPreviewMode ? zIndex : (isActive && editingLayer === 'primary' ? 20 : zIndex),
-                                                }}
-                                                onMouseDown={(e) => handleMouseDown(e, piece.id, 'primary')}
-                                            >
-                                                <Image src={primaryImageUrl} alt={piece.name} width={500} height={500} className="object-contain max-h-full max-w-full pointer-events-none" />
-                                            </div>
-                                            {piece.modularImageUrl2 && (
-                                                 <div 
-                                                    className={cn(
-                                                        "absolute cursor-move",
-                                                        isPreviewMode ? 'opacity-100 pointer-events-none' : (!isActive && 'opacity-50 pointer-events-none')
+                                            return (
+                                                <React.Fragment key={piece.id}>
+                                                    <div 
+                                                        className={cn("absolute cursor-move", isPreviewMode ? 'opacity-100 pointer-events-none' : (!isActive && 'opacity-50 pointer-events-none'))}
+                                                        style={{ left: `${itemTransforms.x}%`, top: `${itemTransforms.y}%`, width: `${itemTransforms.scale}%`, transform: 'translate(-50%, -50%)', zIndex: isPreviewMode ? zIndex : (isActive && editingLayer === 'primary' ? 20 : zIndex) }}
+                                                        onMouseDown={(e) => handleMouseDown(e, piece.id, 'primary')}
+                                                    >
+                                                        <Image src={primaryImageUrl} alt={piece.name} width={500} height={500} className="object-contain max-h-full max-w-full pointer-events-none" />
+                                                    </div>
+                                                    {piece.modularImageUrl2 && (
+                                                        <div 
+                                                            className={cn("absolute cursor-move", isPreviewMode ? 'opacity-100 pointer-events-none' : (!isActive && 'opacity-50 pointer-events-none'))}
+                                                            style={{ left: `${itemTransforms.x2}%`, top: `${itemTransforms.y2}%`, width: `${itemTransforms.scale2}%`, transform: 'translate(-50%, -50%)', zIndex: isPreviewMode ? zIndex : (isActive && editingLayer === 'secondary' ? 20 : zIndex) }}
+                                                            onMouseDown={(e) => handleMouseDown(e, piece.id, 'secondary')}
+                                                        >
+                                                            <Image src={piece.modularImageUrl2} alt={piece.name} width={500} height={500} className="object-contain max-h-full max-w-full pointer-events-none" />
+                                                        </div>
                                                     )}
-                                                    style={{
-                                                        left: `${pieceTransforms.x2}%`,
-                                                        top: `${pieceTransforms.y2}%`,
-                                                        width: `${pieceTransforms.scale2}%`,
-                                                        transform: 'translate(-50%, -50%)',
-                                                        zIndex: isPreviewMode ? zIndex : (isActive && editingLayer === 'secondary' ? 20 : zIndex),
-                                                    }}
-                                                    onMouseDown={(e) => handleMouseDown(e, piece.id, 'secondary')}
+                                                </React.Fragment>
+                                            )
+                                        } else { // Hairstyle
+                                            const hairstyle = item;
+                                            return (
+                                                <div 
+                                                    key={hairstyle.id}
+                                                    className={cn("absolute cursor-move", isPreviewMode ? 'opacity-100 pointer-events-none' : (!isActive && 'opacity-50 pointer-events-none'))}
+                                                    style={{ left: `${itemTransforms.x}%`, top: `${itemTransforms.y}%`, width: `${itemTransforms.scale}%`, transform: 'translate(-50%, -50%)', zIndex: isPreviewMode ? 10 : (isActive ? 20 : 10) }}
+                                                    onMouseDown={(e) => handleMouseDown(e, hairstyle.id, 'primary')}
                                                 >
-                                                    <Image src={piece.modularImageUrl2} alt={piece.name} width={500} height={500} className="object-contain max-h-full max-w-full pointer-events-none" />
+                                                    <Image src={hairstyle.baseImageUrl} alt={hairstyle.styleName} width={500} height={500} className="object-contain max-h-full max-w-full pointer-events-none" />
                                                 </div>
-                                            )}
-                                        </React.Fragment>
-                                    )})}
+                                            )
+                                        }
+                                    })}
                                 </CardContent>
                             </Card>
                         </div>
@@ -337,13 +362,13 @@ export default function ArmorSizerPage() {
                                     </div>
                                 </CardHeader>
                                 <CardContent className="space-y-2">
-                                     {equippedPieces.length === 0 && <p className="text-sm text-muted-foreground">Select pieces from the library to add them here.</p>}
-                                     {equippedPieces.map(piece => (
-                                         <div key={piece.id} className={cn("flex items-center justify-between p-2 rounded-md", piece.id === activePieceId && !isPreviewMode ? 'bg-primary/20' : 'bg-secondary')}>
-                                             <span className="font-semibold text-sm truncate">{piece.name}</span>
+                                     {equippedItems.length === 0 && <p className="text-sm text-muted-foreground">Select items from the library to add them here.</p>}
+                                     {equippedItems.map(item => (
+                                         <div key={item.id} className={cn("flex items-center justify-between p-2 rounded-md", item.id === activePieceId && !isPreviewMode ? 'bg-primary/20' : 'bg-secondary')}>
+                                             <span className="font-semibold text-sm truncate">{'styleName' in item ? item.styleName : item.name}</span>
                                              <div className="flex gap-1">
-                                                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setActivePieceId(piece.id)} disabled={isPreviewMode}><Edit className="h-4 w-4" /></Button>
-                                                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleArmorLibraryClick(piece)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setActivePieceId(item.id)} disabled={isPreviewMode}><Edit className="h-4 w-4" /></Button>
+                                                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleItemLibraryClick(item)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                                              </div>
                                          </div>
                                      ))}
@@ -354,7 +379,7 @@ export default function ArmorSizerPage() {
                                 <CardContent className="space-y-6">
                                      {activePiece && activeTransform ? (
                                         <>
-                                            {activePiece.modularImageUrl2 && (
+                                            {'slot' in activePiece && activePiece.modularImageUrl2 && (
                                                 <div className="space-y-2 p-2 border rounded-md">
                                                     <Label className="flex items-center gap-2"><Layers/> Editing Layer</Label>
                                                     <div className="grid grid-cols-2 gap-2">
@@ -363,7 +388,7 @@ export default function ArmorSizerPage() {
                                                     </div>
                                                 </div>
                                             )}
-                                            {editingLayer === 'primary' ? (
+                                            {editingLayer === 'primary' || !('slot' in activePiece) ? (
                                                  <>
                                                     <div className="space-y-2">
                                                         <Label htmlFor="x-pos">X Position: {activeTransform.x.toFixed(2)}%</Label>

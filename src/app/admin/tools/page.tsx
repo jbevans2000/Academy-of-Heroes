@@ -80,24 +80,17 @@ const adminTools = [
     },
      {
         title: 'Global 3D Forge',
-        description: 'Save 3D transforms for all assets.',
+        description: 'Upload and manage all .glb 3D models for assets.',
         icon: <Box className="h-10 w-10 text-primary" />,
         path: '/admin/tools/global-3d-forge',
         bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-4f51e3c8-a9f8-4177-84f9-b88f3430541e.jpg?alt=media&token=3b3104e1-e129-4598-a3f2-8951214e217d'
     },
     {
-        title: 'Hair Sizer',
-        description: 'Position and scale hairstyles on different body types.',
+        title: '2D Sizer',
+        description: 'Position and scale 2D assets like armor and hairstyles.',
         icon: <Wrench className="h-10 w-10 text-primary" />,
-        path: '/admin/tools/hair-sizer',
+        path: '/admin/tools/2d-sizer',
         bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-e358b5a0-a029-450f-90e6-799c424d1668.jpg?alt=media&token=9ac606d2-31f4-41d6-8480-e889a7414704'
-    },
-    {
-        title: 'Armor Sizer',
-        description: 'Position and scale armor pieces on different body types.',
-        icon: <Wrench className="h-10 w-10 text-primary" />,
-        path: '/admin/tools/armor-sizer',
-        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-3b24f5a3-f094-4b55-83c9-04c94483a992.jpg?alt=media&token=81d227c8-89c0-432a-af94-d4b998a44d03'
     },
 ];
 
