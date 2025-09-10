@@ -110,19 +110,21 @@ export default function SizerPage() {
 
     // Effect to update transform states when selected body or equipped items change
     useEffect(() => {
-        if (!selectedBody) return;
-
+        if (!allBaseBodies.length) return;
+        
         const newTransforms: typeof transforms = {};
-        const defaultBodyId = allBaseBodies[0]?.id; // Fallback to first body
+        const defaultBodyId = allBaseBodies[0]?.id;
 
         equippedItems.forEach(piece => {
             const currentPieceTransforms = transforms[piece.id] || {};
-
             let savedTransform, savedTransform2;
             
             if ('slot' in piece) { // Armor
-                savedTransform = piece.transforms?.[selectedBody.id] || piece.transforms?.[defaultBodyId || ''] || { x: 50, y: 50, scale: 40, rotation: 0 };
-                savedTransform2 = piece.transforms2?.[selectedBody.id] || piece.transforms2?.[defaultBodyId || ''] || { x: 50, y: 50, scale: 40, rotation: 0 };
+                const baseTransform = piece.transforms?.[selectedBody?.id || ''] || piece.transforms?.[defaultBodyId || ''];
+                const baseTransform2 = piece.transforms2?.[selectedBody?.id || ''] || piece.transforms2?.[defaultBodyId || ''];
+                
+                savedTransform = baseTransform || { x: 50, y: 50, scale: 40, rotation: 0 };
+                savedTransform2 = baseTransform2 || { x: 50, y: 50, scale: 40, rotation: 0 };
                 
                 newTransforms[piece.id] = {
                     ...currentPieceTransforms,
@@ -136,7 +138,8 @@ export default function SizerPage() {
                     rotation2: savedTransform2.rotation || 0,
                 };
             } else { // Hairstyle
-                 savedTransform = piece.transforms?.[selectedBody.id] || piece.transforms?.[defaultBodyId || ''] || { x: 50, y: 50, scale: 100, rotation: 0 };
+                 const baseTransform = piece.transforms?.[selectedBody?.id || ''] || piece.transforms?.[defaultBodyId || ''];
+                 savedTransform = baseTransform || { x: 50, y: 50, scale: 100, rotation: 0 };
                  newTransforms[piece.id] = {
                     ...currentPieceTransforms,
                     x: savedTransform.x, 
