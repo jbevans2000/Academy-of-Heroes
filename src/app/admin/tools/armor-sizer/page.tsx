@@ -5,9 +5,8 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
-import { doc, getDoc, collection, onSnapshot, updateDoc } from 'firebase/firestore';
-import type { ArmorPiece, ArmorSlot } from '@/lib/forge';
-import { baseBodyUrls } from '@/lib/forge'; // Import from centralized location
+import { doc, getDoc, collection, onSnapshot, updateDoc, query, orderBy } from 'firebase/firestore';
+import type { ArmorPiece, ArmorSlot, BaseBody } from '@/lib/forge';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,11 +36,12 @@ export default function ArmorSizerPage() {
 
     // Data State
     const [allArmorPieces, setAllArmorPieces] = useState<ArmorPiece[]>([]);
+    const [allBaseBodies, setAllBaseBodies] = useState<BaseBody[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
     // UI State
-    const [selectedBody, setSelectedBody] = useState<(typeof baseBodyUrls[0]) | null>(null);
+    const [selectedBody, setSelectedBody] = useState<BaseBody | null>(null);
     const [equippedPieces, setEquippedPieces] = useState<ArmorPiece[]>([]);
     const [activePieceId, setActivePieceId] = useState<string | null>(null);
     const [editingLayer, setEditingLayer] = useState<'primary' | 'secondary'>('primary');
@@ -75,12 +75,24 @@ export default function ArmorSizerPage() {
     useEffect(() => {
         if (!user) return;
         setIsLoading(true);
+
         const unsubArmor = onSnapshot(collection(db, 'armorPieces'), (snapshot) => {
             const pieces = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ArmorPiece));
             setAllArmorPieces(pieces);
-             setIsLoading(false);
         });
-        return () => unsubArmor();
+        
+        const q = query(collection(db, 'baseBodies'), orderBy('order'));
+        const unsubBodies = onSnapshot(q, (snapshot) => {
+            const bodies = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BaseBody));
+            setAllBaseBodies(bodies);
+        });
+
+        setIsLoading(false);
+
+        return () => {
+             unsubArmor();
+             unsubBodies();
+        };
     }, [user]);
 
     // Effect to update transform states when selected body or equipped pieces change
@@ -213,9 +225,9 @@ export default function ArmorSizerPage() {
                              <Card>
                                 <CardHeader><CardTitle>Base Bodies</CardTitle></CardHeader>
                                 <CardContent className="grid grid-cols-2 gap-2">
-                                    {baseBodyUrls.map((body, i) => (
-                                         <div key={i} className={cn("border p-1 rounded-md cursor-pointer hover:border-primary", selectedBody?.id === body.id && "border-primary ring-2 ring-primary")} onClick={() => setSelectedBody(body)}>
-                                            <Image src={body.imageUrl} alt={`Base Body ${i + 1}`} width={150} height={150} className="w-full h-auto object-contain bg-gray-200 rounded-sm" />
+                                    {allBaseBodies.map((body, i) => (
+                                         <div key={body.id} className={cn("border p-1 rounded-md cursor-pointer hover:border-primary", selectedBody?.id === body.id && "border-primary ring-2 ring-primary")} onClick={() => setSelectedBody(body)}>
+                                            <Image src={body.thumbnailUrl} alt={body.name} width={150} height={150} className="w-full h-auto object-contain bg-gray-200 rounded-sm" />
                                         </div>
                                     ))}
                                 </CardContent>
@@ -255,7 +267,7 @@ export default function ArmorSizerPage() {
                                     className="relative w-full h-full flex items-center justify-center bg-gray-200 rounded-md overflow-hidden"
                                 >
                                    {selectedBody ? (
-                                        <Image src={selectedBody.imageUrl} alt="Selected Base Body" width={selectedBody.width} height={selectedBody.height} className="object-contain max-h-full max-w-full" />
+                                        <Image src={selectedBody.imageUrl} alt="Selected Base Body" fill className="object-contain max-h-full max-w-full" />
                                    ) : (
                                        <p>Select a Base Body to begin.</p>
                                    )}
@@ -264,6 +276,12 @@ export default function ArmorSizerPage() {
                                         if (!pieceTransforms) return null;
                                         const isActive = piece.id === activePieceId;
                                         const zIndex = slotZIndex[piece.slot] || 1;
+                                        
+                                        const isGenderedSlot = piece.slot === 'chest' || piece.slot === 'legs';
+                                        const primaryImageUrl = isGenderedSlot
+                                            ? (selectedBody?.gender === 'female' ? piece.modularImageUrlFemale : piece.modularImageUrlMale) || piece.modularImageUrlMale || piece.modularImageUrl
+                                            : piece.modularImageUrl;
+
 
                                         return (
                                         <React.Fragment key={piece.id}>
@@ -281,7 +299,7 @@ export default function ArmorSizerPage() {
                                                 }}
                                                 onMouseDown={(e) => handleMouseDown(e, piece.id, 'primary')}
                                             >
-                                                <Image src={piece.modularImageUrl} alt={piece.name} width={500} height={500} className="object-contain max-h-full max-w-full pointer-events-none" />
+                                                <Image src={primaryImageUrl} alt={piece.name} width={500} height={500} className="object-contain max-h-full max-w-full pointer-events-none" />
                                             </div>
                                             {piece.modularImageUrl2 && (
                                                  <div 
@@ -389,4 +407,3 @@ export default function ArmorSizerPage() {
         </div>
     );
 }
-
