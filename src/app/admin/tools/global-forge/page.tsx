@@ -157,34 +157,37 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
     };
 
     const handleSave = async () => {
-        // Validation
+        // Client-side validation
         if (!formData.name || !formData.description || !formData.imageUrl || !formData.slot || !formData.classRequirement) {
             toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill out all required fields.' });
             return;
         }
 
-        const isGenderedSlot = formData.slot === 'chest' || formData.slot === 'legs';
+        const dataToSave = { ...formData };
+        const isGenderedSlot = dataToSave.slot === 'chest' || dataToSave.slot === 'legs';
 
         if (isGenderedSlot) {
-            if (!formData.modularImageUrlMale || !formData.modularImageUrlFemale) {
+            if (!dataToSave.modularImageUrlMale || !dataToSave.modularImageUrlFemale) {
                  toast({ variant: 'destructive', title: 'Missing Fields', description: 'Chest and Leg armor require both a male and female modular image.' });
                  return;
             }
+            // For gendered slots, use the male image as the primary `modularImageUrl` to pass validation in the backend function.
+            dataToSave.modularImageUrl = dataToSave.modularImageUrlMale;
         } else {
-            if (!formData.modularImageUrl) {
+            if (!dataToSave.modularImageUrl) {
                  toast({ variant: 'destructive', title: 'Missing Fields', description: 'A primary modular overlay image is required for this armor slot.' });
                  return;
             }
         }
-
+        
         setIsSaving(true);
         try {
-            const result = formData.id
-                ? await updateArmorPiece(formData as ArmorPiece)
-                : await addArmorPiece(formData as any);
+            const result = dataToSave.id
+                ? await updateArmorPiece(dataToSave as ArmorPiece)
+                : await addArmorPiece(dataToSave as any);
             
             if (result.success) {
-                toast({ title: formData.id ? 'Armor Updated' : 'Armor Created' });
+                toast({ title: dataToSave.id ? 'Armor Updated' : 'Armor Created' });
                 onSave();
                 onOpenChange(false);
             } else {
