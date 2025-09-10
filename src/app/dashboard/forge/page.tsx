@@ -286,7 +286,7 @@ export default function ForgePage() {
         };
 
         const baseScale = getBaseScale();
-        const newScale = baseScale * (0.5 + (value / 100));
+        const newScale = baseScale * (0.1 + (value / 100) * 1.4);
 
         const updateTransform = (prev: any) => {
             const currentPieceTransforms = prev[activePiece.id] || {};
@@ -488,7 +488,8 @@ export default function ForgePage() {
         };
 
         const baseScale = getBaseScale();
-        return ((activeTransform.scale - (baseScale * 0.5)) / baseScale) * 100;
+        // The new calculation maps the 0-100 slider to a 0.1-1.5 multiplier range
+        return ((activeTransform.scale / baseScale) - 0.1) / 1.4 * 100;
 
     }, [activeTransform, activePiece, equipment.bodyId, editingLayer, hairstyle]);
     
