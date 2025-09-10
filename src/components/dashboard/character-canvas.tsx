@@ -185,3 +185,4 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>((
 CharacterCanvas.displayName = 'CharacterCanvas';
 
 export default CharacterCanvas;
+

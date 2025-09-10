@@ -118,14 +118,14 @@ export default function SizerPage() {
              let savedTransform, savedTransform2;
              
              if ('slot' in piece) { // Armor
-                savedTransform = piece.transforms?.[selectedBody.id] || piece.transforms?.[defaultBodyId] || { x: 50, y: 50, scale: 40 };
-                savedTransform2 = piece.transforms2?.[selectedBody.id] || piece.transforms2?.[defaultBodyId] || { x: 50, y: 50, scale: 40 };
+                savedTransform = piece.transforms?.[selectedBody.id] || piece.transforms?.[defaultBodyId || ''] || { x: 50, y: 50, scale: 40 };
+                savedTransform2 = piece.transforms2?.[selectedBody.id] || piece.transforms2?.[defaultBodyId || ''] || { x: 50, y: 50, scale: 40 };
                 newTransforms[piece.id] = {
                     x: savedTransform.x, y: savedTransform.y, scale: savedTransform.scale,
                     x2: savedTransform2.x, y2: savedTransform2.y, scale2: savedTransform2.scale,
                 };
             } else { // Hairstyle
-                 savedTransform = piece.transforms?.[selectedBody.id] || piece.transforms?.[defaultBodyId] || { x: 50, y: 50, scale: 100 };
+                 savedTransform = piece.transforms?.[selectedBody.id] || piece.transforms?.[defaultBodyId || ''] || { x: 50, y: 50, scale: 100 };
                  newTransforms[piece.id] = { x: savedTransform.x, y: savedTransform.y, scale: savedTransform.scale };
             }
         });
@@ -439,3 +439,4 @@ export default function SizerPage() {
         </div>
     );
 }
+
