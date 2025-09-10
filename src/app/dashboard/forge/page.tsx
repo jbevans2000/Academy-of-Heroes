@@ -612,7 +612,7 @@ export default function ForgePage() {
                                             <TabsTrigger value="hair-color" disabled={!equipment.hairstyleId}>Color</TabsTrigger>
                                             <TabsTrigger value="armor">Armor</TabsTrigger>
                                         </TabsList>
-                                        <ScrollArea className="flex-grow mt-4 max-h-[65vh]">
+                                        <div className="flex-grow mt-4">
                                             <TabsContent value="body" className="p-1">
                                                 {allBodies && allBodies.length > 0 ? (
                                                     <div className="grid grid-cols-3 gap-2">
@@ -658,34 +658,38 @@ export default function ForgePage() {
                                                     </div>
                                                 )}
                                             </TabsContent>
-                                            <TabsContent value="armor" className="p-1 space-y-4">
-                                                {armorSlotOrder.map(slot => (
-                                                    <div key={slot}>
-                                                        <h4 className="capitalize font-semibold mb-2 text-center border-b pb-1">{slot}</h4>
-                                                        <div className="grid grid-cols-3 gap-2">
-                                                            {armorBySlot[slot].length === 0 ? (
-                                                                <p className="text-muted-foreground text-sm col-span-3 text-center py-2">No items owned for this slot.</p>
-                                                            ) : (
-                                                                armorBySlot[slot].map(item => {
-                                                                    const slotKey = `${item.slot}Id` as keyof typeof equipment;
-                                                                    const isEquipped = equipment[slotKey] === item.id;
-                                                                    return (
-                                                                        <Card 
-                                                                            key={item.id} 
-                                                                            className={cn("cursor-pointer hover:border-primary", isEquipped && "border-2 border-primary")}
-                                                                            onClick={() => handleEquipItem(item)} >
-                                                                            <CardContent className="p-1 aspect-square">
-                                                                                <Image src={item.thumbnailUrl || item.imageUrl} alt={item.name} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
-                                                                            </CardContent>
-                                                                        </Card>
-                                                                    )
-                                                                })
-                                                            )}
-                                                        </div>
+                                            <TabsContent value="armor" className="p-1">
+                                                <ScrollArea className="h-[55vh] pr-2">
+                                                    <div className="space-y-4">
+                                                        {armorSlotOrder.map(slot => (
+                                                            <div key={slot}>
+                                                                <h4 className="capitalize font-semibold mb-2 text-center border-b pb-1">{slot}</h4>
+                                                                <div className="grid grid-cols-3 gap-2">
+                                                                    {armorBySlot[slot].length === 0 ? (
+                                                                        <p className="text-muted-foreground text-sm col-span-3 text-center py-2">No items owned.</p>
+                                                                    ) : (
+                                                                        armorBySlot[slot].map(item => {
+                                                                            const slotKey = `${item.slot}Id` as keyof typeof equipment;
+                                                                            const isEquipped = equipment[slotKey] === item.id;
+                                                                            return (
+                                                                                <Card 
+                                                                                    key={item.id} 
+                                                                                    className={cn("cursor-pointer hover:border-primary", isEquipped && "border-2 border-primary")}
+                                                                                    onClick={() => handleEquipItem(item)} >
+                                                                                    <CardContent className="p-1 aspect-square">
+                                                                                        <Image src={item.thumbnailUrl || item.imageUrl} alt={item.name} width={100} height={100} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                                                                                    </CardContent>
+                                                                                </Card>
+                                                                            )
+                                                                        })
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        ))}
                                                     </div>
-                                                ))}
+                                                </ScrollArea>
                                             </TabsContent>
-                                        </ScrollArea>
+                                        </div>
                                     </Tabs>
                                 </CardContent>
                             </Card>
