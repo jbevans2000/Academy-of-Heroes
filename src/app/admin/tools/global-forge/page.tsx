@@ -157,9 +157,9 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
     };
 
     const handleSave = async () => {
-        if (formData.slot === 'chest') {
+        if (formData.slot === 'chest' || formData.slot === 'legs') {
             if (!formData.modularImageUrlMale || !formData.modularImageUrlFemale) {
-                 toast({ variant: 'destructive', title: 'Missing Fields', description: 'Chest armor requires both a male and female modular image.' });
+                 toast({ variant: 'destructive', title: 'Missing Fields', description: 'Chest and Leg armor require both a male and female modular image.' });
                  return;
             }
         } else if (!formData.modularImageUrl) {
@@ -192,7 +192,7 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
     };
 
     const showPairedUploader = formData.slot === 'hands' || formData.slot === 'feet';
-    const isChest = formData.slot === 'chest';
+    const needsGenderedUploader = formData.slot === 'chest' || formData.slot === 'legs';
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -236,7 +236,7 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
                         {formData.thumbnailUrl && <NextImage src={formData.thumbnailUrl} alt="Thumbnail" width={80} height={80} className="rounded-md border" />}
                     </div>
 
-                     {isChest ? (
+                     {needsGenderedUploader ? (
                         <>
                             <div className="p-4 border rounded-md space-y-2">
                                 <Label>Modular Overlay Image (Male)</Label>

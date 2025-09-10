@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React from 'react';
@@ -131,7 +130,7 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>((
                             const handleMouseDownSecondary = onMouseDown ? (e: React.MouseEvent<HTMLDivElement>) => onMouseDown(e, piece, 'secondary') : undefined;
                             
                             let primaryImageUrl = piece.modularImageUrl;
-                            if (piece.slot === 'chest') {
+                            if (piece.slot === 'chest' || piece.slot === 'legs') {
                                 primaryImageUrl = baseBody?.gender === 'female' ? piece.modularImageUrlFemale || piece.modularImageUrlMale || '' : piece.modularImageUrlMale || piece.modularImageUrlFemale || '';
                             }
 
