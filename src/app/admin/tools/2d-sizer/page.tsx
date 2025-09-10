@@ -113,13 +113,15 @@ export default function SizerPage() {
         if (!selectedBody) return;
 
         const newTransforms: typeof transforms = {};
+        const defaultBodyId = allBaseBodies[0]?.id; // Fallback to first body
+
         equippedItems.forEach(piece => {
-             const defaultBodyId = allBaseBodies[0]?.id;
-             let savedTransform, savedTransform2;
-             
-             if ('slot' in piece) { // Armor
+            let savedTransform, savedTransform2;
+            
+            if ('slot' in piece) { // Armor
                 savedTransform = piece.transforms?.[selectedBody.id] || piece.transforms?.[defaultBodyId || ''] || { x: 50, y: 50, scale: 40 };
                 savedTransform2 = piece.transforms2?.[selectedBody.id] || piece.transforms2?.[defaultBodyId || ''] || { x: 50, y: 50, scale: 40 };
+                
                 newTransforms[piece.id] = {
                     x: savedTransform.x, y: savedTransform.y, scale: savedTransform.scale,
                     x2: savedTransform2.x, y2: savedTransform2.y, scale2: savedTransform2.scale,
@@ -129,6 +131,7 @@ export default function SizerPage() {
                  newTransforms[piece.id] = { x: savedTransform.x, y: savedTransform.y, scale: savedTransform.scale };
             }
         });
+        // This is the key fix: update the state with the potentially defaulted transforms.
         setTransforms(newTransforms);
         
     }, [equippedItems, selectedBody, allBaseBodies]);
@@ -439,4 +442,3 @@ export default function SizerPage() {
         </div>
     );
 }
-
