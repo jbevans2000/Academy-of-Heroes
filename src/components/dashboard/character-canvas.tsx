@@ -62,11 +62,12 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>((
     if (!student) return <Skeleton className="w-full h-full" />;
     
     const baseBody = allBodies.find(b => b.id === equipment.bodyId) || null;
+    const defaultBodyId = allBodies[0]?.id; // Fallback to the first body
 
     const hairstyle = allHairstyles.find(h => h.id === equipment.hairstyleId);
     const hairstyleColor = equipment.hairstyleColor || hairstyle?.colors[0]?.imageUrl;
     
-    const hairstyleTransform = localHairstyleTransforms?.[baseBody?.id || ''] || hairstyle?.transforms?.[baseBody?.id || ''] || { x: 50, y: 50, scale: 100 };
+    const hairstyleTransform = localHairstyleTransforms?.[baseBody?.id || ''] || hairstyle?.transforms?.[baseBody?.id || ''] || hairstyle?.transforms?.[defaultBodyId || ''] || { x: 50, y: 50, scale: 100 };
     
     const equippedArmorPieces = Object.values(equipment)
         .map(id => allArmor.find(a => a.id === id))
@@ -116,11 +117,11 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>((
                         
                         {baseBody && equippedArmorPieces.map(piece => {
                             const customTransform = localArmorTransforms?.[piece.id]?.[baseBody!.id];
-                            const defaultTransform = piece.transforms?.[baseBody!.id] || { x: 50, y: 50, scale: 40 };
+                            const defaultTransform = piece.transforms?.[baseBody!.id] || piece.transforms?.[defaultBodyId || ''] || { x: 50, y: 50, scale: 40 };
                             const transform = customTransform || defaultTransform;
                             
                             const customTransform2 = localArmorTransforms2?.[piece.id]?.[baseBody!.id];
-                            const defaultTransform2 = piece.transforms2?.[baseBody!.id] || { x: 50, y: 50, scale: 40 };
+                            const defaultTransform2 = piece.transforms2?.[baseBody!.id] || piece.transforms2?.[defaultBodyId || ''] || { x: 50, y: 50, scale: 40 };
                             const transform2 = customTransform2 || defaultTransform2;
 
                             const zIndex = slotZIndex[piece.slot] || 1;

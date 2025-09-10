@@ -93,6 +93,9 @@ export default function SizerPage() {
         const unsubBodies = onSnapshot(q, (snapshot) => {
             const bodies = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BaseBody));
             setAllBaseBodies(bodies);
+            if(bodies.length > 0 && !selectedBody) {
+                setSelectedBody(bodies[0]);
+            }
         });
 
         setIsLoading(false);
@@ -102,6 +105,7 @@ export default function SizerPage() {
              unsubHairstyles();
              unsubBodies();
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     // Effect to update transform states when selected body or equipped items change
@@ -110,21 +114,24 @@ export default function SizerPage() {
 
         const newTransforms: typeof transforms = {};
         equippedItems.forEach(piece => {
-            if ('slot' in piece) { // Armor
-                const savedTransform = piece.transforms?.[selectedBody.id] || { x: 50, y: 50, scale: 40 };
-                const savedTransform2 = piece.transforms2?.[selectedBody.id] || { x: 50, y: 50, scale: 40 };
+             const defaultBodyId = allBaseBodies[0]?.id;
+             let savedTransform, savedTransform2;
+             
+             if ('slot' in piece) { // Armor
+                savedTransform = piece.transforms?.[selectedBody.id] || piece.transforms?.[defaultBodyId] || { x: 50, y: 50, scale: 40 };
+                savedTransform2 = piece.transforms2?.[selectedBody.id] || piece.transforms2?.[defaultBodyId] || { x: 50, y: 50, scale: 40 };
                 newTransforms[piece.id] = {
                     x: savedTransform.x, y: savedTransform.y, scale: savedTransform.scale,
                     x2: savedTransform2.x, y2: savedTransform2.y, scale2: savedTransform2.scale,
                 };
             } else { // Hairstyle
-                 const savedTransform = piece.transforms?.[selectedBody.id] || { x: 50, y: 50, scale: 100 };
-                  newTransforms[piece.id] = { x: savedTransform.x, y: savedTransform.y, scale: savedTransform.scale };
+                 savedTransform = piece.transforms?.[selectedBody.id] || piece.transforms?.[defaultBodyId] || { x: 50, y: 50, scale: 100 };
+                 newTransforms[piece.id] = { x: savedTransform.x, y: savedTransform.y, scale: savedTransform.scale };
             }
         });
         setTransforms(newTransforms);
         
-    }, [equippedItems, selectedBody]);
+    }, [equippedItems, selectedBody, allBaseBodies]);
     
     const activePiece = useMemo(() => {
         return equippedItems.find(p => p.id === activePieceId) || null;
@@ -213,7 +220,7 @@ export default function SizerPage() {
     };
 
 
-     if (!user) {
+     if (!user || isLoading) {
         return (
              <div className="flex h-screen items-center justify-center bg-gray-900"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>
         );
