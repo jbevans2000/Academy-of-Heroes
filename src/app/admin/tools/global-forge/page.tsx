@@ -157,20 +157,22 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
     };
 
     const handleSave = async () => {
+        // Validation
+        if (!formData.name || !formData.description || !formData.imageUrl || !formData.slot || !formData.classRequirement) {
+            toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill out all required fields.' });
+            return;
+        }
+
         if (formData.slot === 'chest' || formData.slot === 'legs') {
             if (!formData.modularImageUrlMale || !formData.modularImageUrlFemale) {
                  toast({ variant: 'destructive', title: 'Missing Fields', description: 'Chest and Leg armor require both a male and female modular image.' });
                  return;
             }
         } else if (!formData.modularImageUrl) {
-             toast({ variant: 'destructive', title: 'Missing Fields', description: 'A modular overlay image is required.' });
+             toast({ variant: 'destructive', title: 'Missing Fields', description: 'A primary modular overlay image is required for this armor slot.' });
              return;
         }
 
-        if (!formData.name || !formData.description || !formData.imageUrl || !formData.slot || !formData.classRequirement) {
-            toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill out all required fields.' });
-            return;
-        }
         setIsSaving(true);
         try {
             const result = formData.id
