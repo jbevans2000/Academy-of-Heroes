@@ -7,6 +7,7 @@ export interface BaseBody {
     thumbnailUrl: string;
     modelUrl?: string;
     order?: number; // Add order for sorting
+    gender?: 'male' | 'female';
 }
 
 export type HairstyleColor = { 
@@ -50,7 +51,9 @@ export interface ArmorPiece {
     imageUrl: string; // This will be the display/icon image
     thumbnailUrl?: string; // Thumbnail for selection lists
     modelUrl?: string; // URL for the 3D .glb model
-    modularImageUrl: string; // This is the image for the character overlay (e.g., left glove)
+    modularImageUrl: string; // This is the image for the character overlay (e.g., left glove) or fallback for chest
+    modularImageUrlMale?: string; // For chest pieces
+    modularImageUrlFemale?: string; // For chest pieces
     modularImageUrl2?: string; // Optional second image for pairs (e.g., right glove)
     slot: ArmorSlot;
     classRequirement: ArmorClassRequirement;

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
@@ -399,10 +398,10 @@ export default function ForgePage() {
             let updates: Partial<Student> = {};
 
             if (selectedStaticAvatarUrl) {
-                // If a static avatar is selected, save its URL and clear custom fields
+                // If a static avatar is selected, save its URL and clear custom fields, but keep background
                 updates = {
                     avatarUrl: selectedStaticAvatarUrl,
-                    backgroundUrl: equipment.backgroundUrl || '', // Keep background
+                    backgroundUrl: equipment.backgroundUrl || '', 
                     useCustomAvatar: false,
                     equippedBodyId: '',
                     equippedHairstyleId: '',

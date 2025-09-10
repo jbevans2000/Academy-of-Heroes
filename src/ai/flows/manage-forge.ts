@@ -17,8 +17,15 @@ interface ActionResponse {
 }
 
 export async function addArmorPiece(armorData: CreateArmorPieceInput): Promise<ActionResponse> {
-  if (!armorData.name || !armorData.description || !armorData.imageUrl || !armorData.modularImageUrl || !armorData.slot || !armorData.classRequirement) {
+  const { name, description, imageUrl, slot, classRequirement } = armorData;
+  if (!name || !description || !imageUrl || !slot || !classRequirement) {
     return { success: false, error: 'Missing required armor data.' };
+  }
+  
+  if (slot === 'chest' && (!armorData.modularImageUrlMale || !armorData.modularImageUrlFemale)) {
+    return { success: false, error: 'Chest pieces require both male and female modular images.' };
+  } else if (slot !== 'chest' && !armorData.modularImageUrl) {
+      return { success: false, error: 'A primary modular image is required for this slot.' };
   }
 
   try {
@@ -29,6 +36,9 @@ export async function addArmorPiece(armorData: CreateArmorPieceInput): Promise<A
         levelRequirement: Number(armorData.levelRequirement) || 1,
         goldCost: Number(armorData.goldCost) || 0,
         isPublished: armorData.isPublished || false,
+        modularImageUrl: armorData.modularImageUrl || '',
+        modularImageUrlMale: armorData.modularImageUrlMale || '',
+        modularImageUrlFemale: armorData.modularImageUrlFemale || '',
         modularImageUrl2: armorData.modularImageUrl2 || '',
         transforms: {},
         transforms2: {},

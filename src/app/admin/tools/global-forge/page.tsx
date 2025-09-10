@@ -35,6 +35,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 
 async function createNewSet(teacherUid: string, setName: string) {
@@ -107,12 +108,12 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
     const { toast } = useToast();
     const [formData, setFormData] = useState<Partial<ArmorPiece>>({});
     const [isSaving, setIsSaving] = useState(false);
-    const [isUploading, setIsUploading] = useState<'display' | 'modular' | 'modular2' | 'thumbnail' | null>(null);
+    const [isUploading, setIsUploading] = useState<'display' | 'modular' | 'modular2' | 'thumbnail' | 'modularMale' | 'modularFemale' | null>(null);
     
     useEffect(() => {
         if (isOpen) {
             setFormData(armor || {
-                name: '', description: '', imageUrl: '', thumbnailUrl: '', modularImageUrl: '', modularImageUrl2: '', slot: 'head',
+                name: '', description: '', imageUrl: '', thumbnailUrl: '', modularImageUrl: '', modularImageUrlMale: '', modularImageUrlFemale: '', modularImageUrl2: '', slot: 'head',
                 classRequirement: 'Any', levelRequirement: 1, goldCost: 0, isPublished: false, setName: ''
             });
         }
@@ -127,7 +128,7 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
         handleInputChange('setName', finalValue);
     }
 
-    const handleFileUpload = async (file: File | null, type: 'display' | 'modular' | 'modular2' | 'thumbnail') => {
+    const handleFileUpload = async (file: File | null, type: 'display' | 'modular' | 'modular2' | 'thumbnail' | 'modularMale' | 'modularFemale') => {
         if (!file || !teacherUid) return;
         setIsUploading(type);
         try {
@@ -141,6 +142,8 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
             if (type === 'display') fieldToUpdate = 'imageUrl';
             else if (type === 'modular') fieldToUpdate = 'modularImageUrl';
             else if (type === 'modular2') fieldToUpdate = 'modularImageUrl2';
+            else if (type === 'modularMale') fieldToUpdate = 'modularImageUrlMale';
+            else if (type === 'modularFemale') fieldToUpdate = 'modularImageUrlFemale';
             else fieldToUpdate = 'thumbnailUrl';
 
 
@@ -154,8 +157,18 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
     };
 
     const handleSave = async () => {
-        if (!formData.name || !formData.description || !formData.imageUrl || !formData.modularImageUrl || !formData.slot || !formData.classRequirement) {
-            toast({ variant: 'destructive', title: 'Missing Fields' });
+        if (formData.slot === 'chest') {
+            if (!formData.modularImageUrlMale || !formData.modularImageUrlFemale) {
+                 toast({ variant: 'destructive', title: 'Missing Fields', description: 'Chest armor requires both a male and female modular image.' });
+                 return;
+            }
+        } else if (!formData.modularImageUrl) {
+             toast({ variant: 'destructive', title: 'Missing Fields', description: 'A modular overlay image is required.' });
+             return;
+        }
+
+        if (!formData.name || !formData.description || !formData.imageUrl || !formData.slot || !formData.classRequirement) {
+            toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill out all required fields.' });
             return;
         }
         setIsSaving(true);
@@ -179,6 +192,7 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
     };
 
     const showPairedUploader = formData.slot === 'hands' || formData.slot === 'feet';
+    const isChest = formData.slot === 'chest';
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -222,12 +236,29 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
                         {formData.thumbnailUrl && <NextImage src={formData.thumbnailUrl} alt="Thumbnail" width={80} height={80} className="rounded-md border" />}
                     </div>
 
-                     <div className="p-4 border rounded-md space-y-2">
-                        <Label>Modular Overlay Image (Primary)</Label>
-                        <Input type="file" onChange={e => handleFileUpload(e.target.files?.[0] || null, 'modular')} disabled={isUploading === 'modular'} />
-                        {isUploading === 'modular' && <Loader2 className="animate-spin" />}
-                        {formData.modularImageUrl && <NextImage src={formData.modularImageUrl} alt="Modular" width={80} height={80} className="rounded-md border" />}
-                    </div>
+                     {isChest ? (
+                        <>
+                            <div className="p-4 border rounded-md space-y-2">
+                                <Label>Modular Overlay Image (Male)</Label>
+                                <Input type="file" onChange={e => handleFileUpload(e.target.files?.[0] || null, 'modularMale')} disabled={isUploading === 'modularMale'} />
+                                {isUploading === 'modularMale' && <Loader2 className="animate-spin" />}
+                                {formData.modularImageUrlMale && <NextImage src={formData.modularImageUrlMale} alt="Modular Male" width={80} height={80} className="rounded-md border" />}
+                            </div>
+                            <div className="p-4 border rounded-md space-y-2">
+                                <Label>Modular Overlay Image (Female)</Label>
+                                <Input type="file" onChange={e => handleFileUpload(e.target.files?.[0] || null, 'modularFemale')} disabled={isUploading === 'modularFemale'} />
+                                {isUploading === 'modularFemale' && <Loader2 className="animate-spin" />}
+                                {formData.modularImageUrlFemale && <NextImage src={formData.modularImageUrlFemale} alt="Modular Female" width={80} height={80} className="rounded-md border" />}
+                            </div>
+                        </>
+                     ) : (
+                         <div className="p-4 border rounded-md space-y-2">
+                            <Label>Modular Overlay Image (Primary)</Label>
+                            <Input type="file" onChange={e => handleFileUpload(e.target.files?.[0] || null, 'modular')} disabled={isUploading === 'modular'} />
+                            {isUploading === 'modular' && <Loader2 className="animate-spin" />}
+                            {formData.modularImageUrl && <NextImage src={formData.modularImageUrl} alt="Modular" width={80} height={80} className="rounded-md border" />}
+                        </div>
+                     )}
                     
                     {showPairedUploader && (
                         <div className="p-4 border rounded-md space-y-2 animate-in fade-in-50">
@@ -469,7 +500,7 @@ const BaseBodyEditorDialog = ({ isOpen, onOpenChange, body, onSave }: {
 
     useEffect(() => {
         if (isOpen) {
-            setFormData(body || { name: '', order: 0, imageUrl: '', thumbnailUrl: '' });
+            setFormData(body || { name: '', order: 0, imageUrl: '', thumbnailUrl: '', gender: 'male' });
         }
     }, [isOpen, body]);
 
@@ -504,11 +535,12 @@ const BaseBodyEditorDialog = ({ isOpen, onOpenChange, body, onSave }: {
         setIsSaving(true);
         try {
             const collectionRef = collection(db, 'baseBodies');
+            const dataToSave = { ...formData, gender: formData.gender || 'male' };
             if (formData.id) {
                 const docRef = doc(collectionRef, formData.id);
-                await updateDoc(docRef, formData);
+                await updateDoc(docRef, dataToSave);
             } else {
-                await addDoc(collectionRef, { ...formData, createdAt: serverTimestamp() });
+                await addDoc(collectionRef, { ...dataToSave, createdAt: serverTimestamp() });
             }
             toast({ title: formData.id ? 'Base Body Updated' : 'Base Body Created' });
             onSave();
@@ -534,6 +566,23 @@ const BaseBodyEditorDialog = ({ isOpen, onOpenChange, body, onSave }: {
                      <div className="space-y-2">
                         <Label htmlFor="body-order">Display Order</Label>
                         <Input id="body-order" type="number" value={formData.order ?? ''} onChange={e => handleInputChange('order', Number(e.target.value))} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label>Gender</Label>
+                         <RadioGroup
+                            value={formData.gender || 'male'}
+                            onValueChange={(v) => handleInputChange('gender', v as 'male' | 'female')}
+                            className="flex space-x-4"
+                         >
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="male" id="gender-male" />
+                                <Label htmlFor="gender-male">Male</Label>
+                            </div>
+                             <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="female" id="gender-female" />
+                                <Label htmlFor="gender-female">Female</Label>
+                            </div>
+                        </RadioGroup>
                     </div>
                      <div className="p-4 border rounded-md space-y-2">
                         <Label>Main Image</Label>
@@ -797,6 +846,7 @@ export default function GlobalForgePage() {
                                                         <div className="flex items-center gap-2">
                                                             <NextImage src={body.thumbnailUrl || ''} alt={body.name} width={40} height={40} className="bg-secondary rounded-md object-contain"/>
                                                             <span className="font-semibold">{body.name}</span>
+                                                            <span className="text-xs text-muted-foreground capitalize">({body.gender || 'N/A'})</span>
                                                         </div>
                                                         <div className="flex gap-1">
                                                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditBody(body)}><Edit className="h-4 w-4"/></Button>

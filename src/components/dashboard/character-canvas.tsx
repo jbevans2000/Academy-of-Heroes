@@ -129,6 +129,11 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>((
 
                             const handleMouseDownPrimary = onMouseDown ? (e: React.MouseEvent<HTMLDivElement>) => onMouseDown(e, piece, 'primary') : undefined;
                             const handleMouseDownSecondary = onMouseDown ? (e: React.MouseEvent<HTMLDivElement>) => onMouseDown(e, piece, 'secondary') : undefined;
+                            
+                            let primaryImageUrl = piece.modularImageUrl;
+                            if (piece.slot === 'chest') {
+                                primaryImageUrl = baseBody?.gender === 'female' ? piece.modularImageUrlFemale || piece.modularImageUrlMale || '' : piece.modularImageUrlMale || piece.modularImageUrlFemale || '';
+                            }
 
                             return (
                                 <React.Fragment key={piece.id}>
@@ -147,7 +152,7 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>((
                                             zIndex: isPreviewMode ? zIndex : (isActive && editingLayer === 'primary' ? 20 : zIndex),
                                         }}
                                     >
-                                        <Image src={piece.modularImageUrl} alt={piece.name} width={500} height={500} className="object-contain pointer-events-none" />
+                                        <Image src={primaryImageUrl} alt={piece.name} width={500} height={500} className="object-contain pointer-events-none" />
                                     </div>
                                     {piece.modularImageUrl2 && (
                                         <div
