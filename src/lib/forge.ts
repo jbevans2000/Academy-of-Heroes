@@ -1,5 +1,4 @@
 
-
 export interface BaseBody {
     id: string;
     name: string;
@@ -29,6 +28,7 @@ export interface Hairstyle {
             x: number;
             y: number;
             scale: number;
+            rotation?: number;
         }
     };
     transforms3D?: { // For 3D sizing - saved on the asset
@@ -65,6 +65,7 @@ export interface ArmorPiece {
             x: number;
             y: number;
             scale: number;
+            rotation?: number;
         }
     };
      transforms2?: { // For 2D secondary image
@@ -72,6 +73,7 @@ export interface ArmorPiece {
             x: number;
             y: number;
             scale: number;
+            rotation?: number;
         }
     };
     transforms3D?: { // For 3D model scaling and positioning - saved on the asset
@@ -83,4 +85,3 @@ export interface ArmorPiece {
     isPublished: boolean;
     createdAt?: any;
 }
-

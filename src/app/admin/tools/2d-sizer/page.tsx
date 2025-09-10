@@ -116,24 +116,40 @@ export default function SizerPage() {
         const defaultBodyId = allBaseBodies[0]?.id; // Fallback to first body
 
         equippedItems.forEach(piece => {
+            const currentPieceTransforms = transforms[piece.id] || {};
+
             let savedTransform, savedTransform2;
             
             if ('slot' in piece) { // Armor
-                savedTransform = piece.transforms?.[selectedBody.id] || piece.transforms?.[defaultBodyId || ''] || { x: 50, y: 50, scale: 40 };
-                savedTransform2 = piece.transforms2?.[selectedBody.id] || piece.transforms2?.[defaultBodyId || ''] || { x: 50, y: 50, scale: 40 };
+                savedTransform = piece.transforms?.[selectedBody.id] || piece.transforms?.[defaultBodyId || ''] || { x: 50, y: 50, scale: 40, rotation: 0 };
+                savedTransform2 = piece.transforms2?.[selectedBody.id] || piece.transforms2?.[defaultBodyId || ''] || { x: 50, y: 50, scale: 40, rotation: 0 };
                 
                 newTransforms[piece.id] = {
-                    x: savedTransform.x, y: savedTransform.y, scale: savedTransform.scale,
-                    x2: savedTransform2.x, y2: savedTransform2.y, scale2: savedTransform2.scale,
+                    ...currentPieceTransforms,
+                    x: savedTransform.x, 
+                    y: savedTransform.y, 
+                    scale: savedTransform.scale,
+                    rotation: savedTransform.rotation || 0,
+                    x2: savedTransform2.x, 
+                    y2: savedTransform2.y, 
+                    scale2: savedTransform2.scale,
+                    rotation2: savedTransform2.rotation || 0,
                 };
             } else { // Hairstyle
-                 savedTransform = piece.transforms?.[selectedBody.id] || piece.transforms?.[defaultBodyId || ''] || { x: 50, y: 50, scale: 100 };
-                 newTransforms[piece.id] = { x: savedTransform.x, y: savedTransform.y, scale: savedTransform.scale };
+                 savedTransform = piece.transforms?.[selectedBody.id] || piece.transforms?.[defaultBodyId || ''] || { x: 50, y: 50, scale: 100, rotation: 0 };
+                 newTransforms[piece.id] = {
+                    ...currentPieceTransforms,
+                    x: savedTransform.x, 
+                    y: savedTransform.y, 
+                    scale: savedTransform.scale,
+                    rotation: savedTransform.rotation || 0,
+                 };
             }
         });
-        // This is the key fix: update the state with the potentially defaulted transforms.
+        
         setTransforms(newTransforms);
         
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [equippedItems, selectedBody, allBaseBodies]);
     
     const activePiece = useMemo(() => {
@@ -162,7 +178,7 @@ export default function SizerPage() {
         }));
     };
     
-    const handleSliderChange = (type: 'x' | 'y' | 'scale' | 'x2' | 'y2' | 'scale2', value: number) => {
+    const handleSliderChange = (type: 'x' | 'y' | 'scale' | 'rotation' | 'x2' | 'y2' | 'scale2' | 'rotation2', value: number) => {
         setTransformForActivePiece({ [type]: value });
     }
 
@@ -200,16 +216,16 @@ export default function SizerPage() {
             if ('slot' in activePiece) { // Armor
                 const armorRef = doc(db, 'armorPieces', activePiece.id);
                 const updates: any = {
-                    [`transforms.${selectedBody.id}`]: { x: activeTransform.x, y: activeTransform.y, scale: activeTransform.scale }
+                    [`transforms.${selectedBody.id}`]: { x: activeTransform.x, y: activeTransform.y, scale: activeTransform.scale, rotation: activeTransform.rotation || 0 }
                 };
                 if(activePiece.modularImageUrl2) {
-                    updates[`transforms2.${selectedBody.id}`] = { x: activeTransform.x2, y: activeTransform.y2, scale: activeTransform.scale2 };
+                    updates[`transforms2.${selectedBody.id}`] = { x: activeTransform.x2, y: activeTransform.y2, scale: activeTransform.scale2, rotation: activeTransform.rotation2 || 0 };
                 }
                 await updateDoc(armorRef, updates);
             } else { // Hairstyle
                 const hairRef = doc(db, 'hairstyles', activePiece.id);
                  await updateDoc(hairRef, {
-                    [`transforms.${selectedBody.id}`]: { x: activeTransform.x, y: activeTransform.y, scale: activeTransform.scale }
+                    [`transforms.${selectedBody.id}`]: { x: activeTransform.x, y: activeTransform.y, scale: activeTransform.scale, rotation: activeTransform.rotation || 0 }
                 });
             }
 
@@ -326,7 +342,13 @@ export default function SizerPage() {
                                                 <React.Fragment key={piece.id}>
                                                     <div 
                                                         className={cn("absolute cursor-move", isPreviewMode ? 'opacity-100 pointer-events-none' : (!isActive && 'opacity-50 pointer-events-none'))}
-                                                        style={{ left: `${itemTransforms.x}%`, top: `${itemTransforms.y}%`, width: `${itemTransforms.scale}%`, transform: 'translate(-50%, -50%)', zIndex: isPreviewMode ? zIndex : (isActive && editingLayer === 'primary' ? 20 : zIndex) }}
+                                                        style={{ 
+                                                            left: `${itemTransforms.x}%`, 
+                                                            top: `${itemTransforms.y}%`, 
+                                                            width: `${itemTransforms.scale}%`, 
+                                                            transform: `translate(-50%, -50%) rotate(${itemTransforms.rotation || 0}deg)`, 
+                                                            zIndex: isPreviewMode ? zIndex : (isActive && editingLayer === 'primary' ? 20 : zIndex) 
+                                                        }}
                                                         onMouseDown={(e) => handleMouseDown(e, piece.id, 'primary')}
                                                     >
                                                         <Image src={primaryImageUrl} alt={piece.name} width={500} height={500} className="object-contain max-h-full max-w-full pointer-events-none" />
@@ -334,7 +356,13 @@ export default function SizerPage() {
                                                     {piece.modularImageUrl2 && (
                                                         <div 
                                                             className={cn("absolute cursor-move", isPreviewMode ? 'opacity-100 pointer-events-none' : (!isActive && 'opacity-50 pointer-events-none'))}
-                                                            style={{ left: `${itemTransforms.x2}%`, top: `${itemTransforms.y2}%`, width: `${itemTransforms.scale2}%`, transform: 'translate(-50%, -50%)', zIndex: isPreviewMode ? zIndex : (isActive && editingLayer === 'secondary' ? 20 : zIndex) }}
+                                                            style={{ 
+                                                                left: `${itemTransforms.x2}%`, 
+                                                                top: `${itemTransforms.y2}%`, 
+                                                                width: `${itemTransforms.scale2}%`, 
+                                                                transform: `translate(-50%, -50%) rotate(${itemTransforms.rotation2 || 0}deg)`, 
+                                                                zIndex: isPreviewMode ? zIndex : (isActive && editingLayer === 'secondary' ? 20 : zIndex) 
+                                                            }}
                                                             onMouseDown={(e) => handleMouseDown(e, piece.id, 'secondary')}
                                                         >
                                                             <Image src={piece.modularImageUrl2} alt={piece.name} width={500} height={500} className="object-contain max-h-full max-w-full pointer-events-none" />
@@ -348,7 +376,13 @@ export default function SizerPage() {
                                                 <div 
                                                     key={hairstyle.id}
                                                     className={cn("absolute cursor-move", isPreviewMode ? 'opacity-100 pointer-events-none' : (!isActive && 'opacity-50 pointer-events-none'))}
-                                                    style={{ left: `${itemTransforms.x}%`, top: `${itemTransforms.y}%`, width: `${itemTransforms.scale}%`, transform: 'translate(-50%, -50%)', zIndex: isPreviewMode ? 10 : (isActive ? 20 : 10) }}
+                                                    style={{ 
+                                                        left: `${itemTransforms.x}%`, 
+                                                        top: `${itemTransforms.y}%`, 
+                                                        width: `${itemTransforms.scale}%`, 
+                                                        transform: `translate(-50%, -50%) rotate(${itemTransforms.rotation || 0}deg)`, 
+                                                        zIndex: isPreviewMode ? 10 : (isActive ? 20 : 10) 
+                                                    }}
                                                     onMouseDown={(e) => handleMouseDown(e, hairstyle.id, 'primary')}
                                                 >
                                                     <Image src={hairstyle.baseImageUrl} alt={hairstyle.styleName} width={500} height={500} className="object-contain max-h-full max-w-full pointer-events-none" />
@@ -412,6 +446,10 @@ export default function SizerPage() {
                                                         <Label htmlFor="scale">Scale: {activeTransform.scale}%</Label>
                                                         <Slider id="scale" value={[activeTransform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={200} step={0.5} disabled={isPreviewMode} />
                                                     </div>
+                                                     <div className="space-y-2">
+                                                        <Label htmlFor="rotation">Rotation: {activeTransform.rotation || 0}°</Label>
+                                                        <Slider id="rotation" value={[activeTransform.rotation || 0]} onValueChange={([val]) => handleSliderChange('rotation', val)} min={-180} max={180} step={1} disabled={isPreviewMode} />
+                                                    </div>
                                                 </>
                                             ) : (
                                                  <>
@@ -426,6 +464,10 @@ export default function SizerPage() {
                                                     <div className="space-y-2">
                                                         <Label htmlFor="scale2">Scale 2: {activeTransform.scale2}%</Label>
                                                         <Slider id="scale2" value={[activeTransform.scale2]} onValueChange={([val]) => handleSliderChange('scale2', val)} min={10} max={200} step={0.5} disabled={isPreviewMode} />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor="rotation2">Rotation 2: {activeTransform.rotation2 || 0}°</Label>
+                                                        <Slider id="rotation2" value={[activeTransform.rotation2 || 0]} onValueChange={([val]) => handleSliderChange('rotation2', val)} min={-180} max={180} step={1} disabled={isPreviewMode} />
                                                     </div>
                                                 </>
                                             )}
