@@ -591,13 +591,8 @@ export default function AdminDashboardPage() {
                                 </Link>
                             </Button>
                             <Button className="w-full justify-start" asChild>
-                                <Link href="/admin/tools/hair-sizer">
-                                    <Wrench className="mr-2 h-4 w-4" /> Hair Sizer
-                                </Link>
-                            </Button>
-                            <Button className="w-full justify-start" asChild>
-                                <Link href="/admin/tools/armor-sizer">
-                                    <Wrench className="mr-2 h-4 w-4" /> Armor Sizer
+                                <Link href="/admin/tools/2d-sizer">
+                                    <Wrench className="mr-2 h-4 w-4" /> 2D Sizer
                                 </Link>
                             </Button>
                         </CardContent>
