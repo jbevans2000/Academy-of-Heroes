@@ -163,14 +163,18 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
             return;
         }
 
-        if (formData.slot === 'chest' || formData.slot === 'legs') {
+        const isGenderedSlot = formData.slot === 'chest' || formData.slot === 'legs';
+
+        if (isGenderedSlot) {
             if (!formData.modularImageUrlMale || !formData.modularImageUrlFemale) {
                  toast({ variant: 'destructive', title: 'Missing Fields', description: 'Chest and Leg armor require both a male and female modular image.' });
                  return;
             }
-        } else if (!formData.modularImageUrl) {
-             toast({ variant: 'destructive', title: 'Missing Fields', description: 'A primary modular overlay image is required for this armor slot.' });
-             return;
+        } else {
+            if (!formData.modularImageUrl) {
+                 toast({ variant: 'destructive', title: 'Missing Fields', description: 'A primary modular overlay image is required for this armor slot.' });
+                 return;
+            }
         }
 
         setIsSaving(true);
