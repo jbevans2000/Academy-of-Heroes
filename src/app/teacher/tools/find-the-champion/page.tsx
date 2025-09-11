@@ -69,7 +69,7 @@ export default function FindTheChampionPage() {
         fetchStudentsAndCompanies();
     }, [teacher]);
     
-    const getChampionCandidates = () => students.filter(s => s.isChampion);
+    const getChampionCandidates = () => students.filter(s => s.isChampion === true);
 
     const handleSelectChampions = (mode: 'guild' | 'company') => {
         const candidates = getChampionCandidates();
