@@ -126,9 +126,7 @@ export default function CompaniesPage() {
 
     // State for new functions
     const [isClearing, setIsClearing] = useState(false);
-    const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
     const [isDistributing, setIsDistributing] = useState(false);
-    const [isDistributeConfirmOpen, setIsDistributeConfirmOpen] = useState(false);
 
 
     useEffect(() => {
@@ -298,7 +296,6 @@ export default function CompaniesPage() {
              toast({ variant: 'destructive', title: 'Error', description: 'Could not clear company assignments.' });
         } finally {
             setIsClearing(false);
-            setIsClearConfirmOpen(false);
         }
     };
 
@@ -334,7 +331,6 @@ export default function CompaniesPage() {
             toast({ variant: 'destructive', title: 'Error', description: 'An error occurred while distributing students.' });
         } finally {
             setIsDistributing(false);
-            setIsDistributeConfirmOpen(false);
         }
     };
 
@@ -363,12 +359,46 @@ export default function CompaniesPage() {
                     </div>
                     <div className="flex flex-wrap gap-2">
                         <Button onClick={() => router.push('/teacher/dashboard')} variant="outline"><ArrowLeft className="mr-2 h-4 w-4"/> Return to Podium</Button>
-                        <AlertDialogTrigger asChild>
-                             <Button onClick={() => setIsClearConfirmOpen(true)} variant="destructive"><UserX className="mr-2 h-4 w-4" /> Clear All Companies</Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogTrigger asChild>
-                            <Button onClick={() => setIsDistributeConfirmOpen(true)} variant="secondary"><UserPlus className="mr-2 h-4 w-4" /> Distribute by Class</Button>
-                        </AlertDialogTrigger>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                 <Button variant="destructive"><UserX className="mr-2 h-4 w-4" /> Clear All Companies</Button>
+                            </AlertDialogTrigger>
+                             <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Clear All Company Assignments?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will remove every student from their current company, making them all freelancers. Company rosters will be empty. Are you sure?
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleClearCompanies} disabled={isClearing} className="bg-destructive hover:bg-destructive/90">
+                                        {isClearing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        Yes, Clear All
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="secondary"><UserPlus className="mr-2 h-4 w-4" /> Distribute by Class</Button>
+                            </AlertDialogTrigger>
+                             <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Distribute Freelancers by Class?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will automatically assign all unassigned students (freelancers) to your existing companies, attempting to balance the classes in each one. Are you sure?
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleDistributeByClass} disabled={isDistributing}>
+                                        {isDistributing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        Yes, Distribute
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                         <Button onClick={openNewCompanyDialog}><PlusCircle className="mr-2 h-4 w-4" /> Create New Company</Button>
                     </div>
                 </div>
@@ -439,42 +469,6 @@ export default function CompaniesPage() {
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDeleteCompany} className="bg-destructive hover:bg-destructive/90">
                             Yes, Disband Company
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-            
-            <AlertDialog open={isClearConfirmOpen} onOpenChange={setIsClearConfirmOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Clear All Company Assignments?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will remove every student from their current company, making them all freelancers. Company rosters will be empty. Are you sure?
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleClearCompanies} disabled={isClearing} className="bg-destructive hover:bg-destructive/90">
-                             {isClearing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Yes, Clear All
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
-            <AlertDialog open={isDistributeConfirmOpen} onOpenChange={setIsDistributeConfirmOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Distribute Freelancers by Class?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will automatically assign all unassigned students (freelancers) to your existing companies, attempting to balance the classes in each one. Are you sure?
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDistributeByClass} disabled={isDistributing}>
-                            {isDistributing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Yes, Distribute
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
