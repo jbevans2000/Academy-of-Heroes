@@ -17,7 +17,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, Upload, Users, Briefcase, X } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, Upload, Users, Briefcase, X, UserX, UserPlus } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
@@ -124,6 +124,13 @@ export default function CompaniesPage() {
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [companyToDelete, setCompanyToDelete] = useState<string | null>(null);
 
+    // State for new functions
+    const [isClearing, setIsClearing] = useState(false);
+    const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
+    const [isDistributing, setIsDistributing] = useState(false);
+    const [isDistributeConfirmOpen, setIsDistributeConfirmOpen] = useState(false);
+
+
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
             if (user) setTeacher(user);
@@ -182,7 +189,6 @@ export default function CompaniesPage() {
         try {
             const companyRef = doc(db, 'teachers', teacher.uid, 'companies', companyToDelete);
             
-            // Unassign all students from this company
             const studentsToUpdate = students.filter(s => s.companyId === companyToDelete);
             const batch = writeBatch(db);
             studentsToUpdate.forEach(student => {
@@ -275,6 +281,64 @@ export default function CompaniesPage() {
         }
     }
 
+    const handleClearCompanies = async () => {
+        if (!teacher) return;
+        setIsClearing(true);
+        try {
+            const batch = writeBatch(db);
+            students.forEach(student => {
+                if (student.companyId) {
+                    const studentRef = doc(db, 'teachers', teacher.uid, 'students', student.uid);
+                    batch.update(studentRef, { companyId: '' });
+                }
+            });
+            await batch.commit();
+            toast({ title: "Companies Cleared", description: "All students have been unassigned from their companies." });
+        } catch (error) {
+             toast({ variant: 'destructive', title: 'Error', description: 'Could not clear company assignments.' });
+        } finally {
+            setIsClearing(false);
+            setIsClearConfirmOpen(false);
+        }
+    };
+
+    const handleDistributeByClass = async () => {
+        if (!teacher || companies.length === 0) {
+            toast({ variant: 'destructive', title: 'No Companies', description: 'You must create companies before distributing students.' });
+            return;
+        }
+        setIsDistributing(true);
+        try {
+            const batch = writeBatch(db);
+            const freelancers = students.filter(s => !s.companyId);
+            const guardians = freelancers.filter(s => s.class === 'Guardian');
+            const healers = freelancers.filter(s => s.class === 'Healer');
+            const mages = freelancers.filter(s => s.class === 'Mage');
+
+            let companyIndex = 0;
+            const assign = (student: Student) => {
+                const companyId = companies[companyIndex % companies.length].id;
+                const studentRef = doc(db, 'teachers', teacher.uid, 'students', student.uid);
+                batch.update(studentRef, { companyId });
+                companyIndex++;
+            };
+            
+            guardians.forEach(assign);
+            healers.forEach(assign);
+            mages.forEach(assign);
+
+            await batch.commit();
+            toast({ title: 'Students Distributed', description: 'Freelancers have been distributed into companies by class.' });
+
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'An error occurred while distributing students.' });
+        } finally {
+            setIsDistributing(false);
+            setIsDistributeConfirmOpen(false);
+        }
+    };
+
+
     const freelancers = students.filter(s => !s.companyId && !s.isHidden);
     const visibleStudents = students.filter(s => !s.isHidden);
 
@@ -297,8 +361,14 @@ export default function CompaniesPage() {
                         <h1 className="text-3xl font-bold flex items-center gap-2"><Briefcase /> Company Management</h1>
                         <p className="text-muted-foreground">Drag and drop students to assign them to companies.</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                         <Button onClick={() => router.push('/teacher/dashboard')} variant="outline"><ArrowLeft className="mr-2 h-4 w-4"/> Return to Podium</Button>
+                        <AlertDialogTrigger asChild>
+                             <Button onClick={() => setIsClearConfirmOpen(true)} variant="destructive"><UserX className="mr-2 h-4 w-4" /> Clear All Companies</Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogTrigger asChild>
+                            <Button onClick={() => setIsDistributeConfirmOpen(true)} variant="secondary"><UserPlus className="mr-2 h-4 w-4" /> Distribute by Class</Button>
+                        </AlertDialogTrigger>
                         <Button onClick={openNewCompanyDialog}><PlusCircle className="mr-2 h-4 w-4" /> Create New Company</Button>
                     </div>
                 </div>
@@ -369,6 +439,42 @@ export default function CompaniesPage() {
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDeleteCompany} className="bg-destructive hover:bg-destructive/90">
                             Yes, Disband Company
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            
+            <AlertDialog open={isClearConfirmOpen} onOpenChange={setIsClearConfirmOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Clear All Company Assignments?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will remove every student from their current company, making them all freelancers. Company rosters will be empty. Are you sure?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleClearCompanies} disabled={isClearing} className="bg-destructive hover:bg-destructive/90">
+                             {isClearing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Yes, Clear All
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={isDistributeConfirmOpen} onOpenChange={setIsDistributeConfirmOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Distribute Freelancers by Class?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will automatically assign all unassigned students (freelancers) to your existing companies, attempting to balance the classes in each one. Are you sure?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDistributeByClass} disabled={isDistributing}>
+                            {isDistributing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Yes, Distribute
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
