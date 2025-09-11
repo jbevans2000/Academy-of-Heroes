@@ -38,6 +38,7 @@ export type Student = {
     hubsCompleted: number; // The order number of the last hub completed
     isNewlyApproved?: boolean;
     lastChapterCompletion?: any; // Firestore ServerTimestamp
+    lastDailyRegen?: any; // Firestore ServerTimestamp
     companyId?: string;
     inBattle: boolean; 
     inDuel?: boolean;
@@ -57,6 +58,7 @@ export type Student = {
             x: number;
             y: number;
             scale: number;
+            rotation?: number;
         }
     };
     armorTransforms?: { // Student-specific overrides for armor positions
@@ -65,6 +67,7 @@ export type Student = {
                 x: number;
                 y: number;
                 scale: number;
+                rotation?: number;
             }
         }
     };
@@ -74,6 +77,7 @@ export type Student = {
                 x: number;
                 y: number;
                 scale: number;
+                rotation?: number;
             }
         }
     };

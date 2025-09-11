@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { doc, onSnapshot, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc, updateDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import { DashboardHeader } from '@/components/dashboard/header';
@@ -19,6 +19,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+
+const isSameDay = (d1: Date, d2: Date) => {
+    return d1.getFullYear() === d2.getFullYear() &&
+           d1.getMonth() === d2.getMonth() &&
+           d1.getDate() === d2.getDate();
+}
 
 export default function Dashboard() {
   const [student, setStudent] = useState<Student | null>(null);
@@ -51,14 +57,44 @@ export default function Dashboard() {
           }
           
           const studentRef = doc(db, 'teachers', foundTeacherUid, 'students', user.uid);
-          const unsub = onSnapshot(studentRef, (docSnap) => {
+          const unsub = onSnapshot(studentRef, async (docSnap) => {
             if (docSnap.exists()) {
               const studentData = { uid: docSnap.id, ...docSnap.data() } as Student;
               if (studentData.isArchived) {
                 router.push('/account-archived');
                 return;
               }
-              setStudent(studentData);
+              
+              // --- DAILY REGENERATION LOGIC ---
+              const today = new Date();
+              const lastRegenDate = studentData.lastDailyRegen?.toDate();
+              let updates: Partial<Student> = {};
+              let performedRegen = false;
+
+              if (!lastRegenDate || !isSameDay(today, lastRegenDate)) {
+                  const hpRegen = Math.ceil(studentData.maxHp * 0.05);
+                  const mpRegen = Math.ceil(studentData.maxMp * 0.05);
+                  
+                  const newHp = Math.min(studentData.maxHp, studentData.hp + hpRegen);
+                  const newMp = Math.min(studentData.maxMp, studentData.mp + mpRegen);
+
+                  if (newHp !== studentData.hp || newMp !== studentData.mp) {
+                    updates.hp = newHp;
+                    updates.mp = newMp;
+                  }
+                  
+                  updates.lastDailyRegen = serverTimestamp();
+                  performedRegen = true;
+              }
+              
+              if (performedRegen) {
+                  await updateDoc(studentRef, updates);
+                  // The onSnapshot listener will pick up this change and update the state.
+              } else {
+                 setStudent(studentData);
+              }
+              // --- END REGENERATION LOGIC ---
+              
               setIsLoading(false);
             } else {
               setIsLoading(true);
