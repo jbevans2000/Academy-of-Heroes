@@ -120,11 +120,13 @@ export default function SizerPage() {
             let savedTransform, savedTransform2;
             
             if ('slot' in piece) { // Armor
-                const baseTransform = piece.transforms?.[selectedBody?.id || ''] || piece.transforms?.[defaultBodyId || ''];
-                const baseTransform2 = piece.transforms2?.[selectedBody?.id || ''] || piece.transforms2?.[defaultBodyId || ''];
-                
-                savedTransform = baseTransform || { x: 50, y: 50, scale: 40, rotation: 0 };
-                savedTransform2 = baseTransform2 || { x: 50, y: 50, scale: 40, rotation: 0 };
+                const bodySpecificTransform = piece.transforms?.[selectedBody?.id || ''];
+                const defaultBodyTransform = piece.transforms?.[defaultBodyId || ''];
+                const bodySpecificTransform2 = piece.transforms2?.[selectedBody?.id || ''];
+                const defaultBodyTransform2 = piece.transforms2?.[defaultBodyId || ''];
+
+                savedTransform = bodySpecificTransform || defaultBodyTransform || { x: 50, y: 50, scale: 40, rotation: 0 };
+                savedTransform2 = bodySpecificTransform2 || defaultBodyTransform2 || { x: 50, y: 50, scale: 40, rotation: 0 };
                 
                 newTransforms[piece.id] = {
                     ...currentPieceTransforms,
@@ -138,8 +140,9 @@ export default function SizerPage() {
                     rotation2: savedTransform2.rotation || 0,
                 };
             } else { // Hairstyle
-                 const baseTransform = piece.transforms?.[selectedBody?.id || ''] || piece.transforms?.[defaultBodyId || ''];
-                 savedTransform = baseTransform || { x: 50, y: 50, scale: 100, rotation: 0 };
+                 const bodySpecificTransform = piece.transforms?.[selectedBody?.id || ''];
+                 const defaultBodyTransform = piece.transforms?.[defaultBodyId || ''];
+                 savedTransform = bodySpecificTransform || defaultBodyTransform || { x: 50, y: 50, scale: 100, rotation: 0 };
                  newTransforms[piece.id] = {
                     ...currentPieceTransforms,
                     x: savedTransform.x, 
@@ -269,7 +272,7 @@ export default function SizerPage() {
                         <div className="lg:col-span-1 space-y-4">
                              <Card>
                                 <CardHeader><CardTitle>Base Bodies</CardTitle></CardHeader>
-                                <CardContent className="grid grid-cols-2 gap-2">
+                                <CardContent className="grid grid-cols-3 gap-2">
                                     {allBaseBodies.map((body) => (
                                          <div key={body.id} className={cn("border p-1 rounded-md cursor-pointer hover:border-primary", selectedBody?.id === body.id && "border-primary ring-2 ring-primary")} onClick={() => setSelectedBody(body)}>
                                             <Image src={body.thumbnailUrl} alt={body.name} width={150} height={150} className="w-full h-auto object-contain bg-gray-200 rounded-sm" />
