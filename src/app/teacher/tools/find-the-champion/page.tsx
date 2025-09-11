@@ -86,13 +86,12 @@ export default function FindTheChampionPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [teacher]);
     
-    const getChampionCandidates = () => students.filter(s => s.isChampion === true);
-
     const handleSelectChampions = (mode: 'guild' | 'company') => {
-        const candidates = getChampionCandidates();
+        const candidates = students.filter(s => s.isChampion === true);
+
         if (candidates.length === 0) {
             setPickedChampions([]);
-            setPickedCaption("No champions have volunteered!");
+            setPickedCaption("No champions have volunteered! Make sure students have toggled their Champion Status ON in their dashboard.");
             return;
         }
 
@@ -161,7 +160,7 @@ export default function FindTheChampionPage() {
                                 <ShieldCheck className="h-12 w-12 text-primary" />
                             </div>
                             <CardTitle className="text-3xl">Find The Champion</CardTitle>
-                            <CardDescription>Select a champion to represent their company or the entire guild.</CardDescription>
+                            <CardDescription>Select a champion to answer on behalf of their company or the entire guild.</CardDescription>
                         </CardHeader>
                         <CardContent className="min-h-[450px] flex flex-col items-center justify-center overflow-hidden p-6">
                              {isLoading ? (
