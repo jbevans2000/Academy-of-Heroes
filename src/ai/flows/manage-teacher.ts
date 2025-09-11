@@ -48,6 +48,7 @@ interface UpdateReminderInput {
   teacherUid: string;
   title: string;
   message: string;
+  isActive: boolean;
 }
 
 export async function updateDailyReminder(input: UpdateReminderInput): Promise<ActionResponse> {
@@ -56,6 +57,7 @@ export async function updateDailyReminder(input: UpdateReminderInput): Promise<A
     await updateDoc(teacherRef, {
       dailyReminderTitle: input.title,
       dailyReminderMessage: input.message,
+      isDailyReminderActive: input.isActive,
     });
     return { success: true, message: 'Daily reminder updated successfully!' };
   } catch (e: any) {

@@ -66,6 +66,7 @@ interface TeacherData {
     hasUnreadTeacherMessages?: boolean;
     dailyReminderTitle?: string;
     dailyReminderMessage?: string;
+    isDailyReminderActive?: boolean;
 }
 
 type SortOrder = 'studentName' | 'characterName' | 'xp' | 'class' | 'company';
@@ -108,6 +109,7 @@ export default function Dashboard() {
   const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
   const [reminderTitle, setReminderTitle] = useState('');
   const [reminderMessage, setReminderMessage] = useState('');
+  const [isReminderActive, setIsReminderActive] = useState(true);
   const [isSavingReminder, setIsSavingReminder] = useState(false);
 
   
@@ -149,6 +151,7 @@ export default function Dashboard() {
             setTeacherData(data);
             setReminderTitle(data.dailyReminderTitle || "A Hero's Duty Awaits!");
             setReminderMessage(data.dailyReminderMessage || "Greetings, adventurer! A new day dawns, and the realm of Luminaria has a quest with your name on it. Your legend will not write itself!\n\nEmbark on a chapter from the World Map to continue your training. For each quest you complete, you will be rewarded with valuable **Experience (XP)** to grow stronger and **Gold** to fill your coffers.\n\nYour next great deed awaits!");
+            setIsReminderActive(data.isDailyReminderActive ?? true);
             if (data.pendingCleanupBattleId) {
                 setTimeout(() => {
                     handleClearAllBattleStatus(true);
@@ -541,13 +544,13 @@ export default function Dashboard() {
     setIsMessageCenterOpen(true);
   };
   
-  const handleCloseMessageCenter = async () => {
-    setIsMessageCenterOpen(false);
-    if (teacher && teacherData?.hasUnreadTeacherMessages) {
-        const teacherRef = doc(db, 'teachers', teacher.uid);
-        await updateDoc(teacherRef, { hasUnreadTeacherMessages: false });
-    }
-  };
+    const handleCloseMessageCenter = async () => {
+        setIsMessageCenterOpen(false);
+        if (teacher && teacherData?.hasUnreadTeacherMessages) {
+            const teacherRef = doc(db, 'teachers', teacher.uid);
+            await updateDoc(teacherRef, { hasUnreadTeacherMessages: false });
+        }
+    };
   
   const handleRestoreAll = async (stat: 'hp' | 'mp') => {
       if (!teacher) return;
@@ -577,6 +580,7 @@ export default function Dashboard() {
             teacherUid: teacher.uid,
             title: reminderTitle,
             message: reminderMessage,
+            isActive: isReminderActive,
         });
         if (result.success) {
             toast({ title: "Reminder Saved", description: result.message });
@@ -993,6 +997,17 @@ export default function Dashboard() {
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
+                        <div className="flex items-center space-x-2">
+                           <Switch
+                                id="reminder-active"
+                                checked={isReminderActive}
+                                onCheckedChange={setIsReminderActive}
+                                disabled={isSavingReminder}
+                            />
+                            <Label htmlFor="reminder-active">
+                                {isReminderActive ? 'Reminder is Active' : 'Reminder is Inactive'}
+                            </Label>
+                        </div>
                         <div className="space-y-2">
                             <Label htmlFor="reminder-title">Reminder Title</Label>
                             <Input

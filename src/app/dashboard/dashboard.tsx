@@ -109,11 +109,13 @@ export default function Dashboard() {
                 const teacherSnap = await getDoc(teacherRef);
                 if (teacherSnap.exists()) {
                     const teacherData = teacherSnap.data();
-                    const title = teacherData.dailyReminderTitle || "A Hero's Duty Awaits!";
-                    const message = teacherData.dailyReminderMessage || "Greetings, adventurer! A new day dawns, and the realm of Luminaria has a quest with your name on it. Your legend will not write itself! Embark on a chapter from the World Map to continue your training. For each quest you complete, you will be rewarded with valuable **Experience (XP)** to grow stronger and **Gold** to fill your coffers. Your next great deed awaits!";
-                    setReminder({ title, message });
-                    setShowReminderDialog(true);
-                    sessionStorage.setItem('dailyReminderShown', 'true');
+                    if (teacherData.isDailyReminderActive) {
+                        const title = teacherData.dailyReminderTitle || "A Hero's Duty Awaits!";
+                        const message = teacherData.dailyReminderMessage || "Greetings, adventurer! A new day dawns, and the realm of Luminaria has a quest with your name on it. Your legend will not write itself! Embark on a chapter from the World Map to continue your training. For each quest you complete, you will be rewarded with valuable **Experience (XP)** to grow stronger and **Gold** to fill your coffers. Your next great deed awaits!";
+                        setReminder({ title, message });
+                        setShowReminderDialog(true);
+                        sessionStorage.setItem('dailyReminderShown', 'true');
+                    }
                 }
               }
               // --- END REMINDER LOGIC ---
