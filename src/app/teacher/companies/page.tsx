@@ -13,7 +13,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -323,7 +323,7 @@ export default function CompaniesPage() {
         setIsDistributing(true);
         try {
             const batch = writeBatch(db);
-            const freelancers = students.filter(s => !s.companyId);
+            const freelancers = students.filter(s => !s.companyId && !s.isHidden);
             const guardians = freelancers.filter(s => s.class === 'Guardian');
             const healers = freelancers.filter(s => s.class === 'Healer');
             const mages = freelancers.filter(s => s.class === 'Mage');
