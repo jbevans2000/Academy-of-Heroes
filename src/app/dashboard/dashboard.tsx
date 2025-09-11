@@ -192,7 +192,7 @@ export default function Dashboard() {
                 <AlertDialogDescription className="text-base text-foreground" dangerouslySetInnerHTML={{ __html: reminder?.message.replace(/\n/g, '<br/>') || '' }} />
             </AlertDialogHeader>
             <AlertDialogFooter>
-                <AlertDialogAction>Embark!</AlertDialogAction>
+                <AlertDialogAction>Got it!</AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
