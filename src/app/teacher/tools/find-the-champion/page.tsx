@@ -7,7 +7,7 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, RefreshCw, Loader2, ShieldCheck, Users } from 'lucide-react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student, Company } from '@/lib/data';
 import Image from 'next/image';
@@ -25,6 +25,17 @@ const selectionCaptions = [
     "Destiny calls! Step forward, hero!",
     "The ancient symbols align to choose you!",
 ];
+
+// Fisher-Yates shuffle algorithm
+const shuffleArray = <T,>(array: T[]): T[] => {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+};
+
 
 export default function FindTheChampionPage() {
     const router = useRouter();
@@ -49,25 +60,33 @@ export default function FindTheChampionPage() {
 
     useEffect(() => {
         if (!teacher) return;
-        const fetchStudentsAndCompanies = async () => {
-            setIsLoading(true);
-            try {
-                const studentsQuery = query(collection(db, "teachers", teacher.uid, "students"), where('isArchived', '!=', true));
-                const studentsSnapshot = await getDocs(studentsQuery);
-                const studentsData = studentsSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
-                setStudents(studentsData);
+        
+        setIsLoading(true);
 
-                const companiesSnapshot = await getDocs(collection(db, "teachers", teacher.uid, "companies"));
-                const companiesData = companiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
-                setCompanies(companiesData);
-            } catch (error) {
-                console.error("Error fetching data: ", error);
-            } finally {
-                setIsLoading(false);
-            }
+        const studentsQuery = query(collection(db, "teachers", teacher.uid, "students"), where('isArchived', '!=', true));
+        const unsubStudents = onSnapshot(studentsQuery, (snapshot) => {
+            const studentsData = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
+            setStudents(studentsData);
+             if (isLoading) setIsLoading(false);
+        }, (error) => {
+            console.error("Error fetching students:", error);
+            setIsLoading(false);
+        });
+        
+        const companiesQuery = collection(db, "teachers", teacher.uid, "companies");
+        const unsubCompanies = onSnapshot(companiesQuery, (snapshot) => {
+             const companiesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
+             setCompanies(companiesData);
+        }, (error) => {
+             console.error("Error fetching companies:", error);
+        });
+
+        return () => {
+            unsubStudents();
+            unsubCompanies();
         };
-        fetchStudentsAndCompanies();
-    }, [teacher]);
+
+    }, [teacher, isLoading]);
     
     const getChampionCandidates = () => students.filter(s => s.isChampion === true);
 
