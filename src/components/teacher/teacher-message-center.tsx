@@ -1,8 +1,7 @@
 
-
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import type { User } from 'firebase/auth';
 import type { Student, Message } from '@/lib/data';
 import { Button } from '@/components/ui/button';
@@ -51,6 +50,18 @@ export function TeacherMessageCenter({
     // For viewing conversations
     const [currentThreadMessages, setCurrentThreadMessages] = useState<Message[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // Sort students: unread first, then alphabetically by student name
+    const sortedStudents = useMemo(() => {
+        return [...students].sort((a, b) => {
+            const aHasUnread = a.hasUnreadMessages ?? false;
+            const bHasUnread = b.hasUnreadMessages ?? false;
+
+            if (aHasUnread && !bHasUnread) return -1;
+            if (!aHasUnread && bHasUnread) return 1;
+            return a.studentName.localeCompare(b.studentName);
+        });
+    }, [students]);
 
     useEffect(() => {
         if (!isOpen) {
@@ -114,7 +125,7 @@ export function TeacherMessageCenter({
                     </DialogHeader>
                     <ScrollArea className="flex-grow mt-4">
                         <div className="space-y-2">
-                            {students.map(student => (
+                            {sortedStudents.map(student => (
                                 <div 
                                     key={student.uid}
                                     onClick={() => onConversationSelect(student)}
@@ -124,12 +135,14 @@ export function TeacherMessageCenter({
                                     )}
                                 >
                                     <div className="flex items-center justify-between">
-                                        <p className="font-semibold">{student.characterName}</p>
-                                        {student.hasUnreadMessages && (
-                                            <div className="w-2.5 h-2.5 rounded-full bg-primary" />
-                                        )}
+                                        <div className="flex items-center gap-2">
+                                            {student.hasUnreadMessages && (
+                                                <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+                                            )}
+                                            <p className="font-semibold">{student.studentName}</p>
+                                        </div>
                                     </div>
-                                    <p className="text-sm text-muted-foreground">{student.studentName}</p>
+                                    <p className="text-sm text-muted-foreground ml-4">{student.characterName}</p>
                                 </div>
                             ))}
                         </div>
@@ -141,7 +154,7 @@ export function TeacherMessageCenter({
                    {initialStudent ? (
                         <>
                              <DialogHeader>
-                                <DialogTitle>Conversation with {initialStudent.characterName}</DialogTitle>
+                                <DialogTitle>Conversation with {initialStudent.studentName}</DialogTitle>
                             </DialogHeader>
                              <div className="flex-grow overflow-hidden my-4">
                                 <ScrollArea className="h-full pr-4">
@@ -167,7 +180,7 @@ export function TeacherMessageCenter({
                                 <Textarea 
                                     value={messageText} 
                                     onChange={(e) => setMessageText(e.target.value)} 
-                                    placeholder={`Message ${initialStudent.characterName}...`}
+                                    placeholder={`Message ${initialStudent.studentName}...`}
                                     rows={2}
                                     disabled={isSending}
                                 />
