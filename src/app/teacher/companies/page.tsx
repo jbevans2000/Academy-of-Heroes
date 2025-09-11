@@ -48,13 +48,31 @@ const CompanyCard = ({ company, students, onEdit, onDelete, onDrop, onRemoveStud
                 </div>
                 <div className="flex gap-1">
                     <Button variant="ghost" size="icon" onClick={() => onEdit(company)}><Edit className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => onDelete(company.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Company: {company.name}?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will disband the company, and all its members will become freelancers. This action cannot be undone.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => onDelete(company.id)} className="bg-destructive hover:bg-destructive/90">
+                                    Yes, Disband Company
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </div>
             </CardHeader>
             <CardContent className="flex-grow space-y-2">
                 {students.length > 0 ? students.map(student => (
                     <div key={student.uid} className="flex items-center justify-between p-2 bg-secondary rounded-md">
-                        <span className="font-medium">{student.characterName}</span>
+                        <span className="font-medium">{student.studentName}</span>
                          <Button variant="ghost" size="icon" onClick={() => onRemoveStudent(student.uid)}><X className="h-4 w-4" /></Button>
                     </div>
                 )) : <p className="text-muted-foreground text-sm">Drag students here to assign them.</p>}
@@ -97,7 +115,7 @@ const FreelancerCard = ({ students, onDrop }: {
                     >
                         <div className="flex items-center gap-2">
                             <Image src={student.avatarUrl} alt={student.characterName} width={32} height={32} className="rounded-full" />
-                            <span className="font-medium">{student.characterName}</span>
+                            <span className="font-medium">{student.studentName}</span>
                         </div>
                     </div>
                 ))}
@@ -121,7 +139,6 @@ export default function CompaniesPage() {
     const [companyLogo, setCompanyLogo] = useState<File | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     
-    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [companyToDelete, setCompanyToDelete] = useState<string | null>(null);
 
     // State for new functions
@@ -204,7 +221,6 @@ export default function CompaniesPage() {
         } finally {
             setIsSaving(false);
             setCompanyToDelete(null);
-            setIsDeleteConfirmOpen(false);
         }
     };
     
@@ -349,115 +365,8 @@ export default function CompaniesPage() {
     }
 
     return (
-        <div className="flex min-h-screen w-full flex-col bg-muted/40">
-            <TeacherHeader />
-            <main className="flex-1 p-4 md:p-6 lg:p-8">
-                <div className="flex items-center justify-between mb-6">
-                    <div className="space-y-1">
-                        <h1 className="text-3xl font-bold flex items-center gap-2"><Briefcase /> Company Management</h1>
-                        <p className="text-muted-foreground">Drag and drop students to assign them to companies.</p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        <Button onClick={() => router.push('/teacher/dashboard')} variant="outline"><ArrowLeft className="mr-2 h-4 w-4"/> Return to Podium</Button>
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                 <Button variant="destructive"><UserX className="mr-2 h-4 w-4" /> Clear All Companies</Button>
-                            </AlertDialogTrigger>
-                             <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Clear All Company Assignments?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        This will remove every student from their current company, making them all freelancers. Company rosters will be empty. Are you sure?
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleClearCompanies} disabled={isClearing} className="bg-destructive hover:bg-destructive/90">
-                                        {isClearing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        Yes, Clear All
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="secondary"><UserPlus className="mr-2 h-4 w-4" /> Distribute by Class</Button>
-                            </AlertDialogTrigger>
-                             <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Distribute Freelancers by Class?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        This will automatically assign all unassigned students (freelancers) to your existing companies, attempting to balance the classes in each one. Are you sure?
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleDistributeByClass} disabled={isDistributing}>
-                                        {isDistributing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        Yes, Distribute
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                        <Button onClick={openNewCompanyDialog}><PlusCircle className="mr-2 h-4 w-4" /> Create New Company</Button>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                    <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-                         {companies.map(company => (
-                            <CompanyCard
-                                key={company.id}
-                                company={company}
-                                students={visibleStudents.filter(s => s.companyId === company.id)}
-                                onEdit={openEditCompanyDialog}
-                                onDelete={(id) => { setCompanyToDelete(id); setIsDeleteConfirmOpen(true); }}
-                                onDrop={handleStudentDrop}
-                                onRemoveStudent={handleRemoveStudentFromCompany}
-                            />
-                        ))}
-                    </div>
-                    <FreelancerCard students={freelancers} onDrop={(studentId) => handleRemoveStudentFromCompany(studentId)} />
-                </div>
-            </main>
-
-             <Dialog open={isCompanyDialogOpen} onOpenChange={setIsCompanyDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>{editingCompany ? 'Edit Company' : 'Create New Company'}</DialogTitle>
-                        <DialogDescription>
-                            Enter a name for the company and optionally upload a logo.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="company-name">Company Name</Label>
-                            <Input id="company-name" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="e.g., The Crimson Blades" />
-                        </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="company-logo">Company Logo</Label>
-                            <div className="flex items-center gap-2">
-                                <Label htmlFor="company-logo-upload" className={cn(buttonVariants({ variant: 'secondary' }), "cursor-pointer")}>
-                                    <Upload className="mr-2 h-4 w-4" />
-                                    Choose File
-                                </Label>
-                                <Input id="company-logo-upload" type="file" accept="image/*" className="hidden" onChange={(e) => setCompanyLogo(e.target.files ? e.target.files[0] : null)} />
-                                {companyLogo && <p className="text-sm text-muted-foreground">{companyLogo.name}</p>}
-                                {companyLogo && <Button variant="ghost" size="icon" onClick={() => setCompanyLogo(null)}><X className="h-4 w-4" /></Button>}
-                            </div>
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsCompanyDialogOpen(false)}>Cancel</Button>
-                        <Button onClick={handleSaveCompany} disabled={isSaving}>
-                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {editingCompany ? 'Save Changes' : 'Create Company'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-            
-            <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <>
+            <AlertDialog open={!!companyToDelete}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure you want to delete this company?</AlertDialogTitle>
@@ -466,13 +375,121 @@ export default function CompaniesPage() {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel onClick={() => setCompanyToDelete(null)}>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDeleteCompany} className="bg-destructive hover:bg-destructive/90">
                             Yes, Disband Company
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </div>
+            <div className="flex min-h-screen w-full flex-col bg-muted/40">
+                <TeacherHeader />
+                <main className="flex-1 p-4 md:p-6 lg:p-8">
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="space-y-1">
+                            <h1 className="text-3xl font-bold flex items-center gap-2"><Briefcase /> Company Management</h1>
+                            <p className="text-muted-foreground">Drag and drop students to assign them to companies.</p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <Button onClick={() => router.push('/teacher/dashboard')} variant="outline"><ArrowLeft className="mr-2 h-4 w-4"/> Return to Podium</Button>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive"><UserX className="mr-2 h-4 w-4" /> Clear All Companies</Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Clear All Company Assignments?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This will remove every student from their current company, making them all freelancers. Company rosters will be empty. Are you sure?
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleClearCompanies} disabled={isClearing} className="bg-destructive hover:bg-destructive/90">
+                                            {isClearing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                            Yes, Clear All
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="secondary"><UserPlus className="mr-2 h-4 w-4" /> Distribute by Class</Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Distribute Freelancers by Class?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This will automatically assign all unassigned students (freelancers) to your existing companies, attempting to balance the classes in each one. Are you sure?
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleDistributeByClass} disabled={isDistributing}>
+                                            {isDistributing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                            Yes, Distribute
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                            <Button onClick={openNewCompanyDialog}><PlusCircle className="mr-2 h-4 w-4" /> Create New Company</Button>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {companies.map(company => (
+                                <CompanyCard
+                                    key={company.id}
+                                    company={company}
+                                    students={visibleStudents.filter(s => s.companyId === company.id)}
+                                    onEdit={openEditCompanyDialog}
+                                    onDelete={setCompanyToDelete}
+                                    onDrop={handleStudentDrop}
+                                    onRemoveStudent={handleRemoveStudentFromCompany}
+                                />
+                            ))}
+                        </div>
+                        <FreelancerCard students={freelancers} onDrop={(studentId) => handleRemoveStudentFromCompany(studentId)} />
+                    </div>
+                </main>
+
+                <Dialog open={isCompanyDialogOpen} onOpenChange={setIsCompanyDialogOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>{editingCompany ? 'Edit Company' : 'Create New Company'}</DialogTitle>
+                            <DialogDescription>
+                                Enter a name for the company and optionally upload a logo.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="company-name">Company Name</Label>
+                                <Input id="company-name" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="e.g., The Crimson Blades" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="company-logo">Company Logo</Label>
+                                <div className="flex items-center gap-2">
+                                    <Label htmlFor="company-logo-upload" className={cn(buttonVariants({ variant: 'secondary' }), "cursor-pointer")}>
+                                        <Upload className="mr-2 h-4 w-4" />
+                                        Choose File
+                                    </Label>
+                                    <Input id="company-logo-upload" type="file" accept="image/*" className="hidden" onChange={(e) => setCompanyLogo(e.target.files ? e.target.files[0] : null)} />
+                                    {companyLogo && <p className="text-sm text-muted-foreground">{companyLogo.name}</p>}
+                                    {companyLogo && <Button variant="ghost" size="icon" onClick={() => setCompanyLogo(null)}><X className="h-4 w-4" /></Button>}
+                                </div>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsCompanyDialogOpen(false)}>Cancel</Button>
+                            <Button onClick={handleSaveCompany} disabled={isSaving}>
+                                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {editingCompany ? 'Save Changes' : 'Create Company'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </div>
+        </>
     );
 }
