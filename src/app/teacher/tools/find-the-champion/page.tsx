@@ -80,7 +80,9 @@ export default function FindTheChampionPage() {
     };
 
     useEffect(() => {
-        fetchStudentAndCompanyData();
+        if (teacher) {
+            fetchStudentAndCompanyData();
+        }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [teacher]);
     
@@ -241,4 +243,3 @@ export default function FindTheChampionPage() {
         </div>
     );
 }
-
