@@ -16,12 +16,13 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Check, X, Loader2, Bell } from 'lucide-react';
+import { ArrowLeft, Check, X, Loader2, Bell, BookOpen } from 'lucide-react';
 import { getQuestSettings, updateQuestSettings, approveChapterCompletion, denyChapterCompletion, approveAllPending } from '@/ai/flows/manage-quests';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { SetQuestProgressDialog } from '@/components/teacher/set-quest-progress-dialog';
 
 
 export default function ManageQuestCompletionPage() {
@@ -41,6 +42,10 @@ export default function ManageQuestCompletionPage() {
     const [studentOverrides, setStudentOverrides] = useState<{ [uid: string]: boolean }>({});
     const [isUpdating, setIsUpdating] = useState(false);
     const [isProcessing, setIsProcessing] = useState<string | null>(null);
+    
+    // Dialog state for setting quest progress
+    const [isQuestProgressOpen, setIsQuestProgressOpen] = useState(false);
+    const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -92,6 +97,11 @@ export default function ManageQuestCompletionPage() {
         };
 
     }, [teacher]);
+    
+    const handleOpenQuestProgressDialog = (student: Student) => {
+        setSelectedStudent(student);
+        setIsQuestProgressOpen(true);
+    };
 
     const handleGlobalApprovalToggle = async (checked: boolean) => {
         if (!teacher) return;
@@ -230,6 +240,17 @@ export default function ManageQuestCompletionPage() {
     }
 
     return (
+        <>
+        {selectedStudent && teacher && (
+            <SetQuestProgressDialog
+                isOpen={isQuestProgressOpen}
+                onOpenChange={setIsQuestProgressOpen}
+                studentsToUpdate={[selectedStudent]}
+                teacherUid={teacher.uid}
+                hubs={hubs}
+                chapters={chapters}
+            />
+        )}
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
             <TeacherHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
@@ -358,6 +379,7 @@ export default function ManageQuestCompletionPage() {
                                         <TableHead>Student Name</TableHead>
                                         <TableHead>Current Hub</TableHead>
                                         <TableHead>Last Chapter Completed</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -368,6 +390,12 @@ export default function ManageQuestCompletionPage() {
                                                 <TableCell className="font-medium">{student.studentName}</TableCell>
                                                 <TableCell>{progress.hubName}</TableCell>
                                                 <TableCell>{progress.chapterTitle}</TableCell>
+                                                <TableCell className="text-right">
+                                                    <Button variant="outline" size="sm" onClick={() => handleOpenQuestProgressDialog(student)}>
+                                                        <BookOpen className="mr-2 h-4 w-4" />
+                                                        Set Progress
+                                                    </Button>
+                                                </TableCell>
                                             </TableRow>
                                         )
                                     })}
@@ -379,5 +407,6 @@ export default function ManageQuestCompletionPage() {
                 </div>
             </main>
         </div>
+        </>
     );
 }
