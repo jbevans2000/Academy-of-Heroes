@@ -7,7 +7,7 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, RefreshCw, Loader2, ShieldCheck, Users } from 'lucide-react';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student, Company } from '@/lib/data';
 import Image from 'next/image';
@@ -57,36 +57,32 @@ export default function FindTheChampionPage() {
         });
         return () => unsubscribe();
     }, [router]);
+    
+    const fetchStudentAndCompanyData = async () => {
+        if (!teacher) return;
+        setIsLoading(true);
+        try {
+            const studentsQuery = query(collection(db, "teachers", teacher.uid, "students"), where('isArchived', '!=', true));
+            const studentsSnapshot = await getDocs(studentsQuery);
+            const studentsData = studentsSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
+            setStudents(studentsData);
+
+            const companiesQuery = collection(db, "teachers", teacher.uid, "companies");
+            const companiesSnapshot = await getDocs(companiesQuery);
+            const companiesData = companiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
+            setCompanies(companiesData);
+
+        } catch (error) {
+             console.error("Error fetching data:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     useEffect(() => {
-        if (!teacher) return;
-        
-        setIsLoading(true);
-
-        const studentsQuery = query(collection(db, "teachers", teacher.uid, "students"), where('isArchived', '!=', true));
-        const unsubStudents = onSnapshot(studentsQuery, (snapshot) => {
-            const studentsData = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
-            setStudents(studentsData);
-             if (isLoading) setIsLoading(false);
-        }, (error) => {
-            console.error("Error fetching students:", error);
-            setIsLoading(false);
-        });
-        
-        const companiesQuery = collection(db, "teachers", teacher.uid, "companies");
-        const unsubCompanies = onSnapshot(companiesQuery, (snapshot) => {
-             const companiesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
-             setCompanies(companiesData);
-        }, (error) => {
-             console.error("Error fetching companies:", error);
-        });
-
-        return () => {
-            unsubStudents();
-            unsubCompanies();
-        };
-
-    }, [teacher, isLoading]);
+        fetchStudentAndCompanyData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [teacher]);
     
     const getChampionCandidates = () => students.filter(s => s.isChampion === true);
 
@@ -147,10 +143,16 @@ export default function FindTheChampionPage() {
             <TeacherHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8 flex flex-col items-center justify-center">
                 <div className="w-full max-w-4xl space-y-6">
-                    <Button variant="outline" onClick={() => router.push('/teacher/tools')} className="bg-background/80">
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to All Tools
-                    </Button>
+                     <div className="flex justify-between items-center">
+                        <Button variant="outline" onClick={() => router.push('/teacher/tools')} className="bg-background/80">
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Back to All Tools
+                        </Button>
+                        <Button variant="secondary" onClick={fetchStudentAndCompanyData} disabled={isLoading}>
+                             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                             Refresh Roster
+                        </Button>
+                     </div>
                     <Card className="shadow-2xl text-center bg-card/80 backdrop-blur-sm">
                         <CardHeader>
                             <div className="flex justify-center mb-2">
@@ -239,3 +241,4 @@ export default function FindTheChampionPage() {
         </div>
     );
 }
+
