@@ -177,123 +177,129 @@ export default function BoonsPage() {
                             </Button>
                         </div>
                     </div>
-                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
-                        <div className="lg:col-span-3">
-                            {isLoading ? (
-                                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                                    {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-64" />)}
-                                </div>
-                            ) : boons.length === 0 && pendingRequests.length === 0 ? (
-                                <Card className="text-center py-20">
-                                    <CardHeader>
-                                        <CardTitle>The Workshop is Empty</CardTitle>
-                                        <CardDescription>Would you like to populate the workshop with a set of suggested classroom Rewards?</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="flex flex-col items-center gap-4">
-                                        <Button onClick={handlePopulateBoons} disabled={isPopulating}>
-                                            {isPopulating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Star className="mr-2 h-4 w-4" />}
-                                            Yes, Add Default Rewards
-                                        </Button>
-                                        <Button variant="secondary" onClick={() => router.push('/teacher/boons/new')}>
-                                            <PlusCircle className="mr-2 h-4 w-4" /> No, I'll Create My Own
-                                        </Button>
-                                    </CardContent>
-                                </Card>
-                            ) : (
-                                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                                    {boons.map(boon => (
-                                        <Card key={boon.id} className={cn("flex flex-col transition-all", !boon.isVisibleToStudents && 'bg-muted/50 border-dashed')}>
-                                            <CardHeader>
-                                                <div className="aspect-square relative w-full bg-secondary rounded-md overflow-hidden">
-                                                    <Image src={boon.imageUrl || 'https://placehold.co/400x400.png'} alt={boon.name} fill className="object-cover" data-ai-hint="fantasy item" />
-                                                </div>
-                                            </CardHeader>
-                                            <CardContent className="flex-grow space-y-2">
-                                                <CardTitle>{boon.name}</CardTitle>
-                                                <div className="flex items-center gap-2 text-lg font-bold text-amber-600">
-                                                    <Coins className="h-5 w-5" />
-                                                    <span>{boon.cost}</span>
-                                                </div>
-                                                <CardDescription>{boon.description}</CardDescription>
-                                            </CardContent>
-                                            <CardFooter className="flex-col gap-4">
-                                                <div className="flex items-center space-x-2 w-full border p-2 rounded-md justify-center">
-                                                    {isToggling === boon.id ? <Loader2 className="h-4 w-4 animate-spin"/> : <Switch
-                                                        id={`visibility-${boon.id}`}
-                                                        checked={boon.isVisibleToStudents ?? false}
-                                                        onCheckedChange={() => handleVisibilityToggle(boon)}
-                                                    />}
-                                                    <Label htmlFor={`visibility-${boon.id}`} className="flex items-center gap-1 cursor-pointer">
-                                                        {boon.isVisibleToStudents ? <Eye className="w-4 h-4"/> : <EyeOff className="w-4 h-4"/>}
-                                                        {boon.isVisibleToStudents ? 'Visible' : 'Hidden'}
-                                                    </Label>
-                                                </div>
-                                                <div className="flex w-full gap-2">
-                                                    <Button variant="outline" className="w-full" onClick={() => router.push(`/teacher/boons/edit/${boon.id}`)}>
-                                                        <Edit className="h-4 w-4" />
-                                                    </Button>
-                                                    <AlertDialog>
-                                                        <AlertDialogTrigger asChild>
-                                                            <Button variant="destructive" className="w-full" disabled={isDeleting === boon.id}>
-                                                                {isDeleting === boon.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                                                            </Button>
-                                                        </AlertDialogTrigger>
-                                                        <AlertDialogContent>
-                                                            <AlertDialogHeader>
-                                                                <AlertDialogTitle>Delete "{boon.name}"?</AlertDialogTitle>
-                                                                <AlertDialogDescription>
-                                                                    This will permanently remove the Reward from your workshop. This action cannot be undone.
-                                                                </AlertDialogDescription>
-                                                            </AlertDialogHeader>
-                                                            <AlertDialogFooter>
-                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                                <AlertDialogAction onClick={() => handleDelete(boon.id)}>
-                                                                    Yes, Delete
-                                                                </AlertDialogAction>
-                                                            </AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
-                                                </div>
-                                            </CardFooter>
-                                        </Card>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                        <div className="lg:col-span-1 space-y-6">
-                            {pendingRequests.length > 0 && (
-                                <Card className="border-primary">
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2">
-                                            <Bell className="h-6 w-6 text-primary animate-pulse" />
-                                            Pending Approvals
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-2">
-                                        {pendingRequests.map(req => (
-                                            <div key={req.id} className="flex items-center justify-between p-3 border rounded-lg">
-                                                <div>
-                                                    <p className="font-bold">{req.characterName}</p>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        Wants to buy <span className="font-semibold">{req.boonName}</span> for <span className="font-semibold text-amber-600">{req.cost}g</span>
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground"> {formatDistanceToNow(new Date(req.requestedAt.seconds * 1000), { addSuffix: true })}</p>
-                                                </div>
-                                                <div className="flex gap-2">
-                                                    <Button size="sm" variant="destructive" onClick={() => handleApproval(req.id, false)} disabled={isProcessingRequest === req.id}>
-                                                        {isProcessingRequest === req.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
-                                                    </Button>
-                                                    <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleApproval(req.id, true)} disabled={isProcessingRequest === req.id}>
-                                                        {isProcessingRequest === req.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                                                    </Button>
-                                                </div>
+                    <div>
+                        {isLoading ? (
+                            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                                {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-64" />)}
+                            </div>
+                        ) : boons.length === 0 && pendingRequests.length === 0 ? (
+                            <Card className="text-center py-20">
+                                <CardHeader>
+                                    <CardTitle>The Workshop is Empty</CardTitle>
+                                    <CardDescription>Would you like to populate the workshop with a set of suggested classroom Rewards?</CardDescription>
+                                </CardHeader>
+                                <CardContent className="flex flex-col items-center gap-4">
+                                    <Button onClick={handlePopulateBoons} disabled={isPopulating}>
+                                        {isPopulating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Star className="mr-2 h-4 w-4" />}
+                                        Yes, Add Default Rewards
+                                    </Button>
+                                    <Button variant="secondary" onClick={() => router.push('/teacher/boons/new')}>
+                                        <PlusCircle className="mr-2 h-4 w-4" /> No, I'll Create My Own
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        ) : (
+                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                                {boons.map(boon => (
+                                    <Card key={boon.id} className={cn("flex flex-col transition-all", !boon.isVisibleToStudents && 'bg-muted/50 border-dashed')}>
+                                        <CardHeader>
+                                            <div className="aspect-square relative w-full bg-secondary rounded-md overflow-hidden">
+                                                <Image src={boon.imageUrl || 'https://placehold.co/400x400.png'} alt={boon.name} fill className="object-cover" data-ai-hint="fantasy item" />
                                             </div>
-                                        ))}
-                                    </CardContent>
-                                </Card>
-                            )}
-                        </div>
+                                        </CardHeader>
+                                        <CardContent className="flex-grow space-y-2">
+                                            <CardTitle>{boon.name}</CardTitle>
+                                            <div className="flex items-center gap-2 text-lg font-bold text-amber-600">
+                                                <Coins className="h-5 w-5" />
+                                                <span>{boon.cost}</span>
+                                            </div>
+                                            <CardDescription>{boon.description}</CardDescription>
+                                        </CardContent>
+                                        <CardFooter className="flex-col gap-4">
+                                            <div className="flex items-center space-x-2 w-full border p-2 rounded-md justify-center">
+                                                {isToggling === boon.id ? <Loader2 className="h-4 w-4 animate-spin"/> : <Switch
+                                                    id={`visibility-${boon.id}`}
+                                                    checked={boon.isVisibleToStudents ?? false}
+                                                    onCheckedChange={() => handleVisibilityToggle(boon)}
+                                                />}
+                                                <Label htmlFor={`visibility-${boon.id}`} className="flex items-center gap-1 cursor-pointer">
+                                                    {boon.isVisibleToStudents ? <Eye className="w-4 h-4"/> : <EyeOff className="w-4 h-4"/>}
+                                                    {boon.isVisibleToStudents ? 'Visible' : 'Hidden'}
+                                                </Label>
+                                            </div>
+                                            <div className="flex w-full gap-2">
+                                                <Button variant="outline" className="w-full" onClick={() => router.push(`/teacher/boons/edit/${boon.id}`)}>
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="destructive" className="w-full" disabled={isDeleting === boon.id}>
+                                                            {isDeleting === boon.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Delete "{boon.name}"?</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                This will permanently remove the Reward from your workshop. This action cannot be undone.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDelete(boon.id)}>
+                                                                Yes, Delete
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </div>
+                                        </CardFooter>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
                     </div>
+                     <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Bell className={cn("h-6 w-6", pendingRequests.length > 0 && "text-primary animate-pulse")} />
+                                Pending Approvals
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                            {pendingRequests.length > 0 && (
+                                <Button onClick={handleApproveAll} disabled={isProcessingRequest === 'all'}>
+                                    {isProcessingRequest === 'all' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+                                    Approve All ({pendingRequests.length})
+                                </Button>
+                             )}
+                            <div className="space-y-2 max-h-80 overflow-y-auto">
+                            {pendingRequests.length === 0 ? (
+                                <p className="text-muted-foreground text-center py-4">No pending requests.</p>
+                            ) : (
+                                pendingRequests.map(req => (
+                                    <div key={req.id} className="flex items-center justify-between p-3 border rounded-lg">
+                                        <div>
+                                            <p className="font-bold">{req.characterName}</p>
+                                            <p className="text-sm text-muted-foreground">
+                                                Wants to buy <span className="font-semibold">{req.boonName}</span> for <span className="font-semibold text-amber-600">{req.cost}g</span>
+                                            </p>
+                                            <p className="text-xs text-muted-foreground"> {formatDistanceToNow(new Date(req.requestedAt.seconds * 1000), { addSuffix: true })}</p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <Button size="sm" variant="destructive" onClick={() => handleApproval(req.id, false)} disabled={!!isProcessingRequest}>
+                                                {isProcessingRequest === req.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+                                            </Button>
+                                            <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleApproval(req.id, true)} disabled={!!isProcessingRequest}>
+                                                {isProcessingRequest === req.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                            </div>
+                        </CardContent>
+                    </Card>
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
