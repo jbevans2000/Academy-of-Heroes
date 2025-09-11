@@ -166,20 +166,19 @@ export default function BoonsPage() {
             <TeacherHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="max-w-7xl mx-auto space-y-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div className="lg:col-span-2 space-y-6">
-                            <div className="flex items-center justify-between">
-                                <h1 className="text-3xl font-bold flex items-center gap-2"><Star className="text-yellow-400"/> Guild Rewards</h1>
-                                <div className="flex gap-2">
-                                    <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
-                                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
-                                    </Button>
-                                    <Button onClick={() => router.push('/teacher/boons/new')}>
-                                        <PlusCircle className="mr-2 h-4 w-4" /> Create New Reward
-                                    </Button>
-                                </div>
-                            </div>
-                            
+                     <div className="flex items-center justify-between">
+                        <h1 className="text-3xl font-bold flex items-center gap-2"><Star className="text-yellow-400"/> Guild Rewards</h1>
+                        <div className="flex gap-2">
+                            <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
+                                <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+                            </Button>
+                            <Button onClick={() => router.push('/teacher/boons/new')}>
+                                <PlusCircle className="mr-2 h-4 w-4" /> Create New Reward
+                            </Button>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                        <div className="lg:col-span-3 space-y-6">
                             {isLoading ? (
                                 <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-5">
                                     {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-64" />)}
