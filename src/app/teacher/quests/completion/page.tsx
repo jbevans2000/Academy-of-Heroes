@@ -7,7 +7,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 
-import type { Student } from '@/lib/data';
+import type { Student, QuestHub, Chapter } from '@/lib/data';
 import type { QuestCompletionRequest } from '@/lib/quests';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,8 @@ import { getQuestSettings, updateQuestSettings, approveChapterCompletion, denyCh
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
 
 export default function ManageQuestCompletionPage() {
     const router = useRouter();
@@ -28,6 +30,8 @@ export default function ManageQuestCompletionPage() {
 
     const [teacher, setTeacher] = useState<User | null>(null);
     const [students, setStudents] = useState<Student[]>([]);
+    const [hubs, setHubs] = useState<QuestHub[]>([]);
+    const [chapters, setChapters] = useState<Chapter[]>([]);
     const [pendingRequests, setPendingRequests] = useState<QuestCompletionRequest[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -69,10 +73,22 @@ export default function ManageQuestCompletionPage() {
         const unsubRequests = onSnapshot(requestsQuery, snapshot => {
             setPendingRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestCompletionRequest)));
         });
+        
+        const hubsQuery = query(collection(db, 'teachers', teacher.uid, 'questHubs'), orderBy('hubOrder'));
+        const unsubHubs = onSnapshot(hubsQuery, (snapshot) => {
+            setHubs(snapshot.docs.map(doc => ({id: doc.id, ...doc.data()} as QuestHub)))
+        });
+
+        const chaptersQuery = query(collection(db, 'teachers', teacher.uid, 'chapters'));
+        const unsubChapters = onSnapshot(chaptersQuery, (snapshot) => {
+            setChapters(snapshot.docs.map(doc => ({id: doc.id, ...doc.data()} as Chapter)))
+        });
 
         return () => {
             unsubStudents();
             unsubRequests();
+            unsubHubs();
+            unsubChapters();
         };
 
     }, [teacher]);
@@ -169,6 +185,40 @@ export default function ManageQuestCompletionPage() {
             setIsProcessing(null);
         }
     }
+    
+     const getStudentProgress = (student: Student) => {
+        let latestHub: QuestHub | undefined;
+        let latestChapter: Chapter | undefined;
+        let maxHubOrder = -1;
+
+        if (student.questProgress) {
+            for (const hubId in student.questProgress) {
+                const hub = hubs.find(h => h.id === hubId);
+                if (hub && hub.hubOrder > maxHubOrder) {
+                    const chapterNumber = student.questProgress[hubId];
+                    if (chapterNumber > 0) {
+                        maxHubOrder = hub.hubOrder;
+                        latestHub = hub;
+                        latestChapter = chapters.find(c => c.hubId === hubId && c.chapterNumber === chapterNumber);
+                    }
+                }
+            }
+        }
+
+        // If no progress in specific hubs, check hubsCompleted
+        if (!latestHub && student.hubsCompleted > 0) {
+             latestHub = hubs.find(h => h.hubOrder === student.hubsCompleted);
+             if (latestHub) {
+                const chaptersInHub = chapters.filter(c => c.hubId === latestHub!.id);
+                latestChapter = chaptersInHub.reduce((latest, current) => (current.chapterNumber > latest.chapterNumber ? current : latest), chaptersInHub[0]);
+             }
+        }
+
+        return {
+            hubName: latestHub?.name || 'Not Started',
+            chapterTitle: latestChapter?.title ? `Ch. ${latestChapter.chapterNumber}: ${latestChapter.title}` : 'Prologue',
+        };
+    };
 
     if (isLoading) {
         return (
@@ -183,7 +233,7 @@ export default function ManageQuestCompletionPage() {
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
             <TeacherHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
-                <div className="max-w-4xl mx-auto space-y-6">
+                <div className="max-w-7xl mx-auto space-y-6">
                     <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
                         <ArrowLeft className="mr-2 h-4 w-4" /> Back to Podium
                     </Button>
@@ -295,6 +345,36 @@ export default function ManageQuestCompletionPage() {
                             </CardContent>
                         </Card>
                     </div>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Student Progress Overview</CardTitle>
+                            <CardDescription>A quick look at every student's last completed chapter.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Student Name</TableHead>
+                                        <TableHead>Current Hub</TableHead>
+                                        <TableHead>Last Chapter Completed</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {students.filter(s => !s.isArchived).map(student => {
+                                        const progress = getStudentProgress(student);
+                                        return (
+                                            <TableRow key={student.uid}>
+                                                <TableCell className="font-medium">{student.studentName}</TableCell>
+                                                <TableCell>{progress.hubName}</TableCell>
+                                                <TableCell>{progress.chapterTitle}</TableCell>
+                                            </TableRow>
+                                        )
+                                    })}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
 
                 </div>
             </main>
