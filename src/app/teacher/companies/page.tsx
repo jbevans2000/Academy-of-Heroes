@@ -275,7 +275,9 @@ export default function CompaniesPage() {
         }
     }
 
-    const freelancers = students.filter(s => !s.companyId);
+    const freelancers = students.filter(s => !s.companyId && !s.isHidden);
+    const visibleStudents = students.filter(s => !s.isHidden);
+
 
     if (isLoading) {
         return (
@@ -307,7 +309,7 @@ export default function CompaniesPage() {
                             <CompanyCard
                                 key={company.id}
                                 company={company}
-                                students={students.filter(s => s.companyId === company.id)}
+                                students={visibleStudents.filter(s => s.companyId === company.id)}
                                 onEdit={openEditCompanyDialog}
                                 onDelete={(id) => { setCompanyToDelete(id); setIsDeleteConfirmOpen(true); }}
                                 onDrop={handleStudentDrop}
