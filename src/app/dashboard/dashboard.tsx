@@ -31,6 +31,11 @@ export default function Dashboard() {
   const [teacherUid, setTeacherUid] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showApprovedDialog, setShowApprovedDialog] = useState(false);
+
+  // Daily Reminder State
+  const [showReminderDialog, setShowReminderDialog] = useState(false);
+  const [reminder, setReminder] = useState<{ title: string; message: string } | null>(null);
+
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -65,12 +70,12 @@ export default function Dashboard() {
                 return;
               }
               
-              // --- DAILY REGENERATION LOGIC ---
               const today = new Date();
-              const lastRegenDate = studentData.lastDailyRegen?.toDate();
               let updates: Partial<Student> = {};
               let performedRegen = false;
 
+              // --- DAILY REGENERATION LOGIC ---
+              const lastRegenDate = studentData.lastDailyRegen?.toDate();
               if (!lastRegenDate || !isSameDay(today, lastRegenDate)) {
                   const hpRegen = Math.ceil(studentData.maxHp * 0.05);
                   const mpRegen = Math.ceil(studentData.maxMp * 0.05);
@@ -95,6 +100,24 @@ export default function Dashboard() {
               }
               // --- END REGENERATION LOGIC ---
               
+              // --- DAILY REMINDER LOGIC ---
+              const lastChapterDate = studentData.lastChapterCompletion?.toDate();
+              const hasCompletedToday = lastChapterDate && isSameDay(today, lastChapterDate);
+              const reminderShown = sessionStorage.getItem('dailyReminderShown');
+              if (!hasCompletedToday && !reminderShown) {
+                const teacherRef = doc(db, 'teachers', foundTeacherUid);
+                const teacherSnap = await getDoc(teacherRef);
+                if (teacherSnap.exists()) {
+                    const teacherData = teacherSnap.data();
+                    const title = teacherData.dailyReminderTitle || "A Hero's Duty Awaits!";
+                    const message = teacherData.dailyReminderMessage || "Greetings, adventurer! A new day dawns, and the realm of Luminaria has a quest with your name on it. Your legend will not write itself! Embark on a chapter from the World Map to continue your training. For each quest you complete, you will be rewarded with valuable **Experience (XP)** to grow stronger and **Gold** to fill your coffers. Your next great deed awaits!";
+                    setReminder({ title, message });
+                    setShowReminderDialog(true);
+                    sessionStorage.setItem('dailyReminderShown', 'true');
+                }
+              }
+              // --- END REMINDER LOGIC ---
+
               setIsLoading(false);
             } else {
               setIsLoading(true);
@@ -157,6 +180,18 @@ export default function Dashboard() {
           <AlertDialogFooter>
             <AlertDialogAction onClick={handleCloseApprovedDialog}>Begin Your Quest</AlertDialogAction>
           </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showReminderDialog} onOpenChange={setShowReminderDialog}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle className="text-2xl">{reminder?.title}</AlertDialogTitle>
+                <AlertDialogDescription className="text-base text-foreground" dangerouslySetInnerHTML={{ __html: reminder?.message.replace(/\n/g, '<br/>') || '' }} />
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogAction>Embark!</AlertDialogAction>
+            </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 

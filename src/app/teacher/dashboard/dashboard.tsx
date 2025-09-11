@@ -47,7 +47,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff, MessageSquare, Heart, Zap as ZapIcon } from 'lucide-react';
+import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff, MessageSquare, Heart, Zap as ZapIcon, MessageCircle } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain, MAX_LEVEL, XP_FOR_MAX_LEVEL } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -55,6 +55,8 @@ import { archiveStudents } from '@/ai/flows/manage-student';
 import { TeacherMessageCenter } from '@/components/teacher/teacher-message-center';
 import { restoreAllStudentsHp, restoreAllStudentsMp } from '@/ai/flows/manage-class';
 import { SetQuestProgressDialog } from '@/components/teacher/set-quest-progress-dialog';
+import { updateDailyReminder } from '@/ai/flows/manage-teacher';
+import { Textarea } from '@/components/ui/textarea';
 
 interface TeacherData {
     name: string;
@@ -62,6 +64,8 @@ interface TeacherData {
     classCode: string;
     pendingCleanupBattleId?: string;
     hasUnreadTeacherMessages?: boolean;
+    dailyReminderTitle?: string;
+    dailyReminderMessage?: string;
 }
 
 type SortOrder = 'studentName' | 'characterName' | 'xp' | 'class' | 'company';
@@ -96,10 +100,16 @@ export default function Dashboard() {
 
   const { toast } = useToast();
   
-  // New state for single student messaging
+  // Messaging state
   const [isMessageCenterOpen, setIsMessageCenterOpen] = useState(false);
   const [initialStudentToView, setInitialStudentToView] = useState<Student | null>(null);
-  const [hasUnread, setHasUnread] = useState(false);
+  
+  // Daily Reminder state
+  const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
+  const [reminderTitle, setReminderTitle] = useState('');
+  const [reminderMessage, setReminderMessage] = useState('');
+  const [isSavingReminder, setIsSavingReminder] = useState(false);
+
   
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async user => {
@@ -114,10 +124,8 @@ export default function Dashboard() {
         const viewingTeacherId = searchParams.get('teacherId');
 
         if (isAdmin && viewingTeacherId) {
-            // Admin is viewing a specific teacher's dashboard
             setTeacher({ uid: viewingTeacherId } as User);
         } else {
-            // Regular teacher viewing their own dashboard
             setTeacher(user);
         }
     });
@@ -139,17 +147,16 @@ export default function Dashboard() {
         if (teacherSnap.exists()) {
             const data = teacherSnap.data() as TeacherData;
             setTeacherData(data);
-            setHasUnread(data.hasUnreadTeacherMessages || false);
+            setReminderTitle(data.dailyReminderTitle || "A Hero's Duty Awaits!");
+            setReminderMessage(data.dailyReminderMessage || "Greetings, adventurer! A new day dawns, and the realm of Luminaria has a quest with your name on it. Your legend will not write itself!\n\nEmbark on a chapter from the World Map to continue your training. For each quest you complete, you will be rewarded with valuable **Experience (XP)** to grow stronger and **Gold** to fill your coffers.\n\nYour next great deed awaits!");
             if (data.pendingCleanupBattleId) {
-                // Wait 20 seconds then trigger cleanup
                 setTimeout(() => {
-                    handleClearAllBattleStatus(true); // Pass flag to indicate auto-cleanup
+                    handleClearAllBattleStatus(true);
                 }, 20000);
             }
         }
     });
 
-    // Set up real-time listener for students
     const studentsQuery = collection(db, "teachers", teacherUid, "students");
     const studentsUnsubscribe = onSnapshot(studentsQuery, (snapshot) => {
         const studentData = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
@@ -157,20 +164,17 @@ export default function Dashboard() {
         setIsLoading(false);
     });
     
-    // Set up real-time listener for pending students
     const pendingStudentsQuery = collection(db, "teachers", teacherUid, "pendingStudents");
     const pendingUnsubscribe = onSnapshot(pendingStudentsQuery, (snapshot) => {
         setPendingStudents(snapshot.docs.map(doc => ({ ...doc.data() } as PendingStudent)));
     });
     
-    // Set up real-time listener for companies
     const companiesQuery = collection(db, 'teachers', teacherUid, 'companies');
     const companiesUnsubscribe = onSnapshot(companiesQuery, (snapshot) => {
         const companiesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
         setCompanies(companiesData.sort((a,b) => a.name.localeCompare(b.name)));
     });
 
-    // Set up presence listener
     const presenceRef = doc(db, 'teachers', teacher.uid, 'presence', 'online');
     const unsubPresence = onSnapshot(presenceRef, (presenceSnap) => {
         const presenceData = presenceSnap.exists() ? presenceSnap.data().onlineStatus || {} : {};
@@ -178,7 +182,6 @@ export default function Dashboard() {
         setOnlineUids(uids);
     });
     
-    // Fetch quests data
     const hubsQuery = query(collection(db, 'teachers', teacherUid, 'questHubs'), orderBy('hubOrder'));
     const hubsUnsubscribe = onSnapshot(hubsQuery, (snapshot) => {
         setHubs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub)))
@@ -189,8 +192,6 @@ export default function Dashboard() {
         setChapters(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter)))
     });
 
-
-    // Cleanup listeners on unmount
     return () => {
         unsubTeacher();
         studentsUnsubscribe();
@@ -230,17 +231,14 @@ export default function Dashboard() {
             }
         });
         
-        // Sort students within each company
         for (const companyId in grouped) {
             grouped[companyId].sort((a, b) => a.characterName.localeCompare(b.characterName));
         }
         
-        // Sort freelancers
         freelancers.sort((a, b) => a.characterName.localeCompare(b.characterName));
 
-        // Create a sorted list of company IDs based on company names
         const sortedCompanyIds = companies
-            .filter(c => grouped[c.id]) // Only include companies that have members
+            .filter(c => grouped[c.id])
             .map(c => c.id);
 
         return { type: 'grouped', data: grouped, freelancers, companyOrder: sortedCompanyIds };
@@ -289,7 +287,6 @@ export default function Dashboard() {
       
       try {
           const batch = writeBatch(db);
-          // Use the local state which is already up-to-date
           const studentsToUpdate = students.filter(s => selectedStudents.includes(s.uid));
           let studentsAtMaxLevel = 0;
 
@@ -298,7 +295,7 @@ export default function Dashboard() {
 
               if (currentLevel >= MAX_LEVEL && amount > 0) {
                   studentsAtMaxLevel++;
-                  continue; // Skip awarding positive XP to max-level students
+                  continue; 
               }
 
               const studentRef = doc(db, 'teachers', teacher!.uid, 'students', studentData.uid);
@@ -544,13 +541,13 @@ export default function Dashboard() {
     setIsMessageCenterOpen(true);
   };
   
-    const handleCloseMessageCenter = async () => {
-        setIsMessageCenterOpen(false);
-        if (teacher && teacherData?.hasUnreadTeacherMessages) {
-            const teacherRef = doc(db, 'teachers', teacher.uid);
-            await updateDoc(teacherRef, { hasUnreadTeacherMessages: false });
-        }
-    };
+  const handleCloseMessageCenter = async () => {
+    setIsMessageCenterOpen(false);
+    if (teacher && teacherData?.hasUnreadTeacherMessages) {
+        const teacherRef = doc(db, 'teachers', teacher.uid);
+        await updateDoc(teacherRef, { hasUnreadTeacherMessages: false });
+    }
+  };
   
   const handleRestoreAll = async (stat: 'hp' | 'mp') => {
       if (!teacher) return;
@@ -571,6 +568,28 @@ export default function Dashboard() {
           setIsAwarding(false);
       }
   }
+
+  const handleSaveReminder = async () => {
+    if (!teacher) return;
+    setIsSavingReminder(true);
+    try {
+        const result = await updateDailyReminder({
+            teacherUid: teacher.uid,
+            title: reminderTitle,
+            message: reminderMessage,
+        });
+        if (result.success) {
+            toast({ title: "Reminder Saved", description: result.message });
+            setIsReminderDialogOpen(false);
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Error', description: error.message });
+    } finally {
+        setIsSavingReminder(false);
+    }
+  };
 
 
   if (isLoading || !teacher) {
@@ -686,7 +705,7 @@ export default function Dashboard() {
             variant="outline"
             className="text-black border-black"
             >
-            {selectedStudents.length === students.filter(s => !s.isArchived && (showHidden ? s.isHidden : !s.isHidden)).length ? 'Deselect All' : 'Select All'}
+            {selectedStudents.length === students.filter(s => !s.isArchived).length ? 'Deselect All' : 'Select All'}
             </Button>
             
             <DropdownMenu>
@@ -796,6 +815,10 @@ export default function Dashboard() {
                     <DropdownMenuItem onClick={() => router.push('/teacher/quests/completion')}>
                         <Check className="mr-2 h-4 w-4" />
                         <span>Manage Quest Completion</span>
+                    </DropdownMenuItem>
+                     <DropdownMenuItem onSelect={() => setIsReminderDialogOpen(true)}>
+                        <MessageCircle className="mr-2 h-4 w-4" />
+                        <span>Set Daily Reminder</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/teacher/gamelog')}>
                         <BookOpen className="mr-2 h-4 w-4" />
@@ -961,6 +984,44 @@ export default function Dashboard() {
                 hubs={hubs}
                 chapters={chapters}
             />
+            <Dialog open={isReminderDialogOpen} onOpenChange={setIsReminderDialogOpen}>
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>Set Daily Reminder Message</DialogTitle>
+                        <DialogDescription>
+                            This message will pop up for students the first time they log in each day, if they haven't completed a quest yet. Use markdown for formatting like **bold**.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="reminder-title">Reminder Title</Label>
+                            <Input
+                                id="reminder-title"
+                                value={reminderTitle}
+                                onChange={(e) => setReminderTitle(e.target.value)}
+                                disabled={isSavingReminder}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="reminder-message">Reminder Message</Label>
+                            <Textarea
+                                id="reminder-message"
+                                value={reminderMessage}
+                                onChange={(e) => setReminderMessage(e.target.value)}
+                                disabled={isSavingReminder}
+                                rows={8}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsReminderDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleSaveReminder} disabled={isSavingReminder}>
+                            {isSavingReminder && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Save Reminder
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
             <div className="flex items-center space-x-2">
                 <Switch id="show-hidden" checked={showHidden} onCheckedChange={setShowHidden} />
                 <Label htmlFor="show-hidden" className="flex items-center gap-1 cursor-pointer font-semibold text-black text-lg">

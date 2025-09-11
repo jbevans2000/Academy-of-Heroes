@@ -44,6 +44,27 @@ export async function updateTeacherProfile(input: UpdateProfileInput): Promise<A
   }
 }
 
+interface UpdateReminderInput {
+  teacherUid: string;
+  title: string;
+  message: string;
+}
+
+export async function updateDailyReminder(input: UpdateReminderInput): Promise<ActionResponse> {
+  try {
+    const teacherRef = doc(db, 'teachers', input.teacherUid);
+    await updateDoc(teacherRef, {
+      dailyReminderTitle: input.title,
+      dailyReminderMessage: input.message,
+    });
+    return { success: true, message: 'Daily reminder updated successfully!' };
+  } catch (e: any) {
+    console.error("Error in updateDailyReminder:", e);
+    return { success: false, error: e.message || 'Failed to update the daily reminder.' };
+  }
+}
+
+
 export async function deleteTeacher(teacherUid: string): Promise<ActionResponse> {
     const auth = getAuth(getFirebaseAdminApp());
 
