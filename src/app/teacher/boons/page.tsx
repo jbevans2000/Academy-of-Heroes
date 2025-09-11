@@ -178,7 +178,7 @@ export default function BoonsPage() {
                         </div>
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
-                        <div className="lg:col-span-3 space-y-6">
+                        <div className="lg:col-span-3">
                             {isLoading ? (
                                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                                     {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-64" />)}
@@ -292,28 +292,28 @@ export default function BoonsPage() {
                                     </CardContent>
                                 </Card>
                             )}
-                             <Card>
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2">
-                                        <History className="h-6 w-6" />
-                                        Transaction Log
-                                    </CardTitle>
-                                    <CardDescription>The most recent Reward purchases and uses.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-3 max-h-96 overflow-y-auto">
-                                    {transactions.length === 0 && <p className="text-muted-foreground text-sm text-center">No transactions yet.</p>}
-                                    {transactions.map(tx => (
-                                        <div key={tx.id} className="text-sm border-b pb-2">
-                                            <p><span className="font-bold">{tx.characterName}</span> {tx.transactionType === 'purchase' ? 'purchased' : 'used'} <span className="font-semibold text-primary">{tx.boonName}</span>
-                                            {tx.transactionType === 'purchase' && ` for ${tx.cost} gold`}.
-                                            </p>
-                                            <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(tx.timestamp.seconds * 1000), { addSuffix: true })}</p>
-                                        </div>
-                                    ))}
-                                </CardContent>
-                            </Card>
                         </div>
                     </div>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <History className="h-6 w-6" />
+                                Transaction Log
+                            </CardTitle>
+                            <CardDescription>The most recent Reward purchases and uses.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3 max-h-96 overflow-y-auto">
+                            {transactions.length === 0 && <p className="text-muted-foreground text-sm text-center">No transactions yet.</p>}
+                            {transactions.map(tx => (
+                                <div key={tx.id} className="text-sm border-b pb-2">
+                                    <p><span className="font-bold">{tx.characterName}</span> {tx.transactionType === 'purchase' ? 'purchased' : 'used'} <span className="font-semibold text-primary">{tx.boonName}</span>
+                                    {tx.transactionType === 'purchase' && ` for ${tx.cost} gold`}.
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(tx.timestamp.seconds * 1000), { addSuffix: true })}</p>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
                 </div>
             </main>
         </div>
