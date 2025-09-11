@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
@@ -88,6 +88,18 @@ export default function BoonsPage() {
         };
     }, [teacher, toast]);
     
+    const sortedBoons = useMemo(() => {
+        return [...boons].sort((a, b) => {
+            const aVisible = a.isVisibleToStudents ?? false;
+            const bVisible = b.isVisibleToStudents ?? false;
+            if (aVisible === bVisible) {
+                // If visibility is the same, sort by creation date (already done by query)
+                return 0; 
+            }
+            return aVisible ? -1 : 1; // Visible items first
+        });
+    }, [boons]);
+
     const handlePopulateBoons = async () => {
         if (!teacher) return;
         setIsPopulating(true);
@@ -182,7 +194,7 @@ export default function BoonsPage() {
                             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                                 {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-64" />)}
                             </div>
-                        ) : boons.length === 0 && pendingRequests.length === 0 ? (
+                        ) : boons.length === 0 ? (
                             <Card className="text-center py-20">
                                 <CardHeader>
                                     <CardTitle>The Workshop is Empty</CardTitle>
@@ -200,7 +212,7 @@ export default function BoonsPage() {
                             </Card>
                         ) : (
                             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                                {boons.map(boon => (
+                                {sortedBoons.map(boon => (
                                     <Card key={boon.id} className={cn("flex flex-col transition-all", !boon.isVisibleToStudents && 'bg-muted/50 border-dashed')}>
                                         <CardHeader>
                                             <div className="aspect-square relative w-full bg-secondary rounded-md overflow-hidden">
@@ -267,17 +279,11 @@ export default function BoonsPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-2">
-                            {pendingRequests.length > 0 && (
-                                <Button onClick={handleApproveAll} disabled={isProcessingRequest === 'all'}>
-                                    {isProcessingRequest === 'all' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
-                                    Approve All ({pendingRequests.length})
-                                </Button>
-                             )}
-                            <div className="space-y-2 max-h-80 overflow-y-auto">
-                            {pendingRequests.length === 0 ? (
+                             {pendingRequests.length === 0 ? (
                                 <p className="text-muted-foreground text-center py-4">No pending requests.</p>
                             ) : (
-                                pendingRequests.map(req => (
+                                <div className="space-y-2 max-h-80 overflow-y-auto">
+                                {pendingRequests.map(req => (
                                     <div key={req.id} className="flex items-center justify-between p-3 border rounded-lg">
                                         <div>
                                             <p className="font-bold">{req.characterName}</p>
@@ -295,9 +301,9 @@ export default function BoonsPage() {
                                             </Button>
                                         </div>
                                     </div>
-                                ))
+                                ))}
+                                </div>
                             )}
-                            </div>
                         </CardContent>
                     </Card>
                     <Card>
