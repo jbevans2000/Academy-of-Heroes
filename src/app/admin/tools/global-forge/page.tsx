@@ -651,10 +651,24 @@ export default function GlobalForgePage() {
     const [editingBody, setEditingBody] = useState<Partial<BaseBody> | null>(null);
     const [bodyToDelete, setBodyToDelete] = useState<BaseBody | null>(null);
     const [isDeletingBody, setIsDeletingBody] = useState(false);
+    
+    // Filter State
+    const [filterSet, setFilterSet] = useState('all');
 
     const existingSetNames = useMemo(() => {
         return armorSets.map(s => s.name).sort((a, b) => a.localeCompare(b));
     }, [armorSets]);
+    
+    const uniqueSetNames = useMemo(() => {
+       const names = new Set(armorPieces.map(p => p.setName).filter(Boolean));
+       return Array.from(names).sort();
+    }, [armorPieces]);
+
+    const filteredArmorPieces = useMemo(() => {
+        if (filterSet === 'all') return armorPieces;
+        if (filterSet === 'none') return armorPieces.filter(p => !p.setName);
+        return armorPieces.filter(p => p.setName === filterSet);
+    }, [filterSet, armorPieces]);
 
 
     useEffect(() => {
@@ -924,14 +938,26 @@ export default function GlobalForgePage() {
                             </div>
                             <div className="lg:col-span-1">
                                <Card>
-                                    <CardHeader className="flex-row justify-between items-start">
-                                        <div>
+                                    <CardHeader>
+                                        <div className="flex-row justify-between items-start">
                                             <CardTitle className="flex items-center gap-2"><Diamond className="text-primary"/> Armor Management</CardTitle>
                                             <CardDescription>Manage all armor pieces available in the game.</CardDescription>
                                         </div>
-                                        <div className="flex gap-2">
-                                            <Button onClick={() => setIsSetCreatorOpen(true)} variant="secondary"><PlusCircle className="mr-2 h-4 w-4" /> Create Set</Button>
-                                            <Button onClick={handleNewArmor}><PlusCircle className="mr-2 h-4 w-4" /> Create Armor</Button>
+                                         <div className="flex gap-2 items-center pt-4">
+                                            <Select value={filterSet} onValueChange={setFilterSet}>
+                                                <SelectTrigger className="w-[180px]">
+                                                    <SelectValue placeholder="Filter by set..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all">All Sets</SelectItem>
+                                                    <SelectItem value="none">No Set</SelectItem>
+                                                    {uniqueSetNames.map(name => (
+                                                        <SelectItem key={name} value={name}>{name}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <Button onClick={() => setIsSetCreatorOpen(true)} variant="secondary" size="sm"><PlusCircle className="mr-2 h-4 w-4" /> New Set</Button>
+                                            <Button onClick={handleNewArmor} size="sm"><PlusCircle className="mr-2 h-4 w-4" /> New Armor</Button>
                                         </div>
                                     </CardHeader>
                                     <CardContent>
@@ -940,11 +966,11 @@ export default function GlobalForgePage() {
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <Skeleton className="h-64" /> <Skeleton className="h-64" />
                                             </div>
-                                        ) : armorPieces.length === 0 ? (
+                                        ) : filteredArmorPieces.length === 0 ? (
                                             <p className="text-center text-muted-foreground py-10">The forge is empty. Create your first armor piece!</p>
                                         ) : (
                                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-4">
-                                                {armorPieces.map(piece => (
+                                                {filteredArmorPieces.map(piece => (
                                                     <Card key={piece.id} className="flex flex-col relative">
                                                         <div className="absolute top-2 left-2 z-10">
                                                             {piece.isPublished ? (
