@@ -94,6 +94,7 @@ export type Student = {
     hasUnreadMessages?: boolean; // Denormalized field for quick UI updates
     dailyDuelCount?: number;
     lastDuelCountReset?: any; // Firestore ServerTimestamp
+    isChampion?: boolean;
 }
 
 export type PendingStudent = {

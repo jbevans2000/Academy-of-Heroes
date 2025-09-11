@@ -3,13 +3,17 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Star, Coins, Trophy, Heart, Zap, Shield, Wand2, Flame, Briefcase } from 'lucide-react';
+import { Star, Coins, Trophy, Heart, Zap, Shield, Wand2, Flame, Briefcase, UserCheck } from 'lucide-react';
 import type { ClassType, Student, Company } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { PowersSheet } from './powers-sheet';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Image from 'next/image';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { setChampionStatus } from '@/ai/flows/manage-student';
 
 interface StatsCardProps {
   student: Student;
@@ -25,6 +29,9 @@ const classIconMap: { [key in ClassType]?: React.ReactNode } = {
 export function StatsCard({ student }: StatsCardProps) {
   const [isPowersSheetOpen, setIsPowersSheetOpen] = useState(false);
   const [company, setCompany] = useState<Company | null>(null);
+  const [isChampion, setIsChampion] = useState(student.isChampion || false);
+  const [isUpdatingChampion, setIsUpdatingChampion] = useState(false);
+  const { toast } = useToast();
 
   const { xp, gold, level, hp, mp, maxHp, maxMp, characterName, studentName, class: characterClass } = student;
 
@@ -55,6 +62,37 @@ export function StatsCard({ student }: StatsCardProps) {
           isMounted = false;
       };
   }, [student.companyId, student.teacherUid]);
+  
+  useEffect(() => {
+    setIsChampion(student.isChampion || false);
+  }, [student.isChampion]);
+
+  const handleChampionToggle = async (checked: boolean) => {
+    if (!student.teacherUid || !student.uid) return;
+    setIsUpdatingChampion(true);
+    setIsChampion(checked); // Optimistic update
+    try {
+      const result = await setChampionStatus({
+        teacherUid: student.teacherUid,
+        studentUid: student.uid,
+        isChampion: checked,
+      });
+      if (!result.success) {
+        setIsChampion(!checked); // Revert on failure
+        throw new Error(result.error);
+      }
+      toast({
+          title: "Champion Status Updated",
+          description: `You are now ${checked ? 'a Champion' : 'no longer a Champion'}.`
+      });
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: "Update Failed", description: error.message });
+        setIsChampion(!checked); // Revert on failure
+    } finally {
+        setIsUpdatingChampion(false);
+    }
+  }
+
 
   return (
     <>
@@ -128,14 +166,26 @@ export function StatsCard({ student }: StatsCardProps) {
                 <p className="text-xl font-bold">{xp.toLocaleString()}</p>
               </div>
             </div>
-            <div className="flex flex-col items-center justify-center space-y-2 bg-secondary/80 p-4 rounded-lg col-span-2 sm:col-span-1">
+             <div className="flex flex-col items-center justify-center space-y-2 bg-secondary/80 p-4 rounded-lg col-span-2 sm:col-span-1">
               <Coins className="h-8 w-8 text-amber-500" />
               <div>
                 <p className="text-sm text-muted-foreground">Gold</p>
                 <p className="text-xl font-bold">{gold.toLocaleString()}</p>
               </div>
             </div>
-            <div className="flex flex-col items-center justify-center space-y-4 bg-secondary/80 p-4 rounded-lg col-span-2 sm:col-span-2">
+            <div className="flex flex-col items-center justify-center space-y-2 bg-secondary/80 p-4 rounded-lg col-span-2 sm:col-span-1">
+                <div className="flex items-center space-x-2">
+                    <UserCheck className="h-8 w-8 text-purple-500" />
+                    <Label htmlFor="champion-status" className="font-bold">Champion Status</Label>
+                    <Switch
+                        id="champion-status"
+                        checked={isChampion}
+                        onCheckedChange={handleChampionToggle}
+                        disabled={isUpdatingChampion}
+                    />
+                </div>
+            </div>
+            <div className="flex flex-col items-center justify-center space-y-4 bg-secondary/80 p-4 rounded-lg col-span-2 sm:col-span-1">
                 <Button
                     size="lg"
                     variant="outline"

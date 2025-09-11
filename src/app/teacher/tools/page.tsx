@@ -1,11 +1,10 @@
 
-
 'use client';
 
 import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Timer, Volume2, Users, Dices, Wrench, Swords, ScrollText, DatabaseZap, Sparkles, ImageIcon, Archive, Edit, Diamond, Box } from 'lucide-react';
+import { ArrowLeft, Timer, Volume2, Users, Dices, Wrench, Swords, ScrollText, DatabaseZap, Sparkles, ImageIcon, Archive, Edit, Diamond, Box, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
@@ -35,6 +34,14 @@ const tools = [
         path: '/teacher/tools/random-student',
         disabled: false,
         bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-01eb6e6f-c49f-49a6-8296-3b97d092a4c2.jpg?alt=media&token=6fe54bce-fef4-4ad1-92a2-fdef04425008',
+    },
+    {
+        title: 'Find The Champion',
+        description: 'Select a champion to answer on behalf of their company or the entire guild.',
+        icon: <ShieldCheck className="h-10 w-10 text-primary" />,
+        path: '/teacher/tools/find-the-champion',
+        disabled: false,
+        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2FFind%20The%20Champion.jpg?alt=media&token=5b2b2a63-a2a4-4f0f-8f81-2292f2c8d2c8',
     },
     {
         title: 'A Task from the Throne',

@@ -64,6 +64,23 @@ export async function updateStudentNotes(input: UpdateNotesInput): Promise<Actio
   }
 }
 
+interface ChampionStatusInput {
+  teacherUid: string;
+  studentUid: string;
+  isChampion: boolean;
+}
+
+export async function setChampionStatus(input: ChampionStatusInput): Promise<ActionResponse> {
+  try {
+    const studentRef = doc(db, 'teachers', input.teacherUid, 'students', input.studentUid);
+    await updateDoc(studentRef, { isChampion: input.isChampion });
+    return { success: true };
+  } catch (e: any) {
+    console.error("Error in setChampionStatus:", e);
+    return { success: false, error: e.message || 'Failed to update champion status.' };
+  }
+}
+
 interface ToggleVisibilityInput {
   teacherUid: string;
   studentUid: string;
