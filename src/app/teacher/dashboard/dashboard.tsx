@@ -256,11 +256,13 @@ export default function Dashboard() {
   };
 
   const handleSelectAllToggle = () => {
-     const allSortedUids = students.filter(s => !s.isArchived).map(s => s.uid);
-    if (selectedStudents.length === allSortedUids.length) {
+    const currentlyVisibleStudents = students.filter(s => !s.isArchived && (showHidden ? s.isHidden : !s.isHidden));
+    const allVisibleUids = currentlyVisibleStudents.map(s => s.uid);
+
+    if (selectedStudents.length === allVisibleUids.length) {
       setSelectedStudents([]);
     } else {
-      setSelectedStudents(allSortedUids);
+      setSelectedStudents(allVisibleUids);
     }
   };
 
@@ -544,10 +546,9 @@ export default function Dashboard() {
   
     const handleCloseMessageCenter = async () => {
         setIsMessageCenterOpen(false);
-        if (teacher && hasUnread) {
+        if (teacher && teacherData?.hasUnreadTeacherMessages) {
             const teacherRef = doc(db, 'teachers', teacher.uid);
             await updateDoc(teacherRef, { hasUnreadTeacherMessages: false });
-            setHasUnread(false);
         }
     };
   
@@ -685,7 +686,7 @@ export default function Dashboard() {
             variant="outline"
             className="text-black border-black"
             >
-            {selectedStudents.length === students.filter(s => !s.isArchived).length ? 'Deselect All' : 'Select All'}
+            {selectedStudents.length === students.filter(s => !s.isArchived && (showHidden ? s.isHidden : !s.isHidden)).length ? 'Deselect All' : 'Select All'}
             </Button>
             
             <DropdownMenu>
@@ -844,7 +845,7 @@ export default function Dashboard() {
              <Button variant="outline" onClick={() => handleOpenMessageCenter()} className="relative text-black border-black">
                 <MessageSquare className="mr-2 h-5 w-5" />
                 Message Center
-                {hasUnread && <span className="absolute top-1 right-1 flex h-3 w-3 rounded-full bg-red-600 animate-pulse" />}
+                {teacherData?.hasUnreadTeacherMessages && <span className="absolute top-1 right-1 flex h-3 w-3 rounded-full bg-red-600 animate-pulse" />}
             </Button>
 
             <Dialog open={isXpDialogOpen} onOpenChange={setIsXpDialogOpen}>
@@ -946,8 +947,8 @@ export default function Dashboard() {
             </AlertDialog>
             <TeacherMessageCenter 
                 teacher={teacher} 
-                students={students} 
-                isOpen={isMessageCenterOpen} 
+                students={students}
+                isOpen={isMessageCenterOpen}
                 onOpenChange={handleCloseMessageCenter}
                 initialStudent={initialStudentToView}
                 onConversationSelect={setInitialStudentToView}
