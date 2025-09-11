@@ -53,7 +53,10 @@ export function TeacherMessageCenter({
 
     // Sort students: unread first, then alphabetically by student name
     const sortedStudents = useMemo(() => {
-        return [...students].sort((a, b) => {
+        // Filter out hidden students first
+        const visibleStudents = students.filter(s => !s.isHidden);
+
+        return visibleStudents.sort((a, b) => {
             const aHasUnread = a.hasUnreadMessages ?? false;
             const bHasUnread = b.hasUnreadMessages ?? false;
 
