@@ -542,7 +542,8 @@ export default function TeacherLiveBattlePage() {
         const currentLiveState = currentLiveSnap.data() as LiveBattleState;
         
         const roundEvents: RoundEvent[] = [];
-
+        
+        // Decrement any active shields
         const currentShields = currentLiveState.shielded || {};
         const newShields: { [uid: string]: { roundsRemaining: number; casterName: string; } } = {};
         for (const uid in currentShields) {
@@ -566,8 +567,13 @@ export default function TeacherLiveBattlePage() {
             }
         }
         
+        // This is the bug fix: Initialize powerDamage based on what was already queued.
         let powerDamage = isDivinationSkip ? (liveState.lastRoundPowerDamage || 0) : 0;
-        const powersUsedThisRound: string[] = isDivinationSkip ? (liveState.lastRoundPowersUsed || []) : [];
+        for (const power of currentLiveState.queuedPowers || []) {
+            powerDamage += power.damage;
+        }
+
+        const powersUsedThisRound: string[] = isDivinationSkip ? (liveState.lastRoundPowersUsed || []) : (currentLiveState.queuedPowers || []).map(p => `${p.powerName} (${p.damage} dmg)`);
         const battleLogRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
         
         let baseDamageFromAnswers = 0;
@@ -683,8 +689,6 @@ export default function TeacherLiveBattlePage() {
                 let shouldApplyDamage = power.powerName === 'Martial Sacrifice' || casterResponse?.isCorrect;
 
                 if (shouldApplyDamage) {
-                    powerDamage += power.damage;
-                    powersUsedThisRound.push(`${power.powerName} (${power.damage} dmg)`);
                     batch.set(doc(battleLogRef), {
                         round: liveState.currentQuestionIndex + 1,
                         casterName: casterName,
@@ -1610,5 +1614,3 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
-
-    
