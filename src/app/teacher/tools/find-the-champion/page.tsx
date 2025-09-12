@@ -7,7 +7,7 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, RefreshCw, Loader2, ShieldCheck, Users } from 'lucide-react';
-import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student, Company } from '@/lib/data';
 import Image from 'next/image';
@@ -88,49 +88,51 @@ export default function FindTheChampionPage() {
     }, [teacher]);
     
     const handleSelectChampions = (mode: 'guild' | 'company') => {
-        const candidates = students.filter(s => s.isChampion === true && !s.isHidden && !s.isArchived);
-
-        if (candidates.length === 0) {
-            setPickedChampions([]);
-            setPickedCaption("No champions have volunteered! Make sure students have toggled their Champion Status ON in their dashboard.");
-            return;
-        }
-
         setPickedChampions([]);
         setIsShuffling(true);
-        const caption = selectionCaptions[Math.floor(Math.random() * selectionCaptions.length)];
-        setPickedCaption(caption);
-
-        let champions: Student[] = [];
-
-        if (mode === 'guild') {
-            const randomIndex = Math.floor(Math.random() * candidates.length);
-            champions = [candidates[randomIndex]];
-        } else { // 'company' mode
-            const championsByCompany: { [companyId: string]: Student[] } = {};
-            candidates.forEach(c => {
-                if (c.companyId) {
-                    if (!championsByCompany[c.companyId]) {
-                        championsByCompany[c.companyId] = [];
-                    }
-                    championsByCompany[c.companyId].push(c);
-                }
-            });
-
-            for (const companyId in championsByCompany) {
-                const companyCandidates = championsByCompany[companyId];
-                if (companyCandidates.length > 0) {
-                    const randomIndex = Math.floor(Math.random() * companyCandidates.length);
-                    champions.push(companyCandidates[randomIndex]);
-                }
-            }
-
-            if (champions.length === 0) {
-                setPickedCaption("No champions in any company have volunteered.");
-            }
-        }
 
         setTimeout(() => {
+            const candidates = students.filter(s => s.isChampion && !s.isHidden && !s.isArchived);
+
+            if (candidates.length === 0) {
+                setPickedChampions([]);
+                setPickedCaption("No champions have volunteered! Make sure students have toggled their Champion Status ON in their dashboard.");
+                setIsShuffling(false);
+                return;
+            }
+
+            const caption = selectionCaptions[Math.floor(Math.random() * selectionCaptions.length)];
+            setPickedCaption(caption);
+
+            let champions: Student[] = [];
+
+            if (mode === 'guild') {
+                const randomIndex = Math.floor(Math.random() * candidates.length);
+                champions = [candidates[randomIndex]];
+            } else { // 'company' mode
+                const championsByCompany: { [companyId: string]: Student[] } = {};
+                candidates.forEach(c => {
+                    if (c.companyId) {
+                        if (!championsByCompany[c.companyId]) {
+                            championsByCompany[c.companyId] = [];
+                        }
+                        championsByCompany[c.companyId].push(c);
+                    }
+                });
+
+                for (const companyId in championsByCompany) {
+                    const companyCandidates = championsByCompany[companyId];
+                    if (companyCandidates.length > 0) {
+                        const randomIndex = Math.floor(Math.random() * companyCandidates.length);
+                        champions.push(companyCandidates[randomIndex]);
+                    }
+                }
+
+                if (champions.length === 0) {
+                    setPickedCaption("No champions in any company have volunteered.");
+                }
+            }
+
             setPickedChampions(champions);
             setIsShuffling(false);
         }, 3000); // 3-second animation
@@ -190,9 +192,9 @@ export default function FindTheChampionPage() {
                                             <style jsx global>{`
                                                 @keyframes shuffle {
                                                     0% { transform: translate(0, 0) rotate(0deg); }
-                                                    25% { transform: translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px) rotate(${Math.random() * 180}deg); }
-                                                    50% { transform: translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px) rotate(${Math.random() * 360}deg); }
-                                                    75% { transform: translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px) rotate(${Math.random() * 180}deg); }
+                                                    25% { transform: translate(${'${Math.random() * 200 - 100}'}px, ${'${Math.random() * 200 - 100}'}px) rotate(${'${Math.random() * 180}'}deg); }
+                                                    50% { transform: translate(${'${Math.random() * 200 - 100}'}px, ${'${Math.random() * 200 - 100}'}px) rotate(${'${Math.random() * 360}'}deg); }
+                                                    75% { transform: translate(${'${Math.random() * 200 - 100}'}px, ${'${Math.random() * 200 - 100}'}px) rotate(${'${Math.random() * 180}'}deg); }
                                                     100% { transform: translate(0, 0) rotate(0deg); }
                                                 }
                                             `}</style>
