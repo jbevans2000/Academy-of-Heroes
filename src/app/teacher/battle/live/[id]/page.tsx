@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -567,17 +566,34 @@ export default function TeacherLiveBattlePage() {
             }
         }
         
-        // This is the bug fix: Initialize powerDamage based on what was already queued.
-        let powerDamage = isDivinationSkip ? (liveState.lastRoundPowerDamage || 0) : 0;
-        for (const power of currentLiveState.queuedPowers || []) {
-            powerDamage += power.damage;
-        }
-
-        const powersUsedThisRound: string[] = isDivinationSkip ? (liveState.lastRoundPowersUsed || []) : (currentLiveState.queuedPowers || []).map(p => `${p.powerName} (${p.damage} dmg)`);
+        let powerDamage = 0;
+        const powersUsedThisRound: string[] = [];
         const battleLogRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
         
         let baseDamageFromAnswers = 0;
         let finalRoundResponses = [...roundResponses];
+
+        // --- POWER DAMAGE LOGIC ---
+        if (!isDivinationSkip) {
+            for (const power of currentLiveState.queuedPowers || []) {
+                const casterResponse = finalRoundResponses.find(res => res.studentUid === power.casterUid);
+                const casterName = casterResponse?.characterName || studentMap.get(power.casterUid)?.characterName || 'Unknown Hero';
+                
+                const isCorrect = casterResponse?.isCorrect ?? false;
+                const shouldApplyDamage = (power.powerName === 'Wildfire' && isCorrect) || power.powerName !== 'Wildfire';
+                
+                if (shouldApplyDamage) {
+                    powerDamage += power.damage;
+                    powersUsedThisRound.push(`${power.powerName} (${power.damage} dmg)`);
+                     batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: casterName, powerName: power.powerName, description: `Dealt ${power.damage} damage.`, timestamp: serverTimestamp() });
+                } else {
+                     batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: casterName, powerName: power.powerName, description: 'Fizzled due to incorrect answer.', timestamp: serverTimestamp() });
+                }
+            }
+        } else {
+             powerDamage = liveState.lastRoundPowerDamage || 0;
+             powersUsedThisRound.push(...(liveState.lastRoundPowersUsed || []));
+        }
 
         const interceptors = currentLiveState.intercepting || {};
         let redirectedDamageForGuardians: { [uid: string]: number } = {};
@@ -614,20 +630,16 @@ export default function TeacherLiveBattlePage() {
             }
             
              for(const student of studentsInBattle) {
-                if (student.guardedBy && damageToTakeByStudent[student.uid] > 0) {
-                    const guardianUid = student.guardedBy;
+                const guardianUid = student.guardedBy;
+                if (guardianUid && damageToTakeByStudent[student.uid] > 0) {
                     const guardianName = studentMap.get(guardianUid)?.characterName || 'A Guardian';
                     const damageRedirected = damageToTakeByStudent[student.uid];
                     
                     roundEvents.push({ studentUid: student.uid, message: `${guardianName} protected you from ${damageRedirected} damage!` });
-                    if(guardianUid) {
-                        roundEvents.push({ studentUid: guardianUid, message: `Your Guard protected ${student.characterName}! You took ${damageRedirected} additional damage on your ally's behalf!` });
-                    }
+                    roundEvents.push({ studentUid: guardianUid, message: `Your Guard protected ${student.characterName}! You took ${damageRedirected} additional damage on your ally's behalf!` });
                     
-                    if (guardianUid) {
-                        if (!redirectedDamageForGuardians[guardianUid]) redirectedDamageForGuardians[guardianUid] = 0;
-                        redirectedDamageForGuardians[guardianUid] += damageRedirected;
-                    }
+                    if (!redirectedDamageForGuardians[guardianUid]) redirectedDamageForGuardians[guardianUid] = 0;
+                    redirectedDamageForGuardians[guardianUid] += damageRedirected;
                     
                     delete damageToTakeByStudent[student.uid];
                 }
@@ -680,33 +692,6 @@ export default function TeacherLiveBattlePage() {
                 baseDamageFromAnswers++;
             }
         });
-
-        if (!isDivinationSkip) {
-            for (const power of liveState.queuedPowers || []) {
-                const casterResponse = finalRoundResponses.find(res => res.studentUid === power.casterUid);
-                const casterName = casterResponse?.characterName || studentMap.get(power.casterUid)?.characterName || 'Unknown Hero';
-                
-                let shouldApplyDamage = power.powerName === 'Martial Sacrifice' || casterResponse?.isCorrect;
-
-                if (shouldApplyDamage) {
-                    batch.set(doc(battleLogRef), {
-                        round: liveState.currentQuestionIndex + 1,
-                        casterName: casterName,
-                        powerName: power.powerName,
-                        description: `Dealt ${power.damage} damage.`,
-                        timestamp: serverTimestamp()
-                    });
-                } else {
-                    batch.set(doc(battleLogRef), {
-                        round: liveState.currentQuestionIndex + 1,
-                        casterName: casterName,
-                        powerName: power.powerName,
-                        description: 'Fizzled due to incorrect answer.',
-                        timestamp: serverTimestamp()
-                    });
-                }
-            }
-        }
         
         const elementalFusionCasters = new Set<string>();
         if(currentLiveState.powerUsersThisRound) {
