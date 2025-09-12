@@ -10,7 +10,7 @@
  * - getStudentStatus: Fetches the enabled/disabled status of a student's account.
  * - clearGameLog: Deletes all entries from the game log.
  */
-import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch, getDoc, runTransaction, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch, getDoc, runTransaction, arrayUnion, arrayRemove, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirebaseAdminApp } from '@/lib/firebase-admin';
@@ -84,6 +84,8 @@ export async function setChampionStatus(input: ChampionStatusInput): Promise<Act
         if (isChampion) {
             transaction.set(championsRef, { championUids: arrayUnion(studentUid) }, { merge: true });
         } else {
+            // Here, we use update because we are only removing an element. 
+            // The document must exist if we are removing a UID from it.
             transaction.update(championsRef, { championUids: arrayRemove(studentUid) });
         }
     });
