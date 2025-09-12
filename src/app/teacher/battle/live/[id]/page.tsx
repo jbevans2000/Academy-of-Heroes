@@ -1214,8 +1214,8 @@ export default function TeacherLiveBattlePage() {
                 for (const targetUid of activation.targets) {
                     const targetRef = doc(db, 'teachers', teacherUid!, 'students', targetUid);
                     batch.update(targetRef, {
-                        hp: arrayUnion(boostPerTarget),
-                        maxHp: arrayUnion(boostPerTarget)
+                        hp: increment(boostPerTarget),
+                        maxHp: increment(boostPerTarget)
                     });
                     const targetDoc = await getDoc(targetRef);
                     if(targetDoc.exists()) targetNames.push(targetDoc.data().characterName);
