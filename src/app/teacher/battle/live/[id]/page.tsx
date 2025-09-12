@@ -607,15 +607,15 @@ export default function TeacherLiveBattlePage() {
                  }
             }
             
-            for(const student of studentsInBattle) {
+             for(const student of studentsInBattle) {
                 if (student.guardedBy && damageToTakeByStudent[student.uid] > 0) {
                     const guardianUid = student.guardedBy;
                     const guardianName = studentMap.get(guardianUid)?.characterName || 'A Guardian';
                     const damageRedirected = damageToTakeByStudent[student.uid];
                     
-                    roundEvents.push({ studentUid: student.uid, message: `You were protected by ${guardianName}'s Guard!` });
+                    roundEvents.push({ studentUid: student.uid, message: `${guardianName} protected you from ${damageRedirected} damage!` });
                     if(guardianUid) {
-                        roundEvents.push({ studentUid: guardianUid, message: `Your Guard protected ${student.characterName}! You took ${damageRedirected} additional damage.` });
+                        roundEvents.push({ studentUid: guardianUid, message: `Your Guard protected ${student.characterName}! You took ${damageRedirected} additional damage on your ally's behalf!` });
                     }
                     
                     if (guardianUid) {
@@ -1610,3 +1610,5 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
+
+    

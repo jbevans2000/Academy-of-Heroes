@@ -386,3 +386,5 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
     </>
   );
 }
+
+    
