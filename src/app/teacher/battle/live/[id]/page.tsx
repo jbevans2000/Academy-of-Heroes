@@ -882,7 +882,7 @@ export default function TeacherLiveBattlePage() {
         if (!liveState || !battle || !teacherUid || (liveState.status !== 'IN_PROGRESS' && liveState.status !== 'ROUND_ENDING')) return;
 
         const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
-        const powerActivationsRef = collection(db, 'teachers', teacherUid, `liveBattles/active-battle/powerActivations`);
+        const powerActivationsRef = collection(db, 'teachers', teacherUid, `liveBattles/${battleId}/powerActivations`);
         const battleLogRef = collection(db, 'teachers', teacherUid!, 'liveBattles/active-battle/battleLog');
         const q = query(powerActivationsRef);
 
@@ -1434,27 +1434,27 @@ export default function TeacherLiveBattlePage() {
                     });
                 }
             } else if (activation.powerName === 'Arcane Shield') {
-                 if (!activation.targets || activation.targets.length === 0) return;
-                 const targetNames: string[] = [];
-                 for (const targetUid of activation.targets) {
-                    const targetData = allStudents.find(s => s.uid === targetUid);
-                    if (targetData) {
-                       targetNames.push(targetData.characterName);
-                       batch.update(liveBattleRef, {
-                           [`shielded.${targetUid}`]: { roundsRemaining: 3, casterName: activation.studentName }
-                       });
-                    }
-                 }
-                 batch.update(liveBattleRef, {
-                    powerEventMessage: `${activation.studentName} casts Arcane Shield on ${targetNames.join(', ')}!`,
-                 });
-                 batch.set(doc(battleLogRef), {
-                    round: liveState.currentQuestionIndex + 1,
-                    casterName: activation.studentName,
-                    powerName: activation.powerName,
-                    description: `Shielded ${targetNames.join(', ')} for 3 rounds.`,
-                    timestamp: serverTimestamp()
+                if (!activation.targets || activation.targets.length === 0) return;
+                const targetNames: string[] = [];
+                for (const targetUid of activation.targets) {
+                   const targetData = allStudents.find(s => s.uid === targetUid);
+                   if (targetData) {
+                      targetNames.push(targetData.characterName);
+                      batch.update(liveBattleRef, {
+                          [`shielded.${targetUid}`]: { roundsRemaining: 3, casterName: activation.studentName }
+                      });
+                   }
+                }
+                batch.update(liveBattleRef, {
+                   powerEventMessage: `${activation.studentName} casts Arcane Shield on ${targetNames.join(', ')}!`,
                 });
+                batch.set(doc(battleLogRef), {
+                   round: liveState.currentQuestionIndex + 1,
+                   casterName: activation.studentName,
+                   powerName: activation.powerName,
+                   description: `Shielded ${targetNames.join(', ')} for 3 rounds.`,
+                   timestamp: serverTimestamp()
+               });
             } else if (activation.powerName === 'Guard') {
                 if (!activation.targets || activation.targets.length === 0) return;
                  const targetNames: string[] = [];
@@ -1926,5 +1926,3 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
-
-    
