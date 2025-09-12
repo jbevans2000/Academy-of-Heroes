@@ -1194,13 +1194,13 @@ export default function TeacherLiveBattlePage() {
                         batch.update(liveBattleRef, { powerEventMessage: `${activation.studentName} casts Guard, protecting ${targetNames.join(', ')}!` });
                         batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: activation.studentName, powerName: activation.powerName, description: `Protected ${targetNames.join(', ')}.`, timestamp: serverTimestamp() });
                     } else if (activation.powerName === 'Intercept') {
-                        const eligibleTargets = allStudents.filter(s => s.inBattle && s.uid !== activation.studentUid && !s.guardedBy && (!s.shielded || s.shielded.roundsRemaining <= 0));
+                        const eligibleTargets = allStudents.filter(s => s.inBattle && s.hp > 0 && s.uid !== activation.studentUid && !s.guardedBy);
                         if (eligibleTargets.length > 0) {
                             const target = eligibleTargets[Math.floor(Math.random() * eligibleTargets.length)];
-                            batch.update(liveBattleRef, { [`intercepting.${activation.studentUid}`]: target.uid, powerEventMessage: `${activation.studentName} is intercepting the attack on ${target.characterName}!`, targetedEvent: { targetUid: target.uid, message: `${activation.studentName} is assisting you in your attack!` }, });
+                            const targetRef = doc(db, 'teachers', teacherUid!, 'students', target.uid);
+                            batch.update(targetRef, { guardedBy: activation.studentUid });
+                            batch.update(liveBattleRef, { powerEventMessage: `${activation.studentName} intercepts for ${target.characterName}!` });
                             batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: activation.studentName, powerName: activation.powerName, description: `Intercepted for ${target.characterName}.`, timestamp: serverTimestamp() });
-                        } else {
-                            batch.update(liveBattleRef, { powerEventMessage: `${activation.studentName} finds no allies to protect and channels additional power into their strike!`, targetedEvent: { targetUid: activation.studentUid, message: "There are no allies to protect, so you channel additional power into your strike!" }, });
                         }
                     } else if (activation.powerName === 'Zen Shield') {
                         const casts = battleData.zenShieldCasts?.[activation.studentUid] || 0;
