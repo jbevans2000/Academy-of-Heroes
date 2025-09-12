@@ -74,16 +74,16 @@ export default function FindTheChampionPage() {
     }, [teacher]);
     
     const handleSelectChampions = (mode: 'guild' | 'company') => {
+        setIsShuffling(true);
         setPickedChampions([]);
         setPickedCaption('');
-        setIsShuffling(true);
 
         setTimeout(() => {
             const candidates = students.filter(s => s.isChampion && !s.isHidden && !s.isArchived);
 
             if (candidates.length === 0) {
-                setPickedChampions([]);
                 setPickedCaption("No champions have volunteered! Make sure students have toggled their Champion Status ON in their dashboard.");
+                setPickedChampions([]);
                 setIsShuffling(false);
                 return;
             }
@@ -117,7 +117,7 @@ export default function FindTheChampionPage() {
                     setPickedCaption("No champions in any company have volunteered.");
                 }
             }
-
+            
             setPickedChampions(champions);
             setPickedCaption(caption);
             setIsShuffling(false);
