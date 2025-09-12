@@ -7,7 +7,7 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, RefreshCw, Loader2, ShieldCheck, Users } from 'lucide-react';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, getDocs, documentId } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student, Company } from '@/lib/data';
 import Image from 'next/image';
@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 
 const runeImageSrc = 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-1b1a5535-ccec-4d95-b6ba-5199715edc4c.jpg?alt=media&token=b0a366fe-a4d4-46d7-b5f3-c13df8c2e69a';
-const numRunes = 12; // Number of runes to display in the animation
+const numRunes = 12;
 
 const selectionCaptions = [
     "The runes have chosen a champion!",
@@ -27,7 +27,8 @@ const selectionCaptions = [
 
 export default function FindTheChampionPage() {
     const router = useRouter();
-    const [students, setStudents] = useState<Student[]>([]);
+    const [championUids, setChampionUids] = useState<string[]>([]);
+    const [championDetails, setChampionDetails] = useState<Student[]>([]);
     const [companies, setCompanies] = useState<Company[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isShuffling, setIsShuffling] = useState(false);
@@ -49,29 +50,47 @@ export default function FindTheChampionPage() {
     useEffect(() => {
         if (!teacher) return;
         
-        const studentsQuery = query(collection(db, "teachers", teacher.uid, "students"), where('isArchived', '!=', true));
-        const studentsUnsubscribe = onSnapshot(studentsQuery, (snapshot) => {
-            const studentsData = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
-            setStudents(studentsData);
-            setIsLoading(false);
-        }, (error) => {
-            console.error("Error fetching students in real-time:", error);
+        // Listen to the new 'active' champions document
+        const championsRef = doc(db, "teachers", teacher.uid, "champions", "active");
+        const unsubChampions = onSnapshot(championsRef, (docSnap) => {
+            if (docSnap.exists()) {
+                setChampionUids(docSnap.data().championUids || []);
+            } else {
+                setChampionUids([]);
+            }
             setIsLoading(false);
         });
 
+        // Still need companies for displaying names
         const companiesQuery = collection(db, "teachers", teacher.uid, "companies");
-        const companiesUnsubscribe = onSnapshot(companiesQuery, (snapshot) => {
+        const unsubCompanies = onSnapshot(companiesQuery, (snapshot) => {
              const companiesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
             setCompanies(companiesData);
-        }, (error) => {
-            console.error("Error fetching companies in real-time:", error);
         });
 
         return () => {
-            studentsUnsubscribe();
-            companiesUnsubscribe();
+            unsubChampions();
+            unsubCompanies();
         };
     }, [teacher]);
+    
+    // Fetch details for the champion UIDs
+    useEffect(() => {
+        if (!teacher || championUids.length === 0) {
+            setChampionDetails([]);
+            return;
+        }
+
+        const studentsRef = collection(db, 'teachers', teacher.uid, 'students');
+        const q = query(studentsRef, where(documentId(), 'in', championUids));
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const details = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
+            setChampionDetails(details.filter(s => !s.isHidden));
+        });
+        
+        return () => unsubscribe();
+    }, [teacher, championUids]);
     
     const handleSelectChampions = (mode: 'guild' | 'company') => {
         setIsShuffling(true);
@@ -79,8 +98,7 @@ export default function FindTheChampionPage() {
         setPickedCaption('');
 
         setTimeout(() => {
-            const candidates = students.filter(s => s.isChampion && !s.isHidden);
-
+            const candidates = championDetails;
             if (candidates.length === 0) {
                 setPickedCaption("No champions have volunteered! Make sure students have toggled their Champion Status ON in their dashboard.");
                 setPickedChampions([]);
@@ -131,7 +149,7 @@ export default function FindTheChampionPage() {
              <div 
                 className="absolute inset-0 -z-10"
                 style={{
-                    backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2FFind%20The%20Champion.jpg?alt=media&token=5b2b2a63-a2a4-4f0f-8f81-2292f2c8d2c8')`,
+                    backgroundImage: `url('${runeImageSrc}')`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                 }}

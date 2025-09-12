@@ -10,7 +10,7 @@
  * - getStudentStatus: Fetches the enabled/disabled status of a student's account.
  * - clearGameLog: Deletes all entries from the game log.
  */
-import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch, getDoc, runTransaction } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch, getDoc, runTransaction, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirebaseAdminApp } from '@/lib/firebase-admin';
@@ -71,9 +71,22 @@ interface ChampionStatusInput {
 }
 
 export async function setChampionStatus(input: ChampionStatusInput): Promise<ActionResponse> {
+  const { teacherUid, studentUid, isChampion } = input;
+  const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
+  const championsRef = doc(db, 'teachers', teacherUid, 'champions', 'active');
+  
   try {
-    const studentRef = doc(db, 'teachers', input.teacherUid, 'students', input.studentUid);
-    await updateDoc(studentRef, { isChampion: input.isChampion });
+    await runTransaction(db, async (transaction) => {
+        // First, update the student's document
+        transaction.update(studentRef, { isChampion: isChampion });
+
+        // Then, update the centralized champions document
+        if (isChampion) {
+            transaction.set(championsRef, { championUids: arrayUnion(studentUid) }, { merge: true });
+        } else {
+            transaction.update(championsRef, { championUids: arrayRemove(studentUid) });
+        }
+    });
     return { success: true };
   } catch (e: any) {
     console.error("Error in setChampionStatus:", e);
