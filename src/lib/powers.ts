@@ -106,13 +106,11 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Absorb',
-      description: 'Throw yourself in front of the enemy, protecting your most wounded allies by absorbing a chosen amount of damage.',
+      description: 'Convert your own life force into magical energy. For every 2 HP sacrificed, you will gain 1 MP.',
       level: 5,
-      mpCost: 10,
+      mpCost: 0,
       type: 'support',
       isMultiStep: true,
-      target: 'ally',
-      targetSelf: false,
     },
     {
       name: 'Berserker Strike',

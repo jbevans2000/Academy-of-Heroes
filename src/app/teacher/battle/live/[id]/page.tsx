@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -607,9 +608,8 @@ export default function TeacherLiveBattlePage() {
             roundEvents.push({ studentUid: interceptorUid, message: `You bravely intercepted the attack for ${targetName}!` });
             roundEvents.push({ studentUid: targetUid, message: `${interceptorName} bravely intercepted the attack for you!` });
 
-
             if (interceptorResponse?.isCorrect) {
-                powerDamage += 5;
+                baseDamageFromAnswers++; // Intercept correct answer deals base damage
             }
         }
         
@@ -888,27 +888,15 @@ export default function TeacherLiveBattlePage() {
                             batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: activation.studentName, powerName: activation.powerName, description: 'Fizzled and had no effect.', timestamp: serverTimestamp() });
                         }
                     } else if (activation.powerName === 'Absorb') {
-                        if (!activation.targets || activation.targets.length === 0 || !activation.inputValue) return;
-                        const absorbAmount = activation.inputValue;
-                        const selfDamage = Math.floor(absorbAmount * 0.8);
-                        
-                        if (selfDamage > 0) {
-                            const newHp = Math.max(0, studentData.hp - selfDamage);
-                            batch.update(studentRef, { hp: newHp });
-                            if (newHp === 0 && !(battleData.fallenPlayerUids || []).includes(activation.studentUid)) {
-                                batch.update(liveBattleRef, { fallenPlayerUids: arrayUnion(activation.studentUid) });
-                            }
+                        const hpToConvert = activation.inputValue || 0;
+                        if (hpToConvert > 0 && hpToConvert < studentData.hp) {
+                            const mpGained = Math.floor(hpToConvert / 2);
+                            const newHp = studentData.hp - hpToConvert;
+                            const newMp = Math.min(studentData.maxMp, studentData.mp + mpGained);
+                            batch.update(studentRef, { hp: newHp, mp: newMp });
+                            batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: activation.studentName, powerName: activation.powerName, description: `Converted ${hpToConvert} HP into ${mpGained} MP.`, timestamp: serverTimestamp() });
+                            batch.update(liveBattleRef, { targetedEvent: { targetUid: activation.studentUid, message: `You converted ${hpToConvert} HP into ${mpGained} MP!` } });
                         }
-                        
-                        const damagePerTarget = Math.floor(absorbAmount / activation.targets.length);
-                        const updates: { [key: string]: any } = {};
-                        for (const targetUid of activation.targets) {
-                            updates[`damageShields.${targetUid}`] = increment(damagePerTarget);
-                        }
-                        
-                        batch.update(liveBattleRef, updates);
-                        
-                        batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: activation.studentName, powerName: activation.powerName, description: `Absorbed up to ${absorbAmount} damage for ${activation.targets.length} allies, taking ${selfDamage} damage.`, timestamp: serverTimestamp() });
                     } else if (activation.powerName === 'Martial Sacrifice') {
                         if (battleData.martialSacrificeCasterUid) {
                             batch.update(liveBattleRef, { targetedEvent: { targetUid: activation.studentUid, message: `${allStudents.find(s => s.uid === battleData.martialSacrificeCasterUid)?.characterName || 'A hero'} has already sacrificed themself for the glory of the group! Don't let it be in vain!` } });

@@ -58,7 +58,7 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
   const [isFateDeciding, setIsFateDeciding] = useState(false);
   const { toast } = useToast();
   
-  // New state for multi-step powers like Absorb
+  // New state for multi-step powers
   const [currentStep, setCurrentStep] = useState(1);
   const [inputValue, setInputValue] = useState<number | ''>('');
 
@@ -72,14 +72,13 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
   }, [isOpen, power.isMultiStep]);
 
   const handleSelectStudent = (uid: string) => {
-    const isAbsorb = power.name === 'Absorb';
     const targetCount = power.targetCount || 1;
 
     setSelectedUids(prev => {
       if (prev.includes(uid)) {
         return prev.filter(id => id !== uid);
       }
-      if (isAbsorb || prev.length < targetCount) {
+      if (prev.length < targetCount) {
         return [...prev, uid];
       }
       toast({ title: `You can only select ${targetCount} target(s).`, description: 'Deselect a player to choose another.' });
@@ -106,28 +105,24 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
   const handleConfirmClick = () => {
     // For non-input powers or after input has been given
     if (power.target) {
-        const isAbsorb = power.name === 'Absorb';
         const targetCount = power.targetCount || 1;
         const canSelectMax = eligibleTargets.length >= targetCount;
         
-        const isSelectionComplete = isAbsorb
-            ? selectedUids.length > 0
-            : (canSelectMax 
+        const isSelectionComplete = (canSelectMax 
                 ? selectedUids.length === targetCount 
                 : selectedUids.length > 0 && selectedUids.length <= eligibleTargets.length);
         
         if (!isSelectionComplete) {
-             toast({ title: 'Invalid Selection', description: isAbsorb ? `Please select at least one player.` : `Please select up to ${Math.min(targetCount, eligibleTargets.length)} players.`});
+             toast({ title: 'Invalid Selection', description: `Please select up to ${Math.min(targetCount, eligibleTargets.length)} players.`});
              return;
         }
 
-        if (!canSelectMax && !isAbsorb && selectedUids.length > 0) {
+        if (!canSelectMax && selectedUids.length > 0) {
             setIsConfirming(true); // Show confirmation for casting with fewer targets
         } else {
             onConfirm(selectedUids, Number(inputValue) || undefined);
         }
     } else {
-         // For powers like Arcane Redirect that only need an input value
          onConfirm([], Number(inputValue) || undefined);
     }
   };
@@ -135,11 +130,13 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
   const handleNextStep = () => {
       // Validate input for step 1
       if (power.name === 'Absorb') {
-          const maxAbsorb = Math.min(caster.level * 4, caster.hp - 1);
-          if (inputValue === '' || inputValue <= 0 || inputValue > maxAbsorb) {
-              toast({ variant: 'destructive', title: 'Invalid Amount', description: `Please enter a number between 1 and ${maxAbsorb}.`});
+          const hpToConvert = Number(inputValue);
+          if (inputValue === '' || hpToConvert <= 0 || hpToConvert >= caster.hp) {
+              toast({ variant: 'destructive', title: 'Invalid Amount', description: `Please enter an amount of HP to convert that is less than your current HP (${caster.hp}).`});
               return;
           }
+          onConfirm([], hpToConvert); // Absorb is now a single step
+          return;
       } else if (power.name === 'Arcane Redirect') {
           const cost = (Number(inputValue) || 0) * 15;
           if (inputValue === '' || inputValue <= 0 || cost > caster.mp) {
@@ -152,20 +149,20 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
 
     const renderStep1 = () => {
         if (power.name === 'Absorb') {
-            const maxAbsorb = Math.min(caster.level * 4, caster.hp - 1);
+            const maxConvert = caster.hp - 1;
             return (
                 <>
                     <DialogHeader>
-                        <DialogTitle>Absorb Damage</DialogTitle>
-                        <DialogDescription>How much damage do you wish to endure for your allies? It will cost 80% of this value in HP.</DialogDescription>
+                        <DialogTitle>Convert HP to MP</DialogTitle>
+                        <DialogDescription>How many hit points do you want to convert into magic points? The cost is 2 HP for every 1 MP gained.</DialogDescription>
                     </DialogHeader>
                      <div className="py-4">
-                        <Label htmlFor="absorb-amount">Amount to Absorb (1 - {maxAbsorb})</Label>
+                        <Label htmlFor="absorb-amount">HP to Convert (1 - {maxConvert})</Label>
                         <Input id="absorb-amount" type="number" value={inputValue} onChange={e => setInputValue(Number(e.target.value))} />
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                        <Button onClick={handleNextStep}>Next: Choose Targets</Button>
+                        <Button onClick={handleNextStep}>Convert</Button>
                     </DialogFooter>
                 </>
             )
@@ -194,13 +191,10 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
     }
 
   const renderStep2 = () => {
-      const isAbsorb = power.name === 'Absorb';
       const targetCount = power.targetCount || 1;
       const canSelectMax = eligibleTargets.length >= targetCount;
       const isSelectionComplete = power.target
-          ? isAbsorb
-              ? selectedUids.length > 0
-              : (canSelectMax 
+          ? (canSelectMax 
                   ? selectedUids.length === targetCount 
                   : selectedUids.length > 0 && selectedUids.length <= eligibleTargets.length)
           : true;
@@ -210,7 +204,7 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
             <DialogHeader>
                 <DialogTitle>Select Target(s) for {power.name}</DialogTitle>
                 <DialogDescription>
-                    {isAbsorb ? 'Choose allies to protect with your shield.' : (power.targetCount ? `Choose up to ${targetCount} player(s) to affect with this power.` : 'Choose players to affect with this power.')}
+                    {power.targetCount ? `Choose up to ${targetCount} player(s) to affect with this power.` : 'Choose players to affect with this power.'}
                 </DialogDescription>
             </DialogHeader>
             <ScrollArea className="h-72 w-full rounded-md border p-4">
@@ -240,7 +234,7 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
                     </Button>
                 )}
                 <Button type="button" onClick={handleConfirmClick} disabled={!isSelectionComplete}>
-                    Confirm Selection ({selectedUids.length}/{isAbsorb ? '∞' : (canSelectMax ? targetCount : eligibleTargets.length)})
+                    Confirm Selection ({selectedUids.length}/{canSelectMax ? targetCount : eligibleTargets.length})
                 </Button>
             </DialogFooter>
         </>
