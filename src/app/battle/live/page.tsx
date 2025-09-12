@@ -772,10 +772,17 @@ export default function LiveBattlePage() {
                             )}
 
                             {lastAnswerCorrect === false && (
-                                <div className="p-4 rounded-md bg-red-900/70 border border-red-700 text-red-200 flex items-center justify-center gap-4">
-                                    <HeartCrack className="h-10 w-10 text-red-400" />
-                                    <p className="text-xl font-bold">You took {battle.questions[battleState.currentQuestionIndex].damage} damage!</p>
-                                </div>
+                                (student.shielded && student.shielded.roundsRemaining > 0) || student.guardedBy ? (
+                                    <div className="p-4 rounded-md bg-sky-900/70 border border-sky-700 text-sky-200 flex items-center justify-center gap-4">
+                                        <Shield className="h-10 w-10 text-sky-400" />
+                                        <p className="text-xl font-bold">You answered incorrectly, but have been protected from damage!</p>
+                                    </div>
+                                ) : (
+                                    <div className="p-4 rounded-md bg-red-900/70 border border-red-700 text-red-200 flex items-center justify-center gap-4">
+                                        <HeartCrack className="h-10 w-10 text-red-400" />
+                                        <p className="text-xl font-bold">You took {battle.questions[battleState.currentQuestionIndex].damage} damage!</p>
+                                    </div>
+                                )
                             )}
                             
                             {lastAnswerCorrect === null && (
