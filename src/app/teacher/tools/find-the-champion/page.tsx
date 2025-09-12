@@ -79,7 +79,7 @@ export default function FindTheChampionPage() {
         setPickedCaption('');
 
         setTimeout(() => {
-            const candidates = students.filter(s => s.isChampion && !s.isHidden && !s.isArchived);
+            const candidates = students.filter(s => s.isChampion === true && !s.isHidden);
 
             if (candidates.length === 0) {
                 setPickedCaption("No champions have volunteered! Make sure students have toggled their Champion Status ON in their dashboard.");
