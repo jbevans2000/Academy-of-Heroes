@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { onSnapshot, doc, collection, query } from 'firebase/firestore';
+import { onSnapshot, doc, collection, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,31 +31,22 @@ export function BattleLog({ teacherUid }: { teacherUid: string }) {
 
     useEffect(() => {
         if (!teacherUid) return;
-        const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
-        const unsubscribeLive = onSnapshot(liveBattleRef, (docSnap) => {
-            if (!docSnap.exists() || docSnap.data().status === 'WAITING') {
-                setLogEntries([]);
-                return;
-            }
-            const logRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
-            const q = query(logRef);
-            const unsubscribeLog = onSnapshot(q, (snapshot) => {
-                const entries: PowerLogEntry[] = [];
-                snapshot.forEach(doc => {
-                    entries.push({ id: doc.id, ...doc.data() } as PowerLogEntry);
-                });
-                
-                // Filter out entries with null timestamps before sorting
-                const sortedEntries = entries
-                    .filter(entry => entry.timestamp)
-                    .sort((a, b) => a.timestamp!.seconds - b.timestamp!.seconds);
 
-                setLogEntries(sortedEntries);
+        const logRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
+        const q = query(logRef, orderBy('timestamp', 'asc'));
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const entries: PowerLogEntry[] = [];
+            snapshot.forEach(doc => {
+                entries.push({ id: doc.id, ...doc.data() } as PowerLogEntry);
             });
-             return () => unsubscribeLog();
+            setLogEntries(entries);
+        }, (error) => {
+            console.error("Error fetching battle log:", error);
+            // Don't toast here, as it could be noisy if the collection doesn't exist yet.
         });
 
-        return () => unsubscribeLive();
+        return () => unsubscribe();
     }, [teacherUid]);
 
     const titleColor = logEntries.length > 0 ? 'text-black' : '';
