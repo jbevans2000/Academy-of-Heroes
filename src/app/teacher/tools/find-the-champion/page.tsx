@@ -194,7 +194,7 @@ export default function FindTheChampionPage() {
                                     )}>
                                         <div className="space-y-4">
                                             <h3 className="text-2xl font-bold font-headline text-black">{pickedCaption}</h3>
-                                            {pickedChampions.length > 0 && (
+                                            {pickedChampions.length > 0 ? (
                                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                                     {pickedChampions.map(champion => {
                                                         const companyName = companies.find(c => c.id === champion.companyId)?.name;
@@ -204,10 +204,13 @@ export default function FindTheChampionPage() {
                                                                 <Image src={champion.avatarUrl} alt={champion.characterName} fill className="object-contain drop-shadow-lg" />
                                                             </div>
                                                             <h4 className="text-xl font-bold">{champion.characterName}</h4>
+                                                            <p className="text-sm text-muted-foreground">{champion.studentName}</p>
                                                             {companyName && <p className="text-sm font-semibold text-primary">{companyName}</p>}
                                                         </div>
                                                     )})}
                                                 </div>
+                                            ) : (
+                                                <p className="text-destructive font-semibold">No champions were found.</p>
                                             )}
                                         </div>
                                     </div>
