@@ -13,7 +13,6 @@ import type { Student, Company } from '@/lib/data';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { Separator } from '@/components/ui/separator';
 
 const runeImageSrc = 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-1b1a5535-ccec-4d95-b6ba-5199715edc4c.jpg?alt=media&token=b0a366fe-a4d4-46d7-b5f3-c13df8c2e69a';
 const numRunes = 12; // Number of runes to display in the animation
@@ -25,17 +24,6 @@ const selectionCaptions = [
     "Destiny calls! Step forward, hero!",
     "The ancient symbols align to choose you!",
 ];
-
-// Fisher-Yates shuffle algorithm
-const shuffleArray = <T,>(array: T[]): T[] => {
-    const newArray = [...array];
-    for (let i = newArray.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-    }
-    return newArray;
-};
-
 
 export default function FindTheChampionPage() {
     const router = useRouter();
@@ -60,8 +48,7 @@ export default function FindTheChampionPage() {
     
     useEffect(() => {
         if (!teacher) return;
-        setIsLoading(true);
-
+        
         const studentsQuery = query(collection(db, "teachers", teacher.uid, "students"), where('isArchived', '!=', true));
         const studentsUnsubscribe = onSnapshot(studentsQuery, (snapshot) => {
             const studentsData = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
@@ -80,7 +67,6 @@ export default function FindTheChampionPage() {
             console.error("Error fetching companies in real-time:", error);
         });
 
-
         return () => {
             studentsUnsubscribe();
             companiesUnsubscribe();
@@ -89,6 +75,7 @@ export default function FindTheChampionPage() {
     
     const handleSelectChampions = (mode: 'guild' | 'company') => {
         setPickedChampions([]);
+        setPickedCaption('');
         setIsShuffling(true);
 
         setTimeout(() => {
@@ -102,8 +89,6 @@ export default function FindTheChampionPage() {
             }
 
             const caption = selectionCaptions[Math.floor(Math.random() * selectionCaptions.length)];
-            setPickedCaption(caption);
-
             let champions: Student[] = [];
 
             if (mode === 'guild') {
@@ -134,6 +119,7 @@ export default function FindTheChampionPage() {
             }
 
             setPickedChampions(champions);
+            setPickedCaption(caption);
             setIsShuffling(false);
         }, 3000); // 3-second animation
     };
@@ -201,16 +187,20 @@ export default function FindTheChampionPage() {
                                         </div>
                                     </div>
                                     
-                                    <div className={cn("transition-opacity duration-500", isShuffling ? "opacity-0" : "opacity-100")}>
-                                        {pickedChampions.length > 0 ? (
-                                            <div className="space-y-4 animate-in fade-in-50">
-                                                <h3 className="text-2xl font-bold font-headline text-black">{pickedCaption}</h3>
+                                    <div className={cn(
+                                        "absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-500",
+                                        !isShuffling && pickedCaption ? "opacity-100" : "opacity-0 pointer-events-none",
+                                        "animate-in fade-in-50"
+                                    )}>
+                                        <div className="space-y-4">
+                                            <h3 className="text-2xl font-bold font-headline text-black">{pickedCaption}</h3>
+                                            {pickedChampions.length > 0 && (
                                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                                     {pickedChampions.map(champion => {
                                                         const companyName = companies.find(c => c.id === champion.companyId)?.name;
                                                         return (
                                                         <div key={champion.uid} className="flex flex-col items-center space-y-2 p-4 bg-background/50 rounded-lg">
-                                                             <div className="relative w-24 h-24">
+                                                            <div className="relative w-24 h-24">
                                                                 <Image src={champion.avatarUrl} alt={champion.characterName} fill className="object-contain drop-shadow-lg" />
                                                             </div>
                                                             <h4 className="text-xl font-bold">{champion.characterName}</h4>
@@ -218,14 +208,15 @@ export default function FindTheChampionPage() {
                                                         </div>
                                                     )})}
                                                 </div>
-                                            </div>
-                                        ) : (
-                                            <div className="text-center">
-                                                <p className="text-muted-foreground text-lg mb-4">
-                                                    {pickedCaption || "Choose how to select your champion(s)!"}
-                                                </p>
-                                            </div>
-                                        )}
+                                            )}
+                                        </div>
+                                    </div>
+                                    
+                                    <div className={cn(
+                                        "flex flex-col items-center justify-center transition-opacity duration-500",
+                                        isShuffling || pickedCaption ? "opacity-0 pointer-events-none" : "opacity-100"
+                                    )}>
+                                        <p className="text-muted-foreground text-lg mb-4">Choose how to select your champion(s)!</p>
                                     </div>
 
                                 </div>
@@ -234,11 +225,11 @@ export default function FindTheChampionPage() {
                     </Card>
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Button size="lg" className="text-lg py-8" onClick={() => handleSelectChampions('guild')} disabled={isLoading || isShuffling}>
-                            <Users className="mr-4 h-6 w-6" />
+                            {isShuffling ? <Loader2 className="h-6 w-6 animate-spin" /> : <Users className="mr-4 h-6 w-6" />}
                             Choose Guild Champion
                         </Button>
                         <Button size="lg" className="text-lg py-8" onClick={() => handleSelectChampions('company')} disabled={isLoading || isShuffling}>
-                            <ShieldCheck className="mr-4 h-6 w-6" />
+                             {isShuffling ? <Loader2 className="h-6 w-6 animate-spin" /> : <ShieldCheck className="mr-4 h-6 w-6" />}
                             Choose Company Champions
                         </Button>
                     </div>
