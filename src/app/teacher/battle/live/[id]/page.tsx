@@ -882,7 +882,7 @@ export default function TeacherLiveBattlePage() {
         if (!liveState || !battle || !teacherUid || (liveState.status !== 'IN_PROGRESS' && liveState.status !== 'ROUND_ENDING')) return;
         
         const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
-        const powerActivationsRef = collection(db, 'teachers', teacherUid, `liveBattles/${battleId}/powerActivations`);
+        const powerActivationsRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/powerActivations');
         const q = query(powerActivationsRef);
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -1642,5 +1642,3 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
-
-    
