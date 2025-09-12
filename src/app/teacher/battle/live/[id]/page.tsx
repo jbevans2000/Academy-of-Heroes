@@ -79,7 +79,7 @@ interface LiveBattleState {
   elementalFusionCasts?: { [studentUid: string]: number };
   globalElementalFusionCasts?: number;
   shielded?: { [uid: string]: { roundsRemaining: number; casterName: string; } }; // uid -> shield info
-  chaosStormCasts?: { [studentUid: string]: number }; // For Chaos Storm
+  chaosStormCasts?: { [studentUid: string]: number };
   intercepting?: { [casterUid: string]: string }; // casterUid -> targetUid
   damageShields?: { [uid: string]: number };
   zenShieldCasts?: { [studentUid: string]: number }; // For Zen Shield
@@ -1927,4 +1927,3 @@ export default function TeacherLiveBattlePage() {
   );
 }
 
-    
