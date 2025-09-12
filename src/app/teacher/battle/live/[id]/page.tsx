@@ -1926,5 +1926,3 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
-
-    
