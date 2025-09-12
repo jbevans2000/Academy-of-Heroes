@@ -87,7 +87,7 @@ export default function FindTheChampionPage() {
     }, [teacher]);
     
     const handleSelectChampions = (mode: 'guild' | 'company') => {
-        const candidates = students.filter(s => s.isChampion === true);
+        const candidates = students.filter(s => s.isChampion === true && !s.isHidden && !s.isArchived);
 
         if (candidates.length === 0) {
             setPickedChampions([]);
@@ -118,8 +118,14 @@ export default function FindTheChampionPage() {
 
             for (const companyId in championsByCompany) {
                 const companyCandidates = championsByCompany[companyId];
-                const randomIndex = Math.floor(Math.random() * companyCandidates.length);
-                champions.push(companyCandidates[randomIndex]);
+                if (companyCandidates.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * companyCandidates.length);
+                    champions.push(companyCandidates[randomIndex]);
+                }
+            }
+
+            if (champions.length === 0) {
+                setPickedCaption("No champions in any company have volunteered.");
             }
         }
 
