@@ -54,13 +54,16 @@ export default function Dashboard() {
 
         if (studentMetaSnap.exists()) {
           const { teacherUid: foundTeacherUid, approved } = studentMetaSnap.data();
-          setTeacherUid(foundTeacherUid);
           
           if (!approved) {
              router.push('/awaiting-approval');
              return;
           }
           
+          // Set teacher and stop initial loading here, before the listener
+          setTeacherUid(foundTeacherUid);
+          setIsLoading(false);
+
           const studentRef = doc(db, 'teachers', foundTeacherUid, 'students', user.uid);
           const unsub = onSnapshot(studentRef, async (docSnap) => {
             if (docSnap.exists()) {
@@ -120,9 +123,12 @@ export default function Dashboard() {
               }
               // --- END REMINDER LOGIC ---
 
-              setIsLoading(false);
             } else {
-              setIsLoading(true);
+              // This case handles a student who is approved but document is missing,
+              // which could happen during account creation race conditions.
+              // We log them out to prevent a bad state.
+              await signOut(auth);
+              router.push('/');
             }
           }, (error) => {
              console.error("Error listening to student document:", error);
@@ -131,17 +137,19 @@ export default function Dashboard() {
           
           return () => unsub();
         } else {
-          console.error(`No teacher metadata found for student with UID: ${user.uid}`);
+          // If no student metadata, they don't belong here.
+          await signOut(auth);
           router.push('/');
         }
       } else {
-        setIsLoading(false);
+        // No user logged in, send to login page.
         router.push('/');
       }
     });
 
     return () => authUnsubscribe();
-  }, [router]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   const handleCloseApprovedDialog = async () => {
     setShowApprovedDialog(false);
@@ -189,7 +197,7 @@ export default function Dashboard() {
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle className="text-2xl">{reminder?.title}</AlertDialogTitle>
-                <AlertDialogDescription className="text-base text-foreground" dangerouslySetInnerHTML={{ __html: reminder?.message.replace(/\n/g, '<br/>') || '' }} />
+                <AlertDialogDescription className="text-base text-foreground" dangerouslySetInnerHTML={{ __html: reminder?.message.replace(/\\n/g, '<br/>') || '' }} />
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogAction>Got it!</AlertDialogAction>
