@@ -864,7 +864,7 @@ export default function TeacherLiveBattlePage() {
                     round: liveState.currentQuestionIndex + 1,
                     casterName: caster?.characterName || 'A Healer',
                     powerName: 'Divine Judgment (Damage)',
-                    description: `Dealt ${totalDamage} damage to the boss.`,
+                    description: `Dealt ${totalDamage} direct damage.`,
                     timestamp: serverTimestamp()
                 });
             }
@@ -1926,3 +1926,5 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
+
+    
