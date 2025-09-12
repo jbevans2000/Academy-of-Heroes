@@ -1434,7 +1434,7 @@ export default function TeacherLiveBattlePage() {
                     });
                 }
             } else if (activation.powerName === 'Arcane Shield') {
-                if (!activation.targets || activation.targets.length === 0) return;
+                 if (!activation.targets || activation.targets.length === 0) return;
                  const targetNames: string[] = [];
                  for (const targetUid of activation.targets) {
                     const targetData = allStudents.find(s => s.uid === targetUid);
@@ -1926,4 +1926,3 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
-
