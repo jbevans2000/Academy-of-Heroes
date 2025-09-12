@@ -541,24 +541,14 @@ export default function TeacherLiveBattlePage() {
         if (!currentLiveSnap.exists()) return;
         const currentLiveState = currentLiveSnap.data() as LiveBattleState;
         
-        // --- PRE-CALCULATION PHASE ---
-        let sacrificeThisRound = false;
         const roundEvents: RoundEvent[] = [];
 
-        // Decrement shield timers at the start of result calculation
         const currentShields = currentLiveState.shielded || {};
         const newShields: { [uid: string]: { roundsRemaining: number; casterName: string; } } = {};
         for (const uid in currentShields) {
             const shield = currentShields[uid];
             if (shield.roundsRemaining > 1) {
                 newShields[uid] = { ...shield, roundsRemaining: shield.roundsRemaining - 1 };
-            }
-        }
-        
-        if (currentLiveState.martialSacrificeCasterUid && !currentLiveState.powerEventMessage?.includes("has already sacrificed")) {
-            sacrificeThisRound = true;
-            for (const uid in newShields) {
-                newShields[uid].roundsRemaining += 1;
             }
         }
         batch.update(liveBattleRef, { shielded: newShields });
@@ -583,15 +573,12 @@ export default function TeacherLiveBattlePage() {
         let baseDamageFromAnswers = 0;
         let finalRoundResponses = [...roundResponses];
 
-        // --- INTERCEPT LOGIC ---
         const interceptors = currentLiveState.intercepting || {};
         let redirectedDamageForGuardians: { [uid: string]: number } = {};
 
         for (const interceptorUid in interceptors) {
             const targetUid = interceptors[interceptorUid];
             const interceptorResponse = roundResponses.find(r => r.studentUid === interceptorUid);
-            const targetResponse = roundResponses.find(r => r.studentUid === targetUid);
-            const currentQuestion = battle.questions[liveState.currentQuestionIndex];
 
             const interceptorName = studentMap.get(interceptorUid)?.characterName || 'A Guardian';
             const targetName = studentMap.get(targetUid)?.characterName || 'an ally';
@@ -600,45 +587,26 @@ export default function TeacherLiveBattlePage() {
 
 
             if (interceptorResponse?.isCorrect) {
-                powerDamage += 5; // Intercept bonus damage
-                if (targetResponse && !targetResponse.isCorrect) {
-                    // Flip target's answer to correct
-                    finalRoundResponses = finalRoundResponses.map(res => 
-                        res.studentUid === targetUid ? { ...res, isCorrect: true } : res
-                    );
-                }
-            } else { // Interceptor is wrong
-                if (targetResponse && !targetResponse.isCorrect) {
-                    // Redirect damage from target to Guardian
-                    const damageToRedirect = currentQuestion.damage || 0;
-                    if (!redirectedDamageForGuardians[interceptorUid]) redirectedDamageForGuardians[interceptorUid] = 0;
-                    redirectedDamageForGuardians[interceptorUid] += damageToRedirect;
-                }
+                powerDamage += 5;
             }
         }
         
-        // --- ABSORB & DAMAGE CALCULATION ---
         const studentDamageShields = { ...(currentLiveState.damageShields || {}) };
 
-        // --- DAMAGE CALCULATION ---
         if (!isDivinationSkip) {
             const currentQuestion = battle.questions[liveState.currentQuestionIndex];
             const damageOnIncorrect = currentQuestion.damage || 0;
             const damageToTakeByStudent: { [uid: string]: number } = {};
 
-            // Calculate initial damage for each student
             if (damageOnIncorrect > 0) {
                  for (const student of studentsInBattle) {
                      const studentResponse = finalRoundResponses.find(r => r.studentUid === student.uid);
-
-                     // Damage for own incorrect answer
                      if (!studentResponse || !studentResponse.isCorrect) {
                         damageToTakeByStudent[student.uid] = (damageToTakeByStudent[student.uid] || 0) + damageOnIncorrect;
                      }
                  }
             }
             
-            // Handle damage redirection from Guard
             for(const student of studentsInBattle) {
                 if (student.guardedBy && damageToTakeByStudent[student.uid] > 0) {
                     const guardianUid = student.guardedBy;
@@ -650,24 +618,21 @@ export default function TeacherLiveBattlePage() {
                         roundEvents.push({ studentUid: guardianUid, message: `Your Guard protected ${student.characterName}! You took ${damageRedirected} additional damage.` });
                     }
                     
-                    // Add the guarded student's damage to the guardian's total for this round
                     if (guardianUid) {
                         if (!redirectedDamageForGuardians[guardianUid]) redirectedDamageForGuardians[guardianUid] = 0;
                         redirectedDamageForGuardians[guardianUid] += damageRedirected;
                     }
                     
-                    delete damageToTakeByStudent[student.uid]; // The guarded student takes no damage
+                    delete damageToTakeByStudent[student.uid];
                 }
             }
 
 
-            // Add redirected damage to the main damage calculation
             for (const guardianUid in redirectedDamageForGuardians) {
                 damageToTakeByStudent[guardianUid] = (damageToTakeByStudent[guardianUid] || 0) + redirectedDamageForGuardians[guardianUid];
             }
 
 
-            // Apply all damage after redirection calculations
             for (const studentUid in damageToTakeByStudent) {
                 const student = studentMap.get(studentUid);
                 if(!student) continue;
@@ -678,7 +643,7 @@ export default function TeacherLiveBattlePage() {
                 if (isShielded) {
                      const casterName = newShields[student.uid]?.casterName || "An ally";
                      roundEvents.push({ studentUid: student.uid, message: `Your shield from ${casterName} absorbed all damage!` });
-                     continue; // Skip damage application
+                     continue; 
                 }
                 
                 if (studentDamageShields[student.uid] && studentDamageShields[student.uid] > 0) {
@@ -739,7 +704,6 @@ export default function TeacherLiveBattlePage() {
             }
         }
         
-        // Elemental Fusion & Inspiring Strike damage calculation
         const elementalFusionCasters = new Set<string>();
         if(currentLiveState.powerUsersThisRound) {
             for (const studentUid in currentLiveState.powerUsersThisRound) {
@@ -758,12 +722,12 @@ export default function TeacherLiveBattlePage() {
         }
         
         if (elementalFusionCasters.size > 0) {
-            const bonusDamage = powerDamage * 2; // Triple the power damage
+            const bonusDamage = powerDamage * 2; 
             powerDamage += bonusDamage;
             powersUsedThisRound.push(`Elemental Fusion (x3 Power Dmg)`);
         }
         if (inspiringStrikeCasters.size > 0) {
-            const bonusDamage = powerDamage * 2; // Triple the power damage
+            const bonusDamage = powerDamage * 2; 
             powerDamage += bonusDamage;
             powersUsedThisRound.push(`Inspiring Strike (x3 Power Dmg)`);
         }
@@ -1366,7 +1330,6 @@ export default function TeacherLiveBattlePage() {
     try {
         const batch = writeBatch(db);
 
-        // Reset guardedBy status for all students
         const studentCollectionRef = collection(db, 'teachers', teacherUid, 'students');
         const studentsSnapshot = await getDocs(studentCollectionRef);
         studentsSnapshot.forEach(studentDoc => {
@@ -1647,4 +1610,3 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
-

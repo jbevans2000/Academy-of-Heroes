@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -100,13 +101,9 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
 
 
   const getEligibleTargets = (power: Power): Student[] => {
-    // START: Bug fix - First, filter for students who are actually in the battle.
     let potentialTargets = partyMembers.filter(s => s.inBattle);
-    // END: Bug fix
-
     const immuneUids = battleState?.immuneToRevival || [];
 
-    // Rule: Fallen players can ONLY be targeted by powers specifically for 'fallen' targets.
     if (power.target === 'fallen') {
         potentialTargets = potentialTargets.filter(s => s.hp <= 0 && !immuneUids.includes(s.uid));
     } else {
