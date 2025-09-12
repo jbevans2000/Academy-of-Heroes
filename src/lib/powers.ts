@@ -39,7 +39,7 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Sorcerer’s Intuition',
-      description: 'Your answer will deal base damage this round, even if it is incorrect. You can only use this power 3 times per battle.',
+      description: "Your answer is considered correct this round. Additionally, the Oracle's insight randomly corrects the answers of up to 3 allies who answered incorrectly, allowing their conditional powers (like Wildfire) to trigger.",
       level: 5,
       mpCost: 10,
       type: 'utility',

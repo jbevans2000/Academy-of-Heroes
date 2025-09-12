@@ -560,19 +560,57 @@ export default function TeacherLiveBattlePage() {
         const studentsInBattle = allStudents.filter(s => s.inBattle);
         const roundResponses = (await getDoc(doc(liveBattleRef, `responses/${liveState.currentQuestionIndex}`))).data()?.responses || [];
 
-        const sorcerersThisRound = new Set<string>();
-        for (const studentUid in liveState.powerUsersThisRound) {
-            if (liveState.powerUsersThisRound[studentUid].includes('Sorcerer’s Intuition')) {
-                sorcerersThisRound.add(studentUid);
+        let finalRoundResponses = [...roundResponses];
+
+        // --- NEW SORCERER'S INTUITION LOGIC ---
+        const sorcererCastersThisRound = Object.keys(currentLiveState.powerUsersThisRound || {}).filter(uid => 
+            currentLiveState.powerUsersThisRound![uid].includes("Sorcerer’s Intuition")
+        );
+
+        if (sorcererCastersThisRound.length > 0) {
+            // First, ensure all casters' answers are marked as correct.
+            sorcererCastersThisRound.forEach(casterUid => {
+                const casterResponseIndex = finalRoundResponses.findIndex(res => res.studentUid === casterUid);
+                if (casterResponseIndex > -1) {
+                    finalRoundResponses[casterResponseIndex].isCorrect = true;
+                }
+            });
+            
+            // Find all other incorrect responders who were NOT casters
+            const incorrectResponders = finalRoundResponses.filter(res => 
+                !res.isCorrect && !sorcererCastersThisRound.includes(res.studentUid)
+            );
+            
+            // For each caster, select up to 3 unique random targets from the incorrect responders
+            const shuffledIncorrectResponders = incorrectResponders.sort(() => 0.5 - Math.random());
+            const targetsToCorrect = shuffledIncorrectResponders.slice(0, 3 * sorcererCastersThisRound.length);
+
+            targetsToCorrect.forEach(target => {
+                const targetResponseIndex = finalRoundResponses.findIndex(res => res.studentUid === target.studentUid);
+                if (targetResponseIndex > -1) {
+                    finalRoundResponses[targetResponseIndex].isCorrect = true;
+                    // Add a round event for the student
+                    roundEvents.push({
+                        studentUid: target.studentUid,
+                        message: "The Oracle's insight corrects your path! Your answer is now correct."
+                    });
+                }
+            });
+            
+            if (targetsToCorrect.length > 0) {
+                batch.update(liveBattleRef, {
+                    powerEventMessage: `The Oracle's insight corrects the answers of ${targetsToCorrect.length} hero(es)!`
+                });
             }
         }
+        // --- END OF NEW LOGIC ---
         
         let powerDamage = 0;
         const powersUsedThisRound: string[] = [];
         const battleLogRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
         
         let baseDamageFromAnswers = 0;
-        let finalRoundResponses = [...roundResponses];
+        
 
         // --- POWER DAMAGE LOGIC ---
         if (!isDivinationSkip) {
@@ -688,7 +726,7 @@ export default function TeacherLiveBattlePage() {
         }
         
         finalRoundResponses.forEach(res => {
-            if (res.isCorrect || sorcerersThisRound.has(res.studentUid)) {
+            if (res.isCorrect) {
                 baseDamageFromAnswers++;
             }
         });
