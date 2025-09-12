@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -220,7 +219,7 @@ export default function TeacherLiveBattlePage() {
   const [liveState, setLiveState] = useState<LiveBattleState | null>(null);
   const [roundResults, setRoundResults] = useState<Result[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isEndingRound, setIsEndingRound] = useState(false);
+  const [isEndingRound, setIsEndingRound] = useState(isEndingRound);
   const [isAdvancing, setIsAdvancing] = useState(false);
   const [isEndingBattle, setIsEndingBattle] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -1187,7 +1186,7 @@ export default function TeacherLiveBattlePage() {
                         powerEventMessage: `${activation.studentName} has cast Focused Restoration! ${targetData.characterName} has been greatly healed!`,
                         targetedEvent: {
                             targetUid: targetUid,
-                            message: `You have been healed by ${studentData.characterName}. Your body and spirit have been renewed!`
+                            message: `${activation.studentName} has healed you. Your body and spirit have been renewed!`
                         }
                     });
                      batch.set(doc(battleLogRef), {
@@ -1927,3 +1926,5 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
+
+    
