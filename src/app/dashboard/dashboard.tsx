@@ -82,7 +82,7 @@ export default function Dashboard() {
               if (!lastRegenDate || !isSameDay(today, lastRegenDate)) {
                   const teacherRef = doc(db, 'teachers', foundTeacherUid);
                   const teacherSnap = await getDoc(teacherRef);
-                  const regenPercent = teacherSnap.exists() ? (teacherSnap.data().dailyRegenPercentage || 5) / 100 : 0.05;
+                  const regenPercent = teacherSnap.exists() ? (teacherSnap.data().dailyRegenPercentage || 0) / 100 : 0;
 
                   const hpRegen = Math.ceil(studentData.maxHp * regenPercent);
                   const mpRegen = Math.ceil(studentData.maxMp * regenPercent);
