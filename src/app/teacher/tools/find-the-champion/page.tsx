@@ -84,7 +84,6 @@ export default function FindTheChampionPage() {
         setPickedCaption('');
 
         setTimeout(() => {
-            // Default to empty arrays if fields are missing
             const freelancers = championData?.freelancerChampions || [];
             const companyChampions = championData?.championsByCompany || {};
 
@@ -93,7 +92,8 @@ export default function FindTheChampionPage() {
                 ...Object.values(companyChampions).flat()
             ];
             
-            const candidates = allStudents.filter(s => allChampionUids.includes(s.uid) && !s.isHidden);
+            const candidates = allStudents.filter(s => allChampionUids.includes(s.uid) && s.isChampion === true && !s.isHidden);
+
 
             if (candidates.length === 0) {
                 setPickedCaption("No champions have volunteered! Make sure students have toggled their Champion Status ON in their dashboard.");
@@ -145,11 +145,12 @@ export default function FindTheChampionPage() {
              <div 
                 className="absolute inset-0 -z-10"
                 style={{
-                    backgroundImage: `url('${runeImageSrc}')`,
+                    backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChooseChampion.jpg?alt=media&token=9d8a8624-c352-415e-84d8-827cebc711a5')`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                 }}
             />
+            <div className="absolute inset-0 bg-black/30 -z-10" />
             <TeacherHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8 flex flex-col items-center justify-center">
                 <div className="w-full max-w-4xl space-y-6">
