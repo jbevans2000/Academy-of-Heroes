@@ -84,9 +84,13 @@ export default function FindTheChampionPage() {
         setPickedCaption('');
 
         setTimeout(() => {
+            // Default to empty arrays if fields are missing
+            const freelancers = championData?.freelancerChampions || [];
+            const companyChampions = championData?.championsByCompany || {};
+
             const allChampionUids = [
-                ...championData.freelancerChampions, 
-                ...Object.values(championData.championsByCompany).flat()
+                ...freelancers,
+                ...Object.values(companyChampions).flat()
             ];
             
             const candidates = allStudents.filter(s => allChampionUids.includes(s.uid) && !s.isHidden);
@@ -205,11 +209,17 @@ export default function FindTheChampionPage() {
                                         <div className="space-y-4">
                                             <h3 className="text-2xl font-bold font-headline text-black">{pickedCaption}</h3>
                                             {pickedChampions.length > 0 ? (
-                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                <div className={cn(
+                                                    "grid gap-4",
+                                                    pickedChampions.length === 1 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+                                                )}>
                                                     {pickedChampions.map(champion => {
                                                         const companyName = companies.find(c => c.id === champion.companyId)?.name;
                                                         return (
-                                                        <div key={champion.uid} className="flex flex-col items-center space-y-2 p-4 bg-background/50 rounded-lg">
+                                                        <div key={champion.uid} className={cn(
+                                                            "flex flex-col items-center space-y-2 p-4 bg-background/50 rounded-lg",
+                                                            pickedChampions.length === 1 && "scale-125"
+                                                        )}>
                                                             <div className="relative w-24 h-24">
                                                                 <Image src={champion.avatarUrl} alt={champion.characterName} fill className="object-contain drop-shadow-lg" />
                                                             </div>
@@ -251,5 +261,3 @@ export default function FindTheChampionPage() {
         </div>
     );
 }
-
-    
