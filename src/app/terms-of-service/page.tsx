@@ -20,35 +20,39 @@ export default function TermsOfServicePage() {
                     <Card>
                         <CardHeader className="text-center">
                             <Gavel className="h-16 w-16 mx-auto text-primary mb-4" />
-                            <CardTitle className="text-4xl font-headline">The Luminarian Pact</CardTitle>
-                            <CardDescription>Terms of Service for The Academy of Heroes</CardDescription>
+                            <CardTitle className="text-4xl font-headline">Terms of Service</CardTitle>
+                            <CardDescription>Last Updated: August 2025</CardDescription>
                         </CardHeader>
                         <CardContent className="prose prose-lg max-w-none dark:prose-invert">
-                            <p>By creating a hero and entering the realm of The Academy of Heroes, you agree to abide by this sacred pact. This pact governs your conduct and ensures the realm remains a place of learning and adventure for all.</p>
+                            <p>Welcome to The Academy of Heroes. These Terms of Service ("Terms") govern your access to and use of our application and services. By creating an account or using our platform, you agree to be bound by these Terms.</p>
                             
-                            <h3>1. Your Hero's Identity (Account)</h3>
-                            <p>You are responsible for safeguarding your login credentials. Do not share your password with others. The actions taken by your hero are your responsibility. Accounts are intended for individual use by a single student within their designated class.</p>
+                            <h3>1. User Accounts</h3>
+                            <p>You are responsible for maintaining the confidentiality of your account login information, including your password. You are responsible for all activities that occur under your account. You agree to notify us immediately of any unauthorized use of your account. Accounts are intended for individual use by a single student within their designated class, as managed by their teacher.</p>
 
                             <h3>2. Code of Conduct</h3>
-                            <p>All heroes must conduct themselves with honor. You agree not to:</p>
+                            <p>You agree not to use the platform to:</p>
                             <ul>
-                                <li>Use the platform for any unlawful purpose or to harass, abuse, or harm another person.</li>
-                                <li>Attempt to disrupt the realm through cheating, exploiting bugs, or using unauthorized scripts.</li>
-                                <li>Post any content that is offensive, inappropriate, or violates your school's code of conduct. The chat is a tool for collaboration, not conflict.</li>
-                                <li>Impersonate another hero or a teacher.</li>
+                                <li>Engage in any activity that is unlawful, harmful, threatening, abusive, or harassing.</li>
+                                <li>Attempt to disrupt the integrity or performance of the service by cheating, exploiting software bugs, or using unauthorized automated scripts.</li>
+                                <li>Post or transmit any content that is inappropriate, offensive, or violates your school's acceptable use policies.</li>
+                                <li>Impersonate another person, student, or teacher.</li>
                             </ul>
+                            <p>Violation of this Code of Conduct may result in the suspension or termination of your account.</p>
 
-                            <h3>3. The Role of the Teacher (Grandmaster)</h3>
-                            <p>Your teacher is the Grandmaster of your classroom instance. They have the authority to manage their students, award or revoke points, and oversee all classroom activities. We are not responsible for the content (quests, battles, etc.) created by your teacher.</p>
+                            <h3>3. Role of the Teacher</h3>
+                            <p>Your teacher acts as the administrator for your classroom's instance of the game. They have the ability to manage student accounts within their class, view progress, award or deduct in-game currency/points, and customize educational content. We are not responsible for the specific content (e.g., quests, battle questions) created by individual teachers.</p>
                             
-                            <h3>4. Termination of Service</h3>
-                            <p>We reserve the right to banish any hero (suspend or terminate an account) who violates this pact. Your teacher also has the right to remove you from their class for academic or disciplinary reasons. If you wish to leave the Academy, you may request your teacher to delete your account.</p>
+                            <h3>4. Account Termination</h3>
+                            <p>We reserve the right to suspend or terminate your account at our discretion if you violate these Terms. Your teacher also has the right to remove you from their class for academic or disciplinary reasons, which may result in the deactivation of your account for that class.</p>
 
-                            <h3>5. The Realm's Integrity (Disclaimer of Warranty)</h3>
-                            <p>The realm is provided "as is," without warranty of any kind. While our mages and engineers work tirelessly, we cannot guarantee the realm will be free from glitches or dragon attacks (downtime).</p>
+                            <h3>5. Disclaimer of Warranties</h3>
+                            <p>The service is provided on an "as is" and "as available" basis, without any warranties of any kind, express or implied. We do not guarantee that the service will be uninterrupted, secure, or free from errors or bugs.</p>
+                            
+                            <h3>6. Limitation of Liability</h3>
+                            <p>To the fullest extent permitted by law, The Academy of Heroes shall not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits or revenues, whether incurred directly or indirectly, resulting from your use of the service.</p>
 
-                            <h3>6. Amendments to the Pact</h3>
-                            <p>This pact may be updated as the realm grows and evolves. We will notify all users of significant changes. Continued use of the platform after such changes constitutes acceptance of the new pact.</p>
+                            <h3>7. Changes to the Terms</h3>
+                            <p>We may modify these Terms from time to time. We will provide notice of significant changes, and your continued use of the platform after such changes have been made will constitute your acceptance of the new Terms.</p>
                         </CardContent>
                     </Card>
                 </div>
