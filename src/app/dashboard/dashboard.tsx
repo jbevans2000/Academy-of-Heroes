@@ -80,8 +80,12 @@ export default function Dashboard() {
               // --- DAILY REGENERATION LOGIC ---
               const lastRegenDate = studentData.lastDailyRegen?.toDate();
               if (!lastRegenDate || !isSameDay(today, lastRegenDate)) {
-                  const hpRegen = Math.ceil(studentData.maxHp * 0.05);
-                  const mpRegen = Math.ceil(studentData.maxMp * 0.05);
+                  const teacherRef = doc(db, 'teachers', foundTeacherUid);
+                  const teacherSnap = await getDoc(teacherRef);
+                  const regenPercent = teacherSnap.exists() ? (teacherSnap.data().dailyRegenPercentage || 5) / 100 : 0.05;
+
+                  const hpRegen = Math.ceil(studentData.maxHp * regenPercent);
+                  const mpRegen = Math.ceil(studentData.maxMp * regenPercent);
                   
                   const newHp = Math.min(studentData.maxHp, studentData.hp + hpRegen);
                   const newMp = Math.min(studentData.maxMp, studentData.mp + mpRegen);
@@ -127,7 +131,7 @@ export default function Dashboard() {
               // This case handles a student who is approved but document is missing,
               // which could happen during account creation race conditions.
               // We log them out to prevent a bad state.
-              await signOut(auth);
+              await auth.signOut();
               router.push('/');
             }
           }, (error) => {
@@ -138,7 +142,7 @@ export default function Dashboard() {
           return () => unsub();
         } else {
           // If no student metadata, they don't belong here.
-          await signOut(auth);
+          await auth.signOut();
           router.push('/');
         }
       } else {

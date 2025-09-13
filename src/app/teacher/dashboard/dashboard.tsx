@@ -47,7 +47,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff, MessageSquare, Heart, Zap as ZapIcon } from 'lucide-react';
+import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff, MessageSquare, Heart, Zap as ZapIcon, HeartPulse } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain, MAX_LEVEL, XP_FOR_MAX_LEVEL } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -55,7 +55,7 @@ import { archiveStudents } from '@/ai/flows/manage-student';
 import { TeacherMessageCenter } from '@/components/teacher/teacher-message-center';
 import { restoreAllStudentsHp, restoreAllStudentsMp } from '@/ai/flows/manage-class';
 import { SetQuestProgressDialog } from '@/components/teacher/set-quest-progress-dialog';
-import { updateDailyReminder } from '@/ai/flows/manage-teacher';
+import { updateDailyReminder, updateDailyRegen } from '@/ai/flows/manage-teacher';
 import { Textarea } from '@/components/ui/textarea';
 import { getGlobalSettings } from '@/ai/flows/manage-settings';
 
@@ -68,6 +68,7 @@ interface TeacherData {
     dailyReminderTitle?: string;
     dailyReminderMessage?: string;
     isDailyReminderActive?: boolean;
+    dailyRegenPercentage?: number;
 }
 
 type SortOrder = 'studentName' | 'characterName' | 'xp' | 'class' | 'company';
@@ -112,6 +113,11 @@ export default function Dashboard() {
   const [reminderMessage, setReminderMessage] = useState('');
   const [isReminderActive, setIsReminderActive] = useState(true);
   const [isSavingReminder, setIsSavingReminder] = useState(false);
+
+  // Daily Regen State
+  const [isRegenDialogOpen, setIsRegenDialogOpen] = useState(false);
+  const [regenPercentage, setRegenPercentage] = useState<number | string>(5);
+  const [isSavingRegen, setIsSavingRegen] = useState(false);
 
   
   useEffect(() => {
@@ -161,6 +167,7 @@ export default function Dashboard() {
             setReminderTitle(data.dailyReminderTitle || "A Hero's Duty Awaits!");
             setReminderMessage(data.dailyReminderMessage || "Greetings, adventurer! A new day dawns, and the realm of Luminaria has a quest with your name on it. Your legend will not write itself!\\n\\nEmbark on a chapter from the World Map to continue your training. For each quest you complete, you will be rewarded with valuable **Experience (XP)** to grow stronger and **Gold** to fill your coffers.\\n\\nYour next great deed awaits!");
             setIsReminderActive(data.isDailyReminderActive ?? true);
+            setRegenPercentage(data.dailyRegenPercentage ?? 5);
             if (data.pendingCleanupBattleId) {
                 setTimeout(() => {
                     handleClearAllBattleStatus(true);
@@ -549,6 +556,29 @@ export default function Dashboard() {
     }
   };
 
+  const handleSaveRegen = async () => {
+      if (!teacher) return;
+      const percentage = Number(regenPercentage);
+      if (isNaN(percentage) || percentage < 0 || percentage > 100) {
+          toast({ variant: 'destructive', title: 'Invalid Percentage', description: 'Please enter a number between 0 and 100.' });
+          return;
+      }
+      setIsSavingRegen(true);
+      try {
+          const result = await updateDailyRegen({ teacherUid: teacher.uid, regenPercentage: percentage });
+          if (result.success) {
+              toast({ title: 'Regen Rate Updated!', description: result.message });
+              setIsRegenDialogOpen(false);
+          } else {
+              throw new Error(result.error);
+          }
+      } catch (error: any) {
+          toast({ variant: 'destructive', title: 'Save Failed', description: error.message });
+      } finally {
+          setIsSavingRegen(false);
+      }
+  }
+
 
   if (isLoading || !teacher) {
     return (
@@ -776,6 +806,10 @@ export default function Dashboard() {
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
+                     <DropdownMenuItem onSelect={() => setIsRegenDialogOpen(true)}>
+                        <HeartPulse className="mr-2 h-4 w-4 text-purple-600" />
+                        <span>Set Daily Regeneration</span>
+                    </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
             
@@ -990,6 +1024,35 @@ export default function Dashboard() {
                         <Button onClick={handleSaveReminder} disabled={isSavingReminder}>
                             {isSavingReminder && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Save Reminder
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            <Dialog open={isRegenDialogOpen} onOpenChange={setIsRegenDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Set Daily Regeneration</DialogTitle>
+                        <DialogDescription>
+                            Set the percentage of max HP and MP that students will regenerate automatically each day.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Label htmlFor="regen-percent">Regeneration Percentage (%)</Label>
+                        <Input
+                            id="regen-percent"
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={regenPercentage}
+                            onChange={(e) => setRegenPercentage(e.target.value)}
+                            disabled={isSavingRegen}
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsRegenDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleSaveRegen} disabled={isSavingRegen}>
+                             {isSavingRegen && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                             Save Setting
                         </Button>
                     </DialogFooter>
                 </DialogContent>

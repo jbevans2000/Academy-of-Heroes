@@ -66,6 +66,29 @@ export async function updateDailyReminder(input: UpdateReminderInput): Promise<A
   }
 }
 
+interface UpdateRegenInput {
+    teacherUid: string;
+    regenPercentage: number;
+}
+
+export async function updateDailyRegen(input: UpdateRegenInput): Promise<ActionResponse> {
+    const { teacherUid, regenPercentage } = input;
+    if (regenPercentage < 0 || regenPercentage > 100) {
+        return { success: false, error: 'Percentage must be between 0 and 100.' };
+    }
+    try {
+        const teacherRef = doc(db, 'teachers', teacherUid);
+        await updateDoc(teacherRef, {
+            dailyRegenPercentage: regenPercentage,
+        });
+        await logGameEvent(teacherUid, 'GAMEMASTER', `Set daily HP/MP regeneration to ${regenPercentage}%.`);
+        return { success: true, message: 'Daily regeneration rate updated!' };
+    } catch (e: any) {
+        console.error("Error in updateDailyRegen:", e);
+        return { success: false, error: e.message || 'Failed to update regeneration rate.' };
+    }
+}
+
 
 export async function deleteTeacher(teacherUid: string): Promise<ActionResponse> {
     const auth = getAuth(getFirebaseAdminApp());
