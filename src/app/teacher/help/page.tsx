@@ -10,7 +10,7 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction } from '@/components/ui/alert-dialog';
-import { ArrowLeft, BookOpen, Swords, Wrench, Star, UserPlus, LayoutDashboard, Copy, Gift, DatabaseZap, Users, Briefcase, Sparkles, User as UserIcon, Coins, Heart, Zap, Gamepad2, School, MessageSquare } from 'lucide-react';
+import { ArrowLeft, BookOpen, Swords, Wrench, Star, UserPlus, LayoutDashboard, Copy, Gift, DatabaseZap, Users, Briefcase, Sparkles, User as UserIcon, Coins, Heart, Zap, Gamepad2, School, MessageSquare, Shield, Wand2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
