@@ -41,6 +41,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -132,17 +133,17 @@ export default function Dashboard() {
         }
     });
 
-    if (searchParams.get('new') === 'true') {
-        const checkWelcomeType = async () => {
+    const checkWelcome = async () => {
+        if (searchParams.get('new') === 'true') {
             const settings = await getGlobalSettings();
             if (settings.isFeedbackPanelVisible) {
                 setShowBetaWelcomeDialog(true);
             } else {
                 setShowWelcomeDialog(true);
             }
-        };
-        checkWelcomeType();
+        }
     }
+    checkWelcome();
 
     return () => unsubscribe();
   }, [searchParams, router]);
