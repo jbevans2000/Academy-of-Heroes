@@ -10,10 +10,9 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction } from '@/components/ui/alert-dialog';
-import { ArrowLeft, BookOpen, Swords, Wrench, Star, UserPlus, LayoutDashboard, Copy, Gift, DatabaseZap } from 'lucide-react';
+import { ArrowLeft, BookOpen, Swords, Wrench, Star, UserPlus, LayoutDashboard, Copy, Gift, DatabaseZap, Users, Briefcase, Sparkles, User as UserIcon, Coins, Heart, Zap, Gamepad2, School, MessageSquare } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import Image from 'next/image';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 
@@ -21,24 +20,12 @@ interface TeacherData {
     classCode: string;
 }
 
-const helpTopics = [
-    { id: 'signup', title: 'Student Sign-Up', icon: <UserPlus className="h-8 w-8 text-primary" />, description: 'How to get students registered and into your class.' },
-    { id: 'dashboard', title: 'Understanding the Dashboard', icon: <LayoutDashboard className="h-8 w-8 text-primary" />, description: 'An overview of the main dashboard features.' },
-    { id: 'awarding', title: 'Awarding XP & Gold', icon: <Star className="h-8 w-8 text-primary" />, description: 'How to give rewards and edit student stats.' },
-    { id: 'rewards', title: 'Managing Guild Rewards', icon: <Gift className="h-8 w-8 text-primary" />, description: 'Create and manage custom rewards for your students.' },
-    { id: 'quests', title: 'Quests & Chapters', icon: <BookOpen className="h-8 w-8 text-primary" />, description: 'Learn how to create and manage the story campaign.' },
-    { id: 'battles', title: 'Boss Battles', icon: <Swords className="h-8 w-8 text-primary" />, description: 'Set up and run exciting, live boss battles.' },
-    { id: 'tools', title: 'Classroom Tools', icon: <Wrench className="h-8 w-8 text-primary" />, description: 'Discover the suite of helpful classroom utilities.' },
-    { id: 'migration', title: 'Data Migration Tool', icon: <DatabaseZap className="h-8 w-8 text-primary" />, description: 'How to recover a student\'s progress if they lose their password.' },
-];
-
 export default function TeacherHelpPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [teacher, setTeacher] = useState<User | null>(null);
     const [teacherData, setTeacherData] = useState<TeacherData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [activeDialog, setActiveDialog] = useState<string | null>(null);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -60,203 +47,7 @@ export default function TeacherHelpPage() {
     const copyClassCode = () => {
         if (teacherData?.classCode) {
             navigator.clipboard.writeText(teacherData.classCode);
-            toast({ title: "Class Code Copied!", description: "You can now share it with your students." });
-        }
-    };
-    
-    const renderDialogContent = () => {
-        switch (activeDialog) {
-            case 'signup':
-                return (
-                    <>
-                        <AlertDialogTitle className="text-2xl">Getting Students Signed Up</AlertDialogTitle>
-                        <AlertDialogDescription className="text-lg text-black space-y-4">
-                            <div>
-                                <p>Here is the simple, 3-step process for students to create their accounts and join your class:</p>
-                                <ol className="list-decimal list-inside space-y-2">
-                                    <li><strong>Navigate Home:</strong> Direct students to the application's main home page.</li>
-                                    <li><strong>Create a Hero:</strong> They should click the "Forge Your Hero & Join a Guild" button.</li>
-                                    <li><strong>Enter Guild Code:</strong> On the registration page, the most important step is to enter your unique Guild Code below.</li>
-                                </ol>
-                                <div className="text-center p-4 bg-primary/10 rounded-lg">
-                                    <p className="font-semibold">Your Unique Guild Code:</p>
-                                    <div className="flex items-center justify-center gap-2 mt-1">
-                                        <strong className="text-3xl font-mono tracking-widest text-primary">{teacherData?.classCode || 'Loading...'}</strong>
-                                        <Button size="icon" variant="ghost" onClick={copyClassCode}><Copy className="w-5 h-5" /></Button>
-                                    </div>
-                                </div>
-                            </div>
-                        </AlertDialogDescription>
-                    </>
-                );
-            case 'dashboard':
-                 return (
-                    <>
-                        <AlertDialogTitle className="text-2xl">Understanding the Dashboard</AlertDialogTitle>
-                        <AlertDialogDescription className="text-lg text-black space-y-4">
-                            <div>
-                                <p>The Teacher Dashboard is your central command center. Here’s a quick breakdown:</p>
-                                <Image src="https://placehold.co/800x400.png" alt="Placeholder for dashboard screenshot" width={800} height={400} className="rounded-lg border" data-ai-hint="dashboard interface" />
-                                <ul className="list-disc list-inside space-y-2">
-                                    <li><strong>Student Cards:</strong> Each student in your class gets their own card, showing their character, name, class, and key stats at a glance.</li>
-                                    <li><strong>Selection:</strong> Click the checkbox in the top-right of a card to select a student. You can select multiple students, or use the "Select All" button.</li>
-                                    <li><strong>Manual Stat Editing:</strong> You can directly edit a student's XP, Gold, HP, or MP by clicking on the stat on their card. A small input box will appear for you to enter a new value.</li>
-                                    <li><strong>View Details:</strong> Click the "View Details" button on a card to see a full-screen preview of that student's dashboard, exactly as they see it.</li>
-                                    <li><strong>Dropdown Menus:</strong> The "Game Management" and "Classroom" dropdowns contain all your tools for managing the game and your students.</li>
-                                </ul>
-                            </div>
-                        </AlertDialogDescription>
-                    </>
-                );
-            case 'awarding':
-                 return (
-                    <>
-                        <AlertDialogTitle className="text-2xl">Awarding XP & Gold</AlertDialogTitle>
-                        <AlertDialogDescription className="text-lg text-black space-y-4">
-                             <div>
-                                <p>You can award Experience Points (XP) and Gold to students individually or in groups.</p>
-                                <ol className="list-decimal list-inside space-y-2">
-                                    <li><strong>Select Students:</strong> On the dashboard, click the checkbox on the cards of the students you want to reward. Use "Select All" for the whole class.</li>
-                                    <li><strong>Click Award Button:</strong> Click either the "Bestow Experience" or "Bestow Gold" button at the top of the dashboard.</li>
-                                    <li><strong>Enter Amount:</strong> A dialog will appear. Enter the amount you wish to give. You can also enter a negative number to subtract points.</li>
-                                    <li><strong>Confirm:</strong> Click "Confirm Award". The points will be applied, and any level-ups (from XP), HP, or MP gains will be calculated automatically.</li>
-                                </ol>
-                                <p className="font-semibold">Note: You can also set a stat to a specific number by clicking directly on it within a student's card.</p>
-                            </div>
-                        </AlertDialogDescription>
-                    </>
-                );
-            case 'rewards':
-                return (
-                    <>
-                        <AlertDialogTitle className="text-2xl">Managing Guild Rewards</AlertDialogTitle>
-                        <AlertDialogDescription className="text-lg text-black space-y-4">
-                            <div>
-                                <p><strong>Guild Rewards</strong> are custom real-world or in-game perks you can create for your students to purchase with their Gold.</p>
-                                <h4 className="font-bold mt-2">Creating Rewards</h4>
-                                <p>From your main Podium, navigate to Game Management &gt; Guild Rewards. Here, you can click "Create New Reward" to design a new item. You can set its name, description, cost, and image. You can also decide if a purchase requires your approval.</p>
-                                <h4 className="font-bold mt-2">Managing Rewards</h4>
-                                <p>On the Guild Rewards page, you can see all the rewards you've created. Each card has controls to:</p>
-                                <ul className="list-disc list-inside">
-                                    <li><strong>Toggle Visibility:</strong> Make a reward visible or hidden from the student store.</li>
-                                    <li><strong>Edit:</strong> Change any of the reward's details.</li>
-                                    <li><strong>Delete:</strong> Permanently remove the reward.</li>
-                                </ul>
-                                <h4 className="font-bold mt-2">Student Experience</h4>
-                                <p>Students browse and purchase visible rewards in "The Vault". If a reward requires approval, you will see a request on your Guild Rewards page. Students use their purchased rewards from the "My Inventory" page.</p>
-                            </div>
-                        </AlertDialogDescription>
-                    </>
-                );
-            case 'quests':
-                return (
-                    <>
-                        <AlertDialogTitle className="text-2xl">Creating Quests & Chapters</AlertDialogTitle>
-                         <AlertDialogDescription className="text-lg text-black space-y-4">
-                           <div>
-                                <p>The Quest system is how you deliver your curriculum content through a story.</p>
-                                <Image src="https://placehold.co/800x400.png" alt="Placeholder for quest creation screenshot" width={800} height={400} className="rounded-lg border" data-ai-hint="quest map" />
-                                <h3 className="font-bold">Key Concepts:</h3>
-                                <ul className="list-disc list-inside space-y-2">
-                                    <li><strong>Quest Hubs:</strong> Think of these as main story areas or units (e.g., "The Kingdom of Fractions," "The Forest of Verbs"). Each Hub has its own map and can contain multiple chapters. They appear on the World Map.</li>
-                                    <li><strong>Chapters:</strong> These are the individual lessons within a Hub. Each chapter has a "Story" tab and a "Lesson" tab, allowing you to separate the narrative from the academic content.</li>
-                                </ul>
-                                <h3 className="font-bold">How to Create:</h3>
-                                <ol className="list-decimal list-inside space-y-2">
-                                    <li>Navigate to "The Quest Archives" from the dashboard.</li>
-                                    <li>Click "Create New Quest".</li>
-                                    <li>First, either select an existing Hub or choose to create a new one by providing its name, map URL, and position on the world map.</li>
-                                    <li>Next, fill out the content for your new Chapter, including its title, story, lesson, and any images or videos.</li>
-                                    <li>Finally, click and drag the icon on the Hub map to position your new chapter.</li>
-                                </ol>
-                            </div>
-                        </AlertDialogDescription>
-                    </>
-                );
-            case 'battles':
-                return (
-                    <>
-                        <AlertDialogTitle className="text-2xl">Running Boss Battles</AlertDialogTitle>
-                         <AlertDialogDescription className="text-lg text-black space-y-4">
-                             <div>
-                                <p>Boss Battles are live, timed quiz games for the whole class.</p>
-                                <ol className="list-decimal list-inside space-y-2">
-                                    <li><strong>Create a Battle:</strong> Go to "The Field of Battle" and click "Create New". Give it a name, a boss image/video, and add your questions, answers, and the HP damage for incorrect answers.</li>
-                                    <li><strong>Start the Battle:</strong> From the battles list, click "Start Battle". This opens the waiting room for students.</li>
-                                    <li><strong>Run the Battle:</strong> On the Live Battle Control Panel, you will advance the game:
-                                        <ul className="list-disc list-inside ml-6">
-                                            <li>Click "Start First Question" to begin.</li>
-                                            <li>Click "End Round" to start a 10-second countdown for students to lock in answers.</li>
-                                            <li>After the timer, results are shown. Click "Next Question" to proceed.</li>
-                                        </ul>
-                                    </li>
-                                    <li><strong>End the Battle:</strong> When you're done, click "End Battle". This calculates all rewards, saves a summary report, and directs students to their results.</li>
-                                </ol>
-                             </div>
-                        </AlertDialogDescription>
-                    </>
-                );
-             case 'tools':
-                return (
-                    <>
-                        <AlertDialogTitle className="text-2xl">Using Classroom Tools</AlertDialogTitle>
-                         <AlertDialogDescription className="text-lg text-black space-y-4">
-                           <div>
-                                <p>The Guild Leader's Toolkit is a suite of utilities to help you manage your class with a fantasy theme.</p>
-                                <ul className="list-disc list-inside space-y-2">
-                                    <li><strong>Mystical Clock:</strong> A themed timer and stopwatch.</li>
-                                    <li><strong>Sleeping Dragon:</strong> A noise monitor. The dragon on screen wakes up if the class gets too loud!</li>
-                                    <li><strong>The Runes of Destiny:</strong> A random student selector.</li>
-                                    <li><strong>A Task from the Throne:</strong> An AI-powered generator for quick, fun, fantasy-themed classroom activities (e.g., "Draw a mythical creature").</li>
-                                    <li><strong>Group Guilder:</strong> Randomly sorts your students into named groups or "guilds".</li>
-                                    <li><strong>The Royal Scribe:</strong> An AI-powered generator for grade-specific writing prompts.</li>
-                                </ul>
-                            </div>
-                        </AlertDialogDescription>
-                    </>
-                );
-            case 'migration':
-                return (
-                    <>
-                        <AlertDialogTitle className="text-2xl">Using the Data Migration Tool</AlertDialogTitle>
-                         <AlertDialogDescription className="text-lg text-black space-y-4">
-                           <div>
-                                <p>The Data Migration tool is a powerful utility designed for a specific scenario: <strong>when a student using a "Hero's Alias" for login forgets their password.</strong> Since these accounts aren't tied to a real email, they cannot use the standard "Forgot Password" feature.</p>
-                                <div className="bg-destructive/10 border-l-4 border-destructive p-4 my-4 rounded-md">
-                                    <h4 className="font-bold text-destructive">WARNING:</h4>
-                                    <p>This process is irreversible. It will completely <strong>overwrite all game progress</strong> (Level, XP, Gold, inventory, etc.) on the NEW account with the data from the OLD account. The new account's login credentials and name will remain unchanged.</p>
-                                </div>
-                                <h4>When to Use This Tool:</h4>
-                                <ul className="list-disc list-inside">
-                                    <li>A student used the "Hero's Alias" signup method.</li>
-                                    <li>That student has forgotten their password and is locked out of their account.</li>
-                                    <li>You want to transfer their game progress to a fresh, new account.</li>
-                                </ul>
-                                <h4>Step 1: Instructions for the Student</h4>
-                                <div className="bg-amber-100 border-l-4 border-amber-500 text-amber-900 p-4 my-2 rounded-md">
-                                    <p><strong>CRUCIAL:</strong> The student's new character <strong>MUST be the same class</strong> (Guardian, Healer, or Mage) as their old character. The tool will not allow migration between different classes!</p>
-                                </div>
-                                <p>The student must first create a brand new character:</p>
-                                <ol className="list-decimal list-inside">
-                                    <li>Go to the registration page.</li>
-                                    <li>Enter your Guild Code.</li>
-                                    <li>Fill out the form to create a new hero. They can use the same names, but must choose a <strong>new Hero's Alias and Password</strong> that they will remember.</li>
-                                    <li>They must wait for you to approve them.</li>
-                                </ol>
-                                <h4>Step 2: Instructions for the Teacher</h4>
-                                <ol className="list-decimal list-inside">
-                                    <li>First, approve the student's new account application from your dashboard's "Pending Approvals" dialog. The new, empty account must appear on your dashboard roster.</li>
-                                    <li>Navigate to Classroom &gt; Data Migration Tool.</li>
-                                    <li>From the first dropdown, select the student's <strong>OLD</strong> account (the one with all the progress).</li>
-                                    <li>From the second dropdown, select the student's <strong>NEW</strong>, empty account.</li>
-                                    <li>Click "Migrate Data" and confirm the action. The old account will be archived and disabled, and the new account will now have all the old progress.</li>
-                                </ol>
-                            </div>
-                        </AlertDialogDescription>
-                    </>
-                );
-            default:
-                return null;
+            toast({ title: "Guild Code Copied!", description: "You can now share it with your students." });
         }
     };
 
@@ -280,42 +71,152 @@ export default function TeacherHelpPage() {
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
             <TeacherHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
-                <div className="max-w-4xl mx-auto space-y-6">
+                <div className="max-w-4xl mx-auto space-y-8">
                     <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Dashboard
+                        Back to Podium
                     </Button>
                     <Card className="text-center">
                         <CardHeader>
-                            <CardTitle className="text-3xl">Help Center</CardTitle>
-                            <CardDescription>Find answers and instructions on how to use the Academy of Heroes platform.</CardDescription>
+                            <CardTitle className="text-3xl">The Grandmaster's Guide</CardTitle>
+                            <CardDescription>A complete guide to managing your guild and leading your students to victory.</CardDescription>
                         </CardHeader>
                     </Card>
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {helpTopics.map(topic => (
-                            <Card key={topic.id} className="hover:border-primary hover:shadow-lg transition-all cursor-pointer" onClick={() => setActiveDialog(topic.id)}>
-                                <CardHeader className="items-center text-center">
-                                    {topic.icon}
-                                    <CardTitle className="mt-2">{topic.title}</CardTitle>
 
-                                </CardHeader>
-                                <CardContent>
-                                    <p className="text-sm text-muted-foreground">{topic.description}</p>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><UserPlus className="text-primary"/> Teacher Features</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                             <Accordion type="single" collapsible className="w-full">
+                                <AccordionItem value="signup">
+                                    <AccordionTrigger className="text-lg">Student Sign-Up</AccordionTrigger>
+                                    <AccordionContent className="prose dark:prose-invert max-w-none">
+                                        <p>To get students into your class, they need your unique Guild Code. The process is simple:</p>
+                                        <ol>
+                                            <li>Direct students to the application's home page.</li>
+                                            <li>They click "Forge Your Hero & Join a Guild".</li>
+                                            <li>They enter your Guild Code: <strong className="font-mono text-primary bg-primary/10 p-1 rounded-md">{teacherData?.classCode}</strong> <Button size="sm" variant="ghost" onClick={copyClassCode}><Copy className="w-4 h-4 mr-1"/>Copy</Button></li>
+                                            <li>They fill out the form, choosing a login method (email or username), class, and avatar.</li>
+                                        </ol>
+                                        <p>Once they register, their application will appear in the "Pending Approvals" dialog on your main Podium, where you must approve them to grant access.</p>
+                                    </AccordionContent>
+                                </AccordionItem>
+                                 <AccordionItem value="dashboard">
+                                    <AccordionTrigger className="text-lg">Podium (Main Dashboard)</AccordionTrigger>
+                                    <AccordionContent className="prose dark:prose-invert max-w-none">
+                                        <p>The Podium is your central command center. Here’s a breakdown:</p>
+                                        <ul>
+                                            <li><strong>Student Roster:</strong> View all your students at a glance, with key stats like Level, HP, MP, XP, and Gold.</li>
+                                            <li><strong>Stat Editing:</strong> Click directly on a student's XP, Gold, HP, or MP on their card to manually set a new value. This is useful for quick corrections.</li>
+                                            <li><strong>Student Selection:</strong> Use the checkboxes on each card to select one or more students. Use "Select All" to target everyone. Selected students can be awarded points in bulk, archived, or have their quest progress set.</li>
+                                             <li><strong>Awarding Points:</strong> Use the "Bestow Experience" and "Bestow Gold" buttons to give or take points from all selected students.</li>
+                                             <li><strong>Student Details:</strong> Click "View Details" to see a student's dashboard exactly as they see it. Use the pencil icons on their card to edit their name or character name.</li>
+                                            <li><strong>Dropdown Menus:</strong> All major features are accessible from the "Game Management" and "Classroom" dropdowns at the top of the page.</li>
+                                        </ul>
+                                    </AccordionContent>
+                                </AccordionItem>
+                                <AccordionItem value="quests">
+                                    <AccordionTrigger className="text-lg">Quest Archives (Content Management)</AccordionTrigger>
+                                    <AccordionContent className="prose dark:prose-invert max-w-none">
+                                        <p>This is where you build your educational adventure. Access it via `Game Management &gt; The Quest Archives`.</p>
+                                        <ul>
+                                            <li><strong>Quest Hubs:</strong> These are the main zones on your World Map (e.g., "Unit 1: The Crystal Mountains"). Each Hub has its own regional map where you place Chapters. You can create a Hub from the Quest Archives page.</li>
+                                            <li><strong>Chapters:</strong> These are your individual lessons. Each Chapter has a "Story" tab for narrative and a "Lesson" tab for curriculum content. You can add text, images, and YouTube videos.</li>
+                                            <li><strong>Quizzes:</strong> You can add an optional multiple-choice quiz to the end of any chapter to test student knowledge.</li>
+                                            <li><strong>Quest Completion:</strong> In `Classroom &gt; Manage Quest Completion`, you can set a global rule requiring your approval for students to advance chapters. You can also override this setting for individual students or manually set any student's progress to a specific chapter.</li>
+                                        </ul>
+                                    </AccordionContent>
+                                </AccordionItem>
+                                 <AccordionItem value="boons-rewards">
+                                    <AccordionTrigger className="text-lg">Guild Rewards & The Workshop</AccordionTrigger>
+                                    <AccordionContent className="prose dark:prose-invert max-w-none">
+                                        <p>You can create custom real-world or in-game perks for students to buy with their earned Gold.</p>
+                                        <ul>
+                                            <li><strong>Guild Rewards (`Game Management &gt; Guild Rewards`):</strong> This is your workshop. Create new rewards, edit existing ones, and toggle their visibility in the student store ("The Vault").</li>
+                                            <li><strong>Pending Approvals:</strong> If a reward requires your approval, student purchase requests will appear here for you to accept or deny.</li>
+                                            <li><strong>Manage Rewards (`Classroom &gt; Manage Rewards`):</strong> This page provides a master table allowing you to manually add or remove any reward from any student's inventory at any time.</li>
+                                        </ul>
+                                    </AccordionContent>
+                                </AccordionItem>
+                                <AccordionItem value="battles">
+                                    <AccordionTrigger className="text-lg">Boss Battles & Training Grounds</AccordionTrigger>
+                                    <AccordionContent className="prose dark:prose-invert max-w-none">
+                                        <p>Engage your class with two forms of combat-based quizzing.</p>
+                                        <ul>
+                                            <li><strong>Boss Battles (`Game Management &gt; The Field of Battle`):</strong> Create multiple-choice quizzes that the whole class can fight together in real-time. Students join from their dashboards to answer questions on their own devices. Their combined effort damages the boss.</li>
+                                            <li><strong>Training Grounds (Duels) (`Game Management &gt; The Training Grounds`):</strong> This is a Player vs. Player (PvP) system. You create sections of questions, and students can challenge each other to 1v1 duels using the questions from the active sections. You can set XP/Gold rewards, entry costs, and daily duel limits.</li>
+                                        </ul>
+                                    </AccordionContent>
+                                </AccordionItem>
+                                <AccordionItem value="tools">
+                                    <AccordionTrigger className="text-lg">The Guild Leader's Toolkit</AccordionTrigger>
+                                    <AccordionContent className="prose dark:prose-invert max-w-none">
+                                        <p>A suite of utilities to help manage your classroom with a fantasy theme. Access it via `Game Management &gt; The Guild Leader's Toolkit`.</p>
+                                         <ul>
+                                            <li><strong>Mystical Clock:</strong> A themed timer and stopwatch.</li>
+                                            <li><strong>Sleeping Dragon:</strong> A noise monitor. The dragon on screen wakes up if the class gets too loud!</li>
+                                            <li><strong>The Runes of Destiny:</strong> A random student selector.</li>
+                                            <li><strong>Find the Champion:</strong> A tool to randomly select a "Champion" from students who have volunteered. Great for calling on a student to answer for their team.</li>
+                                            <li><strong>A Task from the Throne:</strong> An AI-powered generator for quick, fun, fantasy-themed classroom activities.</li>
+                                            <li><strong>Group Guilder:</strong> Randomly sorts your students into groups.</li>
+                                            <li><strong>The Royal Scribe:</strong> An AI-powered generator for grade-specific writing prompts.</li>
+                                            <li><strong>Wheel of Fate:</strong> A customizable spinning wheel for random classroom events.</li>
+                                        </ul>
+                                    </AccordionContent>
+                                </AccordionItem>
+                                 <AccordionItem value="data-tools">
+                                    <AccordionTrigger className="text-lg">Data & Account Management</AccordionTrigger>
+                                    <AccordionContent className="prose dark:prose-invert max-w-none">
+                                         <ul>
+                                            <li><strong>Message Center:</strong> Send and receive private messages with your students from the main Podium.</li>
+                                            <li><strong>Data Migration Tool:</strong> A powerful tool for when a student who used a "Username" login (not an email) forgets their password. It allows you to transfer all their game progress to a newly created account.</li>
+                                            <li><strong>Archived Heroes:</strong> View students who have been archived after a data migration. You can restore them from this page.</li>
+                                            <li><strong>The Chronicler's Scroll (Game Log):</strong> A real-time log of all major events happening in your game, from logins to quest completions.</li>
+                                        </ul>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            </Accordion>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><Sparkles className="text-primary"/> Student-Facing Features</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                             <Accordion type="single" collapsible className="w-full">
+                                <AccordionItem value="s-dashboard">
+                                    <AccordionTrigger className="text-lg">The Student Dashboard</AccordionTrigger>
+                                    <AccordionContent className="prose dark:prose-invert max-w-none">
+                                        <p>This is the student's main screen. They can see their character, stats (HP, MP, Level, etc.), and access all other features.</p>
+                                         <ul>
+                                            <li><strong>Ready for Battle:</strong> Students click this to join a live Boss Battle you have started.</li>
+                                            <li><strong>Embark on Your Quest:</strong> Takes them to the World Map to continue their quests.</li>
+                                            <li><strong>Training Grounds:</strong> Opens a dialog where they can challenge other online students to a duel.</li>
+                                             <li><strong>The Forge:</strong> A new screen where students can customize their 2D and 3D character appearance using items they own.</li>
+                                             <li><strong>The Vault:</strong> The store where students can spend Gold on Rewards you've created.</li>
+                                             <li><strong>My Inventory:</strong> A page to view and use the Rewards they have purchased.</li>
+                                             <li><strong>Champion Status:</strong> A toggle on their stats card allows them to volunteer to be a "Champion," making them eligible for selection in the "Find the Champion" tool.</li>
+                                        </ul>
+                                    </AccordionContent>
+                                </AccordionItem>
+                                <AccordionItem value="s-powers">
+                                    <AccordionTrigger className="text-lg">Class Powers</AccordionTrigger>
+                                    <AccordionContent className="prose dark:prose-invert max-w-none">
+                                        <p>Each class—Guardian, Healer, and Mage—has a unique set of 8 powers they unlock as they level up. These powers can be used during live Boss Battles to help the party.</p>
+                                        <ul>
+                                            <li><strong>Guardians (<Shield className="inline h-5 w-5 text-amber-500"/>):</strong> Focus on defense, protecting allies, and taking damage for others.</li>
+                                            <li><strong>Healers (<Heart className="inline h-5 w-5 text-green-500"/>):</strong> Focus on restoring HP, reviving fallen allies, and providing utility like removing wrong answers.</li>
+                                            <li><strong>Mages (<Wand2 className="inline h-5 w-5 text-blue-500"/>):</strong> Focus on dealing extra damage and restoring MP to their allies.</li>
+                                        </ul>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            </Accordion>
+                        </CardContent>
+                    </Card>
+
                 </div>
-                 <AlertDialog open={!!activeDialog} onOpenChange={(open) => !open && setActiveDialog(null)}>
-                    <AlertDialogContent className="max-w-3xl">
-                        <AlertDialogHeader>
-                           {renderDialogContent()}
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogAction>Got it!</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
             </main>
         </div>
     );
