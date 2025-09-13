@@ -80,13 +80,17 @@ export async function setChampionStatus(input: ChampionStatusInput): Promise<Act
         // First, update the student's document
         transaction.update(studentRef, { isChampion: isChampion });
 
-        // Then, update the centralized champions document
         if (isChampion) {
+            // If becoming a champion, add them to the list. `set` with `merge` will create the document if it doesn't exist.
             transaction.set(championsRef, { championUids: arrayUnion(studentUid) }, { merge: true });
         } else {
-            // Here, we use update because we are only removing an element. 
-            // The document must exist if we are removing a UID from it.
-            transaction.update(championsRef, { championUids: arrayRemove(studentUid) });
+            // If ceasing to be a champion, remove them. This must be handled carefully.
+            const championsSnap = await transaction.get(championsRef);
+            if (championsSnap.exists()) {
+                // Only update if the document actually exists.
+                transaction.update(championsRef, { championUids: arrayRemove(studentUid) });
+            }
+            // If the document doesn't exist, there's nothing to remove, so we do nothing.
         }
     });
     return { success: true };
@@ -333,3 +337,5 @@ export async function archiveStudents(input: ArchiveStudentsInput): Promise<Acti
         return { success: false, error: 'An unexpected error occurred while archiving the students.' };
     }
 }
+
+    
