@@ -182,7 +182,7 @@ export default function RegisterPage() {
       <div 
         className="flex items-center justify-center min-h-screen bg-background p-4 sm:p-6"
         style={{
-          backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Aug%2014%2C%202025%2C%2009_59_49%20PM.png?alt=media&token=747d1d1c-a431-40bd-9305-e0141bd548df')`,
+          backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Sep%2012%2C%202025%2C%2005_51_46%20PM.png?alt=media&token=0d3a14f7-9769-4696-95a5-09e6b578c949')`,
           backgroundSize: 'cover',
           backgroundPosition: 'top',
           backgroundRepeat: 'no-repeat',
