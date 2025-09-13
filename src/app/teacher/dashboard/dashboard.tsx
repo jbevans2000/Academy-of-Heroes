@@ -41,7 +41,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -84,8 +83,7 @@ export default function Dashboard() {
   const [goldAmount, setGoldAmount] = useState<number | string>('');
   const [isAwarding, setIsAwarding] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
-  const [isXpDialogOpen, setIsXpDialogOpen] = useState(false);
-  const [isGoldDialogOpen, setIsGoldDialogOpen] = useState(false);
+  const [isRewardsDialogOpen, setIsRewardsDialogOpen] = useState(false);
   const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false);
   const [isArchiveConfirmOpen, setIsArchiveConfirmOpen] = useState(false);
   const [isQuestProgressOpen, setIsQuestProgressOpen] = useState(false);
@@ -160,7 +158,7 @@ export default function Dashboard() {
             const data = teacherSnap.data() as TeacherData;
             setTeacherData(data);
             setReminderTitle(data.dailyReminderTitle || "A Hero's Duty Awaits!");
-            setReminderMessage(data.dailyReminderMessage || "Greetings, adventurer! A new day dawns, and the realm of Luminaria has a quest with your name on it. Your legend will not write itself!\n\nEmbark on a chapter from the World Map to continue your training. For each quest you complete, you will be rewarded with valuable **Experience (XP)** to grow stronger and **Gold** to fill your coffers.\n\nYour next great deed awaits!");
+            setReminderMessage(data.dailyReminderMessage || "Greetings, adventurer! A new day dawns, and the realm of Luminaria has a quest with your name on it. Your legend will not write itself!\\n\\nEmbark on a chapter from the World Map to continue your training. For each quest you complete, you will be rewarded with valuable **Experience (XP)** to grow stronger and **Gold** to fill your coffers.\\n\\nYour next great deed awaits!");
             setIsReminderActive(data.isDailyReminderActive ?? true);
             if (data.pendingCleanupBattleId) {
                 setTimeout(() => {
@@ -277,22 +275,16 @@ export default function Dashboard() {
     }
   };
 
-  const handleAwardXp = async () => {
-      const amount = Number(xpAmount);
-      if (isNaN(amount) || amount === 0) {
-          toast({
-              variant: 'destructive',
-              title: 'Invalid Amount',
-              description: 'Please enter a valid non-zero number for XP.',
-          });
+  const handleAwardRewards = async () => {
+      const xpValue = Number(xpAmount) || 0;
+      const goldValue = Number(goldAmount) || 0;
+
+      if (xpValue === 0 && goldValue === 0) {
+          toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a non-zero amount for XP or Gold.' });
           return;
       }
       if (selectedStudents.length === 0) {
-          toast({
-              variant: 'destructive',
-              title: 'No Students Selected',
-              description: 'Please select at least one student.',
-          });
+          toast({ variant: 'destructive', title: 'No Students Selected', description: 'Please select at least one student.' });
           return;
       }
 
@@ -304,43 +296,51 @@ export default function Dashboard() {
           let studentsAtMaxLevel = 0;
 
           for (const studentData of studentsToUpdate) {
-              const currentLevel = studentData.level || 1;
-
-              if (currentLevel >= MAX_LEVEL && amount > 0) {
-                  studentsAtMaxLevel++;
-                  continue; 
-              }
-
               const studentRef = doc(db, 'teachers', teacher!.uid, 'students', studentData.uid);
-              const currentXp = studentData.xp || 0;
-              const newXp = Math.max(0, currentXp + amount);
-              
-              const newLevel = calculateLevel(newXp);
-              
-              const updates: Partial<Student> = { xp: newXp };
+              const updates: Partial<Student> = {};
 
-              if (newLevel > currentLevel) {
-                  const levelsGained = newLevel - currentLevel;
-                  const hpGained = calculateHpGain(studentData.class, levelsGained);
-                  const mpGained = calculateMpGain(studentData.class, levelsGained);
+              // Handle XP
+              if (xpValue !== 0) {
+                  const currentLevel = studentData.level || 1;
+                  if (currentLevel >= MAX_LEVEL && xpValue > 0) {
+                      studentsAtMaxLevel++;
+                  } else {
+                      const currentXp = studentData.xp || 0;
+                      const newXp = Math.max(0, currentXp + xpValue);
+                      const newLevel = calculateLevel(newXp);
+                      updates.xp = newXp;
 
-                  updates.level = newLevel;
-                  updates.hp = (studentData.hp || 0) + hpGained;
-                  updates.maxHp = (studentData.maxHp || 0) + hpGained;
-                  updates.mp = (studentData.mp || 0) + mpGained;
-                  updates.maxMp = (studentData.maxMp || 0) + mpGained;
+                      if (newLevel > currentLevel) {
+                          const levelsGained = newLevel - currentLevel;
+                          updates.level = newLevel;
+                          updates.hp = (studentData.hp || 0) + calculateHpGain(studentData.class, levelsGained);
+                          updates.maxHp = (studentData.maxHp || 0) + calculateHpGain(studentData.class, levelsGained);
+                          updates.mp = (studentData.mp || 0) + calculateMpGain(studentData.class, levelsGained);
+                          updates.maxMp = (studentData.maxMp || 0) + calculateMpGain(studentData.class, levelsGained);
+                      }
+                  }
+              }
+
+              // Handle Gold
+              if (goldValue !== 0) {
+                  updates.gold = Math.max(0, (studentData.gold || 0) + goldValue);
               }
               
-              batch.update(studentRef, updates);
+              if (Object.keys(updates).length > 0) {
+                  batch.update(studentRef, updates);
+              }
           }
           
           await batch.commit();
           
-          await logGameEvent(teacher!.uid, 'GAMEMASTER', `Bestowed ${amount} XP to ${selectedStudents.length} student(s).`);
+          const xpMessage = xpValue !== 0 ? `${xpValue} XP` : '';
+          const goldMessage = goldValue !== 0 ? `${goldValue} Gold` : '';
+          const and = xpValue !== 0 && goldValue !== 0 ? ' and ' : '';
+          await logGameEvent(teacher!.uid, 'GAMEMASTER', `Bestowed ${xpMessage}${and}${goldMessage} to ${selectedStudents.length} student(s).`);
 
           toast({
-              title: 'Experience Bestowed!',
-              description: `${amount} XP has been bestowed upon ${selectedStudents.length - studentsAtMaxLevel} student(s). Levels, HP, and MP have been updated where appropriate.`,
+              title: 'Rewards Bestowed!',
+              description: `Successfully awarded rewards to ${selectedStudents.length - studentsAtMaxLevel} student(s).`,
           });
 
           if (studentsAtMaxLevel > 0) {
@@ -353,73 +353,16 @@ export default function Dashboard() {
 
           setSelectedStudents([]);
           setXpAmount('');
-          setIsXpDialogOpen(false);
-      } catch (error) {
-          console.error("Error awarding XP: ", error);
-          toast({
-              variant: 'destructive',
-              title: 'Update Failed',
-              description: 'Could not bestow Experience. Please try again.',
-          });
-      } finally {
-          setIsAwarding(false);
-      }
-  };
-
-  const handleAwardGold = async () => {
-      const amount = Number(goldAmount);
-      if (isNaN(amount) || amount === 0) {
-          toast({
-              variant: 'destructive',
-              title: 'Invalid Amount',
-              description: 'Please enter a valid non-zero number for Gold.',
-          });
-          return;
-      }
-      if (selectedStudents.length === 0) {
-          toast({
-              variant: 'destructive',
-              title: 'No Students Selected',
-              description: 'Please select at least one student.',
-          });
-          return;
-      }
-
-      setIsAwarding(true);
-
-      try {
-          const batch = writeBatch(db);
-          const studentsToUpdate = students.filter(s => selectedStudents.includes(s.uid));
-
-          for (const studentData of studentsToUpdate) {
-              const studentRef = doc(db, 'teachers', teacher!.uid, 'students', studentData.uid);
-              const currentGold = studentData.gold || 0;
-              const newGold = Math.max(0, currentGold + amount);
-              batch.update(studentRef, { gold: newGold });
-          }
-
-          await batch.commit();
-          
-          await logGameEvent(teacher!.uid, 'GAMEMASTER', `Bestowed ${amount} Gold to ${selectedStudents.length} student(s).`);
-
-          toast({
-              title: 'Gold Bestowed!',
-              description: `${amount} Gold has been bestowed upon ${selectedStudents.length} student(s).`,
-          });
-          setSelectedStudents([]);
           setGoldAmount('');
-          setIsGoldDialogOpen(false);
+          setIsRewardsDialogOpen(false);
       } catch (error) {
-          console.error("Error awarding Gold: ", error);
-          toast({
-              variant: 'destructive',
-              title: 'Update Failed',
-              description: 'Could not bestow Gold. Please try again.',
-          });
+          console.error("Error awarding rewards: ", error);
+          toast({ variant: 'destructive', title: 'Update Failed', description: 'Could not bestow rewards. Please try again.' });
       } finally {
           setIsAwarding(false);
       }
   };
+
 
   const handleArchiveStudents = async () => {
     if (!teacher || selectedStudents.length === 0) return;
@@ -684,7 +627,6 @@ export default function Dashboard() {
                             <li><strong>Data Resets:</strong> In rare cases, we may need to reset game data (like student XP, Gold, or quest progress) to implement major updates. We will do our best to notify you in advance if this is necessary.</li>
                         </ul>
                          <p>Your role is crucial. By using the app and providing feedback, you are helping us forge a better, more engaging experience for everyone. Please use the **"Report a Bug"** and **"Request a Feature"** buttons in the header to share your thoughts.</p>
-                         <p>Thank you for your courage and your adventurous spirit!</p>
                       </div>
                     </AlertDialogDescription>
                 </AlertDialogHeader>
@@ -857,7 +799,7 @@ export default function Dashboard() {
                         <Check className="mr-2 h-4 w-4" />
                         <span>Manage Quest Completion</span>
                     </DropdownMenuItem>
-                     <DropdownMenuItem onSelect={() => setIsReminderDialogOpen(true)}>
+                    <DropdownMenuItem onSelect={() => setIsReminderDialogOpen(true)}>
                         <MessageSquare className="mr-2 h-4 w-4" />
                         <span>Set Daily Reminder</span>
                     </DropdownMenuItem>
@@ -912,79 +854,56 @@ export default function Dashboard() {
                 {teacherData?.hasUnreadTeacherMessages && <span className="absolute top-1 right-1 flex h-3 w-3 rounded-full bg-red-600 animate-pulse" />}
             </Button>
 
-            <Dialog open={isXpDialogOpen} onOpenChange={setIsXpDialogOpen}>
-            <DialogTrigger asChild>
-                <Button disabled={selectedStudents.length === 0} className="text-black border-black border">
-                <Star className="mr-2 h-4 w-4" /> Bestow Experience
-                </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                <DialogTitle>Bestow Experience to Selected Students</DialogTitle>
-                <DialogDescription>
-                    Enter a positive value to add XP or a negative value to remove XP. This will apply to all selected students.
-                </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="xp-amount" className="text-right">
-                    XP Amount
-                    </Label>
-                    <Input
-                    id="xp-amount"
-                    type="number"
-                    value={xpAmount}
-                    onChange={(e) => setXpAmount(e.target.value)}
-                    className="col-span-3"
-                    placeholder="e.g., 100 or -50"
-                    disabled={isAwarding}
-                    />
-                </div>
-                </div>
-                <DialogFooter>
-                <Button onClick={handleAwardXp} disabled={isAwarding || selectedStudents.length === 0}>
-                    {isAwarding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Confirm Award ({selectedStudents.length} selected)
-                </Button>
-                </DialogFooter>
-            </DialogContent>
-            </Dialog>
-            <Dialog open={isGoldDialogOpen} onOpenChange={setIsGoldDialogOpen}>
-            <DialogTrigger asChild>
-                <Button className="bg-green-600 hover:bg-green-700 text-white border-black border" disabled={selectedStudents.length === 0}>
-                <Coins className="mr-2 h-4 w-4" /> Bestow Gold
-                </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                <DialogTitle>Bestow Gold to Selected Students</DialogTitle>
-                <DialogDescription>
-                    Enter a positive value to add Gold or a negative value to remove it. This will apply to all selected students.
-                </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="gold-amount" className="text-right">
-                    Gold Amount
-                    </Label>
-                    <Input
-                    id="gold-amount"
-                    type="number"
-                    value={goldAmount}
-                    onChange={(e) => setGoldAmount(e.target.value)}
-                    className="col-span-3"
-                    placeholder="e.g., 50 or -10"
-                    disabled={isAwarding}
-                    />
-                </div>
-                </div>
-                <DialogFooter>
-                <Button onClick={handleAwardGold} disabled={isAwarding || selectedStudents.length === 0} className="bg-green-600 hover:bg-green-700 text-white">
-                    {isAwarding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Confirm Award ({selectedStudents.length} selected)
-                </Button>
-                </DialogFooter>
-            </DialogContent>
+            <Dialog open={isRewardsDialogOpen} onOpenChange={setIsRewardsDialogOpen}>
+              <DialogTrigger asChild>
+                  <Button disabled={selectedStudents.length === 0} className="text-black border-black border">
+                      <Star className="mr-2 h-4 w-4" /> Bestow Rewards
+                  </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                  <DialogTitle>Bestow Rewards</DialogTitle>
+                  <DialogDescription>
+                      Enter a positive value to add or a negative value to remove XP or Gold for all selected students.
+                  </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="xp-amount" className="text-right">
+                              XP Amount
+                          </Label>
+                          <Input
+                              id="xp-amount"
+                              type="number"
+                              value={xpAmount}
+                              onChange={(e) => setXpAmount(e.target.value)}
+                              className="col-span-3"
+                              placeholder="e.g., 100 or -50"
+                              disabled={isAwarding}
+                          />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="gold-amount" className="text-right">
+                              Gold Amount
+                          </Label>
+                          <Input
+                              id="gold-amount"
+                              type="number"
+                              value={goldAmount}
+                              onChange={(e) => setGoldAmount(e.target.value)}
+                              className="col-span-3"
+                              placeholder="e.g., 50 or -10"
+                              disabled={isAwarding}
+                          />
+                      </div>
+                  </div>
+                  <DialogFooter>
+                      <Button onClick={handleAwardRewards} disabled={isAwarding || selectedStudents.length === 0}>
+                          {isAwarding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                          Confirm Award ({selectedStudents.length} selected)
+                      </Button>
+                  </DialogFooter>
+              </DialogContent>
             </Dialog>
 
              <AlertDialog open={isArchiveConfirmOpen} onOpenChange={setIsArchiveConfirmOpen}>
