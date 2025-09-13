@@ -77,28 +77,42 @@ export async function setChampionStatus(input: ChampionStatusInput): Promise<Act
   
   try {
     await runTransaction(db, async (transaction) => {
+      const studentSnap = await transaction.get(studentRef);
+      if (!studentSnap.exists()) {
+          throw new Error("Student document not found.");
+      }
+      const studentData = studentSnap.data();
+      const companyId = studentData.companyId;
+
       const championsSnap = await transaction.get(championsRef);
-      
+      const championsData = championsSnap.exists() ? championsSnap.data() : { championsByCompany: {}, freelancerChampions: [] };
+
       // 1. Update the student's own document
       transaction.update(studentRef, { isChampion: isChampion });
 
-      // 2. Update the centralized champions list
-      if (isChampion) {
-        // Add student to the list
-        if (championsSnap.exists()) {
-          transaction.update(championsRef, { championUids: arrayUnion(studentUid) });
-        } else {
-          // If the doc doesn't exist, create it with the student.
-          transaction.set(championsRef, { championUids: [studentUid] });
-        }
-      } else {
-        // Remove student from the list
-        if (championsSnap.exists()) {
-          // Only attempt to remove if the document exists.
-          transaction.update(championsRef, { championUids: arrayRemove(studentUid) });
-        }
-        // If the document doesn't exist, there's nothing to remove, so we do nothing.
+      // 2. Remove the student from any list they might be in
+      if (championsData.freelancerChampions.includes(studentUid)) {
+          championsData.freelancerChampions = championsData.freelancerChampions.filter((uid: string) => uid !== studentUid);
       }
+      for (const compId in championsData.championsByCompany) {
+          championsData.championsByCompany[compId] = championsData.championsByCompany[compId].filter((uid: string) => uid !== studentUid);
+      }
+
+      // 3. If becoming a champion, add them to the correct new list
+      if (isChampion) {
+          if (companyId) {
+              if (!championsData.championsByCompany[companyId]) {
+                  championsData.championsByCompany[companyId] = [];
+              }
+              championsData.championsByCompany[companyId].push(studentUid);
+          } else {
+              championsData.freelancerChampions.push(studentUid);
+          }
+      }
+      
+      // 4. Write the final, cleaned-up data back to Firestore.
+      // Using set() handles both creation and update of the document.
+      transaction.set(championsRef, championsData);
     });
     return { success: true };
   } catch (e: any) {

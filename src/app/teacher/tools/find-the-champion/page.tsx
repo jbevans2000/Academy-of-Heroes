@@ -27,8 +27,8 @@ const selectionCaptions = [
 
 export default function FindTheChampionPage() {
     const router = useRouter();
-    const [championUids, setChampionUids] = useState<string[]>([]);
-    const [championDetails, setChampionDetails] = useState<Student[]>([]);
+    const [allStudents, setAllStudents] = useState<Student[]>([]);
+    const [championData, setChampionData] = useState<{ championsByCompany: Record<string, string[]>, freelancerChampions: string[] }>({ championsByCompany: {}, freelancerChampions: [] });
     const [companies, setCompanies] = useState<Company[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isShuffling, setIsShuffling] = useState(false);
@@ -50,18 +50,20 @@ export default function FindTheChampionPage() {
     useEffect(() => {
         if (!teacher) return;
         
-        // Listen to the new 'active' champions document
+        const unsubStudents = onSnapshot(collection(db, "teachers", teacher.uid, "students"), (snapshot) => {
+            setAllStudents(snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student)));
+        });
+
         const championsRef = doc(db, "teachers", teacher.uid, "champions", "active");
         const unsubChampions = onSnapshot(championsRef, (docSnap) => {
             if (docSnap.exists()) {
-                setChampionUids(docSnap.data().championUids || []);
+                setChampionData(docSnap.data() as any);
             } else {
-                setChampionUids([]);
+                setChampionData({ championsByCompany: {}, freelancerChampions: [] });
             }
             setIsLoading(false);
         });
 
-        // Still need companies for displaying names
         const companiesQuery = collection(db, "teachers", teacher.uid, "companies");
         const unsubCompanies = onSnapshot(companiesQuery, (snapshot) => {
              const companiesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
@@ -69,28 +71,12 @@ export default function FindTheChampionPage() {
         });
 
         return () => {
+            unsubStudents();
             unsubChampions();
             unsubCompanies();
         };
     }, [teacher]);
     
-    // Fetch details for the champion UIDs
-    useEffect(() => {
-        if (!teacher || championUids.length === 0) {
-            setChampionDetails([]);
-            return;
-        }
-
-        const studentsRef = collection(db, 'teachers', teacher.uid, 'students');
-        const q = query(studentsRef, where(documentId(), 'in', championUids));
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const details = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
-            setChampionDetails(details.filter(s => !s.isHidden));
-        });
-        
-        return () => unsubscribe();
-    }, [teacher, championUids]);
     
     const handleSelectChampions = (mode: 'guild' | 'company') => {
         setIsShuffling(true);
@@ -98,7 +84,13 @@ export default function FindTheChampionPage() {
         setPickedCaption('');
 
         setTimeout(() => {
-            const candidates = championDetails;
+            const allChampionUids = [
+                ...championData.freelancerChampions, 
+                ...Object.values(championData.championsByCompany).flat()
+            ];
+            
+            const candidates = allStudents.filter(s => allChampionUids.includes(s.uid) && !s.isHidden);
+
             if (candidates.length === 0) {
                 setPickedCaption("No champions have volunteered! Make sure students have toggled their Champion Status ON in their dashboard.");
                 setPickedChampions([]);
@@ -259,3 +251,5 @@ export default function FindTheChampionPage() {
         </div>
     );
 }
+
+    
