@@ -47,7 +47,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff, MessageSquare, Heart, Zap as ZapIcon, MessageCircle } from 'lucide-react';
+import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff, MessageSquare, Heart, Zap as ZapIcon } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain, MAX_LEVEL, XP_FOR_MAX_LEVEL } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -57,6 +57,7 @@ import { restoreAllStudentsHp, restoreAllStudentsMp } from '@/ai/flows/manage-cl
 import { SetQuestProgressDialog } from '@/components/teacher/set-quest-progress-dialog';
 import { updateDailyReminder } from '@/ai/flows/manage-teacher';
 import { Textarea } from '@/components/ui/textarea';
+import { getGlobalSettings } from '@/ai/flows/manage-settings';
 
 interface TeacherData {
     name: string;
@@ -95,6 +96,7 @@ export default function Dashboard() {
   const searchParams = useSearchParams();
 
   const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
+  const [showBetaWelcomeDialog, setShowBetaWelcomeDialog] = useState(false);
   const [showHidden, setShowHidden] = useState(false);
   
   const [sortOrder, setSortOrder] = useState<SortOrder>('studentName');
@@ -133,7 +135,15 @@ export default function Dashboard() {
     });
 
     if (searchParams.get('new') === 'true') {
-        setShowWelcomeDialog(true);
+        const checkWelcomeType = async () => {
+            const settings = await getGlobalSettings();
+            if (settings.isFeedbackPanelVisible) {
+                setShowBetaWelcomeDialog(true);
+            } else {
+                setShowWelcomeDialog(true);
+            }
+        };
+        checkWelcomeType();
     }
 
     return () => unsubscribe();
@@ -660,6 +670,33 @@ export default function Dashboard() {
             </AlertDialogContent>
         </AlertDialog>
 
+        <AlertDialog open={showBetaWelcomeDialog} onOpenChange={setShowBetaWelcomeDialog}>
+            <AlertDialogContent className="max-w-2xl">
+                <AlertDialogHeader>
+                    <AlertDialogTitle className="text-3xl">Welcome, Guild Leader, to the Academy of Heroes Beta Test!</AlertDialogTitle>
+                    <AlertDialogDescription asChild>
+                      <div className="text-base text-foreground space-y-4">
+                        <p>Thank you for being one of the first Guild Leaders to venture into this new world! You've joined during our Beta Testing phase, which means you get early access to our latest features, but you might also encounter some unfinished parts of the realm or the occasional grumpy bug.</p>
+                        <h4 className='font-bold'>What to Expect as a Beta Tester:</h4>
+                        <ul className="list-disc list-inside space-y-2 pt-2">
+                            <li><strong>Evolving World:</strong> Features may change, look different, or be added/removed as we refine the experience.</li>
+                            <li><strong>Potential Bugs:</strong> You might run into unexpected issues or "gremlins" in the system. Your feedback in reporting these is invaluable!</li>
+                            <li><strong>Data Resets:</strong> In rare cases, we may need to reset game data (like student XP, Gold, or quest progress) to implement major updates. We will do our best to notify you in advance if this is necessary.</li>
+                        </ul>
+                         <p>Your role is crucial. By using the app and providing feedback, you are helping us forge a better, more engaging experience for everyone. Please use the **"Report a Bug"** and **"Request a Feature"** buttons in the header to share your thoughts.</p>
+                         <p>Thank you for your courage and your adventurous spirit!</p>
+                      </div>
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogAction onClick={() => setShowBetaWelcomeDialog(false)}>
+                        Onward to Adventure!
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
+
         <Dialog open={isApprovalDialogOpen} onOpenChange={setIsApprovalDialogOpen}>
             <DialogContent className="max-w-2xl">
                 <DialogHeader>
@@ -821,7 +858,7 @@ export default function Dashboard() {
                         <span>Manage Quest Completion</span>
                     </DropdownMenuItem>
                      <DropdownMenuItem onSelect={() => setIsReminderDialogOpen(true)}>
-                        <MessageCircle className="mr-2 h-4 w-4" />
+                        <MessageSquare className="mr-2 h-4 w-4" />
                         <span>Set Daily Reminder</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/teacher/gamelog')}>
