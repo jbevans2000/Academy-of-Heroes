@@ -2,9 +2,10 @@
 'use client';
 
 import { Suspense } from 'react';
-import { DashboardHeader } from '@/components/dashboard/header';
+import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import Dashboard from './dashboard';
+import { DashboardHeader } from '@/components/dashboard/header';
 
 
 function DashboardLoading() {
@@ -24,8 +25,7 @@ function DashboardLoading() {
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={<DashboardLoading />}>
-        <Dashboard />
-    </Suspense>
+    <Dashboard />
   );
 }
+

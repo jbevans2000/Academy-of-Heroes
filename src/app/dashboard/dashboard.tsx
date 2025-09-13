@@ -28,7 +28,6 @@ const isSameDay = (d1: Date, d2: Date) => {
 
 export default function Dashboard() {
   const [student, setStudent] = useState<Student | null>(null);
-  const [teacherUid, setTeacherUid] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showApprovedDialog, setShowApprovedDialog] = useState(false);
 
@@ -53,18 +52,14 @@ export default function Dashboard() {
         const studentMetaSnap = await getDoc(studentMetaRef);
 
         if (studentMetaSnap.exists()) {
-          const { teacherUid: foundTeacherUid, approved } = studentMetaSnap.data();
+          const { teacherUid, approved } = studentMetaSnap.data();
           
           if (!approved) {
              router.push('/awaiting-approval');
              return;
           }
           
-          // Set teacher and stop initial loading here, before the listener
-          setTeacherUid(foundTeacherUid);
-          setIsLoading(false);
-
-          const studentRef = doc(db, 'teachers', foundTeacherUid, 'students', user.uid);
+          const studentRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
           const unsub = onSnapshot(studentRef, async (docSnap) => {
             if (docSnap.exists()) {
               const studentData = { uid: docSnap.id, ...docSnap.data() } as Student;
@@ -80,26 +75,28 @@ export default function Dashboard() {
               // --- DAILY REGENERATION LOGIC ---
               const lastRegenDate = studentData.lastDailyRegen?.toDate();
               if (!lastRegenDate || !isSameDay(today, lastRegenDate)) {
-                  const teacherRef = doc(db, 'teachers', foundTeacherUid);
+                  const teacherRef = doc(db, 'teachers', teacherUid);
                   const teacherSnap = await getDoc(teacherRef);
-                  const regenPercent = teacherSnap.exists() ? (teacherSnap.data().dailyRegenPercentage || 0) / 100 : 0;
+                  const regenPercent = (teacherSnap.exists() ? (teacherSnap.data().dailyRegenPercentage || 0) : 0) / 100;
 
-                  const hpRegen = Math.ceil(studentData.maxHp * regenPercent);
-                  const mpRegen = Math.ceil(studentData.maxMp * regenPercent);
-                  
-                  const newHp = Math.min(studentData.maxHp, studentData.hp + hpRegen);
-                  const newMp = Math.min(studentData.maxMp, studentData.mp + mpRegen);
+                  if (regenPercent > 0) {
+                      const hpRegen = Math.ceil(studentData.maxHp * regenPercent);
+                      const mpRegen = Math.ceil(studentData.maxMp * regenPercent);
+                      
+                      const newHp = Math.min(studentData.maxHp, studentData.hp + hpRegen);
+                      const newMp = Math.min(studentData.maxMp, studentData.mp + mpRegen);
 
-                  if (newHp !== studentData.hp || newMp !== studentData.mp) {
-                    updates.hp = newHp;
-                    updates.mp = newMp;
+                      if (newHp !== studentData.hp || newMp !== studentData.mp) {
+                        updates.hp = newHp;
+                        updates.mp = newMp;
+                      }
                   }
                   
                   updates.lastDailyRegen = serverTimestamp();
                   performedRegen = true;
               }
               
-              if (performedRegen) {
+              if (performedRegen && Object.keys(updates).length > 1) { // more than just timestamp
                   await updateDoc(studentRef, updates);
                   // The onSnapshot listener will pick up this change and update the state.
               } else {
@@ -112,7 +109,7 @@ export default function Dashboard() {
               const hasCompletedToday = lastChapterDate && isSameDay(today, lastChapterDate);
               const reminderShown = sessionStorage.getItem('dailyReminderShown');
               if (!hasCompletedToday && !reminderShown) {
-                const teacherRef = doc(db, 'teachers', foundTeacherUid);
+                const teacherRef = doc(db, 'teachers', teacherUid);
                 const teacherSnap = await getDoc(teacherRef);
                 if (teacherSnap.exists()) {
                     const teacherData = teacherSnap.data();
@@ -126,11 +123,8 @@ export default function Dashboard() {
                 }
               }
               // --- END REMINDER LOGIC ---
-
+              setIsLoading(false); // Data is loaded or initial logic is complete
             } else {
-              // This case handles a student who is approved but document is missing,
-              // which could happen during account creation race conditions.
-              // We log them out to prevent a bad state.
               await auth.signOut();
               router.push('/');
             }
@@ -141,40 +135,40 @@ export default function Dashboard() {
           
           return () => unsub();
         } else {
-          // If no student metadata, they don't belong here.
           await auth.signOut();
           router.push('/');
         }
       } else {
-        // No user logged in, send to login page.
         router.push('/');
       }
     });
 
     return () => authUnsubscribe();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [router]);
   
   const handleCloseApprovedDialog = async () => {
     setShowApprovedDialog(false);
-    if (student && teacherUid) {
-      const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
-      await updateDoc(studentRef, { isNewlyApproved: false });
+    if (student) {
+      const studentMetaRef = doc(db, 'students', student.uid);
+      const metaSnap = await getDoc(studentMetaRef);
+      if (metaSnap.exists()) {
+        const studentRef = doc(db, 'teachers', metaSnap.data().teacherUid, 'students', student.uid);
+        await updateDoc(studentRef, { isNewlyApproved: false });
+      }
     }
     router.replace('/dashboard', { scroll: false });
   };
   
   const approvedClassName = searchParams.get('className');
 
-
   if (isLoading || !student) {
     return (
         <div className="flex min-h-screen w-full flex-col">
             <DashboardHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
-                 <div className="space-y-6">
-                    <Skeleton className="aspect-video w-full rounded-xl" />
-                    <Skeleton className="h-24 w-full rounded-xl" />
+                 <div className="mx-auto max-w-4xl space-y-6">
+                    <Skeleton className="h-[450px] w-full rounded-xl" />
+                    <Skeleton className="h-48 w-full rounded-xl" />
                 </div>
             </main>
         </div>
