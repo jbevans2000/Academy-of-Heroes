@@ -13,9 +13,9 @@ function DashboardLoading() {
        <div className="flex min-h-screen w-full flex-col">
         <DashboardHeader />
         <main className="flex-1 p-4 md:p-6 lg:p-8">
-             <div className="space-y-6">
-                <Skeleton className="aspect-video w-full rounded-xl" />
-                <Skeleton className="h-24 w-full rounded-xl" />
+             <div className="mx-auto max-w-4xl space-y-6">
+                <Skeleton className="h-[450px] w-full rounded-xl" />
+                <Skeleton className="h-48 w-full rounded-xl" />
             </div>
         </main>
       </div>
@@ -25,7 +25,8 @@ function DashboardLoading() {
 
 export default function DashboardPage() {
   return (
-    <Dashboard />
+    <Suspense fallback={<DashboardLoading />}>
+        <Dashboard />
+    </Suspense>
   );
 }
-
