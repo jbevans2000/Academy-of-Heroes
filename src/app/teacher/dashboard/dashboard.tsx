@@ -92,6 +92,7 @@ export default function Dashboard() {
   const [teacher, setTeacher] = useState<User | null>(null);
   const [teacherData, setTeacherData] = useState<TeacherData | null>(null);
   const [onlineUids, setOnlineUids] = useState<string[]>([]);
+  const [isAdminPreview, setIsAdminPreview] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -116,7 +117,7 @@ export default function Dashboard() {
 
   // Daily Regen State
   const [isRegenDialogOpen, setIsRegenDialogOpen] = useState(false);
-  const [regenPercentage, setRegenPercentage] = useState<number | string>(5);
+  const [regenPercentage, setRegenPercentage] = useState<number | string>(0);
   const [isSavingRegen, setIsSavingRegen] = useState(false);
 
   
@@ -134,13 +135,16 @@ export default function Dashboard() {
 
         if (isAdmin && viewingTeacherId) {
             setTeacher({ uid: viewingTeacherId } as User);
+            setIsAdminPreview(true);
         } else {
             setTeacher(user);
+            setIsAdminPreview(false);
         }
     });
 
     const checkWelcome = async () => {
-        if (searchParams.get('new') === 'true') {
+        const isNewTeacher = searchParams.get('new') === 'true';
+        if (isNewTeacher) {
             const settings = await getGlobalSettings();
             if (settings.isFeedbackPanelVisible) {
                 setShowBetaWelcomeDialog(true);
@@ -167,7 +171,7 @@ export default function Dashboard() {
             setReminderTitle(data.dailyReminderTitle || "A Hero's Duty Awaits!");
             setReminderMessage(data.dailyReminderMessage || "Greetings, adventurer! A new day dawns, and the realm of Luminaria has a quest with your name on it. Your legend will not write itself!\\n\\nEmbark on a chapter from the World Map to continue your training. For each quest you complete, you will be rewarded with valuable **Experience (XP)** to grow stronger and **Gold** to fill your coffers.\\n\\nYour next great deed awaits!");
             setIsReminderActive(data.isDailyReminderActive ?? true);
-            setRegenPercentage(data.dailyRegenPercentage ?? 5);
+            setRegenPercentage(data.dailyRegenPercentage ?? 0);
             if (data.pendingCleanupBattleId) {
                 setTimeout(() => {
                     handleClearAllBattleStatus(true);
@@ -612,7 +616,7 @@ export default function Dashboard() {
               opacity: 0.5,
           }}
       />
-      <TeacherHeader />
+      <TeacherHeader isAdminPreview={isAdminPreview} />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <AlertDialog open={showWelcomeDialog} onOpenChange={setShowWelcomeDialog}>
             <AlertDialogContent className="max-w-2xl">

@@ -12,10 +12,13 @@ import { doc, getDoc, onSnapshot, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Bug, Lightbulb } from "lucide-react";
 
-export function TeacherHeader() {
+interface TeacherHeaderProps {
+    isAdminPreview?: boolean;
+}
+
+export function TeacherHeader({ isAdminPreview = false }: TeacherHeaderProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const [isAdmin, setIsAdmin] = useState(false);
   const [isFeedbackPanelVisible, setIsFeedbackPanelVisible] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
   const [teacher, setTeacher] = useState<User | null>(null);
@@ -24,11 +27,6 @@ export function TeacherHeader() {
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
         if(currentUser) {
             setTeacher(currentUser);
-            const adminRef = doc(db, 'admins', currentUser.uid);
-            const adminSnap = await getDoc(adminRef);
-            if (adminSnap.exists()) {
-                setIsAdmin(true);
-            }
         }
     });
 
@@ -93,7 +91,7 @@ export function TeacherHeader() {
                 </Button>
             </>
         )}
-        {isAdmin && (
+        {isAdminPreview && (
              <Button variant="secondary" onClick={() => router.push('/admin/dashboard')}>
                 <Shield className="mr-2 h-5 w-5" />
                 Return to Admin Dashboard
