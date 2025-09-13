@@ -126,6 +126,7 @@ export default function TeacherRegisterPage() {
             address: address,
             className: className,
             classCode: classCode, // Save the generated class code
+            createdAt: serverTimestamp(),
         };
 
         const teacherRef = doc(db, "teachers", user.uid);
@@ -307,3 +308,5 @@ export default function TeacherRegisterPage() {
     </div>
   );
 }
+
+    

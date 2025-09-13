@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, getDocs, doc, getDoc, query, orderBy, updateDoc } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -19,7 +19,7 @@ import { getGlobalSettings, updateGlobalSettings } from '@/ai/flows/manage-setti
 import { deleteFeedback } from '@/ai/flows/submit-feedback';
 import { moderateStudent } from '@/ai/flows/manage-student';
 import { deleteTeacher } from '@/ai/flows/manage-teacher';
-import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box } from 'lucide-react';
+import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,6 +41,10 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { Label } from '@/components/ui/label';
 
+type SortDirection = 'asc' | 'desc';
+type TeacherSortKey = 'className' | 'name' | 'email' | 'schoolName' | 'studentCount' | 'createdAt';
+type StudentSortKey = 'studentName' | 'characterName' | 'studentId' | 'teacherName' | 'createdAt';
+
 interface Teacher {
     id: string;
     name: string;
@@ -48,6 +52,7 @@ interface Teacher {
     className: string;
     schoolName: string;
     studentCount: number;
+    createdAt: Date | null;
 }
 
 interface Student {
@@ -57,6 +62,7 @@ interface Student {
     characterName: string;
     teacherName: string;
     teacherId: string;
+    createdAt: Date | null;
 }
 
 interface Feedback {
@@ -83,6 +89,10 @@ export default function AdminDashboardPage() {
     const [feedbackToDelete, setFeedbackToDelete] = useState<string | null>(null);
     const [isDeletingFeedback, setIsDeletingFeedback] = useState(false);
     
+    // Sorting state
+    const [teacherSortConfig, setTeacherSortConfig] = useState<{ key: TeacherSortKey; direction: SortDirection } | null>({ key: 'className', direction: 'asc' });
+    const [studentSortConfig, setStudentSortConfig] = useState<{ key: StudentSortKey; direction: SortDirection } | null>({ key: 'studentName', direction: 'asc' });
+
     // State for deleting students
     const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
     const [isDeletingStudent, setIsDeletingStudent] = useState(false);
@@ -147,6 +157,7 @@ export default function AdminDashboardPage() {
                     className: teacherInfo.className || '[No Class Name]',
                     schoolName: teacherInfo.schoolName || '[No School]',
                     studentCount: studentsSnapshot.size,
+                    createdAt: teacherInfo.createdAt?.toDate() || null,
                 });
 
                 studentsSnapshot.forEach(studentDoc => {
@@ -158,6 +169,7 @@ export default function AdminDashboardPage() {
                         characterName: studentInfo.characterName || '[No Character]',
                         teacherName: teacherInfo.name || '[No Teacher]',
                         teacherId: teacherDoc.id,
+                        createdAt: studentInfo.createdAt?.toDate() || null,
                     });
                 });
             }
@@ -174,6 +186,46 @@ export default function AdminDashboardPage() {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not load teacher and student data.' });
         }
     };
+
+     const sortedTeachers = useMemo(() => {
+        let sortableItems = [...teachers];
+        if (teacherSortConfig !== null) {
+            sortableItems.sort((a, b) => {
+                const aValue = a[teacherSortConfig.key];
+                const bValue = b[teacherSortConfig.key];
+                if (aValue < bValue) return teacherSortConfig.direction === 'asc' ? -1 : 1;
+                if (aValue > bValue) return teacherSortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+        return sortableItems;
+    }, [teachers, teacherSortConfig]);
+
+    const sortedStudents = useMemo(() => {
+        let sortableItems = [...allStudents];
+        if (studentSortConfig !== null) {
+            sortableItems.sort((a, b) => {
+                const aValue = a[studentSortConfig.key];
+                const bValue = b[studentSortConfig.key];
+                if (aValue < bValue) return studentSortConfig.direction === 'asc' ? -1 : 1;
+                if (aValue > bValue) return studentSortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+        return sortableItems;
+    }, [allStudents, studentSortConfig]);
+
+    const requestSort = (key: TeacherSortKey | StudentSortKey, type: 'teacher' | 'student') => {
+        const config = type === 'teacher' ? teacherSortConfig : studentSortConfig;
+        const setConfig = type === 'teacher' ? setTeacherSortConfig : setStudentSortConfig;
+        
+        let direction: SortDirection = 'asc';
+        if (config && config.key === key && config.direction === 'asc') {
+            direction = 'desc';
+        }
+        setConfig({ key, direction } as any);
+    };
+
     
     const fetchFeedback = async () => {
         try {
@@ -445,17 +497,18 @@ export default function AdminDashboardPage() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>Guild Name</TableHead>
-                                                <TableHead>Leader (Teacher)</TableHead>
+                                                <TableHead><Button variant="ghost" onClick={() => requestSort('className', 'teacher')}>Guild Name <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
+                                                <TableHead><Button variant="ghost" onClick={() => requestSort('name', 'teacher')}>Leader (Teacher) <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
                                                 <TableHead>Teacher UID</TableHead>
-                                                <TableHead>Email</TableHead>
-                                                <TableHead>School</TableHead>
-                                                <TableHead>Students</TableHead>
+                                                <TableHead><Button variant="ghost" onClick={() => requestSort('email', 'teacher')}>Email <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
+                                                <TableHead><Button variant="ghost" onClick={() => requestSort('schoolName', 'teacher')}>School <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
+                                                <TableHead><Button variant="ghost" onClick={() => requestSort('studentCount', 'teacher')}>Students <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
+                                                <TableHead><Button variant="ghost" onClick={() => requestSort('createdAt', 'teacher')}>Date Created <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
                                                 <TableHead className="text-right">Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {teachers.map((teacher) => (
+                                            {sortedTeachers.map((teacher) => (
                                                 <TableRow key={teacher.id}>
                                                     <TableCell>
                                                         <Link href={`/teacher/dashboard?teacherId=${teacher.id}`} className="font-semibold underline hover:text-primary">
@@ -467,6 +520,7 @@ export default function AdminDashboardPage() {
                                                     <TableCell>{teacher.email}</TableCell>
                                                     <TableCell>{teacher.schoolName}</TableCell>
                                                     <TableCell>{teacher.studentCount}</TableCell>
+                                                    <TableCell>{teacher.createdAt ? format(teacher.createdAt, 'PP') : 'N/A'}</TableCell>
                                                     <TableCell className="text-right">
                                                         <Button variant="destructive" size="sm" onClick={() => setTeacherToDelete(teacher)}>
                                                             <Trash2 className="h-4 w-4" />
@@ -501,15 +555,16 @@ export default function AdminDashboardPage() {
                                 <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>Student Name</TableHead>
-                                                <TableHead>Character Name</TableHead>
-                                                <TableHead>Login Alias</TableHead>
-                                                <TableHead>Guild / Teacher</TableHead>
+                                                <TableHead><Button variant="ghost" onClick={() => requestSort('studentName', 'student')}>Student Name <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
+                                                <TableHead><Button variant="ghost" onClick={() => requestSort('characterName', 'student')}>Character Name <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
+                                                <TableHead><Button variant="ghost" onClick={() => requestSort('studentId', 'student')}>Login Alias <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
+                                                <TableHead><Button variant="ghost" onClick={() => requestSort('teacherName', 'student')}>Guild / Teacher <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
+                                                <TableHead><Button variant="ghost" onClick={() => requestSort('createdAt', 'student')}>Date Created <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
                                                 <TableHead className="text-right">Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {allStudents.map(student => (
+                                            {sortedStudents.map(student => (
                                                 <TableRow key={student.uid}>
                                                     <TableCell>{student.studentName}</TableCell>
                                                     <TableCell>{student.characterName}</TableCell>
@@ -519,6 +574,7 @@ export default function AdminDashboardPage() {
                                                             {student.teacherName}
                                                         </Link>
                                                     </TableCell>
+                                                    <TableCell>{student.createdAt ? format(student.createdAt, 'PP') : 'N/A'}</TableCell>
                                                     <TableCell className="text-right">
                                                         <Button variant="destructive" size="sm" onClick={() => setStudentToDelete(student)}>
                                                             <Trash2 className="h-4 w-4" />
@@ -709,3 +765,5 @@ export default function AdminDashboardPage() {
         </div>
     );
 }
+
+    
