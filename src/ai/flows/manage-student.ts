@@ -77,21 +77,28 @@ export async function setChampionStatus(input: ChampionStatusInput): Promise<Act
   
   try {
     await runTransaction(db, async (transaction) => {
-        // First, update the student's document
-        transaction.update(studentRef, { isChampion: isChampion });
+      const championsSnap = await transaction.get(championsRef);
+      
+      // 1. Update the student's own document
+      transaction.update(studentRef, { isChampion: isChampion });
 
-        if (isChampion) {
-            // If becoming a champion, add them to the list. `set` with `merge` will create the document if it doesn't exist.
-            transaction.set(championsRef, { championUids: arrayUnion(studentUid) }, { merge: true });
+      // 2. Update the centralized champions list
+      if (isChampion) {
+        // Add student to the list
+        if (championsSnap.exists()) {
+          transaction.update(championsRef, { championUids: arrayUnion(studentUid) });
         } else {
-            // If ceasing to be a champion, remove them. This must be handled carefully.
-            const championsSnap = await transaction.get(championsRef);
-            if (championsSnap.exists()) {
-                // Only update if the document actually exists.
-                transaction.update(championsRef, { championUids: arrayRemove(studentUid) });
-            }
-            // If the document doesn't exist, there's nothing to remove, so we do nothing.
+          // If the doc doesn't exist, create it with the student.
+          transaction.set(championsRef, { championUids: [studentUid] });
         }
+      } else {
+        // Remove student from the list
+        if (championsSnap.exists()) {
+          // Only attempt to remove if the document exists.
+          transaction.update(championsRef, { championUids: arrayRemove(studentUid) });
+        }
+        // If the document doesn't exist, there's nothing to remove, so we do nothing.
+      }
     });
     return { success: true };
   } catch (e: any) {
