@@ -41,7 +41,7 @@ const tools = [
         icon: <ShieldCheck className="h-10 w-10 text-primary" />,
         path: '/teacher/tools/find-the-champion',
         disabled: false,
-        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2FFind%20The%20Champion.jpg?alt=media&token=5b2b2a63-a2a4-4f0f-8f81-2292f2c8d2c8',
+        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChooseChampion.jpg?alt=media&token=9d8a8624-c352-415e-84d8-827cebc711a5',
     },
     {
         title: 'A Task from the Throne',
