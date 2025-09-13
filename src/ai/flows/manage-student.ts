@@ -87,15 +87,22 @@ export async function setChampionStatus(input: ChampionStatusInput): Promise<Act
       const championsSnap = await transaction.get(championsRef);
       const championsData = championsSnap.exists() ? championsSnap.data() : { championsByCompany: {}, freelancerChampions: [] };
 
+      // Ensure fields exist before trying to access them
+      championsData.championsByCompany = championsData.championsByCompany || {};
+      championsData.freelancerChampions = championsData.freelancerChampions || [];
+
+
       // 1. Update the student's own document
       transaction.update(studentRef, { isChampion: isChampion });
 
-      // 2. Remove the student from any list they might be in
+      // 2. Remove the student from any list they might be in to prevent duplicates
       if (championsData.freelancerChampions.includes(studentUid)) {
           championsData.freelancerChampions = championsData.freelancerChampions.filter((uid: string) => uid !== studentUid);
       }
       for (const compId in championsData.championsByCompany) {
-          championsData.championsByCompany[compId] = championsData.championsByCompany[compId].filter((uid: string) => uid !== studentUid);
+          if (championsData.championsByCompany[compId]?.includes(studentUid)) {
+             championsData.championsByCompany[compId] = championsData.championsByCompany[compId].filter((uid: string) => uid !== studentUid);
+          }
       }
 
       // 3. If becoming a champion, add them to the correct new list
@@ -358,5 +365,7 @@ export async function archiveStudents(input: ArchiveStudentsInput): Promise<Acti
         return { success: false, error: 'An unexpected error occurred while archiving the students.' };
     }
 }
+
+    
 
     
