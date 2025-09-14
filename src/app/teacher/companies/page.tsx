@@ -137,6 +137,7 @@ export default function CompaniesPage() {
     const [editingCompany, setEditingCompany] = useState<Company | null>(null);
     const [companyName, setCompanyName] = useState('');
     const [companyLogo, setCompanyLogo] = useState<File | null>(null);
+    const [companyBackground, setCompanyBackground] = useState<File | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     
     const [companyToDelete, setCompanyToDelete] = useState<string | null>(null);
@@ -176,6 +177,7 @@ export default function CompaniesPage() {
         setEditingCompany(null);
         setCompanyName('');
         setCompanyLogo(null);
+        setCompanyBackground(null);
         setIsCompanyDialogOpen(true);
     };
 
@@ -183,6 +185,7 @@ export default function CompaniesPage() {
         setEditingCompany(company);
         setCompanyName(company.name);
         setCompanyLogo(null);
+        setCompanyBackground(null);
         setIsCompanyDialogOpen(true);
     };
 
@@ -234,35 +237,15 @@ export default function CompaniesPage() {
         try {
             let logoUrl = editingCompany?.logoUrl || '';
             if (companyLogo) {
-                const storage = getStorage(app);
-                const logoRef = ref(storage, `company-logos/${teacher.uid}/${Date.now()}_${companyLogo.name}`);
-                
-                const reader = new FileReader();
-                reader.readAsDataURL(companyLogo);
-                reader.onload = async (event) => {
-                    if (event.target?.result) {
-                        const dataUrl = event.target.result as string;
-                        try {
-                            await uploadString(logoRef, dataUrl, 'data_url');
-                            logoUrl = await getDownloadURL(logoRef);
-                            await saveCompanyData(logoUrl);
-                        } catch(uploadError) {
-                            console.error("Error during logo upload and data save: ", uploadError);
-                            toast({ variant: 'destructive', title: 'Error', description: 'Could not upload the logo and save the company.' });
-                            setIsSaving(false);
-                        }
-                    } else {
-                        throw new Error("Failed to read file for upload.");
-                    }
-                };
-                reader.onerror = (error) => {
-                    console.error("File reading error: ", error);
-                    toast({ variant: 'destructive', title: 'Error', description: 'Could not read the selected file.' });
-                    setIsSaving(false);
-                };
-            } else {
-                 await saveCompanyData(logoUrl);
+                logoUrl = await uploadFile(companyLogo, `company-logos/${teacher.uid}/${Date.now()}_${companyLogo.name}`);
             }
+
+            let backgroundUrl = editingCompany?.backgroundUrl || '';
+             if (companyBackground) {
+                backgroundUrl = await uploadFile(companyBackground, `company-backgrounds/${teacher.uid}/${Date.now()}_${companyBackground.name}`);
+            }
+
+            await saveCompanyData(logoUrl, backgroundUrl);
             
         } catch (error) {
              console.error("Error saving company: ", error);
@@ -270,11 +253,27 @@ export default function CompaniesPage() {
             setIsSaving(false);
         }
     }
+
+    const uploadFile = async (file: File, path: string): Promise<string> => {
+        const storage = getStorage(app);
+        const fileRef = ref(storage, path);
+        await uploadString(fileRef, await readFileAsDataUrl(file), 'data_url');
+        return await getDownloadURL(fileRef);
+    }
     
-    const saveCompanyData = async (logoUrl: string) => {
+    const readFileAsDataUrl = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (event) => resolve(event.target?.result as string);
+            reader.onerror = (error) => reject(error);
+            reader.readAsDataURL(file);
+        });
+    }
+    
+    const saveCompanyData = async (logoUrl: string, backgroundUrl: string) => {
         if (!teacher) return;
         try {
-            const companyData = { name: companyName, logoUrl };
+            const companyData = { name: companyName, logoUrl, backgroundUrl };
             if (editingCompany) {
                 const companyRef = doc(db, 'teachers', teacher.uid, 'companies', editingCompany.id);
                 await updateDoc(companyRef, companyData);
@@ -291,6 +290,7 @@ export default function CompaniesPage() {
             setIsCompanyDialogOpen(false);
             setEditingCompany(null);
             setCompanyLogo(null);
+            setCompanyBackground(null);
             setCompanyName('');
         }
     }
@@ -459,7 +459,7 @@ export default function CompaniesPage() {
                         <DialogHeader>
                             <DialogTitle>{editingCompany ? 'Edit Company' : 'Create New Company'}</DialogTitle>
                             <DialogDescription>
-                                Enter a name for the company and optionally upload a logo.
+                                Enter a name for the company and optionally upload a logo and background.
                             </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4 py-4">
@@ -477,6 +477,18 @@ export default function CompaniesPage() {
                                     <Input id="company-logo-upload" type="file" accept="image/*" className="hidden" onChange={(e) => setCompanyLogo(e.target.files ? e.target.files[0] : null)} />
                                     {companyLogo && <p className="text-sm text-muted-foreground">{companyLogo.name}</p>}
                                     {companyLogo && <Button variant="ghost" size="icon" onClick={() => setCompanyLogo(null)}><X className="h-4 w-4" /></Button>}
+                                </div>
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="company-background">Company Background</Label>
+                                <div className="flex items-center gap-2">
+                                    <Label htmlFor="company-background-upload" className={cn(buttonVariants({ variant: 'secondary' }), "cursor-pointer")}>
+                                        <Upload className="mr-2 h-4 w-4" />
+                                        Choose File
+                                    </Label>
+                                    <Input id="company-background-upload" type="file" accept="image/*" className="hidden" onChange={(e) => setCompanyBackground(e.target.files ? e.target.files[0] : null)} />
+                                    {companyBackground && <p className="text-sm text-muted-foreground">{companyBackground.name}</p>}
+                                    {companyBackground && <Button variant="ghost" size="icon" onClick={() => setCompanyBackground(null)}><X className="h-4 w-4" /></Button>}
                                 </div>
                             </div>
                         </div>

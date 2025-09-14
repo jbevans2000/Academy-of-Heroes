@@ -5,6 +5,7 @@ export type Company = {
     id: string;
     name: string;
     logoUrl?: string;
+    backgroundUrl?: string;
 }
 
 export interface Message {

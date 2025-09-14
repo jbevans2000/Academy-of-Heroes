@@ -4,9 +4,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { doc, onSnapshot, getDoc, updateDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc, updateDoc, serverTimestamp, Timestamp, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
-import type { Student } from '@/lib/data';
+import type { Student, Company } from '@/lib/data';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { DashboardClient } from './dashboard-client';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -28,6 +28,7 @@ const isSameDay = (d1: Date, d2: Date) => {
 
 export default function Dashboard() {
   const [student, setStudent] = useState<Student | null>(null);
+  const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showApprovedDialog, setShowApprovedDialog] = useState(false);
 
@@ -66,6 +67,18 @@ export default function Dashboard() {
               if (studentData.isArchived) {
                 router.push('/account-archived');
                 return;
+              }
+              
+              if (studentData.companyId) {
+                const companyRef = doc(db, 'teachers', teacherUid, 'companies', studentData.companyId);
+                const companySnap = await getDoc(companyRef);
+                if (companySnap.exists()) {
+                    setCompany(companySnap.data() as Company);
+                } else {
+                    setCompany(null);
+                }
+              } else {
+                  setCompany(null);
               }
               
               const today = new Date();
@@ -160,6 +173,7 @@ export default function Dashboard() {
   };
   
   const approvedClassName = searchParams.get('className');
+  const backgroundUrl = company?.backgroundUrl || 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-b2ed6807-b64f-48e1-9b8c-a2d0b719db78.jpg?alt=media&token=793c0484-06f3-49ab-9557-9ca0a9b0f6bf';
 
   if (isLoading || !student) {
     return (
@@ -176,7 +190,10 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
+    <div 
+        className="flex min-h-screen w-full flex-col bg-cover bg-center"
+        style={{ backgroundImage: `url('${backgroundUrl}')`}}
+    >
       <AlertDialog open={showApprovedDialog} onOpenChange={setShowApprovedDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -204,7 +221,7 @@ export default function Dashboard() {
       </AlertDialog>
 
       <DashboardHeader characterName={student.characterName}/>
-      <main className="flex-1">
+      <main className="flex-1 bg-background/50 backdrop-blur-sm">
         <DashboardClient student={student} />
       </main>
     </div>
