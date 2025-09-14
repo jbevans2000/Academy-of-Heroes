@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -109,7 +110,16 @@ export default function HubMapPage() {
     const currentChapter = unlockedChapters.find(c => c.chapterNumber === lastCompletedChapter + 1);
 
     return (
-        <div className="flex flex-col items-center justify-start bg-background p-2">
+        <div className="relative flex flex-col items-center justify-start bg-background p-2">
+            <div 
+                className="absolute inset-0 -z-10"
+                style={{
+                    backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FWorld%20Maps%2FWorld%20Map%20(3).jpg?alt=media&token=f46483bd-849a-45cc-9e28-fe59372017b6')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    opacity: 0.5,
+                }}
+            />
             <Card className="w-full max-w-7xl shadow-2xl">
                 <CardHeader className="py-4">
                     <CardTitle className="text-3xl font-bold text-center text-primary">{hub.name}</CardTitle>

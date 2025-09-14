@@ -417,7 +417,16 @@ export default function ChapterPage() {
             </AlertDialogContent>
         </AlertDialog>
 
-        <div className="flex flex-col items-center justify-start bg-background p-2 md:p-4">
+        <div className="relative flex flex-col items-center justify-start bg-background p-2 md:p-4">
+             <div 
+                className="absolute inset-0 -z-10"
+                style={{
+                    backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FWorld%20Maps%2FWorld%20Map%20(3).jpg?alt=media&token=f46483bd-849a-45cc-9e28-fe59372017b6')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    opacity: 0.5,
+                }}
+            />
             <div className="w-full max-w-4xl space-y-4">
                 <Card className="shadow-2xl">
                     <CardHeader className="text-center">
@@ -461,7 +470,7 @@ export default function ChapterPage() {
                                         width={800}
                                         height={100}
                                         className="rounded-lg object-contain"
-                                        data-ai-hint="twig decoration"
+                                        data-ai-hint="divider"
                                     />
                                 </div></>}
                                 {storyVideoSrc && <><Separator /><div className="flex justify-center">
@@ -586,4 +595,3 @@ export default function ChapterPage() {
       </>
     );
 }
-
