@@ -15,11 +15,17 @@ interface BossImageGalleryProps {
     onImageSelect: (url: string) => void;
 }
 
-const generatePlaceholders = (count: number, seedPrefix: string) => {
-    return Array.from({ length: count }, (_, i) => `https://picsum.photos/seed/${seedPrefix}${i + 1}/400/400`);
-};
-
-const primaryImages = generatePlaceholders(12, 'primary');
+const primaryImages = [
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FLibrary%20Boss%20Images%2FES%20Bosses%20(9).jpg?alt=media&token=af6497f1-0a8e-428c-b469-c3834c7d7f0c",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FLibrary%20Boss%20Images%2FES%20Bosses%20(8).jpg?alt=media&token=08940f3e-e6d0-4741-a375-72979d7e3366",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FLibrary%20Boss%20Images%2FES%20Bosses%20(7).jpg?alt=media&token=273fe6fc-1499-4164-b482-0afd41b21609",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FLibrary%20Boss%20Images%2FES%20Bosses%20(6).jpg?alt=media&token=d0bf567f-4ba6-44e7-8afb-c93bbb95ea43",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FLibrary%20Boss%20Images%2FES%20Bosses%20(5).jpg?alt=media&token=1f23cf38-a320-4ecf-a05d-9598692fb607",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FLibrary%20Boss%20Images%2FES%20Bosses%20(4).jpg?alt=media&token=6b6907e4-2d58-4ef9-a320-1b06862f8191",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FLibrary%20Boss%20Images%2FES%20Bosses%20(3).jpg?alt=media&token=519081ae-3c42-448a-8d44-3e8538314f91",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FLibrary%20Boss%20Images%2FES%20Bosses%20(2).jpg?alt=media&token=627eddd8-76c3-4e1d-842f-b52bd0c06d9c",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FLibrary%20Boss%20Images%2FES%20Bosses%20(1).jpg?alt=media&token=0626ef90-37b3-4e8c-90c4-9745f1cf5d9e"
+];
 const secondaryImages = [
     "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FLibrary%20Boss%20Images%2FHS%20Bosses%20(1).jpg?alt=media&token=b819947a-78b2-4b59-8541-8f4bd1a9d425",
     "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FLibrary%20Boss%20Images%2FHS%20Bosses%20(10).jpg?alt=media&token=d0e64fb9-20d0-428f-a1c0-ed8fc1c518d2",
