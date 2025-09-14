@@ -22,6 +22,8 @@ import NextImage from 'next/image';
 import { v4 as uuidv4 } from 'uuid';
 import { cn } from '@/lib/utils';
 import { MusicGallery } from '@/components/teacher/music-gallery';
+import { generateQuestions } from '@/ai/flows/question-generator';
+
 
 const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
@@ -58,6 +60,7 @@ export default function NewBossBattlePage() {
   const [aiSubject, setAiSubject] = useState('');
   const [aiGradeLevel, setAiGradeLevel] = useState('');
   const [aiNumQuestions, setAiNumQuestions] = useState<number | string>(5);
+  const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
 
   // AI Image Generation State
   const [aiImagePrompt, setAiImagePrompt] = useState('');
@@ -180,6 +183,39 @@ export default function NewBossBattlePage() {
       )
     );
   };
+
+  const handleGenerateQuestions = async () => {
+    if (!aiSubject || !aiGradeLevel || !aiNumQuestions) {
+        toast({ variant: 'destructive', title: 'Missing Info', description: 'Please provide a subject, grade, and number of questions.' });
+        return;
+    }
+    setIsGeneratingQuestions(true);
+    try {
+        const result = await generateQuestions({
+            subject: aiSubject,
+            gradeLevel: aiGradeLevel,
+            numQuestions: Number(aiNumQuestions)
+        });
+        const newQuestions = result.questions.map(q => ({
+            ...q,
+            id: Date.now() + Math.random(),
+        }));
+        
+        // Check if the first question is empty, if so, replace it, otherwise append.
+        if (questions.length === 1 && questions[0].questionText === '' && questions[0].answers.every(a => a === '')) {
+             setQuestions(newQuestions);
+        } else {
+             setQuestions(prev => [...prev, ...newQuestions]);
+        }
+       
+        toast({ title: 'Questions Generated!', description: `${newQuestions.length} questions have been added to the editor.` });
+
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Generation Failed', description: error.message });
+    } finally {
+        setIsGeneratingQuestions(false);
+    }
+  }
 
   const validateBattle = () => {
     if (!battleTitle.trim()) {
@@ -378,11 +414,11 @@ export default function NewBossBattlePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <Label htmlFor="ai-subject">Subject / Topic</Label>
-                        <Input id="ai-subject" placeholder="e.g. Photosynthesis" value={aiSubject} onChange={(e) => setAiSubject(e.target.value)} disabled />
+                        <Input id="ai-subject" placeholder="e.g. Photosynthesis" value={aiSubject} onChange={(e) => setAiSubject(e.target.value)} disabled={isGeneratingQuestions} />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="ai-grade">Grade Level</Label>
-                         <Select onValueChange={setAiGradeLevel} value={aiGradeLevel} disabled>
+                         <Select onValueChange={setAiGradeLevel} value={aiGradeLevel} disabled={isGeneratingQuestions}>
                             <SelectTrigger id="ai-grade"><SelectValue placeholder="Choose a grade..." /></SelectTrigger>
                             <SelectContent>{gradeLevels.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
                         </Select>
@@ -390,10 +426,10 @@ export default function NewBossBattlePage() {
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="ai-num-questions">Number of Questions (1-10)</Label>
-                    <Input id="ai-num-questions" type="number" min="1" max="10" value={aiNumQuestions} onChange={(e) => setAiNumQuestions(e.target.value)} disabled />
+                    <Input id="ai-num-questions" type="number" min="1" max="10" value={aiNumQuestions} onChange={(e) => setAiNumQuestions(e.target.value)} disabled={isGeneratingQuestions}/>
                  </div>
-                 <Button disabled>
-                    <Sparkles className="mr-2 h-4 w-4" />
+                 <Button onClick={handleGenerateQuestions} disabled={isGeneratingQuestions || !aiSubject || !aiGradeLevel}>
+                    {isGeneratingQuestions ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
                     Consult the Oracle
                  </Button>
               </div>
