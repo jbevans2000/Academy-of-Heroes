@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, onSnapshot, query, where, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
@@ -16,6 +16,10 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Coins, Gem, Ban, ShoppingCart, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { purchaseBoon } from '@/ai/flows/manage-inventory';
+import { TeacherHeader } from '@/components/teacher/teacher-header';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { User as UserIcon } from 'lucide-react';
+
 
 const BoonCard = ({ boon, onPurchase, student, disabled }: { boon: Boon, onPurchase: (boonId: string) => void, student: Student | null, disabled: boolean }) => {
     const [isPurchasing, setIsPurchasing] = useState(false);
@@ -59,8 +63,9 @@ const BoonCard = ({ boon, onPurchase, student, disabled }: { boon: Boon, onPurch
     )
 }
 
-export default function ArmoryPage() {
+function ArmoryPageComponent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { toast } = useToast();
 
     const [user, setUser] = useState<User | null>(null);
@@ -68,34 +73,53 @@ export default function ArmoryPage() {
     const [boons, setBoons] = useState<Boon[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isPurchasingAny, setIsPurchasingAny] = useState(false);
-
+    
+    const isTeacherPreview = searchParams.get('teacherPreview') === 'true';
+    const studentUid = searchParams.get('studentUid');
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
                 setUser(currentUser);
-                const studentMetaRef = doc(db, 'students', currentUser.uid);
-                const studentMetaSnap = await getDoc(studentMetaRef);
+                let targetStudentUid = currentUser.uid;
+                let teacherUidForStudent: string | null = null;
 
-                if (studentMetaSnap.exists()) {
-                    const studentRef = doc(db, 'teachers', studentMetaSnap.data().teacherUid, 'students', currentUser.uid);
-                    // Use onSnapshot to get real-time updates for student's gold and inventory
-                    const unsubStudent = onSnapshot(studentRef, (docSnap) => {
-                        if (docSnap.exists()) {
-                            setStudent(docSnap.data() as Student);
-                        }
-                    });
-                    return () => unsubStudent();
+                if (isTeacherPreview && studentUid) {
+                    // Teacher is previewing a student
+                    targetStudentUid = studentUid;
+                    teacherUidForStudent = currentUser.uid;
                 } else {
-                    toast({ variant: 'destructive', title: 'Error', description: 'Could not identify your guild.' });
-                    router.push('/dashboard');
+                    // Student is viewing their own page
+                    const studentMetaRef = doc(db, 'students', currentUser.uid);
+                    const studentMetaSnap = await getDoc(studentMetaRef);
+                    if (studentMetaSnap.exists()) {
+                        teacherUidForStudent = studentMetaSnap.data().teacherUid;
+                    }
                 }
+                
+                if (teacherUidForStudent) {
+                     const studentRef = doc(db, 'teachers', teacherUidForStudent, 'students', targetStudentUid);
+                     const unsubStudent = onSnapshot(studentRef, (docSnap) => {
+                         if (docSnap.exists()) {
+                             setStudent({ uid: docSnap.id, ...docSnap.data() } as Student);
+                         } else if (!isTeacherPreview) {
+                            toast({ variant: 'destructive', title: 'Error', description: 'Student data not found.'});
+                            router.push('/dashboard');
+                         }
+                     });
+                     return () => unsubStudent();
+                } else if (!isTeacherPreview) {
+                     toast({ variant: 'destructive', title: 'Error', description: 'Could not identify your guild.' });
+                     router.push('/dashboard');
+                }
+
             } else {
                 router.push('/');
             }
         });
         return () => unsubscribe();
-    }, [router, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isTeacherPreview, studentUid, router, toast]);
     
     useEffect(() => {
         if (!student?.teacherUid) return;
@@ -110,7 +134,7 @@ export default function ArmoryPage() {
             setIsLoading(false);
         }, (error) => {
             console.error("Error fetching boons: ", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch the items from the Armory.' });
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch the items from the Vault.' });
             setIsLoading(false);
         });
 
@@ -120,31 +144,44 @@ export default function ArmoryPage() {
     const handlePurchaseBoon = async (boonId: string) => {
         if (!user || !student) return;
         setIsPurchasingAny(true);
+
         const result = await purchaseBoon({
             teacherUid: student.teacherUid,
-            studentUid: user.uid,
+            studentUid: student.uid, // Always use the student's UID being acted upon
             boonId: boonId,
         });
 
         if (result.success) {
-            toast({ title: 'Purchase Successful!', description: result.message });
+            toast({ title: 'Success!', description: result.message });
         } else {
             toast({ variant: 'destructive', title: 'Purchase Failed', description: result.error });
         }
         setIsPurchasingAny(false);
     };
+    
+    const returnPath = isTeacherPreview ? '/teacher/dashboard' : '/dashboard';
 
     return (
         <div 
             className="flex min-h-screen w-full flex-col bg-cover bg-center"
             style={{ backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-a78eccd5-9dd1-4ce7-bad4-44d11234177c.jpg?alt=media&token=bfe048b0-1e6c-4281-9d4e-523263132966')`}}
         >
-            <DashboardHeader />
+            {isTeacherPreview ? <TeacherHeader /> : <DashboardHeader />}
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="max-w-7xl mx-auto space-y-6">
-                    <Button variant="outline" onClick={() => router.push('/dashboard')} className="bg-background/80">
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+                    <Button variant="outline" onClick={() => router.push(returnPath)} className="bg-background/80">
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to {isTeacherPreview ? 'Podium' : 'Dashboard'}
                     </Button>
+                    
+                    {isTeacherPreview && student && (
+                        <Alert variant="default" className="bg-yellow-100 dark:bg-yellow-900/50 border-yellow-500">
+                             <UserIcon className="h-4 w-4" />
+                            <AlertTitle>Teacher Preview Mode</AlertTitle>
+                            <AlertDescription>
+                                You are purchasing items for <strong>{student.characterName}</strong>. Gold will be deducted from their balance.
+                            </AlertDescription>
+                        </Alert>
+                    )}
 
                     <Card className="bg-card/80 backdrop-blur-sm">
                         <CardHeader className="text-center">
@@ -155,7 +192,7 @@ export default function ArmoryPage() {
                     </Card>
 
                      {isLoading ? (
-                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                             {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-96" />)}
                         </div>
                     ) : boons.length === 0 ? (
@@ -166,7 +203,7 @@ export default function ArmoryPage() {
                             </CardHeader>
                         </Card>
                     ) : (
-                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                             {boons.map(boon => <BoonCard key={boon.id} boon={boon} onPurchase={handlePurchaseBoon} student={student} disabled={isPurchasingAny} />)}
                         </div>
                     )}
@@ -174,4 +211,13 @@ export default function ArmoryPage() {
             </main>
         </div>
     );
+}
+
+
+export default function ArmoryPage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>}>
+            <ArmoryPageComponent />
+        </Suspense>
+    )
 }

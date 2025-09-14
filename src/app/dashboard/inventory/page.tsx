@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, onSnapshot, query, where, doc, getDoc, getDocs } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
@@ -25,18 +25,19 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
+import { TeacherHeader } from '@/components/teacher/teacher-header';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { User as UserIcon } from 'lucide-react';
 
-const InventoryBoonCard = ({ boon, quantity, onUse }: { boon: Boon; quantity: number; onUse: (boonId: string) => void; }) => {
+const InventoryBoonCard = ({ boon, quantity, onUse, disabled }: { boon: Boon; quantity: number; onUse: (boonId: string) => void; disabled: boolean }) => {
     const [isUsing, setIsUsing] = useState(false);
     const [isConfirmingUse, setIsConfirmingUse] = useState(false);
 
     const handleUse = async () => {
         setIsUsing(true);
         await onUse(boon.id);
-        // Do not set isUsing to false here. The component will re-render with new data,
-        // or be removed if quantity becomes 0. If there's an error, onUse should handle the toast.
-        // A finally block in onUse could set it to false if needed.
+        // The component will re-render, no need to set isUsing(false) here if it's successful
     };
 
     const handleActivateBoon = () => {
@@ -79,7 +80,7 @@ const InventoryBoonCard = ({ boon, quantity, onUse }: { boon: Boon; quantity: nu
                 <CardDescription>{boon.description}</CardDescription>
             </CardContent>
             <CardFooter>
-                <Button className="w-full" onClick={handleActivateBoon} disabled={isUsing}>
+                <Button className="w-full" onClick={handleActivateBoon} disabled={isUsing || disabled}>
                     {isUsing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                     Use Reward
                 </Button>
@@ -89,33 +90,49 @@ const InventoryBoonCard = ({ boon, quantity, onUse }: { boon: Boon; quantity: nu
     )
 }
 
-export default function InventoryPage() {
+function InventoryPageComponent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { toast } = useToast();
 
     const [user, setUser] = useState<User | null>(null);
     const [student, setStudent] = useState<Student | null>(null);
     const [inventoryBoons, setInventoryBoons] = useState<Boon[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isUsingAny, setIsUsingAny] = useState(false);
+    
+    const isTeacherPreview = searchParams.get('teacherPreview') === 'true';
+    const studentUid = searchParams.get('studentUid');
 
     useEffect(() => {
         const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
                 setUser(currentUser);
-                const studentMetaRef = doc(db, 'students', currentUser.uid);
-                const studentMetaSnap = await getDoc(studentMetaRef);
+                let targetStudentUid = currentUser.uid;
+                let teacherUidForStudent: string | null = null;
 
-                if (studentMetaSnap.exists()) {
-                    const studentRef = doc(db, 'teachers', studentMetaSnap.data().teacherUid, 'students', currentUser.uid);
+                if (isTeacherPreview && studentUid) {
+                    targetStudentUid = studentUid;
+                    teacherUidForStudent = currentUser.uid;
+                } else {
+                    const studentMetaRef = doc(db, 'students', currentUser.uid);
+                    const studentMetaSnap = await getDoc(studentMetaRef);
+                    if (studentMetaSnap.exists()) {
+                        teacherUidForStudent = studentMetaSnap.data().teacherUid;
+                    }
+                }
+
+                if (teacherUidForStudent) {
+                    const studentRef = doc(db, 'teachers', teacherUidForStudent, 'students', targetStudentUid);
                     const unsubscribeStudent = onSnapshot(studentRef, (docSnap) => {
                         if (docSnap.exists()) {
-                            setStudent(docSnap.data() as Student);
-                        } else {
+                            setStudent({ uid: docSnap.id, ...docSnap.data() } as Student);
+                        } else if (!isTeacherPreview) {
                             router.push('/dashboard');
                         }
                     });
                     return () => unsubscribeStudent();
-                } else {
+                } else if (!isTeacherPreview) {
                     router.push('/dashboard');
                 }
             } else {
@@ -123,18 +140,19 @@ export default function InventoryPage() {
             }
         });
         return () => unsubscribeAuth();
-    }, [router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isTeacherPreview, studentUid, router]);
 
     useEffect(() => {
         if (!student || !student.teacherUid) {
+            setInventoryBoons([]);
             setIsLoading(false);
-            setInventoryBoons([]); // Clear boons if student/teacher is not available
             return;
         };
 
         const fetchInventoryBoons = async () => {
             const inventory = student.inventory || {};
-            const boonIds = Object.keys(inventory);
+            const boonIds = Object.keys(inventory).filter(id => inventory[id] > 0);
 
             if (boonIds.length === 0) {
                 setInventoryBoons([]);
@@ -144,8 +162,8 @@ export default function InventoryPage() {
             
             setIsLoading(true);
             try {
-                // Firestore 'in' query is limited to 30 items. If a student has more, we'd need to batch.
                 const boonsRef = collection(db, 'teachers', student.teacherUid, 'boons');
+                // Firestore 'in' query can handle up to 30 items. For larger inventories, batching would be needed.
                 const q = query(boonsRef, where('__name__', 'in', boonIds.slice(0,30)));
                 const querySnapshot = await getDocs(q);
                 setInventoryBoons(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Boon)));
@@ -162,10 +180,10 @@ export default function InventoryPage() {
 
     const handleUseBoon = async (boonId: string) => {
         if (!user || !student?.teacherUid) return;
-
+        setIsUsingAny(true);
         const result = await useBoon({
             teacherUid: student.teacherUid,
-            studentUid: user.uid,
+            studentUid: student.uid,
             boonId: boonId,
         });
 
@@ -174,18 +192,29 @@ export default function InventoryPage() {
         } else {
             toast({ variant: 'destructive', title: 'Action Failed', description: result.error });
         }
-        // The onSnapshot listener will handle the UI update automatically.
+        setIsUsingAny(false);
     };
 
+    const returnPath = isTeacherPreview ? '/teacher/dashboard' : '/dashboard';
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
-            <DashboardHeader />
+            {isTeacherPreview ? <TeacherHeader /> : <DashboardHeader />}
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="max-w-6xl mx-auto space-y-6">
-                    <Button variant="outline" onClick={() => router.push('/dashboard')}>
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+                    <Button variant="outline" onClick={() => router.push(returnPath)}>
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to {isTeacherPreview ? 'Podium' : 'Dashboard'}
                     </Button>
+                    
+                    {isTeacherPreview && student && (
+                        <Alert variant="default" className="bg-yellow-100 dark:bg-yellow-900/50 border-yellow-500">
+                             <UserIcon className="h-4 w-4" />
+                            <AlertTitle>Teacher Preview Mode</AlertTitle>
+                            <AlertDescription>
+                                You are managing the inventory for <strong>{student.characterName}</strong>. Using a reward will consume it from their inventory.
+                            </AlertDescription>
+                        </Alert>
+                    )}
 
                     <Card>
                         <CardHeader className="text-center">
@@ -206,15 +235,15 @@ export default function InventoryPage() {
                                 <CardDescription>Visit the Vault to purchase powerful items and Rewards!</CardDescription>
                             </CardHeader>
                              <CardContent>
-                                <Button onClick={() => router.push('/armory')}>Visit the Vault</Button>
+                                <Button onClick={() => router.push(`/armory${isTeacherPreview ? `?teacherPreview=true&studentUid=${studentUid}` : ''}`)}>Visit the Vault</Button>
                             </CardContent>
                         </Card>
                     ) : (
                         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                             {inventoryBoons.map(boon => {
                                 const quantity = student?.inventory?.[boon.id] || 0;
-                                if (quantity === 0) return null; // Don't show boons the student has used up
-                                return <InventoryBoonCard key={boon.id} boon={boon} quantity={quantity} onUse={handleUseBoon} />
+                                if (quantity === 0) return null;
+                                return <InventoryBoonCard key={boon.id} boon={boon} quantity={quantity} onUse={handleUseBoon} disabled={isUsingAny} />
                             })}
                         </div>
                     )}
@@ -222,4 +251,12 @@ export default function InventoryPage() {
             </main>
         </div>
     );
+}
+
+export default function InventoryPage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>}>
+            <InventoryPageComponent />
+        </Suspense>
+    )
 }
