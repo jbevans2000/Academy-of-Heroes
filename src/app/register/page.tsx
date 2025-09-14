@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -27,6 +26,7 @@ import { createStudentDocuments } from '@/ai/flows/create-student';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { generateName } from '@/ai/flows/name-generator';
 
 
 export default function RegisterPage() {
@@ -65,6 +65,30 @@ export default function RegisterPage() {
     checkRegistrationStatus();
   }, []);
 
+  const handleGenerateName = async () => {
+    if (!selectedClass) {
+        toast({
+            variant: 'destructive',
+            title: 'Select a Class First',
+            description: 'Please choose your hero\'s class before generating a name.',
+        });
+        return;
+    }
+    setIsGeneratingName(true);
+    try {
+        const name = await generateName(selectedClass);
+        setCharacterName(name);
+    } catch (error) {
+        console.error(error);
+        toast({
+            variant: 'destructive',
+            title: 'Name Generation Failed',
+            description: 'Could not generate a name at this time. Please try again or enter one manually.',
+        });
+    } finally {
+        setIsGeneratingName(false);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!classCode || (signupMethod === 'alias' && !studentId) || (signupMethod === 'email' && !email) || !password || !confirmPassword || !studentName || !characterName || !selectedClass || !selectedAvatar) {
@@ -303,7 +327,7 @@ export default function RegisterPage() {
                     <Label htmlFor="character-name" className="flex items-center"><Star className="w-4 h-4 mr-2" />Character Name</Label>
                     <div className="flex gap-2">
                       <Input id="character-name" placeholder="Your hero's name" value={characterName} onChange={(e) => setCharacterName(e.target.value)} disabled={isLoading || isGeneratingName} />
-                       <Button variant="outline" size="icon" disabled>
+                       <Button variant="outline" size="icon" onClick={handleGenerateName} disabled={isGeneratingName || !selectedClass}>
                             {isGeneratingName ? <Loader2 className="h-4 w-4 animate-spin" /> : <Star className="h-4 w-4" />}
                        </Button>
                     </div>
