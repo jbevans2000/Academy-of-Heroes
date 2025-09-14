@@ -2,13 +2,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { School, LogOut, LifeBuoy, Shield, User as UserIcon, MessageSquare } from "lucide-react";
+import { School, LogOut, LifeBuoy, Shield, User as UserIcon, MessageSquare, Rss } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import { signOut, onAuthStateChanged, type User } from "firebase/auth";
-import { doc, getDoc, onSnapshot, updateDoc } from "firebase/firestore";
+import { doc, getDoc, onSnapshot, collection, query, orderBy, limit } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Bug, Lightbulb } from "lucide-react";
 import { TeacherAdminMessageDialog } from './teacher-admin-message-dialog';
@@ -23,7 +23,8 @@ export function TeacherHeader({ isAdminPreview = false }: TeacherHeaderProps) {
   const [isFeedbackPanelVisible, setIsFeedbackPanelVisible] = useState(false);
   const [teacher, setTeacher] = useState<User | null>(null);
   const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
-  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
+  const [hasUnreadAdminMessages, setHasUnreadAdminMessages] = useState(false);
+  const [hasNewBroadcasts, setHasNewBroadcasts] = useState(false);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
@@ -47,10 +48,31 @@ export function TeacherHeader({ isAdminPreview = false }: TeacherHeaderProps) {
   
   useEffect(() => {
     if (!teacher) return;
+    
     const teacherRef = doc(db, 'teachers', teacher.uid);
     const unsubscribeTeacher = onSnapshot(teacherRef, (docSnap) => {
         if (docSnap.exists()) {
-            setHasUnreadMessages(docSnap.data().hasUnreadAdminMessages || false);
+            const teacherData = docSnap.data();
+            setHasUnreadAdminMessages(teacherData.hasUnreadAdminMessages || false);
+
+            const lastSeenTimestamp = teacherData.lastSeenBroadcastTimestamp?.toDate() ?? new Date(0);
+            
+            // Check for new broadcasts
+            const broadcastsRef = collection(db, 'settings', 'global', 'broadcasts');
+            const q = query(broadcastsRef, orderBy('sentAt', 'desc'), limit(1));
+            getDocs(q).then(snapshot => {
+                if (!snapshot.empty) {
+                    const latestBroadcast = snapshot.docs[0].data();
+                    if (latestBroadcast.sentAt) {
+                        const latestTimestamp = latestBroadcast.sentAt.toDate();
+                        if (latestTimestamp > lastSeenTimestamp) {
+                            setHasNewBroadcasts(true);
+                        } else {
+                            setHasNewBroadcasts(false);
+                        }
+                    }
+                }
+            });
         }
     });
 
@@ -101,10 +123,15 @@ export function TeacherHeader({ isAdminPreview = false }: TeacherHeaderProps) {
                   Return to Admin Dashboard
               </Button>
           )}
+           <Button variant="outline" onClick={() => router.push('/teacher/broadcasts')} className="relative">
+                <Rss className="mr-2 h-5 w-5" />
+                Announcements
+                {hasNewBroadcasts && <span className="absolute top-1 right-1 flex h-3 w-3 rounded-full bg-red-600 animate-pulse" />}
+            </Button>
           <Button variant="outline" onClick={() => setIsMessageDialogOpen(true)} className="relative">
               <MessageSquare className="mr-2 h-5 w-5" />
               Contact Admin
-              {hasUnreadMessages && <span className="absolute top-1 right-1 flex h-3 w-3 rounded-full bg-red-600 animate-pulse" />}
+              {hasUnreadAdminMessages && <span className="absolute top-1 right-1 flex h-3 w-3 rounded-full bg-red-600 animate-pulse" />}
           </Button>
           <Button variant="outline" onClick={() => router.push('/teacher/profile')}>
               <UserIcon className="mr-2 h-5 w-5" />
