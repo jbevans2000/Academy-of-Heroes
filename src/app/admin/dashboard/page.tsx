@@ -19,7 +19,7 @@ import { getGlobalSettings, updateGlobalSettings } from '@/ai/flows/manage-setti
 import { deleteFeedback } from '@/ai/flows/submit-feedback';
 import { moderateStudent } from '@/ai/flows/manage-student';
 import { deleteTeacher } from '@/ai/flows/manage-teacher';
-import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown } from 'lucide-react';
+import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,6 +41,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { Label } from '@/components/ui/label';
 import { DirectPromptInterface } from '@/components/admin/direct-prompt-interface';
+import { Textarea } from '@/components/ui/textarea';
 
 type SortDirection = 'asc' | 'desc';
 type TeacherSortKey = 'className' | 'name' | 'email' | 'schoolName' | 'studentCount' | 'createdAt';
@@ -92,6 +93,10 @@ export default function AdminDashboardPage() {
     const [feedbackToDelete, setFeedbackToDelete] = useState<string | null>(null);
     const [isDeletingFeedback, setIsDeletingFeedback] = useState(false);
     
+    // Broadcast message state
+    const [broadcastMessage, setBroadcastMessage] = useState('');
+    const [isSendingBroadcast, setIsSendingBroadcast] = useState(false);
+
     // Sorting state
     const [teacherSortConfig, setTeacherSortConfig] = useState<{ key: TeacherSortKey; direction: SortDirection } | null>({ key: 'className', direction: 'asc' });
     const [studentSortConfig, setStudentSortConfig] = useState<{ key: StudentSortKey; direction: SortDirection } | null>({ key: 'studentName', direction: 'asc' });
@@ -249,6 +254,7 @@ export default function AdminDashboardPage() {
             setIsStudentRegistrationOpen(settings.isStudentRegistrationOpen);
             setIsTeacherRegistrationOpen(settings.isTeacherRegistrationOpen);
             setIsFeedbackPanelVisible(settings.isFeedbackPanelVisible || false);
+            setBroadcastMessage(settings.broadcastMessage || '');
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not load global settings.' });
         } finally {
@@ -318,6 +324,49 @@ export default function AdminDashboardPage() {
             setIsSettingsLoading(false);
         }
     }
+
+    const handleSendBroadcast = async () => {
+        if (!broadcastMessage.trim()) {
+            toast({ variant: 'destructive', title: 'Message Empty', description: 'Cannot send an empty broadcast message.' });
+            return;
+        }
+        setIsSendingBroadcast(true);
+        try {
+            const result = await updateGlobalSettings({
+                broadcastMessage: broadcastMessage,
+                broadcastMessageId: new Date().toISOString(), // Unique ID for this message
+            });
+            if (result.success) {
+                toast({ title: 'Broadcast Sent!', description: 'The message will be shown to teachers on their next login.' });
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Send Failed', description: error.message });
+        } finally {
+            setIsSendingBroadcast(false);
+        }
+    };
+    
+    const handleClearBroadcast = async () => {
+        setIsSendingBroadcast(true);
+        try {
+            const result = await updateGlobalSettings({
+                broadcastMessage: '',
+                broadcastMessageId: '',
+            });
+            if (result.success) {
+                setBroadcastMessage('');
+                toast({ title: 'Broadcast Cleared', description: 'The announcement has been removed.' });
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Clear Failed', description: error.message });
+        } finally {
+            setIsSendingBroadcast(false);
+        }
+    };
 
     const handleFeedbackStatusChange = async (feedbackId: string, currentStatus: 'new' | 'addressed') => {
         const newStatus = currentStatus === 'new' ? 'addressed' : 'new';
@@ -452,6 +501,40 @@ export default function AdminDashboardPage() {
             <main className="flex-1 p-4 md:p-6 lg:p-8 grid gap-6 md:grid-cols-3 lg:grid-cols-4">
                  
                  <div className="lg:col-span-3 space-y-6">
+                    {/* Broadcast Message Card */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <MessageCircle className="h-6 w-6 text-primary" />
+                                Broadcast to Teachers
+                            </CardTitle>
+                            <CardDescription>
+                                Send a pop-up message that all teachers will see on their next login. Useful for maintenance notices or announcements.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <Textarea
+                                placeholder="Enter your announcement..."
+                                value={broadcastMessage}
+                                onChange={(e) => setBroadcastMessage(e.target.value)}
+                                rows={4}
+                                disabled={isSendingBroadcast}
+                            />
+                            <div className="flex gap-2">
+                                <Button onClick={handleSendBroadcast} disabled={isSendingBroadcast || !broadcastMessage.trim()}>
+                                    {isSendingBroadcast ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                                    Send Broadcast
+                                </Button>
+                                {broadcastMessage && (
+                                     <Button variant="destructive" onClick={handleClearBroadcast} disabled={isSendingBroadcast}>
+                                        {isSendingBroadcast ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                                        Clear Broadcast
+                                    </Button>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+
                     {/* Direct Prompt Interface */}
                     <DirectPromptInterface />
 
@@ -774,4 +857,3 @@ export default function AdminDashboardPage() {
         </div>
     );
 }
-

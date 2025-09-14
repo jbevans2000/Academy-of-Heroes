@@ -11,6 +11,8 @@ interface Settings {
     isStudentRegistrationOpen: boolean;
     isTeacherRegistrationOpen: boolean;
     isFeedbackPanelVisible?: boolean;
+    broadcastMessage?: string;
+    broadcastMessageId?: string;
 }
 
 const settingsRef = doc(db, 'settings', 'global');
@@ -29,14 +31,16 @@ export async function getGlobalSettings(): Promise<Settings> {
                 isStudentRegistrationOpen: data.isStudentRegistrationOpen ?? data.isRegistrationOpen ?? true, // Fallback for old setting
                 isTeacherRegistrationOpen: data.isTeacherRegistrationOpen ?? true,
                 isFeedbackPanelVisible: data.isFeedbackPanelVisible ?? false,
+                broadcastMessage: data.broadcastMessage || '',
+                broadcastMessageId: data.broadcastMessageId || '',
             };
         }
         // Default to registration being open if the document doesn't exist
-        return { isStudentRegistrationOpen: true, isTeacherRegistrationOpen: true, isFeedbackPanelVisible: false };
+        return { isStudentRegistrationOpen: true, isTeacherRegistrationOpen: true, isFeedbackPanelVisible: false, broadcastMessage: '', broadcastMessageId: '' };
     } catch (error) {
         console.error("Error fetching global settings:", error);
         // Fail-safe default
-        return { isStudentRegistrationOpen: true, isTeacherRegistrationOpen: true, isFeedbackPanelVisible: false };
+        return { isStudentRegistrationOpen: true, isTeacherRegistrationOpen: true, isFeedbackPanelVisible: false, broadcastMessage: '', broadcastMessageId: '' };
     }
 }
 

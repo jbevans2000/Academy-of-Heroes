@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -119,7 +120,11 @@ export default function Dashboard() {
   const [regenPercentage, setRegenPercentage] = useState<number | string>(0);
   const [isSavingRegen, setIsSavingRegen] = useState(false);
 
-  
+  // Broadcast message state
+  const [broadcastMessage, setBroadcastMessage] = useState('');
+  const [isBroadcastDialogOpen, setIsBroadcastDialogOpen] = useState(false);
+
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async user => {
         if (!user) {
@@ -141,18 +146,26 @@ export default function Dashboard() {
         }
     });
 
-    const checkWelcome = async () => {
+    const checkWelcomeAndBroadcast = async () => {
         const isNewTeacher = searchParams.get('new') === 'true';
+        const settings = await getGlobalSettings();
+
         if (isNewTeacher) {
-            const settings = await getGlobalSettings();
             if (settings.isFeedbackPanelVisible) {
                 setShowBetaWelcomeDialog(true);
             } else {
                 setShowWelcomeDialog(true);
             }
+        } else if (settings.broadcastMessage) {
+            const lastSeenId = localStorage.getItem('lastSeenBroadcastId');
+            if (settings.broadcastMessageId && lastSeenId !== settings.broadcastMessageId) {
+                setBroadcastMessage(settings.broadcastMessage);
+                setIsBroadcastDialogOpen(true);
+                localStorage.setItem('lastSeenBroadcastId', settings.broadcastMessageId);
+            }
         }
     }
-    checkWelcome();
+    checkWelcomeAndBroadcast();
 
     return () => unsubscribe();
   }, [searchParams, router]);
@@ -615,8 +628,22 @@ export default function Dashboard() {
               opacity: 0.5,
           }}
       />
-      <TeacherHeader isAdminPreview={isAdminPreview} />
+      <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
+        <AlertDialog open={isBroadcastDialogOpen} onOpenChange={setIsBroadcastDialogOpen}>
+             <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle className="text-2xl">A Message from the Grandmaster</AlertDialogTitle>
+                    <AlertDialogDescription className="text-base text-foreground">
+                        {broadcastMessage}
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogAction onClick={() => setIsBroadcastDialogOpen(false)}>I Understand</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
         <AlertDialog open={showWelcomeDialog} onOpenChange={setShowWelcomeDialog}>
             <AlertDialogContent className="max-w-2xl">
                 <AlertDialogHeader>
