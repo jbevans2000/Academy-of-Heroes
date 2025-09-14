@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI flow for generating generic fantasy quest chapters.
@@ -26,7 +27,7 @@ Follow these rules strictly:
 1.  **Perspective:** Write the entire story in the second person (e.g., "You enter the forest...", "You see a strange glow...").
 2.  **Content:** The story must be 4-5 paragraphs long. It should describe a simple, fantasy-based objective for the hero to complete (e.g., find an artifact, decipher a riddle, follow a mysterious map).
 3.  **No Specifics:** Do not use any proper names for people, places, or items. Keep it generic (e.g., "the old man," "the dark forest," "the glowing sword").
-4.  **Output Format:** Provide a creative, fantasy-themed title for the chapter. The story content itself must be formatted as an HTML string, with each paragraph wrapped in `<p>` tags.
+4.  **Output Format:** Provide a creative, fantasy-themed title for the chapter. The story content itself must be formatted as an HTML string, with each paragraph wrapped in \`<p>\` tags.
 `,
 });
 
@@ -37,7 +38,7 @@ const generateStoryFlow = ai.defineFlow(
     outputSchema: StoryGeneratorOutputSchema,
   },
   async () => {
-    const { output } = await storyPrompt({});
+    const { output } = await storyPrompt();
     if (!output) {
         throw new Error("The AI failed to generate a valid story.");
     }
