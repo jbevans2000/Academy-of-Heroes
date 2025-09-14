@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { generateWritingPrompt } from '@/ai/flows/writing-prompt-generator';
 
 const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 const fictionGenres = ['Fantasy', 'Sci-Fi', 'Mystery', 'Adventure', 'Comedy'];
@@ -29,6 +30,38 @@ export default function RoyalScribePage() {
     const [promptType, setPromptType] = useState<'Fiction' | 'Non-Fiction' | ''>('');
     const [genreOrSubject, setGenreOrSubject] = useState('');
     const [specificTopic, setSpecificTopic] = useState('');
+
+    const handleGenerate = async () => {
+        if (!gradeLevel || !promptType || !genreOrSubject) {
+            toast({
+                variant: 'destructive',
+                title: 'Missing Information',
+                description: 'Please select a grade, prompt type, and genre/subject.',
+            });
+            return;
+        }
+        setIsLoading(true);
+        setGeneratedPrompt(null);
+        try {
+            const result = await generateWritingPrompt({
+                gradeLevel,
+                promptType,
+                genreOrSubject,
+                specificTopic
+            });
+            setGeneratedPrompt(result);
+        } catch (error: any) {
+            console.error("Error generating prompt:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Generation Failed',
+                description: 'The Royal Scribe could not conjure a prompt. Please try again.',
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
 
     const resetSelections = () => {
         setGradeLevel('');
@@ -119,8 +152,8 @@ export default function RoyalScribePage() {
                             )}
 
                              <div className="pt-4">
-                                <Button size="lg" disabled>
-                                    <Sparkles className="mr-2 h-5 w-5" />
+                                <Button size="lg" onClick={handleGenerate} disabled={isLoading || !gradeLevel || !promptType || !genreOrSubject}>
+                                    {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
                                     Generate Prompt
                                 </Button>
                              </div>
