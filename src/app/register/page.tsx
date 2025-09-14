@@ -338,8 +338,9 @@ export default function RegisterPage() {
                     <Label htmlFor="character-name" className="flex items-center"><Star className="w-4 h-4 mr-2" />Character Name</Label>
                     <div className="flex gap-2">
                       <Input id="character-name" placeholder="Your hero's name" value={characterName} onChange={(e) => setCharacterName(e.target.value)} disabled={isLoading || isGeneratingName} />
-                       <Button variant="outline" size="icon" onClick={handleGenerateName} disabled={isGeneratingName}>
-                            {isGeneratingName ? <Loader2 className="h-4 w-4 animate-spin" /> : <Star className="h-4 w-4" />}
+                       <Button variant="outline" onClick={handleGenerateName} disabled={isGeneratingName}>
+                            {isGeneratingName ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Name Generator
                        </Button>
                     </div>
                 </div>
