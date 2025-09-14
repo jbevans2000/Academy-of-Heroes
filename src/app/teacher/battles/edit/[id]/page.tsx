@@ -24,6 +24,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { cn } from '@/lib/utils';
 import { MusicGallery } from '@/components/teacher/music-gallery';
 import { generateQuestions } from '@/ai/flows/question-generator';
+import { BossImageGallery } from '@/components/teacher/boss-image-gallery';
+
 
 const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
@@ -53,6 +55,7 @@ export default function EditBossBattlePage() {
   // Image Upload State
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isBossImageGalleryOpen, setIsBossImageGalleryOpen] = useState(false);
 
   // Music Upload State
   const [musicFile, setMusicFile] = useState<File | null>(null);
@@ -334,6 +337,7 @@ export default function EditBossBattlePage() {
   return (
     <>
     <MusicGallery isOpen={isMusicGalleryOpen} onOpenChange={setIsMusicGalleryOpen} onMusicSelect={setMusicUrl} />
+    <BossImageGallery isOpen={isBossImageGalleryOpen} onOpenChange={setIsBossImageGalleryOpen} onImageSelect={setBossImageUrl} />
     <div className="flex min-h-screen w-full flex-col bg-cover bg-center" style={{ backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-5c865a8c-e16c-4e32-b822-164b15894c5b.jpg?alt=media&token=11c25a8d-193a-44cf-bdfd-a752d57ccade')` }}>
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
@@ -367,13 +371,14 @@ export default function EditBossBattlePage() {
                <div className="space-y-4 p-6 border rounded-lg bg-background/30">
                  <h3 className="text-xl font-semibold flex items-center gap-2"><ImageIcon className="text-primary" /> Boss Image</h3>
                   <div className="space-y-2 p-4 border rounded-md">
-                    <Label className="text-base font-medium">Upload Boss Image</Label>
+                    <Label className="text-base font-medium">Image Options</Label>
                     <div className="flex items-center gap-2">
                       <Label htmlFor="image-upload" className={cn(buttonVariants({ variant: 'default' }), "cursor-pointer")}>
                         <Upload className="mr-2 h-4 w-4" />
-                        Choose File
+                        Upload Custom Image
                       </Label>
                       <Input id="image-upload" type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files ? e.target.files[0] : null)} className="hidden" disabled={isUploading}/>
+                      <Button variant="outline" onClick={() => setIsBossImageGalleryOpen(true)}><Library className="mr-2 h-4 w-4"/> Choose From Library</Button>
                       {imageFile && (
                           <>
                             <Button onClick={handleUploadImage} disabled={!imageFile || isUploading}>
