@@ -15,6 +15,7 @@ import { Loader2, Send } from 'lucide-react';
 import { sendMessageToTeacher, markMessagesAsRead } from '@/ai/flows/manage-messages';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
+import { ClientOnlyTime } from '../client-only-time';
 
 
 interface StudentMessageDialogProps {
@@ -115,7 +116,7 @@ export function StudentMessageDialog({ isOpen, onOpenChange }: StudentMessageDia
                                         <p>{msg.text}</p>
                                     </div>
                                     <p className="text-xs text-muted-foreground mt-1">
-                                         {msg.timestamp ? formatDistanceToNow(new Date(msg.timestamp.seconds * 1000), { addSuffix: true }) : 'Sending...'}
+                                         {msg.timestamp ? <ClientOnlyTime date={new Date(msg.timestamp.seconds * 1000)} /> : 'Sending...'}
                                     </p>
                                 </div>
                             ))}

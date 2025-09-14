@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { SetQuestProgressDialog } from '@/components/teacher/set-quest-progress-dialog';
+import { ClientOnlyTime } from '@/components/client-only-time';
 
 
 export default function ManageQuestCompletionPage() {
@@ -330,7 +331,7 @@ export default function ManageQuestCompletionPage() {
                                             <div className="flex-grow">
                                                 <p className="font-bold">{req.characterName}</p>
                                                 <p className="text-sm">wants to complete: <span className="font-semibold">{req.chapterTitle}</span></p>
-                                                <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(req.requestedAt.seconds * 1000), { addSuffix: true })}</p>
+                                                <p className="text-xs text-muted-foreground"><ClientOnlyTime date={new Date(req.requestedAt.seconds * 1000)} /></p>
                                                  {req.quizScore !== undefined && <p className="text-sm font-semibold">Quiz Score: {req.quizScore}%</p>}
                                             </div>
                                             <div className="flex gap-2">

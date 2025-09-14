@@ -30,6 +30,7 @@ import Image from 'next/image';
 import { deleteBoon, updateBoonVisibility, populateDefaultBoons, approveBoonRequest, denyBoonRequest } from '@/ai/flows/manage-boons';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
+import { ClientOnlyTime } from '@/components/client-only-time';
 
 
 export default function BoonsPage() {
@@ -290,7 +291,7 @@ export default function BoonsPage() {
                                             <p className="text-sm text-muted-foreground">
                                                 Wants to buy <span className="font-semibold">{req.boonName}</span> for <span className="font-semibold text-amber-600">{req.cost}g</span>
                                             </p>
-                                            <p className="text-xs text-muted-foreground"> {formatDistanceToNow(new Date(req.requestedAt.seconds * 1000), { addSuffix: true })}</p>
+                                            <p className="text-xs text-muted-foreground"> <ClientOnlyTime date={new Date(req.requestedAt.seconds * 1000)} /></p>
                                         </div>
                                         <div className="flex gap-2">
                                             <Button size="sm" variant="destructive" onClick={() => handleApproval(req.id, false)} disabled={!!isProcessingRequest}>
@@ -321,7 +322,7 @@ export default function BoonsPage() {
                                     <p><span className="font-bold">{tx.characterName}</span> {tx.transactionType === 'purchase' ? 'purchased' : 'used'} <span className="font-semibold text-primary">{tx.boonName}</span>
                                     {tx.transactionType === 'purchase' && ` for ${tx.cost} gold`}.
                                     </p>
-                                    <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(tx.timestamp.seconds * 1000), { addSuffix: true })}</p>
+                                    <p className="text-xs text-muted-foreground"><ClientOnlyTime date={new Date(tx.timestamp.seconds * 1000)} /></p>
                                 </div>
                             ))}
                         </CardContent>

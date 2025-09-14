@@ -11,7 +11,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, BookOpen, Trash2, Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { formatDistanceToNow } from 'date-fns';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import {
   AlertDialog,
@@ -26,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
 import { clearGameLog } from '@/ai/flows/manage-student';
+import { ClientOnlyTime } from '@/components/client-only-time';
 
 interface GameLogEntry {
   id: string;
@@ -126,7 +126,7 @@ export default function GameLogPage() {
                   <li key={log.id} className="flex items-start justify-between p-3 rounded-md bg-secondary/50">
                       <span>{log.description}</span>
                       <span className="text-xs text-muted-foreground whitespace-nowrap pl-4">
-                          {formatDistanceToNow(new Date(log.timestamp.seconds * 1000), { addSuffix: true })}
+                          {log.timestamp && <ClientOnlyTime date={new Date(log.timestamp.seconds * 1000)} />}
                       </span>
                   </li>
               ))}

@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import type { User } from 'firebase/auth';
-import type { Student, Message } from '@/lib/data';
+import type { Message, Teacher } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -16,78 +16,71 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, MessageSquare, Send } from 'lucide-react';
-import { sendMessageToStudents, markMessagesAsRead } from '@/ai/flows/manage-messages';
-import { onSnapshot, collection, query, orderBy, where } from 'firebase/firestore';
+import { sendMessageToTeacherFromAdmin, markAdminMessagesAsRead } from '@/ai/flows/manage-admin-messages';
+import { onSnapshot, collection, query, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Checkbox } from '../ui/checkbox';
-import { Label } from '../ui/label';
 import { ClientOnlyTime } from '../client-only-time';
 
-interface TeacherMessageCenterProps {
-    teacher: User | null;
-    students: Student[];
+interface AdminMessageCenterProps {
+    admin: User | null;
+    teachers: Teacher[];
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
-    initialStudent: Student | null;
-    onConversationSelect: (student: Student | null) => void;
+    initialTeacher: Teacher | null;
+    onConversationSelect: (teacher: Teacher | null) => void;
 }
 
-export function TeacherMessageCenter({ 
-    teacher, 
-    students,
+export function AdminMessageCenter({ 
+    admin, 
+    teachers,
     isOpen,
     onOpenChange,
-    initialStudent,
+    initialTeacher,
     onConversationSelect,
-}: TeacherMessageCenterProps) {
+}: AdminMessageCenterProps) {
     const { toast } = useToast();
     
-    // For bulk messages
     const [messageText, setMessageText] = useState('');
     const [isSending, setIsSending] = useState(false);
-    
-    // For viewing conversations
     const [currentThreadMessages, setCurrentThreadMessages] = useState<Message[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // Sort students: unread first, then alphabetically by student name
-    const sortedStudents = useMemo(() => {
-        // Filter out hidden students first
-        const visibleStudents = students.filter(s => !s.isHidden);
-
-        return visibleStudents.sort((a, b) => {
-            const aHasUnread = a.hasUnreadMessages ?? false;
-            const bHasUnread = b.hasUnreadMessages ?? false;
-
+    const sortedTeachers = useMemo(() => {
+        return [...teachers].sort((a, b) => {
+            const aHasUnread = a.hasUnreadAdminMessages ?? false;
+            const bHasUnread = b.hasUnreadAdminMessages ?? false;
             if (aHasUnread && !bHasUnread) return -1;
             if (!aHasUnread && bHasUnread) return 1;
-            return a.studentName.localeCompare(b.studentName);
+            // Fallback to name sorting if unread status is the same
+            if (a.name && b.name) {
+                return a.name.localeCompare(b.name);
+            }
+            return 0;
         });
-    }, [students]);
+    }, [teachers]);
 
     useEffect(() => {
         if (!isOpen) {
-            onConversationSelect(null); // Reset selected student when dialog closes
+            onConversationSelect(null);
         }
     }, [isOpen, onConversationSelect]);
     
     useEffect(() => {
-        if (initialStudent && teacher) {
-             const messagesQuery = query(collection(db, 'teachers', teacher.uid, 'students', initialStudent.uid, 'messages'), orderBy('timestamp', 'asc'));
+        if (initialTeacher && admin) {
+             const messagesQuery = query(collection(db, 'teachers', initialTeacher.id, 'adminMessages'), orderBy('timestamp', 'asc'));
              const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
                 setCurrentThreadMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message)));
              });
              
-             // Mark messages as read
-             markMessagesAsRead({ teacherUid: teacher.uid, studentUid: initialStudent.uid, reader: 'teacher' });
+             markAdminMessagesAsRead({ teacherId: initialTeacher.id });
              
              return () => unsubscribe();
         } else {
             setCurrentThreadMessages([]);
         }
-    }, [initialStudent, teacher]);
+    }, [initialTeacher, admin]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -97,13 +90,13 @@ export function TeacherMessageCenter({
     
     const handleSendMessage = async (e?: React.FormEvent) => {
         e?.preventDefault();
-        if (!teacher || !initialStudent || !messageText.trim()) return;
+        if (!admin || !initialTeacher || !messageText.trim()) return;
 
         setIsSending(true);
         try {
-            const result = await sendMessageToStudents({
-                teacherUid: teacher.uid,
-                studentUids: [initialStudent.uid],
+            const result = await sendMessageToTeacherFromAdmin({
+                adminUid: admin.uid,
+                teacherUid: initialTeacher.id,
                 message: messageText,
             });
             if (result.success) {
@@ -121,53 +114,51 @@ export function TeacherMessageCenter({
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-4xl h-[90vh] flex">
-                {/* Left Panel: Student List */}
                 <div className="w-1/3 border-r pr-4 flex flex-col">
                     <DialogHeader>
-                        <DialogTitle>Message Center</DialogTitle>
-                         <DialogDescription>Select a student to view your conversation.</DialogDescription>
+                        <DialogTitle>Master Message Center</DialogTitle>
+                         <DialogDescription>Select a Guild Leader to view your conversation.</DialogDescription>
                     </DialogHeader>
                     <ScrollArea className="flex-grow mt-4">
                         <div className="space-y-2">
-                            {sortedStudents.map(student => (
+                            {sortedTeachers.map(teacher => (
                                 <div 
-                                    key={student.uid}
-                                    onClick={() => onConversationSelect(student)}
+                                    key={teacher.id}
+                                    onClick={() => onConversationSelect(teacher)}
                                     className={cn(
                                         "p-2 rounded-md cursor-pointer hover:bg-accent",
-                                        initialStudent?.uid === student.uid && "bg-accent"
+                                        initialTeacher?.id === teacher.id && "bg-accent"
                                     )}
                                 >
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
-                                            {student.hasUnreadMessages && (
-                                                <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+                                            {teacher.hasUnreadAdminMessages && (
+                                                <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
                                             )}
-                                            <p className="font-semibold">{student.studentName}</p>
+                                            <p className="font-semibold">{teacher.name}</p>
                                         </div>
                                     </div>
-                                    <p className="text-sm text-muted-foreground ml-4">{student.characterName}</p>
+                                    <p className="text-sm text-muted-foreground ml-4">{teacher.className}</p>
                                 </div>
                             ))}
                         </div>
                     </ScrollArea>
                 </div>
 
-                {/* Right Panel: Conversation View */}
                 <div className="w-2/3 flex flex-col">
-                   {initialStudent ? (
+                   {initialTeacher ? (
                         <>
                              <DialogHeader>
-                                <DialogTitle>Conversation with {initialStudent.studentName}</DialogTitle>
+                                <DialogTitle>Conversation with {initialTeacher.name}</DialogTitle>
                             </DialogHeader>
                              <div className="flex-grow overflow-hidden my-4">
                                 <ScrollArea className="h-full pr-4">
                                     <div className="space-y-4">
                                         {currentThreadMessages.map(msg => (
-                                            <div key={msg.id} className={cn("flex flex-col", msg.sender === 'teacher' ? 'items-end' : 'items-start')}>
+                                            <div key={msg.id} className={cn("flex flex-col", msg.sender === 'admin' ? 'items-end' : 'items-start')}>
                                                 <div className={cn(
                                                     "p-3 rounded-lg max-w-[80%]",
-                                                    msg.sender === 'teacher' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
+                                                    msg.sender === 'admin' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
                                                 )}>
                                                     <p>{msg.text}</p>
                                                 </div>
@@ -184,7 +175,7 @@ export function TeacherMessageCenter({
                                 <Textarea 
                                     value={messageText} 
                                     onChange={(e) => setMessageText(e.target.value)} 
-                                    placeholder={`Message ${initialStudent.studentName}...`}
+                                    placeholder={`Message ${initialTeacher.name}...`}
                                     rows={2}
                                     disabled={isSending}
                                 />
@@ -196,7 +187,7 @@ export function TeacherMessageCenter({
                    ) : (
                         <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
                             <MessageSquare className="h-16 w-16 mb-4"/>
-                            <p>Select a student from the list to begin messaging.</p>
+                            <p>Select a Guild Leader from the list to begin messaging.</p>
                         </div>
                    )}
                 </div>
