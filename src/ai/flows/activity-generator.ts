@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A flow for generating classroom activities using AI.
@@ -24,6 +25,7 @@ export type ActivityGeneratorOutput = z.infer<typeof ActivityGeneratorOutputSche
 // Define the prompt template
 const activityPrompt = ai.definePrompt({
     name: 'activityGeneratorPrompt',
+    model: 'googleai/gemini-1.5-flash',
     input: { schema: ActivityGeneratorInputSchema },
     output: { schema: ActivityGeneratorOutputSchema },
     prompt: `You are an expert curriculum designer specializing in creating fun, fantasy-themed classroom activities. Generate a single, unique, and engaging activity based on the following criteria:
