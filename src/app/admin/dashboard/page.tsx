@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -19,7 +20,7 @@ import { getGlobalSettings, updateGlobalSettings } from '@/ai/flows/manage-setti
 import { deleteFeedback } from '@/ai/flows/submit-feedback';
 import { moderateStudent } from '@/ai/flows/manage-student';
 import { deleteTeacher } from '@/ai/flows/manage-teacher';
-import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle } from 'lucide-react';
+import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle, HelpCircle } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,6 +43,7 @@ import { format } from 'date-fns';
 import { Label } from '@/components/ui/label';
 import { DirectPromptInterface } from '@/components/admin/direct-prompt-interface';
 import { Textarea } from '@/components/ui/textarea';
+import { HelpArticleEditor } from '@/components/admin/help-article-editor';
 
 type SortDirection = 'asc' | 'desc';
 type TeacherSortKey = 'className' | 'name' | 'email' | 'schoolName' | 'studentCount' | 'createdAt';
@@ -624,6 +626,31 @@ export default function AdminDashboardPage() {
                             </CollapsibleContent>
                         </Card>
                     </Collapsible>
+                    
+                    <Collapsible>
+                        <Card>
+                             <CollapsibleTrigger asChild>
+                                <div className="flex w-full cursor-pointer items-center justify-between p-6">
+                                    <div className="flex items-center gap-2">
+                                        <HelpCircle className="h-6 w-6 text-primary" />
+                                        <div>
+                                            <CardTitle>Help Content Editor</CardTitle>
+                                            <CardDescription>
+                                               Manage the content of the teacher and student help pages.
+                                            </CardDescription>
+                                        </div>
+                                    </div>
+                                    <ChevronDown className="h-6 w-6 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                                </div>
+                            </CollapsibleTrigger>
+                             <CollapsibleContent>
+                                <CardContent>
+                                    <HelpArticleEditor />
+                                </CardContent>
+                             </CollapsibleContent>
+                        </Card>
+                    </Collapsible>
+
 
                     {/* Direct Prompt Interface */}
                     <DirectPromptInterface />
@@ -963,5 +990,6 @@ export default function AdminDashboardPage() {
         </div>
     );
 }
+
 
     
