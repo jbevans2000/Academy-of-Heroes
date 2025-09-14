@@ -41,7 +41,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -58,6 +57,8 @@ import { SetQuestProgressDialog } from '@/components/teacher/set-quest-progress-
 import { updateDailyReminder, updateDailyRegen } from '@/ai/flows/manage-teacher';
 import { Textarea } from '@/components/ui/textarea';
 import { getGlobalSettings } from '@/ai/flows/manage-settings';
+import { CreateStudentDialog } from '@/components/teacher/create-student-dialog';
+
 
 interface TeacherData {
     name: string;
@@ -69,6 +70,7 @@ interface TeacherData {
     dailyReminderMessage?: string;
     isDailyReminderActive?: boolean;
     dailyRegenPercentage?: number;
+    lastSeenBroadcastTimestamp?: any;
 }
 
 type SortOrder = 'studentName' | 'characterName' | 'xp' | 'class' | 'company';
@@ -123,6 +125,8 @@ export default function Dashboard() {
   // Broadcast message state
   const [broadcastMessage, setBroadcastMessage] = useState('');
   const [isBroadcastDialogOpen, setIsBroadcastDialogOpen] = useState(false);
+  
+  const [isCreateStudentDialogOpen, setIsCreateStudentDialogOpen] = useState(false);
 
 
   useEffect(() => {
@@ -137,38 +141,55 @@ export default function Dashboard() {
         const isAdmin = adminSnap.exists();
         const viewingTeacherId = searchParams.get('teacherId');
 
+        let currentTeacher: User;
         if (isAdmin && viewingTeacherId) {
-            setTeacher({ uid: viewingTeacherId } as User);
+            currentTeacher = { uid: viewingTeacherId } as User;
             setIsAdminPreview(true);
         } else {
-            setTeacher(user);
+            currentTeacher = user;
             setIsAdminPreview(false);
+        }
+        setTeacher(currentTeacher);
+
+        const checkWelcomeAndBroadcast = async () => {
+            const isNewTeacher = searchParams.get('new') === 'true';
+            const settings = await getGlobalSettings();
+
+            if (isNewTeacher) {
+                if (settings.isFeedbackPanelVisible) {
+                    setShowBetaWelcomeDialog(true);
+                } else {
+                    setShowWelcomeDialog(true);
+                }
+            } else if (settings.broadcastMessageId) {
+                 const teacherRef = doc(db, 'teachers', currentTeacher.uid);
+                 const teacherSnap = await getDoc(teacherRef);
+                 const teacherData = teacherSnap.data() as TeacherData;
+                 const lastSeenTimestamp = teacherData?.lastSeenBroadcastTimestamp?.toDate() ?? new Date(0);
+
+                 const broadcastsRef = collection(db, 'settings', 'global', 'broadcasts');
+                 const latestBroadcastQuery = query(broadcastsRef, orderBy('sentAt', 'desc'), limit(1));
+                 const latestBroadcastSnapshot = await getDocs(latestBroadcastQuery);
+
+                 if(!latestBroadcastSnapshot.empty) {
+                     const latestBroadcast = latestBroadcastSnapshot.docs[0].data();
+                     const latestTimestamp = latestBroadcast.sentAt.toDate();
+                     
+                     if (latestTimestamp > lastSeenTimestamp) {
+                         setBroadcastMessage(latestBroadcast.message);
+                         setIsBroadcastDialogOpen(true);
+                     }
+                 }
+            }
+        }
+        
+        if (!isAdminPreview) {
+            checkWelcomeAndBroadcast();
         }
     });
 
-    const checkWelcomeAndBroadcast = async () => {
-        const isNewTeacher = searchParams.get('new') === 'true';
-        const settings = await getGlobalSettings();
-
-        if (isNewTeacher) {
-            if (settings.isFeedbackPanelVisible) {
-                setShowBetaWelcomeDialog(true);
-            } else {
-                setShowWelcomeDialog(true);
-            }
-        } else if (settings.broadcastMessage) {
-            const lastSeenId = localStorage.getItem('lastSeenBroadcastId');
-            if (settings.broadcastMessageId && lastSeenId !== settings.broadcastMessageId) {
-                setBroadcastMessage(settings.broadcastMessage);
-                setIsBroadcastDialogOpen(true);
-                localStorage.setItem('lastSeenBroadcastId', settings.broadcastMessageId);
-            }
-        }
-    }
-    checkWelcomeAndBroadcast();
-
     return () => unsubscribe();
-  }, [searchParams, router]);
+  }, [searchParams, router, isAdminPreview]);
 
   useEffect(() => {
     if (!teacher?.uid) return;
@@ -852,6 +873,9 @@ export default function Dashboard() {
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
+                    <DropdownMenuItem onSelect={() => setIsCreateStudentDialogOpen(true)}>
+                        <UserPlus className="mr-2 h-4 w-4" /> Create New Hero
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/teacher/rewards')}>
                         <Gift className="mr-2 h-4 w-4" />
                         <span>Manage Rewards</span>
@@ -1008,6 +1032,11 @@ export default function Dashboard() {
                 teacherUid={teacher.uid}
                 hubs={hubs}
                 chapters={chapters}
+            />
+             <CreateStudentDialog 
+                isOpen={isCreateStudentDialogOpen} 
+                onOpenChange={setIsCreateStudentDialogOpen}
+                guildCode={teacherData?.classCode || ''}
             />
             <Dialog open={isReminderDialogOpen} onOpenChange={setIsReminderDialogOpen}>
                 <DialogContent className="sm:max-w-lg">

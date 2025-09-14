@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, doc, getDoc, query, orderBy, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, query, orderBy, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -254,7 +254,6 @@ export default function AdminDashboardPage() {
             setIsStudentRegistrationOpen(settings.isStudentRegistrationOpen);
             setIsTeacherRegistrationOpen(settings.isTeacherRegistrationOpen);
             setIsFeedbackPanelVisible(settings.isFeedbackPanelVisible || false);
-            setBroadcastMessage(settings.broadcastMessage || '');
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not load global settings.' });
         } finally {
@@ -332,12 +331,22 @@ export default function AdminDashboardPage() {
         }
         setIsSendingBroadcast(true);
         try {
-            const result = await updateGlobalSettings({
-                broadcastMessage: broadcastMessage,
-                broadcastMessageId: new Date().toISOString(), // Unique ID for this message
+            // 1. Add the new message to a 'broadcasts' collection
+            const broadcastsRef = collection(db, 'settings', 'global', 'broadcasts');
+            const newBroadcastDoc = await addDoc(broadcastsRef, {
+                message: broadcastMessage,
+                sentAt: serverTimestamp(),
             });
+
+            // 2. Update the main settings doc with the ID of the latest message
+            const result = await updateGlobalSettings({
+                broadcastMessageId: newBroadcastDoc.id,
+                broadcastMessage: broadcastMessage, // Keep for backward compatibility/simplicity
+            });
+
             if (result.success) {
                 toast({ title: 'Broadcast Sent!', description: 'The message will be shown to teachers on their next login.' });
+                setBroadcastMessage('');
             } else {
                 throw new Error(result.error);
             }

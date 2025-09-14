@@ -17,6 +17,14 @@ export interface Message {
   senderName?: string; // For student->teacher or teacher->admin messages
 }
 
+export type Teacher = {
+    id: string;
+    name: string;
+    className: string;
+    hasUnreadAdminMessages?: boolean;
+    lastSeenBroadcastTimestamp?: any;
+}
+
 export type Student = {
     uid: string;
     teacherUid: string;
