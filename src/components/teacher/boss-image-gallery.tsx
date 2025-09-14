@@ -20,7 +20,21 @@ const generatePlaceholders = (count: number, seedPrefix: string) => {
 };
 
 const primaryImages = generatePlaceholders(12, 'primary');
-const secondaryImages = generatePlaceholders(12, 'secondary');
+const secondaryImages = [
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FLibrary%20Boss%20Images%2FHS%20Bosses%20(1).jpg?alt=media&token=b819947a-78b2-4b59-8541-8f4bd1a9d425",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FLibrary%20Boss%20Images%2FHS%20Bosses%20(10).jpg?alt=media&token=d0e64fb9-20d0-428f-a1c0-ed8fc1c518d2",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FLibrary%20Boss%20Images%2FHS%20Bosses%20(11).jpg?alt=media&token=391ea8fd-8c69-411a-9193-34a39d6509c6",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FLibrary%20Boss%20Images%2FHS%20Bosses%20(2).jpg?alt=media&token=62067db5-9174-499f-9a19-15f025e95e22",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FLibrary%20Boss%20Images%2FHS%20Bosses%20(3).jpg?alt=media&token=af6e03e4-755a-4f96-9afb-85648fe79829",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FLibrary%20Boss%20Images%2FHS%20Bosses%20(4).jpg?alt=media&token=f15c6528-042d-4ee8-a379-d328761a343b",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FLibrary%20Boss%20Images%2FHS%20Bosses%20(5).jpg?alt=media&token=b01da3e9-26cb-49b4-a2c9-59da511567f3",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FLibrary%20Boss%20Images%2FHS%20Bosses%20(6).jpg?alt=media&token=cdc9ee4e-7bf0-4215-a954-448d6be35f1f",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FLibrary%20Boss%20Images%2FHS%20Bosses%20(7).jpg?alt=media&token=b883edf1-01e4-4b5a-8a54-e28de83f0cde",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FLibrary%20Boss%20Images%2FHS%20Bosses%20(8).jpg?alt=media&token=26b3d1bf-ddc5-4ebc-bc81-71dc87b67b57",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FLibrary%20Boss%20Images%2FHS%20Bosses%20(9).jpg?alt=media&token=7d205d35-213b-4cf0-b80d-9b2ffd5d36a5",
+    "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Boss%20Images%2FLibrary%20Boss%20Images%2FES%20Bosses%20(7).jpg?alt=media&token=273fe6fc-1499-4164-b482-0afd41b21609"
+];
+
 
 export function BossImageGallery({ isOpen, onOpenChange, onImageSelect }: BossImageGalleryProps) {
     const [view, setView] = useState<'selection' | 'primary' | 'secondary'>('selection');
