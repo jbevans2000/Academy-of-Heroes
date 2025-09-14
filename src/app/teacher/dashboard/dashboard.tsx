@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { collection, doc, getDoc, onSnapshot, writeBatch, deleteDoc, getDocs, query, where, updateDoc, orderBy } from 'firebase/firestore';
+import { collection, doc, getDoc, onSnapshot, writeBatch, deleteDoc, getDocs, query, where, updateDoc, orderBy, limit } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student, PendingStudent, ClassType, Company, QuestHub, Chapter } from '@/lib/data';
 import { TeacherHeader } from "@/components/teacher/teacher-header";
@@ -57,7 +57,6 @@ import { SetQuestProgressDialog } from '@/components/teacher/set-quest-progress-
 import { updateDailyReminder, updateDailyRegen } from '@/ai/flows/manage-teacher';
 import { Textarea } from '@/components/ui/textarea';
 import { getGlobalSettings } from '@/ai/flows/manage-settings';
-import { CreateStudentDialog } from '@/components/teacher/create-student-dialog';
 
 
 interface TeacherData {
@@ -125,8 +124,6 @@ export default function Dashboard() {
   // Broadcast message state
   const [broadcastMessage, setBroadcastMessage] = useState('');
   const [isBroadcastDialogOpen, setIsBroadcastDialogOpen] = useState(false);
-  
-  const [isCreateStudentDialogOpen, setIsCreateStudentDialogOpen] = useState(false);
 
 
   useEffect(() => {
@@ -873,9 +870,6 @@ export default function Dashboard() {
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
-                    <DropdownMenuItem onSelect={() => setIsCreateStudentDialogOpen(true)}>
-                        <UserPlus className="mr-2 h-4 w-4" /> Create New Hero
-                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/teacher/rewards')}>
                         <Gift className="mr-2 h-4 w-4" />
                         <span>Manage Rewards</span>
@@ -1032,11 +1026,6 @@ export default function Dashboard() {
                 teacherUid={teacher.uid}
                 hubs={hubs}
                 chapters={chapters}
-            />
-             <CreateStudentDialog 
-                isOpen={isCreateStudentDialogOpen} 
-                onOpenChange={setIsCreateStudentDialogOpen}
-                guildCode={teacherData?.classCode || ''}
             />
             <Dialog open={isReminderDialogOpen} onOpenChange={setIsReminderDialogOpen}>
                 <DialogContent className="sm:max-w-lg">
