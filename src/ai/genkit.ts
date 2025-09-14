@@ -1,5 +1,5 @@
 
-import { genkit, configureGenkit } from 'genkit';
+import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
 
 // This will use the environment variable provided by next.config.ts OR the App Hosting secret.
@@ -16,7 +16,7 @@ if (!process.env.GEMINI_API_KEY) {
   }
 }
 
-export const ai = configureGenkit({
+export const ai = genkit({
   plugins: [
     googleAI({
       apiKey: process.env.GEMINI_API_KEY,
