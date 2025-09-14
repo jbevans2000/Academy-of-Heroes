@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import { signOut, onAuthStateChanged, type User } from "firebase/auth";
-import { doc, getDoc, onSnapshot, collection, query, orderBy, limit } from "firebase/firestore";
+import { doc, getDoc, onSnapshot, collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Bug, Lightbulb } from "lucide-react";
 import { TeacherAdminMessageDialog } from './teacher-admin-message-dialog';
