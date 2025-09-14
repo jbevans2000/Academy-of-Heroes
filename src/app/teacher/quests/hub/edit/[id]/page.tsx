@@ -221,14 +221,25 @@ export default function EditQuestHubPage() {
     return (
         <>
             <MapGallery isOpen={isGalleryOpen} onOpenChange={setIsGalleryOpen} onMapSelect={(url) => handleFieldChange('worldMapUrl', url)} />
-            <div className="flex min-h-screen w-full flex-col bg-muted/40">
+            <div className="relative flex min-h-screen w-full flex-col">
+                {teacherWorldMapUrl && (
+                    <div 
+                      className="absolute inset-0 -z-10"
+                      style={{
+                          backgroundImage: `url('${teacherWorldMapUrl}')`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                          opacity: 0.5,
+                      }}
+                    />
+                )}
                 <TeacherHeader />
                 <main className="flex-1 p-4 md:p-6 lg:p-8">
                     <div className="max-w-4xl mx-auto space-y-6">
                         <Button variant="outline" onClick={() => router.push('/teacher/quests')}>
                             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Quest Archives
                         </Button>
-                        <Card>
+                        <Card className="bg-card/90">
                             <CardHeader>
                                 <CardTitle>Edit Quest Hub</CardTitle>
                                 <CardDescription>Modify the details for "{hub.name}".</CardDescription>
@@ -323,3 +334,5 @@ export default function EditQuestHubPage() {
         </>
     )
 }
+
+    

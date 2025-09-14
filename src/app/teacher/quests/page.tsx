@@ -196,7 +196,7 @@ export default function QuestsPage() {
   };
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
+    <div className="relative flex min-h-screen w-full flex-col">
        <Dialog open={isMapDialogOpen} onOpenChange={setIsMapDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -265,7 +265,17 @@ export default function QuestsPage() {
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
+        {worldMapUrl && (
+            <div 
+              className="absolute inset-0 -z-10"
+              style={{
+                  backgroundImage: `url('${worldMapUrl}')`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  opacity: 0.5,
+              }}
+            />
+        )}
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="flex items-center justify-between mb-6">
@@ -408,3 +418,5 @@ export default function QuestsPage() {
     </div>
   );
 }
+
+    

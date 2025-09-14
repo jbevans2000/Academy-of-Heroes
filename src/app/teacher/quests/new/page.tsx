@@ -379,17 +379,25 @@ function NewQuestForm() {
   
     if (isLoading) {
         return (
-             <div className="flex min-h-screen w-full flex-col bg-muted/40">
-                <TeacherHeader />
-                <main className="flex-1 p-4 md:p-6 lg:p-8"><Loader2 className="mx-auto h-12 w-12 animate-spin" /></main>
-            </div>
+             <div className="flex min-h-screen w-full flex-col bg-muted/40"><TeacherHeader /><main className="flex-1 p-4 md:p-6 lg:p-8"><Loader2 className="mx-auto h-12 w-12 animate-spin" /></main></div>
         )
     }
 
   return (
     <>
       <MapGallery isOpen={isGalleryOpen} onOpenChange={setIsGalleryOpen} onMapSelect={setNewHubMapUrl} />
-      <div className="flex min-h-screen w-full flex-col bg-muted/40">
+       <div className="relative flex min-h-screen w-full flex-col">
+        {teacherWorldMapUrl && (
+            <div 
+              className="absolute inset-0 -z-10"
+              style={{
+                  backgroundImage: `url('${teacherWorldMapUrl}')`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  opacity: 0.5,
+              }}
+            />
+        )}
         <TeacherHeader />
         <main className="flex-1 p-4 md:p-6 lg:p-8">
           <div className="max-w-4xl mx-auto space-y-6">
@@ -397,7 +405,7 @@ function NewQuestForm() {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to All Quests
             </Button>
-            <Card className="shadow-lg">
+            <Card className="shadow-lg bg-card/90">
               <CardHeader>
                 <CardTitle className="text-3xl">{isHubOnlyMode ? 'Create New Quest Hub' : 'Create New Quest'}</CardTitle>
                 <CardDescription>
@@ -653,3 +661,5 @@ export default function NewQuestPage() {
         </Suspense>
     )
 }
+
+    
