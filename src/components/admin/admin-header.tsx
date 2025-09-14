@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import { signOut, onAuthStateChanged, type User as FirebaseUser } from "firebase/auth";
-import { doc, onSnapshot, collection } from 'firebase/firestore';
+import { doc, onSnapshot, collection, getDoc } from 'firebase/firestore';
 import { useToast } from "@/hooks/use-toast";
 import { AdminMessageCenter } from './admin-message-center';
 import type { Teacher } from '@/lib/data';
