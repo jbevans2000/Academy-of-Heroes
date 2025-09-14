@@ -1,6 +1,7 @@
+'use client';
+
 import { genkit, configureGenkit } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
-import { dotprompt } from '@genkit-ai/dotprompt';
 
 // This will use the environment variable provided by next.config.ts OR the App Hosting secret.
 if (!process.env.GEMINI_API_KEY) {
@@ -18,7 +19,6 @@ if (!process.env.GEMINI_API_KEY) {
 
 export const ai = configureGenkit({
   plugins: [
-    dotprompt(),
     googleAI({
       apiKey: process.env.GEMINI_API_KEY,
     }),
