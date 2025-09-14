@@ -28,6 +28,8 @@ import {
     deleteHelpArticle,
     seedInitialHelpArticles,
 } from '@/ai/flows/manage-help-articles';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 
 export interface HelpArticle {
     id: string;
@@ -148,29 +150,17 @@ export function HelpArticleEditor() {
         </div>
     );
     
-    if (isLoading) return <Loader2 className="h-8 w-8 animate-spin" />;
-
-    return (
-        <div className="space-y-4">
-             {articles.length === 0 && (
-                <div className="text-center p-4 border-dashed border-2 rounded-md">
-                    <p className="text-muted-foreground">No help articles found in the database.</p>
-                     <Button onClick={handleSeed} disabled={isSeeding} className="mt-2">
-                        {isSeeding ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                        Seed Initial Help Content
-                    </Button>
-                </div>
-            )}
-            {editingArticle ? renderEditor() : (
-                 <Button onClick={() => setEditingArticle({ audience: 'teacher', order: articles.length })}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Create New Article
-                </Button>
-            )}
+    const renderArticleList = (audience: 'teacher' | 'student') => {
+        const filteredArticles = articles.filter(a => a.audience === audience);
+        if (filteredArticles.length === 0) {
+            return <p className="text-center text-muted-foreground py-4">No articles for this audience yet.</p>
+        }
+        return (
             <Accordion type="multiple" className="w-full">
-                {articles.map(article => (
+                {filteredArticles.map(article => (
                     <AccordionItem value={article.id} key={article.id}>
                         <AccordionTrigger className="flex justify-between items-center">
-                            <span className="font-semibold text-left">{article.title} ({article.audience})</span>
+                            <span className="font-semibold text-left">{article.title}</span>
                         </AccordionTrigger>
                         <AccordionContent className="space-y-2">
                             <p className="whitespace-pre-wrap">{article.content}</p>
@@ -197,6 +187,39 @@ export function HelpArticleEditor() {
                     </AccordionItem>
                 ))}
             </Accordion>
+        );
+    }
+    
+    if (isLoading) return <Loader2 className="h-8 w-8 animate-spin" />;
+
+    return (
+        <div className="space-y-4">
+             {articles.length === 0 && (
+                <div className="text-center p-4 border-dashed border-2 rounded-md">
+                    <p className="text-muted-foreground">No help articles found in the database.</p>
+                     <Button onClick={handleSeed} disabled={isSeeding} className="mt-2">
+                        {isSeeding ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                        Seed Initial Help Content
+                    </Button>
+                </div>
+            )}
+            {editingArticle ? renderEditor() : (
+                 <Button onClick={() => setEditingArticle({ audience: 'teacher', order: articles.length })}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Create New Article
+                </Button>
+            )}
+             <Tabs defaultValue="teacher" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="teacher">Teacher Articles</TabsTrigger>
+                    <TabsTrigger value="student">Student Articles</TabsTrigger>
+                </TabsList>
+                <TabsContent value="teacher" className="mt-4">
+                    {renderArticleList('teacher')}
+                </TabsContent>
+                <TabsContent value="student" className="mt-4">
+                    {renderArticleList('student')}
+                </TabsContent>
+            </Tabs>
         </div>
     )
 }
