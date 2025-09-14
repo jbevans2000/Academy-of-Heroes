@@ -40,6 +40,7 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { Label } from '@/components/ui/label';
+import { DirectPromptInterface } from '@/components/admin/direct-prompt-interface';
 
 type SortDirection = 'asc' | 'desc';
 type TeacherSortKey = 'className' | 'name' | 'email' | 'schoolName' | 'studentCount' | 'createdAt';
@@ -449,6 +450,9 @@ export default function AdminDashboardPage() {
             <main className="flex-1 p-4 md:p-6 lg:p-8 grid gap-6 md:grid-cols-3 lg:grid-cols-4">
                  
                  <div className="lg:col-span-3 space-y-6">
+                    {/* Direct Prompt Interface */}
+                    <DirectPromptInterface />
+
                     {/* Phase Zero Card */}
                     <Card>
                         <CardHeader>
@@ -766,4 +770,3 @@ export default function AdminDashboardPage() {
     );
 }
 
-    
