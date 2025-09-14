@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -13,16 +12,50 @@ import jsPDF from 'jspdf';
 import { marked } from 'marked';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { generateActivity, type ActivityGeneratorOutput } from '@/ai/flows/activity-generator';
 
 const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
 export default function RandomActivityPage() {
     const router = useRouter();
     const { toast } = useToast();
-    const [currentActivity, setCurrentActivity] = useState<any | null>(null);
+    const [currentActivity, setCurrentActivity] = useState<ActivityGeneratorOutput | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [loadingType, setLoadingType] = useState<'Mental' | 'Physical' | null>(null);
     const [selectedGrade, setSelectedGrade] = useState<string>('');
+
+    const handleGenerate = async (taskType: 'Mental' | 'Physical') => {
+        if (!selectedGrade) {
+            toast({
+                variant: 'destructive',
+                title: 'Grade Level Required',
+                description: 'Please select a grade level before generating an activity.',
+            });
+            return;
+        }
+
+        setIsLoading(true);
+        setLoadingType(taskType);
+        setCurrentActivity(null);
+
+        try {
+            const result = await generateActivity({
+                gradeLevel: selectedGrade,
+                taskType: taskType,
+            });
+            setCurrentActivity(result);
+        } catch (error: any) {
+            console.error("Error generating activity:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Generation Failed',
+                description: error.message || 'The AI could not generate an activity at this time. Please try again.',
+            });
+        } finally {
+            setIsLoading(false);
+            setLoadingType(null);
+        }
+    };
 
 
     const handleDownload = () => {
@@ -61,12 +94,12 @@ export default function RandomActivityPage() {
             <TeacherHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8 flex flex-col items-center justify-center">
                 <div className="w-full max-w-2xl space-y-6">
-                    <Button variant="outline" onClick={() => router.push('/teacher/tools')} className="bg-background/80">
+                     <Button variant="outline" onClick={() => router.push('/teacher/tools')} className="bg-background/80">
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Back to All Tools
                     </Button>
                     <Card className="shadow-2xl text-center bg-card/80 backdrop-blur-sm">
-                        <CardHeader>
+                         <CardHeader>
                             <div className="flex justify-center mb-2">
                                 <Dices className="h-12 w-12 text-primary" />
                             </div>
@@ -105,9 +138,8 @@ export default function RandomActivityPage() {
                                                 <Separator className="my-4" />
                                                 <div 
                                                     className="prose prose-sm max-w-none text-black text-left whitespace-pre-wrap"
-                                                >
-                                                    {currentActivity.documentContent}
-                                                </div>
+                                                    dangerouslySetInnerHTML={{ __html: marked(currentActivity.documentContent) as string }}
+                                                />
                                                 <div className="text-center mt-4">
                                                     <Button onClick={handleDownload}>
                                                         <Download className="mr-2 h-4 w-4" />
@@ -124,12 +156,12 @@ export default function RandomActivityPage() {
                         </CardContent>
                     </Card>
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Button size="lg" className="text-lg py-8" disabled>
-                            <BrainCircuit className="mr-4 h-6 w-6" />
+                        <Button size="lg" className="text-lg py-8" onClick={() => handleGenerate('Mental')} disabled={isLoading}>
+                            {isLoading && loadingType === 'Mental' ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <BrainCircuit className="mr-4 h-6 w-6" />}
                             Generate Mental Task
                         </Button>
-                         <Button size="lg" className="text-lg py-8" disabled>
-                            <PersonStanding className="mr-4 h-6 w-6" />
+                         <Button size="lg" className="text-lg py-8" onClick={() => handleGenerate('Physical')} disabled={isLoading}>
+                             {isLoading && loadingType === 'Physical' ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <PersonStanding className="mr-4 h-6 w-6" />}
                             Generate Physical Task
                         </Button>
                     </div>
