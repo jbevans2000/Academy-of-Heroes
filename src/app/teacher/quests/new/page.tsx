@@ -35,6 +35,7 @@ import { cn } from '@/lib/utils';
 import { MapGallery } from '@/components/teacher/map-gallery';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
+import { generateStory } from '@/ai/flows/story-generator';
 
 // A reusable component for the image upload fields
 const ImageUploader = ({ label, imageUrl, onUploadSuccess, teacherUid, storagePath, onGalleryOpen }: {
@@ -120,7 +121,7 @@ function NewQuestForm() {
   const [isHubOnlyMode, setIsHubOnlyMode] = useState(false);
 
   // State for AI generator
-  const [isOracleOpen, setIsOracleOpen] = useState(false);
+  const [isGeneratingStory, setIsGeneratingStory] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
 
   // State for the new Hub creator
@@ -262,6 +263,20 @@ function NewQuestForm() {
     const handleRemoveQuizQuestion = (id: string) => {
         setQuizQuestions(prev => prev.filter(q => q.id !== id));
     };
+
+    const handleGenerateStory = async () => {
+        setIsGeneratingStory(true);
+        try {
+            const result = await generateStory();
+            setChapterTitle(result.title);
+            setStoryContent(result.storyContent);
+            toast({ title: "Story Generated!", description: "The Oracle has provided a new tale for your heroes." });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Generation Failed', description: 'The Oracle is silent. Please try again.' });
+        } finally {
+            setIsGeneratingStory(false);
+        }
+    }
 
 
   const validateInputs = () => {
@@ -477,8 +492,8 @@ function NewQuestForm() {
                   <div className="space-y-6 p-6 border rounded-lg">
                       <div className="flex justify-between items-center">
                           <h3 className="text-xl font-semibold">Phase 2: Chapter Content</h3>
-                          <Button variant="outline" onClick={() => setIsOracleOpen(true)} disabled>
-                              <Sparkles className="mr-2 h-4 w-4" />
+                          <Button variant="outline" onClick={handleGenerateStory} disabled={isGeneratingStory}>
+                              {isGeneratingStory ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
                               Consult the Oracle
                           </Button>
                       </div>
@@ -625,19 +640,6 @@ function NewQuestForm() {
               </CardContent>
             </Card>
           </div>
-          <AlertDialog open={isOracleOpen} onOpenChange={setIsOracleOpen}>
-              <AlertDialogContent>
-                  <AlertDialogHeader>
-                      <AlertDialogTitle>The Oracle Is Resting</AlertDialogTitle>
-                      <AlertDialogDescription>
-                          The AI story generation feature is temporarily disabled. Please write your story manually.
-                      </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                      <AlertDialogAction onClick={() => setIsOracleOpen(false)}>I Understand</AlertDialogAction>
-                  </AlertDialogFooter>
-              </AlertDialogContent>
-          </AlertDialog>
         </main>
       </div>
     </>
