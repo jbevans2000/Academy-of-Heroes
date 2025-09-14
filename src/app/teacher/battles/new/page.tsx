@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -29,7 +30,7 @@ import { BossImageGallery } from '@/components/teacher/boss-image-gallery';
 const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
 interface Question {
-  id: number;
+  id: number | string;
   questionText: string;
   answers: string[];
   correctAnswerIndex: number | null;
@@ -79,7 +80,7 @@ export default function NewBossBattlePage() {
   }, [router]);
 
   useEffect(() => {
-    setQuestions([{ id: Date.now(), questionText: '', answers: ['', '', '', ''], correctAnswerIndex: null, damage: 1 }]);
+    setQuestions([{ id: uuidv4(), questionText: '', answers: ['', '', '', ''], correctAnswerIndex: null, damage: 1 }]);
     setIsClient(true);
   }, []);
   
@@ -137,11 +138,11 @@ export default function NewBossBattlePage() {
   const handleAddQuestion = () => {
     setQuestions([
       ...questions,
-      { id: Date.now(), questionText: '', answers: ['', '', '', ''], correctAnswerIndex: null, damage: 1 },
+      { id: uuidv4(), questionText: '', answers: ['', '', '', ''], correctAnswerIndex: null, damage: 1 },
     ]);
   };
 
-  const handleRemoveQuestion = (id: number) => {
+  const handleRemoveQuestion = (id: number | string) => {
     if (questions.length > 1) {
       setQuestions(questions.filter((q) => q.id !== id));
     } else {
@@ -153,19 +154,19 @@ export default function NewBossBattlePage() {
     }
   };
 
-  const handleQuestionChange = (id: number, value: string) => {
+  const handleQuestionChange = (id: number | string, value: string) => {
     setQuestions(
       questions.map((q) => (q.id === id ? { ...q, questionText: value } : q))
     );
   };
   
-  const handleDamageChange = (id: number, value: string) => {
+  const handleDamageChange = (id: number | string, value: string) => {
     setQuestions(
       questions.map((q) => (q.id === id ? { ...q, damage: Number(value) } : q))
     );
   };
 
-  const handleAnswerChange = (qId: number, aIndex: number, value: string) => {
+  const handleAnswerChange = (qId: number | string, aIndex: number, value: string) => {
     setQuestions(
       questions.map((q) =>
         q.id === qId
@@ -178,7 +179,7 @@ export default function NewBossBattlePage() {
     );
   };
 
-  const handleCorrectAnswerChange = (qId: number, aIndex: number) => {
+  const handleCorrectAnswerChange = (qId: number | string, aIndex: number) => {
     setQuestions(
       questions.map((q) =>
         q.id === qId ? { ...q, correctAnswerIndex: aIndex } : q
@@ -200,7 +201,7 @@ export default function NewBossBattlePage() {
         });
         const newQuestions = result.questions.map(q => ({
             ...q,
-            id: Date.now() + Math.random(),
+            id: uuidv4(),
         }));
         
         // Check if the first question is empty, if so, replace it, otherwise append.
