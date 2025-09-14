@@ -16,17 +16,15 @@ export const maleNames = [
 ];
 
 export const femaleNames = [
-    'Aeliana', 'Seraphina', 'Lyra', 'Rowan', 'Astrid', 'Elara', 'Moira', 'Sabine', 
-    'Bronwyn', 'Isolde', 'Genevieve', 'Fiora', 'Carys', 'Sorcha', 'Rhiannon', 
-    'Maeve', 'Brenna', 'Seraphine', 'Elowen', 'Lyra', 'Astrid', 'Rowan', 'Moira', 
-    'Sabine', 'Bronwyn', 'Isolde', 'Fiora', 'Carys', 'Sorcha', 'Rhiannon', 
-    'Maeve', 'Brenna', 'Eira', 'Gwendolyn', 'Niamh', 'Aoife', 'Siobhan', 
-    'Deirdre', 'Grainne', 'Aine', 'Cliona', 'Fionnuala', 'Liadan', 'Emer', 
-    'Ailbhe', 'Blathnaid', 'Caoimhe', 'Doireann', 'Etain', 'Fenella', 'Gobnait', 
-    'Ide', 'Laoise', 'Muirne', 'Orlaith', 'Riona', 'Sadhbh', 'Treasa', 
-    'Una', 'Aoibheann', 'Bebinn', 'Caireann', 'Damhnait', 'Eithne', 'Fedelma', 
-    'Gormlaith', 'Iseult', 'Lile', 'Macha', 'Nuala', 'Onora', 'Roisin', 
-    'Saoirse', 'Tamsin', 'Yseult', 'Zaira', 'Ariadne', 'Calista', 'Daphne', 
-    'Evanthe', 'Helena', 'Ione', 'Jocasta', 'Kassandra', 'Melaina', 'Nephele', 
-    'Ophelia', 'Penelope', 'Rhea', 'Selene', 'Thalia', 'Xanthe', 'Zoe'
+    'Lyrian', 'Anyaella', 'Faelar', 'Silvani', 'Laelindra', 'Elarae', 'Linnya', 
+    'Aerion', 'Iolanthe', 'Rhiannon', 'Elowyn', 'Taliandra', 'Lysandra', 'Faelora', 
+    'Auralia', 'Lianna', 'Avelin', 'Silveria', 'Elowen', 'Starla', 'Briallen', 
+    'Caerys', 'Ianthe', 'Aeriel', 'Liralen', 'Adhara', 'Lyrelle', 'Aella', 'Alani', 
+    'Elara', 'Elenia', 'Liora', 'Amaryllis', 'Rosalind', 'Luthien', 'Eluned', 
+    'Isadora', 'Alanis', 'Laurinda', 'Seraphina', 'Anya', 'Faelarion', 'Nimue', 
+    'Lyra', 'Elisif', 'Taelynn', 'Lian', 'Arianwen', 'Avelina', 'Lyrie', 'Rhianna', 
+    'Caera', 'Lirina', 'Isolde', 'Elisabet', 'Aline', 'Silverlyn', 'Faelara', 
+    'Aurelia', 'Talia', 'Laelith', 'Aerin', 'Brighid', 'Lianne', 'Annalise', 
+    'Laural', 'Silverleaf', 'Liraleen', 'Avelynn', 'Caelinn', 'Taelyr', 'Arianrhod', 
+    'Rhiann'
 ];
