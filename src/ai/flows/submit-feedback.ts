@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview A server-side flow for handling anonymous teacher feedback submissions.
+ * @fileOverview A server-side flow for handling teacher feedback submissions.
  */
 import { addDoc, collection, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -15,12 +15,19 @@ interface ActionResponse {
 interface FeedbackInput {
   feedbackType: 'bug' | 'feature';
   message: string;
+  // New fields to track the submitter
+  teacherUid: string;
+  teacherName: string;
+  teacherEmail: string;
 }
 
 export async function submitFeedback(input: FeedbackInput): Promise<ActionResponse> {
-  const { feedbackType, message } = input;
+  const { feedbackType, message, teacherUid, teacherName, teacherEmail } = input;
   if (!message.trim()) {
       return { success: false, error: 'Feedback message cannot be empty.' };
+  }
+  if (!teacherUid || !teacherName || !teacherEmail) {
+      return { success: false, error: 'User information is missing.' };
   }
 
   try {
@@ -28,6 +35,9 @@ export async function submitFeedback(input: FeedbackInput): Promise<ActionRespon
     await addDoc(feedbackRef, {
         feedbackType,
         message,
+        teacherUid,
+        teacherName,
+        teacherEmail,
         createdAt: serverTimestamp(),
         status: 'new' // for admin tracking
     });

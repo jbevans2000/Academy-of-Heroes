@@ -4,7 +4,8 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +17,11 @@ import { useToast } from '@/hooks/use-toast';
 import { submitFeedback } from '@/ai/flows/submit-feedback';
 import { DashboardHeader } from '@/components/dashboard/header';
 
+interface TeacherData {
+    name: string;
+    email: string;
+}
+
 function FeedbackFormComponent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -25,13 +31,19 @@ function FeedbackFormComponent() {
     const from = searchParams.get('from') || 'teacher';
 
     const [user, setUser] = useState<User | null>(null);
+    const [teacherData, setTeacherData] = useState<TeacherData | null>(null);
     const [message, setMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
                 setUser(currentUser);
+                const teacherRef = doc(db, 'teachers', currentUser.uid);
+                const teacherSnap = await getDoc(teacherRef);
+                if(teacherSnap.exists()) {
+                    setTeacherData(teacherSnap.data() as TeacherData);
+                }
             } else {
                 router.push('/');
             }
@@ -40,13 +52,19 @@ function FeedbackFormComponent() {
     }, [router]);
     
     const handleSubmit = async () => {
-        if (!user || !message.trim()) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Message cannot be empty.' });
+        if (!user || !message.trim() || !teacherData) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Message cannot be empty and user must be identifiable.' });
             return;
         }
         setIsSubmitting(true);
         try {
-            const result = await submitFeedback({ feedbackType, message });
+            const result = await submitFeedback({
+              feedbackType,
+              message,
+              teacherUid: user.uid,
+              teacherName: teacherData.name,
+              teacherEmail: teacherData.email,
+            });
             if (result.success) {
                 toast({ title: 'Feedback Sent!', description: 'Thank you for helping us improve The Academy of Heroes.' });
                 router.push(from === 'student' ? '/dashboard' : '/teacher/dashboard');

@@ -75,6 +75,8 @@ interface Feedback {
         nanoseconds: number;
     };
     status: 'new' | 'addressed';
+    teacherName?: string;
+    teacherEmail?: string;
 }
 
 export default function AdminDashboardPage() {
@@ -209,7 +211,7 @@ export default function AdminDashboardPage() {
                 const aValue = a[studentSortConfig.key];
                 const bValue = b[studentSortConfig.key];
                 if (aValue < bValue) return studentSortConfig.direction === 'asc' ? -1 : 1;
-                if (aValue > bValue) return studentSortConfig.direction === 'asc' ? 1 : -1;
+                if (aValue > bValue) return teacherSortConfig.direction === 'asc' ? 1 : -1;
                 return 0;
             });
         }
@@ -694,6 +696,9 @@ export default function AdminDashboardPage() {
                                                          {item.feedbackType === 'bug' ? <Bug className="h-4 w-4 text-destructive" /> : <Lightbulb className="h-4 w-4 text-yellow-500" />}
                                                          <span>{item.feedbackType === 'bug' ? 'Bug' : 'Feature'}</span>
                                                     </div>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        From: {item.teacherName || 'Anonymous'} ({item.teacherEmail || 'N/A'})
+                                                    </p>
                                                 </div>
                                                 <div className="flex flex-col items-end gap-1">
                                                     <p className="text-xs text-muted-foreground">{format(new Date(item.createdAt.seconds * 1000), 'PPp')}</p>
