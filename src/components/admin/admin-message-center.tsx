@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import type { User } from 'firebase/auth';
-import type { Student, Message, Teacher } from '@/lib/data';
+import type { Message, Teacher } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -17,7 +17,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, MessageSquare, Send } from 'lucide-react';
 import { sendMessageToTeacherFromAdmin, markAdminMessagesAsRead } from '@/ai/flows/manage-admin-messages';
-import { onSnapshot, collection, query, orderBy } from 'firebase/firestore';
+import { onSnapshot, collection, query, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -52,7 +52,11 @@ export function AdminMessageCenter({
             const bHasUnread = b.hasUnreadAdminMessages ?? false;
             if (aHasUnread && !bHasUnread) return -1;
             if (!aHasUnread && bHasUnread) return 1;
-            return a.name.localeCompare(b.name);
+            // Fallback to name sorting if unread status is the same
+            if (a.name && b.name) {
+                return a.name.localeCompare(b.name);
+            }
+            return 0;
         });
     }, [teachers]);
 

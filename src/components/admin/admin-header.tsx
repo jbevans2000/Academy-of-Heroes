@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import { signOut, onAuthStateChanged, type User as FirebaseUser } from "firebase/auth";
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, collection } from 'firebase/firestore';
 import { useToast } from "@/hooks/use-toast";
 import { AdminMessageCenter } from './admin-message-center';
 import type { Teacher } from '@/lib/data';
@@ -22,14 +23,31 @@ export function AdminHeader() {
   const [initialTeacherToView, setInitialTeacherToView] = useState<Teacher | null>(null);
 
   useEffect(() => {
-    if (!auth.currentUser) return;
-    setAdmin(auth.currentUser);
-
-    const unsub = onSnapshot(collection(db, 'teachers'), (snapshot) => {
-        setTeachers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Teacher)));
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+        if (!currentUser) {
+            router.push('/teacher/login');
+            return;
+        }
+        
+        const adminRef = doc(db, 'admins', currentUser.uid);
+        getDoc(adminRef).then(adminSnap => {
+            if (adminSnap.exists()) {
+                setAdmin(currentUser);
+                
+                const unsubTeachers = onSnapshot(collection(db, 'teachers'), (snapshot) => {
+                    setTeachers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Teacher)));
+                });
+                
+                // Return the cleanup function for the teachers snapshot
+                return () => unsubTeachers();
+            } else {
+                 router.push('/teacher/dashboard');
+            }
+        });
     });
-    return unsub;
-  }, []);
+
+    return () => unsubscribeAuth();
+  }, [router]);
 
   const hasUnreadMessages = teachers.some(t => t.hasUnreadAdminMessages);
   
