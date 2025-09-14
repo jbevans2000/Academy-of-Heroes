@@ -48,7 +48,7 @@ export function HelpArticleEditor() {
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
-        const q = collection(db, 'helpArticles');
+        const q = collection(db, 'content', 'help', 'articles');
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const articlesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HelpArticle))
                 .sort((a, b) => a.order - b.order);

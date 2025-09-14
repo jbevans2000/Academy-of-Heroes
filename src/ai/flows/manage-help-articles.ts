@@ -1,6 +1,6 @@
 
 'use server';
-import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDocs } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 interface HelpArticle {
@@ -20,7 +20,7 @@ interface ActionResponse {
 
 export async function createHelpArticle(article: Omit<HelpArticle, 'id'>): Promise<ActionResponse> {
     try {
-        await addDoc(collection(db, 'helpArticles'), {
+        await addDoc(collection(db, 'content', 'help', 'articles'), {
             ...article,
             createdAt: serverTimestamp(),
         });
@@ -33,7 +33,7 @@ export async function createHelpArticle(article: Omit<HelpArticle, 'id'>): Promi
 export async function updateHelpArticle(article: HelpArticle): Promise<ActionResponse> {
     try {
         const { id, ...dataToUpdate } = article;
-        const articleRef = doc(db, 'helpArticles', id);
+        const articleRef = doc(db, 'content', 'help', 'articles', id);
         await updateDoc(articleRef, dataToUpdate);
         return { success: true, message: 'Article updated successfully.' };
     } catch (error: any) {
@@ -43,7 +43,7 @@ export async function updateHelpArticle(article: HelpArticle): Promise<ActionRes
 
 export async function deleteHelpArticle(articleId: string): Promise<ActionResponse> {
     try {
-        await deleteDoc(doc(db, 'helpArticles', articleId));
+        await deleteDoc(doc(db, 'content', 'help', 'articles', articleId));
         return { success: true, message: 'Article deleted successfully.' };
     } catch (error: any) {
         return { success: false, error: error.message };
@@ -72,7 +72,7 @@ const initialStudentArticles = [
 
 export async function seedInitialHelpArticles(): Promise<ActionResponse> {
     try {
-        const helpArticlesRef = collection(db, 'helpArticles');
+        const helpArticlesRef = collection(db, 'content', 'help', 'articles');
         const snapshot = await getDocs(helpArticlesRef);
         
         if (!snapshot.empty) {

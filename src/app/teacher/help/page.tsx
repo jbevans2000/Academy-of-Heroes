@@ -25,7 +25,7 @@ export default function TeacherHelpPage() {
             }
         });
 
-        const q = query(collection(db, 'helpArticles'), where('audience', '==', 'teacher'));
+        const q = query(collection(db, 'content', 'help', 'articles'), where('audience', '==', 'teacher'));
         const unsubscribeArticles = onSnapshot(q, (snapshot) => {
             const articlesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HelpArticle))
                 .sort((a, b) => a.order - b.order);

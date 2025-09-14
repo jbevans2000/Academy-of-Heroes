@@ -17,7 +17,7 @@ export default function StudentHelpPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(db, 'helpArticles'), where('audience', '==', 'student'));
+    const q = query(collection(db, 'content', 'help', 'articles'), where('audience', '==', 'student'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
         const articlesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HelpArticle))
             .sort((a, b) => a.order - b.order);
