@@ -8,7 +8,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { PlusCircle, Edit, Trash2, Save, Loader2 } from 'lucide-react';
 import {
@@ -29,6 +28,7 @@ import {
     seedInitialHelpArticles,
 } from '@/ai/flows/manage-help-articles';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import RichTextEditor from '@/components/teacher/rich-text-editor';
 
 
 export interface HelpArticle {
@@ -120,7 +120,10 @@ export function HelpArticleEditor() {
             </div>
             <div className="space-y-2">
                 <Label htmlFor="content">Content</Label>
-                <Textarea id="content" value={editingArticle?.content || ''} onChange={e => setEditingArticle(prev => ({...prev, content: e.target.value}))} rows={6} />
+                <RichTextEditor
+                    value={editingArticle?.content || ''}
+                    onChange={value => setEditingArticle(prev => ({...prev, content: value}))}
+                />
             </div>
              <div className="space-y-2">
                 <Label htmlFor="videoUrl">YouTube Video URL (Optional)</Label>
@@ -163,7 +166,7 @@ export function HelpArticleEditor() {
                             <span className="font-semibold text-left">{article.title}</span>
                         </AccordionTrigger>
                         <AccordionContent className="space-y-2">
-                            <p className="whitespace-pre-wrap">{article.content}</p>
+                             <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: article.content }} />
                             {article.videoUrl && <p className="text-sm text-blue-500">Video: {article.videoUrl}</p>}
                             <div className="flex gap-2">
                                 <Button size="sm" onClick={() => setEditingArticle(article)}><Edit className="mr-2 h-4 w-4"/> Edit</Button>

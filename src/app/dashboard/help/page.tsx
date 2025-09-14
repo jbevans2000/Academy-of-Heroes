@@ -59,7 +59,7 @@ export default function StudentHelpPage() {
                     <AccordionItem value={article.id} key={article.id}>
                       <AccordionTrigger>{article.title}</AccordionTrigger>
                       <AccordionContent className="prose dark:prose-invert max-w-none">
-                        <p>{article.content}</p>
+                        <div dangerouslySetInnerHTML={{ __html: article.content }} />
                         {article.videoUrl && (
                           <div className="aspect-video mt-4">
                             <iframe 
@@ -91,5 +91,3 @@ export default function StudentHelpPage() {
     </div>
   );
 }
-
-    
