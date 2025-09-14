@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -66,17 +67,9 @@ export default function RegisterPage() {
   }, []);
 
   const handleGenerateName = async () => {
-    if (!selectedClass) {
-        toast({
-            variant: 'destructive',
-            title: 'Select a Class First',
-            description: 'Please choose your hero\'s class before generating a name.',
-        });
-        return;
-    }
     setIsGeneratingName(true);
     try {
-        const name = await generateName(selectedClass);
+        const name = await generateName();
         setCharacterName(name);
     } catch (error) {
         console.error(error);
@@ -327,7 +320,7 @@ export default function RegisterPage() {
                     <Label htmlFor="character-name" className="flex items-center"><Star className="w-4 h-4 mr-2" />Character Name</Label>
                     <div className="flex gap-2">
                       <Input id="character-name" placeholder="Your hero's name" value={characterName} onChange={(e) => setCharacterName(e.target.value)} disabled={isLoading || isGeneratingName} />
-                       <Button variant="outline" size="icon" onClick={handleGenerateName} disabled={isGeneratingName || !selectedClass}>
+                       <Button variant="outline" size="icon" onClick={handleGenerateName} disabled={isGeneratingName}>
                             {isGeneratingName ? <Loader2 className="h-4 w-4 animate-spin" /> : <Star className="h-4 w-4" />}
                        </Button>
                     </div>

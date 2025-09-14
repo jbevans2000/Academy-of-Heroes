@@ -7,24 +7,20 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
-const NameInputSchema = z.object({
-  class: z.string().describe('The character class (e.g., Mage, Guardian, Healer)'),
-});
-
 const nameGenerationPrompt = ai.definePrompt({
     name: 'nameGenerationPrompt',
-    inputSchema: NameInputSchema,
-    prompt: `Generate a single, cool, and creative fantasy character name suitable for a {{{class}}}. Ensure the name is unique and fits the fantasy genre. Do not provide more than one name. Do not add any extra formatting or quotation marks.`,
+    prompt: `Generate a single, cool, and creative fantasy character name. Ensure the name is unique and fits the fantasy genre. Do not provide more than one name. Do not add any extra formatting or quotation marks.`,
 });
 
 
-export async function generateName(characterClass: string): Promise<string> {
+export async function generateName(): Promise<string> {
     try {
-        const { output } = await nameGenerationPrompt({ class: characterClass });
-        return output || `Heroic ${characterClass}`;
+        const { output } = await nameGenerationPrompt();
+        // Return a fallback name if the model returns an empty string or null
+        return output || 'Heroic Adventurer';
     } catch (error) {
         console.error("Error generating name:", error);
         // Provide a fallback name on error
-        return `Brave ${characterClass}`;
+        return 'Brave Hero';
     }
 }
