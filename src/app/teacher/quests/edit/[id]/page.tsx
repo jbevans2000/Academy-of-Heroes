@@ -123,6 +123,8 @@ export default function EditQuestPage() {
   const [chapter, setChapter] = useState<Partial<Chapter> | null>(null);
   const [selectedHubId, setSelectedHubId] = useState('');
   const [chapterCoordinates, setChapterCoordinates] = useState({ x: 50, y: 50 });
+  const [worldMapUrl, setWorldMapUrl] = useState('');
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -135,21 +137,28 @@ export default function EditQuestPage() {
     return () => unsubscribe();
   }, [router]);
 
-  // Fetch all hubs for the dropdown
+  // Fetch all hubs for the dropdown and teacher's world map
   useEffect(() => {
     if (!teacher) return;
-    const fetchHubs = async () => {
+    const fetchHubsAndMap = async () => {
         try {
             const hubsQuery = query(collection(db, 'teachers', teacher.uid, 'questHubs'), orderBy('hubOrder'));
             const hubsSnapshot = await getDocs(hubsQuery);
             const hubsData = hubsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
             setHubs(hubsData);
+
+            const teacherRef = doc(db, 'teachers', teacher.uid);
+            const teacherSnap = await getDoc(teacherRef);
+            if (teacherSnap.exists() && teacherSnap.data().worldMapUrl) {
+                setWorldMapUrl(teacherSnap.data().worldMapUrl);
+            }
+
         } catch (error) {
-            console.error("Error fetching hubs: ", error);
+            console.error("Error fetching hubs/map: ", error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch quest hubs.' });
         }
     };
-    fetchHubs();
+    fetchHubsAndMap();
   }, [teacher, toast]);
   
   // Fetch the specific chapter data to edit
@@ -325,7 +334,18 @@ export default function EditQuestPage() {
   }
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-muted/40">
+    <div className="relative flex min-h-screen w-full flex-col">
+        {worldMapUrl && (
+            <div 
+              className="absolute inset-0 -z-10"
+              style={{
+                  backgroundImage: `url('${worldMapUrl}')`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  opacity: 0.5,
+              }}
+            />
+        )}
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="max-w-4xl mx-auto space-y-6">
@@ -333,7 +353,7 @@ export default function EditQuestPage() {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to All Quests
           </Button>
-          <Card className="shadow-lg">
+          <Card className="shadow-lg bg-card/90">
             <CardHeader>
               <CardTitle className="text-3xl">Edit Quest</CardTitle>
               <CardDescription>
