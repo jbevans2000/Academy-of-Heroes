@@ -11,6 +11,7 @@ import { signOut, onAuthStateChanged, type User } from "firebase/auth";
 import { doc, getDoc, onSnapshot, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Bug, Lightbulb } from "lucide-react";
+import { TeacherAdminMessageDialog } from './teacher-admin-message-dialog';
 
 interface TeacherHeaderProps {
     isAdminPreview?: boolean;
@@ -20,8 +21,9 @@ export function TeacherHeader({ isAdminPreview = false }: TeacherHeaderProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isFeedbackPanelVisible, setIsFeedbackPanelVisible] = useState(false);
-  const [hasUnread, setHasUnread] = useState(false);
   const [teacher, setTeacher] = useState<User | null>(null);
+  const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
@@ -48,7 +50,7 @@ export function TeacherHeader({ isAdminPreview = false }: TeacherHeaderProps) {
     const teacherRef = doc(db, 'teachers', teacher.uid);
     const unsubscribeTeacher = onSnapshot(teacherRef, (docSnap) => {
         if (docSnap.exists()) {
-            setHasUnread(docSnap.data().hasUnreadTeacherMessages || false);
+            setHasUnreadMessages(docSnap.data().hasUnreadAdminMessages || false);
         }
     });
 
@@ -75,41 +77,49 @@ export function TeacherHeader({ isAdminPreview = false }: TeacherHeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
-      <Link href="/teacher/dashboard" className="flex items-center gap-2 font-semibold border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md px-3 py-2 transition-colors">
-        <School className="h-6 w-6 text-primary" />
-        <span className="text-xl">The Guild Leader's Podium</span>
-      </Link>
-      <div className="ml-auto flex items-center gap-2">
-        {isFeedbackPanelVisible && (
-            <>
-                 <Button variant="outline" size="sm" onClick={() => router.push('/teacher/feedback?type=bug')}>
-                    <Bug className="mr-2 h-4 w-4" /> Report a Bug
-                </Button>
-                 <Button variant="outline" size="sm" onClick={() => router.push('/teacher/feedback?type=feature')}>
-                    <Lightbulb className="mr-2 h-4 w-4" /> Request a Feature
-                </Button>
-            </>
-        )}
-        {isAdminPreview && (
-             <Button variant="secondary" onClick={() => router.push('/admin/dashboard')}>
-                <Shield className="mr-2 h-5 w-5" />
-                Return to Admin Dashboard
-            </Button>
-        )}
-        <Button variant="outline" onClick={() => router.push('/teacher/profile')}>
-            <UserIcon className="mr-2 h-5 w-5" />
-            My Profile
-        </Button>
-        <Button variant="outline" onClick={() => router.push('/teacher/help')}>
-            <LifeBuoy className="mr-2 h-5 w-5" />
-            Help
-        </Button>
-        <Button onClick={handleLogout} className="bg-amber-500 hover:bg-amber-600 text-white">
-          <LogOut className="mr-2 h-5 w-5" />
-          Logout
-        </Button>
-      </div>
-    </header>
+    <>
+      <TeacherAdminMessageDialog isOpen={isMessageDialogOpen} onOpenChange={setIsMessageDialogOpen} />
+      <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
+        <Link href="/teacher/dashboard" className="flex items-center gap-2 font-semibold border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md px-3 py-2 transition-colors">
+          <School className="h-6 w-6 text-primary" />
+          <span className="text-xl">The Guild Leader's Podium</span>
+        </Link>
+        <div className="ml-auto flex items-center gap-2">
+          {isFeedbackPanelVisible && (
+              <>
+                  <Button variant="outline" size="sm" onClick={() => router.push('/teacher/feedback?type=bug')}>
+                      <Bug className="mr-2 h-4 w-4" /> Report a Bug
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => router.push('/teacher/feedback?type=feature')}>
+                      <Lightbulb className="mr-2 h-4 w-4" /> Request a Feature
+                  </Button>
+              </>
+          )}
+          {isAdminPreview && (
+              <Button variant="secondary" onClick={() => router.push('/admin/dashboard')}>
+                  <Shield className="mr-2 h-5 w-5" />
+                  Return to Admin Dashboard
+              </Button>
+          )}
+          <Button variant="outline" onClick={() => setIsMessageDialogOpen(true)} className="relative">
+              <MessageSquare className="mr-2 h-5 w-5" />
+              Contact Admin
+              {hasUnreadMessages && <span className="absolute top-1 right-1 flex h-3 w-3 rounded-full bg-red-600 animate-pulse" />}
+          </Button>
+          <Button variant="outline" onClick={() => router.push('/teacher/profile')}>
+              <UserIcon className="mr-2 h-5 w-5" />
+              My Profile
+          </Button>
+          <Button variant="outline" onClick={() => router.push('/teacher/help')}>
+              <LifeBuoy className="mr-2 h-5 w-5" />
+              Help
+          </Button>
+          <Button onClick={handleLogout} className="bg-amber-500 hover:bg-amber-600 text-white">
+            <LogOut className="mr-2 h-5 w-5" />
+            Logout
+          </Button>
+        </div>
+      </header>
+    </>
   );
 }
