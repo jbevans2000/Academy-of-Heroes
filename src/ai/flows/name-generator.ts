@@ -9,6 +9,9 @@ import { z } from 'zod';
 
 const nameGenerationPrompt = ai.definePrompt({
     name: 'nameGenerationPrompt',
+    output: {
+      schema: z.string(),
+    },
     prompt: `Generate a single, cool, and creative fantasy character name. Ensure the name is unique and fits the fantasy genre. Do not provide more than one name. Do not add any extra formatting or quotation marks.`,
 });
 
