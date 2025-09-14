@@ -1,26 +1,18 @@
 
 'use server';
 /**
- * @fileOverview An AI flow for generating character names.
- * This file should use the Genkit AI library.
+ * @fileOverview A flow for generating character names from a predefined list.
  */
-import { ai } from '@/ai/genkit';
-import { z } from 'zod';
+import { maleNames, femaleNames } from '@/lib/names';
 
-const nameGenerationPrompt = ai.definePrompt({
-    name: 'nameGenerationPrompt',
-    output: {
-      schema: z.string(),
-    },
-    prompt: `Generate a single, cool, and creative fantasy character name. Ensure the name is unique and fits the fantasy genre. Do not provide more than one name. Do not add any extra formatting or quotation marks.`,
-});
-
-
-export async function generateName(): Promise<string> {
+export async function generateName(gender: 'male' | 'female'): Promise<string> {
     try {
-        const { output } = await nameGenerationPrompt();
-        // Return a fallback name if the model returns an empty string or null
-        return output || 'Heroic Adventurer';
+        const nameList = gender === 'male' ? maleNames : femaleNames;
+        if (!nameList || nameList.length === 0) {
+            return 'Brave Hero';
+        }
+        const randomIndex = Math.floor(Math.random() * nameList.length);
+        return nameList[randomIndex];
     } catch (error) {
         console.error("Error generating name:", error);
         // Provide a fallback name on error

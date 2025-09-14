@@ -42,6 +42,7 @@ export default function RegisterPage() {
   const [characterName, setCharacterName] = useState('');
   const [selectedClass, setSelectedClass] = useState<ClassType>('');
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
+  const [selectedGender, setSelectedGender] = useState<'male' | 'female'>('female');
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
@@ -69,7 +70,7 @@ export default function RegisterPage() {
   const handleGenerateName = async () => {
     setIsGeneratingName(true);
     try {
-        const name = await generateName();
+        const name = await generateName(selectedGender);
         setCharacterName(name);
     } catch (error) {
         console.error(error);
@@ -316,6 +317,23 @@ export default function RegisterPage() {
                     </SelectContent>
                     </Select>
                 </div>
+                 <div className="space-y-2">
+                    <Label className="font-semibold">Character Gender</Label>
+                    <RadioGroup
+                        value={selectedGender}
+                        onValueChange={(value) => setSelectedGender(value as 'male' | 'female')}
+                        className="flex space-x-4"
+                    >
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="male" id="gender-male" />
+                            <Label htmlFor="gender-male">Male</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="female" id="gender-female" />
+                            <Label htmlFor="gender-female">Female</Label>
+                        </div>
+                    </RadioGroup>
+                  </div>
                 <div className="space-y-2">
                     <Label htmlFor="character-name" className="flex items-center"><Star className="w-4 h-4 mr-2" />Character Name</Label>
                     <div className="flex gap-2">
