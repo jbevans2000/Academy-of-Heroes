@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, doc, getDoc, query, orderBy, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, query, orderBy, updateDoc, addDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -80,11 +80,21 @@ interface Feedback {
     teacherEmail?: string;
 }
 
+interface Broadcast {
+    id: string;
+    message: string;
+    sentAt: {
+        seconds: number;
+        nanoseconds: number;
+    };
+}
+
 export default function AdminDashboardPage() {
     const [user, setUser] = useState<User | null>(null);
     const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [allStudents, setAllStudents] = useState<Student[]>([]);
     const [feedback, setFeedback] = useState<Feedback[]>([]);
+    const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isStudentRegistrationOpen, setIsStudentRegistrationOpen] = useState(true);
     const [isTeacherRegistrationOpen, setIsTeacherRegistrationOpen] = useState(true);
@@ -96,6 +106,8 @@ export default function AdminDashboardPage() {
     // Broadcast message state
     const [broadcastMessage, setBroadcastMessage] = useState('');
     const [isSendingBroadcast, setIsSendingBroadcast] = useState(false);
+    const [broadcastToDelete, setBroadcastToDelete] = useState<Broadcast | null>(null);
+    const [isDeletingBroadcast, setIsDeletingBroadcast] = useState(false);
 
     // Sorting state
     const [teacherSortConfig, setTeacherSortConfig] = useState<{ key: TeacherSortKey; direction: SortDirection } | null>({ key: 'className', direction: 'asc' });
@@ -143,7 +155,8 @@ export default function AdminDashboardPage() {
         await Promise.all([
             fetchTeachersAndStudents(),
             fetchSettings(),
-            fetchFeedback()
+            fetchFeedback(),
+            fetchBroadcasts()
         ]);
         setIsLoading(false);
     };
@@ -246,6 +259,18 @@ export default function AdminDashboardPage() {
              toast({ variant: 'destructive', title: 'Error', description: 'Could not load feedback submissions.' });
         }
     }
+    
+    const fetchBroadcasts = async () => {
+        try {
+            const broadcastsQuery = query(collection(db, 'settings', 'global', 'broadcasts'), orderBy('sentAt', 'desc'));
+            const broadcastsSnapshot = await getDocs(broadcastsQuery);
+            const broadcastsData = broadcastsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Broadcast));
+            setBroadcasts(broadcastsData);
+        } catch (error) {
+            console.error("Error fetching broadcasts:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not load broadcast history.' });
+        }
+    }
 
     const fetchSettings = async () => {
         setIsSettingsLoading(true);
@@ -331,17 +356,16 @@ export default function AdminDashboardPage() {
         }
         setIsSendingBroadcast(true);
         try {
-            // 1. Add the new message to a 'broadcasts' collection
             const broadcastsRef = collection(db, 'settings', 'global', 'broadcasts');
             const newBroadcastDoc = await addDoc(broadcastsRef, {
                 message: broadcastMessage,
                 sentAt: serverTimestamp(),
             });
+            await fetchBroadcasts(); 
 
-            // 2. Update the main settings doc with the ID of the latest message
             const result = await updateGlobalSettings({
                 broadcastMessageId: newBroadcastDoc.id,
-                broadcastMessage: broadcastMessage, // Keep for backward compatibility/simplicity
+                broadcastMessage: broadcastMessage,
             });
 
             if (result.success) {
@@ -374,6 +398,40 @@ export default function AdminDashboardPage() {
             toast({ variant: 'destructive', title: 'Clear Failed', description: error.message });
         } finally {
             setIsSendingBroadcast(false);
+        }
+    };
+    
+    const handleDeleteBroadcast = async () => {
+        if (!broadcastToDelete) return;
+        setIsDeletingBroadcast(true);
+        try {
+            // Delete the specific broadcast document
+            await deleteDoc(doc(db, 'settings', 'global', 'broadcasts', broadcastToDelete.id));
+
+            // Check if we are deleting the *current* broadcast
+            const settings = await getGlobalSettings();
+            if (settings.broadcastMessageId === broadcastToDelete.id) {
+                // Find the next latest message to set as current
+                const remainingBroadcasts = broadcasts.filter(b => b.id !== broadcastToDelete.id);
+                if (remainingBroadcasts.length > 0) {
+                    await updateGlobalSettings({ 
+                        broadcastMessageId: remainingBroadcasts[0].id,
+                        broadcastMessage: remainingBroadcasts[0].message
+                    });
+                } else {
+                    // No messages left, clear the main setting
+                    await updateGlobalSettings({ broadcastMessageId: '', broadcastMessage: '' });
+                }
+            }
+            
+            toast({ title: "Broadcast Deleted" });
+            setBroadcasts(prev => prev.filter(b => b.id !== broadcastToDelete.id));
+
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Delete Failed', description: error.message });
+        } finally {
+            setIsDeletingBroadcast(false);
+            setBroadcastToDelete(null);
         }
     };
 
@@ -459,7 +517,6 @@ export default function AdminDashboardPage() {
         setIsTesting(true);
         setFetchStatus(null);
         try {
-            // 1. Upload the file with correct metadata
             const storage = getStorage(app);
             const storagePath = `permission-test-models/${user.uid}/${uuidv4()}_${testFile.name}`;
             const storageRef = ref(storage, storagePath);
@@ -467,7 +524,6 @@ export default function AdminDashboardPage() {
             await uploadBytes(storageRef, testFile, metadata);
             const downloadUrl = await getDownloadURL(storageRef);
             
-            // 2. Fetch the file via our server-side API proxy
             const response = await fetch(`/api/fetch-glb?url=${encodeURIComponent(downloadUrl)}`);
             setFetchStatus({ ok: response.ok, status: response.status });
 
@@ -511,38 +567,63 @@ export default function AdminDashboardPage() {
                  
                  <div className="lg:col-span-3 space-y-6">
                     {/* Broadcast Message Card */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <MessageCircle className="h-6 w-6 text-primary" />
-                                Broadcast to Teachers
-                            </CardTitle>
-                            <CardDescription>
-                                Send a pop-up message that all teachers will see on their next login. Useful for maintenance notices or announcements.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <Textarea
-                                placeholder="Enter your announcement..."
-                                value={broadcastMessage}
-                                onChange={(e) => setBroadcastMessage(e.target.value)}
-                                rows={4}
-                                disabled={isSendingBroadcast}
-                            />
-                            <div className="flex gap-2">
-                                <Button onClick={handleSendBroadcast} disabled={isSendingBroadcast || !broadcastMessage.trim()}>
-                                    {isSendingBroadcast ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                                    Send Broadcast
-                                </Button>
-                                {broadcastMessage && (
-                                     <Button variant="destructive" onClick={handleClearBroadcast} disabled={isSendingBroadcast}>
-                                        {isSendingBroadcast ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                                        Clear Broadcast
-                                    </Button>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <Collapsible>
+                        <Card>
+                            <CollapsibleTrigger asChild>
+                                <div className="flex w-full cursor-pointer items-center justify-between p-6">
+                                    <div className="flex items-center gap-2">
+                                        <MessageCircle className="h-6 w-6 text-primary" />
+                                        <div>
+                                            <CardTitle>Broadcast to Teachers</CardTitle>
+                                            <CardDescription>
+                                                Send a pop-up message that all teachers will see on their next login.
+                                            </CardDescription>
+                                        </div>
+                                    </div>
+                                    <ChevronDown className="h-6 w-6 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                                </div>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                                <CardContent className="space-y-4">
+                                    <Textarea
+                                        placeholder="Enter your announcement..."
+                                        value={broadcastMessage}
+                                        onChange={(e) => setBroadcastMessage(e.target.value)}
+                                        rows={4}
+                                        disabled={isSendingBroadcast}
+                                    />
+                                    <div className="flex justify-between items-center">
+                                        <div className="flex gap-2">
+                                            <Button onClick={handleSendBroadcast} disabled={isSendingBroadcast || !broadcastMessage.trim()}>
+                                                {isSendingBroadcast ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                                                Send Broadcast
+                                            </Button>
+                                            <Button variant="destructive" onClick={handleClearBroadcast} disabled={isSendingBroadcast}>
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                Clear Current Broadcast
+                                            </Button>
+                                        </div>
+                                    </div>
+                                     <div className="pt-4 mt-4 border-t">
+                                        <h4 className="font-semibold mb-2">Broadcast History</h4>
+                                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                                            {broadcasts.map(b => (
+                                                <div key={b.id} className="flex justify-between items-start p-2 border rounded-md">
+                                                    <div>
+                                                        <p className="text-sm">{b.message}</p>
+                                                        <p className="text-xs text-muted-foreground">{format(new Date(b.sentAt.seconds * 1000), 'PPp')}</p>
+                                                    </div>
+                                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setBroadcastToDelete(b)}>
+                                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                                    </Button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </CollapsibleContent>
+                        </Card>
+                    </Collapsible>
 
                     {/* Direct Prompt Interface */}
                     <DirectPromptInterface />
@@ -861,8 +942,26 @@ export default function AdminDashboardPage() {
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
+                    <AlertDialog open={!!broadcastToDelete} onOpenChange={(isOpen) => !isOpen && setBroadcastToDelete(null)}>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Broadcast?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Are you sure you want to delete this broadcast message? It will be removed from the history for all teachers.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel disabled={isDeletingBroadcast}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteBroadcast} disabled={isDeletingBroadcast} className="bg-destructive hover:bg-destructive/90">
+                                    {isDeletingBroadcast ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Yes, Delete'}
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </div>
             </main>
         </div>
     );
 }
+
+    
