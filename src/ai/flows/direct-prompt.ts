@@ -12,14 +12,14 @@ export async function directPrompt(promptText: string): Promise<string> {
         return "Error: Prompt text cannot be empty.";
     }
     try {
-        const { output } = await ai.generate({
+        const response = await ai.generate({
             prompt: promptText,
             model: 'googleai/gemini-1.5-flash',
             output: {
                 format: 'text',
             },
         });
-        return output || "The model returned an empty response.";
+        return response.text || "The model returned an empty response.";
     } catch (error: any) {
         console.error("Error in directPrompt flow:", error);
         return `An error occurred: ${error.message}`;
