@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Student, Company, QuestHub, Chapter } from '@/lib/data';
-import { Star, Coins, User, Sword, Trophy, Heart, Zap, Loader2, Edit, Settings, Briefcase, FileText, Eye, EyeOff, MessageSquare, BookOpen } from 'lucide-react';
+import { Star, Coins, User, Sword, Trophy, Heart, Zap, Loader2, Edit, Settings, Briefcase, FileText, Eye, EyeOff, MessageSquare, BookOpen, ShieldCheck } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -208,19 +208,16 @@ function EditableStat({ student, stat, icon, label, teacherUid }: EditableStatPr
 
                 if (newLevel !== currentLevel) {
                     const levelChange = newLevel - currentLevel;
-                    updates.level = newLevel;
-                    
                     const newMaxHp = calculateBaseMaxHp(studentData.class, newLevel, 'hp');
                     const newMaxMp = calculateBaseMaxHp(studentData.class, newLevel, 'mp');
 
+                    updates.level = newLevel;
                     updates.maxHp = newMaxHp;
-                    // On level down, clamp HP to new max. On level up, add gain.
                     updates.hp = levelChange > 0 
                         ? (studentData.hp || 0) + calculateHpGain(studentData.class, levelChange)
                         : Math.min(studentData.hp, newMaxHp);
 
                     updates.maxMp = newMaxMp;
-                    // On level down, clamp MP to new max. On level up, add gain.
                     updates.mp = levelChange > 0
                         ? (studentData.mp || 0) + calculateMpGain(studentData.class, levelChange)
                         : Math.min(studentData.mp, newMaxMp);
@@ -511,11 +508,11 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
                  <EditablePairedStat student={student} stat="mp" maxStat="maxMp" label="MP" icon={<Zap className="h-5 w-5 text-blue-500" />} teacherUid={teacherUid} />
                 <div className="flex items-center gap-2">
                     <Briefcase className="w-5 h-5" />
-                    <span>{company?.name || 'Freelancer'}</span>
+                    <span className="truncate">{company?.name || 'Freelancer'}</span>
                 </div>
                  <EditableStat student={student} stat="gold" label="Gold" icon={<Coins className="h-5 w-5 text-amber-500" />} teacherUid={teacherUid} />
                 <div className="col-span-2">
-                 <EditableStat student={student} stat="xp" label="Experience" icon={<Star className="h-5 w-5 text-yellow-400" />} teacherUid={teacherUid} />
+                 <EditableStat student={student} stat="xp" label="Experience" icon={<ShieldCheck className="h-5 w-5 text-yellow-400" />} teacherUid={teacherUid} />
                 </div>
             </CardContent>
             <CardFooter className="p-2 bg-secondary/30 mt-auto grid grid-cols-3 gap-2">
