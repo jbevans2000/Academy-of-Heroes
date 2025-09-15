@@ -213,13 +213,13 @@ function EditableStat({ student, stat, icon, label, teacherUid }: EditableStatPr
 
                     updates.level = newLevel;
                     updates.maxHp = newMaxHp;
-                    updates.hp = levelChange > 0 
-                        ? (studentData.hp || 0) + calculateHpGain(studentData.class, levelChange)
+                    updates.hp = levelsGained > 0 
+                        ? (studentData.hp || 0) + calculateHpGain(studentData.class, levelsGained)
                         : Math.min(studentData.hp, newMaxHp);
 
                     updates.maxMp = newMaxMp;
-                    updates.mp = levelChange > 0
-                        ? (studentData.mp || 0) + calculateMpGain(studentData.class, levelChange)
+                    updates.mp = levelsGained > 0
+                        ? (studentData.mp || 0) + calculateMpGain(studentData.class, levelsGained)
                         : Math.min(studentData.mp, newMaxMp);
                 }
             } else {
@@ -273,7 +273,7 @@ function EditableStat({ student, stat, icon, label, teacherUid }: EditableStatPr
         >
             {icon}
             <p className="font-semibold text-lg">{value.toLocaleString()}</p>
-            {stat === 'xp' && <span className="font-semibold text-lg">Points</span>}
+            {stat === 'xp' && <span className="font-semibold text-lg">Experience Points</span>}
             <Edit className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
     );
