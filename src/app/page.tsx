@@ -117,7 +117,7 @@ export default function SplashPage() {
                 <Link href="https://www.instagram.com" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
                     <Image src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/social%20icons%2F5772032.png?alt=media&token=30c2c0fb-2ac2-4aeb-ba5d-1f0b3f7473af" alt="Instagram" width={24} height={24} />
                 </Link>
-                 <Link href="https://www.tiktok.com" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
+                 <Link href="https://www.tiktok.com/@academyheroes?_t=ZP-8zjqRfHMWRK&_r=1" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
                     <Image src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/social%20icons%2F3046121.png?alt=media&token=5e878042-9fa1-4703-9539-f75a31e3f9be" alt="TikTok" width={24} height={24} />
                 </Link>
             </div>
