@@ -58,6 +58,7 @@ import { SetQuestProgressDialog } from '@/components/teacher/set-quest-progress-
 import { updateDailyReminder, updateDailyRegen } from '@/ai/flows/manage-teacher';
 import { Textarea } from '@/components/ui/textarea';
 import { getGlobalSettings } from '@/ai/flows/manage-settings';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 interface TeacherData {
@@ -104,6 +105,7 @@ export default function Dashboard() {
   const [showHidden, setShowHidden] = useState(false);
   
   const [sortOrder, setSortOrder] = useState<SortOrder>('studentName');
+  const [companyFilter, setCompanyFilter] = useState<string>('all');
 
   const { toast } = useToast();
   
@@ -260,22 +262,31 @@ export default function Dashboard() {
 
 
   const sortedStudents = useMemo(() => {
-    const relevantStudents = students.filter(s => !s.isArchived && (showHidden ? s.isHidden : !s.isHidden));
+    let filteredStudents = students.filter(s => !s.isArchived && (showHidden ? s.isHidden : !s.isHidden));
+
+    if (companyFilter !== 'all') {
+        if (companyFilter === 'freelancers') {
+            filteredStudents = filteredStudents.filter(s => !s.companyId);
+        } else {
+            filteredStudents = filteredStudents.filter(s => s.companyId === companyFilter);
+        }
+    }
+
     switch(sortOrder) {
       case 'studentName':
-        return { type: 'flat', data: [...relevantStudents].sort((a, b) => a.studentName.localeCompare(b.studentName)) };
+        return { type: 'flat', data: [...filteredStudents].sort((a, b) => a.studentName.localeCompare(b.studentName)) };
       case 'characterName':
-        return { type: 'flat', data: [...relevantStudents].sort((a, b) => a.characterName.localeCompare(b.characterName)) };
+        return { type: 'flat', data: [...filteredStudents].sort((a, b) => a.characterName.localeCompare(b.characterName)) };
       case 'xp':
-        return { type: 'flat', data: [...relevantStudents].sort((a, b) => (b.xp || 0) - (a.xp || 0)) };
+        return { type: 'flat', data: [...filteredStudents].sort((a, b) => (b.xp || 0) - (a.xp || 0)) };
       case 'class':
         const classOrder: ClassType[] = ['Guardian', 'Healer', 'Mage'];
-        return { type: 'flat', data: [...relevantStudents].sort((a, b) => classOrder.indexOf(a.class) - classOrder.indexOf(b.class)) };
+        return { type: 'flat', data: [...filteredStudents].sort((a, b) => classOrder.indexOf(a.class) - classOrder.indexOf(b.class)) };
       case 'company':
         const grouped: { [companyId: string]: Student[] } = {};
         const freelancers: Student[] = [];
 
-        relevantStudents.forEach(student => {
+        filteredStudents.forEach(student => {
             if (student.companyId && companies.find(c => c.id === student.companyId)) {
                 if (!grouped[student.companyId]) {
                     grouped[student.companyId] = [];
@@ -298,9 +309,9 @@ export default function Dashboard() {
 
         return { type: 'grouped', data: grouped, freelancers, companyOrder: sortedCompanyIds };
       default:
-        return { type: 'flat', data: relevantStudents };
+        return { type: 'flat', data: filteredStudents };
     }
-  }, [students, sortOrder, companies, showHidden]);
+  }, [students, sortOrder, companies, showHidden, companyFilter]);
 
   const handleToggleStudentSelection = (uid: string) => {
     setSelectedStudents(prev =>
@@ -918,23 +929,33 @@ export default function Dashboard() {
                         <span>Clear All Battle Statuses</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuSub>
-                      <DropdownMenuSubTrigger>
-                        <SortAsc className="mr-2 h-4 w-4" />
-                        <span>Sort Students</span>
-                      </DropdownMenuSubTrigger>
-                      <DropdownMenuSubContent>
-                         <DropdownMenuRadioGroup value={sortOrder} onValueChange={(value) => setSortOrder(value as SortOrder)}>
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                <SortAsc className="mr-2 h-4 w-4" />
+                                <span>Sort / Filter</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
                             <DropdownMenuLabel>Sort By</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuRadioItem value="studentName">Student Name</DropdownMenuRadioItem>
-                            <DropdownMenuRadioItem value="characterName">Character Name</DropdownMenuRadioItem>
-                            <DropdownMenuRadioItem value="xp">Experience</DropdownMenuRadioItem>
-                            <DropdownMenuRadioItem value="class">Class</DropdownMenuRadioItem>
-                            <DropdownMenuRadioItem value="company">Company</DropdownMenuRadioItem>
-                        </DropdownMenuRadioGroup>
-                      </DropdownMenuSubContent>
-                    </DropdownMenuSub>
+                            <DropdownMenuRadioGroup value={sortOrder} onValueChange={(value) => setSortOrder(value as SortOrder)}>
+                                <DropdownMenuRadioItem value="studentName">Student Name</DropdownMenuRadioItem>
+                                <DropdownMenuRadioItem value="characterName">Character Name</DropdownMenuRadioItem>
+                                <DropdownMenuRadioItem value="xp">Experience</DropdownMenuRadioItem>
+                                <DropdownMenuRadioItem value="class">Class</DropdownMenuRadioItem>
+                                <DropdownMenuRadioItem value="company">Company</DropdownMenuRadioItem>
+                            </DropdownMenuRadioGroup>
+                             <DropdownMenuSeparator />
+                             <DropdownMenuLabel>Filter By Company</DropdownMenuLabel>
+                             <DropdownMenuRadioGroup value={companyFilter} onValueChange={setCompanyFilter}>
+                                <DropdownMenuRadioItem value="all">All Students</DropdownMenuRadioItem>
+                                <DropdownMenuRadioItem value="freelancers">Freelancers</DropdownMenuRadioItem>
+                                {companies.map(company => (
+                                    <DropdownMenuRadioItem key={company.id} value={company.id}>{company.name}</DropdownMenuRadioItem>
+                                ))}
+                            </DropdownMenuRadioGroup>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </DropdownMenuContent>
             </DropdownMenu>
 
@@ -1181,3 +1202,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
+    
