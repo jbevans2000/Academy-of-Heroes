@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { StudentCard } from './student-card';
@@ -26,7 +25,7 @@ export function StudentList({ students, selectedStudents, onSelectStudent, teach
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
       {students.map((student) => (
             <StudentCard
                 key={student.uid}
@@ -43,4 +42,3 @@ export function StudentList({ students, selectedStudents, onSelectStudent, teach
     </div>
   );
 }
-
