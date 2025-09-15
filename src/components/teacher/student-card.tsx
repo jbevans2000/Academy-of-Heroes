@@ -115,8 +115,8 @@ function EditableText({ student, field, icon, label, teacherUid }: EditableTextP
 
     if (isEditing) {
         return (
-            <div className="col-span-2 space-y-1">
-                <Label htmlFor={`edit-${field}`}>{label}</Label>
+            <div className="space-y-1">
+                <Label htmlFor={`edit-${field}`} className="text-xs">{label}</Label>
                 <Input
                     ref={inputRef}
                     id={`edit-${field}`}
@@ -134,12 +134,12 @@ function EditableText({ student, field, icon, label, teacherUid }: EditableTextP
 
     return (
         <div 
-            className="flex items-center gap-2 cursor-pointer group"
+            className="flex items-center gap-2 cursor-pointer group w-full"
             onClick={() => setIsEditing(true)}
         >
             {icon}
-            <span className="font-bold truncate" title={value}>{value}</span>
-            <Edit className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            <span className="font-bold text-lg truncate" title={value}>{value}</span>
+            <Edit className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
     );
 }
@@ -255,7 +255,7 @@ function EditableStat({ student, stat, icon, label, teacherUid }: EditableStatPr
                     onChange={(e) => setValue(Number(e.target.value))}
                     onBlur={handleSave}
                     onKeyDown={handleKeyDown}
-                    className="h-8"
+                    className="h-8 w-24"
                     disabled={isLoading}
                 />
             </div>
@@ -264,15 +264,12 @@ function EditableStat({ student, stat, icon, label, teacherUid }: EditableStatPr
 
     return (
         <div 
-            className="flex items-center space-x-1 cursor-pointer group"
+            className="flex items-center space-x-2 cursor-pointer group"
             onClick={() => setIsEditing(true)}
         >
             {icon}
-            <div className="flex-grow">
-                <p className="font-semibold">{value.toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground">{label}</p>
-            </div>
-            <Edit className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            <p className="font-semibold text-lg">{value.toLocaleString()}</p>
+            <Edit className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
     );
 }
@@ -320,7 +317,6 @@ function EditablePairedStat({ student, stat, maxStat, icon, label, teacherUid }:
 
             await updateDoc(studentRef, updates);
             
-            // Only show the "Updated" toast if the value wasn't auto-adjusted.
             if (!wasAdjusted) {
                 toast({ title: 'Stat Updated!', description: `${student.characterName}'s ${label} has been updated.` });
             }
@@ -333,39 +329,40 @@ function EditablePairedStat({ student, stat, maxStat, icon, label, teacherUid }:
             setIsLoading(false);
         }
     };
+    
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') handleSave();
+        else if (e.key === 'Escape') {
+            setCurrentValue(student[stat] ?? 0);
+            setMaxValue(student[maxStat] ?? 0);
+            setIsEditing(false);
+        }
+    };
+
 
     if (isEditing) {
         return (
-            <div className="col-span-2 space-y-2 p-2 border rounded-md">
+            <div className="space-y-2 cursor-default" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center gap-2">
-                    <Label htmlFor={`${stat}-current`}>Current {label}:</Label>
-                    <Input id={`${stat}-current`} type="number" value={currentValue} onChange={(e) => setCurrentValue(Number(e.target.value))} className="h-8" />
+                    <Input id={`${stat}-current`} type="number" value={currentValue} onChange={(e) => setCurrentValue(Number(e.target.value))} onKeyDown={handleKeyDown} className="h-8" />
+                    <span>/</span>
+                    <Input id={`${stat}-max`} type="number" value={maxValue} onChange={(e) => setMaxValue(Number(e.target.value))} onKeyDown={handleKeyDown} className="h-8" />
                 </div>
-                 <div className="flex items-center gap-2">
-                    <Label htmlFor={`${stat}-max`}>Max {label}:</Label>
-                    <Input id={`${stat}-max`} type="number" value={maxValue} onChange={(e) => setMaxValue(Number(e.target.value))} className="h-8" />
-                </div>
-                <div className="flex gap-2">
-                    <Button size="sm" onClick={handleSave} disabled={isLoading}>
-                         {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
-                    </Button>
-                     <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)}>Cancel</Button>
-                </div>
+                 <Button size="sm" onClick={handleSave} disabled={isLoading}>
+                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
+                </Button>
             </div>
         )
     }
 
     return (
         <div 
-            className="flex items-center space-x-1 cursor-pointer group"
-            onClick={() => setIsEditing(true)}
+            className="flex items-center space-x-2 cursor-pointer group"
+            onClick={(e) => { e.stopPropagation(); setIsEditing(true);}}
         >
             {icon}
-            <div className="flex-grow">
-                <p className="font-semibold">{currentValue} / {maxValue}</p>
-                <p className="text-xs text-muted-foreground">{label}</p>
-            </div>
-            <Edit className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            <p className="font-semibold text-lg">{currentValue} / {maxValue}</p>
+            <Edit className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
     );
 }
@@ -454,15 +451,15 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
       />
       <Dialog>
       <TooltipProvider>
-        <Card className={cn("shadow-lg rounded-xl flex flex-col overflow-hidden transition-all duration-300 relative", isSelected ? "ring-2 ring-primary scale-105" : "hover:scale-105", student.isHidden && "opacity-60 bg-gray-200")}>
+        <Card className={cn("shadow-lg rounded-xl flex flex-col overflow-hidden transition-all duration-300 relative", isSelected ? "ring-4 ring-primary scale-105" : "hover:scale-105", student.isHidden && "opacity-60 bg-gray-200")}>
             {company?.logoUrl && (
                 <div className="absolute inset-0 z-0">
                     <Image src={company.logoUrl} alt="Company Logo" fill className="object-cover opacity-50" />
                 </div>
             )}
-           <div className="relative z-10 flex flex-col h-full bg-card/80">
-            <CardHeader className="p-4 relative h-40 bg-secondary/30 flex items-center justify-center">
-                <div className="absolute top-2 right-2 z-10">
+           <div className="relative z-10 flex flex-col h-full bg-card/80 backdrop-blur-sm">
+            <CardHeader className="p-4 relative flex flex-row items-center gap-4 bg-secondary/30">
+                 <div className="absolute top-2 right-2 z-10">
                     <Checkbox
                         checked={isSelected}
                         onCheckedChange={onSelect}
@@ -470,148 +467,74 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
                         className="h-6 w-6 border-2 border-black bg-white"
                     />
                 </div>
-                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="absolute top-2 left-2 z-10 h-7 w-7"
-                            onClick={handleToggleVisibility}
-                        >
-                            {student.isHidden ? <EyeOff className="w-5 h-5"/> : <Eye className="w-5 h-5"/>}
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p>{student.isHidden ? 'Click to Unhide' : 'Click to Hide'}</p>
-                    </TooltipContent>
-                 </Tooltip>
-                 {student.hasUnreadMessages && (
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="absolute bottom-2 right-2 z-10 h-7 w-7"
-                                onClick={() => onSendMessage(student)}
-                            >
-                                <MessageSquare className="w-5 h-5 text-primary" />
-                                <span className="absolute top-0 right-0 flex h-2.5 w-2.5">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-                                </span>
-                            </Button>
-                        </TooltipTrigger>
-                         <TooltipContent>
-                            <p>Unread Message</p>
-                        </TooltipContent>
-                    </Tooltip>
-                 )}
-                {isOnline && (
-                    <Tooltip>
-                        <TooltipTrigger className="absolute top-3 left-10 z-10">
-                        <div className="w-3 h-3 rounded-full bg-green-500 ring-2 ring-white animate-pulse" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Online</p>
-                        </TooltipContent>
-                    </Tooltip>
-                )}
-                <div className={cn("relative w-28 h-28 border-4 bg-black/20 p-1 shadow-inner", avatarBorderColor)}>
+                <div className={cn("relative w-24 h-24 border-4 bg-black/20 p-1 shadow-inner shrink-0", avatarBorderColor)}>
+                    {isOnline && (
+                        <Tooltip>
+                            <TooltipTrigger className="absolute -top-1 -left-1 z-10">
+                            <div className="w-4 h-4 rounded-full bg-green-500 ring-2 ring-white animate-pulse" />
+                            </TooltipTrigger>
+                            <TooltipContent><p>Online</p></TooltipContent>
+                        </Tooltip>
+                    )}
                     <Image
                         src={avatarUrl}
                         alt={`${student.characterName}'s avatar`}
                         fill
-                        sizes="112px"
+                        sizes="96px"
                         className="object-contain drop-shadow-lg"
                         data-ai-hint="character"
                         onError={(e) => (e.currentTarget.src = 'https://placehold.co/100x100.png')}
                     />
                 </div>
+                <div className="flex-grow space-y-1">
+                    <EditableText student={student} field="characterName" label="Character Name" icon={<Sword className="w-5 h-5" />} teacherUid={teacherUid} />
+                    <EditableText student={student} field="studentName" label="Student Name" icon={<User className="w-5 h-5" />} teacherUid={teacherUid} />
+                </div>
             </CardHeader>
-            <CardContent className="p-4 flex-grow space-y-3">
-                <EditableText
-                    student={student}
-                    field="characterName"
-                    label="Character Name"
-                    icon={<Sword className="w-4 h-4" />}
-                    teacherUid={teacherUid}
-                />
-                <EditableText
-                    student={student}
-                    field="studentName"
-                    label="Student Name"
-                    icon={<User className="w-4 h-4" />}
-                    teacherUid={teacherUid}
-                />
-                <div className="text-sm text-muted-foreground flex items-center gap-2">
-                    <Sword className="w-4 h-4" />
+            <CardContent className="p-4 flex-grow grid grid-cols-2 gap-x-4 gap-y-3 text-lg">
+                <div className="flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-orange-400" />
+                    <span>Lvl {student.level ?? 1}</span>
+                </div>
+                 <EditablePairedStat student={student} stat="hp" maxStat="maxHp" label="HP" icon={<Heart className="h-5 w-5 text-red-500" />} teacherUid={teacherUid} />
+                <div className="flex items-center gap-2">
+                    <Sword className="w-5 h-5" />
                     <span>{student.class}</span>
                 </div>
-                 <div className="text-sm text-muted-foreground flex items-center gap-2">
-                    <Briefcase className="w-4 h-4" />
+                 <EditablePairedStat student={student} stat="mp" maxStat="maxMp" label="MP" icon={<Zap className="h-5 w-5 text-blue-500" />} teacherUid={teacherUid} />
+                <div className="flex items-center gap-2">
+                    <Briefcase className="w-5 h-5" />
                     <span>{company?.name || 'Freelancer'}</span>
                 </div>
-                <div className="space-y-3 text-sm pt-2">
-                    <div className="flex justify-between items-center gap-2">
-                        <div className="flex items-center space-x-1">
-                            <Trophy className="h-5 w-5 text-orange-400" />
-                            <div>
-                            <p className="font-semibold">{student.level ?? 1}</p>
-                            <p className="text-xs text-muted-foreground">Level</p>
-                            </div>
-                        </div>
-                        <EditableStat 
-                            student={student}
-                            stat="xp"
-                            label="Experience"
-                            icon={<Star className="h-5 w-5 text-yellow-400" />}
-                            teacherUid={teacherUid}
-                        />
-                        <EditableStat 
-                            student={student}
-                            stat="gold"
-                            label="Gold"
-                            icon={<Coins className="h-5 w-5 text-amber-500" />}
-                            teacherUid={teacherUid}
-                        />
-                    </div>
-                     <div className="flex justify-between items-center gap-2">
-                        <EditablePairedStat
-                            student={student}
-                            stat="hp"
-                            maxStat="maxHp"
-                            label="HP"
-                            icon={<Heart className="h-5 w-5 text-red-500" />}
-                            teacherUid={teacherUid}
-                        />
-                        <EditablePairedStat
-                            student={student}
-                            stat="mp"
-                            maxStat="maxMp"
-                            label="MP"
-                            icon={<Zap className="h-5 w-5 text-blue-500" />}
-                            teacherUid={teacherUid}
-                        />
-                    </div>
+                 <EditableStat student={student} stat="gold" label="Gold" icon={<Coins className="h-5 w-5 text-amber-500" />} teacherUid={teacherUid} />
+                <div className="col-span-2">
+                 <EditableStat student={student} stat="xp" label="Experience" icon={<Star className="h-5 w-5 text-yellow-400" />} teacherUid={teacherUid} />
                 </div>
             </CardContent>
             <CardFooter className="p-2 bg-secondary/30 mt-auto grid grid-cols-3 gap-2">
                  <Button className="w-full" variant="outline" onClick={() => onSendMessage(student)}>
                     <MessageSquare className="h-4 w-4" />
+                    {student.hasUnreadMessages && <span className="absolute top-1 right-1 flex h-2.5 w-2.5 rounded-full bg-red-600" />}
                 </Button>
                 <DialogTrigger asChild>
                 <Button className="w-full" variant="secondary">
                     View Details
                 </Button>
                 </DialogTrigger>
-                <div className="flex gap-1">
-                   <Button className="flex-1" variant="outline" onClick={() => setIsNotesOpen(true)}>
-                        <FileText className="h-4 w-4" />
-                    </Button>
-                    <Button className="flex-1" variant="outline" onClick={() => setIsQuestProgressOpen(true)}>
-                        <BookOpen className="h-4 w-4" />
-                    </Button>
-                </div>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button className="w-full" variant="outline"><Settings className="h-4 w-4" /></Button>
+                    </DropdownMenuTrigger>
+                     <DropdownMenuContent align="end">
+                        <DropdownMenuItem onSelect={() => setIsNotesOpen(true)}><FileText className="mr-2 h-4 w-4"/> View/Edit Notes</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => setIsQuestProgressOpen(true)}><BookOpen className="mr-2 h-4 w-4" /> Set Quest Progress</DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onSelect={handleToggleVisibility}>
+                            {student.isHidden ? <Eye className="mr-2 h-4 w-4"/> : <EyeOff className="mr-2 h-4 w-4" />}
+                            {student.isHidden ? 'Unhide Student' : 'Hide Student'}
+                        </DropdownMenuItem>
+                     </DropdownMenuContent>
+                </DropdownMenu>
             </CardFooter>
            </div>
         </Card>
