@@ -617,13 +617,17 @@ export default function Dashboard() {
   
   const closeWelcomeDialog = async () => {
       setShowWelcomeDialog(false);
-      setShowBetaWelcomeDialog(false);
       copyClassCode();
       if(teacher) {
         const teacherRef = doc(db, 'teachers', teacher.uid);
         await updateDoc(teacherRef, { isNewlyRegistered: false });
       }
   };
+  
+  const closeBetaWelcomeDialog = () => {
+    setShowBetaWelcomeDialog(false);
+    setShowWelcomeDialog(true); // Chain the next dialog
+  }
 
 
   if (isLoading || !teacher) {
@@ -719,7 +723,7 @@ export default function Dashboard() {
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogAction onClick={closeWelcomeDialog}>
+                    <AlertDialogAction onClick={closeBetaWelcomeDialog}>
                         Onward to Adventure!
                     </AlertDialogAction>
                 </AlertDialogFooter>
