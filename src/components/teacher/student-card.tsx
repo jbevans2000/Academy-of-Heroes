@@ -207,7 +207,7 @@ function EditableStat({ student, stat, icon, label, teacherUid }: EditableStatPr
                 const newLevel = calculateLevel(updates.xp);
 
                 if (newLevel !== currentLevel) {
-                    const levelChange = newLevel - currentLevel;
+                    const levelsGained = newLevel - currentLevel;
                     const newMaxHp = calculateBaseMaxHp(studentData.class, newLevel, 'hp');
                     const newMaxMp = calculateBaseMaxHp(studentData.class, newLevel, 'mp');
 
@@ -273,6 +273,7 @@ function EditableStat({ student, stat, icon, label, teacherUid }: EditableStatPr
         >
             {icon}
             <p className="font-semibold text-lg">{value.toLocaleString()}</p>
+            {stat === 'xp' && <span className="font-semibold text-lg">Points</span>}
             <Edit className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
     );
