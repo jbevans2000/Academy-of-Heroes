@@ -153,7 +153,7 @@ export default function TeacherRegisterPage() {
             title: 'Registration Almost Complete!',
             description: "We've sent a verification link to your email address.",
         });
-        router.push('/teacher/verify-email');
+        router.push('/teacher/verify-email?new=true');
 
     } catch (error: any) {
         console.error("Error creating teacher account:", error);
@@ -308,5 +308,3 @@ export default function TeacherRegisterPage() {
     </div>
   );
 }
-
-    
