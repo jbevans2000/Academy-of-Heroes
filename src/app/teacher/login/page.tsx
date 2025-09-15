@@ -14,12 +14,13 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { School, Loader2, KeyRound, Mail, ArrowLeft } from 'lucide-react';
+import { School, Loader2, KeyRound, Mail, ArrowLeft, ShieldAlert } from 'lucide-react';
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { doc, getDoc } from 'firebase/firestore';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function TeacherLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -77,7 +78,9 @@ export default function TeacherLoginPage() {
                 title: 'Login Successful!',
                 description: 'Welcome back to the Academy of Heroes, Wise One!',
             });
-            router.push('/teacher/dashboard');
+            const teacherData = teacherDocSnap.exists() ? teacherDocSnap.data() : null;
+            const route = teacherData?.isNewlyRegistered ? '/teacher/dashboard?new=true' : '/teacher/dashboard';
+            router.push(route);
         }
 
     } catch (error: any) {
@@ -149,6 +152,13 @@ export default function TeacherLoginPage() {
         }}
     >
       <div className="w-full max-w-md">
+        <Alert variant="destructive" className="mb-4 bg-yellow-100/90 border-yellow-500 text-yellow-900 dark:bg-yellow-900/80 dark:text-yellow-100">
+            <ShieldAlert className="h-4 w-4 !text-yellow-900 dark:!text-yellow-100" />
+            <AlertTitle className="font-bold">Attention Existing BETA Testers!</AlertTitle>
+            <AlertDescription>
+                Due to recent security updates, you may be required to re-verify your email address. If you are unable to log in, please use the "Forgot your password?" link to have a new verification link sent to you. We apologize for the inconvenience!
+            </AlertDescription>
+        </Alert>
         <Card className="shadow-2xl bg-card/80 backdrop-blur-sm">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-6">
