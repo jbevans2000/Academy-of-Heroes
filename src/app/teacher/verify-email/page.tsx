@@ -4,11 +4,48 @@
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { MailCheck, LogIn } from 'lucide-react';
+import { MailCheck, LogIn, Send, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
+import { auth } from '@/lib/firebase';
+import { sendEmailVerification } from 'firebase/auth';
+import { useState } from 'react';
 
 export default function VerifyEmailPage() {
     const router = useRouter();
+    const { toast } = useToast();
+    const [isResending, setIsResending] = useState(false);
+
+    const handleResend = async () => {
+        setIsResending(true);
+        const user = auth.currentUser;
+        if (!user) {
+            toast({
+                variant: 'destructive',
+                title: 'Not Logged In',
+                description: 'You must be logged in to resend a verification email. Please return to the login page.',
+            });
+            setIsResending(false);
+            return;
+        }
+
+        try {
+            await sendEmailVerification(user);
+            toast({
+                title: 'Verification Email Sent',
+                description: 'A new verification link has been sent to your email address. Please check your inbox.',
+            });
+        } catch (error: any) {
+            console.error("Error resending verification email:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Failed to Resend',
+                description: 'There was an error sending the email. Please try again shortly.',
+            });
+        } finally {
+            setIsResending(false);
+        }
+    };
 
     return (
          <div 
@@ -32,8 +69,14 @@ export default function VerifyEmailPage() {
                         A raven has been dispatched to your email address carrying a scroll of verification. Please check your inbox (and the raven's roost, or spam folder) and click the link upon the scroll to finalize your registration.
                     </p>
                     <p className="text-muted-foreground">
-                        Once your email has been verified, you may enter the Guild Leader's Podium and begin your journey.
+                        Once your email has been verified, you may enter the Guild Leader's Podium.
                     </p>
+                    <div className="pt-4">
+                        <Button variant="secondary" onClick={handleResend} disabled={isResending}>
+                            {isResending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                            Resend Verification Email
+                        </Button>
+                    </div>
                 </CardContent>
                 <CardFooter>
                     <Button className="w-full" asChild>
