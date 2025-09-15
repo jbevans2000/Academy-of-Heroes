@@ -15,6 +15,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { DashboardClient } from '@/components/dashboard/dashboard-client';
 import { Input } from '@/components/ui/input';
 import { doc, getDoc, updateDoc, collection, onSnapshot } from 'firebase/firestore';
@@ -24,7 +31,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { calculateLevel, calculateHpGain, calculateMpGain, calculateBaseMaxHp, MAX_LEVEL, XP_FOR_MAX_LEVEL } from '@/lib/game-mechanics';
 import { Label } from '../ui/label';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider } from '../ui/tooltip';
 import { TeacherNotesDialog } from './teacher-notes-dialog';
 import { toggleStudentVisibility, updateStudentDetails } from '@/ai/flows/manage-student';
 import { SetQuestProgressDialog } from './set-quest-progress-dialog';
@@ -554,3 +561,5 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
     </>
   );
 }
+
+    
