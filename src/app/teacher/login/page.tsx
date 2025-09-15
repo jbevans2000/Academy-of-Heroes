@@ -156,7 +156,7 @@ export default function TeacherLoginPage() {
             <ShieldAlert className="h-4 w-4 !text-yellow-900 dark:!text-yellow-100" />
             <AlertTitle className="font-bold">Attention Existing BETA Testers!</AlertTitle>
             <AlertDescription>
-                Due to recent security updates, you may be required to re-verify your email address. If you are unable to log in, please use the "Forgot your password?" link to have a new verification link sent to you. We apologize for the inconvenience!
+                Due to recent security updates, you may be required to re-verify your email address. When you login, you may have to click the "Resend Verification Email" button, and go to your email to re-verify the account.
             </AlertDescription>
         </Alert>
         <Card className="shadow-2xl bg-card/80 backdrop-blur-sm">
