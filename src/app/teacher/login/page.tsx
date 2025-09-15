@@ -43,6 +43,20 @@ export default function TeacherLoginPage() {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
+        // **** CRITICAL SECURITY CHECK ****
+        // This was missing before. We must ensure the email is verified.
+        if (!user.emailVerified) {
+            toast({
+                variant: 'destructive',
+                title: 'Email Not Verified',
+                description: 'You must verify your email address before you can log in. Please check your inbox for the verification link.',
+                duration: 8000,
+            });
+            // Optionally, resend verification email here if desired
+            router.push('/teacher/verify-email');
+            return; // Stop the login process
+        }
+
         // Check if the user is a master admin
         const adminRef = doc(db, 'admins', user.uid);
         const adminSnap = await getDoc(adminRef);
