@@ -46,13 +46,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { HelpArticleEditor } from '@/components/admin/help-article-editor';
 
 type SortDirection = 'asc' | 'desc';
-type TeacherSortKey = 'className' | 'name' | 'email' | 'schoolName' | 'studentCount' | 'createdAt';
+type TeacherSortKey = 'className' | 'name' | 'email' | 'schoolName' | 'studentCount' | 'createdAt' | 'contactEmail';
 type StudentSortKey = 'studentName' | 'characterName' | 'studentId' | 'teacherName' | 'createdAt';
 
 interface Teacher {
     id: string;
     name: string;
     email: string;
+    contactEmail?: string;
+    address?: string;
     className: string;
     schoolName: string;
     studentCount: number;
@@ -177,6 +179,8 @@ export default function AdminDashboardPage() {
                     id: teacherDoc.id,
                     name: teacherInfo.name || '[No Name]',
                     email: teacherInfo.email || '[No Email]',
+                    contactEmail: teacherInfo.contactEmail || '-',
+                    address: teacherInfo.address || '-',
                     className: teacherInfo.className || '[No Class Name]',
                     schoolName: teacherInfo.schoolName || '[No School]',
                     studentCount: studentsSnapshot.size,
@@ -214,8 +218,8 @@ export default function AdminDashboardPage() {
         let sortableItems = [...teachers];
         if (teacherSortConfig !== null) {
             sortableItems.sort((a, b) => {
-                const aValue = a[teacherSortConfig.key];
-                const bValue = b[teacherSortConfig.key];
+                const aValue = a[teacherSortConfig.key] || '';
+                const bValue = b[teacherSortConfig.key] || '';
                 if (aValue < bValue) return teacherSortConfig.direction === 'asc' ? -1 : 1;
                 if (aValue > bValue) return teacherSortConfig.direction === 'asc' ? 1 : -1;
                 return 0;
@@ -228,10 +232,10 @@ export default function AdminDashboardPage() {
         let sortableItems = [...allStudents];
         if (studentSortConfig !== null) {
             sortableItems.sort((a, b) => {
-                const aValue = a[studentSortConfig.key];
-                const bValue = b[studentSortConfig.key];
+                const aValue = a[studentSortConfig.key] || '';
+                const bValue = b[studentSortConfig.key] || '';
                 if (aValue < bValue) return studentSortConfig.direction === 'asc' ? -1 : 1;
-                if (aValue > bValue) return teacherSortConfig.direction === 'asc' ? 1 : -1;
+                if (aValue > bValue) return studentSortConfig.direction === 'asc' ? 1 : -1;
                 return 0;
             });
         }
@@ -498,7 +502,6 @@ export default function AdminDashboardPage() {
             const result = await deleteTeacher(teacherToDelete.id);
             if (result.success) {
                  toast({ title: "Teacher Deleted", description: `${teacherToDelete.name}'s guild has been removed from the system.`});
-                 // Refetch all data to update the UI correctly
                  fetchInitialData();
             } else {
                  throw new Error(result.error);
@@ -705,8 +708,7 @@ export default function AdminDashboardPage() {
                                             <TableRow>
                                                 <TableHead><Button variant="ghost" onClick={() => requestSort('className', 'teacher')}>Guild Name <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
                                                 <TableHead><Button variant="ghost" onClick={() => requestSort('name', 'teacher')}>Leader (Teacher) <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
-                                                <TableHead>Teacher UID</TableHead>
-                                                <TableHead><Button variant="ghost" onClick={() => requestSort('email', 'teacher')}>Email <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
+                                                <TableHead><Button variant="ghost" onClick={() => requestSort('contactEmail', 'teacher')}>Contact Email<ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
                                                 <TableHead><Button variant="ghost" onClick={() => requestSort('schoolName', 'teacher')}>School <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
                                                 <TableHead><Button variant="ghost" onClick={() => requestSort('studentCount', 'teacher')}>Students <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
                                                 <TableHead><Button variant="ghost" onClick={() => requestSort('createdAt', 'teacher')}>Date Created <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
@@ -722,8 +724,7 @@ export default function AdminDashboardPage() {
                                                         </Link>
                                                     </TableCell>
                                                     <TableCell>{teacher.name}</TableCell>
-                                                    <TableCell className="font-mono text-xs">{teacher.id}</TableCell>
-                                                    <TableCell>{teacher.email}</TableCell>
+                                                    <TableCell>{teacher.contactEmail || teacher.email}</TableCell>
                                                     <TableCell>{teacher.schoolName}</TableCell>
                                                     <TableCell>{teacher.studentCount}</TableCell>
                                                     <TableCell>{teacher.createdAt ? format(teacher.createdAt, 'PP') : 'N/A'}</TableCell>
@@ -990,6 +991,3 @@ export default function AdminDashboardPage() {
         </div>
     );
 }
-
-
-    

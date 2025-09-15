@@ -15,11 +15,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save, ArrowLeft, CreditCard } from 'lucide-react';
 import { updateTeacherProfile } from '@/ai/flows/manage-teacher';
+import { getGlobalSettings } from '@/ai/flows/manage-settings';
 
 interface TeacherProfile {
     name: string;
     schoolName: string;
     className: string;
+    contactEmail?: string;
+    address?: string;
 }
 
 export default function TeacherProfilePage() {
@@ -27,10 +30,11 @@ export default function TeacherProfilePage() {
     const { toast } = useToast();
 
     const [teacher, setTeacher] = useState<User | null>(null);
-    const [profile, setProfile] = useState<TeacherProfile>({ name: '', schoolName: '', className: '' });
-    const [initialProfile, setInitialProfile] = useState<TeacherProfile>({ name: '', schoolName: '', className: '' });
+    const [profile, setProfile] = useState<TeacherProfile>({ name: '', schoolName: '', className: '', contactEmail: '', address: '' });
+    const [initialProfile, setInitialProfile] = useState<TeacherProfile>({ name: '', schoolName: '', className: '', contactEmail: '', address: '' });
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isBeta, setIsBeta] = useState(false);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -43,6 +47,8 @@ export default function TeacherProfilePage() {
                     setProfile(data);
                     setInitialProfile(data);
                 }
+                const settings = await getGlobalSettings();
+                setIsBeta(settings.isFeedbackPanelVisible ?? false);
                 setIsLoading(false);
             } else {
                 router.push('/teacher/login');
@@ -67,6 +73,8 @@ export default function TeacherProfilePage() {
                 name: profile.name,
                 schoolName: profile.schoolName,
                 className: profile.className,
+                contactEmail: profile.contactEmail || '',
+                address: profile.address || '',
             });
 
             if (result.success) {
@@ -117,9 +125,18 @@ export default function TeacherProfilePage() {
                                 <Label htmlFor="name">Full Name</Label>
                                 <Input id="name" name="name" value={profile.name} onChange={handleInputChange} />
                             </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="contactEmail">Contact Email</Label>
+                                <Input id="contactEmail" name="contactEmail" type="email" value={profile.contactEmail || ''} onChange={handleInputChange} />
+                                <p className="text-xs text-muted-foreground">This does not change your login email.</p>
+                            </div>
                             <div className="space-y-2">
                                 <Label htmlFor="schoolName">School Name</Label>
                                 <Input id="schoolName" name="schoolName" value={profile.schoolName} onChange={handleInputChange} />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="address">School Address</Label>
+                                <Input id="address" name="address" value={profile.address || ''} onChange={handleInputChange} />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="className">Guild Name (Class Name)</Label>
@@ -134,12 +151,20 @@ export default function TeacherProfilePage() {
                             <CardDescription>Manage your Academy of Heroes plan.</CardDescription>
                         </CardHeader>
                         <CardContent className="flex flex-col items-start gap-4">
-                            <div className="p-4 border rounded-md w-full">
-                                <p className="font-semibold">Current Plan: <span className="text-primary">Premium</span></p>
-                                <p className="text-sm text-muted-foreground">Your plan renews on September 1, 2025.</p>
-                            </div>
-                            <Button disabled><CreditCard className="mr-2 h-4 w-4" /> Manage Subscription</Button>
-                             <p className="text-xs text-muted-foreground">Subscription management is handled by our secure third-party provider.</p>
+                            {isBeta ? (
+                                <p className="text-destructive font-bold p-4 border-l-4 border-destructive bg-destructive/10 rounded-r-md">
+                                    Subscription and payment features are disabled during the BETA testing period.
+                                </p>
+                            ) : (
+                                <>
+                                    <div className="p-4 border rounded-md w-full">
+                                        <p className="font-semibold">Current Plan: <span className="text-primary">Premium</span></p>
+                                        <p className="text-sm text-muted-foreground">Your plan renews on September 1, 2025.</p>
+                                    </div>
+                                    <Button disabled><CreditCard className="mr-2 h-4 w-4" /> Manage Subscription</Button>
+                                    <p className="text-xs text-muted-foreground">Subscription management is handled by our secure third-party provider.</p>
+                                </>
+                            )}
                         </CardContent>
                     </Card>
 
