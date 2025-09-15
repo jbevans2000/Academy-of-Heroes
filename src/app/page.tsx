@@ -107,7 +107,21 @@ export default function SplashPage() {
       <footer className="z-10 w-full max-w-5xl py-4 text-white/70 mx-auto">
           <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center text-sm">
             <p>&copy; {new Date().getFullYear()} Academy of Heroes. All rights reserved.</p>
-            <div className="flex gap-4 mt-2 sm:mt-0">
+            <div className="flex items-center gap-4 mt-4 sm:mt-0">
+                <Link href="https://www.facebook.com" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
+                    <Image src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/social%20icons%2F5841491.png?alt=media&token=f429cb50-dc5a-4e9a-bfeb-55dcc10a8a0f" alt="Facebook" width={24} height={24} />
+                </Link>
+                <Link href="https://www.youtube.com" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
+                    <Image src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/social%20icons%2F5771788.png?alt=media&token=4c41c6e3-2008-4ee0-8f0f-2781674037d2" alt="YouTube" width={24} height={24} />
+                </Link>
+                <Link href="https://www.instagram.com" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
+                    <Image src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/social%20icons%2F5772032.png?alt=media&token=30c2c0fb-2ac2-4aeb-ba5d-1f0b3f7473af" alt="Instagram" width={24} height={24} />
+                </Link>
+                 <Link href="https://www.tiktok.com" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
+                    <Image src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/social%20icons%2F3046121.png?alt=media&token=5e878042-9fa1-4703-9539-f75a31e3f9be" alt="TikTok" width={24} height={24} />
+                </Link>
+            </div>
+            <div className="flex gap-4 mt-4 sm:mt-0">
                 <Link href="/support" className="hover:text-white transition-colors">Support</Link>
                 <Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
                 <Link href="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</Link>
