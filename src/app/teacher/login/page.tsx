@@ -43,16 +43,21 @@ export default function TeacherLoginPage() {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
+        // Fetch teacher document to check for legacy status
+        const teacherDocRef = doc(db, 'teachers', user.uid);
+        const teacherDocSnap = await getDoc(teacherDocRef);
+
+        const isLegacyAccount = teacherDocSnap.exists() && teacherDocSnap.data().isLegacyAccount === true;
+
         // **** CRITICAL SECURITY CHECK ****
-        // This was missing before. We must ensure the email is verified.
-        if (!user.emailVerified) {
+        // Bypass verification only if it's a legacy account.
+        if (!user.emailVerified && !isLegacyAccount) {
             toast({
                 variant: 'destructive',
                 title: 'Email Not Verified',
                 description: 'You must verify your email address before you can log in. Please check your inbox for the verification link.',
                 duration: 8000,
             });
-            // Optionally, resend verification email here if desired
             router.push('/teacher/verify-email');
             return; // Stop the login process
         }
