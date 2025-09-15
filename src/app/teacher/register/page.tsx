@@ -126,6 +126,7 @@ export default function TeacherRegisterPage() {
             address: address,
             className: className,
             classCode: classCode, // Save the generated class code
+            isNewlyRegistered: true, // Flag for the welcome pop-up
             createdAt: serverTimestamp(),
         };
 
@@ -153,7 +154,7 @@ export default function TeacherRegisterPage() {
             title: 'Registration Almost Complete!',
             description: "We've sent a verification link to your email address.",
         });
-        router.push('/teacher/verify-email?new=true');
+        router.push('/teacher/verify-email');
 
     } catch (error: any) {
         console.error("Error creating teacher account:", error);

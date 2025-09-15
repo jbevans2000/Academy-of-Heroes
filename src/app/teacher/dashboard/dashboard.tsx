@@ -71,6 +71,7 @@ interface TeacherData {
     isDailyReminderActive?: boolean;
     dailyRegenPercentage?: number;
     lastSeenBroadcastTimestamp?: any;
+    isNewlyRegistered?: boolean;
 }
 
 type SortOrder = 'studentName' | 'characterName' | 'xp' | 'class' | 'company';
@@ -150,44 +151,44 @@ export default function Dashboard() {
         setTeacher(currentTeacher);
 
         const checkWelcomeAndBroadcast = async () => {
-            const isNewTeacher = searchParams.get('new') === 'true';
-            const settings = await getGlobalSettings();
+            const teacherRef = doc(db, 'teachers', currentTeacher.uid);
+            const teacherSnap = await getDoc(teacherRef);
+            if (!teacherSnap.exists()) return;
+            const teacherData = teacherSnap.data() as TeacherData;
 
-            if (isNewTeacher) {
-                if (settings.isFeedbackPanelVisible) {
+            if (teacherData.isNewlyRegistered) {
+                 const settings = await getGlobalSettings();
+                 if (settings.isFeedbackPanelVisible) {
                     setShowBetaWelcomeDialog(true);
                 } else {
                     setShowWelcomeDialog(true);
                 }
-            } else if (settings.broadcastMessageId) {
-                 const teacherRef = doc(db, 'teachers', currentTeacher.uid);
-                 const teacherSnap = await getDoc(teacherRef);
-                 const teacherData = teacherSnap.data() as TeacherData;
-                 const lastSeenTimestamp = teacherData?.lastSeenBroadcastTimestamp?.toDate() ?? new Date(0);
+            } else if (!isAdminPreview) {
+                 const settings = await getGlobalSettings();
+                 if (settings.broadcastMessageId) {
+                     const lastSeenTimestamp = teacherData?.lastSeenBroadcastTimestamp?.toDate() ?? new Date(0);
+                     const broadcastsRef = collection(db, 'settings', 'global', 'broadcasts');
+                     const latestBroadcastQuery = query(broadcastsRef, orderBy('sentAt', 'desc'), limit(1));
+                     const latestBroadcastSnapshot = await getDocs(latestBroadcastQuery);
 
-                 const broadcastsRef = collection(db, 'settings', 'global', 'broadcasts');
-                 const latestBroadcastQuery = query(broadcastsRef, orderBy('sentAt', 'desc'), limit(1));
-                 const latestBroadcastSnapshot = await getDocs(latestBroadcastQuery);
-
-                 if(!latestBroadcastSnapshot.empty) {
-                     const latestBroadcast = latestBroadcastSnapshot.docs[0].data();
-                     const latestTimestamp = latestBroadcast.sentAt.toDate();
-                     
-                     if (latestTimestamp > lastSeenTimestamp) {
-                         setBroadcastMessage(latestBroadcast.message);
-                         setIsBroadcastDialogOpen(true);
+                     if(!latestBroadcastSnapshot.empty) {
+                         const latestBroadcast = latestBroadcastSnapshot.docs[0].data();
+                         const latestTimestamp = latestBroadcast.sentAt.toDate();
+                         
+                         if (latestTimestamp > lastSeenTimestamp) {
+                             setBroadcastMessage(latestBroadcast.message);
+                             setIsBroadcastDialogOpen(true);
+                         }
                      }
                  }
             }
         }
         
-        if (!isAdminPreview) {
-            checkWelcomeAndBroadcast();
-        }
+        checkWelcomeAndBroadcast();
     });
 
     return () => unsubscribe();
-  }, [searchParams, router, isAdminPreview]);
+  }, [searchParams, router]);
 
   useEffect(() => {
     if (!teacher?.uid) return;
@@ -613,6 +614,16 @@ export default function Dashboard() {
           setIsSavingRegen(false);
       }
   }
+  
+  const closeWelcomeDialog = async () => {
+      setShowWelcomeDialog(false);
+      setShowBetaWelcomeDialog(false);
+      copyClassCode();
+      if(teacher) {
+        const teacherRef = doc(db, 'teachers', teacher.uid);
+        await updateDoc(teacherRef, { isNewlyRegistered: false });
+      }
+  };
 
 
   if (isLoading || !teacher) {
@@ -683,10 +694,7 @@ export default function Dashboard() {
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogAction onClick={() => {
-                        setShowWelcomeDialog(false)
-                        copyClassCode()
-                        }}>
+                    <AlertDialogAction onClick={closeWelcomeDialog}>
                         <Copy className="mr-2 h-4 w-4" /> Copy Code & Close
                     </AlertDialogAction>
                 </AlertDialogFooter>
@@ -711,7 +719,7 @@ export default function Dashboard() {
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogAction onClick={() => setShowBetaWelcomeDialog(false)}>
+                    <AlertDialogAction onClick={closeWelcomeDialog}>
                         Onward to Adventure!
                     </AlertDialogAction>
                 </AlertDialogFooter>
@@ -1169,5 +1177,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
-  
