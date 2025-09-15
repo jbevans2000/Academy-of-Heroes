@@ -111,7 +111,7 @@ export default function SplashPage() {
                 <Link href="https://www.facebook.com/profile.php?id=61579600810397" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
                     <Image src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/social%20icons%2F5841491.png?alt=media&token=f429cb50-dc5a-4e9a-bfeb-55dcc10a8a0f" alt="Facebook" width={24} height={24} />
                 </Link>
-                <Link href="https://www.youtube.com" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
+                <Link href="https://www.youtube.com/@AcademyofHeroes-t1r" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
                     <Image src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/social%20icons%2F5771788.png?alt=media&token=4c41c6e3-2008-4ee0-8f0f-2781674037d2" alt="YouTube" width={24} height={24} />
                 </Link>
                 <Link href="https://www.instagram.com" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
