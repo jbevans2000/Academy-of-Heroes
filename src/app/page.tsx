@@ -108,7 +108,7 @@ export default function SplashPage() {
           <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center text-sm">
             <p>&copy; {new Date().getFullYear()} Academy of Heroes. All rights reserved.</p>
             <div className="flex items-center gap-4 mt-4 sm:mt-0">
-                <Link href="https://www.facebook.com" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
+                <Link href="https://www.facebook.com/profile.php?id=61579600810397" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
                     <Image src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/social%20icons%2F5841491.png?alt=media&token=f429cb50-dc5a-4e9a-bfeb-55dcc10a8a0f" alt="Facebook" width={24} height={24} />
                 </Link>
                 <Link href="https://www.youtube.com" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
