@@ -130,9 +130,11 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
   const handleNextStep = () => {
       // Validate input for step 1
       if (power.name === 'Absorb') {
+          const mpNeeded = caster.maxMp - caster.mp;
+          const maxHpToConvert = Math.min(caster.hp - 1, mpNeeded * 2);
           const hpToConvert = Number(inputValue);
-          if (inputValue === '' || hpToConvert <= 0 || hpToConvert >= caster.hp) {
-              toast({ variant: 'destructive', title: 'Invalid Amount', description: `Please enter an amount of HP to convert that is less than your current HP (${caster.hp}).`});
+          if (inputValue === '' || hpToConvert <= 0 || hpToConvert > maxHpToConvert) {
+              toast({ variant: 'destructive', title: 'Invalid Amount', description: `Please enter an amount between 1 and ${maxHpToConvert} HP.`});
               return;
           }
           onConfirm([], hpToConvert); // Absorb is now a single step
@@ -149,7 +151,9 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
 
     const renderStep1 = () => {
         if (power.name === 'Absorb') {
-            const maxConvert = caster.hp - 1;
+            const mpNeeded = caster.maxMp - caster.mp;
+            const maxHpToConvert = Math.min(caster.hp - 1, mpNeeded * 2);
+            
             return (
                 <>
                     <DialogHeader>
@@ -157,8 +161,9 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
                         <DialogDescription>How many hit points do you want to convert into magic points? The cost is 2 HP for every 1 MP gained.</DialogDescription>
                     </DialogHeader>
                      <div className="py-4">
-                        <Label htmlFor="absorb-amount">HP to Convert (1 - {maxConvert})</Label>
-                        <Input id="absorb-amount" type="number" value={inputValue} onChange={e => setInputValue(Number(e.target.value))} />
+                        <Label htmlFor="absorb-amount">HP to Convert (Max: {maxHpToConvert})</Label>
+                        <Input id="absorb-amount" type="number" value={inputValue} onChange={e => setInputValue(Number(e.target.value))} max={maxHpToConvert} />
+                        <p className="text-sm text-muted-foreground mt-1">You need {mpNeeded} MP to be full. You can convert up to {maxHpToConvert} HP.</p>
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
