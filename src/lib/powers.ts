@@ -1,4 +1,5 @@
 
+
 export type PowerType = 'damage' | 'support' | 'healing' | 'utility';
 
 export interface Power {
@@ -169,7 +170,7 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Solar Empowerment',
-      description: 'You intertwine the light of the sun into the energies of 3 allied mages. Their maximum hit points temporarily increase for the duration of the battle.',
+      description: 'You intertwine the light of the sun into the energies of up to 3 allied Mages, temporarily increasing their Max HP by 50% of your level (rounded up) for the duration of the battle.',
       level: 4,
       mpCost: 8,
       type: 'support',

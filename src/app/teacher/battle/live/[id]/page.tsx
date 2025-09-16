@@ -73,7 +73,7 @@ interface LiveBattleState {
   powerUsersThisRound?: { [key: string]: string[] }; // { studentUid: [powerName, ...] }
   queuedPowers?: QueuedPower[];
   fallenPlayerUids?: string[];
-  empoweredMageUids?: string[]; // For Solar Empowerment
+  empoweredMages?: { mageUid: string; casterUid: string; }[];
   divineJudgmentUses?: { [studentUid: string]: number };
   voteState?: VoteState | null; 
   sorcerersIntuitionUses?: { [key: string]: number }; // For Sorcerer's Intuition
@@ -416,13 +416,11 @@ export default function TeacherLiveBattlePage() {
         const currentlyFallenUids = finalLiveState.fallenPlayerUids || [];
 
         // 3. Revert Solar Empowerment before calculating final rewards
-        const empoweredMages = allStudents.filter(s => (finalLiveState.empoweredMageUids || []).includes(s.uid));
-        for (const mage of empoweredMages) {
-            const solarPower = classPowers.Healer.find(p => p.name === 'Solar Empowerment');
-            if (solarPower) {
-                const casterLevel = allStudents.find(s => s.class === 'Healer')?.level || 1; // Simplification, assumes one healer or first one found
-                const buffAmount = Math.ceil(casterLevel * 0.25);
-                const studentRef = doc(db, 'teachers', teacherUid, 'students', mage.uid);
+        if (finalLiveState.empoweredMages) {
+            for (const empowered of finalLiveState.empoweredMages) {
+                const casterData = allStudents.find(s => s.uid === empowered.casterUid);
+                const buffAmount = Math.ceil((casterData?.level || 1) * 0.50);
+                const studentRef = doc(db, 'teachers', teacherUid, 'students', empowered.mageUid);
                 batch.update(studentRef, { maxHp: increment(-buffAmount) });
             }
         }
@@ -1081,19 +1079,20 @@ export default function TeacherLiveBattlePage() {
                     if (!activation.targets || activation.targets.length === 0) return;
                     const powerDef = classPowers.Healer.find(p => p.name === 'Solar Empowerment');
                     const maxTargets = powerDef?.targetCount || 1;
-                    const roll1 = Math.floor(Math.random() * 6) + 1;
-                    const roll2 = Math.floor(Math.random() * 6) + 1;
-                    const totalBoost = roll1 + roll2 + (studentData.level || 1);
+                    const totalBoost = Math.ceil((studentData.level || 1) * 0.50);
                     const boostPerTarget = Math.ceil(totalBoost / maxTargets);
                     const targetNames: string[] = [];
-                    for (const targetUid of activation.targets) {
+                    const empoweredMagesPayload = activation.targets.map(targetUid => {
+                        const targetData = allStudents.find(s => s.uid === targetUid);
+                        if(targetData) targetNames.push(targetData.characterName);
                         const targetRef = doc(db, 'teachers', teacherUid!, 'students', targetUid);
                         batch.update(targetRef, { hp: increment(boostPerTarget), maxHp: increment(boostPerTarget) });
-                        const targetDoc = await getDoc(targetRef);
-                        if(targetDoc.exists()) targetNames.push(targetDoc.data().characterName);
-                    }
-                    batch.update(liveBattleRef, { empoweredMageUids: arrayUnion(...activation.targets), powerEventMessage: `${activation.studentName} has cast Solar Empowerment! ${targetNames.length} Mages begin to shine with the light of the sun!` });
+                        return { mageUid: targetUid, casterUid: activation.studentUid };
+                    });
+                    
+                    batch.update(liveBattleRef, { empoweredMages: arrayUnion(...empoweredMagesPayload), powerEventMessage: `${activation.studentName} has cast Solar Empowerment! ${targetNames.length} Mages begin to shine with the light of the sun!` });
                     batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: activation.studentName, powerName: activation.powerName, description: `Empowered ${targetNames.join(', ')}.`, timestamp: serverTimestamp() });
+
                 } else if (activation.powerName === 'Divine Judgment') {
                     const individualCasts = battleData.divineJudgmentUses?.[activation.studentUid] || 0;
                     const totalCasts = Object.values(battleData.divineJudgmentUses || {}).reduce((a, b) => a + b, 0);
@@ -1291,7 +1290,7 @@ export default function TeacherLiveBattlePage() {
         totalBaseDamage: 0,
         totalPowerDamage: 0,
         fallenPlayerUids: initiallyFallenUids,
-        empoweredMageUids: [],
+        empoweredMages: [],
         divineJudgmentUses: {},
         sorcerersIntuitionUses: {},
         elementalFusionCasts: {},
