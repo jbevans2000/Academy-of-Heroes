@@ -80,7 +80,13 @@ export default function WorldMapPage() {
         fetchHubs();
     }, [teacherUid]);
 
-    const unlockedHubs = student ? hubs.filter(hub => hub.hubOrder <= (student.hubsCompleted || 0) + 1) : [];
+    const unlockedHubs = student
+      ? hubs.filter(hub => {
+          const isVisible = hub.isVisibleToAll ?? true;
+          if (isVisible) return true;
+          return hub.assignedCompanyIds?.includes(student.companyId || '') ?? false;
+      })
+      : [];
 
     return (
         <div className="relative flex flex-col items-center justify-start bg-background p-2">
@@ -106,12 +112,15 @@ export default function WorldMapPage() {
                             className="object-contain"
                             priority
                          />
-                         {isLoading ? (
+                         {isLoading || !student ? (
                             <div className="absolute inset-0 flex items-center justify-center">
                                <Skeleton className="w-24 h-8" />
                             </div>
                          ) : (
-                            unlockedHubs.map(hub => (
+                            unlockedHubs.map(hub => {
+                                const isUnlocked = hub.hubOrder <= (student.hubsCompleted || 0) + 1;
+                                if (!isUnlocked) return null;
+                                return (
                                 <Link key={hub.id} href={`/dashboard/map/${hub.id}`} passHref>
                                     <div
                                         className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
@@ -126,7 +135,7 @@ export default function WorldMapPage() {
                                         <div className="w-5 h-5 bg-yellow-400 rounded-full ring-2 ring-white shadow-xl animate-pulse-glow"></div>
                                     </div>
                                 </Link>
-                            ))
+                            )})
                          )}
                     </div>
                 </CardContent>
