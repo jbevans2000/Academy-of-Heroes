@@ -291,11 +291,6 @@ export default function TeacherLiveBattlePage() {
       if (docSnap.exists()) {
         const newState = docSnap.data() as LiveBattleState;
         setLiveState(newState);
-        // This logic was causing a premature redirect. It's now handled inside handleEndBattleAndAggregate.
-        // if (newState.status === 'BATTLE_ENDED' && newState.parentArchiveId) {
-        //     router.push(`/teacher/battle/summary/${newState.parentArchiveId}`);
-        //     return;
-        // }
       } else {
         router.push('/teacher/battles');
       }
@@ -918,7 +913,7 @@ export default function TeacherLiveBattlePage() {
   useEffect(() => {
     if (!liveState || !battle || !teacherUid || (liveState.status !== 'IN_PROGRESS' && liveState.status !== 'ROUND_ENDING')) return;
     
-    const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles/active-battle/liveState');
+    const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
     const powerActivationsRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/powerActivations');
     const q = query(powerActivationsRef);
 
