@@ -177,7 +177,7 @@ export default function TeacherBattleSummaryPage() {
     );
   }
 
-  const roundKeys = Object.keys(summary.responsesByRound);
+  const roundKeys = summary.responsesByRound ? Object.keys(summary.responsesByRound) : [];
   
   const battleLogByRound: { [round: number]: PowerLogEntry[] } = {};
     if (summary.powerLog) {
@@ -288,7 +288,7 @@ export default function TeacherBattleSummaryPage() {
                                         <ul className="space-y-2 py-2 px-4 bg-secondary/50 rounded-md">
                                             {roundData.responses.map(res => (
                                                 <li key={res.studentUid} className="flex items-center justify-between p-2 rounded bg-background">
-                                                    <span className="font-medium">{res.studentName}</span>
+                                                    <span className="font-medium">{res.characterName}</span>
                                                     <div className="flex items-center gap-2">
                                                         <span>{question.answers[res.answerIndex]}</span>
                                                         {res.isCorrect ? <CheckCircle className="text-green-500" /> : <XCircle className="text-red-500" />}
