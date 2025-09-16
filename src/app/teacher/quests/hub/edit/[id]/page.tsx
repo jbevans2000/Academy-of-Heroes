@@ -7,20 +7,20 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ArrowLeft, Loader2, Save, Upload, X, Library, Star, Coins } from 'lucide-react';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, getDocs } from 'firebase/firestore';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { QuestHub } from '@/lib/quests';
+import type { QuestHub, Company } from '@/lib/quests';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { v4 as uuidv4 } from 'uuid';
 import { cn } from '@/lib/utils';
 import { MapGallery } from '@/components/teacher/map-gallery';
-import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const defaultWorldMap = "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FWorld%20Map.JPG?alt=media&token=2d88af7d-a54c-4f34-b4c7-1a7c04485b8b";
 
@@ -106,8 +106,11 @@ export default function EditQuestHubPage() {
     const [teacherWorldMapUrl, setTeacherWorldMapUrl] = useState(defaultWorldMap);
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
     
-    // Hub State
+    // Hub and company state
     const [hub, setHub] = useState<Partial<QuestHub> | null>(null);
+    const [companies, setCompanies] = useState<Company[]>([]);
+    const [assignedCompanyIds, setAssignedCompanyIds] = useState<string[]>([]);
+    const [isVisibleToAll, setIsVisibleToAll] = useState(true);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -120,22 +123,34 @@ export default function EditQuestHubPage() {
         return () => unsubscribe();
     }, [router]);
 
-    // Fetch Hub data and teacher's world map
+    // Fetch Hub data, companies and teacher's world map
     useEffect(() => {
         if (!hubId || !teacher) return;
-        const fetchHubData = async () => {
+        const fetchData = async () => {
             setIsLoading(true);
             try {
+                // Fetch Hub
                 const hubRef = doc(db, 'teachers', teacher.uid, 'questHubs', hubId);
                 const hubSnap = await getDoc(hubRef);
 
                 if (hubSnap.exists()) {
-                    setHub({ id: hubSnap.id, ...hubSnap.data() });
+                    const hubData = { id: hubSnap.id, ...hubSnap.data() } as QuestHub;
+                    setHub(hubData);
+                    // Initialize visibility state from fetched data
+                    setAssignedCompanyIds(hubData.assignedCompanyIds || []);
+                    setIsVisibleToAll(hubData.isVisibleToAll ?? true);
                 } else {
                     toast({ variant: 'destructive', title: 'Not Found', description: 'This hub could not be found.' });
                     router.push('/teacher/quests');
                 }
 
+                // Fetch Companies
+                const companiesQuery = collection(db, 'teachers', teacher.uid, 'companies');
+                const companiesSnapshot = await getDocs(companiesQuery);
+                setCompanies(companiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company)));
+
+
+                // Fetch Teacher World Map
                 const teacherRef = doc(db, 'teachers', teacher.uid);
                 const teacherSnap = await getDoc(teacherRef);
                 if (teacherSnap.exists() && teacherSnap.data().worldMapUrl) {
@@ -143,13 +158,13 @@ export default function EditQuestHubPage() {
                 }
 
             } catch (error) {
-                console.error("Error fetching hub data:", error);
+                console.error("Error fetching data:", error);
                 toast({ variant: 'destructive', title: 'Error', description: 'Failed to load hub data.' });
             } finally {
                 setIsLoading(false);
             }
         }
-        fetchHubData();
+        fetchData();
     }, [hubId, router, toast, teacher]);
 
     const handleFieldChange = (field: keyof QuestHub, value: any) => {
@@ -175,6 +190,12 @@ export default function EditQuestHubPage() {
         document.addEventListener('mouseup', stopDragging);
     };
 
+    const handleCompanyCheckboxChange = (companyId: string, checked: boolean) => {
+        setAssignedCompanyIds(prev => 
+            checked ? [...prev, companyId] : prev.filter(id => id !== companyId)
+        );
+    };
+
     const handleSaveChanges = async () => {
         if (!hub?.name || hub?.hubOrder === undefined || !teacher || !hub.id) {
             toast({ variant: 'destructive', title: 'Validation Error', description: 'Hub name and order are required.' });
@@ -183,7 +204,7 @@ export default function EditQuestHubPage() {
         setIsSaving(true);
         try {
             const hubRef = doc(db, 'teachers', teacher.uid, 'questHubs', hub.id);
-            const dataToSave = {
+            const dataToSave: Partial<QuestHub> = {
                 name: hub.name,
                 hubOrder: hub.hubOrder,
                 worldMapUrl: hub.worldMapUrl,
@@ -191,6 +212,8 @@ export default function EditQuestHubPage() {
                 areRewardsEnabled: hub.areRewardsEnabled ?? false,
                 rewardXp: hub.rewardXp ?? 0,
                 rewardGold: hub.rewardGold ?? 0,
+                isVisibleToAll,
+                assignedCompanyIds: isVisibleToAll ? [] : assignedCompanyIds,
             };
 
             await updateDoc(hubRef, dataToSave);
@@ -289,6 +312,41 @@ export default function EditQuestHubPage() {
                                         )}
                                     </div>
                                 </div>
+
+                                <Card className="bg-secondary/50">
+                                    <CardHeader>
+                                        <CardTitle>Hub Visibility</CardTitle>
+                                        <CardDescription>Control which companies can access the chapters in this hub.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox
+                                                id="visible-to-all"
+                                                checked={isVisibleToAll}
+                                                onCheckedChange={(checked) => setIsVisibleToAll(!!checked)}
+                                            />
+                                            <Label htmlFor="visible-to-all">Visible to All Students</Label>
+                                        </div>
+                                        
+                                        {!isVisibleToAll && (
+                                            <div className="space-y-2 pt-4 border-t animate-in fade-in-50">
+                                                <h4 className="font-semibold">Assign to Companies:</h4>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {companies.map(company => (
+                                                        <div key={company.id} className="flex items-center space-x-2">
+                                                            <Checkbox
+                                                                id={`company-${company.id}`}
+                                                                checked={assignedCompanyIds.includes(company.id)}
+                                                                onCheckedChange={(checked) => handleCompanyCheckboxChange(company.id, !!checked)}
+                                                            />
+                                                            <Label htmlFor={`company-${company.id}`}>{company.name}</Label>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
                                 
                                 <Card className="bg-secondary/50">
                                     <CardHeader>
@@ -334,5 +392,3 @@ export default function EditQuestHubPage() {
         </>
     )
 }
-
-    

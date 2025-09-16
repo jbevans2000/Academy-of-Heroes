@@ -14,28 +14,20 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { QuestHub, Chapter, QuizQuestion, Quiz } from '@/lib/quests';
+import { QuestHub, Chapter, QuizQuestion, Quiz, Company } from '@/lib/quests';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RichTextEditor from '@/components/teacher/rich-text-editor';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { v4 as uuidv4 } from 'uuid';
 import { cn } from '@/lib/utils';
 import { MapGallery } from '@/components/teacher/map-gallery';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
 import { generateStory } from '@/ai/flows/story-generator';
+import { Checkbox } from '@/components/ui/checkbox';
+
 
 // A reusable component for the image upload fields
 const ImageUploader = ({ label, imageUrl, onUploadSuccess, teacherUid, storagePath, onGalleryOpen }: {
@@ -124,14 +116,19 @@ function NewQuestForm() {
   const [isGeneratingStory, setIsGeneratingStory] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
 
-  // State for the new Hub creator
+  // State for Hubs and Companies
   const [hubs, setHubs] = useState<QuestHub[]>([]);
   const [chaptersInHub, setChaptersInHub] = useState<Chapter[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  
+  // State for the new Hub creator
   const [selectedHubId, setSelectedHubId] = useState('');
   const [newHubName, setNewHubName] = useState('');
   const [newHubMapUrl, setNewHubMapUrl] = useState('');
   const [newHubOrder, setNewHubOrder] = useState<number>(1);
   const [hubCoordinates, setHubCoordinates] = useState({ x: 50, y: 50 });
+  const [hubIsVisibleToAll, setHubIsVisibleToAll] = useState(true);
+  const [hubAssignedCompanyIds, setHubAssignedCompanyIds] = useState<string[]>([]);
 
   // State for the new Chapter creator
   const [chapterTitle, setChapterTitle] = useState('');
@@ -181,6 +178,12 @@ function NewQuestForm() {
             const hubsData = hubsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
             setHubs(hubsData);
             setNewHubOrder(hubsData.length + 1);
+            
+            // Fetch Companies
+            const companiesQuery = collection(db, 'teachers', teacher.uid, 'companies');
+            const companiesSnapshot = await getDocs(companiesQuery);
+            setCompanies(companiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company)));
+
 
             // Fetch Teacher's custom world map
             const teacherRef = doc(db, 'teachers', teacher.uid);
@@ -189,7 +192,6 @@ function NewQuestForm() {
                 setTeacherWorldMapUrl(teacherSnap.data().worldMapUrl);
             }
 
-            // Check for hubId from query params to pre-select it
             const preselectedHubId = searchParams.get('hubId');
             if (preselectedHubId) {
                 setSelectedHubId(preselectedHubId);
@@ -309,7 +311,6 @@ function NewQuestForm() {
     try {
         let finalHubId = selectedHubId;
 
-        // Create a new hub if 'new' is selected
         if (selectedHubId === 'new' || isHubOnlyMode) {
             const newHubRef = doc(collection(db, 'teachers', teacher.uid, 'questHubs'));
             await setDoc(newHubRef, {
@@ -318,11 +319,12 @@ function NewQuestForm() {
                 coordinates: hubCoordinates,
                 hubOrder: newHubOrder,
                 createdAt: serverTimestamp(),
+                isVisibleToAll: hubIsVisibleToAll,
+                assignedCompanyIds: hubIsVisibleToAll ? [] : hubAssignedCompanyIds
             });
             finalHubId = newHubRef.id;
             toast({ title: 'Hub Created!', description: 'The new quest hub has been added to your world map.' });
             
-            // If we are in hub-only mode, we are done.
             if (isHubOnlyMode) {
                 router.push('/teacher/quests');
                 return;
@@ -359,7 +361,6 @@ function NewQuestForm() {
             };
         }
 
-        // Create the new chapter
         await addDoc(collection(db, 'teachers', teacher.uid, 'chapters'), chapterData);
         
         toast({
@@ -377,6 +378,12 @@ function NewQuestForm() {
     }
   }
   
+    const handleHubCompanyCheckboxChange = (companyId: string, checked: boolean) => {
+        setHubAssignedCompanyIds(prev => 
+            checked ? [...prev, companyId] : prev.filter(id => id !== companyId)
+        );
+    };
+
     if (isLoading) {
         return (
              <div className="flex min-h-screen w-full flex-col bg-muted/40"><TeacherHeader /><main className="flex-1 p-4 md:p-6 lg:p-8"><Loader2 className="mx-auto h-12 w-12 animate-spin" /></main></div>
@@ -489,6 +496,34 @@ function NewQuestForm() {
                                       >
                                           <div className="w-5 h-5 bg-yellow-400 rounded-full ring-2 ring-white shadow-xl animate-pulse-glow"></div>
                                       </div>
+                                  </div>
+                                  <div className="space-y-2 pt-4 border-t">
+                                    <h4 className="font-semibold">Hub Visibility</h4>
+                                     <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                            id="visible-to-all-hub"
+                                            checked={hubIsVisibleToAll}
+                                            onCheckedChange={(checked) => setHubIsVisibleToAll(!!checked)}
+                                        />
+                                        <Label htmlFor="visible-to-all-hub">Visible to All Students</Label>
+                                    </div>
+                                    {!hubIsVisibleToAll && (
+                                        <div className="space-y-2 pl-2">
+                                            <Label>Assign to specific companies:</Label>
+                                            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                                                {companies.map(company => (
+                                                    <div key={company.id} className="flex items-center space-x-2">
+                                                        <Checkbox
+                                                            id={`company-hub-${company.id}`}
+                                                            checked={hubAssignedCompanyIds.includes(company.id)}
+                                                            onCheckedChange={(checked) => handleHubCompanyCheckboxChange(company.id, !!checked)}
+                                                        />
+                                                        <Label htmlFor={`company-hub-${company.id}`}>{company.name}</Label>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                   </div>
                               </div>
                           )}
@@ -661,5 +696,3 @@ export default function NewQuestPage() {
         </Suspense>
     )
 }
-
-    

@@ -14,6 +14,12 @@ export interface Quiz {
     };
 }
 
+export type Company = {
+    id: string;
+    name: string;
+    logoUrl?: string;
+}
+
 export interface QuestHub {
     id: string;
     name: string;
@@ -25,6 +31,9 @@ export interface QuestHub {
     areRewardsEnabled?: boolean;
     rewardXp?: number;
     rewardGold?: number;
+    // New Visibility Fields
+    isVisibleToAll?: boolean;
+    assignedCompanyIds?: string[];
 }
 
 export interface Chapter {
