@@ -965,6 +965,7 @@ export default function TeacherLiveBattlePage() {
                             powerEventMessage: `${activation.studentName} has sacrificed their life force, unleashing a wave of raw magical power that empowers the party!`,
                             targetedEvent: { targetUid: activation.studentUid, message: "You pull upon the leylines, letting an overwhelming surge of arcane energy flow through you and into your allies before your vision fades to black."}
                         });
+                        batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: activation.studentName, powerName: activation.powerName, description: 'Made the Arcane Sacrifice to empower their allies.', timestamp: serverTimestamp() });
                         batch.update(studentRef, { hp: 0, mp: 0 });
                     }
                 } else if (activation.powerName === 'Divine Sacrifice') {
@@ -986,6 +987,7 @@ export default function TeacherLiveBattlePage() {
                             powerEventMessage: `${activation.studentName} has made the Divine Sacrifice! A wave of healing light washes over the party, strengthening their resolve!`,
                             targetedEvent: { targetUid: activation.studentUid, message: "You channel all of your life's energy into a final, selfless act, sending a wave of pure vitality to your allies as your spirit departs the battlefield." }
                         });
+                        batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: activation.studentName, powerName: activation.powerName, description: 'Made the Divine Sacrifice to empower their allies.', timestamp: serverTimestamp() });
                         batch.update(studentRef, { hp: 0, mp: 0 });
                     }
                 } else if (activation.powerName === 'Wildfire') {
