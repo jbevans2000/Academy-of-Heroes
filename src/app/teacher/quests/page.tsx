@@ -351,7 +351,7 @@ export default function QuestsPage() {
                         {hubs.map(hub => {
                             const hubChapters = chapters.filter(c => c.hubId === hub.id).sort((a,b) => a.chapterNumber - b.chapterNumber);
                             const assignedCompanies = hub.assignedCompanyIds?.map(id => companies.find(c => c.id === id)?.name).filter(Boolean);
-                            const visibilityText = hub.isVisibleToAll === false && assignedCompanies && assignedCompanies.length > 0
+                            const visibilityText = (hub.isVisibleToAll === false && assignedCompanies && assignedCompanies.length > 0)
                                 ? assignedCompanies.join(', ')
                                 : "All Students";
 
@@ -362,10 +362,6 @@ export default function QuestsPage() {
                                             Hub: {hub.name}
                                         </AccordionTrigger>
                                         <div className="flex items-center gap-4 pr-4">
-                                            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                                                <Users className="h-4 w-4" />
-                                                <span className="truncate max-w-xs">{visibilityText}</span>
-                                            </div>
                                             <Button variant="outline" size="sm" onClick={() => router.push(`/teacher/quests/hub/edit/${hub.id}`)}>
                                                 <Edit className="mr-2 h-4 w-4" /> Edit Hub
                                             </Button>
@@ -381,47 +377,53 @@ export default function QuestsPage() {
                                         </div>
                                     </div>
                                     <AccordionContent>
-                                        {hubChapters.length > 0 ? (
-                                            <ul className="space-y-2 pl-4">
-                                                {hubChapters.map(chapter => (
-                                                    <li key={chapter.id} className="flex items-center justify-between p-3 rounded-md bg-secondary">
-                                                        <span className="font-medium">Chapter {chapter.chapterNumber}: {chapter.title}</span>
-                                                        <div className="flex items-center gap-2">
-                                                            <Button variant="outline" size="sm" onClick={() => router.push(`/dashboard/map/${hub.id}/${chapter.id}?preview=true`)}>
-                                                                <Eye className="mr-2 h-4 w-4" /> Preview
-                                                            </Button>
-                                                            <Button variant="outline" size="sm" onClick={() => router.push(`/teacher/quests/edit/${chapter.id}`)}>
-                                                                <Edit className="mr-2 h-4 w-4" /> Edit
-                                                            </Button>
-                                                            <AlertDialog>
-                                                                <AlertDialogTrigger asChild>
-                                                                    <Button variant="destructive" size="sm" disabled={isDeleting === chapter.id}>
-                                                                        {isDeleting === chapter.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                                                                         Delete
-                                                                    </Button>
-                                                                </AlertDialogTrigger>
-                                                                <AlertDialogContent>
-                                                                    <AlertDialogHeader>
-                                                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                                                        <AlertDialogDescription>
-                                                                            This action cannot be undone. This will permanently delete the chapter "{chapter.title}".
-                                                                        </AlertDialogDescription>
-                                                                    </AlertDialogHeader>
-                                                                    <AlertDialogFooter>
-                                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                                        <AlertDialogAction onClick={() => handleDeleteChapter(chapter.id)}>
-                                                                            Yes, delete chapter
-                                                                        </AlertDialogAction>
-                                                                    </AlertDialogFooter>
-                                                                </AlertDialogContent>
-                                                            </AlertDialog>
-                                                        </div>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        ) : (
-                                            <p className="pl-4 text-muted-foreground">No chapters have been created for this hub yet.</p>
-                                        )}
+                                        <div className="pl-4 space-y-2">
+                                            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground pb-2">
+                                                <Users className="h-4 w-4" />
+                                                <span>Visible to: {visibilityText}</span>
+                                            </div>
+                                            {hubChapters.length > 0 ? (
+                                                <ul className="space-y-2">
+                                                    {hubChapters.map(chapter => (
+                                                        <li key={chapter.id} className="flex items-center justify-between p-3 rounded-md bg-secondary">
+                                                            <span className="font-medium">Chapter {chapter.chapterNumber}: {chapter.title}</span>
+                                                            <div className="flex items-center gap-2">
+                                                                <Button variant="outline" size="sm" onClick={() => router.push(`/dashboard/map/${hub.id}/${chapter.id}?preview=true`)}>
+                                                                    <Eye className="mr-2 h-4 w-4" /> Preview
+                                                                </Button>
+                                                                <Button variant="outline" size="sm" onClick={() => router.push(`/teacher/quests/edit/${chapter.id}`)}>
+                                                                    <Edit className="mr-2 h-4 w-4" /> Edit
+                                                                </Button>
+                                                                <AlertDialog>
+                                                                    <AlertDialogTrigger asChild>
+                                                                        <Button variant="destructive" size="sm" disabled={isDeleting === chapter.id}>
+                                                                            {isDeleting === chapter.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                                                                            Delete
+                                                                        </Button>
+                                                                    </AlertDialogTrigger>
+                                                                    <AlertDialogContent>
+                                                                        <AlertDialogHeader>
+                                                                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                                            <AlertDialogDescription>
+                                                                                This action cannot be undone. This will permanently delete the chapter "{chapter.title}".
+                                                                            </AlertDialogDescription>
+                                                                        </AlertDialogHeader>
+                                                                        <AlertDialogFooter>
+                                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                            <AlertDialogAction onClick={() => handleDeleteChapter(chapter.id)}>
+                                                                                Yes, delete chapter
+                                                                            </AlertDialogAction>
+                                                                        </AlertDialogFooter>
+                                                                    </AlertDialogContent>
+                                                                </AlertDialog>
+                                                            </div>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            ) : (
+                                                <p className="pl-4 text-muted-foreground">No chapters have been created for this hub yet.</p>
+                                            )}
+                                        </div>
                                     </AccordionContent>
                                 </AccordionItem>
                             )
