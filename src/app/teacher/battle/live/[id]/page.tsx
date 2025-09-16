@@ -416,17 +416,22 @@ export default function TeacherLiveBattlePage() {
         const currentlyFallenUids = finalLiveState.fallenPlayerUids || [];
 
         // 3. Revert Solar Empowerment before calculating final rewards
+        const studentDataMap = new Map(allStudents.map(doc => [doc.uid, doc as Student]));
+
         if (finalLiveState.empoweredMages) {
             for (const empowered of finalLiveState.empoweredMages) {
-                const casterData = allStudents.find(s => s.uid === empowered.casterUid);
-                const buffAmount = Math.ceil((casterData?.level || 1) * 0.50);
-                const studentRef = doc(db, 'teachers', teacherUid, 'students', empowered.mageUid);
-                batch.update(studentRef, { maxHp: increment(-buffAmount) });
+                const casterData = studentDataMap.get(empowered.casterUid);
+                if (casterData) {
+                    const buffAmount = Math.ceil((casterData.level || 1) * 0.50);
+                    const studentRef = doc(db, 'teachers', teacherUid, 'students', empowered.mageUid);
+                    batch.update(studentRef, { maxHp: increment(-buffAmount) });
+                }
             }
         }
         
-        const studentDocs = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
-        const studentDataMap = new Map(studentDocs.docs.map(doc => [doc.id, doc.data() as Student]));
+        // Fetch student data again after potential updates to ensure accuracy for level-up calcs
+        const updatedStudentDocs = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
+        const updatedStudentDataMap = new Map(updatedStudentDocs.docs.map(doc => [doc.id, doc.data() as Student]));
 
 
         // 4. Calculate final rewards for each participant
@@ -490,7 +495,7 @@ export default function TeacherLiveBattlePage() {
                 divineSacrificeBonus: wasDivineSacrificeUsed,
             };
 
-            const studentData = studentDataMap.get(uid);
+            const studentData = updatedStudentDataMap.get(uid);
              if (studentData && !currentlyFallenUids.includes(uid) && !sacrificedPlayerUids.includes(uid)) {
                  const studentRef = doc(db, 'teachers', teacherUid, 'students', uid);
                  const currentXp = studentData.xp || 0;
@@ -1085,20 +1090,18 @@ export default function TeacherLiveBattlePage() {
                     }
                 } else if (activation.powerName === 'Solar Empowerment') {
                     if (!activation.targets || activation.targets.length === 0) return;
-                    const powerDef = classPowers.Healer.find(p => p.name === 'Solar Empowerment');
-                    const maxTargets = powerDef?.targetCount || 1;
-                    const totalBoost = Math.ceil((studentData.level || 1) * 0.50);
-                    const boostPerTarget = Math.ceil(totalBoost / maxTargets);
+                    
+                    const boostAmount = Math.ceil((studentData.level || 1) * 0.50);
                     const targetNames: string[] = [];
                     const empoweredMagesPayload = activation.targets.map(targetUid => {
                         const targetData = allStudents.find(s => s.uid === targetUid);
                         if(targetData) targetNames.push(targetData.characterName);
                         const targetRef = doc(db, 'teachers', teacherUid!, 'students', targetUid);
-                        batch.update(targetRef, { hp: increment(boostPerTarget), maxHp: increment(boostPerTarget) });
+                        batch.update(targetRef, { hp: increment(boostAmount), maxHp: increment(boostAmount) });
                         return { mageUid: targetUid, casterUid: activation.studentUid };
                     });
                     
-                    batch.update(liveBattleRef, { empoweredMages: arrayUnion(...empoweredMagesPayload), powerEventMessage: `${activation.studentName} has cast Solar Empowerment! ${targetNames.length} Mages begin to shine with the light of the sun!` });
+                    batch.update(liveBattleRef, { empoweredMages: arrayUnion(...empoweredMagesPayload), powerEventMessage: `${activation.studentName} has cast Solar Empowerment! ${targetNames.join(', ')} begin to shine with the light of the sun!` });
                     batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: activation.studentName, powerName: activation.powerName, description: `Empowered ${targetNames.join(', ')}.`, timestamp: serverTimestamp() });
 
                 } else if (activation.powerName === 'Divine Judgment') {

@@ -64,7 +64,7 @@ export const classPowers: ClassPowers = {
     },
      {
       name: 'Arcane Shield',
-      description: 'A barrier of arcane energy enfolds 3 allies of your choice for the next 2 rounds, protecting them from damage.',
+      description: 'A barrier of arcane energy enfolds 3 allies of your choice for 2 rounds, protecting them from all damage.',
       level: 15,
       mpCost: 24,
       type: 'support',
@@ -170,7 +170,7 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Solar Empowerment',
-      description: "You intertwine the light of the sun into the energies of up to 3 allied Mages, temporarily increasing their Max HP by 50% of your level (rounded up) for the duration of the battle.",
+      description: "You intertwine the light of the sun into the energies of up to 3 allied Mages, temporarily increasing each target's Max HP and current HP by 50% of your level (rounded up) for the duration of the battle.",
       level: 4,
       mpCost: 8,
       type: 'support',
