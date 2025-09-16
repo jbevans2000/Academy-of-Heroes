@@ -11,7 +11,7 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Star, Coins, ShieldCheck, Sparkles, ScrollText, Trash2, Loader2, Swords, Shield } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Star, Coins, ShieldCheck, Sparkles, ScrollText, Trash2, Loader2, Swords, Shield, Skull } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -32,6 +32,18 @@ interface Question {
   correctAnswerIndex: number;
 }
 
+interface RoundSnapshot {
+    id: string;
+    currentQuestionIndex: number;
+    responses: {
+        studentUid: string;
+        characterName: string;
+        answerIndex: number;
+        isCorrect: boolean;
+    }[];
+    lastRoundPowersUsed?: string[];
+}
+
 interface PowerLogEntry {
     round: number;
     casterName: string;
@@ -43,17 +55,6 @@ interface SavedBattle {
   id: string; // The unique ID of this summary document
   battleId: string; // The ID of the original battle template
   battleName: string;
-  questions: Question[];
-  responsesByRound: {
-    [roundIndex: string]: {
-      responses: {
-        studentUid: string;
-        studentName: string;
-        answerIndex: number;
-        isCorrect: boolean;
-      }[];
-    };
-  };
   powerLog?: PowerLogEntry[];
   totalDamage?: number;
   totalBaseDamage?: number;
@@ -67,6 +68,8 @@ export default function TeacherBattleSummaryPage() {
   const savedBattleId = params.id as string;
 
   const [summary, setSummary] = useState<SavedBattle | null>(null);
+  const [allRounds, setAllRounds] = useState<RoundSnapshot[]>([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCleaning, setIsCleaning] = useState(false);
   const [teacher, setTeacher] = useState<User | null>(null);
@@ -89,10 +92,26 @@ export default function TeacherBattleSummaryPage() {
     const fetchSummary = async () => {
       setIsLoading(true);
       const summaryRef = doc(db, 'teachers', teacher.uid, 'savedBattles', savedBattleId);
-      const docSnap = await getDoc(summaryRef);
+      const summarySnap = await getDoc(summaryRef);
 
-      if (docSnap.exists()) {
-        setSummary({ id: docSnap.id, ...docSnap.data() } as SavedBattle);
+      if (summarySnap.exists()) {
+        const summaryData = { id: summarySnap.id, ...summarySnap.data() } as SavedBattle;
+        setSummary(summaryData);
+        
+        // Fetch original battle for questions
+        const battleTemplateRef = doc(db, 'teachers', teacher.uid, 'bossBattles', summaryData.battleId);
+        const battleTemplateSnap = await getDoc(battleTemplateRef);
+        if (battleTemplateSnap.exists()) {
+            setQuestions(battleTemplateSnap.data().questions as Question[]);
+        }
+
+        // Fetch the `rounds` subcollection
+        const roundsRef = collection(db, 'teachers', teacher.uid, 'savedBattles', savedBattleId, 'rounds');
+        const roundsQuery = query(roundsRef, orderBy('currentQuestionIndex'));
+        const roundsSnapshot = await getDocs(roundsQuery);
+        const roundsData = roundsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as RoundSnapshot);
+        setAllRounds(roundsData);
+
       } else {
         console.error("No summary found for this battle.");
         toast({ title: "Summary Not Found", description: "This battle summary may have already been cleaned up. Redirecting to battles list."})
@@ -176,8 +195,6 @@ export default function TeacherBattleSummaryPage() {
       </div>
     );
   }
-
-  const roundKeys = summary.responsesByRound ? Object.keys(summary.responsesByRound) : [];
   
   const battleLogByRound: { [round: number]: PowerLogEntry[] } = {};
     if (summary.powerLog) {
@@ -259,6 +276,21 @@ export default function TeacherBattleSummaryPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            {summary.fallenAtEnd && summary.fallenAtEnd.length > 0 && (
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Skull /> Fallen at Battle's End</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <ul className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            {summary.fallenAtEnd.map(uid => (
+                                <li key={uid} className="font-semibold p-2 bg-secondary rounded-md text-center">{uid}</li>
+                            ))}
+                        </ul>
+                    </CardContent>
+                </Card>
+            )}
             
             <Card>
                  <CardHeader>
@@ -266,18 +298,17 @@ export default function TeacherBattleSummaryPage() {
                 </CardHeader>
                 <CardContent>
                     <Accordion type="single" collapsible className="w-full">
-                        {roundKeys.map((roundIndex) => {
-                            const roundData = summary.responsesByRound[roundIndex];
-                            if (!roundData) return null;
-                            const question = summary.questions[parseInt(roundIndex)];
-                            const correctCount = roundData.responses.filter(r => r.isCorrect).length;
-                            const incorrectCount = roundData.responses.length - correctCount;
+                        {allRounds.map((round) => {
+                            const question = questions[round.currentQuestionIndex];
+                            if (!question) return null;
+                            const correctCount = round.responses.filter(r => r.isCorrect).length;
+                            const incorrectCount = round.responses.length - correctCount;
 
                             return (
-                                <AccordionItem key={roundIndex} value={`item-${roundIndex}`}>
+                                <AccordionItem key={round.id} value={round.id}>
                                     <AccordionTrigger className="text-lg hover:no-underline">
                                         <div className="flex justify-between w-full pr-4">
-                                            <span>Question {parseInt(roundIndex) + 1}: {question.questionText}</span>
+                                            <span>Question {round.currentQuestionIndex + 1}: {question.questionText}</span>
                                             <div className="flex gap-4">
                                                 <span className="text-green-500 font-semibold">{correctCount} Correct</span>
                                                 <span className="text-red-500 font-semibold">{incorrectCount} Incorrect</span>
@@ -286,7 +317,7 @@ export default function TeacherBattleSummaryPage() {
                                     </AccordionTrigger>
                                     <AccordionContent>
                                         <ul className="space-y-2 py-2 px-4 bg-secondary/50 rounded-md">
-                                            {roundData.responses.map(res => (
+                                            {round.responses.map(res => (
                                                 <li key={res.studentUid} className="flex items-center justify-between p-2 rounded bg-background">
                                                     <span className="font-medium">{res.characterName}</span>
                                                     <div className="flex items-center gap-2">
@@ -296,11 +327,11 @@ export default function TeacherBattleSummaryPage() {
                                                 </li>
                                             ))}
                                         </ul>
-                                        {(battleLogByRound[parseInt(roundIndex) + 1]) && (
+                                        {(battleLogByRound[round.currentQuestionIndex + 1]) && (
                                             <div className="mt-2 p-2 bg-blue-900/10 rounded-md">
                                                 <h4 className="font-semibold text-sm">Powers Used:</h4>
                                                 <ul className="text-xs text-muted-foreground list-disc list-inside">
-                                                    {battleLogByRound[parseInt(roundIndex) + 1].map((log, index) => (
+                                                    {battleLogByRound[round.currentQuestionIndex + 1].map((log, index) => (
                                                         <li key={index}>
                                                             <span className="font-bold">{log.casterName}</span> used <span className="font-semibold text-primary">{log.powerName}</span>. Effect: {log.description}
                                                         </li>
