@@ -364,7 +364,6 @@ export default function TeacherLiveBattlePage() {
         const totalDamageDealt = finalLiveState.totalDamage || 0;
         const totalRounds = battle.questions.length;
         
-        // Fetch all rounds data to calculate participation
         const roundsArchiveRef = collection(db, 'teachers', teacherUid, 'savedBattles', liveState.parentArchiveId, 'rounds');
         const roundsSnap = await getDocs(roundsArchiveRef);
         const battleLogRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
@@ -416,7 +415,23 @@ export default function TeacherLiveBattlePage() {
         
         const currentlyFallenUids = finalLiveState.fallenPlayerUids || [];
 
-        // 3. Calculate final rewards for each participant
+        // 3. Revert Solar Empowerment before calculating final rewards
+        const empoweredMages = allStudents.filter(s => (finalLiveState.empoweredMageUids || []).includes(s.uid));
+        for (const mage of empoweredMages) {
+            const solarPower = classPowers.Healer.find(p => p.name === 'Solar Empowerment');
+            if (solarPower) {
+                const casterLevel = allStudents.find(s => s.class === 'Healer')?.level || 1; // Simplification, assumes one healer or first one found
+                const buffAmount = Math.ceil(casterLevel * 0.25);
+                const studentRef = doc(db, 'teachers', teacherUid, 'students', mage.uid);
+                batch.update(studentRef, { maxHp: increment(-buffAmount) });
+            }
+        }
+        
+        const studentDocs = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
+        const studentDataMap = new Map(studentDocs.docs.map(doc => [doc.id, doc.data() as Student]));
+
+
+        // 4. Calculate final rewards for each participant
         for (const uid of participantUids) {
             const studentRewards = rewardsByStudent[uid];
             
@@ -476,6 +491,28 @@ export default function TeacherLiveBattlePage() {
                 arcaneSacrificeBonus: wasArcaneSacrificeUsed,
                 divineSacrificeBonus: wasDivineSacrificeUsed,
             };
+
+            const studentData = studentDataMap.get(uid);
+             if (studentData && !currentlyFallenUids.includes(uid) && !sacrificedPlayerUids.includes(uid)) {
+                 const studentRef = doc(db, 'teachers', teacherUid, 'students', uid);
+                 const currentXp = studentData.xp || 0;
+                 const newXp = currentXp + studentRewards.xpGained;
+                 const currentLevel = studentData.level || 1;
+                 const newLevel = calculateLevel(newXp);
+                 
+                 const updates: any = {
+                    xp: newXp,
+                    gold: (studentData.gold || 0) + studentRewards.goldGained,
+                 };
+
+                 if (newLevel > currentLevel) {
+                    updates.level = newLevel;
+                    updates.maxHp = calculateBaseMaxHp(studentData.class, newLevel, 'hp');
+                    updates.maxMp = calculateBaseMaxHp(studentData.class, newLevel, 'mp');
+                 }
+                 
+                 batch.update(studentRef, updates);
+             }
         }
 
         batch.update(parentArchiveRef, {
@@ -491,31 +528,6 @@ export default function TeacherLiveBattlePage() {
             divineSacrificeCasterUid: finalLiveState.divineSacrificeCasterUid || null,
         });
 
-        const studentDocs = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
-        for (const studentDoc of studentDocs.docs) {
-             const studentData = studentDoc.data() as Student;
-             const rewards = rewardsByStudent[studentDoc.id];
-             if (rewards && !currentlyFallenUids.includes(studentDoc.id) && !sacrificedPlayerUids.includes(studentDoc.id)) {
-                 const studentRef = doc(db, 'teachers', teacherUid, 'students', studentDoc.id);
-                 const currentXp = studentData.xp || 0;
-                 const newXp = currentXp + rewards.xpGained;
-                 const currentLevel = studentData.level || 1;
-                 const newLevel = calculateLevel(newXp);
-                 
-                 const updates: any = {
-                    xp: newXp,
-                    gold: (studentData.gold || 0) + rewards.goldGained,
-                 };
-
-                 if (newLevel > currentLevel) {
-                    updates.level = newLevel;
-                    updates.maxHp = calculateBaseMaxHp(studentData.class, newLevel, 'hp');
-                    updates.maxMp = calculateBaseMaxHp(studentData.class, newLevel, 'mp');
-                 }
-                 
-                 batch.update(studentRef, updates);
-             }
-        }
         
         await batch.commit();
 
@@ -829,10 +841,10 @@ export default function TeacherLiveBattlePage() {
             for (let i = 0; i < 4; i++) totalDamage += Math.floor(Math.random() * 20) + 1;
             totalDamage += (caster?.level || 1);
             
-             const newQueuedPower: QueuedPower = { casterUid: caster?.uid || '', powerName: 'Divine Judgment', damage: totalDamage };
             batch.update(liveBattleRef, {
-                queuedPowers: arrayUnion(newQueuedPower),
-                powerEventMessage: `Divine Judgment: The party chose to attack! The boss will take ${totalDamage} divine damage at the end of the round!`,
+                totalPowerDamage: increment(totalDamage),
+                lastRoundPowerDamage: increment(totalDamage),
+                powerEventMessage: `Divine Judgment: The party chose to attack! The boss instantly takes ${totalDamage} divine damage!`,
                 voteState: null,
             });
             batch.set(doc(battleLogRef), {
@@ -1092,9 +1104,9 @@ export default function TeacherLiveBattlePage() {
                     } else if (battleData.status === 'ROUND_ENDING') {
                         batch.update(liveBattleRef, { targetedEvent: { targetUid: activation.studentUid, message: "It is too late to cast this power! The round is ending!" } });
                     } else {
-                        const activePlayersCount = allStudents.filter(s => s.inBattle && s.hp > 0).length;
+                        const activePlayers = allStudents.filter(s => s.inBattle && s.hp > 0);
                         const voteEndsAt = new Date(Date.now() + 15000);
-                        batch.update(liveBattleRef, { [`divineJudgmentUses.${activation.studentUid}`]: increment(1), voteState: { isActive: true, casterName: activation.studentName, votesFor: [], votesAgainst: [], endsAt: voteEndsAt, totalVoters: activePlayersCount, }, powerEventMessage: `${activation.studentName} calls for a Divine Judgment! The party must vote!` });
+                        batch.update(liveBattleRef, { [`divineJudgmentUses.${activation.studentUid}`]: increment(1), voteState: { isActive: true, casterName: activation.studentName, votesFor: [], votesAgainst: [], endsAt: voteEndsAt, totalVoters: activePlayers.length, }, powerEventMessage: `${activation.studentName} calls for a Divine Judgment! The party must vote!` });
                     }
                 } else if (activation.powerName === 'Regeneration Field') {
                     const healAmount = Math.ceil((studentData.level || 1) * 0.25);
@@ -1608,4 +1620,3 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
-
