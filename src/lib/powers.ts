@@ -64,7 +64,7 @@ export const classPowers: ClassPowers = {
     },
      {
       name: 'Arcane Shield',
-      description: 'A barrier of arcane energy enfolds 3 allies of your choice for the next 3 rounds, protecting them from damage.',
+      description: 'A barrier of arcane energy enfolds 3 allies of your choice for the next 2 rounds, protecting them from damage.',
       level: 15,
       mpCost: 24,
       type: 'support',
@@ -170,7 +170,7 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Solar Empowerment',
-      description: 'You intertwine the light of the sun into the energies of up to 3 allied Mages, temporarily increasing their Max HP by 50% of your level (rounded up) for the duration of the battle.',
+      description: "You intertwine the light of the sun into the energies of up to 3 allied Mages, temporarily increasing their Max HP by 50% of your level (rounded up) for the duration of the battle.",
       level: 4,
       mpCost: 8,
       type: 'support',
@@ -198,7 +198,7 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Divine Judgment',
-      description: "Channel the party's collective will. A vote is called to either empower the party with a temporary HP boost or unleash divine energy on the boss. The effect triggers instantly after the vote. (Max 1 use per Healer / per battle)",
+      description: "Channel the party's collective will. A vote is called to either empower the party with a temporary HP boost or unleash divine energy on the boss. The effect triggers instantly after the vote. (Max 1 use per Healer per battle)",
       level: 10,
       mpCost: 15,
       type: 'utility',
