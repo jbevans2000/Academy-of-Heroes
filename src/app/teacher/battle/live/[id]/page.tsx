@@ -30,7 +30,7 @@ import { Label } from '@/components/ui/label';
 
 interface QueuedPower {
     casterUid: string;
-    powerName: 'Wildfire' | 'Chaos Storm' | 'Berserker Strike' | 'Martial Sacrifice';
+    powerName: 'Wildfire' | 'Chaos Storm' | 'Berserker Strike' | 'Martial Sacrifice' | 'Divine Judgment';
     damage: number;
 }
 
@@ -807,7 +807,7 @@ export default function TeacherLiveBattlePage() {
              const buffAmount = Math.ceil((caster?.level || 1) * 0.25);
              const livingStudents = allStudents.filter(s => s.inBattle && s.hp > 0);
              livingStudents.forEach(student => {
-                 const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
+                 const studentRef = doc(db, 'teachers', teacherUid!, 'students', student.uid);
                  batch.update(studentRef, {
                      maxHp: increment(buffAmount),
                      hp: increment(buffAmount)
@@ -829,10 +829,11 @@ export default function TeacherLiveBattlePage() {
             for (let i = 0; i < 4; i++) totalDamage += Math.floor(Math.random() * 20) + 1;
             totalDamage += (caster?.level || 1);
             
-            batch.update(liveBattleRef, { 
-                totalPowerDamage: increment(totalDamage),
-                powerEventMessage: `Divine Judgment: The party chose to attack! The boss takes ${totalDamage} divine damage!`,
-                voteState: null 
+             const newQueuedPower: QueuedPower = { casterUid: caster?.uid || '', powerName: 'Divine Judgment', damage: totalDamage };
+            batch.update(liveBattleRef, {
+                queuedPowers: arrayUnion(newQueuedPower),
+                powerEventMessage: `Divine Judgment: The party chose to attack! The boss will take ${totalDamage} divine damage at the end of the round!`,
+                voteState: null,
             });
             batch.set(doc(battleLogRef), {
                 round: liveState.currentQuestionIndex + 1,
@@ -1608,4 +1609,3 @@ export default function TeacherLiveBattlePage() {
   );
 }
 
-    

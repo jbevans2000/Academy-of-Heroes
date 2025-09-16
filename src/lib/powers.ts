@@ -197,7 +197,7 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Divine Judgment',
-      description: "Channel the party's collective will. A vote is called to either empower the party with a temporary HP boost or unleash divine energy on the boss. The effect triggers at the end of the round.",
+      description: "Channel the party's collective will. A vote is called to either empower the party with a temporary HP boost or unleash divine energy on the boss. The effect triggers instantly after the vote.",
       level: 10,
       mpCost: 15,
       type: 'utility',
