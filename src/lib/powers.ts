@@ -47,9 +47,9 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Psychic Flare',
-      description: 'You channel a beam of restorative arcane energies into an ally, restoring them to full magic points. Target must be below 50% MP.',
+      description: "You channel a beam of restorative arcane energies into an ally, restoring them to full magic points. Target must be below 50% MP. This power costs 50% of your current Magic Points, with a minimum cost of 20 MP.",
       level: 9,
-      mpCost: 18,
+      mpCost: 20,
       type: 'support',
       target: 'ally',
       targetSelf: false,

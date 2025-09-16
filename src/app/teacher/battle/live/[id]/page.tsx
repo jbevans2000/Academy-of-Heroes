@@ -30,7 +30,7 @@ import { Label } from '@/components/ui/label';
 
 interface QueuedPower {
     casterUid: string;
-    powerName: 'Wildfire' | 'Chaos Storm' | 'Berserker Strike' | 'Martial Sacrifice' | 'Divine Judgment';
+    powerName: 'Wildfire' | 'Chaos Storm' | 'Berserker Strike' | 'Martial Sacrifice';
     damage: number;
 }
 
@@ -836,7 +836,9 @@ export default function TeacherLiveBattlePage() {
             });
         } else { // Damage
             let totalDamage = 0;
-            for (let i = 0; i < 4; i++) totalDamage += Math.floor(Math.random() * 20) + 1;
+            for (let i = 0; i < 4; i++) {
+                totalDamage += Math.floor(Math.random() * 20) + 1;
+            }
             totalDamage += (caster?.level || 1);
             
             batch.update(liveBattleRef, {
@@ -1014,13 +1016,10 @@ export default function TeacherLiveBattlePage() {
                     if (casts >= 2) {
                         batch.update(liveBattleRef, { targetedEvent: { targetUid: activation.studentUid, message: "You are too exhausted to control the forces of Chaos! Choose another power!" } });
                     } else {
-                        let totalDamage = 0;
-                        for (let i = 0; i < 10; i++) { totalDamage += Math.floor(Math.random() * 6) + 1; }
-                        totalDamage += studentData.level || 1;
-
-                        const newQueuedPower: QueuedPower = { casterUid: activation.studentUid, powerName: 'Chaos Storm', damage: totalDamage };
+                        const damage = Array.from({ length: 10 }, () => Math.floor(Math.random() * 6) + 1).reduce((a, b) => a + b, 0) + (studentData.level || 1);
+                        const newQueuedPower: QueuedPower = { casterUid: activation.studentUid, powerName: 'Chaos Storm', damage };
                         batch.update(liveBattleRef, { 
-                            queuedPowers: arrayUnion(newQueuedPower), 
+                            queuedPowers: arrayUnion(newQueuedPower),
                             [`chaosStormCasts.${activation.studentUid}`]: increment(1), 
                             powerEventMessage: `${activation.studentName} has summoned a storm of pure chaos to smite the Enemy!`,
                             targetedEvent: { targetUid: activation.studentUid, message: `You summon a storm of pure chaos to smite the Enemy!` },
@@ -1161,6 +1160,10 @@ export default function TeacherLiveBattlePage() {
                     const targetSnap = await getDoc(targetRef);
                     if (targetSnap.exists()) {
                         const targetData = targetSnap.data() as Student;
+                        const actualCost = Math.max(20, Math.floor(studentData.mp * 0.5));
+                        
+                        if (studentData.mp < actualCost) return; // Final check
+
                         if (targetData.mp >= targetData.maxMp * 0.5) {
                             batch.update(liveBattleRef, { targetedEvent: { targetUid: activation.studentUid, message: `Your spell fizzled! ${targetData.characterName}'s magic was already potent enough. Your power was not consumed.` } });
                             await batch.commit();
@@ -1169,6 +1172,8 @@ export default function TeacherLiveBattlePage() {
                             setTimeout(async () => { await updateDoc(liveBattleRef, { targetedEvent: null }); }, 5000);
                             return;
                         }
+                        
+                        batch.update(studentRef, { mp: increment(-actualCost) }); // Deduct dynamic cost
                         batch.update(targetRef, { mp: targetData.maxMp });
                         batch.update(liveBattleRef, { powerEventMessage: `${activation.studentName} casts Psychic Flare, restoring ${targetData.characterName}'s magic!`, targetedEvent: { targetUid: targetUid, message: `${activation.studentName} has restored your magic points to their maximum value!` } });
                         batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: activation.studentName, powerName: activation.powerName, description: `Restored ${targetData.characterName} to full MP.`, timestamp: serverTimestamp() });
@@ -1199,11 +1204,11 @@ export default function TeacherLiveBattlePage() {
                        const targetData = allStudents.find(s => s.uid === targetUid);
                        if (targetData) {
                           targetNames.push(targetData.characterName);
-                          batch.update(liveBattleRef, { [`shielded.${targetUid}`]: { roundsRemaining: 3, casterName: activation.studentName } });
+                          batch.update(liveBattleRef, { [`shielded.${targetUid}`]: { roundsRemaining: 2, casterName: activation.studentName } });
                        }
                     }
                     batch.update(liveBattleRef, { powerEventMessage: `${activation.studentName} casts Arcane Shield on ${targetNames.join(', ')}!` });
-                    batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: activation.studentName, powerName: activation.powerName, description: `Shielded ${targetNames.join(', ')} for 3 rounds.`, timestamp: serverTimestamp() });
+                    batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: activation.studentName, powerName: activation.powerName, description: `Shielded ${targetNames.join(', ')} for 2 rounds.`, timestamp: serverTimestamp() });
                 } else if (activation.powerName === 'Guard') {
                     if (!activation.targets || activation.targets.length === 0) return;
                     const targetNames: string[] = [];
@@ -1242,7 +1247,9 @@ export default function TeacherLiveBattlePage() {
                     }
                 }
                 if (activation.powerName !== 'Sorcerer’s Intuition' || (battleData.sorcerersIntuitionUses?.[activation.studentUid] || 0) < 3) {
-                    batch.update(studentRef, { mp: increment(-activation.powerMpCost) });
+                    if (activation.powerName !== 'Psychic Flare') {
+                       batch.update(studentRef, { mp: increment(-activation.powerMpCost) });
+                    }
                     batch.update(liveBattleRef, { [`powerUsersThisRound.${activation.studentUid}`]: arrayUnion(activation.powerName) });
                 }
 
