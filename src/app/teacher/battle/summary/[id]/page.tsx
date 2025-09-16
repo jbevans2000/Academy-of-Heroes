@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, getDoc, collection, query, orderBy, getDocs, deleteDoc, writeBatch } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
@@ -401,3 +401,5 @@ export default function TeacherBattleSummaryPage() {
     </div>
   );
 }
+
+    
