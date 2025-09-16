@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -11,7 +10,7 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Star, Coins, ShieldCheck, Sparkles, ScrollText, Trash2, Loader2, Swords, Shield, Skull } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Star, Coins, ShieldCheck, Sparkles, ScrollText, Trash2, Loader2, Swords, Shield, Skull, Users } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -25,6 +24,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
 
 interface Question {
   questionText: string;
@@ -60,6 +61,7 @@ interface SavedBattle {
   totalBaseDamage?: number;
   totalPowerDamage?: number;
   fallenAtEnd?: string[];
+  participantUids: string[];
 }
 
 export default function TeacherBattleSummaryPage() {
@@ -159,6 +161,26 @@ export default function TeacherBattleSummaryPage() {
     }
   };
 
+  const participantStats = useMemo(() => {
+    const stats: { [uid: string]: { name: string; correct: number; incorrect: number } } = {};
+    if (!summary || !allRounds) return [];
+
+    allRounds.forEach(round => {
+        round.responses.forEach(res => {
+            if (!stats[res.studentUid]) {
+                stats[res.studentUid] = { name: res.characterName, correct: 0, incorrect: 0 };
+            }
+            if (res.isCorrect) {
+                stats[res.studentUid].correct++;
+            } else {
+                stats[res.studentUid].incorrect++;
+            }
+        });
+    });
+
+    return Object.values(stats).sort((a,b) => b.correct - a.correct);
+  }, [summary, allRounds]);
+
 
   if (isLoading) {
     return (
@@ -199,10 +221,11 @@ export default function TeacherBattleSummaryPage() {
   const battleLogByRound: { [round: number]: PowerLogEntry[] } = {};
     if (summary.powerLog) {
         summary.powerLog.forEach(log => {
-            if (!battleLogByRound[log.round]) {
-                battleLogByRound[log.round] = [];
+            const roundNum = log.round;
+            if (!battleLogByRound[roundNum]) {
+                battleLogByRound[roundNum] = [];
             }
-            battleLogByRound[log.round].push(log);
+            battleLogByRound[roundNum].push(log);
         });
     }
 
@@ -347,35 +370,31 @@ export default function TeacherBattleSummaryPage() {
                 </CardContent>
             </Card>
 
-            {(summary.powerLog && summary.powerLog.length > 0) && (
-                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><ScrollText /> Power Usage Log</CardTitle>
-                        <CardDescription>A record of all powers used during the battle, grouped by round.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Accordion type="multiple" className="w-full">
-                            {Object.keys(battleLogByRound).map(roundNumber => (
-                                <AccordionItem key={roundNumber} value={`round-${roundNumber}`}>
-                                    <AccordionTrigger>Round {roundNumber}</AccordionTrigger>
-                                    <AccordionContent>
-                                        <ul className="space-y-2 pl-4">
-                                            {battleLogByRound[parseInt(roundNumber)].map((log, index) => (
-                                                <li key={index} className="flex justify-between items-center p-2 rounded-md bg-secondary/50">
-                                                    <div>
-                                                        <span className="font-bold">{log.casterName}</span> used <span className="font-semibold text-primary">{log.powerName}</span>.
-                                                        <p className="text-sm text-muted-foreground">Effect: {log.description}</p>
-                                                    </div>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </AccordionContent>
-                                </AccordionItem>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Users /> Participant Summary</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Character Name</TableHead>
+                                <TableHead className="text-center">Correct Answers</TableHead>
+                                <TableHead className="text-center">Incorrect Answers</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {participantStats.map(stat => (
+                                <TableRow key={stat.name}>
+                                    <TableCell className="font-semibold">{stat.name}</TableCell>
+                                    <TableCell className="text-center text-green-600 font-bold">{stat.correct}</TableCell>
+                                    <TableCell className="text-center text-red-600 font-bold">{stat.incorrect}</TableCell>
+                                </TableRow>
                             ))}
-                        </Accordion>
-                    </CardContent>
-                </Card>
-            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
 
         </div>
       </main>
