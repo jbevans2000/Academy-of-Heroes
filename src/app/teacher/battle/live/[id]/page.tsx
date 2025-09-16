@@ -227,7 +227,6 @@ export default function TeacherLiveBattlePage() {
   const [teacherData, setTeacherData] = useState<TeacherData | null>(null);
   const [teacherUid, setTeacherUid] = useState<string | null>(null);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
-  const [redirectId, setRedirectId] = useState<string | null>(null);
   
   const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -286,13 +285,9 @@ export default function TeacherLiveBattlePage() {
       if (docSnap.exists()) {
         const newState = docSnap.data() as LiveBattleState;
         setLiveState(newState);
-         if (newState.status === 'BATTLE_ENDED') {
-            setRedirectId(newState.parentArchiveId);
-        }
       } else {
-        if (redirectId === null) {
-          router.push('/teacher/battles');
-        }
+        // If the live battle doc is deleted, the battle is over, redirect.
+        router.push('/teacher/battles');
       }
       setIsLoading(false);
     }, (error) => {
@@ -301,7 +296,7 @@ export default function TeacherLiveBattlePage() {
     });
 
     return () => unsubscribe();
-  }, [battleId, router, teacherUid, redirectId]);
+  }, [battleId, router, teacherUid]);
   
     // Audio playback effect for teacher
     useEffect(() => {
@@ -1036,7 +1031,6 @@ export default function TeacherLiveBattlePage() {
                         batch.update(liveBattleRef, { 
                             queuedPowers: arrayUnion(newQueuedPower),
                             [`chaosStormCasts.${activation.studentUid}`]: increment(1), 
-                            powerEventMessage: `${activation.studentName} has summoned a storm of pure chaos to smite the Enemy!`,
                         });
                         batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: activation.studentName, powerName: activation.powerName, description: `Queued Chaos Storm to deal ${damage} damage.`, timestamp: serverTimestamp() });
                     }
@@ -1202,7 +1196,7 @@ export default function TeacherLiveBattlePage() {
                         batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: activation.studentName, powerName: activation.powerName, description: `Tripled the party's power damage for the round.`, timestamp: serverTimestamp() });
                     }
                 } else if (activation.powerName === 'Inspiring Strike') {
-                    const casts = battleData.inspiringStrikeCasts?.[activation.studentUid] || 0;
+                    const casts = battleData.inspiringStrikeCasts?.[studentData.uid] || 0;
                     if (casts >= 2) {
                         batch.update(liveBattleRef, { targetedEvent: { targetUid: activation.studentUid, message: "Your voice is hoarse! You cannot inspire again this battle." } });
                     } else {
@@ -1291,15 +1285,6 @@ export default function TeacherLiveBattlePage() {
       return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveState?.status, liveState?.timerEndsAt]);
-
-
-  // Effect to handle safe redirection after battle ends
-  useEffect(() => {
-    if (redirectId) {
-        router.push(`/teacher/battle/summary/${redirectId}`);
-    }
-  }, [redirectId, router]);
-
 
   const handleStartFirstQuestion = async () => {
     if(!teacherUid || !battle) return;
@@ -1645,4 +1630,3 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
-
