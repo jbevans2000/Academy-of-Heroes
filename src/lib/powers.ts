@@ -122,7 +122,7 @@ export const classPowers: ClassPowers = {
     },
     {
         name: 'Arcane Redirect',
-        description: 'Empower a chosen number of allied Mages, doubling the damage of their Wildfire spells this round. Costs 15 MP per empowered Mage.',
+        description: 'Pledge to empower a number of allied Mages. For each empowered Mage that successfully casts Wildfire this round, their spell\'s damage is doubled and you pay 15 MP. If more Mages succeed than you pledged, targets are chosen randomly.',
         level: 9,
         mpCost: 15,
         type: 'support',

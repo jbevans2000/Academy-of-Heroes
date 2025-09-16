@@ -34,6 +34,11 @@ interface QueuedPower {
     damage: number;
 }
 
+interface QueuedArcaneRedirect {
+    casterUid: string;
+    maxTargets: number;
+}
+
 interface TargetedEvent {
     targetUid: string;
     message: string;
@@ -72,6 +77,7 @@ interface LiveBattleState {
   roundEvents?: RoundEvent[];
   powerUsersThisRound?: { [key: string]: string[] }; // { studentUid: [powerName, ...] }
   queuedPowers?: QueuedPower[];
+  arcaneRedirectCasts?: QueuedArcaneRedirect[]; // New
   fallenPlayerUids?: string[];
   empoweredMages?: { mageUid: string; casterUid: string; }[];
   divineJudgmentUses?: { [studentUid: string]: number };
@@ -285,8 +291,12 @@ export default function TeacherLiveBattlePage() {
       if (docSnap.exists()) {
         const newState = docSnap.data() as LiveBattleState;
         setLiveState(newState);
+        // This logic was causing a premature redirect. It's now handled inside handleEndBattleAndAggregate.
+        // if (newState.status === 'BATTLE_ENDED' && newState.parentArchiveId) {
+        //     router.push(`/teacher/battle/summary/${newState.parentArchiveId}`);
+        //     return;
+        // }
       } else {
-        // If the live battle doc is deleted, the battle is over, redirect.
         router.push('/teacher/battles');
       }
       setIsLoading(false);
@@ -580,7 +590,7 @@ export default function TeacherLiveBattlePage() {
 
         let finalRoundResponses = [...roundResponses];
 
-        // --- NEW SORCERER'S INTUITION LOGIC ---
+        // --- PHASE 1: Sorcerer's Intuition ---
         const sorcererCastersThisRound = Object.keys(currentLiveState.powerUsersThisRound || {}).filter(uid => 
             currentLiveState.powerUsersThisRound![uid].includes("Sorcerer’s Intuition")
         );
@@ -633,21 +643,52 @@ export default function TeacherLiveBattlePage() {
         
         // --- POWER DAMAGE LOGIC ---
         if (!isDivinationSkip) {
+            // Store base damage of successful Wildfires
+            const wildfireBaseDamages = new Map<string, number>();
+
             for (const power of currentLiveState.queuedPowers || []) {
                 const casterResponse = finalRoundResponses.find(res => res.studentUid === power.casterUid);
-                const casterName = casterResponse?.characterName || studentMap.get(power.casterUid)?.characterName || 'Unknown Hero';
-                
-                const isCorrect = casterResponse?.isCorrect ?? false;
-                const shouldApplyDamage = (power.powerName === 'Wildfire' && isCorrect) || power.powerName !== 'Wildfire';
-                
-                if (shouldApplyDamage) {
+                if (power.powerName === 'Wildfire' && casterResponse?.isCorrect) {
+                    wildfireBaseDamages.set(power.casterUid, power.damage);
                     powerDamage += power.damage;
                     powersUsedThisRound.push(`${power.powerName} (${power.damage} dmg)`);
-                     batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: casterName, powerName: power.powerName, description: `Dealt ${power.damage} damage.`, timestamp: serverTimestamp() });
+                    batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: casterResponse.characterName, powerName: power.powerName, description: `Dealt ${power.damage} base damage.`, timestamp: serverTimestamp() });
+                } else if (power.powerName !== 'Wildfire') {
+                     powerDamage += power.damage;
+                     powersUsedThisRound.push(`${power.powerName} (${power.damage} dmg)`);
+                     batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: casterResponse?.characterName || 'Unknown Hero', powerName: power.powerName, description: `Dealt ${power.damage} damage.`, timestamp: serverTimestamp() });
                 } else {
-                     batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: casterName, powerName: power.powerName, description: 'Fizzled due to incorrect answer.', timestamp: serverTimestamp() });
+                     batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: casterResponse?.characterName || 'Unknown Hero', powerName: power.powerName, description: 'Fizzled due to incorrect answer.', timestamp: serverTimestamp() });
                 }
             }
+
+            // --- ARCANE REDIRECT LOGIC ---
+            if (currentLiveState.arcaneRedirectCasts && currentLiveState.arcaneRedirectCasts.length > 0) {
+                const successfulWildfireCasters = Array.from(wildfireBaseDamages.keys());
+
+                for (const redirect of currentLiveState.arcaneRedirectCasts) {
+                    const potentialTargets = successfulWildfireCasters.filter(mageUid => mageUid !== redirect.casterUid);
+                    const targetsToEmpower = shuffleArray(potentialTargets).slice(0, redirect.maxTargets);
+                    
+                    let empoweredCount = 0;
+                    for (const targetUid of targetsToEmpower) {
+                        const baseDamage = wildfireBaseDamages.get(targetUid);
+                        if (baseDamage) {
+                            powerDamage += baseDamage; // Additive doubling
+                            empoweredCount++;
+                            const casterName = studentMap.get(redirect.casterUid)?.characterName || 'A Guardian';
+                            const targetName = studentMap.get(targetUid)?.characterName || 'a Mage';
+                             batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName, powerName: 'Arcane Redirect', description: `Doubled ${targetName}'s Wildfire damage by ${baseDamage}.`, timestamp: serverTimestamp() });
+                        }
+                    }
+                    if (empoweredCount > 0) {
+                        const cost = empoweredCount * 15;
+                        const guardianRef = doc(db, 'teachers', teacherUid, 'students', redirect.casterUid);
+                        batch.update(guardianRef, { mp: increment(-cost) });
+                    }
+                }
+            }
+            
         } else {
              powerDamage = liveState.lastRoundPowerDamage || 0;
              powersUsedThisRound.push(...(liveState.lastRoundPowersUsed || []));
@@ -769,7 +810,8 @@ export default function TeacherLiveBattlePage() {
             totalPowerDamage: (currentLiveState.totalPowerDamage || 0) + powerDamage,
             voteState: null,
             damageShields: studentDamageShields,
-            roundEvents: roundEvents
+            roundEvents: roundEvents,
+            arcaneRedirectCasts: [], // Clear casts for the next round
         };
 
         if (newlyFallenUids.length > 0) {
@@ -876,7 +918,7 @@ export default function TeacherLiveBattlePage() {
   useEffect(() => {
     if (!liveState || !battle || !teacherUid || (liveState.status !== 'IN_PROGRESS' && liveState.status !== 'ROUND_ENDING')) return;
     
-    const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
+    const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles/active-battle/liveState');
     const powerActivationsRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/powerActivations');
     const q = query(powerActivationsRef);
 
@@ -899,7 +941,11 @@ export default function TeacherLiveBattlePage() {
 
                 const batch = writeBatch(db);
 
-                if (activation.powerName === 'Nature’s Guidance') {
+                if (activation.powerName === 'Arcane Redirect') {
+                    const newRedirect: QueuedArcaneRedirect = { casterUid: activation.studentUid, maxTargets: activation.inputValue || 0 };
+                    batch.update(liveBattleRef, { arcaneRedirectCasts: arrayUnion(newRedirect) });
+                    batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: activation.studentName, powerName: activation.powerName, description: `Pledged to empower up to ${activation.inputValue} Mages.`, timestamp: serverTimestamp() });
+                } else if (activation.powerName === 'Nature’s Guidance') {
                     const baseChance = 0.20;
                     const levelBonus = (studentData.level || 1) * 0.01;
                     const successChance = baseChance + levelBonus;
@@ -1253,7 +1299,7 @@ export default function TeacherLiveBattlePage() {
                     }
                 }
                 if (activation.powerName !== 'Sorcerer’s Intuition' || (battleData.sorcerersIntuitionUses?.[activation.studentUid] || 0) < 3) {
-                    if (activation.powerName !== 'Psychic Flare') {
+                    if (activation.powerName !== 'Psychic Flare' && activation.powerName !== 'Arcane Redirect') {
                        batch.update(studentRef, { mp: increment(-activation.powerMpCost) });
                     }
                     batch.update(liveBattleRef, { [`powerUsersThisRound.${activation.studentUid}`]: arrayUnion(activation.powerName) });
@@ -1300,7 +1346,7 @@ export default function TeacherLiveBattlePage() {
         totalDamage: 0,
         totalBaseDamage: 0,
         totalPowerDamage: 0,
-        fallenPlayerUids: initiallyFallenUids,
+        fallenAtEnd: initiallyFallenUids,
         empoweredMages: [],
         divineJudgmentUses: {},
         sorcerersIntuitionUses: {},
@@ -1379,6 +1425,7 @@ export default function TeacherLiveBattlePage() {
             roundEvents: [],
             intercepting: {},
             damageShields: {},
+            arcaneRedirectCasts: [],
         });
 
         await batch.commit();

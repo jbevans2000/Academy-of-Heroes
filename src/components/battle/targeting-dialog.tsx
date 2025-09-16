@@ -128,7 +128,6 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
   };
   
   const handleNextStep = () => {
-      // Validate input for step 1
       if (power.name === 'Absorb') {
           const mpNeeded = caster.maxMp - caster.mp;
           const maxHpToConvert = Math.min(caster.hp - 1, mpNeeded * 2);
@@ -137,16 +136,17 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
               toast({ variant: 'destructive', title: 'Invalid Amount', description: `Please enter an amount between 1 and ${maxHpToConvert} HP.`});
               return;
           }
-          onConfirm([], hpToConvert); // Absorb is now a single step
+          onConfirm([], hpToConvert);
           return;
       } else if (power.name === 'Arcane Redirect') {
-          const cost = (Number(inputValue) || 0) * 15;
-          if (inputValue === '' || inputValue <= 0 || cost > caster.mp) {
-               toast({ variant: 'destructive', title: 'Cannot Cast', description: `You need ${cost} MP but only have ${caster.mp}.`});
+          const maxCanAfford = Math.floor(caster.mp / (power.mpCost || 15));
+          const numToEmpower = Number(inputValue);
+          if (inputValue === '' || numToEmpower <= 0 || numToEmpower > maxCanAfford) {
+               toast({ variant: 'destructive', title: 'Cannot Cast', description: `You can empower between 1 and ${maxCanAfford} Mages.`});
               return;
           }
+           onConfirm([], numToEmpower);
       }
-      setCurrentStep(2);
   }
 
     const renderStep1 = () => {
@@ -173,21 +173,26 @@ export function TargetingDialog({ isOpen, onOpenChange, power, students, caster,
             )
         }
          if (power.name === 'Arcane Redirect') {
-            const cost = (Number(inputValue) || 0) * 15;
+            const costPerMage = power.mpCost || 15;
+            const maxCanAfford = Math.floor(caster.mp / costPerMage);
+            const cost = (Number(inputValue) || 0) * costPerMage;
+
             return (
                 <>
                     <DialogHeader>
                         <DialogTitle>Arcane Redirect</DialogTitle>
-                        <DialogDescription>How many Mages do you wish to empower? The cost is 15 MP per Mage.</DialogDescription>
+                        <DialogDescription>
+                            Pledge your magic to empower allied Mages. For each successful Wildfire they cast, you will pay {costPerMage} MP and their spell's damage will be doubled.
+                        </DialogDescription>
                     </DialogHeader>
                      <div className="py-4 space-y-2">
-                        <Label htmlFor="mage-count">Number of Mages</Label>
-                        <Input id="mage-count" type="number" value={inputValue} onChange={e => setInputValue(Number(e.target.value))} />
-                        <p className="text-sm">Total Cost: <span className={cost > caster.mp ? 'text-destructive' : 'text-primary'}>{cost} MP</span> (You have {caster.mp} MP)</p>
+                        <Label htmlFor="mage-count">How many Mages will you empower?</Label>
+                        <Input id="mage-count" type="number" value={inputValue} onChange={e => setInputValue(e.target.value === '' ? '' : Number(e.target.value))} />
+                        <p className="text-sm">Potential Cost: <span className={cost > caster.mp ? 'text-destructive' : 'text-primary'}>{cost} MP</span> (You have {caster.mp} MP. You can empower up to {maxCanAfford} Mages)</p>
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                        <Button onClick={handleConfirmClick} disabled={cost > caster.mp || inputValue === '' || Number(inputValue) <= 0}>Confirm</Button>
+                        <Button onClick={handleNextStep} disabled={cost > caster.mp || inputValue === '' || Number(inputValue) <= 0}>Confirm Pledge</Button>
                     </DialogFooter>
                 </>
             )
