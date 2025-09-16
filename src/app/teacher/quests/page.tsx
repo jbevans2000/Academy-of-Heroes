@@ -6,11 +6,11 @@ import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { PlusCircle, LayoutDashboard, Edit, Trash2, Loader2, Eye, Wrench, Image as ImageIcon, Upload, X, Library } from 'lucide-react';
+import { PlusCircle, LayoutDashboard, Edit, Trash2, Loader2, Eye, Wrench, Image as ImageIcon, Upload, X, Library, Users } from 'lucide-react';
 import { collection, getDocs, doc, deleteDoc, onSnapshot, updateDoc, getDoc } from 'firebase/firestore';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import type { QuestHub, Chapter } from '@/lib/quests';
+import type { QuestHub, Chapter, Company } from '@/lib/quests';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import {
@@ -42,6 +42,7 @@ export default function QuestsPage() {
   const { toast } = useToast();
   const [hubs, setHubs] = useState<QuestHub[]>([]);
   const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [teacher, setTeacher] = useState<User | null>(null);
@@ -76,6 +77,7 @@ export default function QuestsPage() {
     const hubsRef = collection(db, 'teachers', teacher.uid, 'questHubs');
     const chaptersRef = collection(db, 'teachers', teacher.uid, 'chapters');
     const teacherRef = doc(db, 'teachers', teacher.uid);
+    const companiesRef = collection(db, 'teachers', teacher.uid, 'companies');
 
     const unsubHubs = onSnapshot(hubsRef, (querySnapshot) => {
         const hubsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
@@ -92,13 +94,19 @@ export default function QuestsPage() {
         if (docSnap.exists()) {
             setWorldMapUrl(docSnap.data().worldMapUrl || '');
         }
-        setIsLoading(false);
     });
+
+    const unsubCompanies = onSnapshot(companiesRef, (snapshot) => {
+      setCompanies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company)));
+    });
+
+    setIsLoading(false);
 
     return () => {
         unsubHubs();
         unsubChapters();
         unsubTeacher();
+        unsubCompanies();
     };
   }, [teacher]);
 
@@ -342,13 +350,22 @@ export default function QuestsPage() {
                     <Accordion type="multiple" className="w-full">
                         {hubs.map(hub => {
                             const hubChapters = chapters.filter(c => c.hubId === hub.id).sort((a,b) => a.chapterNumber - b.chapterNumber);
+                            const assignedCompanies = hub.assignedCompanyIds?.map(id => companies.find(c => c.id === id)?.name).filter(Boolean);
+                            const visibilityText = hub.isVisibleToAll === false && assignedCompanies && assignedCompanies.length > 0
+                                ? assignedCompanies.join(', ')
+                                : "All Students";
+
                             return (
                                 <AccordionItem key={hub.id} value={hub.id}>
                                     <div className="flex items-center w-full">
                                         <AccordionTrigger className="text-xl hover:no-underline flex-grow">
                                             Hub: {hub.name}
                                         </AccordionTrigger>
-                                        <div className="flex items-center gap-2 pr-4">
+                                        <div className="flex items-center gap-4 pr-4">
+                                            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                                                <Users className="h-4 w-4" />
+                                                <span className="truncate max-w-xs">{visibilityText}</span>
+                                            </div>
                                             <Button variant="outline" size="sm" onClick={() => router.push(`/teacher/quests/hub/edit/${hub.id}`)}>
                                                 <Edit className="mr-2 h-4 w-4" /> Edit Hub
                                             </Button>
@@ -418,5 +435,3 @@ export default function QuestsPage() {
     </div>
   );
 }
-
-    
