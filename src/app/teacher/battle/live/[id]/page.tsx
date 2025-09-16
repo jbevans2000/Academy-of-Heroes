@@ -415,23 +415,31 @@ export default function TeacherLiveBattlePage() {
         
         const currentlyFallenUids = finalLiveState.fallenPlayerUids || [];
 
-        // 3. Revert Solar Empowerment before calculating final rewards
-        const studentDataMap = new Map(allStudents.map(doc => [doc.uid, doc as Student]));
-
+        // 3. Revert Solar Empowerment and get updated student data for level-up calcs
+        const studentDocs = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
+        const studentDataMap = new Map(studentDocs.docs.map(doc => [doc.id, doc.data() as Student]));
+        
         if (finalLiveState.empoweredMages) {
             for (const empowered of finalLiveState.empoweredMages) {
                 const casterData = studentDataMap.get(empowered.casterUid);
-                if (casterData) {
+                const empoweredMageData = studentDataMap.get(empowered.mageUid);
+                if (casterData && empoweredMageData) {
                     const buffAmount = Math.ceil((casterData.level || 1) * 0.50);
-                    const studentRef = doc(db, 'teachers', teacherUid, 'students', empowered.mageUid);
-                    batch.update(studentRef, { maxHp: increment(-buffAmount) });
+                    const newMaxHp = empoweredMageData.maxHp - buffAmount;
+                    const newHp = Math.min(empoweredMageData.hp, newMaxHp);
+                    
+                    batch.update(doc(db, 'teachers', teacherUid, 'students', empowered.mageUid), {
+                        maxHp: newMaxHp,
+                        hp: newHp
+                    });
+                    
+                    // Update local map for immediate use in reward calculation
+                    empoweredMageData.maxHp = newMaxHp;
+                    empoweredMageData.hp = newHp;
+                    studentDataMap.set(empowered.mageUid, empoweredMageData);
                 }
             }
         }
-        
-        // Fetch student data again after potential updates to ensure accuracy for level-up calcs
-        const updatedStudentDocs = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
-        const updatedStudentDataMap = new Map(updatedStudentDocs.docs.map(doc => [doc.id, doc.data() as Student]));
 
 
         // 4. Calculate final rewards for each participant
@@ -495,7 +503,7 @@ export default function TeacherLiveBattlePage() {
                 divineSacrificeBonus: wasDivineSacrificeUsed,
             };
 
-            const studentData = updatedStudentDataMap.get(uid);
+            const studentData = studentDataMap.get(uid);
              if (studentData && !currentlyFallenUids.includes(uid) && !sacrificedPlayerUids.includes(uid)) {
                  const studentRef = doc(db, 'teachers', teacherUid, 'students', uid);
                  const currentXp = studentData.xp || 0;
@@ -1029,9 +1037,8 @@ export default function TeacherLiveBattlePage() {
                             queuedPowers: arrayUnion(newQueuedPower),
                             [`chaosStormCasts.${activation.studentUid}`]: increment(1), 
                             powerEventMessage: `${activation.studentName} has summoned a storm of pure chaos to smite the Enemy!`,
-                            targetedEvent: { targetUid: activation.studentUid, message: `You summon a storm of pure chaos to smite the Enemy!` },
                         });
-                        batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: activation.studentName, powerName: activation.powerName, description: 'Queued Chaos Storm.', timestamp: serverTimestamp() });
+                        batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: activation.studentName, powerName: activation.powerName, description: `Queued Chaos Storm to deal ${damage} damage.`, timestamp: serverTimestamp() });
                     }
                 } else if (activation.powerName === 'Enduring Spirit') {
                     if (!activation.targets || activation.targets.length === 0) return;
@@ -1638,3 +1645,4 @@ export default function TeacherLiveBattlePage() {
     </div>
   );
 }
+
