@@ -866,7 +866,7 @@ export default function TeacherLiveBattlePage() {
   useEffect(() => {
     if (!liveState || !battle || !teacherUid || (liveState.status !== 'IN_PROGRESS' && liveState.status !== 'ROUND_ENDING')) return;
     
-    const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles/active-battle');
+    const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
     const powerActivationsRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/powerActivations');
     const q = query(powerActivationsRef);
 
@@ -1017,8 +1017,15 @@ export default function TeacherLiveBattlePage() {
                         let totalDamage = 0;
                         for (let i = 0; i < 10; i++) { totalDamage += Math.floor(Math.random() * 6) + 1; }
                         totalDamage += studentData.level || 1;
-                        batch.update(liveBattleRef, { totalPowerDamage: increment(totalDamage), [`chaosStormCasts.${activation.studentUid}`]: increment(1), powerEventMessage: `${activation.studentName} has summoned a storm of pure chaos to smite the Enemy for ${totalDamage} damage!`, targetedEvent: { targetUid: activation.studentUid, message: `You have summoned a storm of pure chaos to smite the Enemy for ${totalDamage} damage!` }, });
-                        batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: activation.studentName, powerName: activation.powerName, description: `Dealt ${totalDamage} direct damage.`, timestamp: serverTimestamp() });
+
+                        const newQueuedPower: QueuedPower = { casterUid: activation.studentUid, powerName: 'Chaos Storm', damage: totalDamage };
+                        batch.update(liveBattleRef, { 
+                            queuedPowers: arrayUnion(newQueuedPower), 
+                            [`chaosStormCasts.${activation.studentUid}`]: increment(1), 
+                            powerEventMessage: `${activation.studentName} has summoned a storm of pure chaos to smite the Enemy!`,
+                            targetedEvent: { targetUid: activation.studentUid, message: `You summon a storm of pure chaos to smite the Enemy!` },
+                        });
+                        batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: activation.studentName, powerName: activation.powerName, description: 'Queued Chaos Storm.', timestamp: serverTimestamp() });
                     }
                 } else if (activation.powerName === 'Enduring Spirit') {
                     if (!activation.targets || activation.targets.length === 0) return;
