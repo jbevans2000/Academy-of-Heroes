@@ -173,7 +173,7 @@ export default function Dashboard() {
   };
   
   const approvedClassName = searchParams.get('className');
-  const backgroundUrl = company?.backgroundUrl || 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-b2ed6807-b64f-48e1-9b8c-a2d0b719db78.jpg?alt=media&token=793c0484-06f3-49ab-9557-9ca0a9b0f6bf';
+  const backgroundUrl = company?.backgroundUrl || '';
 
   if (isLoading || !student) {
     return (
@@ -193,7 +193,8 @@ export default function Dashboard() {
     <div 
         className="flex min-h-screen w-full flex-col bg-center bg-no-repeat"
         style={{ 
-            backgroundImage: `url('${backgroundUrl}')`,
+            backgroundImage: backgroundUrl ? `url('${backgroundUrl}')` : 'none',
+            backgroundColor: backgroundUrl ? '' : 'hsl(var(--background))',
             backgroundSize: '80%',
         }}
     >
