@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -45,7 +46,7 @@ export default function AboutPage() {
                         </div>
                     ) : (
                         <div 
-                            className="prose prose-lg dark:prose-invert max-w-none"
+                            className="prose prose-lg dark:prose-invert max-w-none [&_iframe]:aspect-video [&_iframe]:w-full [&_iframe]:rounded-lg"
                             dangerouslySetInnerHTML={{ __html: content }} 
                         />
                     )}
