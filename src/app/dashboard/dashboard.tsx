@@ -191,8 +191,11 @@ export default function Dashboard() {
 
   return (
     <div 
-        className="flex min-h-screen w-full flex-col bg-cover bg-center"
-        style={{ backgroundImage: `url('${backgroundUrl}')`}}
+        className="flex min-h-screen w-full flex-col bg-center bg-no-repeat"
+        style={{ 
+            backgroundImage: `url('${backgroundUrl}')`,
+            backgroundSize: '80%',
+        }}
     >
       <AlertDialog open={showApprovedDialog} onOpenChange={setShowApprovedDialog}>
         <AlertDialogContent>
