@@ -111,12 +111,6 @@ export function StatsCard({ student }: StatsCardProps) {
                 className="object-cover z-0 opacity-30"
            />
        )}
-      {company?.logoUrl && (
-           <div className="absolute inset-0 z-0 flex items-center justify-center p-4">
-              <Image src={company.logoUrl} alt="Company Logo" fill className="object-contain opacity-50 scale-50" />
-              <div className="absolute inset-0 bg-card/70 backdrop-blur-sm" />
-          </div>
-      )}
       <div className="relative z-10">
         <CardHeader>
           <CardTitle className="font-headline">{studentName}</CardTitle>
@@ -139,7 +133,11 @@ export function StatsCard({ student }: StatsCardProps) {
               </div>
             </div>
             <div className="flex flex-col items-center justify-center space-y-2 bg-secondary/80 p-4 rounded-lg">
-              <Briefcase className="h-8 w-8 text-indigo-500" />
+              {company?.logoUrl ? (
+                  <Image src={company.logoUrl} alt="Company Logo" width={32} height={32} className="rounded-full object-cover" />
+              ) : (
+                  <Briefcase className="h-8 w-8 text-indigo-500" />
+              )}
               <div>
                 <p className="text-sm text-muted-foreground">Company</p>
                 <p className="text-xl font-bold">{company?.name || 'Freelancer'}</p>
