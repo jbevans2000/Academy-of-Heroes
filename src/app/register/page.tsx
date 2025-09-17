@@ -194,6 +194,8 @@ export default function RegisterPage() {
         </CardFooter>
     </Card>
   );
+  
+  const isFormDisabled = classCode.trim() === '';
 
   return (
     <TooltipProvider>
@@ -236,6 +238,7 @@ export default function RegisterPage() {
                         value={signupMethod}
                         onValueChange={(value) => setSignupMethod(value as 'email' | 'alias')}
                         className="flex space-x-4"
+                        disabled={isFormDisabled || isLoading}
                     >
                         <div className="flex items-center space-x-2">
                             <RadioGroupItem value="email" id="signup-email" />
@@ -251,12 +254,12 @@ export default function RegisterPage() {
                   {signupMethod === 'email' ? (
                     <div className="space-y-2 animate-in fade-in-50">
                         <Label htmlFor="email" className="flex items-center"><Mail className="w-4 h-4 mr-2" />Email Address</Label>
-                        <Input id="email" placeholder="Your email address" type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading} />
+                        <Input id="email" placeholder="Your email address" type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isFormDisabled || isLoading} />
                     </div>
                   ) : (
                     <div className="space-y-2 animate-in fade-in-50">
                         <Label htmlFor="student-id" className="flex items-center"><KeyRound className="w-4 h-4 mr-2" />Username</Label>
-                        <Input id="student-id" placeholder="Choose a unique username" value={studentId} onChange={(e) => setStudentId(e.target.value)} disabled={isLoading} />
+                        <Input id="student-id" placeholder="Choose a unique username" value={studentId} onChange={(e) => setStudentId(e.target.value)} disabled={isFormDisabled || isLoading} />
                         <Alert variant="destructive" className="mt-2">
                             <ShieldAlert className="h-4 w-4" />
                             <AlertTitle>Important!</AlertTitle>
@@ -276,14 +279,14 @@ export default function RegisterPage() {
                         placeholder="Choose a secure password (at least 6 characters)"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        disabled={isLoading}
+                        disabled={isFormDisabled || isLoading}
                         className="pr-10"
                     />
                     <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground"
-                        disabled={isLoading}
+                        disabled={isFormDisabled || isLoading}
                     >
                         {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
@@ -297,16 +300,16 @@ export default function RegisterPage() {
                         placeholder="Confirm your password"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        disabled={isLoading}
+                        disabled={isFormDisabled || isLoading}
                     />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="student-name" className="flex items-center"><User className="w-4 h-4 mr-2" />Student Name</Label>
-                    <Input id="student-name" placeholder="Your real name" value={studentName} onChange={(e) => setStudentName(e.target.value)} disabled={isLoading} />
+                    <Input id="student-name" placeholder="Your real name" value={studentName} onChange={(e) => setStudentName(e.target.value)} disabled={isFormDisabled || isLoading} />
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="class" className="flex items-center"><Wand className="w-4 h-4 mr-2" />Choose Your Calling</Label>
-                    <Select onValueChange={handleClassChange} disabled={isLoading} value={selectedClass}>
+                    <Select onValueChange={handleClassChange} disabled={isFormDisabled || isLoading} value={selectedClass}>
                     <SelectTrigger>
                         <SelectValue placeholder="Choose your destiny" />
                     </SelectTrigger>
@@ -323,6 +326,7 @@ export default function RegisterPage() {
                         value={selectedGender}
                         onValueChange={(value) => setSelectedGender(value as 'male' | 'female')}
                         className="flex space-x-4"
+                        disabled={isFormDisabled || isLoading}
                     >
                         <div className="flex items-center space-x-2">
                             <RadioGroupItem value="male" id="gender-male" />
@@ -337,8 +341,8 @@ export default function RegisterPage() {
                 <div className="space-y-2">
                     <Label htmlFor="character-name" className="flex items-center"><Star className="w-4 h-4 mr-2" />Character Name</Label>
                     <div className="flex gap-2">
-                      <Input id="character-name" placeholder="Your hero's name" value={characterName} onChange={(e) => setCharacterName(e.target.value)} disabled={isLoading || isGeneratingName} />
-                       <Button variant="outline" onClick={handleGenerateName} disabled={isGeneratingName}>
+                      <Input id="character-name" placeholder="Your hero's name" value={characterName} onChange={(e) => setCharacterName(e.target.value)} disabled={isFormDisabled || isLoading || isGeneratingName} />
+                       <Button variant="outline" onClick={handleGenerateName} disabled={isFormDisabled || isLoading || isGeneratingName}>
                             {isGeneratingName ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                             Name Generator
                        </Button>
@@ -348,7 +352,7 @@ export default function RegisterPage() {
 
                 {/* Right Column: Selections */}
                 <div className="space-y-6 flex flex-col justify-center">
-                {selectedClass ? (
+                {selectedClass && !isFormDisabled ? (
                     <>
                     <div>
                         <Label className="text-lg font-semibold">Choose Your Avatar</Label>
@@ -380,13 +384,15 @@ export default function RegisterPage() {
                     </>
                 ) : (
                     <div className="flex items-center justify-center h-full bg-secondary/30 rounded-lg">
-                    <p className="text-muted-foreground">Please select a class to see avatar options.</p>
+                    <p className="text-muted-foreground p-4 text-center">
+                        {isFormDisabled ? 'Please enter a Guild Code to enable the rest of the form.' : 'Please select a class to see avatar options.'}
+                    </p>
                     </div>
                 )}
                 </div>
             </div>
            <div className="col-span-1 md:col-span-2 pt-6">
-              <Button onClick={handleSubmit} disabled={isLoading} className="w-full text-lg py-6">
+              <Button onClick={handleSubmit} disabled={isFormDisabled || isLoading} className="w-full text-lg py-6">
                 {isLoading ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : 'Request to Join Guild'}
               </Button>
               <p className="text-center text-sm mt-4 text-muted-foreground">
