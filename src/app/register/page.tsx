@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Shield, Heart, Wand, User, KeyRound, Star, Eye, EyeOff, BookUser, ChevronsUpDown, ShieldAlert, Mail } from 'lucide-react';
+import { Loader2, Shield, Heart, Wand, User, KeyRound, Star, Eye, EyeOff, BookUser, ChevronsUpDown, ShieldAlert, Mail, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import {
@@ -28,6 +28,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { generateName } from '@/ai/flows/name-generator';
+import { validateClassCode } from '@/ai/flows/validate-class-code';
 
 
 export default function RegisterPage() {
@@ -47,6 +48,10 @@ export default function RegisterPage() {
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
   const [isGeneratingName, setIsGeneratingName] = useState(false);
+
+  // New state for code validation
+  const [isCodeValidated, setIsCodeValidated] = useState(false);
+  const [isCheckingCode, setIsCheckingCode] = useState(false);
 
   const router = useRouter();
   const { toast } = useToast();
@@ -84,8 +89,35 @@ export default function RegisterPage() {
     }
   };
 
+  const handleValidateCode = async () => {
+    if (!classCode.trim()) {
+        toast({ variant: 'destructive', title: 'Guild Code Required', description: 'Please enter a code to validate.' });
+        return;
+    }
+    setIsCheckingCode(true);
+    try {
+        const result = await validateClassCode(classCode);
+        if (result.isValid) {
+            setIsCodeValidated(true);
+            toast({ title: 'Guild Code Valid!', description: 'You may now fill out the rest of the form.' });
+        } else {
+            setIsCodeValidated(false);
+            toast({ variant: 'destructive', title: 'Invalid Guild Code', description: 'That code was not found. Please check with your Guild Leader and try again.' });
+        }
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Validation Failed', description: error.message });
+    } finally {
+        setIsCheckingCode(false);
+    }
+  }
+
+
   const handleSubmit = async () => {
-    if (!classCode || (signupMethod === 'alias' && !studentId) || (signupMethod === 'email' && !email) || !password || !confirmPassword || !studentName || !characterName || !selectedClass || !selectedAvatar) {
+    if (!isCodeValidated) {
+      toast({ variant: 'destructive', title: 'Guild Code Not Validated', description: 'Please validate your Guild Code before proceeding.' });
+      return;
+    }
+    if ((signupMethod === 'alias' && !studentId) || (signupMethod === 'email' && !email) || !password || !confirmPassword || !studentName || !characterName || !selectedClass || !selectedAvatar) {
       toast({
         variant: 'destructive',
         title: 'Missing Information',
@@ -195,7 +227,7 @@ export default function RegisterPage() {
     </Card>
   );
   
-  const isFormDisabled = classCode.trim() === '';
+  const isFormDisabled = !isCodeValidated;
 
   return (
     <TooltipProvider>
@@ -219,14 +251,19 @@ export default function RegisterPage() {
             <div className="space-y-2 text-center bg-primary/10 p-4 rounded-lg">
                 <Label htmlFor="class-code" className="flex items-center justify-center text-lg font-semibold"><BookUser className="w-5 h-5 mr-2" />Guild Code</Label>
                  <p className="text-sm text-black">This is the most important step! Get this code from your Guild Leader.</p>
-                <Input 
-                    id="class-code" 
-                    placeholder="ENTER GUILD CODE" 
-                    value={classCode} 
-                    onChange={(e) => setClassCode(e.target.value)} 
-                    disabled={isLoading} 
-                    className="max-w-xs mx-auto text-center h-12 text-lg tracking-widest font-bold"
-                />
+                <div className="flex justify-center items-center gap-2">
+                    <Input 
+                        id="class-code" 
+                        placeholder="ENTER GUILD CODE" 
+                        value={classCode} 
+                        onChange={(e) => setClassCode(e.target.value.toUpperCase())} 
+                        disabled={isLoading || isCheckingCode || isCodeValidated} 
+                        className="max-w-xs mx-auto text-center h-12 text-lg tracking-widest font-bold"
+                    />
+                    <Button onClick={handleValidateCode} disabled={isCheckingCode || !classCode.trim() || isCodeValidated}>
+                        {isCheckingCode ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Validate Code'}
+                    </Button>
+                </div>
               </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -384,8 +421,8 @@ export default function RegisterPage() {
                     </>
                 ) : (
                     <div className="flex items-center justify-center h-full bg-secondary/30 rounded-lg">
-                        <p className={cn("p-4 text-center", isFormDisabled ? "text-destructive font-bold text-xl" : "text-muted-foreground")}>
-                            {isFormDisabled ? 'Please enter a Guild Code to enable the rest of the form.' : 'Please select a class to see avatar options.'}
+                        <p className={cn("p-4 text-center text-xl font-bold", isFormDisabled ? "text-destructive" : "text-muted-foreground")}>
+                            {isFormDisabled ? 'Please enter a Guild Code and click "Validate Code" to continue.' : 'Please select a class to see avatar options.'}
                         </p>
                     </div>
                 )}
