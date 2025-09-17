@@ -25,8 +25,16 @@ interface RichTextEditorProps {
 const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const [selection, setSelection] = useState<Range | null>(null);
+
+  // YouTube Dialog State
   const [isYouTubeDialogOpen, setIsYouTubeDialogOpen] = useState(false);
   const [youTubeUrl, setYouTubeUrl] = useState('');
+
+  // Image Dialog State
+  const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
+  const [imageUrl, setImageUrl] = useState('');
+  const [imageWidth, setImageWidth] = useState('');
+
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -45,7 +53,6 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
     const sel = window.getSelection();
     if (sel && sel.rangeCount > 0) {
       const range = sel.getRangeAt(0);
-      // Ensure the selection is within the editable div
       if (editorRef.current && editorRef.current.contains(range.commonAncestorContainer)) {
         setSelection(range);
       }
@@ -58,7 +65,6 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
       sel?.removeAllRanges();
       sel?.addRange(selection);
     } else if (editorRef.current) {
-      // Fallback: place cursor at the end if no selection was saved
       editorRef.current.focus();
       const range = document.createRange();
       range.selectNodeContents(editorRef.current);
@@ -76,7 +82,7 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
     }
     document.execCommand(command, false, value);
     if(editorRef.current) {
-      handleInput(); // Update state after command
+      handleInput();
     }
   };
 
@@ -92,16 +98,15 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
     }
   };
 
-  const handleImage = () => {
-    const url = prompt('Enter the image URL:');
-    if (!url) return;
-
-    const width = prompt('Enter the image width in pixels (e.g., 400). Leave blank for default.', '100%');
-    const widthStyle = width ? `width: ${/^\d+$/.test(width) ? `${width}px` : width}; max-width: 100%;` : 'max-width: 100%;';
-    
-    // Wrap the image in a div to ensure it can be justified correctly.
-    const imgTag = `<div><img src="${url}" alt="user image" style="${widthStyle} height: auto; border-radius: 8px; display: inline-block;" /></div>`;
+  const handleImageConfirm = () => {
+    if (!imageUrl) return;
+    const width = imageWidth || '100%';
+    const widthStyle = `width: ${/^\d+$/.test(width) ? `${width}px` : width}; max-width: 100%;`;
+    const imgTag = `<div><img src="${imageUrl}" alt="user image" style="${widthStyle} height: auto; border-radius: 8px; display: inline-block;" /></div>`;
     execCommand('insertHTML', imgTag);
+    setIsImageDialogOpen(false);
+    setImageUrl('');
+    setImageWidth('');
   };
   
   const getYouTubeEmbedUrl = (url: string) => {
@@ -154,6 +159,39 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Embed Image</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+                <Label htmlFor="image-url">Image URL</Label>
+                <Input 
+                id="image-url"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https://example.com/image.png"
+                />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="image-width">Image Width (Optional)</Label>
+                <Input 
+                id="image-width"
+                value={imageWidth}
+                onChange={(e) => setImageWidth(e.target.value)}
+                placeholder="e.g., 400px or 100%"
+                />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button onClick={handleImageConfirm}>Embed Image</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <div className={cn("border rounded-md", className)}>
         <div className="flex items-center gap-2 p-2 border-b bg-muted/50 flex-wrap">
           <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(handleBold)} title="Bold">
@@ -171,7 +209,7 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
           <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(handleLink)} title="Link">
             <Link className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(handleImage)} title="Image">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(() => setIsImageDialogOpen(true))} title="Image">
             <ImageIcon className="h-4 w-4" />
           </Button>
           <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(() => setIsYouTubeDialogOpen(true))} title="YouTube Video">
