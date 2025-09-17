@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { Suspense, lazy } from 'react';
@@ -80,7 +79,7 @@ export function AvatarDisplay({ student }: AvatarDisplayProps) {
                     src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Reaper.png?alt=media&token=cc377d64-54eb-41a1-85b7-fdb37b884255"
                     alt="Fallen"
                     fill
-                    className="object-contain z-20"
+                    className="object-contain z-20 opacity-50"
                     priority
                 />
             )}
