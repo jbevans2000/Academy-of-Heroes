@@ -39,7 +39,7 @@ export default function AboutPage() {
                 </Button>
             </header>
             <main className="flex-1 p-4 md:p-6 lg:p-8">
-                <div className="max-w-4xl mx-auto bg-card/90 p-6 sm:p-8 md:p-12 rounded-xl shadow-2xl">
+                <div className="max-w-6xl mx-auto bg-card/90 p-6 sm:p-8 md:p-12 rounded-xl shadow-2xl">
                     {isLoading ? (
                         <div className="flex justify-center items-center h-64">
                             <Loader2 className="h-16 w-16 animate-spin text-primary" />
