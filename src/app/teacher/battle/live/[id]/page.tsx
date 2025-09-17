@@ -803,10 +803,11 @@ export default function TeacherLiveBattlePage() {
 
         // --- ZEN SHIELD SHATTER LOGIC ---
         if (currentLiveState.zenShieldWasActiveThisRound) {
-            const activePlayerCount = studentsInBattle.length;
+            const activePlayerCount = studentsInBattle.filter(s => s.hp > 0).length;
             const incorrectCount = finalRoundResponses.filter(r => !r.isCorrect).length;
             if (activePlayerCount > 0 && (incorrectCount / activePlayerCount) > 0.25) {
-                const caster = allStudents.find(s => s.uid === currentLiveState.zenShieldCasts?.[0]);
+                const casterUid = Object.keys(currentLiveState.zenShieldCasts || {})[0];
+                const caster = studentMap.get(casterUid);
                 if (caster) {
                     const shatterDamage = (Math.floor(Math.random() * 6) + 1) + (Math.floor(Math.random() * 6) + 1) + (Math.floor(Math.random() * 6) + 1) + (caster.level || 1);
                     powerDamage += shatterDamage;
