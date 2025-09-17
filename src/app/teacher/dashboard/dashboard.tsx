@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { collection, doc, getDoc, onSnapshot, writeBatch, deleteDoc, getDocs, query, where, updateDoc, orderBy, limit } from 'firebase/firestore';
+import { collection, doc, getDoc, onSnapshot, writeBatch, deleteDoc, getDocs, query, where, updateDoc, orderBy, limit, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student, PendingStudent, ClassType, Company, QuestHub, Chapter } from '@/lib/data';
 import { TeacherHeader } from "@/components/teacher/teacher-header";
@@ -175,11 +175,13 @@ export default function Dashboard() {
 
                      if(!latestBroadcastSnapshot.empty) {
                          const latestBroadcast = latestBroadcastSnapshot.docs[0].data();
-                         const latestTimestamp = latestBroadcast.sentAt.toDate();
-                         
-                         if (latestTimestamp > lastSeenTimestamp) {
-                             setBroadcastMessage(latestBroadcast.message);
-                             setIsBroadcastDialogOpen(true);
+                         if (latestBroadcast.sentAt) {
+                            const latestTimestamp = latestBroadcast.sentAt.toDate();
+                            
+                            if (latestTimestamp > lastSeenTimestamp) {
+                                setBroadcastMessage(latestBroadcast.message);
+                                setIsBroadcastDialogOpen(true);
+                            }
                          }
                      }
                  }
@@ -485,8 +487,6 @@ export default function Dashboard() {
     } else {
       await deleteDoc(pendingStudentRef);
       await deleteDoc(doc(db, 'students', uid));
-
-      await logGameEvent(teacher.uid, 'ACCOUNT', `The application for ${pendingStudent.studentName} (${pendingStudent.characterName}) was rejected.`);
       toast({ title: "Request Rejected", description: `The guild application for ${pendingStudent.studentName} has been denied.` });
     }
   
@@ -640,6 +640,14 @@ export default function Dashboard() {
     setShowWelcomeDialog(true); // Chain the next dialog
   }
 
+  const handleCloseBroadcastDialog = async () => {
+    if (teacher) {
+        const teacherRef = doc(db, 'teachers', teacher.uid);
+        await updateDoc(teacherRef, { lastSeenBroadcastTimestamp: serverTimestamp() });
+    }
+    setIsBroadcastDialogOpen(false);
+  }
+
 
   if (isLoading || !teacher) {
     return (
@@ -684,7 +692,7 @@ export default function Dashboard() {
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogAction onClick={() => setIsBroadcastDialogOpen(false)}>I Understand</AlertDialogAction>
+                    <AlertDialogAction onClick={handleCloseBroadcastDialog}>I Understand</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
@@ -1195,5 +1203,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
-    
