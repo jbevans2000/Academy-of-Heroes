@@ -24,7 +24,7 @@ interface RichTextEditorProps {
 
 const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => {
   const editorRef = useRef<HTMLDivElement>(null);
-  const [selection, setSelection] = useState<Range | null>(null);
+  const selectionRef = useRef<Range | null>(null);
 
   // YouTube Dialog State
   const [isYouTubeDialogOpen, setIsYouTubeDialogOpen] = useState(false);
@@ -58,24 +58,18 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
     if (sel && sel.rangeCount > 0) {
       const range = sel.getRangeAt(0);
       if (editorRef.current && editorRef.current.contains(range.commonAncestorContainer)) {
-        setSelection(range);
+        selectionRef.current = range;
       }
     }
   };
   
   const restoreSelection = () => {
-    if (selection) {
+    if (selectionRef.current) {
       const sel = window.getSelection();
       sel?.removeAllRanges();
-      sel?.addRange(selection);
+      sel?.addRange(selectionRef.current);
     } else if (editorRef.current) {
       editorRef.current.focus();
-      const range = document.createRange();
-      range.selectNodeContents(editorRef.current);
-      range.collapse(false);
-      const sel = window.getSelection();
-      sel?.removeAllRanges();
-      sel?.addRange(range);
     }
   };
   
@@ -245,13 +239,13 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
           <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(handleJustifyRight)} title="Align Right">
               <AlignRight className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(() => { saveSelection(); setIsLinkDialogOpen(true); })} title="Link">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(() => setIsLinkDialogOpen(true))} title="Link">
             <LinkIcon className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(() => { saveSelection(); setIsImageDialogOpen(true); })} title="Image">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(() => setIsImageDialogOpen(true))} title="Image">
             <ImageIcon className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(() => { saveSelection(); setIsYouTubeDialogOpen(true); })} title="YouTube Video">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(() => setIsYouTubeDialogOpen(true))} title="YouTube Video">
             <Youtube className="h-4 w-4" />
           </Button>
            <select onChange={handleFontFamilyChange} onMouseDown={(e) => e.preventDefault()} className="p-1 border rounded-md bg-background text-sm">
