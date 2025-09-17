@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { ChallengeDialog } from '@/components/dashboard/challenge-dialog';
 import { getDuelSettings } from '@/ai/flows/manage-duels';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 interface DashboardClientProps {
   student: Student;
@@ -71,7 +72,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
   }, [student, router, toast]);
   
   useEffect(() => {
-    if (!student.teacherUid) return;
+    if (!student.teacherUid || isTeacherPreview) return;
     const duelsRef = collection(db, 'teachers', student.teacherUid, 'duels');
     const q = query(duelsRef, where('opponentUid', '==', student.uid), where('status', '==', 'pending'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -83,7 +84,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
         }
     });
     return () => unsubscribe();
-  }, [student.uid, student.teacherUid]);
+  }, [student.uid, student.teacherUid, isTeacherPreview]);
 
 
   const handleReadyForBattle = async () => {
@@ -152,6 +153,8 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
     }
     setActiveDuelRequest(null);
   };
+  
+  const teacherPreviewQuery = `?teacherPreview=true&studentUid=${student.uid}`;
 
   return (
     <>
@@ -201,6 +204,15 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
 
       <div className="p-4 md:p-6 lg:p-8">
         <div className="mx-auto max-w-4xl space-y-6">
+          {isTeacherPreview && (
+            <Alert variant="default" className="bg-yellow-100 dark:bg-yellow-900/50 border-yellow-500">
+                <User className="h-4 w-4" />
+                <AlertTitle>Teacher Preview Mode</AlertTitle>
+                <AlertDescription>
+                    You are viewing this dashboard as {student.characterName}. Any actions you take, such as purchasing items from The Vault, will be performed on their behalf.
+                </AlertDescription>
+            </Alert>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             <AvatarDisplay
               student={student}
@@ -241,35 +253,33 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
           <StatsCard 
               student={student}
           />
-          {!isTeacherPreview && (
-              <TooltipProvider>
-                  <div className="flex justify-center pt-6 gap-4">
-                      <Link href="/armory" passHref>
-                          <Button variant="outline" className="h-auto py-4 px-8 border-2 border-amber-600 bg-amber-500/10 hover:bg-amber-500/20">
-                              <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
-                                  <Gem className="h-12 w-12 text-amber-500" />
-                                  <div>
-                                      <h3 className="text-xl font-bold">The Vault</h3>
-                                      <p className="text-muted-foreground">Spend your gold!</p>
-                                  </div>
-                                  </div>
-                          </Button>
-                      </Link>
-                      
-                      <Link href="/dashboard/inventory" passHref>
-                          <Button variant="outline" className="h-auto py-4 px-8 border-2 border-purple-600 bg-purple-500/10 hover:bg-purple-500/20">
-                              <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
-                                  <Package className="h-12 w-12 text-purple-500" />
-                                  <div>
-                                      <h3 className="text-xl font-bold">My Inventory</h3>
-                                      <p className="text-muted-foreground">View your items!</p>
-                                  </div>
-                                  </div>
-                          </Button>
-                      </Link>
-                  </div>
-              </TooltipProvider>
-          )}
+          <TooltipProvider>
+              <div className="flex justify-center pt-6 gap-4">
+                  <Link href={`/armory${isTeacherPreview ? teacherPreviewQuery : ''}`} passHref>
+                      <Button variant="outline" className="h-auto py-4 px-8 border-2 border-amber-600 bg-white hover:bg-gray-100 text-gray-900">
+                          <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
+                              <Gem className="h-12 w-12 text-amber-500" />
+                              <div>
+                                  <h3 className="text-xl font-bold">The Vault</h3>
+                                  <p className="text-muted-foreground">Spend your gold!</p>
+                              </div>
+                              </div>
+                      </Button>
+                  </Link>
+                  
+                  <Link href={`/dashboard/inventory${isTeacherPreview ? teacherPreviewQuery : ''}`} passHref>
+                      <Button variant="outline" className="h-auto py-4 px-8 border-2 border-purple-600 bg-white hover:bg-gray-100 text-gray-900">
+                          <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
+                              <Package className="h-12 w-12 text-purple-500" />
+                              <div>
+                                  <h3 className="text-xl font-bold">My Inventory</h3>
+                                  <p className="text-muted-foreground">View your items!</p>
+                              </div>
+                              </div>
+                      </Button>
+                  </Link>
+              </div>
+          </TooltipProvider>
         </div>
       </div>
     </>
