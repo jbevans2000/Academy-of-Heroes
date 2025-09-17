@@ -103,15 +103,7 @@ export function StatsCard({ student }: StatsCardProps) {
         battleState={null} // Not in a battle context
     />
     <Card className="shadow-lg rounded-xl overflow-hidden relative">
-       {student.backgroundUrl && (
-           <Image 
-                src={student.backgroundUrl}
-                alt="Dashboard Background"
-                fill
-                className="object-cover z-0 opacity-30"
-           />
-       )}
-      <div className="relative z-10">
+      <div className="relative z-10 bg-card/80 backdrop-blur-sm">
         <CardHeader>
           <CardTitle className="font-headline">{studentName}</CardTitle>
           <CardDescription>{characterName}</CardDescription>
