@@ -9,7 +9,6 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowLeft, LifeBuoy, Loader2 } from "lucide-react";
-import { DashboardHeader } from "@/components/dashboard/header";
 import type { HelpArticle } from '@/components/admin/help-article-editor';
 
 export default function StudentHelpPage() {
@@ -35,7 +34,14 @@ export default function StudentHelpPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-muted/40">
-      <DashboardHeader />
+      <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
+        <Link href="/" passHref>
+          <Button variant="outline">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Return to Home
+          </Button>
+        </Link>
+      </header>
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="max-w-3xl mx-auto space-y-8">
           <div className="text-center">
@@ -80,9 +86,9 @@ export default function StudentHelpPage() {
             </CardContent>
           </Card>
            <div className="text-center">
-             <Link href="/dashboard" passHref>
-                <Button size="lg" variant="outline">
-                    <ArrowLeft className="mr-2 h-5 w-5" /> Return to Dashboard
+             <Link href="/login" passHref>
+                <Button size="lg" variant="default">
+                    Begin Your Adventure
                 </Button>
             </Link>
            </div>

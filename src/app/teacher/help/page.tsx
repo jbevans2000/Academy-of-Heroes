@@ -3,15 +3,14 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { onAuthStateChanged, type User } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
-import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, LifeBuoy } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import type { HelpArticle } from '@/components/admin/help-article-editor';
+import Link from 'next/link';
 
 export default function TeacherHelpPage() {
     const router = useRouter();
@@ -19,12 +18,6 @@ export default function TeacherHelpPage() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-            if (!user) {
-                router.push('/teacher/login');
-            }
-        });
-
         const q = query(collection(db, 'content', 'help', 'articles'), where('audience', '==', 'teacher'));
         const unsubscribeArticles = onSnapshot(q, (snapshot) => {
             const articlesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as HelpArticle))
@@ -34,7 +27,6 @@ export default function TeacherHelpPage() {
         });
 
         return () => {
-            unsubscribeAuth();
             unsubscribeArticles();
         };
     }, [router]);
@@ -47,13 +39,16 @@ export default function TeacherHelpPage() {
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
-            <TeacherHeader />
+            <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
+                <Link href="/" passHref>
+                    <Button variant="outline">
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Return to Home
+                    </Button>
+                </Link>
+            </header>
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="max-w-4xl mx-auto space-y-8">
-                    <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Podium
-                    </Button>
                     <Card className="text-center">
                         <CardHeader>
                             <CardTitle className="text-3xl">The Grandmaster's Guide</CardTitle>
@@ -94,7 +89,13 @@ export default function TeacherHelpPage() {
                             )}
                         </CardContent>
                     </Card>
-
+                     <div className="text-center">
+                         <Link href="/teacher/register" passHref>
+                            <Button size="lg" variant="default">
+                                Register Your Guild
+                            </Button>
+                        </Link>
+                    </div>
                 </div>
             </main>
         </div>
