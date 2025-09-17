@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Bold, Link, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Youtube } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -14,6 +14,7 @@ interface RichTextEditorProps {
 
 const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => {
   const editorRef = useRef<HTMLDivElement>(null);
+  const [selection, setSelection] = useState<Range | null>(null);
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -27,11 +28,29 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
       onChange(editorRef.current.innerHTML);
     }
   };
+
+  const saveSelection = () => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      setSelection(sel.getRangeAt(0));
+    }
+  };
+  
+  const restoreSelection = () => {
+    if (selection) {
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(selection);
+    }
+  };
   
   const execCommand = (command: string, value?: string) => {
+    restoreSelection();
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
     document.execCommand(command, false, value);
     if(editorRef.current) {
-      editorRef.current.focus();
       handleInput(); // Update state after command
     }
   };
@@ -42,6 +61,7 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
   const handleJustifyRight = () => execCommand('justifyRight');
 
   const handleLink = () => {
+    restoreSelection();
     const url = prompt('Enter the URL:');
     if (url) {
       execCommand('createLink', url);
@@ -49,6 +69,7 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
   };
 
   const handleImage = () => {
+    restoreSelection();
     const url = prompt('Enter the image URL:');
     if (!url) return;
 
@@ -67,6 +88,7 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
   };
 
   const handleYouTubeVideo = () => {
+    restoreSelection();
     const url = prompt('Enter the YouTube video URL:');
     if (!url) return;
     
@@ -109,6 +131,9 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
         ref={editorRef}
         contentEditable
         onInput={handleInput}
+        onBlur={saveSelection}
+        onMouseUp={saveSelection}
+        onKeyUp={saveSelection}
         className="prose prose-sm max-w-none p-3 min-h-[150px] outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-b-md"
         />
     </div>
