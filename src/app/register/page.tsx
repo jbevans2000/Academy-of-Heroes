@@ -210,7 +210,7 @@ export default function RegisterPage() {
       >
         {isCheckingStatus ? <Loader2 className="h-16 w-16 animate-spin text-primary" /> :
          !isRegistrationOpen ? <RegistrationClosedCard /> :
-        <Card className="w-full max-w-4xl shadow-2xl bg-card/80 backdrop-blur-sm">
+        <Card className="w-full max-w-4xl shadow-2xl bg-card/90 backdrop-blur-sm">
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-headline text-primary">Forge Your Hero</CardTitle>
             <CardDescription>Fill in your details and choose your path to begin your adventure in Luminaria.</CardDescription>
@@ -384,9 +384,9 @@ export default function RegisterPage() {
                     </>
                 ) : (
                     <div className="flex items-center justify-center h-full bg-secondary/30 rounded-lg">
-                    <p className="text-muted-foreground p-4 text-center">
-                        {isFormDisabled ? 'Please enter a Guild Code to enable the rest of the form.' : 'Please select a class to see avatar options.'}
-                    </p>
+                        <p className={cn("p-4 text-center", isFormDisabled ? "text-destructive font-bold text-xl" : "text-muted-foreground")}>
+                            {isFormDisabled ? 'Please enter a Guild Code to enable the rest of the form.' : 'Please select a class to see avatar options.'}
+                        </p>
                     </div>
                 )}
                 </div>
