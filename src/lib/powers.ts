@@ -130,7 +130,7 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Zen Shield',
-      description: 'You enter a state of perfect focus, creating a global shield that protects every active member of your party from all damage for one round. (Max 1 use per Guardian per battle)',
+      description: "You enter a state of perfect focus, creating a Zen Shield around the entire party that protects them from all damage for one round. If more than 25% of your party answers incorrectly while the shield is active, the shield shatters, dealing 3d6 + your Level as bonus power damage to the boss! (Max 1 use per Guardian per battle)",
       level: 15,
       mpCost: 30,
       type: 'support',

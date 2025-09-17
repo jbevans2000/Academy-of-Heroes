@@ -99,6 +99,7 @@ interface LiveBattleState {
   intercepting?: { [casterUid: string]: string }; // casterUid -> targetUid
   damageShields?: { [uid: string]: number };
   zenShieldCasts?: { [studentUid: string]: number }; // For Zen Shield
+  zenShieldWasActiveThisRound?: boolean;
   inspiringStrikeCasts?: { [studentUid: string]: number };
   immuneToRevival?: string[]; // For Martial Sacrifice
   martialSacrificeCasterUid?: string | null; // Tracks if the power has been used
@@ -735,10 +736,10 @@ export default function TeacherLiveBattlePage() {
                 if(!student) continue;
 
                 let damageToApply = damageToTakeByStudent[studentUid];
-                const isShielded = newShields[student.uid]?.roundsRemaining > 0;
+                const isShielded = newShields[student.uid]?.roundsRemaining > 0 || currentLiveState.shielded?.[student.uid]?.roundsRemaining > 0;
                 
                 if (isShielded) {
-                     const casterName = newShields[student.uid]?.casterName || "An ally";
+                     const casterName = (newShields[student.uid] || currentLiveState.shielded?.[student.uid])?.casterName || "An ally";
                      roundEvents.push({ studentUid: student.uid, message: `Your shield from ${casterName} absorbed all damage!` });
                      continue; 
                 }
@@ -800,6 +801,21 @@ export default function TeacherLiveBattlePage() {
             powersUsedThisRound.push(`Inspiring Strike (x3 Power Dmg)`);
         }
 
+        // --- ZEN SHIELD SHATTER LOGIC ---
+        if (currentLiveState.zenShieldWasActiveThisRound) {
+            const activePlayerCount = studentsInBattle.length;
+            const incorrectCount = finalRoundResponses.filter(r => !r.isCorrect).length;
+            if (activePlayerCount > 0 && (incorrectCount / activePlayerCount) > 0.25) {
+                const caster = allStudents.find(s => s.uid === currentLiveState.zenShieldCasts?.[0]);
+                if (caster) {
+                    const shatterDamage = (Math.floor(Math.random() * 6) + 1) + (Math.floor(Math.random() * 6) + 1) + (Math.floor(Math.random() * 6) + 1) + (caster.level || 1);
+                    powerDamage += shatterDamage;
+                    batch.update(liveBattleRef, { powerEventMessage: `The Zen Shield shatters from the strain, releasing a wave of concussive force for ${shatterDamage} damage!` });
+                    batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: caster.characterName, powerName: 'Zen Shield (Shatter)', description: `Dealt ${shatterDamage} damage.`, timestamp: serverTimestamp() });
+                }
+            }
+        }
+
         const totalDamageThisRound = baseDamageFromAnswers + powerDamage;
 
         const updatePayload: Partial<LiveBattleState> = {
@@ -816,6 +832,7 @@ export default function TeacherLiveBattlePage() {
             damageShields: studentDamageShields,
             roundEvents: roundEvents,
             arcaneRedirectCasts: [], // Clear casts for the next round
+            zenShieldWasActiveThisRound: false, // Reset the flag
         };
 
         if (newlyFallenUids.length > 0) {
@@ -1295,8 +1312,13 @@ export default function TeacherLiveBattlePage() {
                     if (casts >= 1) {
                         batch.update(liveBattleRef, { targetedEvent: { targetUid: activation.studentUid, message: "You have already achieved Zen this battle. The power cannot be used again." } });
                     } else {
-                        const activePlayers = allStudents.filter(s => s.hp > 0);
-                        const updates: { [key: string]: any } = { [`zenShieldCasts.${activation.studentUid}`]: increment(1), powerEventMessage: `${activation.studentName} achieves perfect focus, creating a Zen Shield around the entire party!`, targetedEvent: { targetUid: activation.studentUid, message: "You create a shield of pure focus around your allies, protecting them from harm." } };
+                        const activePlayers = allStudents.filter(s => s.inBattle && s.hp > 0);
+                        const updates: { [key: string]: any } = { 
+                            [`zenShieldCasts.${activation.studentUid}`]: increment(1), 
+                            zenShieldWasActiveThisRound: true,
+                            powerEventMessage: `${activation.studentName} achieves perfect focus, creating a Zen Shield around the entire party!`, 
+                            targetedEvent: { targetUid: activation.studentUid, message: "You create a shield of pure focus around your allies, protecting them from harm." } 
+                        };
                         activePlayers.forEach(player => { updates[`shielded.${player.uid}`] = { roundsRemaining: 1, casterName: activation.studentName }; });
                         batch.update(liveBattleRef, updates);
                         batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: activation.studentName, powerName: activation.powerName, description: `Shielded all active party members for 1 round.`, timestamp: serverTimestamp() });
@@ -1363,6 +1385,7 @@ export default function TeacherLiveBattlePage() {
         chaosStormCasts: {},
         intercepting: {},
         zenShieldCasts: {},
+        zenShieldWasActiveThisRound: false,
         immuneToRevival: [],
         martialSacrificeCasterUid: null,
         arcaneSacrificeCasterUid: null,
@@ -1430,6 +1453,7 @@ export default function TeacherLiveBattlePage() {
             intercepting: {},
             damageShields: {},
             arcaneRedirectCasts: [],
+            zenShieldWasActiveThisRound: false,
         });
 
         await batch.commit();
