@@ -75,13 +75,9 @@ export function AvatarDisplay({ student }: AvatarDisplayProps) {
     <div className="flex justify-center items-center py-4">
         <div className={cn("relative w-96 h-96 border-8 bg-black/20 p-2 shadow-inner", avatarBorderColor)}>
              {isFallen && (
-                <Image
-                    src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Reaper.png?alt=media&token=cc377d64-54eb-41a1-85b7-fdb37b884255"
-                    alt="Fallen"
-                    fill
-                    className="object-contain z-20 opacity-65"
-                    priority
-                />
+                <div className="absolute inset-0 z-20 bg-black/70 flex items-center justify-center">
+                    <p className="text-5xl font-bold text-red-600 font-headline animate-pulse">FALLEN</p>
+                </div>
             )}
             {showCustomCharacter && equipment.bodyId && allBodies.length > 0 ? (
                 <Suspense fallback={<CharacterViewerFallback />}>
