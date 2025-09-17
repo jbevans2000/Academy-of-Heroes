@@ -46,18 +46,22 @@ export function LoginForm() {
                  const dummyEmail = `${loginId.toLowerCase().replace(/\s/g, '_')}@academy-heroes-mziuf.firebaseapp.com`;
                  await attemptLogin(dummyEmail, password);
             } catch (aliasError: any) {
-                // If the alias login also fails, show a generic error.
+                // If the alias login also fails, re-throw its error to be caught below.
                 throw aliasError;
             }
         } else {
-            // If the error was something else (e.g., network error), throw it.
+            // If the error was something else (e.g., a specific data not found error), throw it.
             throw emailError;
         }
       }
     } catch (error: any) {
       console.error(error);
       let description = 'An unexpected error occurred. Please try again.';
-      if (error.code) {
+
+      // Check for our custom error message first
+      if (error.message === "Your account info could not be found. Please speak with your Guild Leader!") {
+        description = error.message;
+      } else if (error.code) { // Then check for Firebase auth error codes
         switch (error.code) {
           case 'auth/invalid-credential':
           case 'auth/user-not-found':
@@ -71,8 +75,6 @@ export function LoginForm() {
           default:
             description = `An error occurred: ${error.message}`;
         }
-      } else {
-        description = error.message;
       }
       toast({
         variant: 'destructive',
@@ -98,7 +100,8 @@ export function LoginForm() {
         teacherUid = studentMetaSnap.data().teacherUid;
         isApproved = studentMetaSnap.data().approved;
       } else {
-        throw new Error("Your hero's record could not be found in any guild.");
+        // This is the key change: throw a specific, user-friendly error.
+        throw new Error("Your account info could not be found. Please speak with your Guild Leader!");
       }
 
       const studentSnap = await getDoc(doc(db, 'teachers', teacherUid, 'students', user.uid));
@@ -124,8 +127,9 @@ export function LoginForm() {
       } else {
          // This case handles when a student is approved but their document isn't created yet,
          // OR if the student is unapproved.
+         // Also catches cases where a student record was deleted from the teacher's subcollection but the global one remains.
          await setDoc(doc(db, 'students', user.uid), { teacherUid: teacherUid, approved: false });
-         router.push('/awaiting-approval');
+         throw new Error("Your account info could not be found. Please speak with your Guild Leader!");
       }
   }
 
