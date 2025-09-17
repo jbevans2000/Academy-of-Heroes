@@ -245,16 +245,16 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
           <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(handleJustifyRight)} title="Align Right">
               <AlignRight className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(() => setIsLinkDialogOpen(true))} title="Link">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(() => { saveSelection(); setIsLinkDialogOpen(true); })} title="Link">
             <LinkIcon className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(() => setIsImageDialogOpen(true))} title="Image">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(() => { saveSelection(); setIsImageDialogOpen(true); })} title="Image">
             <ImageIcon className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(() => setIsYouTubeDialogOpen(true))} title="YouTube Video">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(() => { saveSelection(); setIsYouTubeDialogOpen(true); })} title="YouTube Video">
             <Youtube className="h-4 w-4" />
           </Button>
-           <select onChange={handleFontFamilyChange} className="p-1 border rounded-md bg-background text-sm">
+           <select onChange={handleFontFamilyChange} onMouseDown={(e) => e.preventDefault()} className="p-1 border rounded-md bg-background text-sm">
                 <option value="Lora">Lora (default)</option>
                 <option value="Cinzel" style={{ fontFamily: 'Cinzel, serif' }}>Cinzel</option>
                 <option value="MedievalSharp" style={{ fontFamily: 'MedievalSharp, cursive' }}>MedievalSharp</option>
@@ -263,7 +263,7 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
                 <option value="Georgia">Georgia</option>
                 <option value="Verdana">Verdana</option>
             </select>
-            <select onChange={handleFontSizeChange} className="p-1 border rounded-md bg-background text-sm">
+            <select onChange={handleFontSizeChange} onMouseDown={(e) => e.preventDefault()} className="p-1 border rounded-md bg-background text-sm">
                 <option value="3">Normal</option>
                 <option value="1">Extra Small</option>
                 <option value="2">Small</option>
@@ -273,7 +273,7 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
                 <option value="7">Heading 1</option>
             </select>
              <div className="flex items-center h-8 w-8 justify-center rounded-md border bg-background">
-                <Input type="color" onChange={handleFontColorChange} className="w-full h-full p-0 border-none cursor-pointer" title="Font Color" />
+                <Input type="color" onChange={handleFontColorChange} onMouseDown={(e) => e.preventDefault()} className="w-full h-full p-0 border-none cursor-pointer" title="Font Color" />
             </div>
         </div>
         <div
