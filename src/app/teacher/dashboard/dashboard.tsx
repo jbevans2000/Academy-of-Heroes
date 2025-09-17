@@ -487,7 +487,7 @@ export default function Dashboard() {
       await deleteDoc(doc(db, 'students', uid));
 
       await logGameEvent(teacher.uid, 'ACCOUNT', `The application for ${pendingStudent.studentName} (${pendingStudent.characterName}) was rejected.`);
-      toast({ title: "Request Rejected", description: `The request for ${pendingStudent.characterName} has been deleted. You may need to delete the user from Firebase Authentication manually if they should be prevented from re-registering.` });
+      toast({ title: "Request Rejected", description: `The guild application for ${pendingStudent.studentName} has been denied.` });
     }
   
     if (pendingStudents.length === 1) {
@@ -1026,7 +1026,7 @@ export default function Dashboard() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Archive Selected Students?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will hide {selectedStudents.length} student(s) from the main dashboard. They will not be deleted and can be restored later from the "Archived Heroes" page. Are you sure?
+                            This will hide {selectedStudents.length} student(s) from the main dashboard. They will not be able to log in. This action can be undone from the "Archived Heroes" page. Are you sure?
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -1195,3 +1195,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
+    
