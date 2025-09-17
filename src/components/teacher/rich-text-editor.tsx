@@ -26,19 +26,14 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
   const editorRef = useRef<HTMLDivElement>(null);
   const selectionRef = useRef<Range | null>(null);
 
-  // YouTube Dialog State
+  // Dialog States
+  const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
   const [isYouTubeDialogOpen, setIsYouTubeDialogOpen] = useState(false);
   const [youTubeUrl, setYouTubeUrl] = useState('');
-
-  // Image Dialog State
   const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [imageWidth, setImageWidth] = useState('');
-
-  // Link Dialog State
-  const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
-  const [linkUrl, setLinkUrl] = useState('');
-
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -75,27 +70,39 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
   
   const execCommand = (command: string, value?: string) => {
     restoreSelection();
-    if (editorRef.current) {
-      editorRef.current.focus();
-    }
     document.execCommand(command, false, value);
     if(editorRef.current) {
-      handleInput();
+      handleInput(); // Update state after command
     }
+  };
+
+  const handleToolbarMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault(); // Prevent editor from losing focus
+    saveSelection(); // Save selection before any dialog opens
   };
 
   const handleBold = () => execCommand('bold');
   const handleJustifyLeft = () => execCommand('justifyLeft');
   const handleJustifyCenter = () => execCommand('justifyCenter');
   const handleJustifyRight = () => execCommand('justifyRight');
+  
+  const handleOpenLinkDialog = () => {
+    saveSelection();
+    setIsLinkDialogOpen(true);
+  }
 
   const handleLinkConfirm = () => {
+    setIsLinkDialogOpen(false);
     if (linkUrl) {
       execCommand('createLink', linkUrl);
     }
-    setIsLinkDialogOpen(false);
     setLinkUrl('');
   };
+
+  const handleOpenImageDialog = () => {
+    saveSelection();
+    setIsImageDialogOpen(true);
+  }
 
   const handleImageConfirm = () => {
     if (!imageUrl) return;
@@ -113,6 +120,11 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
     const videoIdMatch = url.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
     return videoIdMatch ? `https://www.youtube.com/embed/${videoIdMatch[1]}` : null;
   };
+  
+  const handleOpenYouTubeDialog = () => {
+      saveSelection();
+      setIsYouTubeDialogOpen(true);
+  }
 
   const handleYouTubeVideoConfirm = () => {
     if (!youTubeUrl) return;
@@ -127,11 +139,6 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
     execCommand('insertHTML', videoTag);
     setIsYouTubeDialogOpen(false);
     setYouTubeUrl('');
-  };
-
-  const handleToolbarButtonClick = (action: () => void) => (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    action();
   };
   
   const handleFontFamilyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -148,6 +155,7 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
 
   return (
     <>
+      {/* Link Dialog */}
       <Dialog open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -170,6 +178,8 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* YouTube Dialog */}
       <Dialog open={isYouTubeDialogOpen} onOpenChange={setIsYouTubeDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -192,6 +202,8 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Image Dialog */}
       <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -225,27 +237,28 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
       <div className={cn("border rounded-md", className)}>
         <div className="flex items-center gap-2 p-2 border-b bg-muted/50 flex-wrap">
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(handleBold)} title="Bold">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleBold} title="Bold">
             <Bold className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(handleJustifyLeft)} title="Align Left">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleJustifyLeft} title="Align Left">
               <AlignLeft className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(handleJustifyCenter)} title="Align Center">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleJustifyCenter} title="Align Center">
               <AlignCenter className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(handleJustifyRight)} title="Align Right">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleJustifyRight} title="Align Right">
               <AlignRight className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(() => setIsLinkDialogOpen(true))} title="Link">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleOpenLinkDialog} title="Link">
             <LinkIcon className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(() => setIsImageDialogOpen(true))} title="Image">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleOpenImageDialog} title="Image">
             <ImageIcon className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(() => setIsYouTubeDialogOpen(true))} title="YouTube Video">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleOpenYouTubeDialog} title="YouTube Video">
             <Youtube className="h-4 w-4" />
           </Button>
            <select onChange={handleFontFamilyChange} onMouseDown={(e) => e.preventDefault()} className="p-1 border rounded-md bg-background text-sm">
