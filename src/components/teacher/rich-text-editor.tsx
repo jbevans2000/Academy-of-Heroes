@@ -53,7 +53,7 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
     if (sel && sel.rangeCount > 0) {
       const range = sel.getRangeAt(0);
       if (editorRef.current && editorRef.current.contains(range.commonAncestorContainer)) {
-        selectionRef.current = range;
+        selectionRef.current = range.cloneRange();
       }
     }
   };
@@ -78,7 +78,7 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
 
   const handleToolbarMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault(); // Prevent editor from losing focus
-    saveSelection(); // Save selection before any dialog opens
+    saveSelection();
   };
 
   const handleBold = () => execCommand('bold');
@@ -93,10 +93,13 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
 
   const handleLinkConfirm = () => {
     setIsLinkDialogOpen(false);
-    if (linkUrl) {
-      execCommand('createLink', linkUrl);
+    restoreSelection();
+    if (linkUrl && selectionRef.current) {
+      const linkHtml = `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer" style="color: blue; text-decoration: underline;">${selectionRef.current.toString()}</a>`;
+      execCommand('insertHTML', linkHtml);
     }
     setLinkUrl('');
+    selectionRef.current = null;
   };
 
   const handleOpenImageDialog = () => {
