@@ -69,11 +69,22 @@ export function AvatarDisplay({ student }: AvatarDisplayProps) {
       legsId: student.equippedLegsId,
       feetId: student.equippedFeetId,
   };
+  
+  const isFallen = student.hp <= 0;
 
   return (
     <div className="flex justify-center items-center py-4">
-        {showCustomCharacter && equipment.bodyId && allBodies.length > 0 ? (
-            <div className={cn("relative w-96 h-96 border-8 bg-black/20 p-2 shadow-inner", avatarBorderColor)}>
+        <div className={cn("relative w-96 h-96 border-8 bg-black/20 p-2 shadow-inner", avatarBorderColor)}>
+             {isFallen && (
+                <Image
+                    src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Reaper.png?alt=media&token=cc377d64-54eb-41a1-85b7-fdb37b884255"
+                    alt="Fallen"
+                    fill
+                    className="object-contain z-20"
+                    priority
+                />
+            )}
+            {showCustomCharacter && equipment.bodyId && allBodies.length > 0 ? (
                 <Suspense fallback={<CharacterViewerFallback />}>
                     <CharacterCanvas 
                         student={student}
@@ -87,20 +98,20 @@ export function AvatarDisplay({ student }: AvatarDisplayProps) {
                         localArmorTransforms2={student.armorTransforms2}
                     />
                 </Suspense>
-            </div>
-        ) : (
-             <div className={cn("relative w-96 h-96 border-8 bg-black/20 p-2 shadow-inner", avatarBorderColor)}>
-                {student.backgroundUrl && <Image src={student.backgroundUrl} alt="background" fill className="object-cover" />}
-                <Image
-                    src={student.avatarUrl || 'https://placehold.co/400x400.png'}
-                    alt="Selected avatar"
-                    fill
-                    className="object-contain drop-shadow-[0_5px_15px_rgba(0,0,0,0.3)] transition-all duration-500 z-10"
-                    data-ai-hint={student.class}
-                    priority
-                />
-            </div>
-        )}
+            ) : (
+                <>
+                    {student.backgroundUrl && <Image src={student.backgroundUrl} alt="background" fill className="object-cover" />}
+                    <Image
+                        src={student.avatarUrl || 'https://placehold.co/400x400.png'}
+                        alt="Selected avatar"
+                        fill
+                        className="object-contain drop-shadow-[0_5px_15px_rgba(0,0,0,0.3)] transition-all duration-500 z-10"
+                        data-ai-hint={student.class}
+                        priority
+                    />
+                </>
+            )}
+        </div>
     </div>
   );
 }
