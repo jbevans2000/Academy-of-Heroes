@@ -3,7 +3,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Bold, Link, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Youtube } from 'lucide-react';
+import { Bold, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Youtube } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -34,6 +34,10 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
   const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [imageWidth, setImageWidth] = useState('');
+
+  // Link Dialog State
+  const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
 
 
   useEffect(() => {
@@ -91,11 +95,12 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
   const handleJustifyCenter = () => execCommand('justifyCenter');
   const handleJustifyRight = () => execCommand('justifyRight');
 
-  const handleLink = () => {
-    const url = prompt('Enter the URL:');
-    if (url) {
-      execCommand('createLink', url);
+  const handleLinkConfirm = () => {
+    if (linkUrl) {
+      execCommand('createLink', linkUrl);
     }
+    setIsLinkDialogOpen(false);
+    setLinkUrl('');
   };
 
   const handleImageConfirm = () => {
@@ -149,6 +154,28 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
 
   return (
     <>
+      <Dialog open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Insert Hyperlink</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-2">
+            <Label htmlFor="link-url">URL</Label>
+            <Input 
+              id="link-url"
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+              placeholder="https://example.com"
+            />
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button onClick={handleLinkConfirm}>Insert Link</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Dialog open={isYouTubeDialogOpen} onOpenChange={setIsYouTubeDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -218,8 +245,8 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
           <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(handleJustifyRight)} title="Align Right">
               <AlignRight className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(handleLink)} title="Link">
-            <Link className="h-4 w-4" />
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(() => setIsLinkDialogOpen(true))} title="Link">
+            <LinkIcon className="h-4 w-4" />
           </Button>
           <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(() => setIsImageDialogOpen(true))} title="Image">
             <ImageIcon className="h-4 w-4" />
