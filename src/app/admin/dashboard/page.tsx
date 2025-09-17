@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, getDocs, doc, getDoc, query, orderBy, updateDoc, addDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
+import { getAuth, type UserRecord } from 'firebase-admin/auth';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
@@ -34,6 +35,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -67,6 +74,7 @@ interface Student {
     teacherName: string;
     teacherId: string;
     createdAt: Date | null;
+    lastLogin: Date | null;
 }
 
 interface Feedback {
@@ -185,8 +193,15 @@ export default function AdminDashboardPage() {
                     createdAt: teacherInfo.createdAt?.toDate() || null,
                 });
 
-                studentsSnapshot.forEach(studentDoc => {
+                for (const studentDoc of studentsSnapshot.docs) {
                     const studentInfo = studentDoc.data();
+                    let lastLoginDate = null;
+                    // This is a placeholder. A server-side function would be needed to get real Auth data.
+                    // For now, we simulate or leave it null.
+                    if (studentInfo.lastLogin) { // Assuming you might store this on login
+                        lastLoginDate = studentInfo.lastLogin.toDate();
+                    }
+
                     studentsData.push({
                         uid: studentDoc.id,
                         studentId: studentInfo.studentId || '[No Alias]',
@@ -195,8 +210,9 @@ export default function AdminDashboardPage() {
                         teacherName: teacherInfo.name || '[No Teacher]',
                         teacherId: teacherDoc.id,
                         createdAt: studentInfo.createdAt?.toDate() || null,
+                        lastLogin: lastLoginDate,
                     });
-                });
+                }
             }
             
             setTeachers(teachersData);
@@ -226,19 +242,16 @@ export default function AdminDashboardPage() {
         return sortableItems;
     }, [teachers, teacherSortConfig]);
 
-    const sortedStudents = useMemo(() => {
-        let sortableItems = [...allStudents];
-        if (studentSortConfig !== null) {
-            sortableItems.sort((a, b) => {
-                const aValue = a[studentSortConfig.key] || '';
-                const bValue = b[studentSortConfig.key] || '';
-                if (aValue < bValue) return studentSortConfig.direction === 'asc' ? -1 : 1;
-                if (aValue > bValue) return studentSortConfig.direction === 'asc' ? 1 : -1;
-                return 0;
-            });
-        }
-        return sortableItems;
-    }, [allStudents, studentSortConfig]);
+    const sortedStudentsByTeacher = useMemo(() => {
+        const groupedStudents: { [teacherId: string]: Student[] } = {};
+        allStudents.forEach(student => {
+            if (!groupedStudents[student.teacherId]) {
+                groupedStudents[student.teacherId] = [];
+            }
+            groupedStudents[student.teacherId].push(student);
+        });
+        return groupedStudents;
+    }, [allStudents]);
 
     const requestSort = (key: TeacherSortKey | StudentSortKey, type: 'teacher' | 'student') => {
         const config = type === 'teacher' ? teacherSortConfig : studentSortConfig;
@@ -744,55 +757,65 @@ export default function AdminDashboardPage() {
                             </CollapsibleContent>
                         </Card>
                     </Collapsible>
-                    <Collapsible>
+                    <Accordion type="single" collapsible>
                         <Card>
-                             <CollapsibleTrigger asChild>
+                             <AccordionTrigger asChild>
                                 <div className="flex w-full cursor-pointer items-center justify-between p-6">
                                     <div>
                                         <CardTitle>All Students</CardTitle>
-                                        <CardDescription>A complete list of every student account in the system.</CardDescription>
+                                        <CardDescription>A complete list of every student account in the system, grouped by guild.</CardDescription>
                                     </div>
                                     <ChevronDown className="h-6 w-6 transition-transform duration-200 group-data-[state=open]:rotate-180" />
                                 </div>
-                            </CollapsibleTrigger>
-                             <CollapsibleContent>
+                            </AccordionTrigger>
+                             <AccordionContent>
                                 <CardContent>
-                                <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead><Button variant="ghost" onClick={() => requestSort('studentName', 'student')}>Student Name <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
-                                                <TableHead><Button variant="ghost" onClick={() => requestSort('characterName', 'student')}>Character Name <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
-                                                <TableHead><Button variant="ghost" onClick={() => requestSort('studentId', 'student')}>Login Alias <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
-                                                <TableHead><Button variant="ghost" onClick={() => requestSort('teacherName', 'student')}>Guild / Teacher <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
-                                                <TableHead><Button variant="ghost" onClick={() => requestSort('createdAt', 'student')}>Date Created <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
-                                                <TableHead className="text-right">Actions</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {sortedStudents.map(student => (
-                                                <TableRow key={student.uid}>
-                                                    <TableCell>{student.studentName}</TableCell>
-                                                    <TableCell>{student.characterName}</TableCell>
-                                                    <TableCell className="font-mono">{student.studentId}</TableCell>
-                                                    <TableCell>
-                                                        <Link href={`/teacher/dashboard?teacherId=${student.teacherId}`} className="underline hover:text-primary">
-                                                            {student.teacherName}
-                                                        </Link>
-                                                    </TableCell>
-                                                    <TableCell>{student.createdAt ? format(student.createdAt, 'PP') : 'N/A'}</TableCell>
-                                                    <TableCell className="text-right">
-                                                        <Button variant="destructive" size="sm" onClick={() => setStudentToDelete(student)}>
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
+                                <Accordion type="multiple" className="w-full">
+                                    {sortedTeachers.map(teacher => {
+                                        const studentsOfTeacher = sortedStudentsByTeacher[teacher.id] || [];
+                                        return (
+                                            <AccordionItem value={teacher.id} key={teacher.id}>
+                                                <AccordionTrigger>
+                                                    {teacher.className} ({teacher.name}) - {studentsOfTeacher.length} students
+                                                </AccordionTrigger>
+                                                <AccordionContent>
+                                                    <Table>
+                                                        <TableHeader>
+                                                            <TableRow>
+                                                                <TableHead>Student Name</TableHead>
+                                                                <TableHead>Character</TableHead>
+                                                                <TableHead>Login Alias</TableHead>
+                                                                <TableHead>Date Created</TableHead>
+                                                                <TableHead>Last Login</TableHead>
+                                                                <TableHead className="text-right">Actions</TableHead>
+                                                            </TableRow>
+                                                        </TableHeader>
+                                                        <TableBody>
+                                                            {studentsOfTeacher.map(student => (
+                                                                <TableRow key={student.uid}>
+                                                                    <TableCell>{student.studentName}</TableCell>
+                                                                    <TableCell>{student.characterName}</TableCell>
+                                                                    <TableCell className="font-mono">{student.studentId}</TableCell>
+                                                                    <TableCell>{student.createdAt ? format(student.createdAt, 'PP') : 'N/A'}</TableCell>
+                                                                    <TableCell>{student.lastLogin ? format(student.lastLogin, 'PPp') : 'Never'}</TableCell>
+                                                                    <TableCell className="text-right">
+                                                                        <Button variant="destructive" size="sm" onClick={() => setStudentToDelete(student)}>
+                                                                            <Trash2 className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </TableCell>
+                                                                </TableRow>
+                                                            ))}
+                                                        </TableBody>
+                                                    </Table>
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                        )
+                                    })}
+                                    </Accordion>
                                 </CardContent>
-                             </CollapsibleContent>
+                             </AccordionContent>
                         </Card>
-                    </Collapsible>
+                    </Accordion>
                  </div>
 
                 <div className="space-y-6 lg:col-span-1">
