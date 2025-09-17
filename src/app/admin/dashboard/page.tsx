@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -20,7 +18,7 @@ import { getGlobalSettings, updateGlobalSettings } from '@/ai/flows/manage-setti
 import { deleteFeedback } from '@/ai/flows/submit-feedback';
 import { moderateStudent } from '@/ai/flows/manage-student';
 import { deleteTeacher } from '@/ai/flows/manage-teacher';
-import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle, HelpCircle } from 'lucide-react';
+import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle, HelpCircle, Edit } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -856,6 +854,11 @@ export default function AdminDashboardPage() {
                             <Button className="w-full justify-start" asChild>
                                 <Link href="/admin/tools/2d-sizer">
                                     <Wrench className="mr-2 h-4 w-4" /> 2D Sizer
+                                </Link>
+                            </Button>
+                             <Button className="w-full justify-start" asChild>
+                                <Link href="/admin/tools/about-page-editor">
+                                    <Edit className="mr-2 h-4 w-4" /> About Page Editor
                                 </Link>
                             </Button>
                         </CardContent>

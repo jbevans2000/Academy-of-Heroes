@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRef, useEffect } from 'react';
@@ -85,6 +84,11 @@ export default function SplashPage() {
                 <Button size="lg" className="w-full sm:w-auto text-lg py-7 px-8">
                   <LogIn className="mr-2" />
                   Student & Teacher Login
+                </Button>
+              </Link>
+               <Link href="/about" passHref>
+                <Button size="lg" variant="secondary" className="w-full sm:w-auto text-lg py-7 px-8">
+                  About the Academy
                 </Button>
               </Link>
             </div>
