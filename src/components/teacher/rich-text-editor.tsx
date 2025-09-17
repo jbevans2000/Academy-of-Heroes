@@ -102,7 +102,7 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
     if (!imageUrl) return;
     const width = imageWidth || '100%';
     const widthStyle = `width: ${/^\d+$/.test(width) ? `${width}px` : width}; max-width: 100%;`;
-    const imgTag = `<div><img src="${imageUrl}" alt="user image" style="${widthStyle} height: auto; border-radius: 8px; display: inline-block;" /></div>`;
+    const imgTag = `<div><img src="${imageUrl}" alt="user image" style="${widthStyle} height: auto; border-radius: 8px; display: block; margin-left: auto; margin-right: auto;" /></div>`;
     execCommand('insertHTML', imgTag);
     setIsImageDialogOpen(false);
     setImageUrl('');
@@ -133,7 +133,19 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
   const handleToolbarButtonClick = (action: () => void) => (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     action();
-  }
+  };
+  
+  const handleFontFamilyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    execCommand('fontName', e.target.value);
+  };
+
+  const handleFontSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    execCommand('fontSize', e.target.value);
+  };
+  
+  const handleFontColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    execCommand('foreColor', e.target.value);
+  };
 
   return (
     <>
@@ -215,6 +227,27 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
           <Button size="sm" variant="outline" onMouseDown={handleToolbarButtonClick(() => setIsYouTubeDialogOpen(true))} title="YouTube Video">
             <Youtube className="h-4 w-4" />
           </Button>
+           <select onChange={handleFontFamilyChange} className="p-1 border rounded-md bg-background text-sm">
+                <option value="Lora">Lora (default)</option>
+                <option value="Cinzel" style={{ fontFamily: 'Cinzel, serif' }}>Cinzel</option>
+                <option value="MedievalSharp" style={{ fontFamily: 'MedievalSharp, cursive' }}>MedievalSharp</option>
+                <option value="Uncial Antiqua" style={{ fontFamily: 'Uncial Antiqua, cursive' }}>Uncial Antiqua</option>
+                <option value="Arial">Arial</option>
+                <option value="Georgia">Georgia</option>
+                <option value="Verdana">Verdana</option>
+            </select>
+            <select onChange={handleFontSizeChange} className="p-1 border rounded-md bg-background text-sm">
+                <option value="3">Normal</option>
+                <option value="1">Extra Small</option>
+                <option value="2">Small</option>
+                <option value="4">Large</option>
+                <option value="5">Extra Large</option>
+                <option value="6">Heading 2</option>
+                <option value="7">Heading 1</option>
+            </select>
+             <div className="flex items-center h-8 w-8 justify-center rounded-md border bg-background">
+                <Input type="color" onChange={handleFontColorChange} className="w-full h-full p-0 border-none cursor-pointer" title="Font Color" />
+            </div>
         </div>
         <div
           ref={editorRef}
