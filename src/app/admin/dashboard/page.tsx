@@ -759,61 +759,63 @@ export default function AdminDashboardPage() {
                     </Collapsible>
                     <Accordion type="single" collapsible>
                         <Card>
-                             <AccordionTrigger asChild>
-                                <div className="flex w-full cursor-pointer items-center justify-between p-6">
-                                    <div>
-                                        <CardTitle>All Students</CardTitle>
-                                        <CardDescription>A complete list of every student account in the system, grouped by guild.</CardDescription>
+                             <AccordionItem value="all-students-accordion" className="border-none">
+                                <AccordionTrigger asChild>
+                                    <div className="flex w-full cursor-pointer items-center justify-between p-6">
+                                        <div>
+                                            <CardTitle>All Students</CardTitle>
+                                            <CardDescription>A complete list of every student account in the system, grouped by guild.</CardDescription>
+                                        </div>
+                                        <ChevronDown className="h-6 w-6 transition-transform duration-200 group-data-[state=open]:rotate-180" />
                                     </div>
-                                    <ChevronDown className="h-6 w-6 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                                </div>
-                            </AccordionTrigger>
-                             <AccordionContent>
-                                <CardContent>
-                                <Accordion type="multiple" className="w-full">
-                                    {sortedTeachers.map(teacher => {
-                                        const studentsOfTeacher = sortedStudentsByTeacher[teacher.id] || [];
-                                        return (
-                                            <AccordionItem value={teacher.id} key={teacher.id}>
-                                                <AccordionTrigger>
-                                                    {teacher.className} ({teacher.name}) - {studentsOfTeacher.length} students
-                                                </AccordionTrigger>
-                                                <AccordionContent>
-                                                    <Table>
-                                                        <TableHeader>
-                                                            <TableRow>
-                                                                <TableHead>Student Name</TableHead>
-                                                                <TableHead>Character</TableHead>
-                                                                <TableHead>Login Alias</TableHead>
-                                                                <TableHead>Date Created</TableHead>
-                                                                <TableHead>Last Login</TableHead>
-                                                                <TableHead className="text-right">Actions</TableHead>
-                                                            </TableRow>
-                                                        </TableHeader>
-                                                        <TableBody>
-                                                            {studentsOfTeacher.map(student => (
-                                                                <TableRow key={student.uid}>
-                                                                    <TableCell>{student.studentName}</TableCell>
-                                                                    <TableCell>{student.characterName}</TableCell>
-                                                                    <TableCell className="font-mono">{student.studentId}</TableCell>
-                                                                    <TableCell>{student.createdAt ? format(student.createdAt, 'PP') : 'N/A'}</TableCell>
-                                                                    <TableCell>{student.lastLogin ? format(student.lastLogin, 'PPp') : 'Never'}</TableCell>
-                                                                    <TableCell className="text-right">
-                                                                        <Button variant="destructive" size="sm" onClick={() => setStudentToDelete(student)}>
-                                                                            <Trash2 className="h-4 w-4" />
-                                                                        </Button>
-                                                                    </TableCell>
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                    <CardContent>
+                                    <Accordion type="multiple" className="w-full">
+                                        {sortedTeachers.map(teacher => {
+                                            const studentsOfTeacher = sortedStudentsByTeacher[teacher.id] || [];
+                                            return (
+                                                <AccordionItem value={teacher.id} key={teacher.id}>
+                                                    <AccordionTrigger>
+                                                        {teacher.className} ({teacher.name}) - {studentsOfTeacher.length} students
+                                                    </AccordionTrigger>
+                                                    <AccordionContent>
+                                                        <Table>
+                                                            <TableHeader>
+                                                                <TableRow>
+                                                                    <TableHead>Student Name</TableHead>
+                                                                    <TableHead>Character</TableHead>
+                                                                    <TableHead>Login Alias</TableHead>
+                                                                    <TableHead>Date Created</TableHead>
+                                                                    <TableHead>Last Login</TableHead>
+                                                                    <TableHead className="text-right">Actions</TableHead>
                                                                 </TableRow>
-                                                            ))}
-                                                        </TableBody>
-                                                    </Table>
-                                                </AccordionContent>
-                                            </AccordionItem>
-                                        )
-                                    })}
-                                    </Accordion>
-                                </CardContent>
-                             </AccordionContent>
+                                                            </TableHeader>
+                                                            <TableBody>
+                                                                {studentsOfTeacher.map(student => (
+                                                                    <TableRow key={student.uid}>
+                                                                        <TableCell>{student.studentName}</TableCell>
+                                                                        <TableCell>{student.characterName}</TableCell>
+                                                                        <TableCell className="font-mono">{student.studentId}</TableCell>
+                                                                        <TableCell>{student.createdAt ? format(student.createdAt, 'PP') : 'N/A'}</TableCell>
+                                                                        <TableCell>{student.lastLogin ? format(student.lastLogin, 'PPp') : 'Never'}</TableCell>
+                                                                        <TableCell className="text-right">
+                                                                            <Button variant="destructive" size="sm" onClick={() => setStudentToDelete(student)}>
+                                                                                <Trash2 className="h-4 w-4" />
+                                                                            </Button>
+                                                                        </TableCell>
+                                                                    </TableRow>
+                                                                ))}
+                                                            </TableBody>
+                                                        </Table>
+                                                    </AccordionContent>
+                                                </AccordionItem>
+                                            )
+                                        })}
+                                        </Accordion>
+                                    </CardContent>
+                                </AccordionContent>
+                             </AccordionItem>
                         </Card>
                     </Accordion>
                  </div>
