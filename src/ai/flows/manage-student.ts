@@ -187,16 +187,13 @@ export async function moderateStudent(input: ModerateStudentInput): Promise<Acti
         await auth.updateUser(input.studentUid, { disabled: false });
         return { success: true, message: 'Student has been unbanned and can now log in.' };
       case 'delete':
-        // This is a multi-step process to ensure all data is removed.
-        await auth.deleteUser(input.studentUid); // 1. Delete from Auth
-        
         const teacherStudentRef = doc(db, 'teachers', input.teacherUid, 'students', input.studentUid);
-        await deleteDoc(teacherStudentRef); // 2. Delete from teacher's collection
+        await deleteDoc(teacherStudentRef);
         
         const globalStudentRef = doc(db, 'students', input.studentUid);
-        await deleteDoc(globalStudentRef); // 3. Delete from global students collection
+        await deleteDoc(globalStudentRef);
 
-        return { success: true, message: 'Student has been permanently removed from the system.' };
+        return { success: true, message: 'Student data has been removed from the system. The authentication record remains.' };
       default:
         return { success: false, error: 'Invalid moderation action.' };
     }
@@ -365,6 +362,8 @@ export async function archiveStudents(input: ArchiveStudentsInput): Promise<Acti
         return { success: false, error: 'An unexpected error occurred while archiving the students.' };
     }
 }
+
+    
 
     
 

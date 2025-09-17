@@ -98,17 +98,11 @@ export async function deleteTeacher(teacherUid: string): Promise<ActionResponse>
     const auth = getAuth(getFirebaseAdminApp());
 
     try {
-        // 1. Delete all students of the teacher from Firebase Auth
+        // Find all students of the teacher to delete their global metadata
         const studentsSnapshot = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
         const studentUids = studentsSnapshot.docs.map(doc => doc.id);
-
-        if (studentUids.length > 0) {
-            // Firebase Auth Admin SDK can delete up to 1000 users at once.
-            // For larger classes, this might need batching, but this is sufficient for most cases.
-            await auth.deleteUsers(studentUids);
-        }
         
-        // 2. Delete all of the teacher's subcollections and the teacher document itself from Firestore
+        // Delete all of the teacher's subcollections and the teacher document itself from Firestore
         const teacherRef = doc(db, 'teachers', teacherUid);
         const subcollections = ['students', 'pendingStudents', 'boons', 'pendingBoonRequests', 'boonTransactions', 'gameLog', 'bossBattles', 'savedBattles', 'questHubs', 'chapters', 'companies', 'groupBattleSummaries'];
 
@@ -116,16 +110,16 @@ export async function deleteTeacher(teacherUid: string): Promise<ActionResponse>
             const subcollectionRef = collection(teacherRef, sub);
             const snapshot = await getDocs(subcollectionRef);
             if (!snapshot.empty) {
-                const batch = writeBatch(db);
-                snapshot.docs.forEach(d => batch.delete(d.ref));
-                await batch.commit();
+                const subBatch = writeBatch(db);
+                snapshot.docs.forEach(d => subBatch.delete(d.ref));
+                await subBatch.commit();
             }
         }
         
         // After subcollections are gone, delete the main teacher doc
         await deleteDoc(teacherRef);
         
-        // 3. Delete the global student metadata documents
+        // Delete the global student metadata documents
         if (studentUids.length > 0) {
             const studentMetaBatch = writeBatch(db);
             studentUids.forEach(uid => {
@@ -134,14 +128,13 @@ export async function deleteTeacher(teacherUid: string): Promise<ActionResponse>
             });
             await studentMetaBatch.commit();
         }
-
-        // 4. Finally, delete the teacher from Firebase Auth
-        await auth.deleteUser(teacherUid);
-
-        return { success: true, message: "Teacher and all associated data have been permanently deleted." };
+        
+        return { success: true, message: "Teacher data has been removed from Firestore. The authentication records remain." };
 
     } catch (error: any) {
         console.error("Error deleting teacher:", error);
-        return { success: false, error: error.message || 'Failed to complete teacher deletion.' };
+        return { success: false, error: error.message || 'Failed to complete teacher data deletion.' };
     }
 }
+
+    
