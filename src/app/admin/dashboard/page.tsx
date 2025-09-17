@@ -760,14 +760,14 @@ export default function AdminDashboardPage() {
                     <Accordion type="single" collapsible>
                         <Card>
                              <AccordionItem value="all-students-accordion" className="border-none">
-                                <AccordionTrigger asChild>
-                                    <div className="flex w-full cursor-pointer items-center justify-between p-6">
-                                        <div>
-                                            <CardTitle>All Students</CardTitle>
-                                            <CardDescription>A complete list of every student account in the system, grouped by guild.</CardDescription>
-                                        </div>
-                                        <ChevronDown className="h-6 w-6 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                                    </div>
+                                <AccordionTrigger>
+                                  <div className="flex w-full cursor-pointer items-center justify-between p-6">
+                                      <div>
+                                          <CardTitle>All Students</CardTitle>
+                                          <CardDescription>A complete list of every student account in the system, grouped by guild.</CardDescription>
+                                      </div>
+                                      <ChevronDown className="h-6 w-6 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                                  </div>
                                 </AccordionTrigger>
                                 <AccordionContent>
                                     <CardContent>
