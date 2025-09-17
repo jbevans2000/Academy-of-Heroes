@@ -459,7 +459,7 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
         <Card className={cn("shadow-lg rounded-xl flex flex-col overflow-hidden transition-all duration-300 relative", isSelected ? "ring-4 ring-primary scale-105" : "hover:scale-105", student.isHidden && "opacity-60 bg-gray-200")}>
             {company?.logoUrl && (
                 <div className="absolute inset-0 z-0">
-                    <Image src={company.logoUrl} alt="Company Logo" fill className="object-cover opacity-50" />
+                    <Image src={company.backgroundUrl || company.logoUrl} alt="Company Logo" fill className="object-cover opacity-50" />
                 </div>
             )}
            <div className="relative z-10 flex flex-col h-full bg-card/80 backdrop-blur-sm">
@@ -508,7 +508,11 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
                 </div>
                  <EditablePairedStat student={student} stat="mp" maxStat="maxMp" label="MP" icon={<Zap className="h-5 w-5 text-blue-500" />} teacherUid={teacherUid} />
                 <div className="flex items-center gap-2">
-                    <Briefcase className="w-5 h-5" />
+                    {company?.logoUrl ? (
+                        <Image src={company.logoUrl} alt={company.name} width={20} height={20} className="rounded-full" />
+                    ) : (
+                        <Briefcase className="w-5 h-5" />
+                    )}
                     <span className="truncate">{company?.name || 'Freelancer'}</span>
                 </div>
                  <EditableStat student={student} stat="gold" label="Gold" icon={<Coins className="h-5 w-5 text-amber-500" />} teacherUid={teacherUid} />
