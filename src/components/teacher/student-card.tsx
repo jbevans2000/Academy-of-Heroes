@@ -31,7 +31,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { calculateLevel, calculateHpGain, calculateMpGain, calculateBaseMaxHp, MAX_LEVEL, XP_FOR_MAX_LEVEL } from '@/lib/game-mechanics';
 import { Label } from '../ui/label';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider } from '../ui/tooltip';
 import { TeacherNotesDialog } from './teacher-notes-dialog';
 import { toggleStudentVisibility, updateStudentDetails } from '@/ai/flows/manage-student';
 import { SetQuestProgressDialog } from './set-quest-progress-dialog';
@@ -197,7 +197,6 @@ function EditableStat({ student, stat, icon, label, teacherUid }: EditableStatPr
                     amount = studentData.xp; // Revert to old value
                 }
                 
-                // Cap the XP at the max level threshold
                 if (amount > XP_FOR_MAX_LEVEL) {
                     amount = XP_FOR_MAX_LEVEL;
                     toast({ title: 'XP Capped', description: `XP has been capped at the amount for Level ${MAX_LEVEL}.` });
@@ -207,27 +206,20 @@ function EditableStat({ student, stat, icon, label, teacherUid }: EditableStatPr
                 const newLevel = calculateLevel(updates.xp);
 
                 if (newLevel !== currentLevel) {
-                    const levelsGained = newLevel - currentLevel;
+                    updates.level = newLevel;
                     const newMaxHp = calculateBaseMaxHp(studentData.class, newLevel, 'hp');
                     const newMaxMp = calculateBaseMaxHp(studentData.class, newLevel, 'mp');
-
-                    updates.level = newLevel;
                     updates.maxHp = newMaxHp;
-                    updates.hp = levelsGained > 0 
-                        ? (studentData.hp || 0) + calculateHpGain(studentData.class, levelsGained)
-                        : Math.min(studentData.hp, newMaxHp);
-
                     updates.maxMp = newMaxMp;
-                    updates.mp = levelsGained > 0
-                        ? (studentData.mp || 0) + calculateMpGain(studentData.class, levelsGained)
-                        : Math.min(studentData.mp, newMaxMp);
+                    // Cap current stats to new max
+                    updates.hp = Math.min(studentData.hp || 0, newMaxHp);
+                    updates.mp = Math.min(studentData.mp || 0, newMaxMp);
                 }
             } else {
                 updates[stat] = amount;
             }
 
             await updateDoc(studentRef, updates);
-            // Real-time listener will update the state, no need for setStudents
             toast({ title: 'Stat Updated!', description: `${student.characterName}'s ${label} has been set to ${amount}.` });
 
         } catch (error) {
