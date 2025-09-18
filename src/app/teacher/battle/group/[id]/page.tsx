@@ -80,7 +80,20 @@ export default function GroupBattlePage() {
     const [companyRotation, setCompanyRotation] = useState<Company[]>([]);
     const [individualRotation, setIndividualRotation] = useState<Student[]>([]);
     
-    const presentStudents = useMemo(() => allStudents.filter(s => !absentStudentUids.includes(s.uid)), [allStudents, absentStudentUids]);
+    // This is the list of students relevant for the current battle setup.
+    const relevantStudents = useMemo(() => {
+        return allStudents.filter(student => {
+            if (student.isHidden) return false; // Always exclude hidden students
+            if (mode === 'company') {
+                return companyIds.includes(student.companyId || '');
+            }
+            return true; // For 'guild' and 'individual' mode, include all non-hidden students
+        });
+    }, [allStudents, mode, companyIds]);
+
+    const presentStudents = useMemo(() => {
+        return relevantStudents.filter(s => !absentStudentUids.includes(s.uid));
+    }, [relevantStudents, absentStudentUids]);
 
 
     useEffect(() => {
@@ -265,7 +278,7 @@ export default function GroupBattlePage() {
                         <CardDescription>Check the box next to any students who are not present. They will be excluded from participation and rewards.</CardDescription>
                     </CardHeader>
                     <CardContent className="max-h-[50vh] overflow-y-auto space-y-2">
-                        {allStudents.map(student => (
+                        {relevantStudents.map(student => (
                             <div key={student.uid} className="flex items-center space-x-2 p-2 rounded-md border">
                                 <Checkbox
                                     id={`student-${student.uid}`}
