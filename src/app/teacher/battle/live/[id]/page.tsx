@@ -478,7 +478,7 @@ export default function TeacherLiveBattlePage() {
             if (hasFullParticipation) {
                 xpFromParticipation = 25;
                 goldFromParticipation = 10;
-                xpFromDamageShare = Math.floor(totalDamageDealt * 0.25);
+                xpFromDamageShare = Math.floor(totalDamageDealt * 0.10);
             }
             
             const baseTotalXp = xpFromAnswers + xpFromPowers + xpFromParticipation + xpFromDamageShare;
