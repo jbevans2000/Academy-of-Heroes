@@ -382,9 +382,9 @@ export default function CompaniesPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-            <div className="flex min-h-screen w-full flex-col bg-muted/40">
+            <div className="flex h-screen w-full flex-col bg-muted/40">
                 <TeacherHeader />
-                <main className="flex-1 p-4 md:p-6 lg:p-8">
+                <main className="flex-1 p-4 md:p-6 lg:p-8 min-h-0 overflow-y-auto">
                     <div className="flex items-center justify-between mb-6">
                         <div className="space-y-1">
                             <h1 className="text-3xl font-bold flex items-center gap-2"><Briefcase /> Company Management</h1>
