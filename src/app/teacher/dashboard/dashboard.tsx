@@ -886,10 +886,6 @@ export default function Dashboard() {
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
-                     <DropdownMenuItem onSelect={() => setIsRegenDialogOpen(true)}>
-                        <HeartPulse className="mr-2 h-4 w-4 text-purple-600" />
-                        <span>Set Daily Regeneration</span>
-                    </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
             
@@ -914,10 +910,6 @@ export default function Dashboard() {
                         <Check className="mr-2 h-4 w-4" />
                         <span>Manage Quest Completion</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => setIsReminderDialogOpen(true)}>
-                        <MessageSquare className="mr-2 h-4 w-4" />
-                        <span>Set Daily Reminder</span>
-                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/teacher/gamelog')}>
                         <BookOpen className="mr-2 h-4 w-4" />
                         <span>The Chronicler's Scroll</span>
@@ -936,6 +928,25 @@ export default function Dashboard() {
                         <ShieldAlert className="mr-2 h-4 w-4" />
                         <span>Clear All Battle Statuses</span>
                     </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                     <Button variant="outline" className="text-black border-black">
+                        <SortAsc className="mr-2 h-4 w-4" />
+                        Sort
+                        <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                 <DropdownMenuContent align="start">
+                    <DropdownMenuRadioGroup value={sortOrder} onValueChange={(value) => setSortOrder(value as SortOrder)}>
+                        <DropdownMenuRadioItem value="studentName">Student Name</DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="characterName">Character Name</DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="xp">Experience</DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="class">Class</DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="company">Company</DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
                 </DropdownMenuContent>
             </DropdownMenu>
             
@@ -958,7 +969,6 @@ export default function Dashboard() {
                     </DropdownMenuRadioGroup>
                 </DropdownMenuContent>
             </DropdownMenu>
-
 
             {pendingStudents.length > 0 && (
                 <Button variant="secondary" onClick={() => setIsApprovalDialogOpen(true)} className="border-black border">
@@ -1062,84 +1072,6 @@ export default function Dashboard() {
                 hubs={hubs}
                 chapters={chapters}
             />
-            <Dialog open={isReminderDialogOpen} onOpenChange={setIsReminderDialogOpen}>
-                <DialogContent className="sm:max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle>Set Daily Reminder Message</DialogTitle>
-                        <DialogDescription>
-                            This message will pop up for students the first time they log in each day, if they haven't completed a quest yet. Use markdown for formatting like **bold**.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="flex items-center space-x-2">
-                           <Switch
-                                id="reminder-active"
-                                checked={isReminderActive}
-                                onCheckedChange={setIsReminderActive}
-                                disabled={isSavingReminder}
-                            />
-                            <Label htmlFor="reminder-active">
-                                {isReminderActive ? 'Reminder is Active' : 'Reminder is Inactive'}
-                            </Label>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="reminder-title">Reminder Title</Label>
-                            <Input
-                                id="reminder-title"
-                                value={reminderTitle}
-                                onChange={(e) => setReminderTitle(e.target.value)}
-                                disabled={isSavingReminder}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="reminder-message">Reminder Message</Label>
-                            <Textarea
-                                id="reminder-message"
-                                value={reminderMessage}
-                                onChange={(e) => setReminderMessage(e.target.value)}
-                                disabled={isSavingReminder}
-                                rows={8}
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsReminderDialogOpen(false)}>Cancel</Button>
-                        <Button onClick={handleSaveReminder} disabled={isSavingReminder}>
-                            {isSavingReminder && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Save Reminder
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-            <Dialog open={isRegenDialogOpen} onOpenChange={setIsRegenDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Set Daily Regeneration</DialogTitle>
-                        <DialogDescription>
-                            Set the percentage of max HP and MP that students will regenerate automatically each day.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <Label htmlFor="regen-percent">Regeneration Percentage (%)</Label>
-                        <Input
-                            id="regen-percent"
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={regenPercentage}
-                            onChange={(e) => setRegenPercentage(e.target.value)}
-                            disabled={isSavingRegen}
-                        />
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsRegenDialogOpen(false)}>Cancel</Button>
-                        <Button onClick={handleSaveRegen} disabled={isSavingRegen}>
-                             {isSavingRegen && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                             Save Setting
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
             <div className="flex items-center space-x-2">
                 <Switch id="show-hidden" checked={showHidden} onCheckedChange={setShowHidden} />
                 <Label htmlFor="show-hidden" className="flex items-center gap-1 cursor-pointer font-semibold text-black text-lg">
