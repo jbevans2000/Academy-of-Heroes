@@ -28,6 +28,9 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
+import type { Company } from '@/lib/data';
+import { Checkbox } from '@/components/ui/checkbox';
+
 
 interface BossBattle {
   id: string;
@@ -43,12 +46,15 @@ export default function BossBattlesPage() {
   // State for the dialog flow
   const [isModeDialogOpen, setIsModeDialogOpen] = useState(false);
   const [isDeploymentDialogOpen, setIsDeploymentDialogOpen] = useState(false);
+  const [isCompanySelectionDialogOpen, setIsCompanySelectionDialogOpen] = useState(false);
+  const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>([]);
   const [isRewardDialogOpen, setIsRewardDialogOpen] = useState(false);
   const [deploymentMode, setDeploymentMode] = useState<'guild' | 'company' | 'individual' | null>(null);
   const [xpPerAnswer, setXpPerAnswer] = useState<number | string>('');
   const [goldPerAnswer, setGoldPerAnswer] = useState<number | string>('');
   const [xpParticipation, setXpParticipation] = useState<number | string>('');
   const [goldParticipation, setGoldParticipation] = useState<number | string>('');
+  const [allCompanies, setAllCompanies] = useState<Company[]>([]);
 
   const router = useRouter();
   const { toast } = useToast();
@@ -71,7 +77,7 @@ export default function BossBattlesPage() {
     setIsLoading(true);
 
     const battlesRef = collection(db, 'teachers', teacher.uid, 'bossBattles');
-    const unsubscribe = onSnapshot(battlesRef, (querySnapshot) => {
+    const unsubBattles = onSnapshot(battlesRef, (querySnapshot) => {
         const battlesData = querySnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
@@ -84,7 +90,15 @@ export default function BossBattlesPage() {
         setIsLoading(false);
     });
     
-    return () => unsubscribe;
+    const companiesRef = collection(db, 'teachers', teacher.uid, 'companies');
+    const unsubCompanies = onSnapshot(companiesRef, (querySnapshot) => {
+      setAllCompanies(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company)));
+    });
+
+    return () => {
+        unsubBattles();
+        unsubCompanies();
+    }
 
   }, [teacher, toast]);
 
@@ -154,9 +168,27 @@ export default function BossBattlesPage() {
   const handleStartGroupBattleFlow = (mode: 'guild' | 'company' | 'individual') => {
     setDeploymentMode(mode);
     setIsDeploymentDialogOpen(false);
-    setIsRewardDialogOpen(true);
+
+    if (mode === 'company') {
+      setIsCompanySelectionDialogOpen(true);
+    } else {
+      setIsRewardDialogOpen(true);
+    }
   };
   
+  const handleCompanySelectionNext = () => {
+    if (selectedCompanyIds.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'No Companies Selected',
+        description: 'Please select at least one company to participate.'
+      });
+      return;
+    }
+    setIsCompanySelectionDialogOpen(false);
+    setIsRewardDialogOpen(true);
+  }
+
   const handleFinalizeGroupBattleSetup = (withRewards: boolean) => {
       const params = new URLSearchParams();
       params.append('mode', deploymentMode!);
@@ -165,6 +197,9 @@ export default function BossBattlesPage() {
           params.append('gold', String(goldPerAnswer || 0));
           params.append('xpParticipation', String(xpParticipation || 0));
           params.append('goldParticipation', String(goldParticipation || 0));
+      }
+      if (deploymentMode === 'company') {
+        params.append('companies', selectedCompanyIds.join(','));
       }
       router.push(`/teacher/battle/group/${selectedBattleForStart!.id}?${params.toString()}`);
   }
@@ -231,6 +266,36 @@ export default function BossBattlesPage() {
                     <Button variant="outline" className="h-20" onClick={() => handleStartGroupBattleFlow('individual')}>Deploy Individual Heroes</Button>
                 </div>
             </DialogContent>
+        </Dialog>
+
+        {/* New Company Selection Dialog */}
+        <Dialog open={isCompanySelectionDialogOpen} onOpenChange={setIsCompanySelectionDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Select Participating Companies</DialogTitle>
+              <DialogDescription>Choose which companies will take part in this battle.</DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-2 max-h-64 overflow-y-auto">
+              {allCompanies.map(company => (
+                <div key={company.id} className="flex items-center space-x-2">
+                  <Checkbox 
+                    id={`company-${company.id}`}
+                    checked={selectedCompanyIds.includes(company.id)}
+                    onCheckedChange={(checked) => {
+                      setSelectedCompanyIds(prev => 
+                        checked ? [...prev, company.id] : prev.filter(id => id !== company.id)
+                      );
+                    }}
+                  />
+                  <Label htmlFor={`company-${company.id}`}>{company.name}</Label>
+                </div>
+              ))}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsCompanySelectionDialogOpen(false)}>Cancel</Button>
+              <Button onClick={handleCompanySelectionNext}>Continue</Button>
+            </DialogFooter>
+          </DialogContent>
         </Dialog>
 
         {/* Reward Configuration Dialog */}

@@ -71,6 +71,7 @@ export default function GroupBattlePage() {
 
     // Mode-specific state
     const mode = searchParams.get('mode') || 'guild';
+    const companyIds = useMemo(() => searchParams.get('companies')?.split(',') || [], [searchParams]);
     const xpPerAnswer = Number(searchParams.get('xp') || 0);
     const goldPerAnswer = Number(searchParams.get('gold') || 0);
     const xpParticipation = Number(searchParams.get('xpParticipation') || 0);
@@ -125,11 +126,12 @@ export default function GroupBattlePage() {
     
     const handleStartBattle = () => {
         if (mode === 'company') {
-            const companiesWithPresentMembers = allCompanies.filter(c => 
+            const participatingCompanies = allCompanies.filter(c => companyIds.includes(c.id));
+            const companiesWithPresentMembers = participatingCompanies.filter(c => 
                 presentStudents.some(s => s.companyId === c.id)
             );
             if (companiesWithPresentMembers.length === 0) {
-                toast({ variant: 'destructive', title: 'No Companies Present', description: 'There are no companies with members marked as present.'});
+                toast({ variant: 'destructive', title: 'No Companies Present', description: 'There are no selected companies with members marked as present.'});
                 return;
             }
             setCompanyRotation(shuffleArray(companiesWithPresentMembers));
