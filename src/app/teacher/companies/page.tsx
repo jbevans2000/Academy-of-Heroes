@@ -350,6 +350,17 @@ export default function CompaniesPage() {
         }
     };
 
+    const handleMainDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        const scrollZone = 100;
+        const viewportHeight = window.innerHeight;
+
+        if (e.clientY < scrollZone) {
+            window.scrollBy(0, -15);
+        } else if (e.clientY > viewportHeight - scrollZone) {
+            window.scrollBy(0, 15);
+        }
+    };
 
     const freelancers = students.filter(s => !s.companyId && !s.isHidden);
     const visibleStudents = students.filter(s => !s.isHidden);
@@ -384,7 +395,7 @@ export default function CompaniesPage() {
             </AlertDialog>
             <div className="flex h-screen w-full flex-col bg-muted/40">
                 <TeacherHeader />
-                <main className="flex-1 p-4 md:p-6 lg:p-8 min-h-0 overflow-y-auto">
+                <main className="flex-1 p-4 md:p-6 lg:p-8 min-h-0 overflow-y-auto" onDragOver={handleMainDragOver}>
                     <div className="flex items-center justify-between mb-6">
                         <div className="space-y-1">
                             <h1 className="text-3xl font-bold flex items-center gap-2"><Briefcase /> Company Management</h1>
