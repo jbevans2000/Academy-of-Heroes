@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -84,10 +85,10 @@ export default function GroupBattlePage() {
     const relevantStudents = useMemo(() => {
         return allStudents.filter(student => {
             if (student.isHidden) return false; // Always exclude hidden students
-            if (mode === 'company') {
+            if (mode === 'company' || mode === 'individual') { // Also filter by company for individual mode now
                 return companyIds.includes(student.companyId || '');
             }
-            return true; // For 'guild' and 'individual' mode, include all non-hidden students
+            return true; // For 'guild' mode, include all non-hidden students
         });
     }, [allStudents, mode, companyIds]);
 

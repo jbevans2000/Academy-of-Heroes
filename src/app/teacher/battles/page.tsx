@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -169,15 +170,15 @@ export default function BossBattlesPage() {
     setDeploymentMode(mode);
     setIsDeploymentDialogOpen(false);
 
-    if (mode === 'company') {
+    if (mode === 'company' || mode === 'individual') {
       setIsCompanySelectionDialogOpen(true);
-    } else {
+    } else { // guild mode
       setIsRewardDialogOpen(true);
     }
   };
   
   const handleCompanySelectionNext = () => {
-    if (selectedCompanyIds.length === 0) {
+    if (deploymentMode !== 'guild' && selectedCompanyIds.length === 0) {
       toast({
         variant: 'destructive',
         title: 'No Companies Selected',
@@ -198,7 +199,7 @@ export default function BossBattlesPage() {
           params.append('xpParticipation', String(xpParticipation || 0));
           params.append('goldParticipation', String(goldParticipation || 0));
       }
-      if (deploymentMode === 'company') {
+      if (deploymentMode === 'company' || deploymentMode === 'individual') {
         params.append('companies', selectedCompanyIds.join(','));
       }
       router.push(`/teacher/battle/group/${selectedBattleForStart!.id}?${params.toString()}`);
