@@ -1,13 +1,12 @@
 
-
 import type { ClassType } from "./data";
 
-export const MAX_LEVEL = 20;
-// XP required to reach level 20 is 15000.
-export const XP_FOR_MAX_LEVEL = 15000;
+export const MAX_LEVEL = 30;
+// XP required to reach level 30 is 55000.
+export const XP_FOR_MAX_LEVEL = 55000;
 
 // XP thresholds for each level. To reach level X, you need xpForLevel[X-1] total XP.
-const xpForLevel = {
+export const xpForLevel: { [level: number]: number } = {
     1: 0,
     2: 200,
     3: 300,
@@ -28,15 +27,28 @@ const xpForLevel = {
     18: 11000,
     19: 12500,
     20: 15000,
+    21: 17500,
+    22: 20000,
+    23: 23000,
+    24: 26000,
+    25: 30000,
+    26: 34000,
+    27: 38000,
+    28: 43000,
+    29: 48000,
+    30: 55000,
 };
 
-export function calculateLevel(xp: number): number {
+export function calculateLevel(xp: number, customXpTable?: { [level: number]: number }): number {
+    const table = customXpTable && Object.keys(customXpTable).length > 0 ? customXpTable : xpForLevel;
+    const maxXP = table[MAX_LEVEL] || XP_FOR_MAX_LEVEL;
+
     if (xp < 0) return 1;
-    if (xp >= XP_FOR_MAX_LEVEL) return MAX_LEVEL;
+    if (xp >= maxXP) return MAX_LEVEL;
     
     let currentLevel = 1;
     for (let level = 2; level <= MAX_LEVEL; level++) {
-        if (xp >= xpForLevel[level as keyof typeof xpForLevel]) {
+        if (xp >= table[level]) {
             currentLevel = level;
         } else {
             break;

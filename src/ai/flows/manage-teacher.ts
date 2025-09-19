@@ -93,6 +93,26 @@ export async function updateDailyRegen(input: UpdateRegenInput): Promise<ActionR
     }
 }
 
+interface UpdateLevelingTableInput {
+    teacherUid: string;
+    levelingTable: { [level: number]: number };
+}
+
+export async function updateLevelingTable(input: UpdateLevelingTableInput): Promise<ActionResponse> {
+    const { teacherUid, levelingTable } = input;
+    try {
+        const teacherRef = doc(db, 'teachers', teacherUid);
+        await updateDoc(teacherRef, {
+            levelingTable: levelingTable,
+        });
+        await logGameEvent(teacherUid, 'GAMEMASTER', 'Updated the custom leveling curve.');
+        return { success: true, message: 'Custom leveling curve has been saved!' };
+    } catch (e: any) {
+        console.error("Error in updateLevelingTable:", e);
+        return { success: false, error: e.message || 'Failed to save leveling curve.' };
+    }
+}
+
 
 export async function deleteTeacher(teacherUid: string): Promise<ActionResponse> {
     const auth = getAuth(getFirebaseAdminApp());
@@ -136,5 +156,3 @@ export async function deleteTeacher(teacherUid: string): Promise<ActionResponse>
         return { success: false, error: error.message || 'Failed to complete teacher data deletion.' };
     }
 }
-
-    

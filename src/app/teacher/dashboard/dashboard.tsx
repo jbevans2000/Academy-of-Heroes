@@ -48,7 +48,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff, MessageSquare, Heart, Zap as ZapIcon, HeartPulse, Filter } from 'lucide-react';
+import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff, MessageSquare, Heart, Zap as ZapIcon, BarChart } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain, MAX_LEVEL, XP_FOR_MAX_LEVEL } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -896,6 +896,10 @@ export default function Dashboard() {
                         <HeartPulse className="mr-2 h-4 w-4" />
                         <span>Set Daily HP/MP Regen</span>
                     </DropdownMenuItem>
+                     <DropdownMenuItem onClick={() => router.push('/teacher/settings/leveling')}>
+                        <BarChart className="mr-2 h-4 w-4" />
+                        <span>Set Custom Leveling Curve</span>
+                    </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
             
@@ -938,45 +942,24 @@ export default function Dashboard() {
                         <ShieldAlert className="mr-2 h-4 w-4" />
                         <span>Clear All Battle Statuses</span>
                     </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
-
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                     <Button variant="outline" className="text-black border-black">
+                    <DropdownMenuSeparator />
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>
                         <SortAsc className="mr-2 h-4 w-4" />
-                        Sort
-                        <ChevronDown className="ml-2 h-4 w-4" />
-                    </Button>
-                </DropdownMenuTrigger>
-                 <DropdownMenuContent align="start">
-                    <DropdownMenuRadioGroup value={sortOrder} onValueChange={(value) => setSortOrder(value as SortOrder)}>
-                        <DropdownMenuRadioItem value="studentName">Student Name</DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="characterName">Character Name</DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="xp">Experience</DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="class">Class</DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="company">Company</DropdownMenuRadioItem>
-                    </DropdownMenuRadioGroup>
-                </DropdownMenuContent>
-            </DropdownMenu>
-            
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="text-black border-black">
-                        <Filter className="mr-2 h-4 w-4" />
-                        Filter by Company
-                        <ChevronDown className="ml-2 h-4 w-4" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                     <DropdownMenuRadioGroup value={companyFilter} onValueChange={setCompanyFilter}>
-                        <DropdownMenuRadioItem value="all">All Students</DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="freelancers">Freelancers</DropdownMenuRadioItem>
-                        <DropdownMenuSeparator />
-                        {companies.map(company => (
-                            <DropdownMenuRadioItem key={company.id} value={company.id}>{company.name}</DropdownMenuRadioItem>
-                        ))}
-                    </DropdownMenuRadioGroup>
+                        <span>Sort Students</span>
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent>
+                         <DropdownMenuRadioGroup value={sortOrder} onValueChange={(value) => setSortOrder(value as SortOrder)}>
+                            <DropdownMenuLabel>Sort By</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuRadioItem value="studentName">Student Name</DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="characterName">Character Name</DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="xp">Experience</DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="class">Class</DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="company">Company</DropdownMenuRadioItem>
+                        </DropdownMenuRadioGroup>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
                 </DropdownMenuContent>
             </DropdownMenu>
 
