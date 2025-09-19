@@ -48,7 +48,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff, MessageSquare, Heart, Zap as ZapIcon, BarChart } from 'lucide-react';
+import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff, MessageSquare, Heart, Zap as ZapIcon, BarChart, HeartPulse } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain, MAX_LEVEL, XP_FOR_MAX_LEVEL } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -1065,6 +1065,36 @@ export default function Dashboard() {
                 hubs={hubs}
                 chapters={chapters}
             />
+             <Dialog open={isReminderDialogOpen} onOpenChange={setIsReminderDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Set Daily Reminder Message</DialogTitle>
+                        <DialogDescription>
+                            This message will appear for students when they log in if they haven't completed a chapter that day. Use '\n' for line breaks.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                        <div className="flex items-center space-x-2">
+                            <Switch id="reminder-active" checked={isReminderActive} onCheckedChange={setIsReminderActive} />
+                            <Label htmlFor="reminder-active">Enable Daily Reminder</Label>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="reminder-title">Reminder Title</Label>
+                            <Input id="reminder-title" value={reminderTitle} onChange={(e) => setReminderTitle(e.target.value)} disabled={!isReminderActive}/>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="reminder-message">Reminder Message</Label>
+                            <Textarea id="reminder-message" value={reminderMessage} onChange={(e) => setReminderMessage(e.target.value)} rows={6} disabled={!isReminderActive}/>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsReminderDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleSaveReminder} disabled={isSavingReminder}>
+                             {isSavingReminder ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Save Reminder
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
              <Dialog open={isRegenDialogOpen} onOpenChange={setIsRegenDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
