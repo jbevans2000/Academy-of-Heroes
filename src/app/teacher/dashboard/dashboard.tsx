@@ -1070,7 +1070,7 @@ export default function Dashboard() {
                     <DialogHeader>
                         <DialogTitle>Set Daily Reminder Message</DialogTitle>
                         <DialogDescription>
-                            This message will appear for students when they log in if they haven't completed a chapter that day. Use '\n' for line breaks.
+                            This message will appear for students when they log in for the first time that day.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-4 space-y-4">
@@ -1187,3 +1187,4 @@ export default function Dashboard() {
     </div>
   );
 }
+

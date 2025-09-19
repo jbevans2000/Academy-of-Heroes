@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -216,7 +217,9 @@ export default function Dashboard() {
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle className="text-2xl">{reminder?.title}</AlertDialogTitle>
-                <AlertDialogDescription className="text-base text-foreground" dangerouslySetInnerHTML={{ __html: reminder?.message.replace(/\\n/g, '<br/>') || '' }} />
+                <AlertDialogDescription className="text-base text-foreground whitespace-pre-wrap">
+                  {reminder?.message}
+                </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogAction>Got it!</AlertDialogAction>
