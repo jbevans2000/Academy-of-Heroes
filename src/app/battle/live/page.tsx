@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 import { onSnapshot, doc, getDoc, setDoc, updateDoc, increment, arrayUnion, collection, query, getDocs, serverTimestamp } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
-import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Hourglass, VolumeX, Flame, Lightbulb, Skull, ScrollText, Volume1, Volume, Volume2 as VolumeIcon, ChevronDown, Info } from 'lucide-react';
+import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Hourglass, VolumeX, Flame, Lightbulb, Skull, ScrollText, Volume1, Volume, Volume2 as VolumeIcon, ChevronDown, Info, Heart } from 'lucide-react';
 import { type Student } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
@@ -33,6 +33,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
 
 
 interface TargetedEvent {
@@ -621,6 +622,9 @@ export default function LiveBattlePage() {
   const expiryTimestamp = battleState.timerEndsAt ? new Date(battleState.timerEndsAt.seconds * 1000) : null;
   const isRoundActive = battleState.status === 'IN_PROGRESS' || battleState.status === 'ROUND_ENDING';
 
+  const hpPercentage = (student.hp / student.maxHp) * 100;
+  const mpPercentage = (student.mp / student.maxMp) * 100;
+
   return (
     <>
       <AudioPlayer battleState={battleState} battle={battle} audioRef={audioRef} onFirstInteraction={onFirstInteraction} />
@@ -700,7 +704,7 @@ export default function LiveBattlePage() {
                                 </div>
                             )}
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {currentQuestion?.answers.map((answer, index) => {
                                     const isRemoved = battleState.removedAnswerIndices?.includes(index);
                                     return (
@@ -729,6 +733,23 @@ export default function LiveBattlePage() {
                                 >
                                     Submit Answer
                                 </Button>
+                            </div>
+                            <Separator className="my-6 bg-gray-600" />
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-3">
+                                    <Heart className="h-6 w-6 text-red-500 flex-shrink-0" />
+                                    <div className="w-full bg-gray-700 rounded-full h-5 border border-gray-600">
+                                        <div className="bg-red-500 h-full rounded-full" style={{ width: `${hpPercentage}%`}}></div>
+                                    </div>
+                                    <span className="font-mono font-bold w-20 text-right">{student.hp}/{student.maxHp}</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <Flame className="h-6 w-6 text-blue-500 flex-shrink-0" />
+                                    <div className="w-full bg-gray-700 rounded-full h-5 border border-gray-600">
+                                        <div className="bg-blue-500 h-full rounded-full" style={{ width: `${mpPercentage}%`}}></div>
+                                    </div>
+                                    <span className="font-mono font-bold w-20 text-right">{student.mp}/{student.maxMp}</span>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
@@ -858,4 +879,3 @@ export default function LiveBattlePage() {
   );
 }
 
-    
