@@ -1713,7 +1713,7 @@ export default function TeacherLiveBattlePage() {
                     </CardContent>
                 </Card>
             </div>
-             <div className="lg:col-span-1 space-y-6">
+             <div className="lg:col-span-1 flex flex-col gap-6 max-h-[90vh]">
                 <BattleDisplay students={activeParticipants} />
                 {liveState.battleId && <BattleLog teacherUid={teacherUid} />}
                 <BattleChatBox
