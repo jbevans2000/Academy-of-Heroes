@@ -303,8 +303,13 @@ export default function DuelPage() {
                 } else if (opponentAnswers[freshDuelData.currentQuestionIndex] > myAnswers[freshDuelData.currentQuestionIndex]) {
                     await handleDuelEnd(transaction, opponentUid, user.uid, false);
                 } else {
-                    updates.status = 'sudden_death';
-                    updates.resultEndsAt = Timestamp.fromMillis(Date.now() + 7000);
+                    // Check if we've hit the 10th sudden death question (index 19)
+                    if (freshDuelData.currentQuestionIndex >= 19) {
+                         await handleDuelEnd(transaction, user.uid, opponentUid, false, true); // True for draw
+                    } else {
+                        updates.status = 'sudden_death';
+                        updates.resultEndsAt = Timestamp.fromMillis(Date.now() + 7000);
+                    }
                 }
             } else {
                 const isLastRegularQuestion = freshDuelData.currentQuestionIndex >= 9;
