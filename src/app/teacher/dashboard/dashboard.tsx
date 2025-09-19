@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -846,7 +847,7 @@ export default function Dashboard() {
                         <span>Set Chapter Location for Selected</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <AlertDialog>
+                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-green-600 focus:bg-green-100 focus:text-green-800">
                                 <Heart className="mr-2 h-4 w-4" />
@@ -886,6 +887,15 @@ export default function Dashboard() {
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
+                    <DropdownMenuSeparator />
+                     <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setIsReminderDialogOpen(true); }}>
+                        <Bell className="mr-2 h-4 w-4" />
+                        <span>Set Daily Reminder</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setIsRegenDialogOpen(true); }}>
+                        <HeartPulse className="mr-2 h-4 w-4" />
+                        <span>Set Daily HP/MP Regen</span>
+                    </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
             
@@ -1072,6 +1082,35 @@ export default function Dashboard() {
                 hubs={hubs}
                 chapters={chapters}
             />
+             <Dialog open={isRegenDialogOpen} onOpenChange={setIsRegenDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Set Daily HP/MP Regeneration</DialogTitle>
+                        <DialogDescription>
+                            Set the percentage of Max HP and Max MP that all students will regenerate automatically each day upon their first login. Set to 0 to disable.
+                        </DialogDescription>
+                    </DialogHeader>
+                     <div className="py-4 space-y-2">
+                        <Label htmlFor="regen-percentage">Regeneration Percentage</Label>
+                        <div className="flex items-center gap-2">
+                            <Input
+                                id="regen-percentage"
+                                type="number"
+                                value={regenPercentage}
+                                onChange={(e) => setRegenPercentage(e.target.value)}
+                                min="0" max="100"
+                            />
+                            <span>%</span>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsRegenDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleSaveRegen} disabled={isSavingRegen}>
+                            {isSavingRegen ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Save Rate
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
             <div className="flex items-center space-x-2">
                 <Switch id="show-hidden" checked={showHidden} onCheckedChange={setShowHidden} />
                 <Label htmlFor="show-hidden" className="flex items-center gap-1 cursor-pointer font-semibold text-black text-lg">
