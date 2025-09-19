@@ -687,8 +687,8 @@ export default function DuelPage() {
         if (isDraw) {
             rewardsMessage = `The duel ended in a draw after all questions were exhausted! Your entry fee of ${duel.cost} Gold has been refunded.`;
         } else if (winner && duelSettings) {
-            const winnerRewardText = `You have been awarded ${duelSettings.rewardXp} XP and ${duelSettings.rewardGold! > 0 ? duelSettings.rewardGold : 0} Gold! Your entry fee of ${duel.cost} has been returned.`;
-            const loserRewardText = `Your entry fee of ${Math.floor((duel.cost || 0) / 2)} Gold has been refunded for valiantly completing the training exercise.`;
+            const winnerRewardText = `You have been awarded ${duelSettings.rewardXp} XP and ${duelSettings.rewardGold} Gold! Your entry fee of ${duel.cost} gold has been returned.`;
+            const loserRewardText = `50% of your entry fee has been refunded for valiantly completing the training exercise.`;
             rewardsMessage = user?.uid === winner.uid ? winnerRewardText : loserRewardText;
         }
 
@@ -862,3 +862,5 @@ export default function DuelPage() {
         </div>
     )
 }
+
+    
