@@ -960,6 +960,23 @@ export default function Dashboard() {
                         </DropdownMenuRadioGroup>
                       </DropdownMenuSubContent>
                     </DropdownMenuSub>
+                    <DropdownMenuSub>
+                        <DropdownMenuSubTrigger>
+                            <Briefcase className="mr-2 h-4 w-4" />
+                            <span>Filter by Company</span>
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent>
+                            <DropdownMenuRadioGroup value={companyFilter} onValueChange={setCompanyFilter}>
+                                <DropdownMenuLabel>Company</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuRadioItem value="all">All Students</DropdownMenuRadioItem>
+                                <DropdownMenuRadioItem value="freelancers">Freelancers</DropdownMenuRadioItem>
+                                {companies.map(company => (
+                                    <DropdownMenuRadioItem key={company.id} value={company.id}>{company.name}</DropdownMenuRadioItem>
+                                ))}
+                            </DropdownMenuRadioGroup>
+                        </DropdownMenuSubContent>
+                    </DropdownMenuSub>
                 </DropdownMenuContent>
             </DropdownMenu>
 
