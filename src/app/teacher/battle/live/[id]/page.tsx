@@ -10,7 +10,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, Download, Timer, HeartCrack, Video, ShieldCheck, Sparkles, Skull, Trash2, VolumeX, Volume1, Volume2 as VolumeIcon, MessageSquareOff } from 'lucide-react';
+import { Loader2, Download, Timer, HeartCrack, Video, ShieldCheck, Sparkles, Skull, Trash2, VolumeX, Volume1, Volume2 as VolumeIcon, MessageSquareOff, CheckCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RoundResults, type Result } from '@/components/teacher/round-results';
 import { downloadCsv } from '@/lib/utils';
@@ -26,6 +26,7 @@ import { classPowers } from '@/lib/powers';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 // Fisher-Yates shuffle algorithm
 const shuffleArray = <T,>(array: T[]): T[] => {
@@ -940,7 +941,7 @@ export default function TeacherLiveBattlePage() {
   useEffect(() => {
     if (!liveState || !battle || !teacherUid || (liveState.status !== 'IN_PROGRESS' && liveState.status !== 'ROUND_ENDING')) return;
     
-    const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles', 'active-battle');
+    const liveBattleRef = doc(db, 'teachers', teacherUid, 'liveBattles/active-battle');
     const powerActivationsRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/powerActivations');
     const q = query(powerActivationsRef);
 
@@ -1536,6 +1537,7 @@ export default function TeacherLiveBattlePage() {
   const isLastQuestion = liveState.currentQuestionIndex >= battle.questions.length - 1;
   const expiryTimestamp = liveState.timerEndsAt ? new Date(liveState.timerEndsAt.seconds * 1000) : null;
   const videoSrc = battle.videoUrl ? getYouTubeEmbedUrl(battle.videoUrl) : '';
+  const currentQuestion = battle.questions[liveState.currentQuestionIndex];
 
 
   return (
@@ -1582,6 +1584,28 @@ export default function TeacherLiveBattlePage() {
                                     ></iframe>
                                 </div>
                             </div>
+                        )}
+                        
+                        {isRoundInProgress && currentQuestion && (
+                            <Card className="bg-background/70">
+                                <CardHeader>
+                                    <CardTitle>Current Question</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="text-xl font-semibold mb-4">{currentQuestion.questionText}</p>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {currentQuestion.answers.map((answer, index) => (
+                                            <div key={index} className={cn(
+                                                "p-2 border rounded-md flex items-center gap-2",
+                                                index === currentQuestion.correctAnswerIndex ? "bg-green-100 dark:bg-green-900/50 border-green-500" : "bg-secondary"
+                                            )}>
+                                                {index === currentQuestion.correctAnswerIndex && <CheckCircle className="h-5 w-5 text-green-600" />}
+                                                <p>{answer}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
                         )}
 
                         <div className="p-4 border rounded-lg">
