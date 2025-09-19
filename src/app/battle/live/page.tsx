@@ -807,8 +807,9 @@ export default function LiveBattlePage() {
                             )}
                             
                             {lastAnswerCorrect === null && (
-                                <div className="p-4 rounded-md bg-gray-700 border border-gray-600 text-gray-200 flex items-center justify-center gap-4">
-                                    <p className="text-xl font-bold">You did not submit an answer this round.</p>
+                                <div className="p-4 rounded-md bg-red-900/70 border border-red-700 text-red-200 flex items-center justify-center gap-4">
+                                    <HeartCrack className="h-10 w-10 text-red-400" />
+                                    <p className="text-xl font-bold">You did not submit an answer this round, you have taken {battle.questions[battleState.currentQuestionIndex].damage} damage.</p>
                                 </div>
                             )}
 
@@ -878,4 +879,3 @@ export default function LiveBattlePage() {
     </>
   );
 }
-
