@@ -117,7 +117,7 @@ export default function TeacherBattleSummaryPage() {
       } else {
         console.error("No summary found for this battle.");
         toast({ title: "Summary Not Found", description: "This battle summary may have already been cleaned up. Redirecting to battles list."})
-        router.push('/teacher/battles');
+        router.push('/teacher/battles/summary');
       }
       setIsLoading(false);
     };
@@ -160,6 +160,7 @@ export default function TeacherBattleSummaryPage() {
         setIsCleaning(false);
     }
   };
+
 
   const participantStats = useMemo(() => {
     const stats: { [uid: string]: { name: string; correct: number; incorrect: number } } = {};
@@ -221,16 +222,24 @@ export default function TeacherBattleSummaryPage() {
   const battleLogByRound: { [round: number]: PowerLogEntry[] } = {};
     if (summary.powerLog) {
         summary.powerLog.forEach(log => {
-            const roundNum = log.round;
-            if (!battleLogByRound[roundNum]) {
-                battleLogByRound[roundNum] = [];
+            if (!battleLogByRound[log.round]) {
+                battleLogByRound[log.round] = [];
             }
-            battleLogByRound[roundNum].push(log);
+            battleLogByRound[log.round].push(log);
         });
     }
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-muted/40">
+    <div className="relative flex min-h-screen w-full flex-col">
+        <div 
+          className="absolute inset-0 -z-10"
+          style={{
+              backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FArchives.jpg?alt=media&token=1bbfbdcd-fb4a-4139-9a8d-44603c19a86c')`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              opacity: 0.2,
+          }}
+        />
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="max-w-6xl mx-auto space-y-6">
@@ -299,21 +308,6 @@ export default function TeacherBattleSummaryPage() {
                     </div>
                 </CardContent>
             </Card>
-
-            {summary.fallenAtEnd && summary.fallenAtEnd.length > 0 && (
-                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Skull /> Fallen at Battle's End</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <ul className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            {summary.fallenAtEnd.map(uid => (
-                                <li key={uid} className="font-semibold p-2 bg-secondary rounded-md text-center">{uid}</li>
-                            ))}
-                        </ul>
-                    </CardContent>
-                </Card>
-            )}
             
             <Card>
                  <CardHeader>
@@ -401,5 +395,3 @@ export default function TeacherBattleSummaryPage() {
     </div>
   );
 }
-
-    
