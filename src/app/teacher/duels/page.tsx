@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -240,7 +239,16 @@ export default function TrainingGroundsPage() {
         </AlertDialogContent>
     </AlertDialog>
 
-    <div className="flex min-h-screen w-full flex-col bg-muted/40">
+    <div className="relative flex min-h-screen w-full flex-col">
+       <div 
+            className="absolute inset-0 -z-10"
+            style={{
+                backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChooseChampion.jpg?alt=media&token=9d8a8624-c352-415e-84d8-827cebc711a5')`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                opacity: 0.25,
+            }}
+        />
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="max-w-4xl mx-auto space-y-6">
@@ -383,5 +391,3 @@ export default function TrainingGroundsPage() {
     </>
   );
 }
-
-    
