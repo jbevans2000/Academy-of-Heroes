@@ -58,7 +58,16 @@ export default function BroadcastsPage() {
     }, [teacher]);
 
     return (
-        <div className="flex min-h-screen w-full flex-col bg-muted/40">
+        <div className="relative flex flex-col min-h-screen">
+            <div
+                className="absolute inset-0 -z-10"
+                style={{
+                    backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-b2ed6807-b64f-48e1-9b8c-a2d0b719db78.jpg?alt=media&token=793c0484-06f3-49ab-9557-9ca0a9b0f6bf')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                }}
+            />
+            <div className="absolute inset-0 -z-10 bg-background/80" />
             <TeacherHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="max-w-3xl mx-auto space-y-6">
