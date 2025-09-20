@@ -107,7 +107,12 @@ export default function TeacherProfilePage() {
     }
 
     return (
-        <div className="flex min-h-screen w-full flex-col bg-muted/40">
+        <div 
+            className="flex min-h-screen w-full flex-col bg-cover bg-center"
+            style={{
+              backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-76d263d1-64d5-4a17-bda2-a3dc4f20d94f.jpg?alt=media&token=c42c3ef2-243c-4458-9cd5-10bc3bf7fadd')`,
+            }}
+        >
             <TeacherHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="max-w-2xl mx-auto space-y-6">
@@ -115,7 +120,7 @@ export default function TeacherProfilePage() {
                         <ArrowLeft className="mr-2 h-4 w-4" /> Return to Podium
                     </Button>
 
-                    <Card>
+                    <Card className="bg-card/90 backdrop-blur-sm">
                         <CardHeader>
                             <CardTitle>My Profile</CardTitle>
                             <CardDescription>Update your personal and school information here.</CardDescription>
@@ -145,7 +150,7 @@ export default function TeacherProfilePage() {
                         </CardContent>
                     </Card>
 
-                     <Card>
+                     <Card className="bg-card/90 backdrop-blur-sm">
                         <CardHeader>
                             <CardTitle>Billing & Subscription</CardTitle>
                             <CardDescription>Manage your Academy of Heroes plan.</CardDescription>
