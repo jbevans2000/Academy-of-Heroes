@@ -111,7 +111,10 @@ export default function NewBoonPage() {
     };
 
     return (
-        <div className="flex min-h-screen w-full flex-col bg-muted/40">
+        <div 
+            className="flex min-h-screen w-full flex-col bg-cover bg-center"
+            style={{ backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2Fenvato-labs-ai-82960861-9a1e-4e31-9309-085a9b998ca6.jpg?alt=media&token=a15a8c71-faaa-4a38-bc17-b68dc83fba50')` }}
+        >
             <TeacherHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="max-w-2xl mx-auto space-y-6">
@@ -119,7 +122,7 @@ export default function NewBoonPage() {
                         <ArrowLeft className="mr-2 h-4 w-4" /> Back to All Rewards
                     </Button>
 
-                    <Card>
+                    <Card className="bg-card/90 backdrop-blur-sm">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><Star className="text-yellow-400"/> Create New Reward</CardTitle>
                             <CardDescription>Fill in the details for the new item you want to add to your store.</CardDescription>
