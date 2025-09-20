@@ -209,7 +209,7 @@ function InventoryPageComponent() {
                     backgroundPosition: 'center',
                 }}
             />
-            <div className="absolute inset-0 -z-10 bg-black/20" />
+            <div className="absolute inset-0 -z-10 bg-black/25" />
             {isTeacherPreview ? <TeacherHeader /> : <DashboardHeader />}
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="max-w-6xl mx-auto space-y-6">
