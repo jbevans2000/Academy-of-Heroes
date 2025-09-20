@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -38,7 +37,16 @@ export default function TeacherHelpPage() {
     };
 
     return (
-        <div className="flex min-h-screen w-full flex-col bg-muted/40">
+        <div className="relative flex flex-col min-h-screen">
+             <div 
+                className="absolute inset-0 -z-10"
+                style={{
+                    backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FArchives.jpg?alt=media&token=1bbfbdcd-fb4a-4139-9a8d-44603c19a86c')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    opacity: 0.25,
+                }}
+            />
             <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
                 <Link href="/" passHref>
                     <Button variant="outline">
@@ -49,14 +57,14 @@ export default function TeacherHelpPage() {
             </header>
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="max-w-4xl mx-auto space-y-8">
-                    <Card className="text-center">
+                    <Card className="text-center bg-card/90">
                         <CardHeader>
                             <CardTitle className="text-3xl">The Grandmaster's Guide</CardTitle>
                             <CardDescription>A complete guide to managing your guild and leading your students to victory.</CardDescription>
                         </CardHeader>
                     </Card>
 
-                    <Card>
+                    <Card className="bg-card/90">
                         <CardHeader>
                             <CardTitle>Teacher Features Guide</CardTitle>
                         </CardHeader>
