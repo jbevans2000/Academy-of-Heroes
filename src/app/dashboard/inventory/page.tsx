@@ -198,7 +198,18 @@ function InventoryPageComponent() {
     const returnPath = isTeacherPreview ? '/teacher/dashboard' : '/dashboard';
 
     return (
-        <div className="flex min-h-screen w-full flex-col bg-muted/40">
+        <div 
+            className="relative flex min-h-screen w-full flex-col"
+        >
+             <div 
+                className="absolute inset-0 -z-10"
+                style={{
+                    backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FInventory.png?alt=media&token=d86f76bf-0ed1-457a-8f3a-5be3e643e959')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                }}
+            />
+            <div className="absolute inset-0 -z-10 bg-black/20" />
             {isTeacherPreview ? <TeacherHeader /> : <DashboardHeader />}
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="max-w-6xl mx-auto space-y-6">
@@ -216,7 +227,7 @@ function InventoryPageComponent() {
                         </Alert>
                     )}
 
-                    <Card>
+                    <Card className="bg-card/80">
                         <CardHeader className="text-center">
                             <Package className="h-12 w-12 mx-auto text-primary" />
                             <CardTitle className="text-3xl font-headline mt-2">My Inventory</CardTitle>
@@ -229,7 +240,7 @@ function InventoryPageComponent() {
                             {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-80" />)}
                         </div>
                     ) : inventoryBoons.length === 0 ? (
-                         <Card className="text-center py-20">
+                         <Card className="text-center py-20 bg-card/80">
                             <CardHeader>
                                 <CardTitle>Your Backpack is Empty</CardTitle>
                                 <CardDescription>Visit the Vault to purchase powerful items and Rewards!</CardDescription>
