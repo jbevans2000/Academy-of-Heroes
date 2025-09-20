@@ -241,10 +241,10 @@ export default function TrainingGroundsPage() {
 
     <div className="relative flex min-h-screen w-full flex-col">
        <div 
-            className="absolute inset-0 -z-10"
+            className="absolute inset-0 -z-10 bg-no-repeat"
             style={{
                 backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChooseChampion.jpg?alt=media&token=9d8a8624-c352-415e-84d8-827cebc711a5')`,
-                backgroundSize: 'cover',
+                backgroundSize: 'contain',
                 backgroundPosition: 'center',
                 opacity: 0.25,
             }}
