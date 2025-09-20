@@ -243,8 +243,8 @@ export default function TrainingGroundsPage() {
        <div 
             className="absolute inset-0 -z-10 bg-no-repeat"
             style={{
-                backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChooseChampion.jpg?alt=media&token=9d8a8624-c352-415e-84d8-827cebc711a5')`,
-                backgroundSize: 'contain',
+                backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FDual%20Page%20Battle.png?alt=media&token=7db8be1d-0318-4dd5-b621-bf007d15dbf6')`,
+                backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 opacity: 0.25,
             }}
@@ -391,3 +391,5 @@ export default function TrainingGroundsPage() {
     </>
   );
 }
+
+    
