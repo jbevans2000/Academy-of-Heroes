@@ -135,7 +135,16 @@ export default function GameLogPage() {
   }
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-muted/40">
+    <div className="relative flex min-h-screen w-full flex-col">
+       <div 
+          className="absolute inset-0 -z-10"
+          style={{
+              backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FArchives.jpg?alt=media&token=1bbfbdcd-fb4a-4139-9a8d-44603c19a86c')`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              opacity: 0.25,
+          }}
+        />
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="max-w-4xl mx-auto space-y-6">
@@ -169,7 +178,7 @@ export default function GameLogPage() {
             </AlertDialog>
           </div>
 
-          <Card className="shadow-lg">
+          <Card className="shadow-lg bg-card/80">
             <CardHeader>
               <div className="flex items-center gap-4">
                 <BookOpen className="h-8 w-8 text-primary" />
