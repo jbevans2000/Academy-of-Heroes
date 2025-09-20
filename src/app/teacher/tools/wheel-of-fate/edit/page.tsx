@@ -12,6 +12,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { createWheelOfFateEvent, updateWheelOfFateEvent, deleteWheelOfFateEvent } from '@/ai/flows/manage-wheel-of-fate';
 
 interface WheelEvent {
     id: string;
@@ -58,23 +59,22 @@ export default function EditWheelOfFatePage() {
         }
         setIsSaving(true);
         try {
+            let result;
             if (editingEventId) {
-                // Update existing event
-                const eventRef = doc(db, 'teachers', teacher.uid, 'wheelOfFateEvents', editingEventId);
-                await updateDoc(eventRef, { text: currentEventText });
-                toast({ title: 'Event Updated' });
+                result = await updateWheelOfFateEvent({ teacherUid: teacher.uid, eventId: editingEventId, text: currentEventText });
             } else {
-                // Add new event
-                const eventsRef = collection(db, 'teachers', teacher.uid, 'wheelOfFateEvents');
-                await addDoc(eventsRef, { text: currentEventText });
-                toast({ title: 'Event Added' });
+                result = await createWheelOfFateEvent({ teacherUid: teacher.uid, text: currentEventText });
             }
-            // Reset form
+            if(result.success) {
+                toast({ title: editingEventId ? 'Event Updated' : 'Event Added' });
+            } else {
+                throw new Error(result.error);
+            }
             setCurrentEventText('');
             setEditingEventId(null);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error saving event:", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not save the event.' });
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Could not save the event.' });
         } finally {
             setIsSaving(false);
         }
@@ -83,12 +83,15 @@ export default function EditWheelOfFatePage() {
     const handleDeleteEvent = async (eventId: string) => {
         if (!teacher) return;
         try {
-            const eventRef = doc(db, 'teachers', teacher.uid, 'wheelOfFateEvents', eventId);
-            await deleteDoc(eventRef);
-            toast({ title: 'Event Deleted' });
-        } catch (error) {
+            const result = await deleteWheelOfFateEvent({ teacherUid: teacher.uid, eventId });
+             if (result.success) {
+                toast({ title: 'Event Deleted' });
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
              console.error("Error deleting event:", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not delete the event.' });
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Could not delete the event.' });
         }
     };
 
@@ -103,13 +106,23 @@ export default function EditWheelOfFatePage() {
     }
 
     return (
-        <div className="flex min-h-screen w-full flex-col bg-muted/40">
+        <div className="relative flex min-h-screen w-full flex-col">
+            <div 
+                className="absolute inset-0 -z-10"
+                style={{
+                    backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2FWheel%20of%20Fate%20Background.jpg?alt=media&token=b5fe255d-9897-495d-bbde-1ddcb2d05e49')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                }}
+            />
+            <div className="absolute inset-0 -z-10 bg-black/80" />
+
             <TeacherHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="w-full max-w-2xl mx-auto space-y-6">
-                    <Button variant="outline" onClick={() => router.push('/teacher/tools')}>
+                    <Button variant="outline" onClick={() => router.push('/teacher/tools/wheel-of-fate')}>
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to All Tools
+                        Back to Wheel of Fate
                     </Button>
                     <Card>
                         <CardHeader>
