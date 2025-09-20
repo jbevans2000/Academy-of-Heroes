@@ -44,8 +44,6 @@ function parseCsv(text: string): string[][] {
             if (char === ',') {
                 currentRow.push(currentField);
                 currentField = '';
-            } else if (char === '"') {
-                inQuotes = true;
             } else if (char === '\n' || char === '\r') {
                 if (currentField.length > 0 || currentRow.length > 0) {
                     currentRow.push(currentField);
@@ -272,7 +270,16 @@ export default function EditDuelSectionPage() {
     }
 
     return (
-         <div className="flex min-h-screen w-full flex-col bg-muted/40">
+         <div className="relative flex min-h-screen w-full flex-col">
+            <div
+                className="absolute inset-0 -z-10"
+                style={{
+                    backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FDual%20Page%20Battle.png?alt=media&token=7db8be1d-0318-4dd5-b621-bf007d15dbf6')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    opacity: 0.25,
+                }}
+            />
             <TeacherHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                  <div className="max-w-4xl mx-auto space-y-6">
