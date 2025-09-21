@@ -73,7 +73,7 @@ const QuizComponent = ({ quiz, student, chapter, hub, teacherUid, onQuizComplete
     if (showResults) {
         const correctAnswers = answers.filter((ans, i) => ans === quiz.questions[i].correctAnswerIndex).length;
         const score = (correctAnswers / quiz.questions.length) * 100;
-        const passed = !quiz.settings.requirePassing || score >= quiz.settings.passingScore;
+        const passed = score >= (quiz.settings.passingScore || 80);
 
         const detailedAnswers = answers.map((studentAnswerIndex, i) => {
             const question = quiz.questions[i];
@@ -103,7 +103,7 @@ const QuizComponent = ({ quiz, student, chapter, hub, teacherUid, onQuizComplete
                     )}
 
                     <div className="flex justify-center gap-4">
-                        {passed && (
+                        {(passed || !quiz.settings.requirePassing) && (
                             <Button onClick={() => onQuizComplete(score, detailedAnswers)}>Continue</Button>
                         )}
                         <Button variant="outline" onClick={() => {
@@ -114,9 +114,6 @@ const QuizComponent = ({ quiz, student, chapter, hub, teacherUid, onQuizComplete
                         }}>
                             Retake Quiz
                         </Button>
-                         {!passed && !quiz.settings.requirePassing && (
-                            <Button variant="secondary" onClick={() => onQuizComplete(score, detailedAnswers)}>Continue Anyway</Button>
-                        )}
                     </div>
                 </CardContent>
             </Card>
