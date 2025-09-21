@@ -10,16 +10,15 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ArrowLeft, PlusCircle, Trash2, Eye, GitBranch, Loader2, Save, Sparkles, Image as ImageIcon, Upload, X, Music, Library } from 'lucide-react';
-import { useRouter, useParams } from 'next/navigation';
+import { ArrowLeft, PlusCircle, Trash2, Eye, GitBranch, Loader2, Sparkles, Image as ImageIcon, Upload, X, Music, Library } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { addDoc, collection } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, uploadString } from 'firebase/storage';
 import { db, auth, app } from '@/lib/firebase';
-import { Skeleton } from '@/components/ui/skeleton';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 import NextImage from 'next/image';
 import { v4 as uuidv4 } from 'uuid';
 import { cn } from '@/lib/utils';
@@ -39,26 +38,23 @@ interface Question {
   imageUrl?: string;
 }
 
-export default function EditBossBattlePage() {
+export default function NewBossBattlePage() {
   const router = useRouter();
-  const params = useParams();
-  const battleId = params.id as string;
   const { toast } = useToast();
-  const [teacher, setTeacher] = useState<User | null>(null);
-
   const [battleTitle, setBattleTitle] = useState('');
   const [bossImageUrl, setBossImageUrl] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [musicUrl, setMusicUrl] = useState('');
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isClient, setIsClient] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [teacher, setTeacher] = useState<User | null>(null);
 
   // Image Upload State
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isBossImageGalleryOpen, setIsBossImageGalleryOpen] = useState(false);
-
+  
   // Music Upload State
   const [musicFile, setMusicFile] = useState<File | null>(null);
   const [isUploadingMusic, setIsUploadingMusic] = useState(false);
@@ -70,12 +66,11 @@ export default function EditBossBattlePage() {
   const [aiNumQuestions, setAiNumQuestions] = useState<number | string>(5);
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
 
-
   // AI Image Generation State
   const [aiImagePrompt, setAiImagePrompt] = useState('');
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, user => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setTeacher(user);
       } else {
@@ -86,47 +81,9 @@ export default function EditBossBattlePage() {
   }, [router]);
 
   useEffect(() => {
-    if (!battleId || !teacher) return;
-
-    const fetchBattleData = async () => {
-        setIsLoading(true);
-        try {
-            const battleRef = doc(db, 'teachers', teacher.uid, 'bossBattles', battleId);
-            const battleSnap = await getDoc(battleRef);
-
-            if (battleSnap.exists()) {
-                const data = battleSnap.data();
-                setBattleTitle(data.battleName || '');
-                setBossImageUrl(data.bossImageUrl || '');
-                setVideoUrl(data.videoUrl || '');
-                setMusicUrl(data.musicUrl || '');
-                setQuestions(data.questions.map((q: any, index: number) => ({
-                    ...q,
-                    id: uuidv4(),
-                    damage: q.damage !== undefined ? q.damage : 1,
-                })));
-            } else {
-                toast({
-                    variant: 'destructive',
-                    title: 'Not Found',
-                    description: 'This battle could not be found. It may have been deleted.',
-                });
-                router.push('/teacher/battles');
-            }
-        } catch (error) {
-            console.error("Error fetching battle data:", error);
-             toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: 'Failed to load battle data.',
-            });
-        } finally {
-            setIsLoading(false);
-        }
-    }
-
-    fetchBattleData();
-  }, [battleId, router, toast, teacher]);
+    setQuestions([{ id: uuidv4(), questionText: '', answers: ['', '', '', ''], correctAnswerIndex: null, damage: 1, imageUrl: '' }]);
+    setIsClient(true);
+  }, []);
   
   const handleUploadImage = async () => {
     if (!imageFile || !teacher) {
@@ -152,7 +109,7 @@ export default function EditBossBattlePage() {
         setImageFile(null);
     }
   };
-
+  
     const handleUploadMusic = async () => {
         if (!musicFile || !teacher) {
             toast({ variant: 'destructive', title: 'No File Selected', description: 'Please choose an audio file to upload.' });
@@ -224,7 +181,7 @@ export default function EditBossBattlePage() {
       )
     );
   };
-  
+
   const handleGenerateQuestions = async () => {
     if (!aiSubject || !aiGradeLevel || !aiNumQuestions) {
         toast({ variant: 'destructive', title: 'Missing Info', description: 'Please provide a subject, grade, and number of questions.' });
@@ -258,7 +215,6 @@ export default function EditBossBattlePage() {
     }
   }
 
-
   const validateBattle = () => {
     if (!battleTitle.trim()) {
         toast({ variant: 'destructive', title: 'Validation Error', description: 'Boss Battle Title is required.' });
@@ -283,29 +239,30 @@ export default function EditBossBattlePage() {
     return true;
   }
 
-  const handleSaveChanges = async () => {
+  const handleCreateBattle = async () => {
     if (!validateBattle() || !teacher) return;
 
     setIsSaving(true);
+
     const questionsToSave = questions.map(({ id, ...rest }) => rest);
     
     try {
-        const battleRef = doc(db, 'teachers', teacher.uid, 'bossBattles', battleId);
-        await setDoc(battleRef, {
+        await addDoc(collection(db, 'teachers', teacher.uid, 'bossBattles'), {
             battleName: battleTitle,
             bossImageUrl,
             videoUrl,
             musicUrl,
             questions: questionsToSave,
-        }, { merge: true });
+            createdAt: new Date(),
+        });
 
         toast({
-            title: 'Battle Updated Successfully!',
-            description: 'Your changes have been saved.',
+            title: 'Battle Created Successfully!',
+            description: 'The boss battle has been saved and is ready to be activated.',
         });
         router.push('/teacher/battles');
     } catch (error) {
-        console.error("Error updating boss battle:", error);
+        console.error("Error creating boss battle:", error);
         toast({
             variant: 'destructive',
             title: 'Save Failed',
@@ -316,18 +273,13 @@ export default function EditBossBattlePage() {
     }
   }
 
-  if (isLoading) {
-    return (
-        <div className="flex min-h-screen w-full flex-col bg-muted/40">
-          <TeacherHeader />
-          <main className="flex-1 p-4 md:p-6 lg:p-8">
-            <div className="max-w-4xl mx-auto space-y-6">
-                <Skeleton className="h-10 w-48" />
-                <Skeleton className="h-96 w-full" />
-            </div>
-          </main>
-        </div>
-    )
+  const handlePreviewBattle = () => {
+      if (!validateBattle()) return;
+      
+      toast({
+          title: 'Preview Mode',
+          description: 'This will show you what the battle looks like for students.',
+      })
   }
 
   return (
@@ -344,9 +296,9 @@ export default function EditBossBattlePage() {
           </Button>
           <Card className="shadow-lg bg-card/90 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle className="text-3xl">Edit Boss Battle</CardTitle>
+              <CardTitle className="text-3xl">Create New Boss Battle</CardTitle>
               <CardDescription>
-                Make changes to this battle. Your updates will be saved for future sessions.
+                Design an epic challenge for your students. Add a title, media, and your questions below.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-8">
@@ -362,11 +314,11 @@ export default function EditBossBattlePage() {
                 </div>
               </div>
 
-               <Separator />
-               
-               <div className="space-y-4 p-6 border rounded-lg bg-background/30">
+              <Separator />
+
+              <div className="space-y-4 p-6 border rounded-lg bg-background/30">
                  <h3 className="text-xl font-semibold flex items-center gap-2"><ImageIcon className="text-primary" /> Boss Image</h3>
-                  <div className="space-y-2 p-4 border rounded-md">
+                 <div className="space-y-2 p-4 border rounded-md">
                     <Label className="text-base font-medium">Image Options</Label>
                     <div className="flex items-center gap-2">
                       <Label htmlFor="image-upload" className={cn(buttonVariants({ variant: 'default' }), "cursor-pointer")}>
@@ -397,11 +349,18 @@ export default function EditBossBattlePage() {
                     <Sparkles className="mr-2 h-4 w-4" />
                     Generate Image
                  </Button>
-                 {bossImageUrl && (
+                 {(isUploading || bossImageUrl) && (
                     <div className="pt-4">
                         <Label>Current Boss Image</Label>
                         <div className="mt-2 flex justify-center items-center p-4 border rounded-md bg-background/50 h-64">
-                            <NextImage src={bossImageUrl} alt="Generated Boss" width={250} height={250} className="rounded-lg object-contain h-full" />
+                            {isUploading ? (
+                                <div className="text-center">
+                                    <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-2" />
+                                    <p className="text-muted-foreground">Uploading Image...</p>
+                                </div>
+                            ) : bossImageUrl ? (
+                                <NextImage src={bossImageUrl} alt="Uploaded Boss" width={250} height={250} className="rounded-lg object-contain h-full" />
+                            ) : null}
                         </div>
                     </div>
                  )}
@@ -450,7 +409,6 @@ export default function EditBossBattlePage() {
                      )}
                 </div>
 
-
               <div className="space-y-4 p-6 border rounded-lg bg-background/30">
                 <h3 className="text-xl font-semibold flex items-center gap-2"><Sparkles className="text-primary" /> Generate Questions with the Oracle</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -468,7 +426,7 @@ export default function EditBossBattlePage() {
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="ai-num-questions">Number of Questions (1-10)</Label>
-                    <Input id="ai-num-questions" type="number" min="1" max="10" value={aiNumQuestions} onChange={(e) => setAiNumQuestions(e.target.value)} disabled={isGeneratingQuestions} />
+                    <Input id="ai-num-questions" type="number" min="1" max="10" value={aiNumQuestions} onChange={(e) => setAiNumQuestions(e.target.value)} disabled={isGeneratingQuestions}/>
                  </div>
                  <Button onClick={handleGenerateQuestions} disabled={isGeneratingQuestions || !aiSubject || !aiGradeLevel}>
                     {isGeneratingQuestions ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
@@ -476,7 +434,7 @@ export default function EditBossBattlePage() {
                  </Button>
               </div>
 
-              <div className="space-y-6">
+              {isClient && <div className="space-y-6">
                  <h3 className="text-xl font-semibold">Questions</h3>
                 {questions.map((q, qIndex) => (
                   <Card key={q.id} className="p-6 relative bg-background/80 shadow-md">
@@ -502,7 +460,7 @@ export default function EditBossBattlePage() {
                             disabled={isSaving}
                         />
                       </div>
-                       <div className="space-y-2">
+                      <div className="space-y-2">
                         <Label htmlFor={`q-image-${q.id}`} className="text-base">Image URL (Optional)</Label>
                         <Input
                             id={`q-image-${q.id}`}
@@ -560,12 +518,16 @@ export default function EditBossBattlePage() {
                   <PlusCircle className="mr-2 h-5 w-5" />
                   Add Another Question
                 </Button>
-              </div>
+              </div>}
 
               <div className="flex justify-end gap-4 pt-4 border-t">
-                <Button size="lg" onClick={handleSaveChanges} disabled={isSaving}>
-                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2" />}
-                    Save Changes
+                <Button variant="outline" size="lg" onClick={handlePreviewBattle} disabled={isSaving}>
+                    <Eye className="mr-2" />
+                    Preview Boss Battle
+                </Button>
+                <Button size="lg" onClick={handleCreateBattle} disabled={isSaving}>
+                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GitBranch className="mr-2" />}
+                    Create Boss Battle
                 </Button>
               </div>
             </CardContent>

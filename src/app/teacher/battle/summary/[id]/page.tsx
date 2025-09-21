@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -25,12 +26,14 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import Image from 'next/image';
 
 
 interface Question {
   questionText: string;
   answers: string[];
   correctAnswerIndex: number;
+  imageUrl?: string;
 }
 
 interface RoundSnapshot {
@@ -237,7 +240,7 @@ export default function TeacherBattleSummaryPage() {
               backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FArchives.jpg?alt=media&token=1bbfbdcd-fb4a-4139-9a8d-44603c19a86c')`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
-              opacity: 0.2,
+              opacity: 0.25,
           }}
         />
       <TeacherHeader />
@@ -325,7 +328,10 @@ export default function TeacherBattleSummaryPage() {
                                 <AccordionItem key={round.id} value={round.id}>
                                     <AccordionTrigger className="text-lg hover:no-underline">
                                         <div className="flex justify-between w-full pr-4">
-                                            <span>Question {round.currentQuestionIndex + 1}: {question.questionText}</span>
+                                            <div className="flex items-center gap-2 text-left">
+                                                {question.imageUrl && <Image src={question.imageUrl} alt="Question visual" width={40} height={40} className="rounded-md" />}
+                                                <span>Q{round.currentQuestionIndex + 1}: {question.questionText}</span>
+                                            </div>
                                             <div className="flex gap-4">
                                                 <span className="text-green-500 font-semibold">{correctCount} Correct</span>
                                                 <span className="text-red-500 font-semibold">{incorrectCount} Incorrect</span>

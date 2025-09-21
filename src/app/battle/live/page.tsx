@@ -89,6 +89,7 @@ interface Question {
   answers: string[];
   correctAnswerIndex: number;
   damage: number;
+  imageUrl?: string;
 }
 
 interface Battle {
@@ -681,6 +682,11 @@ export default function LiveBattlePage() {
                                     />
                                 </div>
                                 <div className="flex-grow flex flex-col justify-center items-center text-center">
+                                    {currentQuestion?.imageUrl && (
+                                        <div className="mb-4">
+                                            <Image src={currentQuestion.imageUrl} alt="Question Image" width={300} height={150} className="rounded-md max-h-[150px] w-auto object-contain" />
+                                        </div>
+                                    )}
                                     <h2 className="text-2xl md:text-3xl font-bold">{currentQuestion?.questionText}</h2>
                                 </div>
                             </div>

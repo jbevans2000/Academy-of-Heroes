@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -17,6 +18,7 @@ interface Question {
   answers: string[];
   correctAnswerIndex: number;
   damage: number;
+  imageUrl?: string;
 }
 
 interface Battle {
@@ -163,6 +165,11 @@ export default function PreviewBattlePage() {
                         {/* Right Side: Question & Answers */}
                         <div className="p-8 flex flex-col justify-between">
                             <div>
+                                {currentQuestion.imageUrl && (
+                                    <div className="mb-4 flex justify-center">
+                                        <Image src={currentQuestion.imageUrl} alt="Question Image" width={300} height={150} className="rounded-md max-h-[150px] w-auto object-contain border" />
+                                    </div>
+                                )}
                                 <h3 className="text-2xl font-semibold mb-2 text-center">{currentQuestion.questionText}</h3>
                                 <p className="text-center text-sm text-red-500 mb-4 font-semibold">Damage on incorrect answer: {currentQuestion.damage} HP</p>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
