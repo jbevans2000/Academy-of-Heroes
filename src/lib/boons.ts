@@ -16,6 +16,7 @@ export type Boon = {
   isVisibleToStudents: boolean;
   requiresApproval?: boolean; // New: Does this boon purchase need teacher approval?
   studentMessage?: string; // New: A message shown to the student on use.
+  levelRequirement?: number; // New: Minimum level to purchase.
 };
 
 export interface PendingBoonRequest {

@@ -33,6 +33,7 @@ export default function NewBoonPage() {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [cost, setCost] = useState<number | ''>('');
+    const [levelRequirement, setLevelRequirement] = useState<number | ''>(1);
     const [imageUrl, setImageUrl] = useState('');
     const [requiresApproval, setRequiresApproval] = useState(false);
     const [studentMessage, setStudentMessage] = useState('');
@@ -87,6 +88,7 @@ export default function NewBoonPage() {
                 name,
                 description,
                 cost: Number(cost),
+                levelRequirement: Number(levelRequirement) || 1,
                 imageUrl: finalImageUrl,
                 effect: {
                     type: 'REAL_WORLD_PERK',
@@ -136,9 +138,15 @@ export default function NewBoonPage() {
                                 <Label htmlFor="description">Description</Label>
                                 <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g., The student may chew gum in class for one day." />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="cost">Cost (in Gold)</Label>
-                                <Input id="cost" type="number" value={cost} onChange={(e) => setCost(e.target.value === '' ? '' : Number(e.target.value))} placeholder="e.g., 500" />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="cost">Cost (in Gold)</Label>
+                                    <Input id="cost" type="number" value={cost} onChange={(e) => setCost(e.target.value === '' ? '' : Number(e.target.value))} placeholder="e.g., 500" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="levelRequirement">Minimum Level Required</Label>
+                                    <Input id="levelRequirement" type="number" value={levelRequirement} onChange={(e) => setLevelRequirement(e.target.value === '' ? '' : Number(e.target.value))} placeholder="e.g., 1" />
+                                </div>
                             </div>
 
                              <div className="space-y-2">

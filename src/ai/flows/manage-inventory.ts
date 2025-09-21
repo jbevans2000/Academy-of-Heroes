@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { doc, runTransaction, getDoc, updateDoc, deleteField, addDoc, collection, serverTimestamp, increment, setDoc } from 'firebase/firestore';
@@ -39,9 +40,14 @@ export async function purchaseBoon(input: PurchaseBoonInput): Promise<ActionResp
             const student = studentSnap.data() as Student;
             const boon = { id: boonSnap.id, ...boonSnap.data() } as Boon;
 
+            // --- SERVER-SIDE VALIDATION ---
             if (student.gold < boon.cost) {
                 return { success: false, error: "You don't have enough gold!" };
             }
+            if (boon.levelRequirement && student.level < boon.levelRequirement) {
+                return { success: false, error: `You must be level ${boon.levelRequirement} to purchase this item.` };
+            }
+
 
             if (boon.requiresApproval) {
                 // Create a pending request instead of completing the purchase

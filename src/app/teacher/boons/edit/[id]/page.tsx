@@ -108,6 +108,7 @@ export default function EditBoonPage() {
         try {
             const boonToSave = {
                 ...boon,
+                levelRequirement: Number(boon.levelRequirement) || 1,
                 effect: {
                     type: 'REAL_WORLD_PERK' as const,
                     value: boon.description,
@@ -171,9 +172,15 @@ export default function EditBoonPage() {
                                 <Label htmlFor="description">Description</Label>
                                 <Textarea id="description" value={boon.description || ''} onChange={(e) => handleBoonChange('description', e.target.value)} placeholder="e.g., The student may chew gum in class for one day." />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="cost">Cost (in Gold)</Label>
-                                <Input id="cost" type="number" value={boon.cost ?? ''} onChange={(e) => handleBoonChange('cost', Number(e.target.value))} />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="cost">Cost (in Gold)</Label>
+                                    <Input id="cost" type="number" value={boon.cost ?? ''} onChange={(e) => handleBoonChange('cost', Number(e.target.value))} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="levelRequirement">Minimum Level Required</Label>
+                                    <Input id="levelRequirement" type="number" value={boon.levelRequirement ?? ''} onChange={(e) => handleBoonChange('levelRequirement', Number(e.target.value))} placeholder="1" />
+                                </div>
                             </div>
 
                             <div className="space-y-2">

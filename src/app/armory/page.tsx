@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -13,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Coins, Gem, Ban, ShoppingCart, Loader2 } from 'lucide-react';
+import { ArrowLeft, Coins, Gem, Ban, ShoppingCart, Loader2, Star } from 'lucide-react';
 import Image from 'next/image';
 import { purchaseBoon } from '@/ai/flows/manage-inventory';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
@@ -32,6 +33,23 @@ const BoonCard = ({ boon, onPurchase, student, disabled }: { boon: Boon, onPurch
     
     const ownedQuantity = student?.inventory?.[boon.id] || 0;
     const canAfford = student && student.gold >= boon.cost;
+    const meetsLevel = student && student.level >= (boon.levelRequirement || 1);
+
+    let buttonText = 'Purchase';
+    let isButtonDisabled = disabled || isPurchasing;
+    
+    if (!canAfford) {
+        buttonText = 'Not Enough Gold';
+        isButtonDisabled = true;
+    }
+    if (!meetsLevel) {
+        buttonText = `Requires Level ${boon.levelRequirement}`;
+        isButtonDisabled = true;
+    }
+    if (boon.requiresApproval && !isButtonDisabled) {
+        buttonText = 'Request Purchase';
+    }
+
 
     return (
         <Card className="flex flex-col text-center bg-card/80 backdrop-blur-sm">
@@ -49,14 +67,25 @@ const BoonCard = ({ boon, onPurchase, student, disabled }: { boon: Boon, onPurch
                 <CardTitle>{boon.name}</CardTitle>
                 <CardDescription>{boon.description}</CardDescription>
             </CardContent>
-            <CardFooter className="flex-col gap-4">
-                <div className="flex items-center gap-2 text-xl font-bold text-amber-600">
-                    <Coins className="h-6 w-6" />
-                    <span>{boon.cost}</span>
+            <CardFooter className="flex-col gap-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1 font-bold text-amber-600">
+                        <Coins className="h-4 w-4" />
+                        <span>{boon.cost}</span>
+                    </div>
+                    {boon.levelRequirement && boon.levelRequirement > 1 && (
+                        <>
+                            <span>|</span>
+                            <div className="flex items-center gap-1">
+                                <Star className="h-4 w-4" />
+                                <span>Lvl {boon.levelRequirement}</span>
+                            </div>
+                        </>
+                    )}
                 </div>
-                 <Button className="w-full" onClick={handlePurchase} disabled={disabled || isPurchasing || !canAfford}>
+                 <Button className="w-full" onClick={handlePurchase} disabled={isButtonDisabled}>
                     {isPurchasing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShoppingCart className="mr-2 h-4 w-4" />}
-                    {!canAfford ? 'Not Enough Gold' : 'Purchase'}
+                    {buttonText}
                 </Button>
             </CardFooter>
         </Card>

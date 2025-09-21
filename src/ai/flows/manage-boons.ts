@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { doc, addDoc, updateDoc, deleteDoc, collection, serverTimestamp, writeBatch, setDoc, runTransaction } from 'firebase/firestore';
@@ -18,6 +19,7 @@ const defaultBoons = [
     name: "Jester's Favor",
     description: "Share a school-appropriate joke with the class.",
     cost: 50,
+    levelRequirement: 1,
     imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FJester's%20Favor.jpg?alt=media&token=294dd79f-bc38-4465-86c2-50fbbedbbc60",
     effect: { type: 'REAL_WORLD_PERK', value: "Tell a joke in class." },
     requiresApproval: true,
@@ -27,6 +29,7 @@ const defaultBoons = [
     name: "Scribe's Permission",
     description: "Use a special pen or marker for your assignments for the day.",
     cost: 75,
+    levelRequirement: 1,
     imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FScribe's%20Permission.jpg?alt=media&token=424602ba-50d4-4b00-9379-286024d93a5f",
     effect: { type: 'REAL_WORLD_PERK', value: "Use a special pen for the day." },
     requiresApproval: false,
@@ -36,6 +39,7 @@ const defaultBoons = [
     name: "Wanderer's Pass",
     description: "Choose your seat for one class period.",
     cost: 100,
+    levelRequirement: 2,
     imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FWanderer's%20Pass.jpg?alt=media&token=69ce6dcc-5e34-46ae-ba00-c17bf500da33",
     effect: { type: 'REAL_WORLD_PERK', value: "Choose seat for the day." },
     requiresApproval: true,
@@ -45,6 +49,7 @@ const defaultBoons = [
     name: "Emissary's Duty",
     description: "Deliver a message to another classroom or teacher.",
     cost: 120,
+    levelRequirement: 2,
     imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FEmissary's%20Duty.jpg?alt=media&token=45484a0f-d05c-40d7-bae0-6a2cbedc9242",
     effect: { type: 'REAL_WORLD_PERK', value: "Deliver a message to another classroom." },
     requiresApproval: true,
@@ -54,6 +59,7 @@ const defaultBoons = [
     name: "Oracle's Insight",
     description: "Get a one-minute private consultation with the Guildmaster about an assignment.",
     cost: 150,
+    levelRequirement: 3,
     imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FOracle's%20Insight.jpg?alt=media&token=a41ef92b-6b7f-4ea4-80da-50372fd109aa",
     effect: { type: 'REAL_WORLD_PERK', value: "1-minute private teacher consultation." },
     requiresApproval: true,
@@ -63,6 +69,7 @@ const defaultBoons = [
     name: "Bard's Tune",
     description: "Listen to music with headphones during independent work.",
     cost: 200,
+    levelRequirement: 3,
     imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FBard's%20Tune.jpg?alt=media&token=89a03ef6-26bc-46fa-9b84-2183f6528437",
     effect: { type: 'REAL_WORLD_PERK', value: "Listen to music during independent work." },
     requiresApproval: false,
@@ -72,6 +79,7 @@ const defaultBoons = [
     name: "Hero's Respite",
     description: "Leave 5 minutes early for recess.",
     cost: 200,
+    levelRequirement: 4,
     imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FHeroes%20Respite.jpg?alt=media&token=3419c982-2aec-4ab7-adce-07011af329a6",
     effect: { type: 'REAL_WORLD_PERK', value: "Leave 5 minutes early for recess." },
     requiresApproval: true,
@@ -81,6 +89,7 @@ const defaultBoons = [
     name: "Time-Turner's Grace",
     description: "A 24-hour extension on one assignment.",
     cost: 300,
+    levelRequirement: 5,
     imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FTime%20Turner's%20Grace.jpg?alt=media&token=57032694-2c8a-42ec-b26e-7c0a2c414d50",
     effect: { type: 'REAL_WORLD_PERK', value: "24-hour assignment extension." },
     requiresApproval: false,
@@ -90,6 +99,7 @@ const defaultBoons = [
     name: "Keeper of the Scroll",
     description: "Erase one incorrect answer on a past assignment before it is graded.",
     cost: 400,
+    levelRequirement: 7,
     imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FKeeper%20of%20the%20Scroll.jpg?alt=media&token=8a3bcfce-a86c-40a3-8cba-1b7a4754f3dd",
     effect: { type: 'REAL_WORLD_PERK', value: "Erase one incorrect answer on a past assignment." },
     requiresApproval: false,
@@ -99,6 +109,7 @@ const defaultBoons = [
     name: "Scholar's Pardon",
     description: "A one-time pass on a single, small homework assignment.",
     cost: 500,
+    levelRequirement: 10,
     imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FScholar's%20Pardon.jpg?alt=media&token=900a3c30-0a94-4585-bff6-13621f9a1a33",
     effect: { type: 'REAL_WORLD_PERK', value: "Single small homework pass." },
     requiresApproval: false,
@@ -138,6 +149,7 @@ export async function createBoon(teacherUid: string, boonData: CreateBoonInput):
     const boonsRef = collection(db, 'teachers', teacherUid, 'boons');
     await addDoc(boonsRef, {
       ...boonData,
+      levelRequirement: boonData.levelRequirement || 1,
       isVisibleToStudents: true, // Visible by default now
       createdAt: serverTimestamp(),
     });
@@ -263,7 +275,3 @@ export async function denyBoonRequest(teacherUid: string, requestId: string): Pr
         return { success: false, error: "Failed to deny the request." };
     }
 }
-
-    
-
-    
