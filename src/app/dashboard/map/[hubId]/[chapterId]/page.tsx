@@ -167,7 +167,6 @@ export default function ChapterPage() {
     const [isCompleting, setIsCompleting] = useState(false);
     const [isUncompleting, setIsUncompleting] = useState(false);
     const [showApprovalSentDialog, setShowApprovalSentDialog] = useState(false);
-    const [quizPassed, setQuizPassed] = useState(false);
 
     const isPreviewMode = searchParams.get('preview') === 'true';
 
@@ -183,15 +182,17 @@ export default function ChapterPage() {
                     // Fetch student data only if not in preview mode.
                     if (!isPreviewMode) {
                         const studentRef = doc(db, 'teachers', studentMetaSnap.data().teacherUid, 'students', currentUser.uid);
-                        const studentDocSnap = await getDoc(studentRef);
-                        if (studentDocSnap.exists()) {
-                            setStudent(studentDocSnap.data() as Student);
-                        }
+                        const unsubStudent = onSnapshot(studentRef, (docSnap) => {
+                            if (docSnap.exists()) {
+                                setStudent(docSnap.data() as Student);
+                            } else {
+                                router.push('/');
+                            }
+                        });
+                        return () => unsubStudent();
                     }
                 } else if (isPreviewMode) {
                     // In preview mode, we need to find the teacher who owns this content.
-                    // This is a simplified approach. A more robust system might pass the teacherId in the URL.
-                    const chaptersQuery = query(collection(db, 'teachers'), where('__name__', '==', chapterId as string));
                     const teachersSnapshot = await getDocs(collection(db, 'teachers'));
                     for (const teacherDoc of teachersSnapshot.docs) {
                         const chapterRef = doc(db, 'teachers', teacherDoc.id, 'chapters', chapterId as string);
@@ -222,9 +223,6 @@ export default function ChapterPage() {
                 if (chapterSnap.exists()) {
                     const chapterData = { id: chapterSnap.id, ...chapterSnap.data() } as Chapter;
                     setChapter(chapterData);
-                    // If no quiz, student can advance by default.
-                    // If there is a quiz, they must pass it first.
-                    setQuizPassed(!chapterData.quiz); 
 
                     const hubDocRef = doc(db, 'teachers', teacherUid, 'questHubs', hubId as string);
                     const hubSnap = await getDoc(hubDocRef);
@@ -326,12 +324,6 @@ export default function ChapterPage() {
             setIsUncompleting(false);
         }
     };
-
-    const handleQuizCompletion = (score: number, answers: any[]) => {
-        setQuizPassed(true);
-        handleMarkComplete(score, answers);
-    }
-
 
     const getYouTubeEmbedUrl = (url: string) => {
         if (!url) return '';
@@ -535,7 +527,7 @@ export default function ChapterPage() {
                                         chapter={chapter as Chapter}
                                         hub={hub}
                                         teacherUid={teacherUid}
-                                        onQuizComplete={handleQuizCompletion}
+                                        onQuizComplete={handleMarkComplete}
                                     />
                                 )}
                             </TabsContent>
@@ -543,11 +535,11 @@ export default function ChapterPage() {
                     </CardContent>
                 </Card>
                  <div className="flex justify-center flex-col items-center gap-4 py-4">
-                     {isCurrentChapter && !isPreviewMode && (
+                     {isCurrentChapter && !isPreviewMode && !chapter.quiz && (
                         <Button 
                             size="lg" 
                             onClick={() => handleMarkComplete()}
-                            disabled={isCompleting || (!!chapter.quiz && !quizPassed)}
+                            disabled={isCompleting}
                             className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-lg py-6 px-8 shadow-lg"
                         >
                             {isCompleting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CheckCircle className="mr-2 h-5 w-5" />}
@@ -587,5 +579,4 @@ export default function ChapterPage() {
             </div>
         </div>
       </>
-    );
-}
+    
