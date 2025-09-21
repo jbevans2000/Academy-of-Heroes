@@ -542,7 +542,7 @@ export default function ChapterPage() {
                                         className="rounded-lg shadow-lg border">
                                     </iframe>
                                 </div></>}
-                                {chapter.quiz && !isPreviewMode && student && (
+                                {chapter.quiz && student && (chapter.quiz.questions?.length || 0) > 0 && !isPreviewMode && (
                                     <QuizComponent 
                                         quiz={chapter.quiz}
                                         student={student}
@@ -557,7 +557,7 @@ export default function ChapterPage() {
                     </CardContent>
                 </Card>
                  <div className="flex justify-center flex-col items-center gap-4 py-4">
-                     {!isPreviewMode && !chapter.quiz && (
+                     {!isPreviewMode && (!chapter.quiz || !chapter.quiz.questions || chapter.quiz.questions.length === 0) && (
                         <Button 
                             size="lg" 
                             onClick={() => setIsConfirmingComplete(true)}
