@@ -19,7 +19,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import NextImage from 'next/image';
 import { v4 as uuidv4 } from 'uuid';
 import { cn } from '@/lib/utils';
 import { MusicGallery } from '@/components/teacher/music-gallery';
@@ -422,7 +421,7 @@ export default function EditBossBattlePage() {
                     <div className="pt-4">
                         <Label>Current Boss Image</Label>
                         <div className="mt-2 flex justify-center items-center p-4 border rounded-md bg-background/50 h-64">
-                            <NextImage src={bossImageUrl} alt="Generated Boss" width={250} height={250} className="rounded-lg object-contain h-full" />
+                            <img src={bossImageUrl} alt="Uploaded Boss" className="rounded-lg object-contain h-full" />
                         </div>
                     </div>
                  )}

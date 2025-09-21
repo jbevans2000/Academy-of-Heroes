@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { onSnapshot, doc, getDoc, setDoc, updateDoc, increment, arrayUnion, collection, query, getDocs, serverTimestamp } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
-import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Hourglass, VolumeX, Flame, Lightbulb, Skull, ScrollText, Volume1, Volume, Volume2 as VolumeIcon, ChevronDown, Info, Heart } from 'lucide-react';
+import { Loader2, Shield, Swords, Timer, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Hourglass, VolumeX, Flame, Lightbulb, Skull, ScrollText, Volume1, Volume, Volume2 as VolumeIcon, ChevronDown, Info, Heart, Maximize } from 'lucide-react';
 import { type Student } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
@@ -25,6 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
 import {
   Collapsible,
@@ -168,7 +169,7 @@ function FallenPlayerDialog({ isOpen, onOpenChange }: { isOpen: boolean; onOpenC
         <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
             <AlertDialogContent>
                 <AlertDialogHeader className="items-center">
-                    <Image
+                    <img
                         src={imageUrl}
                         alt="A fallen hero"
                         width={300}
@@ -671,20 +672,30 @@ export default function LiveBattlePage() {
 
                             <div className="flex flex-col md:flex-row gap-6 mb-6">
                                 <div className="flex-shrink-0 mx-auto">
-                                    <Image 
+                                    <img 
                                         src={bossImage}
                                         alt={battle?.battleName || 'Boss'}
                                         width={250}
                                         height={250}
                                         className="rounded-lg shadow-lg border-4 border-primary/50 object-contain"
-                                        data-ai-hint="fantasy monster"
                                     />
                                 </div>
                                 <div className="flex-grow flex flex-col justify-center items-center text-center">
                                     {currentQuestion?.imageUrl && (
                                         <div className="mb-4">
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img src={currentQuestion.imageUrl} alt="Question Image" width={300} height={150} className="rounded-md max-h-[150px] w-auto object-contain" />
+                                            <Dialog>
+                                                <DialogTrigger asChild>
+                                                    <button className="relative group">
+                                                        <img src={currentQuestion.imageUrl} alt="Question Image" className="rounded-md max-h-[150px] w-auto object-contain border cursor-pointer hover:opacity-80 transition-opacity" />
+                                                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <Maximize className="h-8 w-8 text-white" />
+                                                        </div>
+                                                    </button>
+                                                </DialogTrigger>
+                                                <DialogContent className="max-w-4xl h-auto">
+                                                    <img src={currentQuestion.imageUrl} alt="Question Image enlarged" className="w-full h-auto object-contain rounded-md" />
+                                                </DialogContent>
+                                            </Dialog>
                                         </div>
                                     )}
                                     <h2 className="text-2xl md:text-3xl font-bold">{currentQuestion?.questionText}</h2>
@@ -776,12 +787,10 @@ export default function LiveBattlePage() {
         ) : battleState.status === 'SHOWING_RESULTS' && battle ? (
             <div className="relative flex w-full flex-grow items-center justify-center p-4">
                 {battle.bossImageUrl && (
-                    <Image
+                    <img
                         src={battle.bossImageUrl}
                         alt="Boss Background"
-                        fill
-                        className="object-cover opacity-20"
-                        data-ai-hint="fantasy monster"
+                        className="absolute inset-0 w-full h-full object-cover opacity-20"
                     />
                 )}
                 <div className="w-full max-w-2xl mx-auto z-10">
@@ -851,12 +860,10 @@ export default function LiveBattlePage() {
         ) : battleState.status === 'BATTLE_ENDED' && battle ? (
              <div className="relative flex w-full flex-grow items-center justify-center p-4">
                 {battle.bossImageUrl && (
-                    <Image
+                    <img
                         src={battle.bossImageUrl}
                         alt="Boss Background"
-                        fill
-                        className="object-cover opacity-20"
-                        data-ai-hint="fantasy monster"
+                        className="absolute inset-0 w-full h-full object-cover opacity-20"
                     />
                 )}
                 <div className="w-full max-w-2xl mx-auto z-10">
