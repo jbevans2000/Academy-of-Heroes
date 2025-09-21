@@ -374,6 +374,7 @@ export default function ChapterPage() {
 
     const lastCompletedChapterForHub = student?.questProgress?.[hubId as string] || 0;
     const isCompletedChapter = chapter.chapterNumber <= lastCompletedChapterForHub;
+    const isCurrentChapter = chapter.chapterNumber === lastCompletedChapterForHub + 1;
     
     const returnPath = isPreviewMode ? '/teacher/quests' : `/dashboard/map/${hubId}`;
 
