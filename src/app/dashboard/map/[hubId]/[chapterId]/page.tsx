@@ -222,7 +222,9 @@ export default function ChapterPage() {
                 if (chapterSnap.exists()) {
                     const chapterData = { id: chapterSnap.id, ...chapterSnap.data() } as Chapter;
                     setChapter(chapterData);
-                    if (!chapterData.quiz) setQuizPassed(true); // If no quiz, student can advance
+                    // If no quiz, student can advance by default.
+                    // If there is a quiz, they must pass it first.
+                    setQuizPassed(!chapterData.quiz); 
 
                     const hubDocRef = doc(db, 'teachers', teacherUid, 'questHubs', hubId as string);
                     const hubSnap = await getDoc(hubDocRef);
