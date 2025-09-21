@@ -217,7 +217,7 @@ export default function BoonsPage() {
                         ) : (
                             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                                 {sortedBoons.map(boon => (
-                                    <Card key={boon.id} className={cn("flex flex-col transition-all", !boon.isVisibleToStudents && 'bg-gray-300 border-dashed')}>
+                                    <Card key={boon.id} className={cn("flex flex-col transition-all", !boon.isVisibleToStudents && 'bg-gray-400 border-dashed')}>
                                         <CardHeader>
                                             <div className="aspect-square relative w-full bg-secondary rounded-md overflow-hidden">
                                                 <Image src={boon.imageUrl || 'https://placehold.co/400x400.png'} alt={boon.name} fill className="object-cover" data-ai-hint="fantasy item" />
@@ -238,7 +238,7 @@ export default function BoonsPage() {
                                                     checked={boon.isVisibleToStudents ?? false}
                                                     onCheckedChange={() => handleVisibilityToggle(boon)}
                                                 />}
-                                                <Label htmlFor={`visibility-${boon.id}`} className="flex items-center gap-1 cursor-pointer">
+                                                <Label htmlFor={`visibility-${boon.id}`} className={cn("flex items-center gap-1 cursor-pointer font-bold", boon.isVisibleToStudents ? 'text-green-600' : 'text-destructive')}>
                                                     {boon.isVisibleToStudents ? <Eye className="w-4 h-4"/> : <EyeOff className="w-4 h-4"/>}
                                                     {boon.isVisibleToStudents ? 'Visible' : 'Hidden'}
                                                 </Label>
