@@ -21,6 +21,7 @@ import { completeChapter } from '@/ai/flows/manage-quests';
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -165,6 +166,7 @@ export default function ChapterPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isCompleting, setIsCompleting] = useState(false);
     const [showApprovalSentDialog, setShowApprovalSentDialog] = useState(false);
+    const [isConfirmingComplete, setIsConfirmingComplete] = useState(false);
     
     const isPreviewMode = searchParams.get('preview') === 'true';
 
@@ -250,6 +252,7 @@ export default function ChapterPage() {
         if (!user || !student || !chapter || !hub || !teacherUid) return;
         
         setIsCompleting(true);
+        setIsConfirmingComplete(false); // Close confirmation dialog
 
         try {
             const result = await completeChapter({
@@ -281,7 +284,6 @@ export default function ChapterPage() {
     
     const handleQuizComplete = (score: number, answers: any[]) => {
         if (!chapter?.quiz) return;
-        // Always call handleMarkComplete, which will handle both approval and direct completion logic
         handleMarkComplete(score, answers);
     };
 
@@ -357,6 +359,21 @@ export default function ChapterPage() {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogAction onClick={() => router.push(`/dashboard/map/${hubId}`)}>Return to Map</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={isConfirmingComplete} onOpenChange={setIsConfirmingComplete}>
+             <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Mark Chapter Complete?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Would you like to mark the current chapter complete and return to the {hub.name} quest map?
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>No, stay here</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => handleMarkComplete()}>Yes, complete it</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
@@ -497,7 +514,7 @@ export default function ChapterPage() {
                      {isCurrentChapter && !isPreviewMode && (
                         <Button 
                             size="lg" 
-                            onClick={() => handleMarkComplete()}
+                            onClick={() => setIsConfirmingComplete(true)}
                             disabled={isCompleting}
                             className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-lg py-6 px-8 shadow-lg"
                         >
@@ -529,3 +546,4 @@ export default function ChapterPage() {
       </>
     );
 }
+
