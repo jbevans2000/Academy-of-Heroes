@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -94,11 +93,15 @@ const QuizComponent = ({ quiz, student, chapter, hub, teacherUid, onQuizComplete
                 <CardContent className="text-center space-y-4">
                     <p className="text-4xl font-bold">You scored {correctAnswers} out of {quiz.questions.length}</p>
                     <p className="text-2xl font-semibold">{score.toFixed(0)}%</p>
-                    {passed ? (
-                        <p className="text-green-600 font-bold">You have proven your knowledge!</p>
-                    ) : (
-                        <p className="text-destructive font-bold">You have not met the minimum score of {quiz.settings.passingScore}%.</p>
+                    
+                    {quiz.settings.requirePassing && (
+                        passed ? (
+                            <p className="text-green-600 font-bold">You have proven your knowledge!</p>
+                        ) : (
+                            <p className="text-destructive font-bold">You have not met the minimum score of {quiz.settings.passingScore}%.</p>
+                        )
                     )}
+
                     <div className="flex justify-center gap-4">
                         {passed && (
                             <Button onClick={() => onQuizComplete(score, detailedAnswers)}>Continue</Button>
@@ -602,4 +605,3 @@ export default function ChapterPage() {
       </>
     );
 }
-
