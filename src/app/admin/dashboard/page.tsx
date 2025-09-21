@@ -579,7 +579,7 @@ export default function AdminDashboardPage() {
     if (isLoading || !user) {
         return (
             <div className="flex min-h-screen w-full flex-col">
-                <AdminHeader />
+                <AdminHeader onOpenMessageCenter={() => {}} />
                 <main className="flex-1 p-4 md:p-6 lg:p-8">
                     <Skeleton className="h-10 w-1/3 mb-6" />
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -604,9 +604,9 @@ export default function AdminDashboardPage() {
                 initialTeacher={initialTeacherToView}
                 onConversationSelect={setInitialTeacherToView}
             />
-            <main className="flex-1 p-4 md:p-6 lg:p-8 grid gap-6 md:grid-cols-3 lg:grid-cols-4">
+            <main className="flex-1 p-4 md:p-6 lg:p-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                  
-                 <div className="lg:col-span-3 space-y-6">
+                 <div className="lg:col-span-2 space-y-6">
                     {/* Broadcast Message Card */}
                     <Collapsible>
                         <Card>
