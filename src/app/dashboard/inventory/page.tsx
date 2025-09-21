@@ -51,6 +51,8 @@ const InventoryBoonCard = ({ boon, quantity, onUse, disabled }: { boon: Boon; qu
                 <AlertDialogHeader>
                     <AlertDialogTitle>Use "{boon.name}"?</AlertDialogTitle>
                     <AlertDialogDescription>
+                        You currently have ({quantity}) in your inventory.
+                        <br/><br/>
                         {boon.studentMessage || "Check with your Guild Leader to redeem this reward!"}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
