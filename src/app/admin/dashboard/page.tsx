@@ -567,19 +567,17 @@ export default function AdminDashboardPage() {
         }
     };
     
-    const handleOpenMessageCenter = (teacherId: string) => {
-        const teacher = teachers.find(t => t.id === teacherId);
-        if (teacher) {
-            setInitialTeacherToView(teacher);
-            setIsMessageCenterOpen(true);
-        }
+    const handleOpenMessageCenter = (teacherId?: string) => {
+        const teacher = teacherId ? teachers.find(t => t.id === teacherId) : null;
+        setInitialTeacherToView(teacher || null);
+        setIsMessageCenterOpen(true);
     };
 
 
     if (isLoading || !user) {
         return (
             <div className="flex min-h-screen w-full flex-col">
-                <AdminHeader onOpenMessageCenter={() => {}} />
+                <AdminHeader onOpenMessageCenter={() => handleOpenMessageCenter()} />
                 <main className="flex-1 p-4 md:p-6 lg:p-8">
                     <Skeleton className="h-10 w-1/3 mb-6" />
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -595,7 +593,7 @@ export default function AdminDashboardPage() {
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
-            <AdminHeader onOpenMessageCenter={() => handleOpenMessageCenter('')} hasUnreadMessages={teachers.some(t => t.hasUnreadAdminMessages)} />
+            <AdminHeader onOpenMessageCenter={() => handleOpenMessageCenter()} hasUnreadMessages={teachers.some(t => t.hasUnreadAdminMessages)} />
             <AdminMessageCenter
                 isOpen={isMessageCenterOpen}
                 onOpenChange={setIsMessageCenterOpen}
