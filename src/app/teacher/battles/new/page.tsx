@@ -35,6 +35,7 @@ interface Question {
   answers: string[];
   correctAnswerIndex: number | null;
   damage: number;
+  imageUrl?: string;
 }
 
 export default function NewBossBattlePage() {
@@ -58,6 +59,9 @@ export default function NewBossBattlePage() {
   const [musicFile, setMusicFile] = useState<File | null>(null);
   const [isUploadingMusic, setIsUploadingMusic] = useState(false);
   const [isMusicGalleryOpen, setIsMusicGalleryOpen] = useState(false);
+  
+  // State for question image uploads
+  const [uploadingQuestionImage, setUploadingQuestionImage] = useState<string | number | null>(null);
 
   // AI Question Generation State
   const [aiSubject, setAiSubject] = useState('');
@@ -80,7 +84,7 @@ export default function NewBossBattlePage() {
   }, [router]);
 
   useEffect(() => {
-    setQuestions([{ id: uuidv4(), questionText: '', answers: ['', '', '', ''], correctAnswerIndex: null, damage: 1 }]);
+    setQuestions([{ id: uuidv4(), questionText: '', answers: ['', '', '', ''], correctAnswerIndex: null, damage: 1, imageUrl: '' }]);
     setIsClient(true);
   }, []);
   
@@ -133,12 +137,29 @@ export default function NewBossBattlePage() {
             setMusicFile(null);
         }
     };
+    
+    const handleQuestionImageUpload = async (questionId: string | number, file: File) => {
+        if (!teacher) return;
+        setUploadingQuestionImage(questionId);
+        try {
+            const storage = getStorage(app);
+            const imageId = uuidv4();
+            const storageRef = ref(storage, `battle-question-images/${teacher.uid}/${imageId}`);
+            await uploadBytes(storageRef, file);
+            const downloadUrl = await getDownloadURL(storageRef);
+            handleQuestionChange(questionId, 'imageUrl', downloadUrl);
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload the question image.' });
+        } finally {
+            setUploadingQuestionImage(null);
+        }
+    };
 
 
   const handleAddQuestion = () => {
     setQuestions([
       ...questions,
-      { id: uuidv4(), questionText: '', answers: ['', '', '', ''], correctAnswerIndex: null, damage: 1 },
+      { id: uuidv4(), questionText: '', answers: ['', '', '', ''], correctAnswerIndex: null, damage: 1, imageUrl: '' },
     ]);
   };
 
@@ -154,15 +175,9 @@ export default function NewBossBattlePage() {
     }
   };
 
-  const handleQuestionChange = (id: number | string, value: string) => {
+  const handleQuestionChange = (id: number | string, field: keyof Question, value: string | number) => {
     setQuestions(
-      questions.map((q) => (q.id === id ? { ...q, questionText: value } : q))
-    );
-  };
-  
-  const handleDamageChange = (id: number | string, value: string) => {
-    setQuestions(
-      questions.map((q) => (q.id === id ? { ...q, damage: Number(value) } : q))
+      questions.map((q) => (q.id === id ? { ...q, [field]: value } : q))
     );
   };
 
@@ -460,10 +475,40 @@ export default function NewBossBattlePage() {
                             id={`q-text-${q.id}`}
                             placeholder="What is the powerhouse of the cell?"
                             value={q.questionText}
-                            onChange={(e) => handleQuestionChange(q.id, e.target.value)}
+                            onChange={(e) => handleQuestionChange(q.id, 'questionText', e.target.value)}
                             className="text-base mt-2"
                             disabled={isSaving}
                         />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`q-image-url-${q.id}`} className="text-base">Image URL (Optional)</Label>
+                        <div className="flex items-center gap-2">
+                            <Input
+                                id={`q-image-url-${q.id}`}
+                                placeholder="https://example.com/image.png"
+                                value={q.imageUrl || ''}
+                                onChange={(e) => handleQuestionChange(q.id, 'imageUrl', e.target.value)}
+                                className="mt-2"
+                                disabled={isSaving}
+                            />
+                            <Label htmlFor={`q-image-upload-${q.id}`} className={cn(buttonVariants({ variant: 'outline' }), "cursor-pointer")}>
+                                <Upload className="h-4 w-4" />
+                            </Label>
+                             <Input 
+                                id={`q-image-upload-${q.id}`}
+                                type="file" 
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                    if(e.target.files && e.target.files[0]){
+                                        handleQuestionImageUpload(q.id, e.target.files[0])
+                                    }
+                                }}
+                                disabled={uploadingQuestionImage === q.id}
+                            />
+                             {uploadingQuestionImage === q.id && <Loader2 className="h-5 w-5 animate-spin" />}
+                        </div>
+                        {q.imageUrl && <NextImage src={q.imageUrl} alt="Question preview" width={100} height={100} className="rounded-md border mt-2" />}
                       </div>
                       <div>
                         <Label htmlFor={`q-damage-${q.id}`} className="text-base">Damage for Incorrect Answer</Label>
@@ -472,7 +517,7 @@ export default function NewBossBattlePage() {
                             type="number"
                             placeholder="e.g., 1"
                             value={q.damage}
-                            onChange={(e) => handleDamageChange(q.id, e.target.value)}
+                            onChange={(e) => handleQuestionChange(q.id, 'damage', Number(e.target.value))}
                             className="mt-2"
                             disabled={isSaving}
                         />

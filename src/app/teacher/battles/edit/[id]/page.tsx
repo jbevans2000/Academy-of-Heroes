@@ -63,6 +63,10 @@ export default function EditBossBattlePage() {
   const [musicFile, setMusicFile] = useState<File | null>(null);
   const [isUploadingMusic, setIsUploadingMusic] = useState(false);
   const [isMusicGalleryOpen, setIsMusicGalleryOpen] = useState(false);
+  
+  // State for question image uploads
+  const [uploadingQuestionImage, setUploadingQuestionImage] = useState<string | number | null>(null);
+
 
   // AI Question Generation State
   const [aiSubject, setAiSubject] = useState('');
@@ -104,6 +108,7 @@ export default function EditBossBattlePage() {
                     ...q,
                     id: uuidv4(),
                     damage: q.damage !== undefined ? q.damage : 1,
+                    imageUrl: q.imageUrl || '',
                 })));
             } else {
                 toast({
@@ -175,6 +180,23 @@ export default function EditBossBattlePage() {
         } finally {
             setIsUploadingMusic(false);
             setMusicFile(null);
+        }
+    };
+    
+    const handleQuestionImageUpload = async (questionId: string | number, file: File) => {
+        if (!teacher) return;
+        setUploadingQuestionImage(questionId);
+        try {
+            const storage = getStorage(app);
+            const imageId = uuidv4();
+            const storageRef = ref(storage, `battle-question-images/${teacher.uid}/${imageId}`);
+            await uploadBytes(storageRef, file);
+            const downloadUrl = await getDownloadURL(storageRef);
+            handleQuestionChange(questionId, 'imageUrl', downloadUrl);
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload the question image.' });
+        } finally {
+            setUploadingQuestionImage(null);
         }
     };
 
@@ -468,7 +490,7 @@ export default function EditBossBattlePage() {
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="ai-num-questions">Number of Questions (1-10)</Label>
-                    <Input id="ai-num-questions" type="number" min="1" max="10" value={aiNumQuestions} onChange={(e) => setAiNumQuestions(e.target.value)} disabled={isGeneratingQuestions} />
+                    <Input id="ai-num-questions" type="number" min="1" max="10" value={aiNumQuestions} onChange={(e) => setAiNumQuestions(e.target.value)} disabled={isGeneratingQuestions}/>
                  </div>
                  <Button onClick={handleGenerateQuestions} disabled={isGeneratingQuestions || !aiSubject || !aiGradeLevel}>
                     {isGeneratingQuestions ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
@@ -502,16 +524,34 @@ export default function EditBossBattlePage() {
                             disabled={isSaving}
                         />
                       </div>
-                       <div className="space-y-2">
-                        <Label htmlFor={`q-image-${q.id}`} className="text-base">Image URL (Optional)</Label>
-                        <Input
-                            id={`q-image-${q.id}`}
-                            placeholder="https://example.com/image.png"
-                            value={q.imageUrl || ''}
-                            onChange={(e) => handleQuestionChange(q.id, 'imageUrl', e.target.value)}
-                            className="mt-2"
-                            disabled={isSaving}
-                        />
+                      <div className="space-y-2">
+                        <Label htmlFor={`q-image-url-${q.id}`} className="text-base">Image URL (Optional)</Label>
+                        <div className="flex items-center gap-2">
+                            <Input
+                                id={`q-image-url-${q.id}`}
+                                placeholder="https://example.com/image.png"
+                                value={q.imageUrl || ''}
+                                onChange={(e) => handleQuestionChange(q.id, 'imageUrl', e.target.value)}
+                                className="mt-2"
+                                disabled={isSaving}
+                            />
+                            <Label htmlFor={`q-image-upload-${q.id}`} className={cn(buttonVariants({ variant: 'outline' }), "cursor-pointer")}>
+                                <Upload className="h-4 w-4" />
+                            </Label>
+                             <Input 
+                                id={`q-image-upload-${q.id}`}
+                                type="file" 
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                    if(e.target.files && e.target.files[0]){
+                                        handleQuestionImageUpload(q.id, e.target.files[0])
+                                    }
+                                }}
+                                disabled={uploadingQuestionImage === q.id}
+                            />
+                             {uploadingQuestionImage === q.id && <Loader2 className="h-5 w-5 animate-spin" />}
+                        </div>
                         {q.imageUrl && <NextImage src={q.imageUrl} alt="Question preview" width={100} height={100} className="rounded-md border mt-2" />}
                       </div>
                       <div>
@@ -564,7 +604,7 @@ export default function EditBossBattlePage() {
 
               <div className="flex justify-end gap-4 pt-4 border-t">
                 <Button size="lg" onClick={handleSaveChanges} disabled={isSaving}>
-                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2" />}
+                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                     Save Changes
                 </Button>
               </div>
@@ -576,3 +616,4 @@ export default function EditBossBattlePage() {
     </>
   );
 }
+
