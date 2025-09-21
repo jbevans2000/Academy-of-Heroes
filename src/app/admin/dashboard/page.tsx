@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -19,7 +20,7 @@ import { getGlobalSettings, updateGlobalSettings } from '@/ai/flows/manage-setti
 import { deleteFeedback } from '@/ai/flows/submit-feedback';
 import { moderateStudent } from '@/ai/flows/manage-student';
 import { deleteTeacher } from '@/ai/flows/manage-teacher';
-import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle, HelpCircle, Edit } from 'lucide-react';
+import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle, HelpCircle, Edit, Reply } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,6 +50,7 @@ import { Label } from '@/components/ui/label';
 import { DirectPromptInterface } from '@/components/admin/direct-prompt-interface';
 import { Textarea } from '@/components/ui/textarea';
 import { HelpArticleEditor } from '@/components/admin/help-article-editor';
+import { AdminMessageCenter } from '@/components/admin/admin-message-center';
 
 type SortDirection = 'asc' | 'desc';
 type TeacherSortKey = 'className' | 'name' | 'email' | 'schoolName' | 'studentCount' | 'createdAt' | 'contactEmail';
@@ -64,6 +66,7 @@ interface Teacher {
     schoolName: string;
     studentCount: number;
     createdAt: Date | null;
+    hasUnreadAdminMessages?: boolean;
 }
 
 interface Student {
@@ -86,6 +89,7 @@ interface Feedback {
         nanoseconds: number;
     };
     status: 'new' | 'addressed';
+    teacherUid: string;
     teacherName?: string;
     teacherEmail?: string;
 }
@@ -135,6 +139,10 @@ export default function AdminDashboardPage() {
     const [testFile, setTestFile] = useState<File | null>(null);
     const [fetchStatus, setFetchStatus] = useState<{ok: boolean, status: number} | null>(null);
     const [isTesting, setIsTesting] = useState(false);
+
+    // Message Center State
+    const [isMessageCenterOpen, setIsMessageCenterOpen] = useState(false);
+    const [initialTeacherToView, setInitialTeacherToView] = useState<Teacher | null>(null);
 
     const router = useRouter();
     const { toast } = useToast();
@@ -191,6 +199,7 @@ export default function AdminDashboardPage() {
                     schoolName: teacherInfo.schoolName || '[No School]',
                     studentCount: studentsSnapshot.size,
                     createdAt: teacherInfo.createdAt?.toDate() || null,
+                    hasUnreadAdminMessages: teacherInfo.hasUnreadAdminMessages || false,
                 });
 
                 for (const studentDoc of studentsSnapshot.docs) {
@@ -557,6 +566,14 @@ export default function AdminDashboardPage() {
             setIsTesting(false);
         }
     };
+    
+    const handleOpenMessageCenter = (teacherId: string) => {
+        const teacher = teachers.find(t => t.id === teacherId);
+        if (teacher) {
+            setInitialTeacherToView(teacher);
+            setIsMessageCenterOpen(true);
+        }
+    };
 
 
     if (isLoading || !user) {
@@ -578,7 +595,15 @@ export default function AdminDashboardPage() {
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
-            <AdminHeader />
+            <AdminHeader onOpenMessageCenter={() => handleOpenMessageCenter('')} hasUnreadMessages={teachers.some(t => t.hasUnreadAdminMessages)} />
+            <AdminMessageCenter
+                isOpen={isMessageCenterOpen}
+                onOpenChange={setIsMessageCenterOpen}
+                admin={user}
+                teachers={teachers}
+                initialTeacher={initialTeacherToView}
+                onConversationSelect={setInitialTeacherToView}
+            />
             <main className="flex-1 p-4 md:p-6 lg:p-8 grid gap-6 md:grid-cols-3 lg:grid-cols-4">
                  
                  <div className="lg:col-span-3 space-y-6">
@@ -944,6 +969,9 @@ export default function AdminDashboardPage() {
                                                 </div>
                                             </div>
                                             <p className="mt-1 text-sm">{item.message}</p>
+                                            <Button variant="outline" size="sm" className="mt-2" onClick={() => handleOpenMessageCenter(item.teacherUid)}>
+                                                <Reply className="mr-2 h-4 w-4"/> Reply
+                                            </Button>
                                         </div>
                                     ))}
                                 </div>

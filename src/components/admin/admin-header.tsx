@@ -2,54 +2,24 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Shield, LogOut, User, MessageSquare } from "lucide-react";
+import { Shield, LogOut, User, MessageSquare, Rss } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import { signOut, onAuthStateChanged, type User as FirebaseUser } from "firebase/auth";
-import { doc, onSnapshot, collection, getDoc } from 'firebase/firestore';
 import { useToast } from "@/hooks/use-toast";
-import { AdminMessageCenter } from './admin-message-center';
-import type { Teacher } from '@/lib/data';
+import { Bug, Lightbulb } from "lucide-react";
 
+interface AdminHeaderProps {
+    isAdminPreview?: boolean;
+    onOpenMessageCenter: () => void;
+    hasUnreadMessages?: boolean;
+}
 
-export function AdminHeader() {
+export function AdminHeader({ isAdminPreview = false, onOpenMessageCenter, hasUnreadMessages }: AdminHeaderProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const [admin, setAdmin] = useState<FirebaseUser | null>(null);
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
-  const [isMessageCenterOpen, setIsMessageCenterOpen] = useState(false);
-  const [initialTeacherToView, setInitialTeacherToView] = useState<Teacher | null>(null);
-
-  useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
-        if (!currentUser) {
-            router.push('/teacher/login');
-            return;
-        }
-        
-        const adminRef = doc(db, 'admins', currentUser.uid);
-        getDoc(adminRef).then(adminSnap => {
-            if (adminSnap.exists()) {
-                setAdmin(currentUser);
-                
-                const unsubTeachers = onSnapshot(collection(db, 'teachers'), (snapshot) => {
-                    setTeachers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Teacher)));
-                });
-                
-                // Return the cleanup function for the teachers snapshot
-                return () => unsubTeachers();
-            } else {
-                 router.push('/teacher/dashboard');
-            }
-        });
-    });
-
-    return () => unsubscribeAuth();
-  }, [router]);
-
-  const hasUnreadMessages = teachers.some(t => t.hasUnreadAdminMessages);
   
   const handleLogout = async () => {
     try {
@@ -68,22 +38,8 @@ export function AdminHeader() {
         });
     }
   };
-  
-  const handleOpenMessageCenter = (teacher?: Teacher) => {
-    setInitialTeacherToView(teacher || null);
-    setIsMessageCenterOpen(true);
-  };
 
   return (
-    <>
-      <AdminMessageCenter
-        isOpen={isMessageCenterOpen}
-        onOpenChange={setIsMessageCenterOpen}
-        admin={admin}
-        teachers={teachers}
-        initialTeacher={initialTeacherToView}
-        onConversationSelect={setInitialTeacherToView}
-      />
       <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
         <Link href="/admin/dashboard" className="flex items-center gap-2 font-semibold">
           <Shield className="h-6 w-6 text-primary" />
@@ -94,7 +50,7 @@ export function AdminHeader() {
               <User className="mr-2 h-5 w-5" />
               View as Teacher
           </Button>
-           <Button variant="outline" onClick={() => handleOpenMessageCenter()} className="relative">
+           <Button variant="outline" onClick={onOpenMessageCenter} className="relative">
                 <MessageSquare className="mr-2 h-5 w-5" />
                 Message Center
                 {hasUnreadMessages && <span className="absolute top-1 right-1 flex h-3 w-3 rounded-full bg-red-600 animate-pulse" />}
@@ -105,6 +61,5 @@ export function AdminHeader() {
           </Button>
         </div>
       </header>
-    </>
   );
 }
