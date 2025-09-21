@@ -737,40 +737,42 @@ export default function AdminDashboardPage() {
                             </CollapsibleTrigger>
                             <CollapsibleContent>
                                 <CardContent>
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead><Button variant="ghost" onClick={() => requestSort('className', 'teacher')}>Guild Name <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
-                                                <TableHead><Button variant="ghost" onClick={() => requestSort('name', 'teacher')}>Leader (Teacher) <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
-                                                <TableHead><Button variant="ghost" onClick={() => requestSort('contactEmail', 'teacher')}>Contact Email<ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
-                                                <TableHead><Button variant="ghost" onClick={() => requestSort('schoolName', 'teacher')}>School <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
-                                                <TableHead><Button variant="ghost" onClick={() => requestSort('studentCount', 'teacher')}>Students <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
-                                                <TableHead><Button variant="ghost" onClick={() => requestSort('createdAt', 'teacher')}>Date Created <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
-                                                <TableHead className="text-right">Actions</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {sortedTeachers.map((teacher) => (
-                                                <TableRow key={teacher.id}>
-                                                    <TableCell>
-                                                        <Link href={`/teacher/dashboard?teacherId=${teacher.id}`} className="font-semibold underline hover:text-primary">
-                                                            {teacher.className}
-                                                        </Link>
-                                                    </TableCell>
-                                                    <TableCell>{teacher.name}</TableCell>
-                                                    <TableCell>{teacher.contactEmail || teacher.email}</TableCell>
-                                                    <TableCell>{teacher.schoolName}</TableCell>
-                                                    <TableCell>{teacher.studentCount}</TableCell>
-                                                    <TableCell>{teacher.createdAt ? format(teacher.createdAt, 'PP') : 'N/A'}</TableCell>
-                                                    <TableCell className="text-right">
-                                                        <Button variant="destructive" size="sm" onClick={() => setTeacherToDelete(teacher)}>
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    </TableCell>
+                                    <div className="overflow-x-auto">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead><Button variant="ghost" onClick={() => requestSort('className', 'teacher')}>Guild Name <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
+                                                    <TableHead><Button variant="ghost" onClick={() => requestSort('name', 'teacher')}>Leader (Teacher) <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
+                                                    <TableHead><Button variant="ghost" onClick={() => requestSort('contactEmail', 'teacher')}>Contact Email<ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
+                                                    <TableHead><Button variant="ghost" onClick={() => requestSort('schoolName', 'teacher')}>School <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
+                                                    <TableHead><Button variant="ghost" onClick={() => requestSort('studentCount', 'teacher')}>Students <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
+                                                    <TableHead><Button variant="ghost" onClick={() => requestSort('createdAt', 'teacher')}>Date Created <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
+                                                    <TableHead className="text-right">Actions</TableHead>
                                                 </TableRow>
-                                            ))}
-                                        </TableBody>
-                                </Table>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {sortedTeachers.map((teacher) => (
+                                                    <TableRow key={teacher.id}>
+                                                        <TableCell>
+                                                            <Link href={`/teacher/dashboard?teacherId=${teacher.id}`} className="font-semibold underline hover:text-primary">
+                                                                {teacher.className}
+                                                            </Link>
+                                                        </TableCell>
+                                                        <TableCell>{teacher.name}</TableCell>
+                                                        <TableCell>{teacher.contactEmail || teacher.email}</TableCell>
+                                                        <TableCell>{teacher.schoolName}</TableCell>
+                                                        <TableCell>{teacher.studentCount}</TableCell>
+                                                        <TableCell>{teacher.createdAt ? format(teacher.createdAt, 'PP') : 'N/A'}</TableCell>
+                                                        <TableCell className="text-right">
+                                                            <Button variant="destructive" size="sm" onClick={() => setTeacherToDelete(teacher)}>
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                    </Table>
+                                    </div>
                                 {teachers.length === 0 && !isLoading && (
                                     <div className="text-center py-10">
                                         <p className="text-muted-foreground">No teachers have registered yet.</p>
