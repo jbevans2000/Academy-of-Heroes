@@ -230,7 +230,7 @@ function InventoryPageComponent() {
                     <Card className="bg-card/80">
                         <CardHeader className="text-center">
                             <Package className="h-12 w-12 mx-auto text-primary" />
-                            <CardTitle className="text-3xl font-headline mt-2">My Inventory</CardTitle>
+                            <CardTitle className="text-3xl font-headline mt-2">My Rewards</CardTitle>
                             <CardDescription>View and use the Rewards you have purchased from the Vault.</CardDescription>
                         </CardHeader>
                     </Card>

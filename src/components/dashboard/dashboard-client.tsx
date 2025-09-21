@@ -272,7 +272,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                           <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
                               <Package className="h-12 w-12 text-purple-500" />
                               <div>
-                                  <h3 className="text-xl font-bold">My Inventory</h3>
+                                  <h3 className="text-xl font-bold">My Rewards</h3>
                                   <p className="text-muted-foreground">View your items!</p>
                               </div>
                               </div>
