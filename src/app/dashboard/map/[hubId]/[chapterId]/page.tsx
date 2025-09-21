@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -165,9 +166,6 @@ export default function ChapterPage() {
     const [isCompleting, setIsCompleting] = useState(false);
     const [showApprovalSentDialog, setShowApprovalSentDialog] = useState(false);
     
-    // Quiz state
-    const [quizPassed, setQuizPassed] = useState(false);
-
     const isPreviewMode = searchParams.get('preview') === 'true';
 
      useEffect(() => {
@@ -283,10 +281,6 @@ export default function ChapterPage() {
     
     const handleQuizComplete = (score: number, answers: any[]) => {
         if (!chapter?.quiz) return;
-        const passed = !chapter.quiz.settings.requirePassing || score >= chapter.quiz.settings.passingScore;
-        if(passed) {
-            setQuizPassed(true);
-        }
         // Always call handleMarkComplete, which will handle both approval and direct completion logic
         handleMarkComplete(score, answers);
     };
@@ -348,9 +342,7 @@ export default function ChapterPage() {
 
     const lastCompletedChapterForHub = student?.questProgress?.[hubId as string] || 0;
     const isCurrentChapter = chapter.chapterNumber === lastCompletedChapterForHub + 1;
-    const isCompletedChapter = chapter.chapterNumber <= lastCompletedChapterForHub;
-    const canCompleteQuizlessChapter = isCurrentChapter && !isPreviewMode && !chapter.quiz;
-
+    
     const returnPath = isPreviewMode ? '/teacher/quests' : `/dashboard/map/${hubId}`;
 
     return (
@@ -496,13 +488,13 @@ export default function ChapterPage() {
                                         teacherUid={teacherUid}
                                         onQuizComplete={handleQuizComplete}
                                     />
-                                ) }
+                                )}
                             </TabsContent>
                         </Tabs>
                     </CardContent>
                 </Card>
                  <div className="flex justify-center flex-col items-center gap-4 py-4">
-                     {canCompleteQuizlessChapter && (
+                     {isCurrentChapter && !isPreviewMode && (
                         <Button 
                             size="lg" 
                             onClick={() => handleMarkComplete()}
