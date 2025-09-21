@@ -217,7 +217,7 @@ export default function BoonsPage() {
                         ) : (
                             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                                 {sortedBoons.map(boon => (
-                                    <Card key={boon.id} className={cn("flex flex-col transition-all", !boon.isVisibleToStudents && 'bg-gray-200 border-dashed')}>
+                                    <Card key={boon.id} className={cn("flex flex-col transition-all", !boon.isVisibleToStudents && 'bg-gray-300 border-dashed')}>
                                         <CardHeader>
                                             <div className="aspect-square relative w-full bg-secondary rounded-md overflow-hidden">
                                                 <Image src={boon.imageUrl || 'https://placehold.co/400x400.png'} alt={boon.name} fill className="object-cover" data-ai-hint="fantasy item" />
