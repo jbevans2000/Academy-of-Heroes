@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -167,7 +166,8 @@ export default function PreviewBattlePage() {
                             <div>
                                 {currentQuestion.imageUrl && (
                                     <div className="mb-4 flex justify-center">
-                                        <Image src={currentQuestion.imageUrl} alt="Question Image" width={300} height={150} className="rounded-md max-h-[150px] w-auto object-contain border" />
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src={currentQuestion.imageUrl} alt="Question Image" width={300} height={150} className="rounded-md max-h-[150px] w-auto object-contain border" />
                                     </div>
                                 )}
                                 <h3 className="text-2xl font-semibold mb-2 text-center">{currentQuestion.questionText}</h3>

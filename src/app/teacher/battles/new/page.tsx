@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -508,7 +507,7 @@ export default function NewBossBattlePage() {
                             />
                              {uploadingQuestionImage === q.id && <Loader2 className="h-5 w-5 animate-spin" />}
                         </div>
-                        {q.imageUrl && <NextImage src={q.imageUrl} alt="Question preview" width={100} height={100} className="rounded-md border mt-2" />}
+                        {q.imageUrl && <img src={q.imageUrl} alt="Question preview" width={100} height={100} className="rounded-md border mt-2" />}
                       </div>
                       <div>
                         <Label htmlFor={`q-damage-${q.id}`} className="text-base">Damage for Incorrect Answer</Label>

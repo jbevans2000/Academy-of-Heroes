@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -329,7 +328,7 @@ export default function TeacherBattleSummaryPage() {
                                     <AccordionTrigger className="text-lg hover:no-underline">
                                         <div className="flex justify-between w-full pr-4">
                                             <div className="flex items-center gap-2 text-left">
-                                                {question.imageUrl && <Image src={question.imageUrl} alt="Question visual" width={40} height={40} className="rounded-md" />}
+                                                {question.imageUrl && <img src={question.imageUrl} alt="Question visual" width={40} height={40} className="rounded-md" />}
                                                 <span>Q{round.currentQuestionIndex + 1}: {question.questionText}</span>
                                             </div>
                                             <div className="flex gap-4">
