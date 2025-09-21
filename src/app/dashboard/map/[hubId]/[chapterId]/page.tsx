@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { doc, getDoc, updateDoc, collection, getDocs, where, query } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import type { Chapter, QuestHub, QuizQuestion } from '@/lib/quests';
+import type { Chapter, QuestHub, QuizQuestion, Quiz } from '@/lib/quests';
 import type { Student } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -34,7 +34,7 @@ import { Progress } from '@/components/ui/progress';
 import { Label } from '@/components/ui/label';
 
 const QuizComponent = ({ quiz, student, chapter, hub, teacherUid, onQuizComplete }: { 
-    quiz: NonNullable<Chapter['quiz']>, 
+    quiz: Quiz, 
     student: Student, 
     chapter: Chapter,
     hub: QuestHub,
@@ -100,7 +100,7 @@ const QuizComponent = ({ quiz, student, chapter, hub, teacherUid, onQuizComplete
                     )}
                     <div className="flex justify-center gap-4">
                         {passed && (
-                            <Button onClick={() => onQuizComplete(score, detailedAnswers)}>Mark Quest Complete</Button>
+                            <Button onClick={() => onQuizComplete(score, detailedAnswers)}>Continue</Button>
                         )}
                         <Button variant="outline" onClick={() => {
                             setCurrentQuestionIndex(0);
@@ -167,6 +167,9 @@ export default function ChapterPage() {
     const [isCompleting, setIsCompleting] = useState(false);
     const [isUncompleting, setIsUncompleting] = useState(false);
     const [showApprovalSentDialog, setShowApprovalSentDialog] = useState(false);
+    
+    // Quiz state
+    const [quizPassed, setQuizPassed] = useState(false);
 
     const isPreviewMode = searchParams.get('preview') === 'true';
 
@@ -324,6 +327,15 @@ export default function ChapterPage() {
             setIsUncompleting(false);
         }
     };
+    
+    const handleQuizComplete = (score: number, answers: any[]) => {
+        if (!chapter?.quiz) return;
+        const passed = !chapter.quiz.settings.requirePassing || score >= chapter.quiz.settings.passingScore;
+        if(passed) {
+            setQuizPassed(true);
+        }
+        handleMarkComplete(score, answers);
+    }
 
     const getYouTubeEmbedUrl = (url: string) => {
         if (!url) return '';
@@ -527,7 +539,7 @@ export default function ChapterPage() {
                                         chapter={chapter as Chapter}
                                         hub={hub}
                                         teacherUid={teacherUid}
-                                        onQuizComplete={handleMarkComplete}
+                                        onQuizComplete={handleQuizComplete}
                                     />
                                 )}
                             </TabsContent>
@@ -579,4 +591,5 @@ export default function ChapterPage() {
             </div>
         </div>
       </>
-    
+    );
+}
