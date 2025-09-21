@@ -1,11 +1,12 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import { ArrowLeft, LayoutDashboard, CheckCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, CheckCircle, Loader2, RotateCcw } from "lucide-react";
 import Image from 'next/image';
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,7 +18,7 @@ import type { Student } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
-import { completeChapter } from '@/ai/flows/manage-quests';
+import { completeChapter, uncompleteChapter } from '@/ai/flows/manage-quests';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -167,6 +168,7 @@ export default function ChapterPage() {
     const [isCompleting, setIsCompleting] = useState(false);
     const [showApprovalSentDialog, setShowApprovalSentDialog] = useState(false);
     const [isConfirmingComplete, setIsConfirmingComplete] = useState(false);
+    const [isConfirmingUncomplete, setIsConfirmingUncomplete] = useState(false);
     
     const isPreviewMode = searchParams.get('preview') === 'true';
 
@@ -282,6 +284,32 @@ export default function ChapterPage() {
         }
     };
     
+    const handleUnmarkComplete = async () => {
+        if (!user || !student || !chapter || !hub || !teacherUid) return;
+        setIsCompleting(true);
+        setIsConfirmingUncomplete(false);
+
+        try {
+            const result = await uncompleteChapter({
+                teacherUid,
+                studentUid: student.uid,
+                hubId: hub.id,
+                chapterNumber: chapter.chapterNumber,
+            });
+            if (result.success) {
+                toast({ title: "Progress Updated", description: result.message });
+                // No need to redirect, they are already on the chapter page they want to review.
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            console.error("Error uncompleting chapter:", error);
+            toast({ title: "Error", description: error.message, variant: "destructive" });
+        } finally {
+            setIsCompleting(false);
+        }
+    }
+    
     const handleQuizComplete = (score: number, answers: any[]) => {
         if (!chapter?.quiz) return;
         handleMarkComplete(score, answers);
@@ -344,6 +372,7 @@ export default function ChapterPage() {
 
     const lastCompletedChapterForHub = student?.questProgress?.[hubId as string] || 0;
     const isCurrentChapter = chapter.chapterNumber === lastCompletedChapterForHub + 1;
+    const isCompletedChapter = chapter.chapterNumber <= lastCompletedChapterForHub;
     
     const returnPath = isPreviewMode ? '/teacher/quests' : `/dashboard/map/${hubId}`;
 
@@ -374,6 +403,21 @@ export default function ChapterPage() {
                 <AlertDialogFooter>
                     <AlertDialogCancel>No, stay here</AlertDialogCancel>
                     <AlertDialogAction onClick={() => handleMarkComplete()}>Yes, complete it</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
+         <AlertDialog open={isConfirmingUncomplete} onOpenChange={setIsConfirmingUncomplete}>
+             <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Unmark Chapter as Complete?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This will reset your progress to this chapter, allowing you to proceed from here. Are you sure you wish to continue?
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleUnmarkComplete}>Yes, Reset My Progress</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
@@ -511,7 +555,7 @@ export default function ChapterPage() {
                     </CardContent>
                 </Card>
                  <div className="flex justify-center flex-col items-center gap-4 py-4">
-                     {isCurrentChapter && !isPreviewMode && (
+                     {isCurrentChapter && !isPreviewMode && !chapter.quiz && (
                         <Button 
                             size="lg" 
                             onClick={() => setIsConfirmingComplete(true)}
@@ -520,6 +564,18 @@ export default function ChapterPage() {
                         >
                             {isCompleting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CheckCircle className="mr-2 h-5 w-5" />}
                             Mark Chapter Complete
+                        </Button>
+                     )}
+                     {isCompletedChapter && !isPreviewMode && (
+                         <Button 
+                            size="lg" 
+                            onClick={() => setIsConfirmingUncomplete(true)}
+                            disabled={isCompleting}
+                            variant="destructive"
+                            className="font-bold text-lg py-6 px-8 shadow-lg"
+                        >
+                            {isCompleting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <RotateCcw className="mr-2 h-5 w-5" />}
+                            Unmark as Complete
                         </Button>
                      )}
                      <div className="flex justify-center gap-4">

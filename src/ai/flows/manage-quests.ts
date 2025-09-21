@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs, writeBatch, deleteDoc, serverTimestamp, query as firestoreQuery, where, arrayUnion, increment } from 'firebase/firestore';
@@ -47,6 +48,13 @@ interface SetStudentQuestProgressInput {
     teacherUid: string;
 
     studentUids: string[];
+    hubId: string;
+    chapterNumber: number;
+}
+
+interface UncompleteChapterInput {
+    teacherUid: string;
+    studentUid: string;
     hubId: string;
     chapterNumber: number;
 }
@@ -397,6 +405,36 @@ export async function setStudentQuestProgress(input: SetStudentQuestProgressInpu
     }
 }
 
+export async function uncompleteChapter(input: UncompleteChapterInput): Promise<ActionResponse> {
+    const { teacherUid, studentUid, hubId, chapterNumber } = input;
+    if (!teacherUid || !studentUid || !hubId || chapterNumber <= 0) {
+        return { success: false, error: 'Invalid input.' };
+    }
+
+    try {
+        const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
+        const studentSnap = await getDoc(studentRef);
+        if (!studentSnap.exists()) {
+            throw new Error("Student not found.");
+        }
+        const student = studentSnap.data() as Student;
+
+        // Set progress to one chapter *before* the one they want to uncomplete
+        const newProgressNumber = chapterNumber - 1;
+
+        const newQuestProgress = { ...(student.questProgress || {}), [hubId]: newProgressNumber };
+        
+        await updateDoc(studentRef, { questProgress: newQuestProgress });
+        await logGameEvent(teacherUid, 'CHAPTER', `${student.characterName} has returned to Chapter ${chapterNumber} to review their lessons.`);
+
+        return { success: true, message: "Your progress has been reset. You may now proceed from this chapter again." };
+
+    } catch (error: any) {
+        console.error("Error uncompleting chapter:", error);
+        return { success: false, error: error.message || 'Failed to update your progress.' };
+    }
+}
+
 
 // --------- HUB & CHAPTER DELETION ---------
 
@@ -439,3 +477,4 @@ export async function deleteQuestHub(input: DeleteHubInput): Promise<ActionRespo
         return { success: false, error: error.message || 'Failed to delete the quest hub.' };
     }
 }
+
