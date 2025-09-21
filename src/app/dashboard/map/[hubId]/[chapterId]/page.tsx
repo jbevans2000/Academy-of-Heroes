@@ -549,14 +549,15 @@ export default function ChapterPage() {
                     </CardContent>
                 </Card>
                  <div className="flex justify-center flex-col items-center gap-4 py-4">
-                     {isCurrentChapter && !isPreviewMode && !chapter.quiz && (
+                     {isCurrentChapter && !isPreviewMode && (
                         <Button 
                             size="lg" 
                             onClick={() => handleMarkComplete()}
-                            disabled={isCompleting}
+                            disabled={isCompleting || (!!chapter.quiz && !quizPassed)}
+                            className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-lg py-6 px-8 shadow-lg"
                         >
                             {isCompleting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CheckCircle className="mr-2 h-5 w-5" />}
-                            Mark Quest as Complete
+                            Mark Chapter Complete
                         </Button>
                      )}
                      {isCompletedChapter && !isPreviewMode && (
@@ -594,3 +595,5 @@ export default function ChapterPage() {
       </>
     );
 }
+
+    
