@@ -4,16 +4,16 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, onSnapshot, query, where, doc, getDoc, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc, getDoc, getDocs, documentId } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
-import type { Boon } from '@/lib/boons';
+import type { Boon, PendingBoonRequest } from '@/lib/boons';
 import type { Student } from '@/lib/data';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Package, Sparkles, Loader2, Info } from 'lucide-react';
+import { ArrowLeft, Package, Sparkles, Loader2, Info, Hourglass } from 'lucide-react';
 import Image from 'next/image';
 import { useBoon } from '@/ai/flows/manage-inventory';
 import {
@@ -29,6 +29,8 @@ import {
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { User as UserIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
 
 const InventoryBoonCard = ({ boon, quantity, onUse, disabled }: { boon: Boon; quantity: number; onUse: (boonId: string) => void; disabled: boolean }) => {
     const [isUsing, setIsUsing] = useState(false);
@@ -92,6 +94,33 @@ const InventoryBoonCard = ({ boon, quantity, onUse, disabled }: { boon: Boon; qu
     )
 }
 
+const PendingBoonCard = ({ boon }: { boon: Boon }) => {
+    return (
+        <Card className="flex flex-col text-center bg-card/50 backdrop-blur-sm relative overflow-hidden opacity-75">
+            <div className="absolute inset-0 bg-black/30 z-10 flex flex-col items-center justify-center p-4">
+                 <Hourglass className="h-10 w-10 text-yellow-400 animate-spin" />
+                 <p className="font-bold text-white mt-2">Pending Approval</p>
+            </div>
+            <CardHeader>
+                <div className="aspect-square relative w-full bg-secondary rounded-md">
+                    <Image src={boon.imageUrl || 'https://placehold.co/400x400.png'} alt={boon.name} fill className="object-cover" />
+                </div>
+            </CardHeader>
+            <CardContent className="flex-grow space-y-1">
+                <CardTitle>{boon.name}</CardTitle>
+                <CardDescription>{boon.description}</CardDescription>
+            </CardContent>
+            <CardFooter>
+                 <Button className="w-full" disabled>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Waiting...
+                </Button>
+            </CardFooter>
+        </Card>
+    );
+};
+
+
 function InventoryPageComponent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -100,6 +129,7 @@ function InventoryPageComponent() {
     const [user, setUser] = useState<User | null>(null);
     const [student, setStudent] = useState<Student | null>(null);
     const [inventoryBoons, setInventoryBoons] = useState<Boon[]>([]);
+    const [pendingBoons, setPendingBoons] = useState<Boon[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isUsingAny, setIsUsingAny] = useState(false);
     
@@ -148,37 +178,52 @@ function InventoryPageComponent() {
     useEffect(() => {
         if (!student || !student.teacherUid) {
             setInventoryBoons([]);
+            setPendingBoons([]);
             setIsLoading(false);
             return;
         };
+        
+        setIsLoading(true);
 
-        const fetchInventoryBoons = async () => {
-            const inventory = student.inventory || {};
-            const boonIds = Object.keys(inventory).filter(id => inventory[id] > 0);
+        // Listener for owned items
+        const inventory = student.inventory || {};
+        const ownedBoonIds = Object.keys(inventory).filter(id => inventory[id] > 0);
+        if (ownedBoonIds.length > 0) {
+            const boonsRef = collection(db, 'teachers', student.teacherUid, 'boons');
+            const q = query(boonsRef, where(documentId(), 'in', ownedBoonIds.slice(0,30)));
+            const unsubOwned = onSnapshot(q, (snapshot) => {
+                setInventoryBoons(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Boon)));
+            });
+             // No need to set loading to false here, let the pending listener do it
+            // return unsubOwned;
+        } else {
+            setInventoryBoons([]);
+        }
 
-            if (boonIds.length === 0) {
-                setInventoryBoons([]);
-                setIsLoading(false);
-                return;
-            }
+        // Listener for pending items
+        const pendingRef = collection(db, 'teachers', student.teacherUid, 'pendingBoonRequests');
+        const qPending = query(pendingRef, where('studentUid', '==', student.uid));
+        const unsubPending = onSnapshot(qPending, async (snapshot) => {
+            const pendingRequestData = snapshot.docs.map(doc => doc.data() as PendingBoonRequest);
+            const pendingBoonIds = pendingRequestData.map(req => req.boonId);
             
-            setIsLoading(true);
-            try {
+            if (pendingBoonIds.length > 0) {
                 const boonsRef = collection(db, 'teachers', student.teacherUid, 'boons');
-                // Firestore 'in' query can handle up to 30 items. For larger inventories, batching would be needed.
-                const q = query(boonsRef, where('__name__', 'in', boonIds.slice(0,30)));
-                const querySnapshot = await getDocs(q);
-                setInventoryBoons(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Boon)));
-            } catch (error) {
-                console.error("Error fetching inventory boons: ", error);
-                toast({ variant: 'destructive', title: 'Error', description: 'Could not load your inventory.' });
-            } finally {
-                setIsLoading(false);
+                const qBoons = query(boonsRef, where(documentId(), 'in', pendingBoonIds.slice(0,30)));
+                const boonsSnapshot = await getDocs(qBoons);
+                setPendingBoons(boonsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Boon)));
+            } else {
+                setPendingBoons([]);
             }
-        };
+            setIsLoading(false); // Set loading to false after both have been processed
+        }, (error) => {
+            console.error("Error fetching pending boons:", error);
+            setIsLoading(false);
+        });
 
-        fetchInventoryBoons();
-    }, [student, toast]);
+        // return () => unsubPending();
+        
+    }, [student]);
 
     const handleUseBoon = async (boonId: string) => {
         if (!user || !student?.teacherUid) return;
@@ -198,6 +243,7 @@ function InventoryPageComponent() {
     };
 
     const returnPath = isTeacherPreview ? '/teacher/dashboard' : '/dashboard';
+    const allDisplayItemsCount = inventoryBoons.length + pendingBoons.length;
 
     return (
         <div 
@@ -241,7 +287,7 @@ function InventoryPageComponent() {
                         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                             {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-80" />)}
                         </div>
-                    ) : inventoryBoons.length === 0 ? (
+                    ) : allDisplayItemsCount === 0 ? (
                          <Card className="text-center py-20 bg-card/80">
                             <CardHeader>
                                 <CardTitle>Your Backpack is Empty</CardTitle>
@@ -258,6 +304,9 @@ function InventoryPageComponent() {
                                 if (quantity === 0) return null;
                                 return <InventoryBoonCard key={boon.id} boon={boon} quantity={quantity} onUse={handleUseBoon} disabled={isUsingAny} />
                             })}
+                            {pendingBoons.map(boon => (
+                                <PendingBoonCard key={`pending-${boon.id}`} boon={boon} />
+                            ))}
                         </div>
                     )}
                 </div>
