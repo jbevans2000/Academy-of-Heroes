@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import { ArrowLeft, LayoutDashboard, Library, CheckCircle, Loader2, RotateCcw } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, CheckCircle, Loader2 } from "lucide-react";
 import Image from 'next/image';
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,7 +20,6 @@ import { completeChapter } from '@/ai/flows/manage-quests';
 import {
   AlertDialog,
   AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -165,7 +163,6 @@ export default function ChapterPage() {
 
     const [isLoading, setIsLoading] = useState(true);
     const [isCompleting, setIsCompleting] = useState(false);
-    const [isUncompleting, setIsUncompleting] = useState(false);
     const [showApprovalSentDialog, setShowApprovalSentDialog] = useState(false);
     
     // Quiz state
@@ -284,58 +281,15 @@ export default function ChapterPage() {
         }
     };
     
-    const handleUnmarkComplete = async () => {
-        if (!user || !student || !chapter || !teacherUid) return;
-        setIsUncompleting(true);
-
-        try {
-            const studentRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
-            
-            const currentProgress = student.questProgress?.[hubId as string] || 0;
-            
-            if (chapter.chapterNumber > currentProgress) {
-                toast({ title: "Cannot Unmark", description: "This chapter has not been completed yet." });
-                return;
-            }
-            if (chapter.chapterNumber === 0) return; // Should not happen with 1-based chapter numbers
-
-            // Set progress back to the previous chapter number
-            const newProgressValue = chapter.chapterNumber - 1;
-            
-            const newProgress = {
-                ...student.questProgress,
-                [hubId as string]: newProgressValue
-            };
-
-            const updates: Partial<Student> = {
-                questProgress: newProgress
-            };
-
-            await updateDoc(studentRef, updates);
-            
-            setStudent(prev => prev ? ({ ...prev, ...updates }) : null);
-
-            await logGameEvent(teacherUid, 'CHAPTER', `${student.characterName} rolled back progress on Chapter ${chapter.chapterNumber}: ${chapter.title}.`);
-
-            toast({ title: "Quest Progress Rolled Back", description: `Progress has been reset to Chapter ${newProgressValue}.` });
-            router.push(`/dashboard/map/${hubId}`);
-
-        } catch (error: any) {
-            console.error("Error unmarking quest:", error);
-            toast({ title: "Error", description: "Could not save your progress.", variant: "destructive" });
-        } finally {
-            setIsUncompleting(false);
-        }
-    };
-    
     const handleQuizComplete = (score: number, answers: any[]) => {
         if (!chapter?.quiz) return;
         const passed = !chapter.quiz.settings.requirePassing || score >= chapter.quiz.settings.passingScore;
         if(passed) {
             setQuizPassed(true);
         }
+        // Always call handleMarkComplete, which will handle both approval and direct completion logic
         handleMarkComplete(score, answers);
-    }
+    };
 
     const getYouTubeEmbedUrl = (url: string) => {
         if (!url) return '';
@@ -533,7 +487,7 @@ export default function ChapterPage() {
                                         className="rounded-lg shadow-lg border">
                                     </iframe>
                                 </div></>}
-                                {chapter.quiz && isCurrentChapter && student ? (
+                                {chapter.quiz && isCurrentChapter && student && (
                                     <QuizComponent 
                                         quiz={chapter.quiz}
                                         student={student}
@@ -542,7 +496,7 @@ export default function ChapterPage() {
                                         teacherUid={teacherUid}
                                         onQuizComplete={handleQuizComplete}
                                     />
-                                ) : null }
+                                ) }
                             </TabsContent>
                         </Tabs>
                     </CardContent>
@@ -557,17 +511,6 @@ export default function ChapterPage() {
                         >
                             {isCompleting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CheckCircle className="mr-2 h-5 w-5" />}
                             Mark Chapter Complete
-                        </Button>
-                     )}
-                     {isCompletedChapter && !isPreviewMode && (
-                         <Button 
-                            size="lg" 
-                            variant="destructive"
-                            onClick={handleUnmarkComplete}
-                            disabled={isUncompleting}
-                        >
-                            {isUncompleting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <RotateCcw className="mr-2 h-5 w-5" />}
-                            Unmark Quest as Complete
                         </Button>
                      )}
                      <div className="flex justify-center gap-4">
@@ -592,4 +535,5 @@ export default function ChapterPage() {
             </div>
         </div>
       </>
-    )
+    );
+}
