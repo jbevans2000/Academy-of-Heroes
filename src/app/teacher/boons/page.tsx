@@ -229,7 +229,7 @@ export default function BoonsPage() {
                                                 <Coins className="h-5 w-5" />
                                                 <span>{boon.cost}</span>
                                             </div>
-                                            <CardDescription>{boon.description}</CardDescription>
+                                            <CardDescription className="text-black">{boon.description}</CardDescription>
                                         </CardContent>
                                         <CardFooter className="flex-col gap-4">
                                             <div className="flex items-center space-x-2 w-full border p-2 rounded-md justify-center">
