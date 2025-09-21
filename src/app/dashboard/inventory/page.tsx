@@ -70,11 +70,6 @@ const InventoryBoonCard = ({ boon, quantity, onUse, disabled }: { boon: Boon; qu
 
         <Card className="flex flex-col text-center">
             <CardHeader>
-                {quantity > 0 && (
-                    <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full h-8 w-8 flex items-center justify-center font-bold text-sm border-2 border-white">
-                        {quantity}
-                    </div>
-                 )}
                 <div className="aspect-square relative w-full bg-secondary rounded-md overflow-hidden">
                     <Image src={boon.imageUrl || 'https://placehold.co/400x400.png'} alt={boon.name} fill className="object-cover" data-ai-hint="fantasy item" />
                 </div>
@@ -83,11 +78,14 @@ const InventoryBoonCard = ({ boon, quantity, onUse, disabled }: { boon: Boon; qu
                 <CardTitle>{boon.name}</CardTitle>
                 <CardDescription>{boon.description}</CardDescription>
             </CardContent>
-            <CardFooter>
-                <Button className="w-full" onClick={handleActivateBoon} disabled={isUsing || disabled}>
+            <CardFooter className="flex items-center justify-center gap-4">
+                 <Button className="flex-grow" onClick={handleActivateBoon} disabled={isUsing || disabled}>
                     {isUsing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                     Use Reward
                 </Button>
+                <div className="flex-shrink-0 bg-primary text-primary-foreground rounded-full h-10 w-10 flex items-center justify-center font-bold text-lg border-2 border-white">
+                    {quantity}
+                </div>
             </CardFooter>
         </Card>
         </>
