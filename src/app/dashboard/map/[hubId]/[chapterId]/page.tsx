@@ -9,7 +9,7 @@ import { ArrowLeft, LayoutDashboard, Library, CheckCircle, Loader2, RotateCcw } 
 import Image from 'next/image';
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { doc, getDoc, updateDoc, collection, getDocs, where, query } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, getDocs, where, query, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import type { Chapter, QuestHub, QuizQuestion, Quiz } from '@/lib/quests';
@@ -395,6 +395,7 @@ export default function ChapterPage() {
     const lastCompletedChapterForHub = student?.questProgress?.[hubId as string] || 0;
     const isCurrentChapter = chapter.chapterNumber === lastCompletedChapterForHub + 1;
     const isCompletedChapter = chapter.chapterNumber <= lastCompletedChapterForHub;
+    const canCompleteQuizlessChapter = isCurrentChapter && !isPreviewMode && !chapter.quiz;
 
     const returnPath = isPreviewMode ? '/teacher/quests' : `/dashboard/map/${hubId}`;
 
@@ -532,7 +533,7 @@ export default function ChapterPage() {
                                         className="rounded-lg shadow-lg border">
                                     </iframe>
                                 </div></>}
-                                {chapter.quiz && isCurrentChapter && student && (
+                                {chapter.quiz && isCurrentChapter && student ? (
                                     <QuizComponent 
                                         quiz={chapter.quiz}
                                         student={student}
@@ -541,13 +542,13 @@ export default function ChapterPage() {
                                         teacherUid={teacherUid}
                                         onQuizComplete={handleQuizComplete}
                                     />
-                                )}
+                                ) : null }
                             </TabsContent>
                         </Tabs>
                     </CardContent>
                 </Card>
                  <div className="flex justify-center flex-col items-center gap-4 py-4">
-                     {isCurrentChapter && !isPreviewMode && !chapter.quiz && (
+                     {canCompleteQuizlessChapter && (
                         <Button 
                             size="lg" 
                             onClick={() => handleMarkComplete()}
@@ -591,5 +592,4 @@ export default function ChapterPage() {
             </div>
         </div>
       </>
-    );
-}
+    )
