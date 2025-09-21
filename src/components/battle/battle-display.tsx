@@ -80,7 +80,7 @@ export function BattleDisplay({ students }: BattleDisplayProps) {
                                                 </div>
                                             </div>
                                         </TooltipTrigger>
-                                        <TooltipContent side="left">
+                                        <TooltipContent side="right">
                                             <p>HP: {student.hp} / {student.maxHp}</p>
                                             <p>MP: {student.mp} / {student.maxMp}</p>
                                         </TooltipContent>
