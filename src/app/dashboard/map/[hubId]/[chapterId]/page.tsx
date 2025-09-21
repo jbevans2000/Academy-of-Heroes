@@ -94,19 +94,19 @@ const QuizComponent = ({ quiz, student, chapter, hub, teacherUid, onQuizComplete
                     <p className="text-4xl font-bold">You scored {correctAnswers} out of {quiz.questions.length}</p>
                     <p className="text-2xl font-semibold">{score.toFixed(0)}%</p>
                     
-                    {quiz.settings.requirePassing ? (
-                        passed ? (
-                            <p className="text-green-600 font-bold">You have proven your knowledge!</p>
-                        ) : (
-                            <p className="text-destructive font-bold">You have not met the minimum score of {quiz.settings.passingScore}%.</p>
-                        )
-                    ) : null}
+                    {quiz.settings.requirePassing && passed && (
+                        <p className="text-green-600 font-bold">You have proven your knowledge!</p>
+                    )}
+                    {quiz.settings.requirePassing && !passed && (
+                         <p className="text-destructive font-bold">You have not met the minimum score of {quiz.settings.passingScore}%.</p>
+                    )}
+
 
                     <div className="flex justify-center gap-4">
-                        {(passed || !quiz.settings.requirePassing) && (
+                        {(passed || !quiz.settings.requirePassing) ? (
                             <Button onClick={() => onQuizComplete(score, detailedAnswers)}>Continue</Button>
-                        )}
-                        {(!passed && quiz.settings.requirePassing) && (
+                        ) : null}
+                         {(!passed && quiz.settings.requirePassing) && (
                             <Button variant="outline" onClick={() => {
                                 setCurrentQuestionIndex(0);
                                 setAnswers(new Array(quiz.questions.length).fill(null));
@@ -373,7 +373,6 @@ export default function ChapterPage() {
     const lessonVideoSrc = chapter.lessonVideoUrl ? getYouTubeEmbedUrl(chapter.lessonVideoUrl) : '';
 
     const lastCompletedChapterForHub = student?.questProgress?.[hubId as string] || 0;
-    const isCurrentChapter = chapter.chapterNumber === lastCompletedChapterForHub + 1;
     const isCompletedChapter = chapter.chapterNumber <= lastCompletedChapterForHub;
     
     const returnPath = isPreviewMode ? '/teacher/quests' : `/dashboard/map/${hubId}`;
@@ -542,7 +541,7 @@ export default function ChapterPage() {
                                         className="rounded-lg shadow-lg border">
                                     </iframe>
                                 </div></>}
-                                {chapter.quiz && isCurrentChapter && student && (
+                                {chapter.quiz && !isPreviewMode && student && (
                                     <QuizComponent 
                                         quiz={chapter.quiz}
                                         student={student}
@@ -557,15 +556,15 @@ export default function ChapterPage() {
                     </CardContent>
                 </Card>
                  <div className="flex justify-center flex-col items-center gap-4 py-4">
-                     {isCurrentChapter && !isPreviewMode && !chapter.quiz && (
+                     {!isPreviewMode && !chapter.quiz && (
                         <Button 
                             size="lg" 
                             onClick={() => setIsConfirmingComplete(true)}
-                            disabled={isCompleting}
+                            disabled={isCompleting || isCompletedChapter}
                             className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-lg py-6 px-8 shadow-lg"
                         >
                             {isCompleting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CheckCircle className="mr-2 h-5 w-5" />}
-                            Mark Chapter Complete
+                            {isCompletedChapter ? 'Chapter Already Completed' : 'Mark Chapter Complete'}
                         </Button>
                      )}
                      {isCompletedChapter && !isPreviewMode && (
