@@ -68,9 +68,11 @@ const InventoryBoonCard = ({ boon, quantity, onUse, disabled }: { boon: Boon; qu
 
         <Card className="flex flex-col text-center">
             <CardHeader>
-                <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full h-8 w-8 flex items-center justify-center font-bold text-sm border-2 border-white">
-                    {quantity}
-                </div>
+                {quantity > 0 && (
+                    <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full h-8 w-8 flex items-center justify-center font-bold text-sm border-2 border-white">
+                        {quantity}
+                    </div>
+                 )}
                 <div className="aspect-square relative w-full bg-secondary rounded-md overflow-hidden">
                     <Image src={boon.imageUrl || 'https://placehold.co/400x400.png'} alt={boon.name} fill className="object-cover" data-ai-hint="fantasy item" />
                 </div>
