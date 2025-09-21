@@ -251,11 +251,6 @@ export default function ChapterPage() {
     const handleMarkComplete = async (quizScore?: number, quizAnswers?: any[]) => {
         if (!user || !student || !chapter || !hub || !teacherUid) return;
         
-        if (chapter.quiz && !quizPassed) {
-            toast({ variant: 'destructive', title: 'Quiz Required', description: 'You must prove your knowledge before continuing your quest!' });
-            return;
-        }
-
         setIsCompleting(true);
 
         try {
@@ -273,10 +268,7 @@ export default function ChapterPage() {
                 if (result.message?.includes('Request sent')) {
                     setShowApprovalSentDialog(true);
                 } else {
-                    // Manually update local state for immediate feedback
-                    const newProgress = { ...student.questProgress, [hubId as string]: chapter.chapterNumber };
-                    const newStudentState: Partial<Student> = { questProgress: newProgress, lastChapterCompletion: new Date() };
-                    setStudent(prev => prev ? ({ ...prev, ...newStudentState }) : null);
+                    router.push(`/dashboard/map/${hubId}`);
                 }
             } else {
                 throw new Error(result.error);
@@ -595,5 +587,3 @@ export default function ChapterPage() {
       </>
     );
 }
-
-    
