@@ -296,10 +296,18 @@ export default function EditQuestPage() {
     if (!validateInputs() || !chapter || !teacher) return;
     setIsSaving(true);
     
+    // Create a mutable copy of the chapter data
+    const chapterToSave = { ...chapter };
+
+    // If there are no questions, remove the whole quiz object
+    if (!chapterToSave.quiz || !chapterToSave.quiz.questions || chapterToSave.quiz.questions.length === 0) {
+        delete chapterToSave.quiz;
+    }
+
     try {
         const chapterRef = doc(db, 'teachers', teacher.uid, 'chapters', chapterId);
         await setDoc(chapterRef, {
-            ...chapter,
+            ...chapterToSave,
             hubId: selectedHubId,
             coordinates: chapterCoordinates,
         }, { merge: true });
@@ -332,6 +340,8 @@ export default function EditQuestPage() {
         </div>
     )
   }
+  
+  const hasQuizQuestions = (chapter?.quiz?.questions?.length || 0) > 0;
 
   return (
     <div className="relative flex min-h-screen w-full flex-col">
@@ -487,13 +497,26 @@ export default function EditQuestPage() {
                         <h3 className="text-xl font-semibold">Quiz Editor</h3>
                         <div className="p-4 border rounded-md space-y-4">
                            <div className="flex items-center space-x-2">
-                                <Switch id="require-passing" checked={chapter.quiz?.settings?.requirePassing ?? true} onCheckedChange={checked => handleQuizChange('settings', { ...(chapter.quiz?.settings || { requirePassing: true, passingScore: 80 }), requirePassing: checked })} />
-                                <Label htmlFor="require-passing">Require Minimum Score to Advance</Label>
+                                <Switch 
+                                    id="require-passing" 
+                                    checked={chapter.quiz?.settings?.requirePassing ?? true} 
+                                    onCheckedChange={checked => handleQuizChange('settings', { ...(chapter.quiz?.settings || { requirePassing: true, passingScore: 80 }), requirePassing: checked })}
+                                    disabled={!hasQuizQuestions}
+                                />
+                                <Label htmlFor="require-passing" className={cn(!hasQuizQuestions && "text-muted-foreground")}>Require Minimum Score to Advance</Label>
                             </div>
                             {(chapter.quiz?.settings?.requirePassing ?? true) && (
                                 <div className="space-y-2 animate-in fade-in-50">
-                                    <Label htmlFor="passing-score">Passing Score (%)</Label>
-                                    <Input id="passing-score" type="number" min="0" max="100" value={chapter.quiz?.settings?.passingScore ?? 80} onChange={(e) => handleQuizChange('settings', { ...(chapter.quiz?.settings || { requirePassing: true, passingScore: 80 }), passingScore: Number(e.target.value)})} />
+                                    <Label htmlFor="passing-score" className={cn(!hasQuizQuestions && "text-muted-foreground")}>Passing Score (%)</Label>
+                                    <Input 
+                                        id="passing-score" 
+                                        type="number" 
+                                        min="0" 
+                                        max="100" 
+                                        value={chapter.quiz?.settings?.passingScore ?? 80} 
+                                        onChange={(e) => handleQuizChange('settings', { ...(chapter.quiz?.settings || { requirePassing: true, passingScore: 80 }), passingScore: Number(e.target.value)})} 
+                                        disabled={!hasQuizQuestions}
+                                    />
                                 </div>
                             )}
                         </div>
