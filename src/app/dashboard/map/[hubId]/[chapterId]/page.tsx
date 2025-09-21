@@ -62,7 +62,7 @@ const QuizComponent = ({ quiz, student, chapter, hub, teacherUid, onQuizComplete
         newAnswers[currentQuestionIndex] = selectedAnswer;
         setAnswers(newAnswers);
         
-        setSelectedAnswer(null);
+        setSelectedAnswer(null); // Reset for the next question
         if (currentQuestionIndex < quiz.questions.length - 1) {
             setCurrentQuestionIndex(prev => prev + 1);
         } else {
@@ -131,7 +131,7 @@ const QuizComponent = ({ quiz, student, chapter, hub, teacherUid, onQuizComplete
             </CardHeader>
             <CardContent>
                 <p className="font-bold text-lg mb-4">{currentQuestionIndex + 1}. {currentQuestion.text}</p>
-                <RadioGroup onValueChange={(value) => handleAnswerSelect(Number(value))} value={selectedAnswer?.toString()}>
+                <RadioGroup onValueChange={(value) => handleAnswerSelect(Number(value))} value={selectedAnswer !== null ? String(selectedAnswer) : ''}>
                     {currentQuestion.answers.map((answer, index) => (
                         <div key={index} className="flex items-center space-x-2 p-3 rounded-md hover:bg-muted transition-colors">
                             <RadioGroupItem value={index.toString()} id={`q${currentQuestionIndex}-a${index}`} />
