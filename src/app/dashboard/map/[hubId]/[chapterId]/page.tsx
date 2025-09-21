@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { doc, getDoc, updateDoc, collection, getDocs, where, query, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import type { Chapter, QuestHub, QuizQuestion, Quiz } from '@/lib/quests';
+import type { Chapter, QuestHub, Quiz, QuizQuestion } from '@/lib/quests';
 import type { Student } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -94,26 +94,28 @@ const QuizComponent = ({ quiz, student, chapter, hub, teacherUid, onQuizComplete
                     <p className="text-4xl font-bold">You scored {correctAnswers} out of {quiz.questions.length}</p>
                     <p className="text-2xl font-semibold">{score.toFixed(0)}%</p>
                     
-                    {quiz.settings.requirePassing && (
+                    {quiz.settings.requirePassing ? (
                         passed ? (
                             <p className="text-green-600 font-bold">You have proven your knowledge!</p>
                         ) : (
                             <p className="text-destructive font-bold">You have not met the minimum score of {quiz.settings.passingScore}%.</p>
                         )
-                    )}
+                    ) : null}
 
                     <div className="flex justify-center gap-4">
                         {(passed || !quiz.settings.requirePassing) && (
                             <Button onClick={() => onQuizComplete(score, detailedAnswers)}>Continue</Button>
                         )}
-                        <Button variant="outline" onClick={() => {
-                            setCurrentQuestionIndex(0);
-                            setAnswers(new Array(quiz.questions.length).fill(null));
-                            setSelectedAnswer(null);
-                            setShowResults(false);
-                        }}>
-                            Retake Quiz
-                        </Button>
+                        {(!passed && quiz.settings.requirePassing) && (
+                            <Button variant="outline" onClick={() => {
+                                setCurrentQuestionIndex(0);
+                                setAnswers(new Array(quiz.questions.length).fill(null));
+                                setSelectedAnswer(null);
+                                setShowResults(false);
+                            }}>
+                                Retake Quiz
+                            </Button>
+                        )}
                     </div>
                 </CardContent>
             </Card>
