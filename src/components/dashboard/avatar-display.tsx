@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { Suspense, lazy } from 'react';
@@ -70,6 +69,8 @@ export function AvatarDisplay({ student }: AvatarDisplayProps) {
       feetId: student.equippedFeetId,
       petId: student.equippedPetId, // Include petId
   };
+
+  const equippedPet = allArmor.find(p => p.id === equipment.petId);
   
   const isFallen = student.hp <= 0;
 
@@ -89,6 +90,7 @@ export function AvatarDisplay({ student }: AvatarDisplayProps) {
                         equipment={equipment}
                         allHairstyles={allHairstyles}
                         allArmor={allArmor}
+                        equippedPet={equippedPet}
                         isPreviewMode={true} // This is a read-only view
                         localHairstyleTransforms={student.equippedHairstyleTransforms}
                         localArmorTransforms={student.armorTransforms}
@@ -106,6 +108,14 @@ export function AvatarDisplay({ student }: AvatarDisplayProps) {
                         data-ai-hint={student.class}
                         priority
                     />
+                     {equippedPet && (
+                        <div 
+                            className="absolute bottom-0 left-0 w-1/3 h-1/3 pointer-events-none"
+                            style={{ zIndex: 12 }}
+                        >
+                            <Image src={equippedPet.modularImageUrl} alt={equippedPet.name} layout="fill" className="object-contain"/>
+                        </div>
+                    )}
                 </>
             )}
         </div>
