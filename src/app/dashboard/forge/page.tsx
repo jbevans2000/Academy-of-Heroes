@@ -107,6 +107,7 @@ export default function ForgePage() {
 
     // Dialog State
     const [isArmoryOpen, setIsArmoryOpen] = useState(false);
+    const [isStableOpen, setIsStableOpen] = useState(false); // New state for pets
     const [isAvatarSetDialogOpen, setIsAvatarSetDialogOpen] = useState(false);
 
     // Equipment State
@@ -121,6 +122,7 @@ export default function ForgePage() {
         handsId: null as string | null,
         legsId: null as string | null,
         feetId: null as string | null,
+        petId: null as string | null,
     });
     
     const [selectedStaticAvatarUrl, setSelectedStaticAvatarUrl] = useState<string | null>(null);
@@ -198,6 +200,7 @@ export default function ForgePage() {
                     handsId: studentData.equippedHandsId || null,
                     legsId: studentData.equippedLegsId || null,
                     feetId: studentData.equippedFeetId || null,
+                    petId: studentData.equippedPetId || null,
                 });
                 
                 // Determine if the last saved avatar was static or custom
@@ -239,7 +242,14 @@ export default function ForgePage() {
 
     const ownedArmor = useMemo(() => {
         if (student?.ownedArmorIds && allArmor.length > 0) {
-            return allArmor.filter(armor => student.ownedArmorIds?.includes(armor.id));
+            return allArmor.filter(armor => student.ownedArmorIds?.includes(armor.id) && armor.slot !== 'Pet');
+        }
+        return [];
+    }, [student?.ownedArmorIds, allArmor]);
+
+    const ownedPets = useMemo(() => {
+        if (student?.ownedArmorIds && allArmor.length > 0) {
+            return allArmor.filter(armor => student.ownedArmorIds?.includes(armor.id) && armor.slot === 'Pet');
         }
         return [];
     }, [student?.ownedArmorIds, allArmor]);
@@ -254,11 +264,15 @@ export default function ForgePage() {
     const handleEquipItem = (item: ArmorPiece | Hairstyle) => {
         setSelectedStaticAvatarUrl(null); // Clear static selection when customizing
         if ('slot' in item) { // It's an ArmorPiece
-            const slotKey = `${item.slot}Id` as keyof typeof equipment;
-            setEquipment(prev => ({
-                ...prev,
-                [slotKey]: prev[slotKey] === item.id ? null : item.id
-            }));
+            if (item.slot === 'Pet') {
+                setEquipment(prev => ({ ...prev, petId: prev.petId === item.id ? null : item.id }));
+            } else {
+                const slotKey = `${item.slot}Id` as keyof typeof equipment;
+                setEquipment(prev => ({
+                    ...prev,
+                    [slotKey]: prev[slotKey] === item.id ? null : item.id
+                }));
+            }
         } else { // It's a Hairstyle
             if (equipment.hairstyleId === item.id) {
                 setEquipment(prev => ({...prev, hairstyleId: null, hairstyleColor: null}));
@@ -334,7 +348,7 @@ export default function ForgePage() {
     };
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece | Hairstyle, layer: 'primary' | 'secondary') => {
-        if (isPreviewMode) return;
+        if (isPreviewMode || piece.slot === 'Pet') return;
         
         e.preventDefault();
         e.stopPropagation();
@@ -364,7 +378,7 @@ export default function ForgePage() {
             bodyId: null, // Clear the body as well
             hairstyleId: null, hairstyleColor: null,
             backgroundUrl: null,
-            headId: null, shouldersId: null, chestId: null, handsId: null, legsId: null, feetId: null,
+            headId: null, shouldersId: null, chestId: null, handsId: null, legsId: null, feetId: null, petId: null
         }));
         setSelectedStaticAvatarUrl(null);
         setActivePiece(null);
@@ -398,7 +412,7 @@ export default function ForgePage() {
             let updates: Partial<Student> = {};
 
             if (selectedStaticAvatarUrl) {
-                // If a static avatar is selected, save its URL and clear custom fields, but keep background
+                // If a static avatar is selected, save its URL and clear custom fields, but keep background and pet
                 updates = {
                     avatarUrl: selectedStaticAvatarUrl,
                     backgroundUrl: equipment.backgroundUrl || '', 
@@ -415,6 +429,7 @@ export default function ForgePage() {
                     equippedFeetId: '',
                     armorTransforms: {},
                     armorTransforms2: {},
+                    equippedPetId: equipment.petId || '', // Persist pet
                 };
             } else {
                  // If a custom character is built, save the recipe
@@ -435,6 +450,7 @@ export default function ForgePage() {
                     equippedFeetId: equipment.feetId,
                     armorTransforms: localArmorTransforms,
                     armorTransforms2: localArmorTransforms2,
+                    equippedPetId: equipment.petId,
                 };
             }
             
@@ -452,7 +468,7 @@ export default function ForgePage() {
     const armorSlotOrder: ArmorSlot[] = ['head', 'shoulders', 'chest', 'hands', 'legs', 'feet'];
 
     const armorBySlot = useMemo(() => {
-        const slots: Record<ArmorSlot, ArmorPiece[]> = { head: [], shoulders: [], chest: [], hands: [], legs: [], feet: [] };
+        const slots: Record<ArmorSlot, ArmorPiece[]> = { head: [], shoulders: [], chest: [], hands: [], legs: [], feet: [], Pet: [] };
         ownedArmor.forEach(piece => {
             if (slots[piece.slot]) {
                 slots[piece.slot].push(piece);
@@ -495,7 +511,7 @@ export default function ForgePage() {
     
     const handleStaticAvatarClick = (url: string) => {
         setSelectedStaticAvatarUrl(url);
-        // Unequip all items when a static avatar is chosen
+        // Unequip all items when a static avatar is chosen, EXCEPT pet
         setEquipment(prev => ({
             ...prev,
             bodyId: null,
@@ -571,7 +587,8 @@ export default function ForgePage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-            {student && <ArmoryDialog isOpen={isArmoryOpen} onOpenChange={setIsArmoryOpen} student={student} allArmor={allArmor} />}
+            {student && <ArmoryDialog isOpen={isArmoryOpen} onOpenChange={setIsArmoryOpen} student={student} allArmor={allArmor.filter(a => a.slot !== 'Pet')} itemType='armor' />}
+            {student && <ArmoryDialog isOpen={isStableOpen} onOpenChange={setIsStableOpen} student={student} allArmor={allArmor.filter(a => a.slot === 'Pet')} itemType='pet' />}
             <DashboardHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                  <div className="w-full max-w-7xl mx-auto space-y-4">
@@ -581,6 +598,10 @@ export default function ForgePage() {
                              <Button onClick={() => setIsArmoryOpen(true)}>
                                 <Hammer className="mr-2 h-4 w-4"/>
                                 The Armory
+                             </Button>
+                              <Button onClick={() => setIsStableOpen(true)}>
+                                <Hammer className="mr-2 h-4 w-4"/>
+                                The Stable
                              </Button>
                              <Button variant="secondary" onClick={handleUnequipAll}><ShirtIcon className="mr-2 h-4 w-4" />Unequip All</Button>
                             <Button variant="default" onClick={handleSetAvatar} disabled={isSettingAvatar || (!selectedStaticAvatarUrl && !equipment.bodyId)}>
@@ -694,18 +715,28 @@ export default function ForgePage() {
                                     </Tabs>
                                 </CardContent>
                             </Card>
-                             <Card>
-                                <CardHeader>
-                                    <CardTitle>Backgrounds</CardTitle>
-                                </CardHeader>
-                                <CardContent className="grid grid-cols-3 gap-2">
-                                    {backgroundImages.map((bg, index) => (
-                                        <div key={index} className={cn("border p-1 rounded-md cursor-pointer hover:border-primary", equipment.backgroundUrl === bg.imageUrl && "border-primary ring-2 ring-primary")} onClick={() => setEquipment(prev => ({...prev, backgroundUrl: bg.imageUrl}))}>
-                                            <Image src={bg.thumbnailUrl} alt="Background" width={150} height={100} className="w-full h-auto object-cover rounded-sm" />
-                                        </div>
-                                    ))}
-                                </CardContent>
-                            </Card>
+                             <div className="grid grid-cols-1 gap-6">
+                                <Card>
+                                    <CardHeader><CardTitle>Backgrounds</CardTitle></CardHeader>
+                                    <CardContent className="grid grid-cols-3 gap-2">
+                                        {backgroundImages.map((bg, index) => (
+                                            <div key={index} className={cn("border p-1 rounded-md cursor-pointer hover:border-primary", equipment.backgroundUrl === bg.imageUrl && "border-primary ring-2 ring-primary")} onClick={() => setEquipment(prev => ({...prev, backgroundUrl: bg.imageUrl}))}>
+                                                <Image src={bg.thumbnailUrl} alt="Background" width={150} height={100} className="w-full h-auto object-cover rounded-sm" />
+                                            </div>
+                                        ))}
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader><CardTitle>My Pets</CardTitle></CardHeader>
+                                    <CardContent className="grid grid-cols-3 gap-2">
+                                        {ownedPets.length > 0 ? ownedPets.map(pet => (
+                                            <div key={pet.id} className={cn("border p-1 rounded-md cursor-pointer hover:border-primary", equipment.petId === pet.id && "border-primary ring-2 ring-primary")} onClick={() => handleEquipItem(pet)}>
+                                                <Image src={pet.thumbnailUrl || pet.imageUrl} alt={pet.name} width={100} height={100} className="w-full h-auto object-contain rounded-sm bg-secondary" />
+                                            </div>
+                                        )) : <p className="text-muted-foreground text-sm col-span-3 text-center py-2">Visit The Stable to purchase pets.</p>}
+                                    </CardContent>
+                                </Card>
+                             </div>
                         </div>
                         
                         <div className="lg:col-span-9 relative" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
