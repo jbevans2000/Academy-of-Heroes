@@ -263,18 +263,16 @@ export default function ForgePage() {
     
     const handleEquipItem = (item: ArmorPiece | Hairstyle) => {
         if ('slot' in item && item.slot === 'Pet') {
-            // This is a pet, only toggle the petId
             setEquipment(prev => ({ ...prev, petId: prev.petId === item.id ? null : item.id }));
         } else {
-            // This is regular armor or a hairstyle, clear the static avatar
             setSelectedStaticAvatarUrl(null); 
-            if ('slot' in item) { // It's an ArmorPiece
+            if ('slot' in item) { // ArmorPiece
                 const slotKey = `${item.slot}Id` as keyof typeof equipment;
                 setEquipment(prev => ({
                     ...prev,
                     [slotKey]: prev[slotKey] === item.id ? null : item.id
                 }));
-            } else { // It's a Hairstyle
+            } else { // Hairstyle
                 if (equipment.hairstyleId === item.id) {
                     setEquipment(prev => ({...prev, hairstyleId: null, hairstyleColor: null}));
                     if (activePiece?.id === item.id) setActivePiece(null);
@@ -513,7 +511,7 @@ export default function ForgePage() {
     
     const handleStaticAvatarClick = (url: string) => {
         setSelectedStaticAvatarUrl(url);
-        // Unequip all items when a static avatar is chosen, EXCEPT pet
+        // Unequip all items when a static avatar is chosen, EXCEPT pet and background
         setEquipment(prev => ({
             ...prev,
             bodyId: null,
@@ -752,7 +750,7 @@ export default function ForgePage() {
                                         allBodies={allBodies}
                                         equipment={equipment}
                                         allHairstyles={allHairstyles}
-                                        allArmor={ownedArmor}
+                                        allArmor={allArmor}
                                         onMouseDown={handleMouseDown}
                                         activePieceId={activePiece?.id || null}
                                         editingLayer={editingLayer}
@@ -857,3 +855,4 @@ export default function ForgePage() {
         </div>
     );
 }
+
