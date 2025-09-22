@@ -36,7 +36,7 @@ interface CharacterCanvasProps {
     };
     allHairstyles: Hairstyle[];
     allArmor: ArmorPiece[];
-    equippedPet: ArmorPiece | null | undefined;
+    equippedPet?: ArmorPiece | null; // Make pet optional
     selectedStaticAvatarUrl?: string | null;
     onMouseDown?: (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece | Hairstyle, layer: 'primary' | 'secondary') => void;
     activePieceId?: string | null;
