@@ -97,13 +97,14 @@ const SetCreatorDialog = ({ isOpen, onOpenChange, teacherUid, onSetCreated }: {
     )
 }
 
-const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, existingSetNames }: {
+const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, existingSetNames, itemType = 'armor' }: {
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
     armor: Partial<ArmorPiece> | null;
     teacherUid: string;
     onSave: () => void;
     existingSetNames: string[];
+    itemType?: 'armor' | 'pet';
 }) => {
     const { toast } = useToast();
     const [formData, setFormData] = useState<Partial<ArmorPiece>>({});
@@ -112,12 +113,13 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
     
     useEffect(() => {
         if (isOpen) {
+            const initialSlot = itemType === 'pet' ? 'Pet' : 'head';
             setFormData(armor || {
-                name: '', description: '', imageUrl: '', thumbnailUrl: '', modularImageUrl: '', modularImageUrlMale: '', modularImageUrlFemale: '', modularImageUrl2: '', slot: 'head',
+                name: '', description: '', imageUrl: '', thumbnailUrl: '', modularImageUrl: '', modularImageUrlMale: '', modularImageUrlFemale: '', modularImageUrl2: '', slot: initialSlot,
                 classRequirement: 'Any', levelRequirement: 1, goldCost: 0, isPublished: false, setName: ''
             });
         }
-    }, [isOpen, armor]);
+    }, [isOpen, armor, itemType]);
 
     const handleInputChange = (field: keyof ArmorPiece, value: any) => {
         setFormData(prev => ({...prev, [field]: value}));
@@ -187,7 +189,7 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
                 : await addArmorPiece(dataToSave as any);
             
             if (result.success) {
-                toast({ title: dataToSave.id ? 'Armor Updated' : 'Armor Created' });
+                toast({ title: dataToSave.id ? `${itemType === 'pet' ? 'Pet' : 'Armor'} Updated` : `${itemType === 'pet' ? 'Pet' : 'Armor'} Created` });
                 onSave();
                 onOpenChange(false);
             } else {
@@ -207,7 +209,7 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>{formData.id ? 'Edit' : 'Create'} Armor Piece</DialogTitle>
+                    <DialogTitle>{formData.id ? 'Edit' : 'Create'} {itemType === 'pet' ? 'Pet' : 'Armor Piece'}</DialogTitle>
                 </DialogHeader>
                 <ScrollArea className="max-h-[70vh] pr-4">
                 <div className="grid gap-4 py-4">
@@ -283,12 +285,18 @@ const ArmorEditorDialog = ({ isOpen, onOpenChange, armor, teacherUid, onSave, ex
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="armor-slot">Slot</Label>
-                            <Select value={formData.slot} onValueChange={(v) => handleInputChange('slot', v as ArmorSlot)}>
+                            <Select value={formData.slot} onValueChange={(v) => handleInputChange('slot', v as ArmorSlot)} disabled={itemType === 'pet'}>
                                 <SelectTrigger><SelectValue placeholder="Select..."/></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="head">Head</SelectItem><SelectItem value="shoulders">Shoulders</SelectItem>
-                                    <SelectItem value="chest">Chest</SelectItem><SelectItem value="hands">Hands</SelectItem>
-                                    <SelectItem value="legs">Legs</SelectItem><SelectItem value="feet">Feet</SelectItem>
+                                    {itemType === 'pet' ? (
+                                        <SelectItem value="Pet">Pet</SelectItem>
+                                    ) : (
+                                        <>
+                                            <SelectItem value="head">Head</SelectItem><SelectItem value="shoulders">Shoulders</SelectItem>
+                                            <SelectItem value="chest">Chest</SelectItem><SelectItem value="hands">Hands</SelectItem>
+                                            <SelectItem value="legs">Legs</SelectItem><SelectItem value="feet">Feet</SelectItem>
+                                        </>
+                                    )}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -625,7 +633,7 @@ export default function GlobalForgePage() {
     const router = useRouter();
     const { toast } = useToast();
     const [user, setUser] = useState<User | null>(null);
-    const [armorPieces, setArmorPieces] = useState<ArmorPiece[]>([]);
+    const [allArmorPieces, setAllArmorPieces] = useState<ArmorPiece[]>([]);
     const [hairstyles, setHairstyles] = useState<Hairstyle[]>([]);
     const [baseBodies, setBaseBodies] = useState<BaseBody[]>([]);
     const [armorSets, setArmorSets] = useState<{id: string, name: string}[]>([]);
@@ -636,6 +644,7 @@ export default function GlobalForgePage() {
     const [editingArmor, setEditingArmor] = useState<Partial<ArmorPiece> | null>(null);
     const [armorToDelete, setArmorToDelete] = useState<ArmorPiece | null>(null);
     const [isDeletingArmor, setIsDeletingArmor] = useState(false);
+    const [itemTypeToEdit, setItemTypeToEdit] = useState<'armor' | 'pet'>('armor');
     
     // Set Creator Dialog
     const [isSetCreatorOpen, setIsSetCreatorOpen] = useState(false);
@@ -654,6 +663,9 @@ export default function GlobalForgePage() {
     
     // Filter State
     const [filterSet, setFilterSet] = useState('all');
+
+    const armorPieces = useMemo(() => allArmorPieces.filter(p => p.slot !== 'Pet'), [allArmorPieces]);
+    const petPieces = useMemo(() => allArmorPieces.filter(p => p.slot === 'Pet'), [allArmorPieces]);
 
     const existingSetNames = useMemo(() => {
         return armorSets.map(s => s.name).sort((a, b) => a.localeCompare(b));
@@ -700,7 +712,7 @@ export default function GlobalForgePage() {
             });
         };
 
-        const unsubArmor = createSnapshotListener('armorPieces', setArmorPieces, 'createdAt');
+        const unsubArmor = createSnapshotListener('armorPieces', setAllArmorPieces, 'createdAt');
         const unsubHairstyles = createSnapshotListener('hairstyles', setHairstyles, 'createdAt');
         const unsubBaseBodies = createSnapshotListener('baseBodies', setBaseBodies, 'order');
         
@@ -719,16 +731,24 @@ export default function GlobalForgePage() {
         };
     }, [user]);
     
-    // --- Armor Functions ---
-    const handleNewArmor = () => { setEditingArmor(null); setIsArmorEditorOpen(true); };
-    const handleEditArmor = (armor: ArmorPiece) => { setEditingArmor(armor); setIsArmorEditorOpen(true); };
+    // --- Armor/Pet Functions ---
+    const handleNewArmor = (itemType: 'armor' | 'pet' = 'armor') => { 
+        setItemTypeToEdit(itemType);
+        setEditingArmor(null); 
+        setIsArmorEditorOpen(true); 
+    };
+    const handleEditArmor = (armor: ArmorPiece) => { 
+        setItemTypeToEdit(armor.slot === 'Pet' ? 'pet' : 'armor');
+        setEditingArmor(armor); 
+        setIsArmorEditorOpen(true); 
+    };
     const handleDeleteArmor = async () => {
         if (!armorToDelete) return;
         setIsDeletingArmor(true);
         try {
             const result = await deleteArmorPiece(armorToDelete.id);
             if (result.success) {
-                toast({ title: 'Armor Deleted' });
+                toast({ title: `${armorToDelete.slot === 'Pet' ? 'Pet' : 'Armor'} Deleted` });
                 setArmorToDelete(null);
             } else { throw new Error(result.error); }
         } catch (error: any) {
@@ -782,6 +802,7 @@ export default function GlobalForgePage() {
                 teacherUid={user.uid}
                 onSave={() => { /* Real-time listener will update UI */}}
                 existingSetNames={existingSetNames}
+                itemType={itemTypeToEdit}
             />}
             {user && <SetCreatorDialog
                 isOpen={isSetCreatorOpen}
@@ -804,7 +825,7 @@ export default function GlobalForgePage() {
             <AlertDialog open={!!armorToDelete} onOpenChange={() => setArmorToDelete(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader><AlertDialogTitle>Delete {armorToDelete?.name}?</AlertDialogTitle></AlertDialogHeader>
-                    <AlertDialogDescription>This will permanently remove this armor piece. This cannot be undone.</AlertDialogDescription>
+                    <AlertDialogDescription>This will permanently remove this item. This cannot be undone.</AlertDialogDescription>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDeleteArmor} disabled={isDeletingArmor} className="bg-destructive hover:bg-destructive/90">
@@ -936,7 +957,7 @@ export default function GlobalForgePage() {
                                     </CardContent>
                                 </Card>
                             </div>
-                            <div className="lg:col-span-1">
+                            <div className="lg:col-span-1 space-y-6">
                                <Card>
                                     <CardHeader>
                                         <div className="flex-row justify-between items-start">
@@ -957,11 +978,11 @@ export default function GlobalForgePage() {
                                                 </SelectContent>
                                             </Select>
                                             <Button onClick={() => setIsSetCreatorOpen(true)} variant="secondary" size="sm"><PlusCircle className="mr-2 h-4 w-4" /> New Set</Button>
-                                            <Button onClick={handleNewArmor} size="sm"><PlusCircle className="mr-2 h-4 w-4" /> New Armor</Button>
+                                            <Button onClick={() => handleNewArmor('armor')} size="sm"><PlusCircle className="mr-2 h-4 w-4" /> New Armor</Button>
                                         </div>
                                     </CardHeader>
                                     <CardContent>
-                                        <ScrollArea className="h-[105vh]">
+                                        <ScrollArea className="h-[48vh]">
                                         {isLoading ? (
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <Skeleton className="h-64" /> <Skeleton className="h-64" />
@@ -994,6 +1015,59 @@ export default function GlobalForgePage() {
                                                             <p className="font-bold">{piece.name}</p>
                                                             {piece.setName && <p className="text-xs font-semibold text-primary">{piece.setName}</p>}
                                                             <p className="text-sm text-muted-foreground">{piece.classRequirement} - {piece.slot}</p>
+                                                            <p className="text-sm">Lvl {piece.levelRequirement} / {piece.goldCost}g</p>
+                                                        </CardContent>
+                                                        <CardFooter className="p-2 flex gap-1">
+                                                            <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditArmor(piece)}><Edit className="mr-1 h-3 w-3" /> Edit</Button>
+                                                            <Button variant="destructive" size="sm" onClick={() => setArmorToDelete(piece)}><Trash2 className="h-3 w-3" /></Button>
+                                                        </CardFooter>
+                                                    </Card>
+                                                ))}
+                                            </div>
+                                        )}
+                                        </ScrollArea>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader className="flex-row justify-between items-start">
+                                        <div>
+                                            <CardTitle className="flex items-center gap-2"><Diamond className="text-purple-500"/> Pet Management</CardTitle>
+                                            <CardDescription>Manage all companion pets available in the game.</CardDescription>
+                                        </div>
+                                        <Button onClick={() => handleNewArmor('pet')} size="sm"><PlusCircle className="mr-2 h-4 w-4" /> New Pet</Button>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <ScrollArea className="h-[48vh]">
+                                        {isLoading ? (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <Skeleton className="h-64" /> <Skeleton className="h-64" />
+                                            </div>
+                                        ) : petPieces.length === 0 ? (
+                                            <p className="text-center text-muted-foreground py-10">No pets have been created yet.</p>
+                                        ) : (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-4">
+                                                {petPieces.map(piece => (
+                                                    <Card key={piece.id} className="flex flex-col relative">
+                                                         <div className="absolute top-2 left-2 z-10">
+                                                            {piece.isPublished ? (
+                                                                <div className="flex items-center gap-1 bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full border border-green-300">
+                                                                    <Eye className="h-3 w-3" />
+                                                                    Published
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex items-center gap-1 bg-gray-100 text-gray-800 text-xs font-semibold px-2 py-1 rounded-full border border-gray-300">
+                                                                    <EyeOff className="h-3 w-3" />
+                                                                    Hidden
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <CardHeader className="items-center">
+                                                            <div className="w-24 h-24 relative bg-secondary rounded-md">
+                                                                <NextImage src={piece.thumbnailUrl || piece.imageUrl || ''} alt={piece.name} fill className="object-contain p-1" />
+                                                            </div>
+                                                        </CardHeader>
+                                                        <CardContent className="flex-grow text-center space-y-1">
+                                                            <p className="font-bold">{piece.name}</p>
                                                             <p className="text-sm">Lvl {piece.levelRequirement} / {piece.goldCost}g</p>
                                                         </CardContent>
                                                         <CardFooter className="p-2 flex gap-1">
