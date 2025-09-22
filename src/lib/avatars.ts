@@ -190,7 +190,16 @@ export const avatarData: ClassAvatarData = {
         "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%208%20-%20Blind%20Seer%20(6).png?alt=media&token=0aed50ef-e208-42b0-82c2-94f5764716eb",
         "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%208%20-%20Blind%20Seer%20(7).png?alt=media&token=37ddb1ab-47a0-4ee9-930e-b4e6afc0e4b2"
     ],
-    9: generatePlaceholders(8, 'divine cleric'),
+    9: [
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%209%20-%20Naturalist%20(1).jpg?alt=media&token=6f485988-f2cd-4425-811e-64fda9b0f694',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%209%20-%20Naturalist%20(1).png?alt=media&token=3ad91dfc-41fa-4aac-944e-718cf027e44f',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%209%20-%20Naturalist%20(2).jpg?alt=media&token=6a57b3f7-9b61-4ac3-8a07-bcf6daeed2e1',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%209%20-%20Naturalist%20(2).png?alt=media&token=fcda7cc8-7386-42b7-856c-398fbbb1ff4f',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%209%20-%20Naturalist%20(3).jpg?alt=media&token=b3f28db2-df37-491a-8d6d-7a3196d475a8',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%209%20-%20Naturalist%20(3).png?alt=media&token=10155b73-ccf2-4f95-9193-3753681f9e60',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%209%20-%20Naturalist%20(4).jpg?alt=media&token=c264ce4e-2835-4349-8dc0-b3a7fdf36a4f',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%209%20-%20Naturalist%20(4).png?alt=media&token=c070b9c2-4ed5-4d31-99cf-1177e8da607f',
+    ],
     10: generatePlaceholders(8, 'prophet'),
     11: generatePlaceholders(8, 'crystal healer'),
     12: generatePlaceholders(8, 'shadow healer'),
@@ -316,3 +325,5 @@ export const avatarData: ClassAvatarData = {
     20: generatePlaceholders(8, 'ascended mage'),
   },
 };
+
+    
