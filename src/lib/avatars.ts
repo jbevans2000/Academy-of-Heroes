@@ -170,7 +170,16 @@ export const avatarData: ClassAvatarData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%206%20(7).png?alt=media&token=e4a2da80-6c95-485e-a0f2-872bbfd801bc',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%206%20(8).png?alt=media&token=7bdf7000-62c9-406d-a197-8c0ddb76f162'
     ],
-    7: generatePlaceholders(8, 'life cleric'),
+    7: [
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%207%20-%20Bardic%20Physician%20(1).png?alt=media&token=a7cd4357-e671-49d0-a8d1-c40c955070a8',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%207%20-%20Bardic%20Physician%20(2).png?alt=media&token=258dd27f-06db-4da1-a655-821f6b045ca0',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%207%20-%20Bardic%20Physician%20(3).png?alt=media&token=af8bfcc2-55b5-4a8c-b055-54009aab1d0f',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%207%20-%20Bardic%20Physician%20(4).png?alt=media&token=e8daa68f-3d4d-4916-a2d6-1de10bb69cdc',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%207%20-%20Bardic%20Physician%20(5).png?alt=media&token=7825b15e-cb02-47ab-ae4c-cf0d37a146e1',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%207%20-%20Bardic%20Physician%20(7).png?alt=media&token=bfa0cfc3-f52e-43a3-9d39-fe51fc4baac3',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%207%20-%20Bardic%20Physician%20(8).png?alt=media&token=6af0b508-17bc-4c85-9245-25fd69e87766',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%207%20-%20Bardic%20Physician%20(9).png?alt=media&token=aa2d79ae-3fa7-49f3-b311-ef9227d87140'
+    ],
     8: generatePlaceholders(8, 'war cleric'),
     9: generatePlaceholders(8, 'divine cleric'),
     10: generatePlaceholders(8, 'prophet'),
