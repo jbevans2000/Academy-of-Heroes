@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -15,6 +16,7 @@ const slotZIndex: Record<ArmorSlot, number> = {
     shoulders: 4,
     head: 5,
     hands: 5,
+    Pet: 12, // Pets should be on top
 };
 
 interface CharacterCanvasProps {
@@ -31,6 +33,7 @@ interface CharacterCanvasProps {
         handsId: string | null;
         legsId: string | null;
         feetId: string | null;
+        petId: string | null; // Added petId
     };
     allHairstyles: Hairstyle[];
     allArmor: ArmorPiece[];
@@ -71,7 +74,9 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>((
     
     const equippedArmorPieces = Object.values(equipment)
         .map(id => allArmor.find(a => a.id === id))
-        .filter((p): p is ArmorPiece => !!p);
+        .filter((p): p is ArmorPiece => !!p && p.slot !== 'Pet'); // Exclude pets from this list
+
+    const equippedPet = allArmor.find(p => p.id === equipment.petId && p.slot === 'Pet');
 
     const handleHairMouseDown = onMouseDown && hairstyle ? (e: React.MouseEvent<HTMLDivElement>) => onMouseDown(e, hairstyle, 'primary') : undefined;
 
@@ -81,18 +86,18 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>((
             className="relative w-full h-full shadow-inner overflow-hidden"
             id="character-canvas-container"
         >
-            {/* Always render the background first */}
+            {/* Background */}
             {equipment.backgroundUrl && (
                 <Image src={equipment.backgroundUrl} alt="Selected Background" fill className="object-cover z-0" />
             )}
 
             <div className="relative w-full h-full z-10">
-                {/* Then, render the static avatar if selected */}
-                {selectedStaticAvatarUrl ? (
+                {/* Static Avatar OR Custom Character */}
+                {selectedStaticAvatarUrl && !equipment.bodyId ? (
                     <Image src={selectedStaticAvatarUrl} alt="Selected Static Avatar" layout="fill" className="object-contain"/>
                 ) : (
                     <>
-                        {/* Or, render the custom character components */}
+                        {/* Custom Character Components */}
                         {baseBody && <Image src={baseBody.imageUrl} alt="Base Body" fill className="object-contain" priority />}
             
                         {baseBody && hairstyleColor && hairstyle && (
@@ -177,6 +182,16 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>((
                             );
                         })}
                     </>
+                )}
+
+                {/* Pet Overlay - Rendered on top of static OR custom avatar */}
+                {equippedPet && (
+                    <div 
+                        className="absolute bottom-0 left-0 w-1/4 h-1/4 pointer-events-none"
+                        style={{ zIndex: slotZIndex.Pet }}
+                    >
+                         <Image src={equippedPet.modularImageUrl} alt={equippedPet.name} layout="fill" className="object-contain"/>
+                    </div>
                 )}
             </div>
         </div>

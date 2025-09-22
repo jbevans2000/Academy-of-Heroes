@@ -1,4 +1,5 @@
 
+
 export interface BaseBody {
     id: string;
     name: string;
@@ -41,7 +42,7 @@ export interface Hairstyle {
     createdAt?: any;
 }
 
-export type ArmorSlot = 'head' | 'shoulders' | 'chest' | 'hands' | 'legs' | 'feet';
+export type ArmorSlot = 'head' | 'shoulders' | 'chest' | 'hands' | 'legs' | 'feet' | 'Pet';
 export type ArmorClassRequirement = 'Any' | 'Guardian' | 'Healer' | 'Mage';
 
 export interface ArmorPiece {

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { Suspense, lazy } from 'react';
@@ -67,6 +68,7 @@ export function AvatarDisplay({ student }: AvatarDisplayProps) {
       handsId: student.equippedHandsId,
       legsId: student.equippedLegsId,
       feetId: student.equippedFeetId,
+      petId: student.equippedPetId, // Include petId
   };
   
   const isFallen = student.hp <= 0;

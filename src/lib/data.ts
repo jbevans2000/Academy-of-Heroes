@@ -1,4 +1,5 @@
 
+
 export type ClassType = 'Guardian' | 'Healer' | 'Mage' | '';
 
 export type Company = {
@@ -60,6 +61,7 @@ export type Student = {
     equippedHandsId?: string;
     equippedLegsId?: string;
     equippedFeetId?: string;
+    equippedPetId?: string; // New field for pets
     equippedBodyId?: string; // The ID of the base body model
     equippedHairstyleId?: string;
     equippedHairstyleColor?: string; // The URL of the specific color variation
