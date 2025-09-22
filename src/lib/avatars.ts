@@ -180,7 +180,16 @@ export const avatarData: ClassAvatarData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%207%20-%20Bardic%20Physician%20(8).png?alt=media&token=6af0b508-17bc-4c85-9245-25fd69e87766',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%207%20-%20Bardic%20Physician%20(9).png?alt=media&token=aa2d79ae-3fa7-49f3-b311-ef9227d87140'
     ],
-    8: generatePlaceholders(8, 'war cleric'),
+    8: [
+        "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%208%20-%20Blind%20Seer%20(1).jpg?alt=media&token=cc18b73f-2819-44aa-8557-34f1f39b1631",
+        "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%208%20-%20Blind%20Seer%20(1).png?alt=media&token=c253394f-aff5-476f-ba58-1fea735239bc",
+        "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%208%20-%20Blind%20Seer%20(2).png?alt=media&token=615e378a-8b1a-47c3-9d95-0340f3b4f310",
+        "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%208%20-%20Blind%20Seer%20(3).png?alt=media&token=7441d970-314b-41ec-abe0-d4d32b276ebe",
+        "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%208%20-%20Blind%20Seer%20(4).png?alt=media&token=90e252f5-f351-4862-bb78-f06f7e6aa8eb",
+        "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%208%20-%20Blind%20Seer%20(5).png?alt=media&token=f7f66504-38d2-4217-b640-87017d82ffe1",
+        "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%208%20-%20Blind%20Seer%20(6).png?alt=media&token=0aed50ef-e208-42b0-82c2-94f5764716eb",
+        "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%208%20-%20Blind%20Seer%20(7).png?alt=media&token=37ddb1ab-47a0-4ee9-930e-b4e6afc0e4b2"
+    ],
     9: generatePlaceholders(8, 'divine cleric'),
     10: generatePlaceholders(8, 'prophet'),
     11: generatePlaceholders(8, 'crystal healer'),
