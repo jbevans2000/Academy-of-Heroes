@@ -36,6 +36,7 @@ interface CharacterCanvasProps {
     };
     allHairstyles: Hairstyle[];
     allArmor: ArmorPiece[];
+    equippedPet: ArmorPiece | null | undefined;
     selectedStaticAvatarUrl?: string | null;
     onMouseDown?: (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece | Hairstyle, layer: 'primary' | 'secondary') => void;
     activePieceId?: string | null;
@@ -52,6 +53,7 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>((
     equipment, 
     allHairstyles,
     allArmor,
+    equippedPet,
     selectedStaticAvatarUrl,
     onMouseDown, 
     activePieceId, 
@@ -74,8 +76,6 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>((
     const equippedArmorPieces = Object.values(equipment)
         .map(id => allArmor.find(a => a.id === id))
         .filter((p): p is ArmorPiece => !!p && p.slot !== 'Pet'); // Exclude pets from this list
-
-    const equippedPet = allArmor.find(p => p.id === equipment.petId && p.slot === 'Pet');
 
     const handleHairMouseDown = onMouseDown && hairstyle ? (e: React.MouseEvent<HTMLDivElement>) => onMouseDown(e, hairstyle, 'primary') : undefined;
 
@@ -186,7 +186,7 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>((
                 {/* Pet Overlay - Rendered on top of static OR custom avatar */}
                 {equippedPet && (
                     <div 
-                        className="absolute bottom-0 left-0 w-1/4 h-1/4 pointer-events-none"
+                        className="absolute bottom-0 left-0 w-1/3 h-1/3 pointer-events-none"
                         style={{ zIndex: slotZIndex.Pet }}
                     >
                          <Image src={equippedPet.modularImageUrl} alt={equippedPet.name} layout="fill" className="object-contain"/>
@@ -199,4 +199,3 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>((
 CharacterCanvas.displayName = 'CharacterCanvas';
 
 export default CharacterCanvas;
-
