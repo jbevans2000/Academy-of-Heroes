@@ -107,7 +107,7 @@ export default function ForgePage() {
 
     // Dialog State
     const [isArmoryOpen, setIsArmoryOpen] = useState(false);
-    const [isStableOpen, setIsStableOpen] = useState(false); // New state for pets
+    const [isStableOpen, setIsStableOpen] = useState(false);
     const [isAvatarSetDialogOpen, setIsAvatarSetDialogOpen] = useState(false);
 
     // Equipment State
@@ -262,23 +262,25 @@ export default function ForgePage() {
     };
     
     const handleEquipItem = (item: ArmorPiece | Hairstyle) => {
-        setSelectedStaticAvatarUrl(null); // Clear static selection when customizing
-        if ('slot' in item) { // It's an ArmorPiece
-            if (item.slot === 'Pet') {
-                setEquipment(prev => ({ ...prev, petId: prev.petId === item.id ? null : item.id }));
-            } else {
+        if ('slot' in item && item.slot === 'Pet') {
+            // This is a pet, only toggle the petId
+            setEquipment(prev => ({ ...prev, petId: prev.petId === item.id ? null : item.id }));
+        } else {
+            // This is regular armor or a hairstyle, clear the static avatar
+            setSelectedStaticAvatarUrl(null); 
+            if ('slot' in item) { // It's an ArmorPiece
                 const slotKey = `${item.slot}Id` as keyof typeof equipment;
                 setEquipment(prev => ({
                     ...prev,
                     [slotKey]: prev[slotKey] === item.id ? null : item.id
                 }));
-            }
-        } else { // It's a Hairstyle
-            if (equipment.hairstyleId === item.id) {
-                setEquipment(prev => ({...prev, hairstyleId: null, hairstyleColor: null}));
-                if (activePiece?.id === item.id) setActivePiece(null);
-            } else {
-                setEquipment(prev => ({...prev, hairstyleId: item.id, hairstyleColor: item.colors?.[0]?.imageUrl || null}));
+            } else { // It's a Hairstyle
+                if (equipment.hairstyleId === item.id) {
+                    setEquipment(prev => ({...prev, hairstyleId: null, hairstyleColor: null}));
+                    if (activePiece?.id === item.id) setActivePiece(null);
+                } else {
+                    setEquipment(prev => ({...prev, hairstyleId: item.id, hairstyleColor: item.colors?.[0]?.imageUrl || null}));
+                }
             }
         }
     };
@@ -348,7 +350,7 @@ export default function ForgePage() {
     };
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece | Hairstyle, layer: 'primary' | 'secondary') => {
-        if (isPreviewMode || piece.slot === 'Pet') return;
+        if (isPreviewMode || ('slot' in piece && piece.slot === 'Pet')) return;
         
         e.preventDefault();
         e.stopPropagation();
@@ -587,7 +589,7 @@ export default function ForgePage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-            {student && <ArmoryDialog isOpen={isArmoryOpen} onOpenChange={setIsArmoryOpen} student={student} allArmor={allArmor.filter(a => a.slot !== 'Pet')} itemType='armor' />}
+            {student && <ArmoryDialog isOpen={isArmoryOpen} onOpenChange={setIsArmoryOpen} student={student} allArmor={allArmor.filter(a => a.slot !== 'Pet')} />}
             {student && <ArmoryDialog isOpen={isStableOpen} onOpenChange={setIsStableOpen} student={student} allArmor={allArmor.filter(a => a.slot === 'Pet')} itemType='pet' />}
             <DashboardHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
@@ -599,7 +601,7 @@ export default function ForgePage() {
                                 <Hammer className="mr-2 h-4 w-4"/>
                                 The Armory
                              </Button>
-                              <Button onClick={() => setIsStableOpen(true)}>
+                             <Button onClick={() => setIsStableOpen(true)}>
                                 <Hammer className="mr-2 h-4 w-4"/>
                                 The Stable
                              </Button>
@@ -745,7 +747,7 @@ export default function ForgePage() {
                                 onMouseMove={handleMouseMove}
                             >
                                 <Suspense fallback={<CharacterViewerFallback />}>
-                                     <CharacterCanvas
+                                     <CharacterCanvas 
                                         student={student}
                                         allBodies={allBodies}
                                         equipment={equipment}
