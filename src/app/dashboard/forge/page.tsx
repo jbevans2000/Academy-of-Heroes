@@ -10,7 +10,7 @@ import type { Student } from '@/lib/data';
 import { type ArmorPiece, type Hairstyle, type BaseBody, type ArmorSlot } from '@/lib/forge';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Loader2, Hammer, Layers, Eye, Camera, X, Shirt, ArrowRight, ChevronsRight, ChevronsLeft, ShirtIcon, UserCheck, ChevronDown, Wand2, Scaling, Orbit, Scissors, Edit, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Hammer, Layers, Eye, Camera, X, Shirt, ArrowRight, ChevronsRight, ChevronsLeft, ShirtIcon, UserCheck, ChevronDown, Wand2, Scaling, Orbit, Scissors, Edit, Trash2, Gem, Package } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -565,6 +565,8 @@ export default function ForgePage() {
             </Collapsible>
         ));
     };
+
+    const equippedPet = allArmor.find(p => p.id === equipment.petId);
     
     if (isLoading || !student) {
         return <div className="flex items-center justify-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>
@@ -600,7 +602,7 @@ export default function ForgePage() {
                                 The Armory
                              </Button>
                              <Button onClick={() => setIsStableOpen(true)}>
-                                <Hammer className="mr-2 h-4 w-4"/>
+                                <Gem className="mr-2 h-4 w-4"/>
                                 The Stable
                              </Button>
                              <Button variant="secondary" onClick={handleUnequipAll}><ShirtIcon className="mr-2 h-4 w-4" />Unequip All</Button>
@@ -751,6 +753,7 @@ export default function ForgePage() {
                                         equipment={equipment}
                                         allHairstyles={allHairstyles}
                                         allArmor={allArmor}
+                                        equippedPet={equippedPet}
                                         onMouseDown={handleMouseDown}
                                         activePieceId={activePiece?.id || null}
                                         editingLayer={editingLayer}
