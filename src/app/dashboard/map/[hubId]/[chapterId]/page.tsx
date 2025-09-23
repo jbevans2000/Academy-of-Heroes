@@ -32,6 +32,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { Label } from '@/components/ui/label';
+import { v4 as uuidv4 } from 'uuid';
 
 const LessonGallery = ({ parts, onLastPartReached }: { parts: LessonPart[], onLastPartReached: (isLast: boolean) => void }) => {
     const [currentPartIndex, setCurrentPartIndex] = useState(0);
