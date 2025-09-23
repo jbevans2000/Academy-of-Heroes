@@ -664,8 +664,8 @@ export default function GlobalForgePage() {
     // Filter State
     const [filterSet, setFilterSet] = useState('all');
 
-    const armorPieces = useMemo(() => allArmorPieces.filter(p => p.slot !== 'Pet'), [allArmorPieces]);
-    const petPieces = useMemo(() => allArmorPieces.filter(p => p.slot === 'Pet'), [allArmorPieces]);
+    const armorPieces = useMemo(() => allArmorPieces.filter(p => p.slot !== 'Pet').sort((a,b) => (a.levelRequirement || 0) - (b.levelRequirement || 0)), [allArmorPieces]);
+    const petPieces = useMemo(() => allArmorPieces.filter(p => p.slot === 'Pet').sort((a,b) => (a.levelRequirement || 0) - (b.levelRequirement || 0)), [allArmorPieces]);
 
     const existingSetNames = useMemo(() => {
         return armorSets.map(s => s.name).sort((a, b) => a.localeCompare(b));
