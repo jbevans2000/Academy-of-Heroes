@@ -36,6 +36,9 @@ import { MusicGallery } from '@/components/teacher/music-gallery';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
 import { generateStory } from '@/ai/flows/story-generator';
+import { generateQuestions } from '@/ai/flows/question-generator';
+
+const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
 // A reusable component for the image upload fields
 const ImageUploader = ({ label, imageUrl, onUploadSuccess, teacherUid, storagePath }: {
@@ -114,6 +117,12 @@ export default function EditQuestPage() {
 
   // State for AI generator
   const [isGeneratingStory, setIsGeneratingStory] = useState(false);
+  
+  // AI Question Generation State
+  const [aiSubject, setAiSubject] = useState('');
+  const [aiGradeLevel, setAiGradeLevel] = useState('');
+  const [aiNumQuestions, setAiNumQuestions] = useState<number | string>(5);
+  const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
   
   // State for Hubs
   const [hubs, setHubs] = useState<QuestHub[]>([]);
@@ -285,6 +294,33 @@ export default function EditQuestPage() {
         toast({ variant: 'destructive', title: 'Generation Failed', description: 'The Oracle is silent. Please try again.' });
     } finally {
         setIsGeneratingStory(false);
+    }
+  }
+  
+  const handleGenerateQuestions = async () => {
+    if (!aiSubject || !aiGradeLevel || !aiNumQuestions) {
+        toast({ variant: 'destructive', title: 'Missing Info', description: 'Please provide a subject, grade, and number of questions.' });
+        return;
+    }
+    setIsGeneratingQuestions(true);
+    try {
+        const result = await generateQuestions({
+            subject: aiSubject,
+            gradeLevel: aiGradeLevel,
+            numQuestions: Number(aiNumQuestions)
+        });
+        const newQuestions = result.questions.map(q => ({
+            ...q,
+            id: uuidv4(),
+        }));
+        
+        handleQuizChange('questions', [...(chapter?.quiz?.questions || []), ...newQuestions]);
+        toast({ title: 'Questions Generated!', description: `${newQuestions.length} questions have been added to the quiz.` });
+
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Generation Failed', description: error.message });
+    } finally {
+        setIsGeneratingQuestions(false);
     }
   }
 
@@ -551,6 +587,30 @@ export default function EditQuestPage() {
                         )}
                     </TabsContent>
                     <TabsContent value="quiz" className="mt-6 space-y-6">
+                        <div className="space-y-4 p-6 border rounded-lg bg-background/30">
+                            <h3 className="text-xl font-semibold flex items-center gap-2"><Sparkles className="text-primary" /> Generate Questions with the Oracle</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="ai-subject">Subject / Topic</Label>
+                                    <Input id="ai-subject" placeholder="e.g. Photosynthesis" value={aiSubject} onChange={(e) => setAiSubject(e.target.value)} disabled={isGeneratingQuestions} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="ai-grade">Grade Level</Label>
+                                    <Select onValueChange={setAiGradeLevel} value={aiGradeLevel} disabled={isGeneratingQuestions}>
+                                        <SelectTrigger id="ai-grade"><SelectValue placeholder="Choose a grade..." /></SelectTrigger>
+                                        <SelectContent>{gradeLevels.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="ai-num-questions">Number of Questions (1-10)</Label>
+                                <Input id="ai-num-questions" type="number" min="1" max="10" value={aiNumQuestions} onChange={(e) => setAiNumQuestions(e.target.value)} disabled={isGeneratingQuestions}/>
+                            </div>
+                            <Button onClick={handleGenerateQuestions} disabled={isGeneratingQuestions || !aiSubject || !aiGradeLevel}>
+                                {isGeneratingQuestions ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
+                                Consult the Oracle
+                            </Button>
+                        </div>
                         <h3 className="text-xl font-semibold">Quiz Editor</h3>
                         <div className="p-4 border rounded-md space-y-4">
                            <div className="flex items-center space-x-2">
@@ -599,9 +659,10 @@ export default function EditQuestPage() {
                         <Button variant="outline" onClick={handleAddQuizQuestion}>
                             <PlusCircle className="mr-2 h-4 w-4" /> Add Question
                         </Button>
-                    </TabsContent>
-                </Tabs>
-              </div>
+                      </TabsContent>
+                    </Tabs>
+                  </div>
+                )}
 
               <div className="flex justify-end pt-4 border-t">
                 <Button size="lg" onClick={handleSaveChanges} disabled={isSaving}>
