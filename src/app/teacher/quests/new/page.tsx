@@ -624,7 +624,7 @@ function NewQuestForm() {
                           <h3 className="text-xl font-semibold">Phase 2: Chapter Content</h3>
                           <Button variant="outline" onClick={handleGenerateStory} disabled={isGeneratingStory}>
                               {isGeneratingStory ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
-                              Consult the Oracle
+                              Generate Story
                           </Button>
                       </div>
                       <Tabs defaultValue="story" className="w-full">
@@ -766,7 +766,7 @@ function NewQuestForm() {
                                 <div className="flex gap-2">
                                     <Button onClick={handleGenerateQuestions} disabled={isGeneratingQuestions || !aiSubject || !aiGradeLevel}>
                                         {isGeneratingQuestions ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
-                                        Consult the Oracle
+                                        Generate by Subject
                                     </Button>
                                     <Button onClick={handleGenerateQuestionsFromText} variant="secondary" disabled={isGeneratingQuestions || !aiNumQuestions}>
                                         {isGeneratingQuestions ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <BookCopy className="mr-2 h-4 w-4" />}

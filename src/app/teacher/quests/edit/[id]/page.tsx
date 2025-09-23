@@ -489,7 +489,7 @@ export default function EditQuestPage() {
                     <h3 className="text-xl font-semibold">Chapter Content</h3>
                     <Button variant="outline" onClick={handleGenerateStory} disabled={isGeneratingStory}>
                         {isGeneratingStory ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
-                        Consult the Oracle
+                        Generate Story
                     </Button>
                 </div>
                 <Tabs defaultValue="story" className="w-full">
@@ -529,7 +529,7 @@ export default function EditQuestPage() {
                                 <Label>Position Chapter on Hub Map</Label>
                                 <div 
                                     className="relative aspect-[2048/1152] rounded-lg overflow-hidden bg-muted/50 border cursor-grab"
-                                    onMouseDown={(e) => handleMapDrag(e, 'chapter')}
+                                    onMouseDown={(e) => handleMapDrag(e)}
                                 >
                                     <Image
                                         src={hubMapUrl}
@@ -635,7 +635,7 @@ export default function EditQuestPage() {
                             <div className="flex gap-2">
                                 <Button onClick={handleGenerateQuestions} disabled={isGeneratingQuestions || !aiSubject || !aiGradeLevel}>
                                     {isGeneratingQuestions ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
-                                    Consult the Oracle
+                                    Generate by Subject
                                 </Button>
                                 <Button onClick={handleGenerateQuestionsFromText} variant="secondary" disabled={isGeneratingQuestions || !aiNumQuestions}>
                                     {isGeneratingQuestions ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <BookCopy className="mr-2 h-4 w-4" />}
@@ -692,7 +692,7 @@ export default function EditQuestPage() {
                             <PlusCircle className="mr-2 h-4 w-4" /> Add Question
                         </Button>
                       </TabsContent>
-                    </Tabs>
+                      </Tabs>
                   </div>
                 )}
 
