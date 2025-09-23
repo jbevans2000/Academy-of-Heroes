@@ -33,8 +33,13 @@ import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { Label } from '@/components/ui/label';
 
-const LessonGallery = ({ parts }: { parts: LessonPart[] }) => {
+const LessonGallery = ({ parts, onLastPartReached }: { parts: LessonPart[], onLastPartReached: (isLast: boolean) => void }) => {
     const [currentPartIndex, setCurrentPartIndex] = useState(0);
+
+    useEffect(() => {
+        onLastPartReached(currentPartIndex === parts.length - 1);
+    }, [currentPartIndex, parts.length, onLastPartReached]);
+
 
     if (!parts || parts.length === 0) {
         return <p className="text-center text-muted-foreground">This lesson has no content.</p>;
@@ -199,6 +204,7 @@ export default function ChapterPage() {
     const [showApprovalSentDialog, setShowApprovalSentDialog] = useState(false);
     const [isConfirmingComplete, setIsConfirmingComplete] = useState(false);
     const [isConfirmingUncomplete, setIsConfirmingUncomplete] = useState(false);
+    const [isOnLastLessonPart, setIsOnLastLessonPart] = useState(false);
     
     const isPreviewMode = searchParams.get('preview') === 'true';
 
@@ -412,6 +418,9 @@ export default function ChapterPage() {
     const isCurrentChapter = chapter.chapterNumber === lastCompletedChapterForHub + 1;
     
     const returnPath = isPreviewMode ? '/teacher/quests' : `/dashboard/map/${hubId}`;
+    
+    const shouldShowQuiz = chapter.quiz && student && (chapter.quiz.questions?.length || 0) > 0 && !isPreviewMode && isOnLastLessonPart;
+
 
     return (
       <>
@@ -533,14 +542,14 @@ export default function ChapterPage() {
                                     <h3 className="text-3xl font-bold text-primary">Lesson</h3>
                                  </div>
                                 {chapter.lessonParts && chapter.lessonParts.length > 0 ? (
-                                    <LessonGallery parts={chapter.lessonParts} />
+                                    <LessonGallery parts={chapter.lessonParts} onLastPartReached={setIsOnLastLessonPart} />
                                 ) : (
                                     <p className="text-muted-foreground text-center py-8">There is no lesson content for this chapter yet.</p>
                                 )}
-                                {chapter.quiz && student && (chapter.quiz.questions?.length || 0) > 0 && !isPreviewMode && (
+                                {shouldShowQuiz && (
                                     <QuizComponent 
-                                        quiz={chapter.quiz}
-                                        student={student}
+                                        quiz={chapter.quiz!}
+                                        student={student!}
                                         chapter={chapter as Chapter}
                                         hub={hub}
                                         teacherUid={teacherUid}
