@@ -76,7 +76,7 @@ const ImageUploader = ({ label, imageUrl, onUploadSuccess, teacherUid, storagePa
     return (
         <div className="space-y-2 p-3 border rounded-md">
             <Label className="text-base font-medium">{label}</Label>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
                 <Label htmlFor={`upload-${label}`} className={cn(buttonVariants({ variant: 'outline' }), "cursor-pointer")}>
                     <Upload className="mr-2 h-4 w-4" />
                     Choose File

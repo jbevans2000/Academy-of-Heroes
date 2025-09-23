@@ -663,8 +663,11 @@ function NewQuestForm() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="text-center p-8 border-2 border-dashed rounded-lg">
+                             <div className="text-center p-8 border-2 border-dashed rounded-lg">
                                 <p className="text-muted-foreground">This lesson has no content parts yet.</p>
+                                <Button onClick={handleAddLessonPart} className="mt-4">
+                                    <PlusCircle className="mr-2 h-4 w-4" /> Add the First Part
+                                </Button>
                             </div>
                         )}
                     </TabsContent>
