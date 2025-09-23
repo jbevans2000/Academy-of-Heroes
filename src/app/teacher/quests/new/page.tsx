@@ -7,7 +7,7 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Loader2, Save, Sparkles, Upload, X, Library, Trash2, PlusCircle, ArrowRight, BookCopy } from 'lucide-react';
-import { doc, setDoc, addDoc, collection, getDocs, serverTimestamp, query, orderBy, where } from 'firebase/firestore';
+import { doc, setDoc, addDoc, collection, getDocs, serverTimestamp, query, orderBy, where, updateDoc } from 'firebase/firestore';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useToast } from '@/hooks/use-toast';
@@ -29,6 +29,17 @@ import { generateStory } from '@/ai/flows/story-generator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { generateQuestions } from '@/ai/flows/question-generator';
 import { generateQuestionsFromText } from '@/ai/flows/generate-questions-from-text';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
@@ -470,6 +481,7 @@ function NewQuestForm() {
     };
     
     const currentLessonPart = lessonParts[currentLessonPartIndex];
+    const hasQuizQuestions = (quizQuestions?.length || 0) > 0;
 
     if (isLoading) {
         return (
@@ -622,10 +634,28 @@ function NewQuestForm() {
                   <div className="space-y-6 p-6 border rounded-lg">
                       <div className="flex justify-between items-center">
                           <h3 className="text-xl font-semibold">Phase 2: Chapter Content</h3>
-                          <Button variant="outline" onClick={handleGenerateStory} disabled={isGeneratingStory}>
-                              {isGeneratingStory ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
-                              Generate Story
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="outline" disabled={isGeneratingStory}>
+                                    {isGeneratingStory ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
+                                    Generate Story
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will replace any existing content in the Chapter Title and Story Content fields with a new, AI-generated story. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleGenerateStory}>
+                                        {isGeneratingStory ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : "Yes, Generate Story"}
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                       <Tabs defaultValue="story" className="w-full">
                       <TabsList className="grid w-full grid-cols-3">

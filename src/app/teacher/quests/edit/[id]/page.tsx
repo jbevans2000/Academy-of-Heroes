@@ -28,6 +28,17 @@ import { Switch } from '@/components/ui/switch';
 import { generateStory } from '@/ai/flows/story-generator';
 import { generateQuestions } from '@/ai/flows/question-generator';
 import { generateQuestionsFromText } from '@/ai/flows/generate-questions-from-text';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
@@ -487,10 +498,28 @@ export default function EditQuestPage() {
               <div className="space-y-6 p-6 border rounded-lg">
                 <div className="flex justify-between items-center">
                     <h3 className="text-xl font-semibold">Chapter Content</h3>
-                    <Button variant="outline" onClick={handleGenerateStory} disabled={isGeneratingStory}>
-                        {isGeneratingStory ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
-                        Generate Story
-                    </Button>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                             <Button variant="outline" disabled={isGeneratingStory}>
+                                {isGeneratingStory ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
+                                Generate Story
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will replace any existing content in the Chapter Title and Story Content fields with a new, AI-generated story. This action cannot be undone.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleGenerateStory}>
+                                    {isGeneratingStory ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : "Yes, Generate Story"}
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </div>
                 <Tabs defaultValue="story" className="w-full">
                     <TabsList className="grid w-full grid-cols-3">
@@ -529,7 +558,7 @@ export default function EditQuestPage() {
                                 <Label>Position Chapter on Hub Map</Label>
                                 <div 
                                     className="relative aspect-[2048/1152] rounded-lg overflow-hidden bg-muted/50 border cursor-grab"
-                                    onMouseDown={(e) => handleMapDrag(e)}
+                                    onMouseDown={(e) => handleMapDrag(e, 'chapter')}
                                 >
                                     <Image
                                         src={hubMapUrl}
@@ -586,7 +615,7 @@ export default function EditQuestPage() {
                             </div>
                         </div>
                         {currentLessonPart ? (
-                            <div className="p-4 border rounded-md bg-background/50 space-y-4">
+                             <div className="p-4 border rounded-md bg-background/50 space-y-4">
                                 <RichTextEditor
                                     value={currentLessonPart.content}
                                     onChange={(content) => handleLessonPartChange(currentLessonPartIndex, content)}
