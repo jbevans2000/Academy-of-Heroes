@@ -5,14 +5,14 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import { ArrowLeft, LayoutDashboard, CheckCircle, Loader2, RotateCcw } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, CheckCircle, Loader2, RotateCcw, ArrowRight } from "lucide-react";
 import Image from 'next/image';
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { doc, getDoc, updateDoc, collection, getDocs, where, query, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import type { Chapter, QuestHub, Quiz, QuizQuestion } from '@/lib/quests';
+import type { Chapter, QuestHub, Quiz, QuizQuestion, LessonPart } from '@/lib/quests';
 import type { Student } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -32,6 +32,34 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { Label } from '@/components/ui/label';
+
+const LessonGallery = ({ parts }: { parts: LessonPart[] }) => {
+    const [currentPartIndex, setCurrentPartIndex] = useState(0);
+
+    if (!parts || parts.length === 0) {
+        return <p className="text-center text-muted-foreground">This lesson has no content.</p>;
+    }
+
+    const currentPart = parts[currentPartIndex];
+
+    return (
+        <div className="space-y-4">
+            <div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: currentPart.content }} />
+            <div className="flex justify-between items-center mt-4">
+                <Button onClick={() => setCurrentPartIndex(p => p - 1)} disabled={currentPartIndex === 0}>
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Previous Part
+                </Button>
+                <span className="text-sm font-semibold text-muted-foreground">
+                    Part {currentPartIndex + 1} of {parts.length}
+                </span>
+                <Button onClick={() => setCurrentPartIndex(p => p + 1)} disabled={currentPartIndex === parts.length - 1}>
+                    Next Part <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+            </div>
+        </div>
+    );
+};
+
 
 const QuizComponent = ({ quiz, student, chapter, hub, teacherUid, onQuizComplete }: { 
     quiz: Quiz, 
@@ -225,8 +253,16 @@ export default function ChapterPage() {
                 const chapterDocRef = doc(db, 'teachers', teacherUid, 'chapters', chapterId as string);
                 const chapterSnap = await getDoc(chapterDocRef);
                 if (chapterSnap.exists()) {
-                    const chapterData = { id: chapterSnap.id, ...chapterSnap.data() } as Chapter;
-                    setChapter(chapterData);
+                    const data = chapterSnap.data() as Chapter;
+                    
+                    // Migration logic for old lesson structure
+                    if (data.lessonContent && (!data.lessonParts || data.lessonParts.length === 0)) {
+                        data.lessonParts = [{ id: uuidv4(), content: data.lessonContent }];
+                    } else if (!data.lessonParts) {
+                        data.lessonParts = [];
+                    }
+
+                    setChapter(data);
 
                     const hubDocRef = doc(db, 'teachers', teacherUid, 'questHubs', hubId as string);
                     const hubSnap = await getDoc(hubDocRef);
@@ -370,7 +406,6 @@ export default function ChapterPage() {
     }
     
     const storyVideoSrc = chapter.videoUrl ? getYouTubeEmbedUrl(chapter.videoUrl) : '';
-    const lessonVideoSrc = chapter.lessonVideoUrl ? getYouTubeEmbedUrl(chapter.lessonVideoUrl) : '';
 
     const lastCompletedChapterForHub = student?.questProgress?.[hubId as string] || 0;
     const isCompletedChapter = chapter.chapterNumber <= lastCompletedChapterForHub;
@@ -497,51 +532,11 @@ export default function ChapterPage() {
                                  <div className="text-center">
                                     <h3 className="text-3xl font-bold text-primary">Lesson</h3>
                                  </div>
-                                {chapter.lessonMainImageUrl && <div className="flex justify-center">
-                                    <Image
-                                        src={chapter.lessonMainImageUrl}
-                                        alt="Lesson main image"
-                                        width={800}
-                                        height={400}
-                                        className="rounded-lg shadow-lg border"
-                                        data-ai-hint="science diagram"
-                                        priority
-                                    />
-                                </div>}
-                                {chapter.lessonContent && <><Separator /><div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: chapter.lessonContent }} /></>}
-                                {chapter.lessonDecorativeImageUrl1 && <><Separator /><div className="flex justify-center">
-                                     <Image
-                                        src={chapter.lessonDecorativeImageUrl1}
-                                        alt="Lesson decorative image"
-                                        width={800}
-                                        height={400}
-                                        className="rounded-lg shadow-lg border"
-                                        data-ai-hint="old paper"
-                                    />
-                                </div></>}
-                                {chapter.lessonAdditionalContent && <><Separator /><div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: chapter.lessonAdditionalContent }} /></>}
-                                 {chapter.lessonDecorativeImageUrl2 && <><Separator /><div className="flex justify-center">
-                                     <Image
-                                        src={chapter.lessonDecorativeImageUrl2}
-                                        alt="Lesson decorative twig"
-                                        width={800}
-                                        height={100}
-                                        className="rounded-lg object-contain"
-                                        data-ai-hint="divider"
-                                    />
-                                </div></>}
-                                {lessonVideoSrc && <><Separator /><div className="flex justify-center">
-                                    <iframe 
-                                        width="800" 
-                                        height="400" 
-                                        src={lessonVideoSrc} 
-                                        title="YouTube video player" 
-                                        frameBorder="0" 
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                                        allowFullScreen
-                                        className="rounded-lg shadow-lg border">
-                                    </iframe>
-                                </div></>}
+                                {chapter.lessonParts && chapter.lessonParts.length > 0 ? (
+                                    <LessonGallery parts={chapter.lessonParts} />
+                                ) : (
+                                    <p className="text-muted-foreground text-center py-8">There is no lesson content for this chapter yet.</p>
+                                )}
                                 {chapter.quiz && student && (chapter.quiz.questions?.length || 0) > 0 && !isPreviewMode && (
                                     <QuizComponent 
                                         quiz={chapter.quiz}

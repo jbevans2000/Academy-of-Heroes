@@ -37,6 +37,11 @@ export interface QuestHub {
     assignedCompanyIds?: string[];
 }
 
+export interface LessonPart {
+    id: string;
+    content: string;
+}
+
 export interface Chapter {
     id:string;
     hubId: string;
@@ -49,14 +54,18 @@ export interface Chapter {
     decorativeImageUrl1: string;
     decorativeImageUrl2: string;
     storyAdditionalContent: string;
-    // Lesson media
-    lessonContent: string;
-    lessonMainImageUrl: string;
-    lessonVideoUrl: string;
-    lessonDecorativeImageUrl1: string;
-    lessonDecorativeImageUrl2: string;
-    lessonAdditionalContent: string;
     
+    // DEPRECATED Lesson Media - will be migrated to lessonParts
+    lessonContent?: string;
+    lessonMainImageUrl?: string;
+    lessonVideoUrl?: string;
+    lessonDecorativeImageUrl1?: string;
+    lessonDecorativeImageUrl2?: string;
+    lessonAdditionalContent?: string;
+    
+    // NEW Lesson Structure
+    lessonParts?: LessonPart[];
+
     coordinates: { x: number; y: number }; // Position on the hub map
     quiz?: Quiz;
 }
