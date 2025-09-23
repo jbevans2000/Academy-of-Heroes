@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -7,15 +6,15 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Loader2, Save, Sparkles, Upload, X, Library, Trash2, PlusCircle } from 'lucide-react';
-import { doc, setDoc, addDoc, collection, getDocs, serverTimestamp, query, orderBy, where, getDoc, updateDoc } from 'firebase/firestore';
+import { ArrowLeft, Loader2, Save, Sparkles, Upload, X, Library, Trash2, PlusCircle, ArrowRight } from 'lucide-react';
+import { doc, setDoc, addDoc, collection, getDocs, serverTimestamp, query, orderBy, where } from 'firebase/firestore';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { QuestHub, Chapter, QuizQuestion, Quiz, Company } from '@/lib/quests';
+import { QuestHub, Chapter, QuizQuestion, Quiz, Company, LessonPart } from '@/lib/quests';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -141,13 +140,10 @@ function NewQuestForm() {
   const [decorativeImageUrl2, setDecorativeImageUrl2] = useState('');
   const [storyAdditionalContent, setStoryAdditionalContent] = useState('');
   
-  const [lessonContent, setLessonContent] = useState('');
-  const [lessonMainImageUrl, setLessonMainImageUrl] = useState('');
-  const [lessonVideoUrl, setLessonVideoUrl] = useState('');
-  const [lessonDecorativeImageUrl1, setLessonDecorativeImageUrl1] = useState('');
-  const [lessonDecorativeImageUrl2, setLessonDecorativeImageUrl2] = useState('');
-  const [lessonAdditionalContent, setLessonAdditionalContent] = useState('');
-  
+  // New lesson parts state
+  const [lessonParts, setLessonParts] = useState<LessonPart[]>([{ id: uuidv4(), content: '' }]);
+  const [currentLessonPartIndex, setCurrentLessonPartIndex] = useState(0);
+
   const [chapterCoordinates, setChapterCoordinates] = useState({ x: 50, y: 50 });
   
   // State for the Quiz
@@ -250,6 +246,27 @@ function NewQuestForm() {
   
   const selectedHub = hubs.find(h => h.id === selectedHubId);
   const hubMapUrl = selectedHub ? selectedHub.worldMapUrl : newHubMapUrl;
+  
+    const handleLessonPartChange = (index: number, content: string) => {
+        const newParts = [...lessonParts];
+        newParts[index] = { ...newParts[index], content };
+        setLessonParts(newParts);
+    };
+
+    const handleAddLessonPart = () => {
+        const newPart: LessonPart = { id: uuidv4(), content: '' };
+        setLessonParts(prev => [...prev, newPart]);
+        setCurrentLessonPartIndex(lessonParts.length); // Switch to the new part
+    };
+
+    const handleDeleteLessonPart = (index: number) => {
+        if (lessonParts.length > 1) {
+            setLessonParts(prev => prev.filter((_, i) => i !== index));
+            setCurrentLessonPartIndex(Math.max(0, index - 1));
+        } else {
+            toast({ variant: 'destructive', title: 'Cannot Delete', description: 'A lesson must have at least one part.' });
+        }
+    };
 
     const handleAddQuizQuestion = () => {
         setQuizQuestions(prev => [...prev, { id: uuidv4(), text: '', answers: ['', '', '', ''], correctAnswerIndex: 0 }]);
@@ -342,12 +359,7 @@ function NewQuestForm() {
             storyAdditionalContent,
             decorativeImageUrl1,
             decorativeImageUrl2,
-            lessonContent,
-            lessonMainImageUrl,
-            lessonVideoUrl,
-            lessonAdditionalContent,
-            lessonDecorativeImageUrl1,
-            lessonDecorativeImageUrl2,
+            lessonParts,
             coordinates: chapterCoordinates,
             createdAt: serverTimestamp(),
         };
@@ -384,6 +396,8 @@ function NewQuestForm() {
             checked ? [...prev, companyId] : prev.filter(id => id !== companyId)
         );
     };
+    
+    const currentLessonPart = lessonParts[currentLessonPartIndex];
 
     if (isLoading) {
         return (
@@ -617,22 +631,43 @@ function NewQuestForm() {
                           )}
                       </TabsContent>
                       <TabsContent value="lesson" className="mt-6 space-y-4">
-                          <ImageUploader label="Main Lesson Image" imageUrl={lessonMainImageUrl} onUploadSuccess={setLessonMainImageUrl} teacherUid={teacher.uid} storagePath="quest-images" />
-                          <div className="space-y-2">
-                              <Label htmlFor="lesson-content">Lesson Content</Label>
-                              <RichTextEditor value={lessonContent} onChange={setLessonContent} />
-                          </div>
-                          <ImageUploader label="Lesson Decorative Image 1" imageUrl={lessonDecorativeImageUrl1} onUploadSuccess={setLessonDecorativeImageUrl1} teacherUid={teacher.uid} storagePath="quest-images" />
-                          <div className="space-y-2">
-                              <Label htmlFor="lesson-additional-content">Additional Lesson Content</Label>
-                              <RichTextEditor value={lessonAdditionalContent} onChange={setLessonAdditionalContent} />
-                          </div>
-                          <ImageUploader label="Lesson Decorative Image 2" imageUrl={lessonDecorativeImageUrl2} onUploadSuccess={setLessonDecorativeImageUrl2} teacherUid={teacher.uid} storagePath="quest-images" />
-                          <div className="space-y-2">
-                              <Label htmlFor="lesson-video-url">Lesson YouTube Video URL</Label>
-                              <Input id="lesson-video-url" placeholder="https://youtube.com/watch?v=..." value={lessonVideoUrl} onChange={e => setLessonVideoUrl(e.target.value)} disabled={isSaving} />
-                          </div>
-                      </TabsContent>
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-xl font-semibold">Lesson Parts</h3>
+                            <div className="flex gap-2">
+                                <Button variant="outline" size="sm" onClick={handleAddLessonPart}>
+                                    <PlusCircle className="mr-2 h-4 w-4" /> Add Part
+                                </Button>
+                                {lessonParts.length > 1 && (
+                                    <Button variant="destructive" size="sm" onClick={() => handleDeleteLessonPart(currentLessonPartIndex)}>
+                                        <Trash2 className="mr-2 h-4 w-4" /> Delete Current Part
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                        {currentLessonPart ? (
+                            <div className="p-4 border rounded-md bg-background/50 space-y-4">
+                                <RichTextEditor
+                                    value={currentLessonPart.content}
+                                    onChange={(content) => handleLessonPartChange(currentLessonPartIndex, content)}
+                                />
+                                <div className="flex justify-between items-center mt-4">
+                                    <Button onClick={() => setCurrentLessonPartIndex(p => p - 1)} disabled={currentLessonPartIndex === 0}>
+                                        <ArrowLeft className="mr-2 h-4 w-4" /> Previous
+                                    </Button>
+                                    <span className="text-sm font-semibold text-muted-foreground">
+                                        Part {currentLessonPartIndex + 1} of {lessonParts.length}
+                                    </span>
+                                    <Button onClick={() => setCurrentLessonPartIndex(p => p + 1)} disabled={currentLessonPartIndex === lessonParts.length - 1}>
+                                        Next <ArrowRight className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="text-center p-8 border-2 border-dashed rounded-lg">
+                                <p className="text-muted-foreground">This lesson has no content parts yet.</p>
+                            </div>
+                        )}
+                    </TabsContent>
                       <TabsContent value="quiz" className="mt-6 space-y-6">
                             <h3 className="text-xl font-semibold">Quiz Editor</h3>
                             <div className="p-4 border rounded-md space-y-4">

@@ -6,7 +6,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Loader2, Save, Sparkles, Upload, X, Library, Trash2, PlusCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Sparkles, Upload, X, Library, Trash2, PlusCircle, ArrowRight } from 'lucide-react';
 import { doc, getDoc, setDoc, collection, getDocs, serverTimestamp, query, orderBy, where, updateDoc } from 'firebase/firestore';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { QuestHub, Chapter, QuizQuestion, Quiz } from '@/lib/quests';
+import { QuestHub, Chapter, QuizQuestion, Quiz, LessonPart } from '@/lib/quests';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -125,6 +125,8 @@ export default function EditQuestPage() {
   const [chapterCoordinates, setChapterCoordinates] = useState({ x: 50, y: 50 });
   const [worldMapUrl, setWorldMapUrl] = useState('');
 
+  // New Lesson Part State
+  const [currentLessonPartIndex, setCurrentLessonPartIndex] = useState(0);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -172,6 +174,12 @@ export default function EditQuestPage() {
 
             if (chapterSnap.exists()) {
                 const data = chapterSnap.data() as Chapter;
+                // Migration for old structure
+                if (data.lessonContent && (!data.lessonParts || data.lessonParts.length === 0)) {
+                    data.lessonParts = [{ id: uuidv4(), content: data.lessonContent }];
+                } else if (!data.lessonParts) {
+                    data.lessonParts = [];
+                }
                 setChapter(data);
                 setSelectedHubId(data.hubId);
                 setChapterCoordinates(data.coordinates || { x: 50, y: 50 });
@@ -296,13 +304,13 @@ export default function EditQuestPage() {
     if (!validateInputs() || !chapter || !teacher) return;
     setIsSaving(true);
     
-    // Create a mutable copy of the chapter data
     const chapterToSave = { ...chapter };
 
-    // If there are no questions, remove the whole quiz object
     if (!chapterToSave.quiz || !chapterToSave.quiz.questions || chapterToSave.quiz.questions.length === 0) {
         delete chapterToSave.quiz;
     }
+    
+    delete chapterToSave.lessonContent; // Remove deprecated field
 
     try {
         const chapterRef = doc(db, 'teachers', teacher.uid, 'chapters', chapterId);
@@ -326,6 +334,30 @@ export default function EditQuestPage() {
         setIsSaving(false);
     }
   }
+  
+  const handleLessonPartChange = (index: number, content: string) => {
+    const newParts = [...(chapter?.lessonParts || [])];
+    newParts[index] = { ...newParts[index], content };
+    handleFieldChange('lessonParts', newParts);
+  };
+
+  const handleAddLessonPart = () => {
+    const newPart: LessonPart = { id: uuidv4(), content: '' };
+    const newParts = [...(chapter?.lessonParts || []), newPart];
+    handleFieldChange('lessonParts', newParts);
+    setCurrentLessonPartIndex(newParts.length - 1);
+  };
+
+  const handleDeleteLessonPart = (index: number) => {
+    if (chapter?.lessonParts && chapter.lessonParts.length > 1) {
+        const newParts = chapter.lessonParts.filter((_, i) => i !== index);
+        handleFieldChange('lessonParts', newParts);
+        setCurrentLessonPartIndex(Math.max(0, index - 1));
+    } else {
+        toast({ variant: 'destructive', title: 'Cannot Delete', description: 'A lesson must have at least one part.' });
+    }
+  };
+
 
   if (isLoading || !chapter || !teacher) {
     return (
@@ -342,6 +374,7 @@ export default function EditQuestPage() {
   }
   
   const hasQuizQuestions = (chapter?.quiz?.questions?.length || 0) > 0;
+  const currentLessonPart = chapter?.lessonParts?.[currentLessonPartIndex];
 
   return (
     <div className="relative flex min-h-screen w-full flex-col">
@@ -445,7 +478,7 @@ export default function EditQuestPage() {
                                     />
                                     <svg className="absolute top-0 left-0 w-full h-full" style={{ pointerEvents: 'none' }}>
                                         {chaptersInHub.map((c, index) => {
-                                             if (c.id === chapterId) return null; // Don't draw lines from/to the chapter being edited
+                                             if (c.id === chapterId) return null;
                                              const nextChapter = chaptersInHub.find(nextC => nextC.chapterNumber === c.chapterNumber + 1);
                                              if (nextChapter && nextChapter.id !== chapterId) {
                                                 return (
@@ -476,22 +509,46 @@ export default function EditQuestPage() {
                             </div>
                         )}
                     </TabsContent>
-                     <TabsContent value="lesson" className="mt-6 space-y-4">
-                        <ImageUploader label="Main Lesson Image" imageUrl={chapter.lessonMainImageUrl || ''} onUploadSuccess={(url) => handleFieldChange('lessonMainImageUrl', url)} teacherUid={teacher.uid} storagePath="quest-images" />
-                        <div className="space-y-2">
-                            <Label htmlFor="lesson-content">Lesson Content</Label>
-                            <RichTextEditor value={chapter.lessonContent || ''} onChange={value => handleFieldChange('lessonContent', value)} />
+                    <TabsContent value="lesson" className="mt-6 space-y-4">
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-xl font-semibold">Lesson Parts</h3>
+                            <div className="flex gap-2">
+                                <Button variant="outline" size="sm" onClick={handleAddLessonPart}>
+                                    <PlusCircle className="mr-2 h-4 w-4" /> Add Part
+                                </Button>
+                                {chapter.lessonParts && chapter.lessonParts.length > 1 && (
+                                    <Button variant="destructive" size="sm" onClick={() => handleDeleteLessonPart(currentLessonPartIndex)}>
+                                        <Trash2 className="mr-2 h-4 w-4" /> Delete Current Part
+                                    </Button>
+                                )}
+                            </div>
                         </div>
-                        <ImageUploader label="Lesson Decorative Image 1" imageUrl={chapter.lessonDecorativeImageUrl1 || ''} onUploadSuccess={(url) => handleFieldChange('lessonDecorativeImageUrl1', url)} teacherUid={teacher.uid} storagePath="quest-images" />
-                         <div className="space-y-2">
-                            <Label htmlFor="lesson-additional-content">Additional Lesson Content</Label>
-                            <RichTextEditor value={chapter.lessonAdditionalContent || ''} onChange={value => handleFieldChange('lessonAdditionalContent', value)} />
-                        </div>
-                        <ImageUploader label="Lesson Decorative Image 2" imageUrl={chapter.lessonDecorativeImageUrl2 || ''} onUploadSuccess={(url) => handleFieldChange('lessonDecorativeImageUrl2', url)} teacherUid={teacher.uid} storagePath="quest-images" />
-                        <div className="space-y-2">
-                            <Label htmlFor="lesson-video-url">Lesson YouTube Video URL</Label>
-                            <Input id="lesson-video-url" placeholder="https://youtube.com/watch?v=..." value={chapter.lessonVideoUrl || ''} onChange={e => handleFieldChange('lessonVideoUrl', e.target.value)} disabled={isSaving} />
-                        </div>
+                        {currentLessonPart ? (
+                            <div className="p-4 border rounded-md bg-background/50 space-y-4">
+                                <RichTextEditor
+                                    value={currentLessonPart.content}
+                                    onChange={(content) => handleLessonPartChange(currentLessonPartIndex, content)}
+                                />
+                                <div className="flex justify-between items-center mt-4">
+                                    <Button onClick={() => setCurrentLessonPartIndex(p => p - 1)} disabled={currentLessonPartIndex === 0}>
+                                        <ArrowLeft className="mr-2 h-4 w-4" /> Previous
+                                    </Button>
+                                    <span className="text-sm font-semibold text-muted-foreground">
+                                        Part {currentLessonPartIndex + 1} of {chapter.lessonParts?.length || 0}
+                                    </span>
+                                    <Button onClick={() => setCurrentLessonPartIndex(p => p + 1)} disabled={currentLessonPartIndex === (chapter.lessonParts?.length || 0) - 1}>
+                                        Next <ArrowRight className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        ) : (
+                             <div className="text-center p-8 border-2 border-dashed rounded-lg">
+                                <p className="text-muted-foreground">This lesson has no content parts yet.</p>
+                                <Button onClick={handleAddLessonPart} className="mt-4">
+                                    <PlusCircle className="mr-2 h-4 w-4" /> Add the First Part
+                                </Button>
+                            </div>
+                        )}
                     </TabsContent>
                     <TabsContent value="quiz" className="mt-6 space-y-6">
                         <h3 className="text-xl font-semibold">Quiz Editor</h3>
