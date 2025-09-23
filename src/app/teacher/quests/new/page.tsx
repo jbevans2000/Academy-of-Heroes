@@ -308,31 +308,33 @@ function NewQuestForm() {
     }
     
     const handleGenerateQuestions = async () => {
-    if (!aiSubject || !aiGradeLevel || !aiNumQuestions) {
-        toast({ variant: 'destructive', title: 'Missing Info', description: 'Please provide a subject, grade, and number of questions.' });
-        return;
-    }
-    setIsGeneratingQuestions(true);
-    try {
-        const result = await generateQuestions({
-            subject: aiSubject,
-            gradeLevel: aiGradeLevel,
-            numQuestions: Number(aiNumQuestions)
-        });
-        const newQuestions = result.questions.map(q => ({
-            ...q,
-            id: uuidv4(),
-        }));
-        
-        setQuizQuestions(prev => [...prev, ...newQuestions]);
-        toast({ title: 'Questions Generated!', description: `${newQuestions.length} questions have been added to the quiz.` });
+        if (!aiSubject || !aiGradeLevel || !aiNumQuestions) {
+            toast({ variant: 'destructive', title: 'Missing Info', description: 'Please provide a subject, grade, and number of questions.' });
+            return;
+        }
+        setIsGeneratingQuestions(true);
+        try {
+            const result = await generateQuestions({
+                subject: aiSubject,
+                gradeLevel: aiGradeLevel,
+                numQuestions: Number(aiNumQuestions)
+            });
+            const newQuestions = result.questions.map(q => ({
+                id: uuidv4(),
+                text: q.questionText,
+                answers: q.answers,
+                correctAnswerIndex: q.correctAnswerIndex,
+            }));
+            
+            setQuizQuestions(prev => [...prev, ...newQuestions]);
+            toast({ title: 'Questions Generated!', description: `${newQuestions.length} questions have been added to the quiz.` });
 
-    } catch (error: any) {
-        toast({ variant: 'destructive', title: 'Generation Failed', description: error.message });
-    } finally {
-        setIsGeneratingQuestions(false);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Generation Failed', description: error.message });
+        } finally {
+            setIsGeneratingQuestions(false);
+        }
     }
-  }
 
 
   const validateInputs = () => {

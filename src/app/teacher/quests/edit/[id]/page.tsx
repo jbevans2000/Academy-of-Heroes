@@ -310,8 +310,10 @@ export default function EditQuestPage() {
             numQuestions: Number(aiNumQuestions)
         });
         const newQuestions = result.questions.map(q => ({
-            ...q,
             id: uuidv4(),
+            text: q.questionText,
+            answers: q.answers,
+            correctAnswerIndex: q.correctAnswerIndex,
         }));
         
         handleQuizChange('questions', [...(chapter?.quiz?.questions || []), ...newQuestions]);
