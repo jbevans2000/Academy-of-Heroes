@@ -723,7 +723,7 @@ export default function EditQuestPage() {
                       </TabsContent>
                       </Tabs>
                   </div>
-                )}
+              
 
               <div className="flex justify-end pt-4 border-t">
                 <Button size="lg" onClick={handleSaveChanges} disabled={isSaving}>
