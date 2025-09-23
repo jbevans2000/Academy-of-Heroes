@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Loader2, Save, Sparkles, Upload, X, Library, Trash2, PlusCircle, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Sparkles, Upload, X, Library, Trash2, PlusCircle, ArrowRight, BookCopy } from 'lucide-react';
 import { doc, setDoc, addDoc, collection, getDocs, serverTimestamp, query, orderBy, where } from 'firebase/firestore';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -28,6 +28,7 @@ import { Switch } from '@/components/ui/switch';
 import { generateStory } from '@/ai/flows/story-generator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { generateQuestions } from '@/ai/flows/question-generator';
+import { generateQuestionsFromText } from '@/ai/flows/generate-questions-from-text';
 
 const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
@@ -328,6 +329,39 @@ function NewQuestForm() {
             
             setQuizQuestions(prev => [...prev, ...newQuestions]);
             toast({ title: 'Questions Generated!', description: `${newQuestions.length} questions have been added to the quiz.` });
+
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Generation Failed', description: error.message });
+        } finally {
+            setIsGeneratingQuestions(false);
+        }
+    }
+
+    const handleGenerateQuestionsFromText = async () => {
+        if (!aiNumQuestions) {
+            toast({ variant: 'destructive', title: 'Missing Info', description: 'Please enter the number of questions to generate.' });
+            return;
+        }
+        const lessonText = lessonParts.map(part => part.content).join('\n\n');
+        if (!lessonText.trim()) {
+             toast({ variant: 'destructive', title: 'No Content', description: 'There is no lesson content to generate questions from.' });
+            return;
+        }
+        setIsGeneratingQuestions(true);
+         try {
+            const result = await generateQuestionsFromText({
+                lessonContent: lessonText,
+                numQuestions: Number(aiNumQuestions),
+            });
+            const newQuestions = result.questions.map(q => ({
+                id: uuidv4(),
+                text: q.questionText,
+                answers: q.answers,
+                correctAnswerIndex: q.correctAnswerIndex,
+            }));
+            
+            setQuizQuestions(prev => [...prev, ...newQuestions]);
+            toast({ title: 'Questions Generated!', description: `${newQuestions.length} questions have been generated from your lesson.` });
 
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Generation Failed', description: error.message });
@@ -714,7 +748,7 @@ function NewQuestForm() {
                                 <h3 className="text-xl font-semibold flex items-center gap-2"><Sparkles className="text-primary" /> Generate Questions with the Oracle</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="ai-subject">Subject / Topic</Label>
+                                        <Label htmlFor="ai-subject">Subject / Topic (for general questions)</Label>
                                         <Input id="ai-subject" placeholder="e.g. Photosynthesis" value={aiSubject} onChange={(e) => setAiSubject(e.target.value)} disabled={isGeneratingQuestions} />
                                     </div>
                                     <div className="space-y-2">
@@ -729,10 +763,16 @@ function NewQuestForm() {
                                     <Label htmlFor="ai-num-questions">Number of Questions (1-10)</Label>
                                     <Input id="ai-num-questions" type="number" min="1" max="10" value={aiNumQuestions} onChange={(e) => setAiNumQuestions(e.target.value)} disabled={isGeneratingQuestions}/>
                                 </div>
-                                <Button onClick={handleGenerateQuestions} disabled={isGeneratingQuestions || !aiSubject || !aiGradeLevel}>
-                                    {isGeneratingQuestions ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
-                                    Consult the Oracle
-                                </Button>
+                                <div className="flex gap-2">
+                                    <Button onClick={handleGenerateQuestions} disabled={isGeneratingQuestions || !aiSubject || !aiGradeLevel}>
+                                        {isGeneratingQuestions ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
+                                        Consult the Oracle
+                                    </Button>
+                                    <Button onClick={handleGenerateQuestionsFromText} variant="secondary" disabled={isGeneratingQuestions || !aiNumQuestions}>
+                                        {isGeneratingQuestions ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <BookCopy className="mr-2 h-4 w-4" />}
+                                        Generate From Lesson
+                                    </Button>
+                                </div>
                             </div>
                             <h3 className="text-xl font-semibold">Quiz Editor</h3>
                             <div className="p-4 border rounded-md space-y-4">
