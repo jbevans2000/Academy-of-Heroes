@@ -70,6 +70,15 @@ const ArmorCard = ({ armor, student, onPurchaseClick }: ArmorCardProps) => {
     )
 }
 
+interface ArmoryDialogProps {
+    isOpen: boolean;
+    onOpenChange: (isOpen: boolean) => void;
+    student: Student;
+    allArmor: ArmorPiece[];
+    itemType?: 'armor' | 'pet';
+}
+
+
 export function ArmoryDialog({ isOpen, onOpenChange, student, allArmor, itemType = 'armor' }: ArmoryDialogProps) {
     const { toast } = useToast();
     const [isPurchasing, setIsPurchasing] = useState(false);
@@ -113,16 +122,16 @@ export function ArmoryDialog({ isOpen, onOpenChange, student, allArmor, itemType
     return (
         <>
             <AlertDialog open={!!confirmingPurchase} onOpenChange={() => setConfirmingPurchase(null)}>
-                <AlertDialogContent>
+                <AlertDialogContent className="sm:max-w-xl">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Purchase {confirmingPurchase?.name}?</AlertDialogTitle>
+                        <AlertDialogTitle className="text-2xl text-center">Purchase {confirmingPurchase?.name}?</AlertDialogTitle>
                         <AlertDialogDescription>
                             <div className="flex flex-col items-center gap-4 py-4">
-                                <div className="w-48 h-48 relative">
+                                <div className="w-64 h-64 relative">
                                     <Image src={confirmingPurchase?.imageUrl || ''} alt={confirmingPurchase?.name || ''} fill className="object-contain" />
                                 </div>
-                                <p className="text-foreground">{confirmingPurchase?.description}</p>
-                                <p>This will cost <span className="font-bold text-amber-600">{confirmingPurchase?.goldCost} Gold</span>. Would you like to purchase {confirmingPurchase?.name} from the Stable?</p>
+                                <p className="text-foreground text-base text-center">{confirmingPurchase?.description}</p>
+                                <p className="text-base">This will cost <span className="font-bold text-amber-600">{confirmingPurchase?.goldCost} Gold</span>. Would you like to purchase {confirmingPurchase?.name} from the Stable?</p>
                             </div>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
