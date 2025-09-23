@@ -18,6 +18,7 @@ interface ArmoryDialogProps {
     onOpenChange: (isOpen: boolean) => void;
     student: Student;
     allArmor: ArmorPiece[];
+    itemType?: 'armor' | 'pet';
 }
 
 const ArmorCard = ({ armor, student, onPurchase }: {
@@ -73,7 +74,7 @@ const ArmorCard = ({ armor, student, onPurchase }: {
     )
 }
 
-export function ArmoryDialog({ isOpen, onOpenChange, student, allArmor }: ArmoryDialogProps) {
+export function ArmoryDialog({ isOpen, onOpenChange, student, allArmor, itemType = 'armor' }: ArmoryDialogProps) {
     const { toast } = useToast();
 
     const handlePurchaseArmor = async (armorId: string) => {
@@ -95,22 +96,24 @@ export function ArmoryDialog({ isOpen, onOpenChange, student, allArmor }: Armory
             toast({ variant: 'destructive', title: 'Purchase Failed', description: error.message });
         }
     }
+    
+    const sortedArmor = [...allArmor].sort((a, b) => a.levelRequirement - b.levelRequirement);
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-4xl h-[90vh]">
                 <DialogHeader>
-                    <DialogTitle>The Armory</DialogTitle>
+                    <DialogTitle>The {itemType === 'pet' ? 'Stable' : 'Armory'}</DialogTitle>
                     <DialogDescription>
-                        Browse and purchase new armor pieces. Owned items will be available in The Forge.
+                        Browse and purchase new {itemType === 'pet' ? 'pets' : 'armor pieces'}. Owned items will be available in The Forge.
                     </DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="h-full w-full rounded-md border p-4">
-                    {allArmor.length === 0 ? (
-                        <p className="text-center text-muted-foreground py-10">The Armory is currently empty.</p>
+                    {sortedArmor.length === 0 ? (
+                        <p className="text-center text-muted-foreground py-10">The {itemType === 'pet' ? 'Stable' : 'Armory'} is currently empty.</p>
                     ) : (
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {allArmor.map(armor => (
+                            {sortedArmor.map(armor => (
                                 <ArmorCard key={armor.id} armor={armor} student={student} onPurchase={handlePurchaseArmor} />
                             ))}
                         </div>
