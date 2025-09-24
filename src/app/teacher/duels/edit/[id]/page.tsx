@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ArrowLeft, PlusCircle, Trash2, Loader2, Save, Upload } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Trash2, Loader2, Save, Upload, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { doc, getDoc, addDoc, updateDoc, deleteDoc, collection, onSnapshot, query, setDoc, writeBatch, getDocs } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
@@ -18,6 +18,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { DuelQuestion, DuelQuestionSection } from '@/lib/duels';
 import { v4 as uuidv4 } from 'uuid';
+import { generateQuestions } from '@/ai/flows/question-generator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+
+
+const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
+
 
 // More robust CSV parser
 function parseCsv(text: string): string[][] {
@@ -81,6 +88,13 @@ export default function EditDuelSectionPage() {
     const [questions, setQuestions] = useState<DuelQuestion[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    
+    // AI Question Generation State
+    const [aiSubject, setAiSubject] = useState('');
+    const [aiGradeLevel, setAiGradeLevel] = useState('');
+    const [aiNumQuestions, setAiNumQuestions] = useState<number | string>(5);
+    const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
+
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -189,6 +203,40 @@ export default function EditDuelSectionPage() {
         reader.readAsText(file);
         event.target.value = ''; // Reset file input
     };
+    
+      const handleGenerateQuestions = async () => {
+        if (!aiSubject || !aiGradeLevel || !aiNumQuestions) {
+            toast({ variant: 'destructive', title: 'Missing Info', description: 'Please provide a subject, grade, and number of questions.' });
+            return;
+        }
+        setIsGeneratingQuestions(true);
+        try {
+            const result = await generateQuestions({
+                subject: aiSubject,
+                gradeLevel: aiGradeLevel,
+                numQuestions: Number(aiNumQuestions)
+            });
+            const newQuestions = result.questions.map(q => ({
+                id: uuidv4(),
+                text: q.questionText,
+                answers: q.answers,
+                correctAnswerIndex: q.correctAnswerIndex,
+            }));
+            
+             if (questions.length === 1 && questions[0].text === '' && questions[0].answers.every(a => a === '')) {
+                setQuestions(newQuestions);
+            } else {
+                setQuestions(prev => [...prev, ...newQuestions]);
+            }
+           
+            toast({ title: 'Questions Generated!', description: `${newQuestions.length} questions have been added to this section.` });
+
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Generation Failed', description: error.message });
+        } finally {
+            setIsGeneratingQuestions(false);
+        }
+    }
 
 
     const handleAddQuestion = () => {
@@ -301,6 +349,31 @@ export default function EditDuelSectionPage() {
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
+                              <Card className="p-6 bg-background/30">
+                                <h3 className="text-xl font-semibold flex items-center gap-2 mb-4"><Sparkles className="text-primary" /> Generate Questions with the Oracle</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="ai-subject">Subject / Topic</Label>
+                                        <Input id="ai-subject" placeholder="e.g. Photosynthesis" value={aiSubject} onChange={(e) => setAiSubject(e.target.value)} disabled={isGeneratingQuestions} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="ai-grade">Grade Level</Label>
+                                        <Select onValueChange={setAiGradeLevel} value={aiGradeLevel} disabled={isGeneratingQuestions}>
+                                            <SelectTrigger id="ai-grade"><SelectValue placeholder="Choose a grade..." /></SelectTrigger>
+                                            <SelectContent>{gradeLevels.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                                <div className="space-y-2 mt-4">
+                                    <Label htmlFor="ai-num-questions">Number of Questions (1-10)</Label>
+                                    <Input id="ai-num-questions" type="number" min="1" max="10" value={aiNumQuestions} onChange={(e) => setAiNumQuestions(e.target.value)} disabled={isGeneratingQuestions}/>
+                                </div>
+                                <Button onClick={handleGenerateQuestions} disabled={isGeneratingQuestions || !aiSubject || !aiGradeLevel} className="mt-4">
+                                    {isGeneratingQuestions ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
+                                    Consult the Oracle
+                                </Button>
+                              </Card>
+                              <Separator/>
                             {questions.map((q, qIndex) => (
                                 <Card key={q.id} className="p-4 relative">
                                     <Button
