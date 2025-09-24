@@ -15,6 +15,7 @@ import { Loader2, Send } from 'lucide-react';
 import { sendMessageToAdmin, markAdminMessagesAsRead } from '@/ai/flows/manage-admin-messages';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
+import { ClientOnlyTime } from '../client-only-time';
 
 
 interface TeacherAdminMessageDialogProps {
@@ -109,7 +110,7 @@ export function TeacherAdminMessageDialog({ isOpen, onOpenChange }: TeacherAdmin
                                         <p className="whitespace-pre-wrap">{msg.text}</p>
                                     </div>
                                     <p className="text-xs text-muted-foreground mt-1">
-                                         {msg.timestamp ? formatDistanceToNow(new Date(msg.timestamp.seconds * 1000), { addSuffix: true }) : 'Sending...'}
+                                         {msg.timestamp ? <ClientOnlyTime date={new Date(msg.timestamp.seconds * 1000)} /> : 'Sending...'}
                                     </p>
                                 </div>
                             ))}
