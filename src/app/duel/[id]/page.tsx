@@ -419,6 +419,7 @@ export default function DuelPage() {
         
         const answerPath = `answers.${user.uid}`;
         
+        // Use a transaction to safely update the answers array
         await runTransaction(db, async (transaction) => {
             const duelDoc = await transaction.get(duelRef);
             if (!duelDoc.exists()) throw new Error("Duel disappeared");
@@ -426,6 +427,7 @@ export default function DuelPage() {
             const duelData = duelDoc.data() as DuelState;
             const currentAnswers = duelData.answers?.[user.uid] || [];
             
+            // Prevent double submission
             if (currentAnswers.length > duelData.currentQuestionIndex) return;
 
             const newAnswers = [...currentAnswers];
@@ -434,11 +436,13 @@ export default function DuelPage() {
             transaction.update(duelRef, { [answerPath]: newAnswers });
         });
 
+        // After successfully submitting, check if the other player has answered.
         const duelSnap = await getDoc(duelRef);
         if (!duelSnap.exists()) return;
         const duelData = duelSnap.data() as DuelState;
         const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
         
+        // If opponent's answer for the current round exists, process results.
         if ((duelData.answers?.[opponentUid] || []).length > duelData.currentQuestionIndex) {
             await processRoundResults(duelData);
         }
@@ -500,20 +504,27 @@ export default function DuelPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [duelRef, teacherUid, router, toast, handleDuelStart]);
     
+    // This effect handles the transition FROM a result screen TO the next question.
     useEffect(() => {
         if (!duelRef || (duel?.status !== 'round_result' && duel?.status !== 'sudden_death') || !duel.resultEndsAt) return;
         
         const isSuddenDeathNext = duel.status === 'sudden_death';
         const delay = isSuddenDeathNext ? 7000 : 5000;
 
+        const timeUntilNextRound = duel.resultEndsAt.toDate().getTime() - Date.now();
+        
         const timeout = setTimeout(async () => {
-            await updateDoc(duelRef, { 
-                status: 'active',
-                currentQuestionIndex: duel.currentQuestionIndex + 1,
-                timerEndsAt: Timestamp.fromMillis(Date.now() + 60000),
-                resultEndsAt: null,
-            });
-        }, delay);
+            // Final check to prevent race conditions
+            const currentDuelSnap = await getDoc(duelRef);
+            if(currentDuelSnap.exists() && (currentDuelSnap.data().status === 'round_result' || currentDuelSnap.data().status === 'sudden_death')) {
+                await updateDoc(duelRef, { 
+                    status: 'active',
+                    currentQuestionIndex: duel.currentQuestionIndex + 1,
+                    timerEndsAt: Timestamp.fromMillis(Date.now() + 60000),
+                    resultEndsAt: null,
+                });
+            }
+        }, timeUntilNextRound > 0 ? timeUntilNextRound : 0);
 
         return () => clearTimeout(timeout);
     }, [duel?.status, duel?.resultEndsAt, duelRef, duel?.currentQuestionIndex]);
@@ -537,6 +548,7 @@ export default function DuelPage() {
     }, [duel, teacherUid]);
     
 
+    // This effect handles the question timer running out.
     useEffect(() => {
         if (!duel?.timerEndsAt || hasAnswered || (duel.status !== 'active' && duel.status !== 'sudden_death')) return;
 
