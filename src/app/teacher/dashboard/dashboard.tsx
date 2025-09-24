@@ -755,6 +755,38 @@ export default function Dashboard() {
             </AlertDialogContent>
         </AlertDialog>
 
+        <Dialog open={isReminderDialogOpen} onOpenChange={setIsReminderDialogOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Set Daily Reminder</DialogTitle>
+                    <DialogDescription>
+                        This message will be shown to students the first time they log in each day.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="flex items-center space-x-2">
+                        <Switch id="reminder-active" checked={isReminderActive} onCheckedChange={setIsReminderActive} />
+                        <Label htmlFor="reminder-active">Reminder is Active</Label>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="reminder-title">Reminder Title</Label>
+                        <Input id="reminder-title" value={reminderTitle} onChange={(e) => setReminderTitle(e.target.value)} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="reminder-message">Reminder Message</Label>
+                        <Textarea id="reminder-message" value={reminderMessage} onChange={(e) => setReminderMessage(e.target.value)} rows={6} />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsReminderDialogOpen(false)}>Cancel</Button>
+                    <Button onClick={handleSaveReminder} disabled={isSavingReminder}>
+                        {isSavingReminder && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                        Save Reminder
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
 
         <Dialog open={isApprovalDialogOpen} onOpenChange={setIsApprovalDialogOpen}>
             <DialogContent className="max-w-2xl">
@@ -1124,3 +1156,4 @@ export default function Dashboard() {
     </div>
   );
 }
+
