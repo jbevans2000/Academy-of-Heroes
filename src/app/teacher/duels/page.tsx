@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
@@ -84,6 +84,10 @@ export default function TrainingGroundsPage() {
 
     return () => unsubscribe();
   }, [teacher, toast]);
+
+  const sortedSections = useMemo(() => {
+    return [...sections].sort((a, b) => a.name.localeCompare(b.name));
+  }, [sections]);
   
   const handleOpenDialog = (section: DuelQuestionSection | null) => {
       setEditingSection(section);
@@ -361,7 +365,7 @@ export default function TrainingGroundsPage() {
                     <p className="text-center text-muted-foreground py-8">No question sections created yet. Click "New Section" to begin.</p>
                 ) : (
                     <Accordion type="single" collapsible className="w-full">
-                        {sections.map(section => (
+                        {sortedSections.map(section => (
                             <AccordionItem value={section.id} key={section.id}>
                                 <div className="flex items-center w-full">
                                     <AccordionTrigger className="text-lg flex-grow hover:no-underline" onClick={() => router.push(`/teacher/duels/edit/${section.id}`)}>
@@ -391,5 +395,3 @@ export default function TrainingGroundsPage() {
     </>
   );
 }
-
-    
