@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -10,7 +9,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, Download, Timer, HeartCrack, Video, ShieldCheck, Sparkles, Skull, Trash2, VolumeX, Volume1, Volume2 as VolumeIcon, MessageSquareOff, CheckCircle } from 'lucide-react';
+import { Loader2, Download, Timer, HeartCrack, Video, ShieldCheck, Sparkles, Skull, Trash2, VolumeX, Volume1, Volume2 as VolumeIcon, MessageSquareOff, CheckCircle, Maximize } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RoundResults, type Result } from '@/components/teacher/round-results';
 import { downloadCsv } from '@/lib/utils';
@@ -27,6 +26,9 @@ import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog';
+import Image from 'next/image';
+
 
 // Fisher-Yates shuffle algorithm
 const shuffleArray = <T,>(array: T[]): T[] => {
@@ -126,6 +128,7 @@ interface Question {
   answers: string[];
   correctAnswerIndex: number;
   damage: number;
+  imageUrl?: string;
 }
 
 interface Battle {
@@ -1592,6 +1595,21 @@ export default function TeacherLiveBattlePage() {
                                     <CardTitle>Current Question</CardTitle>
                                 </CardHeader>
                                 <CardContent>
+                                    {currentQuestion.imageUrl && (
+                                        <Dialog>
+                                            <DialogTrigger asChild>
+                                                <div className="mb-4 relative group cursor-pointer w-fit mx-auto">
+                                                    <Image src={currentQuestion.imageUrl} alt="Question Image" width={200} height={100} className="rounded-md object-contain border" />
+                                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <Maximize className="h-8 w-8 text-white" />
+                                                    </div>
+                                                </div>
+                                            </DialogTrigger>
+                                            <DialogContent className="max-w-4xl h-auto">
+                                                <img src={currentQuestion.imageUrl} alt="Question Image enlarged" className="w-full h-auto object-contain rounded-md" />
+                                            </DialogContent>
+                                        </Dialog>
+                                    )}
                                     <p className="text-xl font-semibold mb-4">{currentQuestion.questionText}</p>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         {currentQuestion.answers.map((answer, index) => (
