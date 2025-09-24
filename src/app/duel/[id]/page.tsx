@@ -327,8 +327,8 @@ export default function DuelPage() {
             } else {
                 const isLastRegularQuestion = freshDuelData.currentQuestionIndex >= (numNormalQuestions - 1);
                 if (isLastRegularQuestion) {
-                    const myFinalScore = myAnswers.filter(a => a === 1).length;
-                    const opponentFinalScore = opponentAnswers.filter(a => a === 1).length;
+                    const myFinalScore = myAnswers.slice(0, numNormalQuestions).filter(a => a === 1).length;
+                    const opponentFinalScore = opponentAnswers.slice(0, numNormalQuestions).filter(a => a === 1).length;
                     if (myFinalScore !== opponentFinalScore) {
                         const winnerUid = myFinalScore > opponentFinalScore ? user.uid : opponentUid;
                         const loserUid = winnerUid === user.uid ? opponentUid : user.uid;
@@ -637,8 +637,7 @@ export default function DuelPage() {
         }
     }
     
-    // New check here
-    if (isLoading || !duel || !challenger || !opponent || !duelSettings) {
+    if (isLoading || !challenger || !opponent || !duelSettings) {
         return <div className="flex h-screen items-center justify-center bg-gray-900"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
     }
     
@@ -725,7 +724,16 @@ export default function DuelPage() {
                         backgroundPosition: 'center',
                     }}
                 />
-                 {winner && (
+                 {isDraw ? (
+                    <div className="relative w-full flex justify-center items-center h-80 gap-8">
+                        <div className="relative w-80 h-80">
+                            <Image src={challenger.avatarUrl} alt={challenger.characterName} layout="fill" className="object-contain" />
+                        </div>
+                        <div className="relative w-80 h-80">
+                            <Image src={opponent.avatarUrl} alt={opponent.characterName} layout="fill" className="object-contain" />
+                        </div>
+                    </div>
+                ) : winner && (
                      <div className="relative w-full flex justify-center items-center h-80">
                          <div className="relative w-80 h-80">
                              <Image src={winner.avatarUrl} alt={winner.characterName} layout="fill" className="object-contain" />
@@ -735,7 +743,7 @@ export default function DuelPage() {
                 <div className="relative text-center w-full px-4 mt-8">
                      <div className="bg-black/70 inline-block p-8 rounded-lg">
                         <h2 className="text-5xl font-headline font-bold text-yellow-400 text-shadow-lg">
-                            {isDraw ? "The Duel is a Draw!" : isTiebreaker ? `${winner.characterName} wins the tie-breaker!` : `${winner.characterName} is Victorious!`}
+                            {isDraw ? "The Duel is a Draw!" : isTiebreaker ? `${winner?.characterName} wins the tie-breaker!` : `${winner?.characterName} is Victorious!`}
                         </h2>
                         <p className="text-xl mt-4 text-white/90">{rewardsMessage}</p>
                         <Button className="mt-8" onClick={() => router.push('/dashboard')}>Return to Dashboard</Button>
