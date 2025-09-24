@@ -29,6 +29,12 @@ const nextConfig = {
         hostname: 'www.shutterstock.com',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'thumbs.dreamstime.com',
+        port: '',
+        pathname: '/**',
       }
     ],
   },
