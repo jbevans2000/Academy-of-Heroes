@@ -292,8 +292,8 @@ export default function DuelPage() {
         await logGameEvent(teacherUid, 'DUEL', `${winnerName} defeated ${loserName} in a duel.`);
     }, [duel, teacherUid, duelSettings, duelRef]);
 
-    const processRoundResults = useCallback(async (duelData: DuelState) => {
-        if (!user || !duelRef || !teacherUid || !duelSettings) return;
+    const processRoundResults = useCallback(async () => {
+        if (!user || !duelRef || !teacherUid || !duelSettings || !duel) return;
 
         await runTransaction(db, async (transaction) => {
             const duelDoc = await transaction.get(duelRef);
@@ -319,7 +319,7 @@ export default function DuelPage() {
                     if (freshDuelData.currentQuestionIndex >= (numNormalQuestions + numSuddenDeathQuestions - 1)) {
                          await handleDuelEnd(transaction, user.uid, opponentUid, false, true);
                     } else {
-                        updates.status = 'sudden_death';
+                        updates.status = 'round_result';
                         updates.resultEndsAt = Timestamp.fromMillis(Date.now() + 7000);
                     }
                 }
@@ -346,7 +346,7 @@ export default function DuelPage() {
                 transaction.update(duelRef, updates);
             }
         });
-    }, [user, duelRef, teacherUid, handleDuelEnd, duelSettings]);
+    }, [user, duelRef, teacherUid, handleDuelEnd, duelSettings, duel]);
 
     const handleDuelStart = useCallback(async (duelData: DuelState) => {
         if (!teacherUid || !duelRef || !duelSettings) return;
@@ -445,15 +445,9 @@ export default function DuelPage() {
             newAnswers[duelData.currentQuestionIndex] = myAnswerValue;
 
             transaction.update(duelRef, { [answerPath]: newAnswers });
-            
-            const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
-            if ((duelData.answers?.[opponentUid] || []).length > duelData.currentQuestionIndex) {
-                // If opponent also answered, process results immediately inside this transaction
-                await processRoundResults({ ...duelData, answers: { ...duelData.answers, [user.uid]: newAnswers } });
-            }
         });
 
-    }, [selectedAnswer, user, duelRef, hasAnswered, teacherUid, duelSettings, duel, processRoundResults]);
+    }, [selectedAnswer, user, duelRef, hasAnswered, teacherUid, duelSettings, duel]);
 
     const setPlayerDuelStatus = async (batch: any, playerUids: string[], inDuel: boolean) => {
         if (!teacherUid) return;
@@ -462,6 +456,22 @@ export default function DuelPage() {
             batch.update(playerRef, { inDuel });
         });
     };
+
+    // New useEffect to handle result processing
+    useEffect(() => {
+        if (!duel || !user) return;
+        const myAnswers = duel.answers?.[user.uid] || [];
+        const opponentUid = user.uid === duel.challengerUid ? duel.opponentUid : duel.challengerUid;
+        const opponentAnswers = duel.answers?.[opponentUid] || [];
+    
+        const bothAnswered = 
+            myAnswers.length > duel.currentQuestionIndex && 
+            opponentAnswers.length > duel.currentQuestionIndex;
+
+        if (bothAnswered && (duel.status === 'active' || duel.status === 'sudden_death')) {
+            processRoundResults();
+        }
+    }, [duel, user, processRoundResults]);
     
     useEffect(() => {
         if (!duelRef || !teacherUid) return;
@@ -622,8 +632,26 @@ export default function DuelPage() {
         }
     }
     
-    if (isLoading || !duel) {
+    if (isLoading) {
         return <div className="flex h-screen items-center justify-center bg-gray-900"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
+    }
+
+    if (!duel) {
+        // This state can be reached if the duel doc is deleted (e.g., declined)
+        return (
+             <div className="flex h-screen items-center justify-center bg-gray-900 text-white">
+                <Card className="text-center p-8 bg-card/80 backdrop-blur-sm">
+                    <CardHeader>
+                        <Swords className="h-16 w-16 mx-auto text-primary" />
+                        <CardTitle className="text-4xl mt-4">Duel Concluded</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <CardDescription>This duel has ended or was cancelled.</CardDescription>
+                        <Button className="mt-4" onClick={() => router.push('/dashboard')}>Return to Dashboard</Button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
     }
     
     const isSuddenDeath = duel.isDraw ?? false;
