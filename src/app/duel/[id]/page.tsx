@@ -568,6 +568,13 @@ export default function DuelPage() {
         return () => clearTimeout(timeout);
     }, [duel?.timerEndsAt, hasAnswered, duel?.status, handleSubmitAnswer]);
 
+    useEffect(() => {
+        if (duel?.status === 'active') {
+            setShowQuestion(true);
+        } else {
+            setShowQuestion(false);
+        }
+    }, [duel?.status]);
 
     const handleEndDuel = async () => {
         if (!duel || !teacherUid || !duelSettings || !user || !duelRef) return;
@@ -615,25 +622,16 @@ export default function DuelPage() {
         }
     }
     
-    const isSuddenDeath = duel?.isDraw ?? false;
-    const numNormalQuestions = duelSettings?.numNormalQuestions ?? 10;
-    const numSuddenDeathQuestions = duelSettings?.numSuddenDeathQuestions ?? 10;
-    
     if (isLoading || !duel) {
         return <div className="flex h-screen items-center justify-center bg-gray-900"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
     }
     
-    const currentQuestion = duel?.questions ? duel.questions[duel.currentQuestionIndex] : null;
+    const isSuddenDeath = duel.isDraw ?? false;
+    const numNormalQuestions = duelSettings?.numNormalQuestions ?? 10;
+    const numSuddenDeathQuestions = duelSettings?.numSuddenDeathQuestions ?? 10;
+    const currentQuestion = duel.questions ? duel.questions[duel.currentQuestionIndex] : null;
     const questionIndexForDisplay = isSuddenDeath ? duel.currentQuestionIndex - numNormalQuestions : duel.currentQuestionIndex;
     const questionCountForDisplay = isSuddenDeath ? numSuddenDeathQuestions : numNormalQuestions;
-
-    useEffect(() => {
-        if (duel?.status === 'active') {
-            setShowQuestion(true);
-        } else {
-            setShowQuestion(false);
-        }
-    }, [duel?.status]);
     
     if (duel.status === 'pending') {
         return (
@@ -881,5 +879,3 @@ export default function DuelPage() {
         </div>
     )
 }
-
-    
