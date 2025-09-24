@@ -287,7 +287,6 @@ export default function DuelPage() {
             if (!duelDoc.exists()) throw new Error("Duel disappeared");
             const freshDuelData = duelDoc.data() as DuelState;
             
-            // Prevent re-processing
             if(freshDuelData.status === 'round_result' || freshDuelData.status === 'sudden_death' || freshDuelData.status === 'finished') return;
 
             const myAnswers = freshDuelData.answers?.[user.uid] || [];
@@ -304,9 +303,8 @@ export default function DuelPage() {
                 } else if (opponentAnswers[freshDuelData.currentQuestionIndex] > myAnswers[freshDuelData.currentQuestionIndex]) {
                     await handleDuelEnd(transaction, opponentUid, user.uid, false);
                 } else {
-                    // Check if we've hit the last sudden death question
                     if (freshDuelData.currentQuestionIndex >= (numNormalQuestions + numSuddenDeathQuestions - 1)) {
-                         await handleDuelEnd(transaction, user.uid, opponentUid, false, true); // True for draw
+                         await handleDuelEnd(transaction, user.uid, opponentUid, false, true);
                     } else {
                         updates.status = 'sudden_death';
                         updates.resultEndsAt = Timestamp.fromMillis(Date.now() + 7000);
@@ -421,7 +419,6 @@ export default function DuelPage() {
         
         const answerPath = `answers.${user.uid}`;
         
-        // This transaction just writes the player's own answer.
         await runTransaction(db, async (transaction) => {
             const duelDoc = await transaction.get(duelRef);
             if (!duelDoc.exists()) throw new Error("Duel disappeared");
@@ -429,7 +426,6 @@ export default function DuelPage() {
             const duelData = duelDoc.data() as DuelState;
             const currentAnswers = duelData.answers?.[user.uid] || [];
             
-            // Prevent duplicate answers for the same question index
             if (currentAnswers.length > duelData.currentQuestionIndex) return;
 
             const newAnswers = [...currentAnswers];
@@ -438,7 +434,6 @@ export default function DuelPage() {
             transaction.update(duelRef, { [answerPath]: newAnswers });
         });
 
-        // After successfully submitting, check if the opponent has also answered.
         const duelSnap = await getDoc(duelRef);
         if (!duelSnap.exists()) return;
         const duelData = duelSnap.data() as DuelState;
@@ -448,7 +443,7 @@ export default function DuelPage() {
             await processRoundResults(duelData);
         }
 
-    }, [selectedAnswer, user, duelRef, hasAnswered, teacherUid, duelSettings, toast, duel, processRoundResults]);
+    }, [selectedAnswer, user, duelRef, hasAnswered, teacherUid, duelSettings, duel, processRoundResults]);
 
     const setPlayerDuelStatus = async (batch: any, playerUids: string[], inDuel: boolean) => {
         if (!teacherUid) return;
@@ -458,7 +453,6 @@ export default function DuelPage() {
         });
     };
     
-    // Set up duel listener
     useEffect(() => {
         if (!duelRef || !teacherUid) return;
         
@@ -477,7 +471,6 @@ export default function DuelPage() {
                     setSelectedAnswer(null);
                 }
 
-                // Handle status changes
                 if (prevStatus !== 'finished' && duelData.status === 'finished') {
                     const batch = writeBatch(db);
                     await setPlayerDuelStatus(batch, [duelData.challengerUid, duelData.opponentUid], false);
@@ -507,7 +500,6 @@ export default function DuelPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [duelRef, teacherUid, router, toast, handleDuelStart]);
     
-    // Effect to handle advancing from the result screen
     useEffect(() => {
         if (!duelRef || (duel?.status !== 'round_result' && duel?.status !== 'sudden_death') || !duel.resultEndsAt) return;
         
@@ -526,7 +518,6 @@ export default function DuelPage() {
         return () => clearTimeout(timeout);
     }, [duel?.status, duel?.resultEndsAt, duelRef, duel?.currentQuestionIndex]);
 
-    // Fetch player data once duel is loaded
     useEffect(() => {
         if (!duel || !teacherUid) return;
         const fetchPlayersAndSettings = async () => {
@@ -546,25 +537,21 @@ export default function DuelPage() {
     }, [duel, teacherUid]);
     
 
-    // Timer timeout effect
     useEffect(() => {
         if (!duel?.timerEndsAt || hasAnswered || (duel.status !== 'active' && duel.status !== 'sudden_death')) return;
 
-        const timeout = setTimeout(async () => {
-            if(!duelRef || !user) return;
-            const duelSnap = await getDoc(duelRef);
-            if (!duelSnap.exists()) return;
+        const timeUntilTimeout = duel.timerEndsAt.toDate().getTime() - Date.now();
+        if (timeUntilTimeout <= 0) {
+            handleSubmitAnswer(true);
+            return;
+        }
 
-            const currentDuelData = duelSnap.data() as DuelState;
-            const myCurrentAnswers = currentDuelData.answers?.[user.uid] || [];
-
-            if (myCurrentAnswers.length <= currentDuelData.currentQuestionIndex) {
-                await handleSubmitAnswer(true);
-            }
-        }, duel.timerEndsAt.toDate().getTime() - Date.now() + 500);
+        const timeout = setTimeout(() => {
+            handleSubmitAnswer(true);
+        }, timeUntilTimeout);
 
         return () => clearTimeout(timeout);
-    }, [duel?.timerEndsAt, hasAnswered, duel?.status, duel?.currentQuestionIndex, handleSubmitAnswer, duelRef, user]);
+    }, [duel?.timerEndsAt, hasAnswered, duel?.status, handleSubmitAnswer]);
 
 
     const handleEndDuel = async () => {
@@ -614,8 +601,8 @@ export default function DuelPage() {
     }
     
     const currentUserAnswers = user && duel?.answers ? (duel.answers[user.uid] || []) : [];
-    const opponentUid = user?.uid === duel?.challengerUid ? duel?.opponentUid : duel?.challengerUid;
-    const opponentAnswers = opponentUid && duel?.answers ? (duel.answers[opponentUid] || []) : [];
+    const opponentUidMaybe = user?.uid === duel?.challengerUid ? duel?.opponentUid : duel?.challengerUid;
+    const opponentAnswers = opponentUidMaybe && duel?.answers ? (duel.answers[opponentUidMaybe] || []) : [];
 
     useEffect(() => {
         if (duel?.status === 'active') {
@@ -864,3 +851,5 @@ export default function DuelPage() {
         </div>
     )
 }
+
+    
