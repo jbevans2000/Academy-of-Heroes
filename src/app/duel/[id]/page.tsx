@@ -51,8 +51,19 @@ interface DuelState {
     resultEndsAt?: Timestamp | null; // For the 5-second result screen
 }
 
-const DuelPlayerCard = ({ player, answers, isCurrentUser, questionCount }: { player: Student | null, answers: number[], isCurrentUser: boolean, questionCount: number }) => {
+const DuelPlayerCard = ({ player, answers, isCurrentUser, questionCount, isSuddenDeath, numNormalQuestions }: { 
+    player: Student | null, 
+    answers: number[], 
+    isCurrentUser: boolean, 
+    questionCount: number,
+    isSuddenDeath: boolean,
+    numNormalQuestions: number,
+}) => {
     if (!player) return <Skeleton className="h-24 w-full" />;
+    
+    // In sudden death, we need to offset the index to look at the correct part of the answers array.
+    const answerIndexOffset = isSuddenDeath ? numNormalQuestions : 0;
+
     return (
         <Card className={cn("text-center bg-card/50", isCurrentUser && "border-primary ring-2 ring-primary")}>
             <CardHeader className="p-2">
@@ -62,12 +73,15 @@ const DuelPlayerCard = ({ player, answers, isCurrentUser, questionCount }: { pla
                  <CardTitle>{player.characterName}</CardTitle>
             </CardHeader>
             <CardContent className="p-2 flex justify-center gap-2">
-                {Array.from({ length: questionCount }).map((_, i) => (
-                    <div key={i} className={cn(
-                        "h-6 w-6 rounded-full border-2",
-                        answers[i] === undefined ? 'bg-muted' : answers[i] === 1 ? 'bg-green-500' : 'bg-red-500'
-                    )} />
-                ))}
+                {Array.from({ length: questionCount }).map((_, i) => {
+                    const answerForThisCircle = answers[i + answerIndexOffset];
+                    return (
+                        <div key={i} className={cn(
+                            "h-6 w-6 rounded-full border-2",
+                            answerForThisCircle === undefined ? 'bg-muted' : answerForThisCircle === 1 ? 'bg-green-500' : 'bg-red-500'
+                        )} />
+                    );
+                })}
             </CardContent>
         </Card>
     );
@@ -419,7 +433,6 @@ export default function DuelPage() {
         
         const answerPath = `answers.${user.uid}`;
         
-        // Use a transaction to safely update the answers array
         await runTransaction(db, async (transaction) => {
             const duelDoc = await transaction.get(duelRef);
             if (!duelDoc.exists()) throw new Error("Duel disappeared");
@@ -427,25 +440,19 @@ export default function DuelPage() {
             const duelData = duelDoc.data() as DuelState;
             const currentAnswers = duelData.answers?.[user.uid] || [];
             
-            // Prevent double submission
             if (currentAnswers.length > duelData.currentQuestionIndex) return;
 
             const newAnswers = [...currentAnswers];
             newAnswers[duelData.currentQuestionIndex] = myAnswerValue;
 
             transaction.update(duelRef, { [answerPath]: newAnswers });
+            
+            const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
+            if ((duelData.answers?.[opponentUid] || []).length > duelData.currentQuestionIndex) {
+                // If opponent also answered, process results immediately inside this transaction
+                await processRoundResults({ ...duelData, answers: { ...duelData.answers, [user.uid]: newAnswers } });
+            }
         });
-
-        // After successfully submitting, check if the other player has answered.
-        const duelSnap = await getDoc(duelRef);
-        if (!duelSnap.exists()) return;
-        const duelData = duelSnap.data() as DuelState;
-        const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
-        
-        // If opponent's answer for the current round exists, process results.
-        if ((duelData.answers?.[opponentUid] || []).length > duelData.currentQuestionIndex) {
-            await processRoundResults(duelData);
-        }
 
     }, [selectedAnswer, user, duelRef, hasAnswered, teacherUid, duelSettings, duel, processRoundResults]);
 
@@ -504,7 +511,6 @@ export default function DuelPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [duelRef, teacherUid, router, toast, handleDuelStart]);
     
-    // This effect handles the transition FROM a result screen TO the next question.
     useEffect(() => {
         if (!duelRef || (duel?.status !== 'round_result' && duel?.status !== 'sudden_death') || !duel.resultEndsAt) return;
         
@@ -514,7 +520,6 @@ export default function DuelPage() {
         const timeUntilNextRound = duel.resultEndsAt.toDate().getTime() - Date.now();
         
         const timeout = setTimeout(async () => {
-            // Final check to prevent race conditions
             const currentDuelSnap = await getDoc(duelRef);
             if(currentDuelSnap.exists() && (currentDuelSnap.data().status === 'round_result' || currentDuelSnap.data().status === 'sudden_death')) {
                 await updateDoc(duelRef, { 
@@ -548,7 +553,6 @@ export default function DuelPage() {
     }, [duel, teacherUid]);
     
 
-    // This effect handles the question timer running out.
     useEffect(() => {
         if (!duel?.timerEndsAt || hasAnswered || (duel.status !== 'active' && duel.status !== 'sudden_death')) return;
 
@@ -612,9 +616,13 @@ export default function DuelPage() {
         }
     }
     
-    const currentUserAnswers = user && duel?.answers ? (duel.answers[user.uid] || []) : [];
-    const opponentUidMaybe = user?.uid === duel?.challengerUid ? duel?.opponentUid : duel?.challengerUid;
-    const opponentAnswers = opponentUidMaybe && duel?.answers ? (duel.answers[opponentUidMaybe] || []) : [];
+    const isSuddenDeath = duel?.isDraw ?? false;
+    const numNormalQuestions = duelSettings?.numNormalQuestions ?? 10;
+    const numSuddenDeathQuestions = duelSettings?.numSuddenDeathQuestions ?? 10;
+    
+    const currentQuestion = duel?.questions ? duel.questions[duel.currentQuestionIndex] : null;
+    const questionIndexForDisplay = isSuddenDeath ? duel.currentQuestionIndex - numNormalQuestions : duel.currentQuestionIndex;
+    const questionCountForDisplay = isSuddenDeath ? numSuddenDeathQuestions : numNormalQuestions;
 
     useEffect(() => {
         if (duel?.status === 'active') {
@@ -754,12 +762,6 @@ export default function DuelPage() {
             </div>
         )
     }
-    
-    const currentQuestion = duel.questions ? duel.questions[duel.currentQuestionIndex] : null;
-    const numQuestions = duel.isDraw 
-        ? duelSettings?.numSuddenDeathQuestions ?? 10
-        : duelSettings?.numNormalQuestions ?? 10;
-    const questionIndexForDisplay = duel.isDraw ? duel.currentQuestionIndex - (duelSettings?.numNormalQuestions ?? 10) : duel.currentQuestionIndex;
 
     return (
         <div className="relative flex h-screen flex-col items-center justify-center p-4 text-white"
@@ -801,13 +803,27 @@ export default function DuelPage() {
             </div>
             <div className={cn("w-full max-w-4xl transition-opacity duration-500", showQuestion ? 'opacity-100' : 'opacity-0')}>
                 <div className="grid grid-cols-2 gap-4 mb-4">
-                    <DuelPlayerCard player={challenger} answers={duel.answers?.[duel.challengerUid] || []} isCurrentUser={user?.uid === challenger?.uid} questionCount={numQuestions}/>
-                    <DuelPlayerCard player={opponent} answers={duel.answers?.[duel.opponentUid] || []} isCurrentUser={user?.uid === opponent?.uid} questionCount={numQuestions} />
+                    <DuelPlayerCard 
+                        player={challenger} 
+                        answers={duel.answers?.[duel.challengerUid] || []} 
+                        isCurrentUser={user?.uid === challenger?.uid} 
+                        questionCount={questionCountForDisplay}
+                        isSuddenDeath={isSuddenDeath}
+                        numNormalQuestions={numNormalQuestions}
+                    />
+                    <DuelPlayerCard 
+                        player={opponent} 
+                        answers={duel.answers?.[duel.opponentUid] || []} 
+                        isCurrentUser={user?.uid === opponent?.uid} 
+                        questionCount={questionCountForDisplay}
+                        isSuddenDeath={isSuddenDeath}
+                        numNormalQuestions={numNormalQuestions}
+                    />
                 </div>
                 
                 <Card className="bg-card/80 backdrop-blur-sm">
                     <CardHeader className="text-center">
-                        <CardTitle>{duel.isDraw ? "Sudden Death!" : `Question ${questionIndexForDisplay + 1}`}</CardTitle>
+                        <CardTitle>{isSuddenDeath ? "Sudden Death!" : `Question ${questionIndexForDisplay + 1}`}</CardTitle>
                         <h2 className="text-2xl font-bold text-white pt-2">{currentQuestion?.text}</h2>
                     </CardHeader>
                     <CardContent>
@@ -842,7 +858,7 @@ export default function DuelPage() {
                     <Card className="text-center p-8 bg-card/80 text-white border-primary shadow-lg shadow-primary/50">
                         <CardHeader>
                             <CardTitle className="text-4xl">{duel.status === 'sudden_death' ? 'SUDDEN DEATH!' : `Round ${questionIndexForDisplay + 1} Over`}</CardTitle>
-                            {currentUserAnswers[duel.currentQuestionIndex] === 1 ? (
+                            {duel.answers && user && duel.answers[user.uid][duel.currentQuestionIndex] === 1 ? (
                                 <div className="flex items-center justify-center gap-2 text-2xl text-green-400 mt-2">
                                     <CheckCircle /> You were correct!
                                 </div>
@@ -866,3 +882,5 @@ export default function DuelPage() {
         </div>
     )
 }
+
+    
