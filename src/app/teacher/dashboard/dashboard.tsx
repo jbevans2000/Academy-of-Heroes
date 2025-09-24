@@ -36,13 +36,11 @@ import {
 import {
   AlertDialog,
   AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -60,6 +58,7 @@ import { updateDailyReminder, updateDailyRegen } from '@/ai/flows/manage-teacher
 import { Textarea } from '@/components/ui/textarea';
 import { getGlobalSettings } from '@/ai/flows/manage-settings';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 interface TeacherData {
@@ -488,7 +487,9 @@ export default function Dashboard() {
     } else {
       await deleteDoc(pendingStudentRef);
       await deleteDoc(doc(db, 'students', uid));
-      toast({ title: "Request Rejected", description: `The guild application for ${pendingStudent.studentName} has been denied.` });
+      
+      await logGameEvent(teacher.uid, 'ACCOUNT', `The application for ${pendingStudent.studentName} (${pendingStudent.characterName}) was rejected.`);
+      toast({ title: "Request Rejected", description: `The request for ${pendingStudent.characterName} has been deleted. You may need to delete the user from Firebase Authentication manually if they should be prevented from re-registering.` });
     }
   
     if (pendingStudents.length === 1) {
@@ -688,9 +689,11 @@ export default function Dashboard() {
              <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle className="text-2xl">A Message from the Grandmaster</AlertDialogTitle>
-                    <AlertDialogDescription className="text-base text-foreground whitespace-pre-wrap">
-                        {broadcastMessage}
-                    </AlertDialogDescription>
+                    <ScrollArea className="max-h-[60vh] pr-4">
+                        <AlertDialogDescription className="text-base text-foreground whitespace-pre-wrap">
+                            {broadcastMessage}
+                        </AlertDialogDescription>
+                    </ScrollArea>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogAction onClick={handleCloseBroadcastDialog}>I Understand</AlertDialogAction>
@@ -1052,65 +1055,6 @@ export default function Dashboard() {
                 hubs={hubs}
                 chapters={chapters}
             />
-             <Dialog open={isReminderDialogOpen} onOpenChange={setIsReminderDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Set Daily Reminder Message</DialogTitle>
-                        <DialogDescription>
-                            This message will appear for students when they log in for the first time that day.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 space-y-4">
-                        <div className="flex items-center space-x-2">
-                            <Switch id="reminder-active" checked={isReminderActive} onCheckedChange={setIsReminderActive} />
-                            <Label htmlFor="reminder-active">Enable Daily Reminder</Label>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="reminder-title">Reminder Title</Label>
-                            <Input id="reminder-title" value={reminderTitle} onChange={(e) => setReminderTitle(e.target.value)} disabled={!isReminderActive}/>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="reminder-message">Reminder Message</Label>
-                            <Textarea id="reminder-message" value={reminderMessage} onChange={(e) => setReminderMessage(e.target.value)} rows={6} disabled={!isReminderActive}/>
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsReminderDialogOpen(false)}>Cancel</Button>
-                        <Button onClick={handleSaveReminder} disabled={isSavingReminder}>
-                             {isSavingReminder ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Save Reminder
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-             <Dialog open={isRegenDialogOpen} onOpenChange={setIsRegenDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Set Daily HP/MP Regeneration</DialogTitle>
-                        <DialogDescription>
-                            Set the percentage of Max HP and Max MP that all students will regenerate automatically each day upon their first login. Set to 0 to disable.
-                        </DialogDescription>
-                    </DialogHeader>
-                     <div className="py-4 space-y-2">
-                        <Label htmlFor="regen-percentage">Regeneration Percentage</Label>
-                        <div className="flex items-center gap-2">
-                            <Input
-                                id="regen-percentage"
-                                type="number"
-                                value={regenPercentage}
-                                onChange={(e) => setRegenPercentage(e.target.value)}
-                                min="0" max="100"
-                            />
-                            <span>%</span>
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsRegenDialogOpen(false)}>Cancel</Button>
-                        <Button onClick={handleSaveRegen} disabled={isSavingRegen}>
-                            {isSavingRegen ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Save Rate
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
             <div className="flex items-center space-x-2">
                 <Switch id="show-hidden" checked={showHidden} onCheckedChange={setShowHidden} />
                 <Label htmlFor="show-hidden" className="flex items-center gap-1 cursor-pointer font-semibold text-black text-lg">
@@ -1174,4 +1118,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
