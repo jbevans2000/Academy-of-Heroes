@@ -415,7 +415,7 @@ export default function DuelPage() {
     }, [teacherUid, duelRef, toast, duelSettings]);
     
     const handleSubmitAnswer = useCallback(async (isTimeout = false) => {
-        if (!user || !duelRef || hasAnswered || !teacherUid || !duelSettings || !duel) return;
+        if (!user || !duelRef || hasAnswered || !teacherUid || !duel) return;
         if (!isTimeout && selectedAnswer === null) return;
         
         onFirstInteraction();
@@ -439,6 +439,7 @@ export default function DuelPage() {
             const duelData = duelDoc.data() as DuelState;
             const currentAnswers = duelData.answers?.[user.uid] || [];
             
+            // Prevent re-submitting an answer for the same question
             if (currentAnswers.length > duelData.currentQuestionIndex) return;
 
             const newAnswers = [...currentAnswers];
@@ -447,7 +448,7 @@ export default function DuelPage() {
             transaction.update(duelRef, { [answerPath]: newAnswers });
         });
 
-    }, [selectedAnswer, user, duelRef, hasAnswered, teacherUid, duelSettings, duel]);
+    }, [selectedAnswer, user, duelRef, hasAnswered, teacherUid, duel]);
 
     const setPlayerDuelStatus = async (batch: any, playerUids: string[], inDuel: boolean) => {
         if (!teacherUid) return;
@@ -457,16 +458,15 @@ export default function DuelPage() {
         });
     };
 
-    // New useEffect to handle result processing
     useEffect(() => {
         if (!duel || !user) return;
+        
         const myAnswers = duel.answers?.[user.uid] || [];
         const opponentUid = user.uid === duel.challengerUid ? duel.opponentUid : duel.challengerUid;
         const opponentAnswers = duel.answers?.[opponentUid] || [];
     
-        const bothAnswered = 
-            myAnswers.length > duel.currentQuestionIndex && 
-            opponentAnswers.length > duel.currentQuestionIndex;
+        const bothAnswered = myAnswers.length > duel.currentQuestionIndex && 
+                             opponentAnswers.length > duel.currentQuestionIndex;
 
         if (bothAnswered && (duel.status === 'active' || duel.status === 'sudden_death')) {
             processRoundResults();
@@ -524,17 +524,15 @@ export default function DuelPage() {
         if (!duelRef || (duel?.status !== 'round_result' && duel?.status !== 'sudden_death') || !duel.resultEndsAt) return;
         
         const isSuddenDeathNext = duel.status === 'sudden_death';
-        const delay = isSuddenDeathNext ? 7000 : 5000;
-
         const timeUntilNextRound = duel.resultEndsAt.toDate().getTime() - Date.now();
         
         const timeout = setTimeout(async () => {
             const currentDuelSnap = await getDoc(duelRef);
             if(currentDuelSnap.exists() && (currentDuelSnap.data().status === 'round_result' || currentDuelSnap.data().status === 'sudden_death')) {
-                await updateDoc(duelRef, { 
+                 await updateDoc(duelRef, { 
                     status: 'active',
                     currentQuestionIndex: duel.currentQuestionIndex + 1,
-                    timerEndsAt: Timestamp.fromMillis(Date.now() + 60000),
+                    timerEndsAt: Timestamp.fromMillis(Date.now() + (isSuddenDeathNext ? 60000 : 60000)), // Reset timer for next round
                     resultEndsAt: null,
                 });
             }
@@ -632,26 +630,8 @@ export default function DuelPage() {
         }
     }
     
-    if (isLoading) {
+    if (isLoading || !duel || !challenger || !opponent) {
         return <div className="flex h-screen items-center justify-center bg-gray-900"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
-    }
-
-    if (!duel) {
-        // This state can be reached if the duel doc is deleted (e.g., declined)
-        return (
-             <div className="flex h-screen items-center justify-center bg-gray-900 text-white">
-                <Card className="text-center p-8 bg-card/80 backdrop-blur-sm">
-                    <CardHeader>
-                        <Swords className="h-16 w-16 mx-auto text-primary" />
-                        <CardTitle className="text-4xl mt-4">Duel Concluded</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <CardDescription>This duel has ended or was cancelled.</CardDescription>
-                        <Button className="mt-4" onClick={() => router.push('/dashboard')}>Return to Dashboard</Button>
-                    </CardContent>
-                </Card>
-            </div>
-        );
     }
     
     const isSuddenDeath = duel.isDraw ?? false;
@@ -712,7 +692,7 @@ export default function DuelPage() {
         )
     }
 
-    if (duel.status === 'finished' && challenger && opponent) {
+    if (duel.status === 'finished') {
         const winner = duel.winnerUid === challenger.uid ? challenger : opponent;
         const isTiebreaker = duel.isDraw && duel.winnerUid !== null;
         const isDraw = duel.isDraw && duel.winnerUid === null;
