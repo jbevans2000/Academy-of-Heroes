@@ -637,7 +637,7 @@ export default function DuelPage() {
         }
     }
     
-    if (isLoading || !challenger || !opponent || !duelSettings) {
+    if (isLoading || !challenger || !opponent || !duelSettings || !duel) {
         return <div className="flex h-screen items-center justify-center bg-gray-900"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
     }
     
