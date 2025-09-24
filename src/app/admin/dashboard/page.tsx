@@ -649,7 +649,7 @@ export default function AdminDashboardPage() {
                                             {broadcasts.map(b => (
                                                 <div key={b.id} className="flex justify-between items-start p-2 border rounded-md">
                                                     <div>
-                                                        <p className="text-sm">{b.message}</p>
+                                                        <p className="text-sm whitespace-pre-wrap">{b.message}</p>
                                                         <p className="text-xs text-muted-foreground">{format(new Date(b.sentAt.seconds * 1000), 'PPp')}</p>
                                                     </div>
                                                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setBroadcastToDelete(b)}>
@@ -968,7 +968,7 @@ export default function AdminDashboardPage() {
                                                     </div>
                                                 </div>
                                             </div>
-                                            <p className="mt-1 text-sm">{item.message}</p>
+                                            <p className="mt-1 text-sm whitespace-pre-wrap">{item.message}</p>
                                             <Button variant="outline" size="sm" className="mt-2" onClick={() => handleOpenMessageCenter(item.teacherUid)}>
                                                 <Reply className="mr-2 h-4 w-4"/> Reply
                                             </Button>

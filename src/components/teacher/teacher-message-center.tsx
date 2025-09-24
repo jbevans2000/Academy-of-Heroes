@@ -169,7 +169,7 @@ export function TeacherMessageCenter({
                                                     "p-3 rounded-lg max-w-[80%]",
                                                     msg.sender === 'teacher' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
                                                 )}>
-                                                    <p>{msg.text}</p>
+                                                    <p className="whitespace-pre-wrap">{msg.text}</p>
                                                 </div>
                                                 <p className="text-xs text-muted-foreground mt-1">
                                                      {msg.timestamp ? <ClientOnlyTime date={new Date(msg.timestamp.seconds * 1000)} /> : 'Sending...'}

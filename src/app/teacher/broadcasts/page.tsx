@@ -98,7 +98,7 @@ export default function BroadcastsPage() {
                                             <p className="text-sm text-muted-foreground">
                                                 {msg.sentAt ? format(new Date(msg.sentAt.seconds * 1000), 'PPPp') : 'Just now'}
                                             </p>
-                                            <p className="mt-1">{msg.message}</p>
+                                            <p className="mt-1 whitespace-pre-wrap">{msg.message}</p>
                                         </div>
                                     ))}
                                 </div>

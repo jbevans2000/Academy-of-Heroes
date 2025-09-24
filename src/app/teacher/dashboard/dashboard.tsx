@@ -688,7 +688,7 @@ export default function Dashboard() {
              <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle className="text-2xl">A Message from the Grandmaster</AlertDialogTitle>
-                    <AlertDialogDescription className="text-base text-foreground">
+                    <AlertDialogDescription className="text-base text-foreground whitespace-pre-wrap">
                         {broadcastMessage}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
@@ -847,7 +847,7 @@ export default function Dashboard() {
                         <span>Set Chapter Location for Selected</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                     <AlertDialog>
+                    <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-green-600 focus:bg-green-100 focus:text-green-800">
                                 <Heart className="mr-2 h-4 w-4" />
@@ -887,19 +887,6 @@ export default function Dashboard() {
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
-                    <DropdownMenuSeparator />
-                     <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setIsReminderDialogOpen(true); }}>
-                        <Bell className="mr-2 h-4 w-4" />
-                        <span>Set Daily Reminder</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setIsRegenDialogOpen(true); }}>
-                        <HeartPulse className="mr-2 h-4 w-4" />
-                        <span>Set Daily HP/MP Regen</span>
-                    </DropdownMenuItem>
-                     <DropdownMenuItem onClick={() => router.push('/teacher/settings/leveling')}>
-                        <BarChart className="mr-2 h-4 w-4" />
-                        <span>Set Custom Leveling Curve</span>
-                    </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
             
@@ -959,23 +946,6 @@ export default function Dashboard() {
                             <DropdownMenuRadioItem value="company">Company</DropdownMenuRadioItem>
                         </DropdownMenuRadioGroup>
                       </DropdownMenuSubContent>
-                    </DropdownMenuSub>
-                    <DropdownMenuSub>
-                        <DropdownMenuSubTrigger>
-                            <Briefcase className="mr-2 h-4 w-4" />
-                            <span>Filter by Company</span>
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuSubContent>
-                            <DropdownMenuRadioGroup value={companyFilter} onValueChange={setCompanyFilter}>
-                                <DropdownMenuLabel>Company</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuRadioItem value="all">All Students</DropdownMenuRadioItem>
-                                <DropdownMenuRadioItem value="freelancers">Freelancers</DropdownMenuRadioItem>
-                                {companies.map(company => (
-                                    <DropdownMenuRadioItem key={company.id} value={company.id}>{company.name}</DropdownMenuRadioItem>
-                                ))}
-                            </DropdownMenuRadioGroup>
-                        </DropdownMenuSubContent>
                     </DropdownMenuSub>
                 </DropdownMenuContent>
             </DropdownMenu>

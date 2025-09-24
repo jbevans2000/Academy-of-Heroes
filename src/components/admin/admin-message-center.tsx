@@ -21,6 +21,7 @@ import { onSnapshot, collection, query, orderBy, doc, getDoc } from 'firebase/fi
 import { db } from '@/lib/firebase';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { ClientOnlyTime } from '../client-only-time';
 
 interface AdminMessageCenterProps {
     admin: User | null;
@@ -159,10 +160,10 @@ export function AdminMessageCenter({
                                                     "p-3 rounded-lg max-w-[80%]",
                                                     msg.sender === 'admin' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
                                                 )}>
-                                                    <p>{msg.text}</p>
+                                                    <p className="whitespace-pre-wrap">{msg.text}</p>
                                                 </div>
                                                 <p className="text-xs text-muted-foreground mt-1">
-                                                     {msg.timestamp ? formatDistanceToNow(new Date(msg.timestamp.seconds * 1000), { addSuffix: true }) : 'Sending...'}
+                                                     {msg.timestamp ? <ClientOnlyTime date={new Date(msg.timestamp.seconds * 1000)} /> : 'Sending...'}
                                                 </p>
                                             </div>
                                         ))}
