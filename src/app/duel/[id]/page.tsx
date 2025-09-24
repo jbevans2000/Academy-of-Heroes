@@ -62,6 +62,7 @@ const DuelPlayerCard = ({ player, answers, isCurrentUser, questionCount, isSudde
     if (!player) return <Skeleton className="h-24 w-full" />;
     
     const answerIndexOffset = isSuddenDeath ? numNormalQuestions : 0;
+    const currentAnswers = answers.slice(answerIndexOffset);
 
     return (
         <Card className={cn("text-center bg-card/50", isCurrentUser && "border-primary ring-2 ring-primary")}>
@@ -73,7 +74,7 @@ const DuelPlayerCard = ({ player, answers, isCurrentUser, questionCount, isSudde
             </CardHeader>
             <CardContent className="p-2 flex justify-center gap-2">
                 {Array.from({ length: questionCount }).map((_, i) => {
-                    const answerForThisCircle = answers[i + answerIndexOffset];
+                    const answerForThisCircle = currentAnswers[i];
                     return (
                         <div key={i} className={cn(
                             "h-6 w-6 rounded-full border-2",
@@ -496,6 +497,8 @@ export default function DuelPage() {
             } else {
                  if (duel?.status === 'declined' || duel?.status === 'abandoned') {
                     if (user?.uid === duel?.challengerUid) {
+                        // The document was deleted, which is expected after declining/abandoning.
+                        // We can now safely redirect.
                         router.push('/dashboard');
                     }
                 }
@@ -678,10 +681,7 @@ export default function DuelPage() {
 
     if (showDeclinedDialog) {
         return (
-            <AlertDialog open={true} onOpenChange={() => {
-                 setShowDeclinedDialog(false);
-                 router.push('/dashboard');
-            }}>
+            <AlertDialog open={true} onOpenChange={() => setShowDeclinedDialog(false)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Challenge Declined</AlertDialogTitle>
