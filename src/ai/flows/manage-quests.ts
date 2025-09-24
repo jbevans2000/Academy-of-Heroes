@@ -337,7 +337,7 @@ export async function setStudentQuestProgress(input: SetStudentQuestProgressInpu
         const chaptersRef = collection(db, 'teachers', teacherUid, 'chapters');
         const [hubsSnapshot, chaptersSnapshot] = await Promise.all([getDocs(hubsRef), getDocs(chaptersRef)]);
         
-        const allHubs = hubsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
+        const allHubs = hubsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub)).sort((a,b) => a.hubOrder - b.hubOrder);
         const allChapters = chaptersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
 
         for (const studentUid of studentUids) {
@@ -347,34 +347,46 @@ export async function setStudentQuestProgress(input: SetStudentQuestProgressInpu
 
             const studentData = studentSnap.data() as Student;
             const newQuestProgress = { ...(studentData.questProgress || {}) };
-            const rewardedChapters = new Set(studentData.completedChapters || []);
+            
+            // Set the new target progress for the specified hub
+            newQuestProgress[hubId] = chapterNumber > 0 ? chapterNumber : 0;
+            
+            // ** CORRECTED LOGIC **
+            // Rebuild the completed chapters array from scratch based on the new progress state
+            const newRewardedChapters = new Set<string>();
 
-            // Iterate through ALL hubs to backfill completed chapters based on existing progress
             for (const hub of allHubs) {
-                const completedInHub = studentData.questProgress?.[hub.id] || 0;
-                if (completedInHub > 0) {
+                // Determine the number of completed chapters for this hub
+                let chaptersCompletedInHub = 0;
+                if (hub.id === hubId) {
+                    chaptersCompletedInHub = newQuestProgress[hub.id];
+                } else if (newQuestProgress[hub.id]) {
+                    // Use existing progress for other hubs
+                    chaptersCompletedInHub = newQuestProgress[hub.id];
+                } else {
+                     // If no progress is set for this hub, check if it should be considered complete
+                     // based on the order relative to the target hub
+                     const targetHubOrder = allHubs.find(h => h.id === hubId)?.hubOrder || 0;
+                     if (hub.hubOrder < targetHubOrder) {
+                         chaptersCompletedInHub = allChapters.filter(c => c.hubId === hub.id).length;
+                         newQuestProgress[hub.id] = chaptersCompletedInHub; // Also backfill progress map
+                     }
+                }
+
+                // Add the corresponding chapter IDs to the set
+                if (chaptersCompletedInHub > 0) {
                     const chaptersInThisHub = allChapters.filter(c => c.hubId === hub.id);
-                    for (let i = 1; i <= completedInHub; i++) {
+                    for (let i = 1; i <= chaptersCompletedInHub; i++) {
                         const chapterToMark = chaptersInThisHub.find(c => c.chapterNumber === i);
                         if (chapterToMark) {
-                            rewardedChapters.add(chapterToMark.id);
+                            newRewardedChapters.add(chapterToMark.id);
                         }
                     }
                 }
             }
-            
-            // Set the new target progress
-            newQuestProgress[hubId] = chapterNumber > 0 ? chapterNumber : 0;
-             // Mark chapters up to the new target as rewarded
-            const chaptersInTargetHub = allChapters.filter(c => c.hubId === hubId);
-            for(let i = 1; i <= chapterNumber; i++) {
-                const chapterToMark = chaptersInTargetHub.find(c => c.chapterNumber === i);
-                if (chapterToMark) {
-                    rewardedChapters.add(chapterToMark.id);
-                }
-            }
 
-            // Determine highest completed hub order
+
+            // Determine highest completed hub order based on the updated progress
             let highestCompletedOrder = 0;
             for (const hub of allHubs) {
                 const chaptersInHub = allChapters.filter(c => c.hubId === hub.id);
@@ -388,7 +400,7 @@ export async function setStudentQuestProgress(input: SetStudentQuestProgressInpu
             batch.update(studentRef, { 
                 questProgress: newQuestProgress,
                 hubsCompleted: highestCompletedOrder,
-                completedChapters: Array.from(rewardedChapters)
+                completedChapters: Array.from(newRewardedChapters) // Use the newly constructed array
             });
         }
         
@@ -477,4 +489,5 @@ export async function deleteQuestHub(input: DeleteHubInput): Promise<ActionRespo
     }
 }
 
+    
     
