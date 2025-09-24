@@ -61,7 +61,6 @@ const DuelPlayerCard = ({ player, answers, isCurrentUser, questionCount, isSudde
 }) => {
     if (!player) return <Skeleton className="h-24 w-full" />;
     
-    // In sudden death, we need to offset the index to look at the correct part of the answers array.
     const answerIndexOffset = isSuddenDeath ? numNormalQuestions : 0;
 
     return (
@@ -620,6 +619,10 @@ export default function DuelPage() {
     const numNormalQuestions = duelSettings?.numNormalQuestions ?? 10;
     const numSuddenDeathQuestions = duelSettings?.numSuddenDeathQuestions ?? 10;
     
+    if (isLoading || !duel) {
+        return <div className="flex h-screen items-center justify-center bg-gray-900"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
+    }
+    
     const currentQuestion = duel?.questions ? duel.questions[duel.currentQuestionIndex] : null;
     const questionIndexForDisplay = isSuddenDeath ? duel.currentQuestionIndex - numNormalQuestions : duel.currentQuestionIndex;
     const questionCountForDisplay = isSuddenDeath ? numSuddenDeathQuestions : numNormalQuestions;
@@ -632,10 +635,6 @@ export default function DuelPage() {
         }
     }, [duel?.status]);
     
-    if (isLoading || !duel) {
-        return <div className="flex h-screen items-center justify-center bg-gray-900"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
-    }
-
     if (duel.status === 'pending') {
         return (
             <div 
