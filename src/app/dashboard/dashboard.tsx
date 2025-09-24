@@ -119,10 +119,8 @@ export default function Dashboard() {
               // --- END REGENERATION LOGIC ---
               
               // --- DAILY REMINDER LOGIC ---
-              const lastChapterDate = studentData.lastChapterCompletion?.toDate();
-              const hasCompletedToday = lastChapterDate && isSameDay(today, lastChapterDate);
               const reminderShown = sessionStorage.getItem('dailyReminderShown');
-              if (!hasCompletedToday && !reminderShown) {
+              if (!reminderShown) {
                 const teacherRef = doc(db, 'teachers', teacherUid);
                 const teacherSnap = await getDoc(teacherRef);
                 if (teacherSnap.exists()) {

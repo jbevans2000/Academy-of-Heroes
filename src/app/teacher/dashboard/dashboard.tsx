@@ -904,6 +904,10 @@ export default function Dashboard() {
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
+                    <DropdownMenuItem onSelect={() => setIsReminderDialogOpen(true)}>
+                        <MessageSquare className="mr-2 h-4 w-4" />
+                        Set Daily Reminder
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/teacher/rewards')}>
                         <Gift className="mr-2 h-4 w-4" />
                         <span>Manage Rewards</span>
