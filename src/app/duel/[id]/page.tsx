@@ -471,7 +471,7 @@ export default function DuelPage() {
         if (bothAnswered && (duel.status === 'active' || duel.status === 'sudden_death')) {
             processRoundResults();
         }
-    }, [duel, user, processRoundResults]);
+    }, [duel?.answers, duel?.currentQuestionIndex, duel?.status, duel?.challengerUid, duel?.opponentUid, user, processRoundResults]);
     
     useEffect(() => {
         if (!duelRef || !teacherUid) return;
@@ -532,7 +532,7 @@ export default function DuelPage() {
                  await updateDoc(duelRef, { 
                     status: 'active',
                     currentQuestionIndex: duel.currentQuestionIndex + 1,
-                    timerEndsAt: Timestamp.fromMillis(Date.now() + (isSuddenDeathNext ? 60000 : 60000)), // Reset timer for next round
+                    timerEndsAt: Timestamp.fromMillis(Date.now() + 60000), // Reset timer for next round
                     resultEndsAt: null,
                 });
             }
@@ -564,13 +564,15 @@ export default function DuelPage() {
         if (!duel?.timerEndsAt || hasAnswered || (duel.status !== 'active' && duel.status !== 'sudden_death')) return;
 
         const timeUntilTimeout = duel.timerEndsAt.toDate().getTime() - Date.now();
-        if (timeUntilTimeout <= 0) {
+        if (timeUntilTimeout <= 0 && !hasAnswered) {
             handleSubmitAnswer(true);
             return;
         }
 
         const timeout = setTimeout(() => {
-            handleSubmitAnswer(true);
+            if (!hasAnswered) {
+              handleSubmitAnswer(true);
+            }
         }, timeUntilTimeout);
 
         return () => clearTimeout(timeout);
@@ -630,7 +632,7 @@ export default function DuelPage() {
         }
     }
     
-    if (isLoading || !duel || !challenger || !opponent) {
+    if (isLoading || !duel || !challenger || !opponent || !duelSettings) {
         return <div className="flex h-screen items-center justify-center bg-gray-900"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
     }
     
@@ -887,3 +889,5 @@ export default function DuelPage() {
         </div>
     )
 }
+
+    
