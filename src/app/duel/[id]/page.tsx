@@ -449,7 +449,7 @@ export default function DuelPage() {
             transaction.update(duelRef, { [answerPath]: newAnswers });
         });
 
-    }, [selectedAnswer, user, duelRef, hasAnswered, teacherUid, duel]);
+    }, [selectedAnswer, user, duelRef, hasAnswered, teacherUid, duel, onFirstInteraction]);
 
     const setPlayerDuelStatus = async (batch: any, playerUids: string[], inDuel: boolean) => {
         if (!teacherUid) return;
@@ -530,23 +530,37 @@ export default function DuelPage() {
         return () => clearTimeout(timeout);
     }, [duel?.status, duel?.resultEndsAt, duelRef, duel?.currentQuestionIndex]);
     
+    // This effect checks if both players have answered.
+    useEffect(() => {
+        if (!duel || !user || (duel.status !== 'active' && duel.status !== 'sudden_death')) return;
+        
+        const myAnswers = duel.answers?.[user.uid] || [];
+        const opponentUid = user.uid === duel.challengerUid ? duel.opponentUid : duel.challengerUid;
+        const opponentAnswers = duel.answers?.[opponentUid] || [];
+    
+        const bothHaveAnsweredThisRound = myAnswers.length > duel.currentQuestionIndex && 
+                                          opponentAnswers.length > duel.currentQuestionIndex;
+
+        if (bothHaveAnsweredThisRound) {
+            processRoundResults();
+        }
+    }, [duel, user, processRoundResults]);
+    
     // This effect handles the round timeout.
     useEffect(() => {
         if (!duel?.timerEndsAt || hasAnswered || (duel.status !== 'active' && duel.status !== 'sudden_death')) return;
 
         const timeUntilTimeout = duel.timerEndsAt.toDate().getTime() - Date.now();
-        if (timeUntilTimeout <= 0) {
-            handleSubmitAnswer(true);
-            return;
-        }
-
+        
         const timeout = setTimeout(() => {
+            // Check again inside timeout to ensure state hasn't changed.
+            if (!hasAnswered) {
               handleSubmitAnswer(true);
-        }, timeUntilTimeout);
+            }
+        }, timeUntilTimeout > 0 ? timeUntilTimeout : 0);
 
         return () => clearTimeout(timeout);
     }, [duel?.timerEndsAt, hasAnswered, duel?.status, handleSubmitAnswer]);
-
 
     useEffect(() => {
         if (!duel || !teacherUid) return;
@@ -566,22 +580,6 @@ export default function DuelPage() {
         fetchPlayersAndSettings();
     }, [duel, teacherUid]);
     
-
-    // This effect checks if both players have answered.
-    useEffect(() => {
-        if (!duel || !user || (duel.status !== 'active' && duel.status !== 'sudden_death')) return;
-        
-        const myAnswers = duel.answers?.[user.uid] || [];
-        const opponentUid = user.uid === duel.challengerUid ? duel.opponentUid : duel.challengerUid;
-        const opponentAnswers = duel.answers?.[opponentUid] || [];
-    
-        const bothAnswered = myAnswers.length > duel.currentQuestionIndex && 
-                             opponentAnswers.length > duel.currentQuestionIndex;
-
-        if (bothAnswered) {
-            processRoundResults();
-        }
-    }, [duel, user, processRoundResults]);
 
     useEffect(() => {
         if (duel?.status === 'active') {
@@ -653,7 +651,7 @@ export default function DuelPage() {
             <div 
                 className="flex h-screen items-center justify-center text-white"
                 style={{
-                    backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fu61696175222_Widescreen_fantasy-style_image_of_a_training_and__3e2d56a1-f725-4687-b023-8b1b8edf404a_2%20(1).png?alt=media&token=0d8359d5-fa1f-417f-b56f-7483cac5455d')`,
+                    backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fu6169617522_Widescreen_fantasy-style_image_of_a_training_and__3e2d56a1-f725-4687-b023-8b1b8edf404a_2%20(1).png?alt=media&token=0d8359d5-fa1f-417f-b56f-7483cac5455d')`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                 }}
