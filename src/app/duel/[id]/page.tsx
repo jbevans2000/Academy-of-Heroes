@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -281,7 +280,7 @@ export default function DuelPage() {
     }, [duel, teacherUid, duelSettings, duelRef]);
 
     const processRoundResults = useCallback(async (duelData: DuelState) => {
-        if (!user || !duelRef || !teacherUid) return;
+        if (!user || !duelRef || !teacherUid || !duelSettings) return;
 
         await runTransaction(db, async (transaction) => {
             const duelDoc = await transaction.get(duelRef);
@@ -296,6 +295,8 @@ export default function DuelPage() {
             const opponentAnswers = freshDuelData.answers?.[opponentUid] || [];
             
             const updates: Partial<DuelState> = {};
+            const numNormalQuestions = duelSettings.numNormalQuestions ?? 10;
+            const numSuddenDeathQuestions = duelSettings.numSuddenDeathQuestions ?? 10;
 
             if (freshDuelData.isDraw) {
                 if (myAnswers[freshDuelData.currentQuestionIndex] > opponentAnswers[freshDuelData.currentQuestionIndex]) {
@@ -303,8 +304,8 @@ export default function DuelPage() {
                 } else if (opponentAnswers[freshDuelData.currentQuestionIndex] > myAnswers[freshDuelData.currentQuestionIndex]) {
                     await handleDuelEnd(transaction, opponentUid, user.uid, false);
                 } else {
-                    // Check if we've hit the 10th sudden death question (index 19)
-                    if (freshDuelData.currentQuestionIndex >= 19) {
+                    // Check if we've hit the last sudden death question
+                    if (freshDuelData.currentQuestionIndex >= (numNormalQuestions + numSuddenDeathQuestions - 1)) {
                          await handleDuelEnd(transaction, user.uid, opponentUid, false, true); // True for draw
                     } else {
                         updates.status = 'sudden_death';
@@ -312,7 +313,7 @@ export default function DuelPage() {
                     }
                 }
             } else {
-                const isLastRegularQuestion = freshDuelData.currentQuestionIndex >= 9;
+                const isLastRegularQuestion = freshDuelData.currentQuestionIndex >= (numNormalQuestions - 1);
                 if (isLastRegularQuestion) {
                     const myFinalScore = myAnswers.filter(a => a === 1).length;
                     const opponentFinalScore = opponentAnswers.filter(a => a === 1).length;
@@ -334,10 +335,10 @@ export default function DuelPage() {
                 transaction.update(duelRef, updates);
             }
         });
-    }, [user, duelRef, teacherUid, handleDuelEnd]);
+    }, [user, duelRef, teacherUid, handleDuelEnd, duelSettings]);
 
     const handleDuelStart = useCallback(async (duelData: DuelState) => {
-        if (!teacherUid || !duelRef) return;
+        if (!teacherUid || !duelRef || !duelSettings) return;
         try {
             await runTransaction(db, async (transaction) => {
                 const duelDocForTransaction = await transaction.get(duelRef);
@@ -386,8 +387,8 @@ export default function DuelPage() {
                     }
                     
                     const shuffled = allQuestions.sort(() => 0.5 - Math.random());
-                    // Fetch more questions than needed for potential sudden death rounds
-                    const selectedQuestions = shuffled.slice(0, 20); 
+                    const totalQuestionsNeeded = (duelSettings.numNormalQuestions ?? 10) + (duelSettings.numSuddenDeathQuestions ?? 10);
+                    const selectedQuestions = shuffled.slice(0, totalQuestionsNeeded);
                     
                     duelUpdates.questions = selectedQuestions.map(q => ({...q, id: q.id}));
                     duelUpdates.currentQuestionIndex = 0;
@@ -400,7 +401,7 @@ export default function DuelPage() {
              console.error("Duel start transaction failed: ", e);
              toast({ variant: "destructive", title: "Error Starting Duel", description: "Could not deduct gold and start the duel." });
         }
-    }, [teacherUid, duelRef, toast]);
+    }, [teacherUid, duelRef, toast, duelSettings]);
     
     const handleSubmitAnswer = useCallback(async (isTimeout = false) => {
         if (!user || !duelRef || hasAnswered || !teacherUid || !duelSettings || !duel) return;
@@ -862,5 +863,3 @@ export default function DuelPage() {
         </div>
     )
 }
-
-    

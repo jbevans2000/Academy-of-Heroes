@@ -123,6 +123,8 @@ export async function getDuelSettings(teacherUid: string): Promise<DuelSettings>
             duelCost: data.duelSettings?.duelCost ?? 0,
             dailyDuelLimit: data.duelSettings?.dailyDuelLimit ?? 5,
             isDailyLimitEnabled: data.duelSettings?.isDailyLimitEnabled ?? true,
+            numNormalQuestions: data.duelSettings?.numNormalQuestions ?? 10,
+            numSuddenDeathQuestions: data.duelSettings?.numSuddenDeathQuestions ?? 10,
         };
     }
     // Default values if settings document doesn't exist
@@ -132,7 +134,9 @@ export async function getDuelSettings(teacherUid: string): Promise<DuelSettings>
         isDuelsEnabled: true, 
         duelCost: 0, 
         dailyDuelLimit: 5, 
-        isDailyLimitEnabled: true 
+        isDailyLimitEnabled: true,
+        numNormalQuestions: 10,
+        numSuddenDeathQuestions: 10,
     };
 }
 

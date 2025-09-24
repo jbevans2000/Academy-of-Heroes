@@ -52,7 +52,7 @@ export default function TrainingGroundsPage() {
   const [isToggling, setIsToggling] = useState<string | null>(null);
 
   // Settings State
-  const [duelSettings, setDuelSettings] = useState<DuelSettings>({ rewardXp: 25, rewardGold: 10, isDuelsEnabled: true, duelCost: 0, dailyDuelLimit: 5, isDailyLimitEnabled: true });
+  const [duelSettings, setDuelSettings] = useState<DuelSettings>({ rewardXp: 25, rewardGold: 10, isDuelsEnabled: true, duelCost: 0, dailyDuelLimit: 5, isDailyLimitEnabled: true, numNormalQuestions: 10, numSuddenDeathQuestions: 10 });
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
 
@@ -161,11 +161,11 @@ export default function TrainingGroundsPage() {
    const handleSaveSettings = async () => {
     if (!teacher) return;
     setIsSavingSettings(true);
-    const { rewardXp, rewardGold, duelCost, dailyDuelLimit, isDailyLimitEnabled } = duelSettings;
+    const { rewardXp, rewardGold, duelCost, dailyDuelLimit, isDailyLimitEnabled, numNormalQuestions, numSuddenDeathQuestions } = duelSettings;
     try {
         const result = await updateDuelSettings({ 
             teacherUid: teacher.uid, 
-            settings: { rewardXp, rewardGold, duelCost, dailyDuelLimit, isDailyLimitEnabled } 
+            settings: { rewardXp, rewardGold, duelCost, dailyDuelLimit, isDailyLimitEnabled, numNormalQuestions, numSuddenDeathQuestions } 
         });
         if (result.success) {
             toast({ title: 'Settings Updated', description: result.message });
@@ -287,7 +287,27 @@ export default function TrainingGroundsPage() {
                     <CardDescription>Configure rewards, costs, and limits for student duels.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <Label htmlFor="num-normal-questions"># of Normal Questions</Label>
+                            <Input
+                                id="num-normal-questions"
+                                type="number"
+                                value={duelSettings.numNormalQuestions || ''}
+                                onChange={(e) => setDuelSettings(prev => ({...prev, numNormalQuestions: Number(e.target.value)}))}
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <Label htmlFor="num-sudden-death-questions"># of Sudden Death Questions</Label>
+                            <Input
+                                id="num-sudden-death-questions"
+                                type="number"
+                                value={duelSettings.numSuddenDeathQuestions || ''}
+                                onChange={(e) => setDuelSettings(prev => ({...prev, numSuddenDeathQuestions: Number(e.target.value)}))}
+                            />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
                         <div className="space-y-1">
                             <Label htmlFor="reward-xp" className="flex items-center gap-1"><Star className="h-4 w-4" /> XP Reward</Label>
                             <Input 
