@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -692,7 +693,7 @@ export default function Dashboard() {
                     <AlertDialogTitle className="text-2xl">A Message from the Grandmaster</AlertDialogTitle>
                 </AlertDialogHeader>
                 <ScrollArea className="max-h-[60vh] pr-4">
-                    <AlertDialogDescription className="text-base text-foreground whitespace-pre-wrap">
+                    <AlertDialogDescription className="text-base text-black whitespace-pre-wrap">
                         {broadcastMessage}
                     </AlertDialogDescription>
                 </ScrollArea>
