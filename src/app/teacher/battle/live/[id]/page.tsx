@@ -240,7 +240,7 @@ export default function TeacherLiveBattlePage() {
   const [liveState, setLiveState] = useState<LiveBattleState | null>(null);
   const [roundResults, setRoundResults] = useState<Result[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isEndingRound, setIsEndingRound] = useState(false);
+  const [isEndingRound, setIsEndingRound] = useState(isEndingRound);
   const [isAdvancing, setIsAdvancing] = useState(false);
   const [isEndingBattle, setIsEndingBattle] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -712,7 +712,7 @@ export default function TeacherLiveBattlePage() {
 
             if (damageOnIncorrect > 0) {
                  for (const student of studentsInBattle) {
-                     const studentResponse = finalRoundResponses.find(r => r.studentUid === student.uid);
+                     const studentResponse = finalRoundResponses.find(res => res.studentUid === student.uid);
                      if (!studentResponse || !studentResponse.isCorrect) {
                         damageToTakeByStudent[student.uid] = (damageToTakeByStudent[student.uid] || 0) + damageOnIncorrect;
                      }
@@ -1599,14 +1599,14 @@ export default function TeacherLiveBattlePage() {
                                         <Dialog>
                                             <DialogTrigger asChild>
                                                 <div className="mb-4 relative group cursor-pointer w-fit mx-auto">
-                                                    <Image src={currentQuestion.imageUrl} alt="Question Image" width={200} height={100} className="rounded-md object-contain border" />
+                                                    <img src={currentQuestion.imageUrl} alt="Question" width={200} height={100} className="rounded-md object-contain border" />
                                                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                                         <Maximize className="h-8 w-8 text-white" />
                                                     </div>
                                                 </div>
                                             </DialogTrigger>
                                             <DialogContent className="max-w-4xl h-auto">
-                                                <img src={currentQuestion.imageUrl} alt="Question Image enlarged" className="w-full h-auto object-contain rounded-md" />
+                                                <img src={currentQuestion.imageUrl} alt="Question enlarged" className="w-full h-auto object-contain rounded-md" />
                                             </DialogContent>
                                         </Dialog>
                                     )}
@@ -1736,7 +1736,7 @@ export default function TeacherLiveBattlePage() {
                 {liveState.battleId && <BattleLog teacherUid={teacherUid} />}
                 <BattleChatBox
                     isTeacher={true}
-                    userName={"The Wise One"}
+                    userName={teacherData?.name || 'Guild Leader'}
                     teacherUid={teacherUid || ''}
                     battleId={'active-battle'}
                     isChatDisabled={liveState.isChatDisabled ?? false}
