@@ -421,31 +421,32 @@ export default function DuelPage() {
         
         const answerPath = `answers.${user.uid}`;
         
+        // This transaction just writes the player's own answer.
         await runTransaction(db, async (transaction) => {
             const duelDoc = await transaction.get(duelRef);
             if (!duelDoc.exists()) throw new Error("Duel disappeared");
             
             const duelData = duelDoc.data() as DuelState;
             const currentAnswers = duelData.answers?.[user.uid] || [];
+            
+            // Prevent duplicate answers for the same question index
+            if (currentAnswers.length > duelData.currentQuestionIndex) return;
+
             const newAnswers = [...currentAnswers];
             newAnswers[duelData.currentQuestionIndex] = myAnswerValue;
 
             transaction.update(duelRef, { [answerPath]: newAnswers });
         });
 
-        // Use a short delay before checking opponent status to prevent race conditions
-        setTimeout(async () => {
-            if (!duelRef) return;
-            const duelSnap = await getDoc(duelRef);
-            if (!duelSnap.exists()) return;
-            const duelData = duelSnap.data() as DuelState;
-            const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
-            
-            // Check if opponent has also answered this round
-            if ((duelData.answers?.[opponentUid] || []).length > duelData.currentQuestionIndex) {
-                await processRoundResults(duelData);
-            }
-        }, 1500); 
+        // After successfully submitting, check if the opponent has also answered.
+        const duelSnap = await getDoc(duelRef);
+        if (!duelSnap.exists()) return;
+        const duelData = duelSnap.data() as DuelState;
+        const opponentUid = user.uid === duelData.challengerUid ? duelData.opponentUid : duelData.challengerUid;
+        
+        if ((duelData.answers?.[opponentUid] || []).length > duelData.currentQuestionIndex) {
+            await processRoundResults(duelData);
+        }
 
     }, [selectedAnswer, user, duelRef, hasAnswered, teacherUid, duelSettings, toast, duel, processRoundResults]);
 
