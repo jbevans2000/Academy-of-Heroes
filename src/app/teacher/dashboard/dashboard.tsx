@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -41,6 +40,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -686,7 +686,7 @@ export default function Dashboard() {
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <AlertDialog open={isBroadcastDialogOpen} onOpenChange={setIsBroadcastDialogOpen}>
-             <AlertDialogContent>
+            <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle className="text-2xl">A Message from the Grandmaster</AlertDialogTitle>
                     <ScrollArea className="max-h-[60vh] pr-4">
