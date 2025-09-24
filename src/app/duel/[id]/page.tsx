@@ -51,7 +51,7 @@ interface DuelState {
     resultEndsAt?: Timestamp | null; // For the 5-second result screen
 }
 
-const DuelPlayerCard = ({ player, answers, isCurrentUser }: { player: Student | null, answers: number[], isCurrentUser: boolean }) => {
+const DuelPlayerCard = ({ player, answers, isCurrentUser, questionCount }: { player: Student | null, answers: number[], isCurrentUser: boolean, questionCount: number }) => {
     if (!player) return <Skeleton className="h-24 w-full" />;
     return (
         <Card className={cn("text-center bg-card/50", isCurrentUser && "border-primary ring-2 ring-primary")}>
@@ -62,7 +62,7 @@ const DuelPlayerCard = ({ player, answers, isCurrentUser }: { player: Student | 
                  <CardTitle>{player.characterName}</CardTitle>
             </CardHeader>
             <CardContent className="p-2 flex justify-center gap-2">
-                {Array.from({ length: 10 }).map((_, i) => (
+                {Array.from({ length: questionCount }).map((_, i) => (
                     <div key={i} className={cn(
                         "h-6 w-6 rounded-full border-2",
                         answers[i] === undefined ? 'bg-muted' : answers[i] === 1 ? 'bg-green-500' : 'bg-red-500'
@@ -756,7 +756,10 @@ export default function DuelPage() {
     }
     
     const currentQuestion = duel.questions ? duel.questions[duel.currentQuestionIndex] : null;
-
+    const numQuestions = duel.isDraw 
+        ? duelSettings?.numSuddenDeathQuestions ?? 10
+        : duelSettings?.numNormalQuestions ?? 10;
+    const questionIndexForDisplay = duel.isDraw ? duel.currentQuestionIndex - (duelSettings?.numNormalQuestions ?? 10) : duel.currentQuestionIndex;
 
     return (
         <div className="relative flex h-screen flex-col items-center justify-center p-4 text-white"
@@ -798,13 +801,13 @@ export default function DuelPage() {
             </div>
             <div className={cn("w-full max-w-4xl transition-opacity duration-500", showQuestion ? 'opacity-100' : 'opacity-0')}>
                 <div className="grid grid-cols-2 gap-4 mb-4">
-                    <DuelPlayerCard player={challenger} answers={duel.answers?.[duel.challengerUid] || []} isCurrentUser={user?.uid === challenger?.uid} />
-                    <DuelPlayerCard player={opponent} answers={duel.answers?.[duel.opponentUid] || []} isCurrentUser={user?.uid === opponent?.uid} />
+                    <DuelPlayerCard player={challenger} answers={duel.answers?.[duel.challengerUid] || []} isCurrentUser={user?.uid === challenger?.uid} questionCount={numQuestions}/>
+                    <DuelPlayerCard player={opponent} answers={duel.answers?.[duel.opponentUid] || []} isCurrentUser={user?.uid === opponent?.uid} questionCount={numQuestions} />
                 </div>
                 
                 <Card className="bg-card/80 backdrop-blur-sm">
                     <CardHeader className="text-center">
-                        <CardTitle>Question {duel.currentQuestionIndex + 1}</CardTitle>
+                        <CardTitle>{duel.isDraw ? "Sudden Death!" : `Question ${questionIndexForDisplay + 1}`}</CardTitle>
                         <h2 className="text-2xl font-bold text-white pt-2">{currentQuestion?.text}</h2>
                     </CardHeader>
                     <CardContent>
@@ -838,7 +841,7 @@ export default function DuelPage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in-50">
                     <Card className="text-center p-8 bg-card/80 text-white border-primary shadow-lg shadow-primary/50">
                         <CardHeader>
-                            <CardTitle className="text-4xl">{duel.status === 'sudden_death' ? 'SUDDEN DEATH!' : `Round ${duel.currentQuestionIndex + 1} Over`}</CardTitle>
+                            <CardTitle className="text-4xl">{duel.status === 'sudden_death' ? 'SUDDEN DEATH!' : `Round ${questionIndexForDisplay + 1} Over`}</CardTitle>
                             {currentUserAnswers[duel.currentQuestionIndex] === 1 ? (
                                 <div className="flex items-center justify-center gap-2 text-2xl text-green-400 mt-2">
                                     <CheckCircle /> You were correct!
@@ -863,5 +866,3 @@ export default function DuelPage() {
         </div>
     )
 }
-
-    
