@@ -300,7 +300,7 @@ export default function DuelPage() {
             if (!duelDoc.exists()) throw new Error("Duel disappeared");
             const freshDuelData = duelDoc.data() as DuelState;
             
-            if(freshDuelData.status === 'round_result' || freshDuelData.status === 'sudden_death' || freshDuelData.status === 'finished') return;
+            if (freshDuelData.status !== 'active' && freshDuelData.status !== 'sudden_death') return;
 
             const myAnswers = freshDuelData.answers?.[user.uid] || [];
             const opponentUid = user.uid === freshDuelData.challengerUid ? freshDuelData.opponentUid : freshDuelData.challengerUid;
@@ -320,7 +320,8 @@ export default function DuelPage() {
                          await handleDuelEnd(transaction, user.uid, opponentUid, false, true);
                     } else {
                         updates.status = 'round_result';
-                        updates.resultEndsAt = Timestamp.fromMillis(Date.now() + 7000);
+                        updates.isDraw = true; // Carry over the draw state
+                        updates.resultEndsAt = Timestamp.fromMillis(Date.now() + 5000);
                     }
                 }
             } else {
@@ -339,6 +340,7 @@ export default function DuelPage() {
                     }
                 } else {
                     updates.status = 'round_result';
+                    updates.isDraw = false;
                     updates.resultEndsAt = Timestamp.fromMillis(Date.now() + 5000);
                 }
             }
@@ -439,7 +441,6 @@ export default function DuelPage() {
             const duelData = duelDoc.data() as DuelState;
             const currentAnswers = duelData.answers?.[user.uid] || [];
             
-            // Prevent re-submitting an answer for the same question
             if (currentAnswers.length > duelData.currentQuestionIndex) return;
 
             const newAnswers = [...currentAnswers];
@@ -458,21 +459,6 @@ export default function DuelPage() {
         });
     };
 
-    useEffect(() => {
-        if (!duel || !user) return;
-        
-        const myAnswers = duel.answers?.[user.uid] || [];
-        const opponentUid = user.uid === duel.challengerUid ? duel.opponentUid : duel.challengerUid;
-        const opponentAnswers = duel.answers?.[opponentUid] || [];
-    
-        const bothAnswered = myAnswers.length > duel.currentQuestionIndex && 
-                             opponentAnswers.length > duel.currentQuestionIndex;
-
-        if (bothAnswered && (duel.status === 'active' || duel.status === 'sudden_death')) {
-            processRoundResults();
-        }
-    }, [duel?.answers, duel?.currentQuestionIndex, duel?.status, duel?.challengerUid, duel?.opponentUid, user, processRoundResults]);
-    
     useEffect(() => {
         if (!duelRef || !teacherUid) return;
         
@@ -520,26 +506,47 @@ export default function DuelPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [duelRef, teacherUid, router, toast, handleDuelStart]);
     
+    // This effect handles advancing to the next round AFTER the result screen is shown.
     useEffect(() => {
         if (!duelRef || (duel?.status !== 'round_result' && duel?.status !== 'sudden_death') || !duel.resultEndsAt) return;
         
-        const isSuddenDeathNext = duel.status === 'sudden_death';
         const timeUntilNextRound = duel.resultEndsAt.toDate().getTime() - Date.now();
         
         const timeout = setTimeout(async () => {
             const currentDuelSnap = await getDoc(duelRef);
-            if(currentDuelSnap.exists() && (currentDuelSnap.data().status === 'round_result' || currentDuelSnap.data().status === 'sudden_death')) {
-                 await updateDoc(duelRef, { 
-                    status: 'active',
-                    currentQuestionIndex: duel.currentQuestionIndex + 1,
-                    timerEndsAt: Timestamp.fromMillis(Date.now() + 60000), // Reset timer for next round
-                    resultEndsAt: null,
-                });
+            if(currentDuelSnap.exists()) {
+                 const currentDuelData = currentDuelSnap.data() as DuelState;
+                 if (currentDuelData.status === 'round_result' || currentDuelData.status === 'sudden_death') {
+                    await updateDoc(duelRef, { 
+                        status: 'active',
+                        currentQuestionIndex: duel.currentQuestionIndex + 1,
+                        timerEndsAt: Timestamp.fromMillis(Date.now() + 60000), // Reset timer for next round
+                        resultEndsAt: null,
+                    });
+                 }
             }
         }, timeUntilNextRound > 0 ? timeUntilNextRound : 0);
 
         return () => clearTimeout(timeout);
     }, [duel?.status, duel?.resultEndsAt, duelRef, duel?.currentQuestionIndex]);
+    
+    // This effect handles the round timeout.
+    useEffect(() => {
+        if (!duel?.timerEndsAt || hasAnswered || (duel.status !== 'active' && duel.status !== 'sudden_death')) return;
+
+        const timeUntilTimeout = duel.timerEndsAt.toDate().getTime() - Date.now();
+        if (timeUntilTimeout <= 0) {
+            handleSubmitAnswer(true);
+            return;
+        }
+
+        const timeout = setTimeout(() => {
+              handleSubmitAnswer(true);
+        }, timeUntilTimeout);
+
+        return () => clearTimeout(timeout);
+    }, [duel?.timerEndsAt, hasAnswered, duel?.status, handleSubmitAnswer]);
+
 
     useEffect(() => {
         if (!duel || !teacherUid) return;
@@ -560,23 +567,21 @@ export default function DuelPage() {
     }, [duel, teacherUid]);
     
 
+    // This effect checks if both players have answered.
     useEffect(() => {
-        if (!duel?.timerEndsAt || hasAnswered || (duel.status !== 'active' && duel.status !== 'sudden_death')) return;
+        if (!duel || !user || (duel.status !== 'active' && duel.status !== 'sudden_death')) return;
+        
+        const myAnswers = duel.answers?.[user.uid] || [];
+        const opponentUid = user.uid === duel.challengerUid ? duel.opponentUid : duel.challengerUid;
+        const opponentAnswers = duel.answers?.[opponentUid] || [];
+    
+        const bothAnswered = myAnswers.length > duel.currentQuestionIndex && 
+                             opponentAnswers.length > duel.currentQuestionIndex;
 
-        const timeUntilTimeout = duel.timerEndsAt.toDate().getTime() - Date.now();
-        if (timeUntilTimeout <= 0 && !hasAnswered) {
-            handleSubmitAnswer(true);
-            return;
+        if (bothAnswered) {
+            processRoundResults();
         }
-
-        const timeout = setTimeout(() => {
-            if (!hasAnswered) {
-              handleSubmitAnswer(true);
-            }
-        }, timeUntilTimeout);
-
-        return () => clearTimeout(timeout);
-    }, [duel?.timerEndsAt, hasAnswered, duel?.status, handleSubmitAnswer]);
+    }, [duel, user, processRoundResults]);
 
     useEffect(() => {
         if (duel?.status === 'active') {
@@ -632,6 +637,7 @@ export default function DuelPage() {
         }
     }
     
+    // New check here
     if (isLoading || !duel || !challenger || !opponent || !duelSettings) {
         return <div className="flex h-screen items-center justify-center bg-gray-900"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
     }
@@ -648,7 +654,7 @@ export default function DuelPage() {
             <div 
                 className="flex h-screen items-center justify-center text-white"
                 style={{
-                    backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fu6169617522_Widescreen_fantasy-style_image_of_a_training_and__3e2d56a1-f725-4687-b023-8b1b8edf404a_2%20(1).png?alt=media&token=0d8359d5-fa1f-417f-b56f-7483cac5455d')`,
+                    backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fu61696175222_Widescreen_fantasy-style_image_of_a_training_and__3e2d56a1-f725-4687-b023-8b1b8edf404a_2%20(1).png?alt=media&token=0d8359d5-fa1f-417f-b56f-7483cac5455d')`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                 }}
@@ -889,5 +895,3 @@ export default function DuelPage() {
         </div>
     )
 }
-
-    
