@@ -35,6 +35,7 @@ import {
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -116,7 +117,7 @@ export default function Dashboard() {
   // Daily Reminder state
   const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
   const [reminderTitle, setReminderTitle] = useState('');
-  const [reminderMessage, setReminderMessage] = useState('');
+  const [reminderMessage, setReminderMessage, setReminderMessage] = useState('');
   const [isReminderActive, setIsReminderActive] = useState(true);
   const [isSavingReminder, setIsSavingReminder] = useState(false);
 
@@ -1118,3 +1119,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
+    
