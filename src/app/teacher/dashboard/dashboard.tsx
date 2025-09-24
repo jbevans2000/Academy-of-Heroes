@@ -117,7 +117,7 @@ export default function Dashboard() {
   // Daily Reminder state
   const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
   const [reminderTitle, setReminderTitle] = useState('');
-  const [reminderMessage, setReminderMessage, setReminderMessage] = useState('');
+  const [reminderMessage, setReminderMessage] = useState('');
   const [isReminderActive, setIsReminderActive] = useState(true);
   const [isSavingReminder, setIsSavingReminder] = useState(false);
 
@@ -687,15 +687,15 @@ export default function Dashboard() {
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <AlertDialog open={isBroadcastDialogOpen} onOpenChange={setIsBroadcastDialogOpen}>
-            <AlertDialogContent>
+            <AlertDialogContent className="max-w-2xl">
                 <AlertDialogHeader>
                     <AlertDialogTitle className="text-2xl">A Message from the Grandmaster</AlertDialogTitle>
-                    <ScrollArea className="max-h-[60vh] pr-4">
-                        <AlertDialogDescription className="text-base text-foreground whitespace-pre-wrap">
-                            {broadcastMessage}
-                        </AlertDialogDescription>
-                    </ScrollArea>
                 </AlertDialogHeader>
+                <ScrollArea className="max-h-[60vh] pr-4">
+                    <AlertDialogDescription className="text-base text-foreground whitespace-pre-wrap">
+                        {broadcastMessage}
+                    </AlertDialogDescription>
+                </ScrollArea>
                 <AlertDialogFooter>
                     <AlertDialogAction onClick={handleCloseBroadcastDialog}>I Understand</AlertDialogAction>
                 </AlertDialogFooter>
@@ -1119,5 +1119,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
-    
