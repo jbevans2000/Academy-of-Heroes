@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -971,7 +970,7 @@ export default function Dashboard() {
                         <span>Clear All Battle Statuses</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuSub>
+                     <DropdownMenuSub>
                       <DropdownMenuSubTrigger>
                         <SortAsc className="mr-2 h-4 w-4" />
                         <span>Sort Students</span>
@@ -985,6 +984,23 @@ export default function Dashboard() {
                             <DropdownMenuRadioItem value="xp">Experience</DropdownMenuRadioItem>
                             <DropdownMenuRadioItem value="class">Class</DropdownMenuRadioItem>
                             <DropdownMenuRadioItem value="company">Company</DropdownMenuRadioItem>
+                        </DropdownMenuRadioGroup>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                     <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>
+                        <Briefcase className="mr-2 h-4 w-4" />
+                        <span>Filter by Company</span>
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent>
+                         <DropdownMenuRadioGroup value={companyFilter} onValueChange={setCompanyFilter}>
+                            <DropdownMenuLabel>Filter By</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuRadioItem value="all">All Students</DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="freelancers">Freelancers</DropdownMenuRadioItem>
+                            {companies.map(company => (
+                                <DropdownMenuRadioItem key={company.id} value={company.id}>{company.name}</DropdownMenuRadioItem>
+                            ))}
                         </DropdownMenuRadioGroup>
                       </DropdownMenuSubContent>
                     </DropdownMenuSub>
@@ -1157,3 +1173,4 @@ export default function Dashboard() {
   );
 }
 
+    
