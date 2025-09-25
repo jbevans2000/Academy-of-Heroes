@@ -20,7 +20,8 @@ import { getGlobalSettings, updateGlobalSettings } from '@/ai/flows/manage-setti
 import { deleteFeedback } from '@/ai/flows/submit-feedback';
 import { moderateStudent } from '@/ai/flows/manage-student';
 import { deleteTeacher } from '@/ai/flows/manage-teacher';
-import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle, HelpCircle, Edit, Reply } from 'lucide-react';
+import { getAdminNotepadContent, updateAdminNotepadContent } from '@/ai/flows/manage-admin-notepad';
+import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle, HelpCircle, Edit, Reply, FileText, Save } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -117,6 +118,12 @@ export default function AdminDashboardPage() {
     const [feedbackToDelete, setFeedbackToDelete] = useState<string | null>(null);
     const [isDeletingFeedback, setIsDeletingFeedback] = useState(false);
     
+    // Notepad State
+    const [notepadContent, setNotepadContent] = useState('');
+    const [isNotepadLoading, setIsNotepadLoading] = useState(true);
+    const [isSavingNotepad, setIsSavingNotepad] = useState(false);
+    const initialNotepadContent = useRef('');
+
     // Broadcast message state
     const [broadcastMessage, setBroadcastMessage] = useState('');
     const [isSendingBroadcast, setIsSendingBroadcast] = useState(false);
@@ -174,7 +181,8 @@ export default function AdminDashboardPage() {
             fetchTeachersAndStudents(),
             fetchSettings(),
             fetchFeedback(),
-            fetchBroadcasts()
+            fetchBroadcasts(),
+            fetchNotepad(),
         ]);
         setIsLoading(false);
     };
@@ -295,6 +303,36 @@ export default function AdminDashboardPage() {
         } catch (error) {
             console.error("Error fetching broadcasts:", error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not load broadcast history.' });
+        }
+    }
+    
+    const fetchNotepad = async () => {
+        setIsNotepadLoading(true);
+        try {
+            const content = await getAdminNotepadContent();
+            setNotepadContent(content);
+            initialNotepadContent.current = content;
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not load notepad content.' });
+        } finally {
+            setIsNotepadLoading(false);
+        }
+    }
+
+    const handleSaveNotepad = async () => {
+        setIsSavingNotepad(true);
+        try {
+            const result = await updateAdminNotepadContent(notepadContent);
+            if(result.success) {
+                toast({ title: 'Notepad Saved', description: 'Your notes have been updated.' });
+                initialNotepadContent.current = notepadContent;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Save Failed', description: error.message });
+        } finally {
+            setIsSavingNotepad(false);
         }
     }
 
@@ -605,6 +643,31 @@ export default function AdminDashboardPage() {
             <main className="flex-1 p-4 md:p-6 lg:p-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                  
                  <div className="lg:col-span-2 space-y-6">
+                    {/* Admin Notepad */}
+                     <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle className="flex items-center gap-2"><FileText className="h-6 w-6 text-primary" /> Admin Notepad</CardTitle>
+                                <CardDescription>Your private, persistent scratchpad.</CardDescription>
+                            </div>
+                            <Button onClick={handleSaveNotepad} disabled={isSavingNotepad || notepadContent === initialNotepadContent.current}>
+                                {isSavingNotepad ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
+                                Save
+                            </Button>
+                        </CardHeader>
+                        <CardContent>
+                            {isNotepadLoading ? <Skeleton className="h-40" /> : (
+                                <Textarea
+                                    placeholder="Jot down notes, to-do items, or reminders here..."
+                                    value={notepadContent}
+                                    onChange={(e) => setNotepadContent(e.target.value)}
+                                    rows={8}
+                                    disabled={isSavingNotepad}
+                                />
+                            )}
+                        </CardContent>
+                     </Card>
+
                     {/* Broadcast Message Card */}
                     <Collapsible>
                         <Card>
