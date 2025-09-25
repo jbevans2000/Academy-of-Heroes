@@ -260,7 +260,7 @@ export default function ChapterPage() {
                 const chapterDocRef = doc(db, 'teachers', teacherUid, 'chapters', chapterId as string);
                 const chapterSnap = await getDoc(chapterDocRef);
                 if (chapterSnap.exists()) {
-                    const data = chapterSnap.data() as Chapter;
+                    const data = { id: chapterSnap.id, ...chapterSnap.data() } as Chapter;
                     
                     // Migration logic for old lesson structure
                     if (data.lessonContent && (!data.lessonParts || data.lessonParts.length === 0)) {
