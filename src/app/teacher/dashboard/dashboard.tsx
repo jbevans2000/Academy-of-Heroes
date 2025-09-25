@@ -22,6 +22,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuLabel,
+  DropdownMenuCheckboxItem
 } from "@/components/ui/dropdown-menu"
 import {
   Dialog,
@@ -106,7 +107,7 @@ export default function Dashboard() {
   const [showHidden, setShowHidden] = useState(false);
   
   const [sortOrder, setSortOrder] = useState<SortOrder>('studentName');
-  const [companyFilter, setCompanyFilter] = useState<string>('all');
+  const [companyFilters, setCompanyFilters] = useState<string[]>(['all']);
 
   const { toast } = useToast();
   
@@ -267,12 +268,17 @@ export default function Dashboard() {
   const sortedStudents = useMemo(() => {
     let filteredStudents = students.filter(s => !s.isArchived && (showHidden ? s.isHidden : !s.isHidden));
 
-    if (companyFilter !== 'all') {
-        if (companyFilter === 'freelancers') {
-            filteredStudents = filteredStudents.filter(s => !s.companyId);
-        } else {
-            filteredStudents = filteredStudents.filter(s => s.companyId === companyFilter);
-        }
+    if (!companyFilters.includes('all')) {
+        filteredStudents = filteredStudents.filter(s => {
+            const isFreelancer = !s.companyId;
+            if (companyFilters.includes('freelancers') && isFreelancer) {
+                return true;
+            }
+            if (s.companyId && companyFilters.includes(s.companyId)) {
+                return true;
+            }
+            return false;
+        });
     }
 
     switch(sortOrder) {
@@ -314,7 +320,24 @@ export default function Dashboard() {
       default:
         return { type: 'flat', data: filteredStudents };
     }
-  }, [students, sortOrder, companies, showHidden, companyFilter]);
+  }, [students, sortOrder, companies, showHidden, companyFilters]);
+  
+  const handleCompanyFilterChange = (filterId: string) => {
+    if (filterId === 'all') {
+        setCompanyFilters(['all']);
+        return;
+    }
+
+    setCompanyFilters(prev => {
+        const newFilters = prev.filter(f => f !== 'all');
+        if (newFilters.includes(filterId)) {
+            const nextFilters = newFilters.filter(f => f !== filterId);
+            return nextFilters.length === 0 ? ['all'] : nextFilters;
+        } else {
+            return [...newFilters, filterId];
+        }
+    });
+  };
 
   const handleToggleStudentSelection = (uid: string) => {
     setSelectedStudents(prev =>
@@ -658,7 +681,7 @@ export default function Dashboard() {
         <TeacherHeader />
         <main className="flex-1 p-4 md:p-6 lg:p-8">
             <h1 className="text-2xl font-bold mb-4">Your Guild Roster</h1>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                 {Array.from({ length: 8 }).map((_, i) => (
                     <div key={i} className="space-y-2">
                         <Skeleton className="h-48 w-full rounded-xl" />
@@ -970,7 +993,7 @@ export default function Dashboard() {
                         <span>Clear All Battle Statuses</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                     <DropdownMenuSub>
+                    <DropdownMenuSub>
                       <DropdownMenuSubTrigger>
                         <SortAsc className="mr-2 h-4 w-4" />
                         <span>Sort Students</span>
@@ -992,17 +1015,30 @@ export default function Dashboard() {
                         <Briefcase className="mr-2 h-4 w-4" />
                         <span>Filter by Company</span>
                       </DropdownMenuSubTrigger>
-                      <DropdownMenuSubContent>
-                         <DropdownMenuRadioGroup value={companyFilter} onValueChange={setCompanyFilter}>
-                            <DropdownMenuLabel>Filter By</DropdownMenuLabel>
+                       <DropdownMenuSubContent>
+                            <DropdownMenuCheckboxItem
+                                checked={companyFilters.includes('all')}
+                                onCheckedChange={() => setCompanyFilters(['all'])}
+                            >
+                                All Students
+                            </DropdownMenuCheckboxItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuRadioItem value="all">All Students</DropdownMenuRadioItem>
-                            <DropdownMenuRadioItem value="freelancers">Freelancers</DropdownMenuRadioItem>
+                            <DropdownMenuCheckboxItem
+                                checked={companyFilters.includes('freelancers')}
+                                onCheckedChange={() => handleCompanyFilterChange('freelancers')}
+                            >
+                                Freelancers
+                            </DropdownMenuCheckboxItem>
                             {companies.map(company => (
-                                <DropdownMenuRadioItem key={company.id} value={company.id}>{company.name}</DropdownMenuRadioItem>
+                                <DropdownMenuCheckboxItem
+                                    key={company.id}
+                                    checked={companyFilters.includes(company.id)}
+                                    onCheckedChange={() => handleCompanyFilterChange(company.id)}
+                                >
+                                    {company.name}
+                                </DropdownMenuCheckboxItem>
                             ))}
-                        </DropdownMenuRadioGroup>
-                      </DropdownMenuSubContent>
+                        </DropdownMenuSubContent>
                     </DropdownMenuSub>
                 </DropdownMenuContent>
             </DropdownMenu>
@@ -1172,5 +1208,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
-    
