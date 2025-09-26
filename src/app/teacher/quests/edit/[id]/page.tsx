@@ -39,6 +39,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Checkbox } from '@/components/ui/checkbox';
 
 const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
@@ -191,6 +192,15 @@ export default function EditQuestPage() {
                 } else if (!data.lessonParts) {
                     data.lessonParts = [];
                 }
+                if (data.quiz && data.quiz.questions) {
+                    data.quiz.questions = data.quiz.questions.map(q => ({
+                        ...q,
+                        questionType: q.questionType || 'single',
+                        correctAnswer: Array.isArray(q.correctAnswer) ? q.correctAnswer : [q.correctAnswerIndex],
+                    }));
+                }
+
+
                 setChapter(data);
                 setSelectedHubId(data.hubId);
                 setChapterCoordinates(data.coordinates || { x: 50, y: 50 });
@@ -259,8 +269,17 @@ export default function EditQuestPage() {
         });
     };
 
-    const handleQuizQuestionChange = (id: string, text: string) => {
-        const updatedQuestions = chapter?.quiz?.questions.map(q => q.id === id ? { ...q, text } : q) || [];
+    const handleQuizQuestionChange = (id: string, field: 'text' | 'questionType', value: string) => {
+        const updatedQuestions = chapter?.quiz?.questions.map(q => {
+            if (q.id === id) {
+                const updatedQ = { ...q, [field]: value };
+                if (field === 'questionType') {
+                    updatedQ.correctAnswer = [];
+                }
+                return updatedQ;
+            }
+            return q;
+        }) || [];
         handleQuizChange('questions', updatedQuestions);
     };
 
@@ -268,14 +287,45 @@ export default function EditQuestPage() {
         const updatedQuestions = chapter?.quiz?.questions.map(q => q.id === qId ? { ...q, answers: q.answers.map((a, i) => i === aIndex ? text : a) } : q) || [];
         handleQuizChange('questions', updatedQuestions);
     };
+    
+    const handleAddAnswerChoice = (qId: string) => {
+        const updatedQuestions = chapter?.quiz?.questions.map(q => 
+            q.id === qId ? { ...q, answers: [...q.answers, ''] } : q
+        ) || [];
+        handleQuizChange('questions', updatedQuestions);
+    };
+
+    const handleRemoveAnswerChoice = (qId: string, aIndex: number) => {
+        const updatedQuestions = chapter?.quiz?.questions.map(q => {
+            if (q.id === qId && q.answers.length > 2) {
+                const newAnswers = q.answers.filter((_, i) => i !== aIndex);
+                const newCorrectAnswer = q.correctAnswer.filter(i => i !== aIndex).map(i => i > aIndex ? i - 1 : i);
+                return { ...q, answers: newAnswers, correctAnswer: newCorrectAnswer };
+            }
+            return q;
+        }) || [];
+        handleQuizChange('questions', updatedQuestions);
+    };
 
     const handleCorrectQuizAnswerChange = (qId: string, aIndex: number) => {
-        const updatedQuestions = chapter?.quiz?.questions.map(q => q.id === qId ? { ...q, correctAnswerIndex: aIndex } : q) || [];
+        const updatedQuestions = chapter?.quiz?.questions.map(q => {
+            if (q.id === qId) {
+                if (q.questionType === 'single') {
+                    return { ...q, correctAnswer: [aIndex] };
+                } else {
+                    const newCorrect = q.correctAnswer.includes(aIndex) 
+                        ? q.correctAnswer.filter(i => i !== aIndex)
+                        : [...q.correctAnswer, aIndex];
+                    return { ...q, correctAnswer: newCorrect.sort((a,b) => a-b) };
+                }
+            }
+            return q;
+        }) || [];
         handleQuizChange('questions', updatedQuestions);
     };
     
     const handleAddQuizQuestion = () => {
-        const newQuestion: QuizQuestion = { id: uuidv4(), text: '', answers: ['', '', '', ''], correctAnswerIndex: 0 };
+        const newQuestion: QuizQuestion = { id: uuidv4(), text: '', answers: ['', ''], correctAnswer: [], questionType: 'single' };
         const updatedQuestions = [...(chapter?.quiz?.questions || []), newQuestion];
         handleQuizChange('questions', updatedQuestions);
     };
@@ -311,11 +361,12 @@ export default function EditQuestPage() {
             gradeLevel: aiGradeLevel,
             numQuestions: Number(aiNumQuestions)
         });
-        const newQuestions = result.questions.map(q => ({
+        const newQuestions: QuizQuestion[] = result.questions.map(q => ({
             id: uuidv4(),
             text: q.questionText,
             answers: q.answers,
-            correctAnswerIndex: q.correctAnswerIndex,
+            correctAnswer: [q.correctAnswerIndex],
+            questionType: 'single'
         }));
         
         handleQuizChange('questions', [...(chapter?.quiz?.questions || []), ...newQuestions]);
@@ -344,11 +395,12 @@ export default function EditQuestPage() {
                 lessonContent: lessonText,
                 numQuestions: Number(aiNumQuestions),
             });
-            const newQuestions = result.questions.map(q => ({
+            const newQuestions: QuizQuestion[] = result.questions.map(q => ({
                 id: uuidv4(),
                 text: q.questionText,
                 answers: q.answers,
-                correctAnswerIndex: q.correctAnswerIndex,
+                correctAnswer: [q.correctAnswerIndex],
+                questionType: 'single'
             }));
             
             handleQuizChange('questions', [...(chapter?.quiz?.questions || []), ...newQuestions]);
@@ -378,12 +430,20 @@ export default function EditQuestPage() {
     setIsSaving(true);
     
     const chapterToSave = { ...chapter };
+    delete chapterToSave.lessonContent; // Remove deprecated field
 
-    if (!chapterToSave.quiz || !chapterToSave.quiz.questions || chapterToSave.quiz.questions.length === 0) {
+    // Clean up quiz data before saving
+    if (chapterToSave.quiz && chapterToSave.quiz.questions) {
+        chapterToSave.quiz.questions = chapterToSave.quiz.questions.map(q => {
+            // Ensure correctAnswer is an array
+            const correctAnswer = Array.isArray(q.correctAnswer) ? q.correctAnswer : [q.correctAnswerIndex];
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { correctAnswerIndex, ...rest } = q; // Remove old index
+            return { ...rest, correctAnswer };
+        });
+    } else {
         delete chapterToSave.quiz;
     }
-    
-    delete chapterToSave.lessonContent; // Remove deprecated field
 
     try {
         const chapterRef = doc(db, 'teachers', teacher.uid, 'chapters', chapterId);
@@ -705,15 +765,36 @@ export default function EditQuestPage() {
                                     <Button variant="ghost" size="icon" onClick={() => handleRemoveQuizQuestion(q.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                                 </div>
                                 <div className="space-y-2">
-                                    <Input placeholder="Question text" value={q.text} onChange={e => handleQuizQuestionChange(q.id, e.target.value)} />
-                                    <RadioGroup value={q.correctAnswerIndex.toString()} onValueChange={value => handleCorrectQuizAnswerChange(q.id, Number(value))}>
+                                    <Textarea placeholder="Question text" value={q.text} onChange={e => handleQuizQuestionChange(q.id, 'text', e.target.value)} />
+                                    <Select value={q.questionType} onValueChange={(value) => handleQuizQuestionChange(q.id, 'questionType', value)}>
+                                        <SelectTrigger><SelectValue/></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="single">Single Choice (Radio Buttons)</SelectItem>
+                                            <SelectItem value="multiple">Multiple Choice (Checkboxes)</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    
+                                    <div className="space-y-2 pt-2">
+                                        <Label>Answers (Select correct one(s))</Label>
                                         {q.answers.map((ans, aIndex) => (
                                             <div key={aIndex} className="flex items-center gap-2">
-                                                <RadioGroupItem value={aIndex.toString()} id={`q${q.id}-a${aIndex}`} />
+                                                {q.questionType === 'single' ? (
+                                                    <RadioGroup value={String(q.correctAnswer[0])} onValueChange={value => handleCorrectQuizAnswerChange(q.id, Number(value))} className="flex items-center">
+                                                        <RadioGroupItem value={String(aIndex)} id={`q${q.id}-a${aIndex}`} />
+                                                    </RadioGroup>
+                                                ) : (
+                                                    <Checkbox id={`q${q.id}-a${aIndex}`} checked={q.correctAnswer.includes(aIndex)} onCheckedChange={() => handleCorrectQuizAnswerChange(q.id, aIndex)} />
+                                                )}
                                                 <Input placeholder={`Answer ${aIndex + 1}`} value={ans} onChange={e => handleQuizAnswerChange(q.id, aIndex, e.target.value)} />
+                                                <Button variant="ghost" size="icon" onClick={() => handleRemoveAnswerChoice(q.id, aIndex)} disabled={q.answers.length <= 2}>
+                                                    <X className="h-4 w-4" />
+                                                </Button>
                                             </div>
                                         ))}
-                                    </RadioGroup>
+                                    </div>
+                                     <Button variant="outline" size="sm" onClick={() => handleAddAnswerChoice(q.id)}>
+                                        <PlusCircle className="mr-2 h-4 w-4" /> Add Answer Choice
+                                    </Button>
                                 </div>
                             </Card>
                         ))}
@@ -739,3 +820,4 @@ export default function EditQuestPage() {
     </div>
   );
 }
+

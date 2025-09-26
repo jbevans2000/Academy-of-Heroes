@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { Label } from '@/components/ui/label';
@@ -76,46 +77,73 @@ const QuizComponent = ({ quiz, student, chapter, hub, teacherUid, onQuizComplete
     onQuizComplete: (score: number, answers: any[]) => void 
 }) => {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-    const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-    const [answers, setAnswers] = useState<(number | null)[]>(new Array(quiz.questions.length).fill(null));
+    const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
+    const [allAnswers, setAllAnswers] = useState<(number[] | null)[]>(new Array(quiz.questions.length).fill(null));
     const [showResults, setShowResults] = useState(false);
     const { toast } = useToast();
 
     const handleAnswerSelect = (answerIndex: number) => {
-        setSelectedAnswer(answerIndex);
+        const currentQuestion = quiz.questions[currentQuestionIndex];
+        if (currentQuestion.questionType === 'single') {
+            setSelectedAnswers([answerIndex]);
+        } else {
+            setSelectedAnswers(prev => 
+                prev.includes(answerIndex) 
+                ? prev.filter(i => i !== answerIndex) 
+                : [...prev, answerIndex]
+            );
+        }
     };
 
     const handleNext = () => {
-        if (selectedAnswer === null) {
+        if (selectedAnswers.length === 0) {
             toast({ variant: 'destructive', title: 'No Answer Selected', description: 'Please choose an answer.' });
             return;
         }
         
-        const newAnswers = [...answers];
-        newAnswers[currentQuestionIndex] = selectedAnswer;
-        setAnswers(newAnswers);
+        const newAnswers = [...allAnswers];
+        newAnswers[currentQuestionIndex] = selectedAnswers.sort((a,b) => a-b);
+        setAllAnswers(newAnswers);
         
-        setSelectedAnswer(null); // Reset for the next question
+        setSelectedAnswers([]); // Reset for the next question
         if (currentQuestionIndex < quiz.questions.length - 1) {
             setCurrentQuestionIndex(prev => prev + 1);
         } else {
-            // Last question, so show results
             setShowResults(true);
         }
     };
     
     if (showResults) {
-        const correctAnswers = answers.filter((ans, i) => ans === quiz.questions[i].correctAnswerIndex).length;
-        const score = (correctAnswers / quiz.questions.length) * 100;
+        let correctCount = 0;
+        allAnswers.forEach((studentAns, i) => {
+            if (!studentAns) return;
+            const question = quiz.questions[i];
+            const correctAns = question.correctAnswer.sort((a,b) => a-b);
+
+            // For single answer, it's a simple comparison
+            if (question.questionType === 'single' && studentAns[0] === correctAns[0]) {
+                 correctCount++;
+            }
+            // For multiple answers, arrays must be identical
+            else if (question.questionType === 'multiple' && JSON.stringify(studentAns) === JSON.stringify(correctAns)) {
+                correctCount++;
+            }
+        });
+        
+        const score = (correctCount / quiz.questions.length) * 100;
         const passed = score >= (quiz.settings.passingScore || 80);
 
-        const detailedAnswers = answers.map((studentAnswerIndex, i) => {
+        const detailedAnswers = allAnswers.map((studentAnswerIndices, i) => {
             const question = quiz.questions[i];
+            const studentAnswerText = studentAnswerIndices?.map(idx => question.answers[idx]).join(', ') || 'No Answer';
+            const correctAnswerText = question.correctAnswer.map(idx => question.answers[idx]).join(', ');
+            const isCorrect = JSON.stringify(studentAnswerIndices) === JSON.stringify(question.correctAnswer.sort((a,b)=>a-b));
+
             return {
                 question: question.text,
-                studentAnswer: studentAnswerIndex !== null ? question.answers[studentAnswerIndex] : 'No Answer',
-                correctAnswer: question.answers[question.correctAnswerIndex],
-                isCorrect: studentAnswerIndex === question.correctAnswerIndex,
+                studentAnswer: studentAnswerText,
+                correctAnswer: correctAnswerText,
+                isCorrect,
             };
         });
 
@@ -125,7 +153,7 @@ const QuizComponent = ({ quiz, student, chapter, hub, teacherUid, onQuizComplete
                     <CardTitle>Quiz Results</CardTitle>
                 </CardHeader>
                 <CardContent className="text-center space-y-4">
-                    <p className="text-4xl font-bold">You scored {correctAnswers} out of {quiz.questions.length}</p>
+                    <p className="text-4xl font-bold">You scored {correctCount} out of {quiz.questions.length}</p>
                     <p className="text-2xl font-semibold">{score.toFixed(0)}%</p>
                     
                     {quiz.settings.requirePassing && passed && (
@@ -143,8 +171,8 @@ const QuizComponent = ({ quiz, student, chapter, hub, teacherUid, onQuizComplete
                          {(!passed && quiz.settings.requirePassing) && (
                             <Button variant="outline" onClick={() => {
                                 setCurrentQuestionIndex(0);
-                                setAnswers(new Array(quiz.questions.length).fill(null));
-                                setSelectedAnswer(null);
+                                setAllAnswers(new Array(quiz.questions.length).fill(null));
+                                setSelectedAnswers([]);
                                 setShowResults(false);
                             }}>
                                 Retake Quiz
@@ -167,14 +195,24 @@ const QuizComponent = ({ quiz, student, chapter, hub, teacherUid, onQuizComplete
             </CardHeader>
             <CardContent>
                 <p className="font-bold text-lg mb-4">{currentQuestionIndex + 1}. {currentQuestion.text}</p>
-                <RadioGroup onValueChange={(value) => handleAnswerSelect(Number(value))} value={selectedAnswer !== null ? String(selectedAnswer) : ''}>
+                <div className="space-y-2">
                     {currentQuestion.answers.map((answer, index) => (
-                        <div key={index} className="flex items-center space-x-2 p-3 rounded-md hover:bg-muted transition-colors">
-                            <RadioGroupItem value={index.toString()} id={`q${currentQuestionIndex}-a${index}`} />
+                        <div key={index} className="flex items-center space-x-3 p-3 rounded-md hover:bg-muted transition-colors">
+                            {currentQuestion.questionType === 'single' ? (
+                                <RadioGroup onValueChange={() => handleAnswerSelect(index)} value={String(selectedAnswers[0])}>
+                                    <RadioGroupItem value={String(index)} id={`q${currentQuestionIndex}-a${index}`} />
+                                </RadioGroup>
+                            ) : (
+                                <Checkbox 
+                                    id={`q${currentQuestionIndex}-a${index}`} 
+                                    checked={selectedAnswers.includes(index)} 
+                                    onCheckedChange={() => handleAnswerSelect(index)} 
+                                />
+                            )}
                             <Label htmlFor={`q${currentQuestionIndex}-a${index}`} className="flex-1 cursor-pointer">{answer}</Label>
                         </div>
                     ))}
-                </RadioGroup>
+                </div>
                 <div className="flex justify-end mt-4">
                     <Button onClick={handleNext}>
                         {currentQuestionIndex === quiz.questions.length - 1 ? 'Finish Quiz' : 'Next Question'}

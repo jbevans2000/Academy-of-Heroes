@@ -289,17 +289,59 @@ function NewQuestForm() {
     };
 
     const handleAddQuizQuestion = () => {
-        setQuizQuestions(prev => [...prev, { id: uuidv4(), text: '', answers: ['', '', '', ''], correctAnswerIndex: 0 }]);
+        setQuizQuestions(prev => [...prev, { id: uuidv4(), text: '', answers: ['', ''], correctAnswer: [], questionType: 'single' }]);
     };
-    const handleQuizQuestionChange = (id: string, text: string) => {
-        setQuizQuestions(prev => prev.map(q => q.id === id ? { ...q, text } : q));
+    
+    const handleQuizQuestionChange = (id: string, field: 'text' | 'questionType', value: string) => {
+        setQuizQuestions(prev => prev.map(q => {
+            if (q.id === id) {
+                const updatedQ = { ...q, [field]: value };
+                // When changing type, reset answers and correct answer
+                if (field === 'questionType') {
+                    updatedQ.answers = ['', ''];
+                    updatedQ.correctAnswer = [];
+                }
+                return updatedQ;
+            }
+            return q;
+        }));
     };
+
     const handleQuizAnswerChange = (qId: string, aIndex: number, text: string) => {
         setQuizQuestions(prev => prev.map(q => q.id === qId ? { ...q, answers: q.answers.map((a, i) => i === aIndex ? text : a) } : q));
     };
+    
     const handleCorrectQuizAnswerChange = (qId: string, aIndex: number) => {
-        setQuizQuestions(prev => prev.map(q => q.id === qId ? { ...q, correctAnswerIndex: aIndex } : q));
+        setQuizQuestions(prev => prev.map(q => {
+            if (q.id === qId) {
+                if (q.questionType === 'single') {
+                    return { ...q, correctAnswer: [aIndex] };
+                } else { // multiple
+                    const newCorrectAnswers = q.correctAnswer.includes(aIndex)
+                        ? q.correctAnswer.filter(i => i !== aIndex)
+                        : [...q.correctAnswer, aIndex];
+                    return { ...q, correctAnswer: newCorrectAnswers.sort((a,b) => a-b) };
+                }
+            }
+            return q;
+        }));
     };
+
+    const handleAddAnswerChoice = (qId: string) => {
+        setQuizQuestions(prev => prev.map(q => q.id === qId ? { ...q, answers: [...q.answers, ''] } : q));
+    }
+
+    const handleRemoveAnswerChoice = (qId: string, aIndex: number) => {
+        setQuizQuestions(prev => prev.map(q => {
+            if (q.id === qId && q.answers.length > 2) {
+                const newAnswers = q.answers.filter((_, i) => i !== aIndex);
+                const newCorrectAnswer = q.correctAnswer.filter(i => i !== aIndex).map(i => i > aIndex ? i - 1 : i);
+                return { ...q, answers: newAnswers, correctAnswer: newCorrectAnswer };
+            }
+            return q;
+        }));
+    };
+
     const handleRemoveQuizQuestion = (id: string) => {
         setQuizQuestions(prev => prev.filter(q => q.id !== id));
     };
@@ -330,11 +372,12 @@ function NewQuestForm() {
                 gradeLevel: aiGradeLevel,
                 numQuestions: Number(aiNumQuestions)
             });
-            const newQuestions = result.questions.map(q => ({
+            const newQuestions: QuizQuestion[] = result.questions.map(q => ({
                 id: uuidv4(),
                 text: q.questionText,
                 answers: q.answers,
-                correctAnswerIndex: q.correctAnswerIndex,
+                correctAnswer: [q.correctAnswerIndex],
+                questionType: 'single'
             }));
             
             setQuizQuestions(prev => [...prev, ...newQuestions]);
@@ -363,11 +406,12 @@ function NewQuestForm() {
                 lessonContent: lessonText,
                 numQuestions: Number(aiNumQuestions),
             });
-            const newQuestions = result.questions.map(q => ({
+            const newQuestions: QuizQuestion[] = result.questions.map(q => ({
                 id: uuidv4(),
                 text: q.questionText,
                 answers: q.answers,
-                correctAnswerIndex: q.correctAnswerIndex,
+                correctAnswer: [q.correctAnswerIndex],
+                questionType: 'single'
             }));
             
             setQuizQuestions(prev => [...prev, ...newQuestions]);
@@ -445,10 +489,16 @@ function NewQuestForm() {
             coordinates: chapterCoordinates,
             createdAt: serverTimestamp(),
         };
+        
+        const finalQuizQuestions = quizQuestions.map(q => ({
+            ...q,
+            // Ensure correctAnswer is always an array
+            correctAnswer: Array.isArray(q.correctAnswer) ? q.correctAnswer : [q.correctAnswer],
+        }));
 
-        if (quizQuestions.length > 0) {
+        if (finalQuizQuestions.length > 0) {
             chapterData.quiz = {
-                questions: quizQuestions,
+                questions: finalQuizQuestions,
                 settings: {
                     requirePassing,
                     passingScore
@@ -823,15 +873,36 @@ function NewQuestForm() {
                                         <Button variant="ghost" size="icon" onClick={() => handleRemoveQuizQuestion(q.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                                     </div>
                                     <div className="space-y-2">
-                                        <Input placeholder="Question text" value={q.text} onChange={e => handleQuizQuestionChange(q.id, e.target.value)} />
-                                        <RadioGroup value={q.correctAnswerIndex.toString()} onValueChange={value => handleCorrectQuizAnswerChange(q.id, Number(value))}>
+                                        <Textarea placeholder="Question text" value={q.text} onChange={e => handleQuizQuestionChange(q.id, 'text', e.target.value)} />
+                                        <Select value={q.questionType} onValueChange={(value) => handleQuizQuestionChange(q.id, 'questionType', value)}>
+                                            <SelectTrigger><SelectValue/></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="single">Single Choice (Radio Buttons)</SelectItem>
+                                                <SelectItem value="multiple">Multiple Choice (Checkboxes)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        
+                                        <div className="space-y-2 pt-2">
+                                            <Label>Answers (Select correct one(s))</Label>
                                             {q.answers.map((ans, aIndex) => (
                                                 <div key={aIndex} className="flex items-center gap-2">
-                                                    <RadioGroupItem value={aIndex.toString()} id={`q${q.id}-a${aIndex}`} />
+                                                    {q.questionType === 'single' ? (
+                                                        <RadioGroup value={String(q.correctAnswer[0])} onValueChange={value => handleCorrectQuizAnswerChange(q.id, Number(value))} className="flex items-center">
+                                                            <RadioGroupItem value={String(aIndex)} id={`q${q.id}-a${aIndex}`} />
+                                                        </RadioGroup>
+                                                    ) : (
+                                                        <Checkbox id={`q${q.id}-a${aIndex}`} checked={q.correctAnswer.includes(aIndex)} onCheckedChange={() => handleCorrectQuizAnswerChange(q.id, aIndex)} />
+                                                    )}
                                                     <Input placeholder={`Answer ${aIndex + 1}`} value={ans} onChange={e => handleQuizAnswerChange(q.id, aIndex, e.target.value)} />
+                                                    <Button variant="ghost" size="icon" onClick={() => handleRemoveAnswerChoice(q.id, aIndex)} disabled={q.answers.length <= 2}>
+                                                        <X className="h-4 w-4" />
+                                                    </Button>
                                                 </div>
                                             ))}
-                                        </RadioGroup>
+                                        </div>
+                                         <Button variant="outline" size="sm" onClick={() => handleAddAnswerChoice(q.id)}>
+                                            <PlusCircle className="mr-2 h-4 w-4" /> Add Answer Choice
+                                        </Button>
                                     </div>
                                 </Card>
                             ))}

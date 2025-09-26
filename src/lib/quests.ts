@@ -4,7 +4,8 @@ export interface QuizQuestion {
     id: string;
     text: string;
     answers: string[];
-    correctAnswerIndex: number;
+    correctAnswer: number[]; // Use an array to support single or multiple correct answers
+    questionType: 'single' | 'multiple'; // 'single' for radio, 'multiple' for checkbox
 }
 
 export interface Quiz {
