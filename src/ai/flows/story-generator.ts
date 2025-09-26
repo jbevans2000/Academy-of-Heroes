@@ -17,7 +17,7 @@ export type StoryGeneratorOutput = z.infer<typeof StoryGeneratorOutputSchema>;
 // Define the prompt template
 const storyPrompt = ai.definePrompt({
     name: 'storyGeneratorPrompt',
-    model: 'googleai/gemini-1.5-flash',
+    model: 'googleai/gemini-2.5-flash',
     output: { schema: StoryGeneratorOutputSchema },
     prompt: `You are a master storyteller specializing in short, engaging fantasy quests for an educational game.
 

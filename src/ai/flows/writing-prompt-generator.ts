@@ -19,7 +19,7 @@ export type WritingPromptInput = z.infer<typeof WritingPromptInputSchema>;
 // Define the prompt template
 const writingPrompt = ai.definePrompt({
     name: 'writingPromptGenerator',
-    model: 'googleai/gemini-1.5-flash',
+    model: 'googleai/gemini-2.5-flash',
     input: { schema: WritingPromptInputSchema },
     output: { format: 'text' },
     prompt: `You are an expert curriculum designer specializing in creating engaging, grade-appropriate writing prompts. Generate a single, unique, and creative writing prompt based on the following criteria:

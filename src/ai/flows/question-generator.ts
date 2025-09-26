@@ -29,7 +29,7 @@ export type QuestionGeneratorOutput = z.infer<typeof QuestionGeneratorOutputSche
 // Define the prompt template
 const questionPrompt = ai.definePrompt({
     name: 'questionGeneratorPrompt',
-    model: 'googleai/gemini-1.5-flash',
+    model: 'googleai/gemini-2.5-flash',
     input: { schema: QuestionGeneratorInputSchema },
     output: { schema: QuestionGeneratorOutputSchema },
     prompt: `You are an expert curriculum designer tasked with creating a set of multiple-choice questions.
