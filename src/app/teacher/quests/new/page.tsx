@@ -209,15 +209,14 @@ function NewQuestForm() {
             if (teacherSnap.exists() && teacherSnap.data().worldMapUrl) {
                 setTeacherWorldMapUrl(teacherSnap.data().worldMapUrl);
             }
-
+            
             const preselectedHubId = searchParams.get('hubId');
-            if (preselectedHubId) {
+            if(preselectedHubId) {
                 setSelectedHubId(preselectedHubId);
             }
 
         } catch (error) {
             console.error("Error fetching initial data: ", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch initial quest data.' });
         } finally {
             setIsLoading(false);
         }
