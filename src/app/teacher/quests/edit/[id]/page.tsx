@@ -6,7 +6,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Loader2, Save, Sparkles, Upload, X, Library, Trash2, PlusCircle, ArrowRight, BookCopy } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Trash2, Eye, GitBranch, Loader2, Save, Sparkles, Image as ImageIcon, Upload, X, Music, Library, BookCopy } from 'lucide-react';
 import { doc, getDoc, setDoc, collection, getDocs, serverTimestamp, query, orderBy, where, updateDoc } from 'firebase/firestore';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -40,6 +40,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
 
 const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
@@ -88,6 +90,7 @@ const ImageUploader = ({ label, imageUrl, onUploadSuccess, teacherUid, storagePa
                     Choose File
                 </Label>
                 <Input id={`upload-${label}`} type="file" accept="image/*" onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)} className="hidden" disabled={isUploading}/>
+                
                 {file && (
                     <>
                         <Button onClick={handleUpload} disabled={!file || isUploading}>
@@ -618,7 +621,7 @@ export default function EditQuestPage() {
                                 <Label>Position Chapter on Hub Map</Label>
                                 <div 
                                     className="relative aspect-[2048/1152] rounded-lg overflow-hidden bg-muted/50 border cursor-grab"
-                                    onMouseDown={(e) => handleMapDrag(e, 'chapter')}
+                                    onMouseDown={(e) => handleMapDrag(e)}
                                 >
                                     <Image
                                         src={hubMapUrl}
@@ -820,4 +823,3 @@ export default function EditQuestPage() {
     </div>
   );
 }
-
