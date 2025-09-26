@@ -974,6 +974,10 @@ export default function Dashboard() {
                         <Check className="mr-2 h-4 w-4" />
                         <span>Manage Quest Completion</span>
                     </DropdownMenuItem>
+                     <DropdownMenuItem onClick={() => router.push('/teacher/settings/leveling')}>
+                        <BarChart className="mr-2 h-4 w-4" />
+                        <span>Leveling Curve</span>
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/teacher/gamelog')}>
                         <BookOpen className="mr-2 h-4 w-4" />
                         <span>The Chronicler's Scroll</span>
