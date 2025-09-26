@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -295,11 +296,15 @@ function NewQuestForm() {
     const handleQuizQuestionChange = (id: string, field: 'text' | 'questionType', value: string) => {
         setQuizQuestions(prev => prev.map(q => {
             if (q.id === id) {
-                const updatedQ = { ...q, [field]: value };
-                // When changing type, reset answers and correct answer
+                const updatedQ: QuizQuestion = { ...q, [field]: value as any };
                 if (field === 'questionType') {
-                    updatedQ.answers = ['', ''];
-                    updatedQ.correctAnswer = [];
+                    if (value === 'true-false') {
+                        updatedQ.answers = ['True', 'False'];
+                        updatedQ.correctAnswer = [];
+                    } else if (q.questionType === 'true-false') {
+                        updatedQ.answers = ['', '', '', ''];
+                        updatedQ.correctAnswer = [];
+                    }
                 }
                 return updatedQ;
             }
@@ -314,7 +319,7 @@ function NewQuestForm() {
     const handleCorrectQuizAnswerChange = (qId: string, aIndex: number) => {
         setQuizQuestions(prev => prev.map(q => {
             if (q.id === qId) {
-                if (q.questionType === 'single') {
+                if (q.questionType === 'single' || q.questionType === 'true-false') {
                     return { ...q, correctAnswer: [aIndex] };
                 } else { // multiple
                     const newCorrectAnswers = q.correctAnswer.includes(aIndex)
@@ -492,8 +497,7 @@ function NewQuestForm() {
         
         const finalQuizQuestions = quizQuestions.map(q => ({
             ...q,
-            // Ensure correctAnswer is always an array
-            correctAnswer: Array.isArray(q.correctAnswer) ? q.correctAnswer : [q.correctAnswer],
+            correctAnswer: Array.isArray(q.correctAnswer) ? q.correctAnswer : [],
         }));
 
         if (finalQuizQuestions.length > 0) {
@@ -879,6 +883,7 @@ function NewQuestForm() {
                                             <SelectContent>
                                                 <SelectItem value="single">Single Choice (Radio Buttons)</SelectItem>
                                                 <SelectItem value="multiple">Multiple Choice (Checkboxes)</SelectItem>
+                                                <SelectItem value="true-false">True/False</SelectItem>
                                             </SelectContent>
                                         </Select>
                                         
@@ -886,23 +891,27 @@ function NewQuestForm() {
                                             <Label>Answers (Select correct one(s))</Label>
                                             {q.answers.map((ans, aIndex) => (
                                                 <div key={aIndex} className="flex items-center gap-2">
-                                                    {q.questionType === 'single' ? (
+                                                    {q.questionType === 'single' || q.questionType === 'true-false' ? (
                                                         <RadioGroup value={String(q.correctAnswer[0])} onValueChange={value => handleCorrectQuizAnswerChange(q.id, Number(value))} className="flex items-center">
                                                             <RadioGroupItem value={String(aIndex)} id={`q${q.id}-a${aIndex}`} />
                                                         </RadioGroup>
                                                     ) : (
                                                         <Checkbox id={`q${q.id}-a${aIndex}`} checked={q.correctAnswer.includes(aIndex)} onCheckedChange={() => handleCorrectQuizAnswerChange(q.id, aIndex)} />
                                                     )}
-                                                    <Input placeholder={`Answer ${aIndex + 1}`} value={ans} onChange={e => handleQuizAnswerChange(q.id, aIndex, e.target.value)} />
-                                                    <Button variant="ghost" size="icon" onClick={() => handleRemoveAnswerChoice(q.id, aIndex)} disabled={q.answers.length <= 2}>
-                                                        <X className="h-4 w-4" />
-                                                    </Button>
+                                                    <Input placeholder={`Answer ${aIndex + 1}`} value={ans} onChange={e => handleQuizAnswerChange(q.id, aIndex, e.target.value)} disabled={q.questionType === 'true-false'} />
+                                                    {q.questionType !== 'true-false' && (
+                                                        <Button variant="ghost" size="icon" onClick={() => handleRemoveAnswerChoice(q.id, aIndex)} disabled={q.answers.length <= 2}>
+                                                            <X className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>
-                                         <Button variant="outline" size="sm" onClick={() => handleAddAnswerChoice(q.id)}>
-                                            <PlusCircle className="mr-2 h-4 w-4" /> Add Answer Choice
-                                        </Button>
+                                         {q.questionType !== 'true-false' && (
+                                            <Button variant="outline" size="sm" onClick={() => handleAddAnswerChoice(q.id)}>
+                                                <PlusCircle className="mr-2 h-4 w-4" /> Add Answer Choice
+                                            </Button>
+                                         )}
                                     </div>
                                 </Card>
                             ))}
