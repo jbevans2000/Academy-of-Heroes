@@ -289,7 +289,7 @@ function NewQuestForm() {
     };
 
     const handleAddQuizQuestion = () => {
-        setQuizQuestions(prev => [...prev, { id: uuidv4(), text: '', answers: ['', ''], correctAnswer: [], questionType: 'single' }]);
+        setQuizQuestions(prev => [...prev, { id: uuidv4(), text: '', answers: ['', '', '', ''], correctAnswer: [], questionType: 'single' }]);
     };
     
     const handleQuizQuestionChange = (id: string, field: 'text' | 'questionType', value: string) => {

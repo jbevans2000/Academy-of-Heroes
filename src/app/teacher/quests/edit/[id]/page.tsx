@@ -328,7 +328,7 @@ export default function EditQuestPage() {
     };
     
     const handleAddQuizQuestion = () => {
-        const newQuestion: QuizQuestion = { id: uuidv4(), text: '', answers: ['', ''], correctAnswer: [], questionType: 'single' };
+        const newQuestion: QuizQuestion = { id: uuidv4(), text: '', answers: ['', '', '', ''], correctAnswer: [], questionType: 'single' };
         const updatedQuestions = [...(chapter?.quiz?.questions || []), newQuestion];
         handleQuizChange('questions', updatedQuestions);
     };
@@ -823,4 +823,3 @@ export default function EditQuestPage() {
     </div>
   );
 }
-
