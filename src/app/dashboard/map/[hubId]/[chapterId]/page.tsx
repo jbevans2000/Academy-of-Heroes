@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -84,7 +85,7 @@ const QuizComponent = ({ quiz, student, chapter, hub, teacherUid, onQuizComplete
 
     const handleAnswerSelect = (answerIndex: number) => {
         const currentQuestion = quiz.questions[currentQuestionIndex];
-        if (currentQuestion.questionType === 'single') {
+        if (currentQuestion.questionType === 'single' || currentQuestion.questionType === 'true-false') {
             setSelectedAnswers([answerIndex]);
         } else {
             setSelectedAnswers(prev => 
@@ -120,12 +121,7 @@ const QuizComponent = ({ quiz, student, chapter, hub, teacherUid, onQuizComplete
             const question = quiz.questions[i];
             const correctAns = question.correctAnswer.sort((a,b) => a-b);
 
-            // For single answer, it's a simple comparison
-            if (question.questionType === 'single' && studentAns[0] === correctAns[0]) {
-                 correctCount++;
-            }
-            // For multiple answers, arrays must be identical
-            else if (question.questionType === 'multiple' && JSON.stringify(studentAns) === JSON.stringify(correctAns)) {
+            if (JSON.stringify(studentAns) === JSON.stringify(correctAns)) {
                 correctCount++;
             }
         });
@@ -198,7 +194,7 @@ const QuizComponent = ({ quiz, student, chapter, hub, teacherUid, onQuizComplete
                 <div className="space-y-2">
                     {currentQuestion.answers.map((answer, index) => (
                         <div key={index} className="flex items-center space-x-3 p-3 rounded-md hover:bg-muted transition-colors">
-                            {currentQuestion.questionType === 'single' ? (
+                            {currentQuestion.questionType === 'single' || currentQuestion.questionType === 'true-false' ? (
                                 <RadioGroup onValueChange={() => handleAnswerSelect(index)} value={String(selectedAnswers[0])}>
                                     <RadioGroupItem value={String(index)} id={`q${currentQuestionIndex}-a${index}`} />
                                 </RadioGroup>

@@ -628,7 +628,7 @@ export default function EditQuestPage() {
                                 <Label>Position Chapter on Hub Map</Label>
                                 <div 
                                     className="relative aspect-[2048/1152] rounded-lg overflow-hidden bg-muted/50 border cursor-grab"
-                                    onMouseDown={(e) => handleMapDrag(e)}
+                                    onMouseDown={(e) => handleMapDrag(e, 'chapter')}
                                 >
                                     <Image
                                         src={hubMapUrl}

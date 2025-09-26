@@ -41,6 +41,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Textarea } from '@/components/ui/textarea';
 
 const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
@@ -297,10 +298,11 @@ function NewQuestForm() {
         setQuizQuestions(prev => prev.map(q => {
             if (q.id === id) {
                 const updatedQ: QuizQuestion = { ...q, [field]: value as any };
+                // If question type changes to/from True/False, adjust answers
                 if (field === 'questionType') {
                     if (value === 'true-false') {
                         updatedQ.answers = ['True', 'False'];
-                        updatedQ.correctAnswer = [];
+                        updatedQ.correctAnswer = []; // Reset correct answer
                     } else if (q.questionType === 'true-false') {
                         updatedQ.answers = ['', '', '', ''];
                         updatedQ.correctAnswer = [];
@@ -340,6 +342,7 @@ function NewQuestForm() {
         setQuizQuestions(prev => prev.map(q => {
             if (q.id === qId && q.answers.length > 2) {
                 const newAnswers = q.answers.filter((_, i) => i !== aIndex);
+                // Also adjust correct answers if the removed one was selected
                 const newCorrectAnswer = q.correctAnswer.filter(i => i !== aIndex).map(i => i > aIndex ? i - 1 : i);
                 return { ...q, answers: newAnswers, correctAnswer: newCorrectAnswer };
             }
@@ -898,7 +901,7 @@ function NewQuestForm() {
                                                     ) : (
                                                         <Checkbox id={`q${q.id}-a${aIndex}`} checked={q.correctAnswer.includes(aIndex)} onCheckedChange={() => handleCorrectQuizAnswerChange(q.id, aIndex)} />
                                                     )}
-                                                    <Input placeholder={`Answer ${aIndex + 1}`} value={ans} onChange={e => handleQuizAnswerChange(q.id, aIndex, e.target.value)} disabled={q.questionType === 'true-false'} />
+                                                    <Input placeholder={`Answer ${aIndex + 1}`} value={ans} onChange={e => handleQuizAnswerChange(q.id, aIndex, e.target.value)} disabled={q.questionType === 'true-false'}/>
                                                     {q.questionType !== 'true-false' && (
                                                         <Button variant="ghost" size="icon" onClick={() => handleRemoveAnswerChoice(q.id, aIndex)} disabled={q.answers.length <= 2}>
                                                             <X className="h-4 w-4" />
