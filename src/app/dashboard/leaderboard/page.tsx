@@ -21,7 +21,7 @@ import { Separator } from '@/components/ui/separator';
 
 const CharacterCanvas = lazy(() => import('@/components/dashboard/character-canvas'));
 
-const ChampionCard = ({ student, rank, assets }: { student: Student | null; rank: 'Guardian' | 'Healer' | 'Mage'; assets: any }) => {
+const ChampionCard = ({ student, rank, assets, type }: { student: Student | null; rank: 'Guardian' | 'Healer' | 'Mage'; assets: any, type: 'Guild' | 'Company' }) => {
     if (!student) {
         return (
             <Card className="flex flex-col items-center justify-center p-4 min-h-[300px] bg-secondary/50">
@@ -41,8 +41,12 @@ const ChampionCard = ({ student, rank, assets }: { student: Student | null; rank
 
     return (
         <Card className="p-4 bg-gradient-to-br from-yellow-100 to-amber-200 dark:from-yellow-900/50 dark:to-amber-800/50 border-2 border-amber-400">
+             <div className="text-center mb-2">
+                <p className="text-sm font-bold text-muted-foreground">LEVEL</p>
+                <p className="text-3xl font-bold">{student.level}</p>
+            </div>
             <CardTitle className="text-center text-xl font-headline flex items-center justify-center gap-2">
-                <Crown className="text-amber-500" /> Guild {rank} Champion
+                <Crown className="text-amber-500" /> {type} {rank} Champion
             </CardTitle>
             <div className="w-full h-80 relative mt-2 rounded-md overflow-hidden bg-black/10">
                  <Suspense fallback={<CharacterViewerFallback />}>
@@ -64,7 +68,6 @@ const ChampionCard = ({ student, rank, assets }: { student: Student | null; rank
             <div className="text-center mt-2">
                 <p className="text-2xl font-bold">{student.characterName}</p>
                 <div className="flex justify-center gap-4 text-lg">
-                    <span className="flex items-center gap-1"><Trophy className="h-5 w-5 text-orange-400"/> {student.level}</span>
                     <span className="flex items-center gap-1"><Star className="h-5 w-5 text-yellow-500"/> {student.xp.toLocaleString()}</span>
                     <span className="flex items-center gap-1"><Coins className="h-5 w-5 text-amber-600"/> {student.gold.toLocaleString()}</span>
                 </div>
@@ -201,9 +204,9 @@ export default function LeaderboardPage() {
                             <CardTitle className="text-2xl text-center">Champions of the Guild</CardTitle>
                         </CardHeader>
                         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                           <ChampionCard student={guildChampions.Guardian} rank="Guardian" assets={assets} />
-                           <ChampionCard student={guildChampions.Healer} rank="Healer" assets={assets} />
-                           <ChampionCard student={guildChampions.Mage} rank="Mage" assets={assets} />
+                           <ChampionCard student={guildChampions.Guardian} rank="Guardian" assets={assets} type="Guild" />
+                           <ChampionCard student={guildChampions.Healer} rank="Healer" assets={assets} type="Guild" />
+                           <ChampionCard student={guildChampions.Mage} rank="Mage" assets={assets} type="Guild" />
                         </CardContent>
                     </Card>
 
@@ -220,9 +223,9 @@ export default function LeaderboardPage() {
                                             <h3 className="text-xl font-bold">{company.name}</h3>
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                            <ChampionCard student={companyChampions[company.id]?.Guardian} rank="Guardian" assets={assets} />
-                                            <ChampionCard student={companyChampions[company.id]?.Healer} rank="Healer" assets={assets} />
-                                            <ChampionCard student={companyChampions[company.id]?.Mage} rank="Mage" assets={assets} />
+                                            <ChampionCard student={companyChampions[company.id]?.Guardian} rank="Guardian" assets={assets} type="Company" />
+                                            <ChampionCard student={companyChampions[company.id]?.Healer} rank="Healer" assets={assets} type="Company" />
+                                            <ChampionCard student={companyChampions[company.id]?.Mage} rank="Mage" assets={assets} type="Company" />
                                         </div>
                                     </div>
                                 ))}
