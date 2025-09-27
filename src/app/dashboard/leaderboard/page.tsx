@@ -181,8 +181,12 @@ export default function LeaderboardPage() {
 
     return (
         <div 
-            className="flex min-h-screen w-full flex-col bg-cover bg-center"
-            style={{ backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Sep%2027%2C%202025%2C%2009_04_40%20AM.png?alt=media&token=94ba1150-487b-4a2e-8b52-d64f5f504572')`}}
+            className="flex min-h-screen w-full flex-col"
+            style={{ 
+                backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Sep%2027%2C%202025%2C%2009_04_40%20AM.png?alt=media&token=94ba1150-487b-4a2e-8b52-d64f5f504572')`,
+                backgroundSize: '100% 100%',
+                backgroundAttachment: 'fixed'
+            }}
         >
             <DashboardHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
