@@ -17,14 +17,22 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import CharacterCanvas from './character-canvas';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Hairstyle, ArmorPiece, BaseBody } from '@/lib/forge';
+import type { Hairstyle, ArmorPiece, BaseBody, ClassType } from '@/lib/forge';
 import { StudentProfileDialog } from './student-profile-dialog';
+import { cn } from '@/lib/utils';
 
 interface CompanyDisplayProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   members: Student[];
 }
+
+const classBorderColors: Record<ClassType, string> = {
+    Guardian: 'border-amber-500',
+    Healer: 'border-green-500',
+    Mage: 'border-blue-600',
+    '': 'border-transparent',
+};
 
 export function CompanyDisplay({ isOpen, onOpenChange, members }: CompanyDisplayProps) {
     const [allHairstyles, setAllHairstyles] = useState<Hairstyle[]>([]);
@@ -123,7 +131,7 @@ export function CompanyDisplay({ isOpen, onOpenChange, members }: CompanyDisplay
                                     return (
                                     <TableRow key={member.uid}>
                                         <TableCell>
-                                            <div className="w-16 h-16 rounded-md overflow-hidden bg-secondary border cursor-pointer" onClick={() => handleStudentClick(member)}>
+                                            <div className={cn("w-16 h-16 rounded-md overflow-hidden bg-secondary border-4 cursor-pointer", classBorderColors[member.class] || 'border-transparent')} onClick={() => handleStudentClick(member)}>
                                                 {isLoadingAssets ? <div className="w-full h-full bg-muted animate-pulse" /> : (
                                                     <CharacterCanvas 
                                                         student={member}
