@@ -256,7 +256,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
           <TooltipProvider>
               <div className="flex justify-center pt-6 gap-4">
                   <Link href={`/armory${isTeacherPreview ? teacherPreviewQuery : ''}`} passHref>
-                      <Button variant="outline" className="h-auto py-4 px-8 border-2 border-amber-600 bg-amber-500/10 hover:bg-amber-500/20">
+                      <Button variant="outline" className="h-auto py-4 px-8 border-2 border-amber-600 bg-white hover:bg-gray-100 text-gray-900">
                           <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
                               <Gem className="h-12 w-12 text-amber-500" />
                               <div>
@@ -268,7 +268,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                   </Link>
                   
                   <Link href={`/dashboard/inventory${isTeacherPreview ? teacherPreviewQuery : ''}`} passHref>
-                      <Button variant="outline" className="h-auto py-4 px-8 border-2 border-purple-600 bg-purple-500/10 hover:bg-purple-500/20">
+                      <Button variant="outline" className="h-auto py-4 px-8 border-2 border-purple-600 bg-white hover:bg-gray-100 text-gray-900">
                           <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
                               <Package className="h-12 w-12 text-purple-500" />
                               <div>

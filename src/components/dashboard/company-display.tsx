@@ -1,7 +1,8 @@
 
 'use client';
 
-import type { Student } from '@/lib/data';
+import { useState, useEffect } from 'react';
+import type { Student, Company } from '@/lib/data';
 import {
   Dialog,
   DialogContent,
@@ -13,7 +14,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { AvatarDisplay } from './avatar-display';
+import CharacterCanvas from './character-canvas'; // Changed from AvatarDisplay
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import type { Hairstyle, ArmorPiece, BaseBody } from '@/lib/forge';
+
 
 interface CompanyDisplayProps {
   isOpen: boolean;
@@ -22,8 +27,44 @@ interface CompanyDisplayProps {
 }
 
 export function CompanyDisplay({ isOpen, onOpenChange, members }: CompanyDisplayProps) {
+    const [allHairstyles, setAllHairstyles] = useState<Hairstyle[]>([]);
+    const [allArmor, setAllArmor] = useState<ArmorPiece[]>([]);
+    const [allBodies, setAllBodies] = useState<BaseBody[]>([]);
+    const [isLoadingAssets, setIsLoadingAssets] = useState(true);
 
-    const companyName = members[0]?.companyId ? `Company Roster` : 'Your Company'; // You might want to fetch company name
+    const student = members[0]; // Assuming at least one member to get teacherUid
+    
+    useEffect(() => {
+        if (!isOpen || !student?.teacherUid) return;
+        setIsLoadingAssets(true);
+
+        const unsubs: (()=>void)[] = [];
+
+        const hairQuery = collection(db, 'hairstyles');
+        unsubs.push(onSnapshot(hairQuery, (snapshot) => {
+            setAllHairstyles(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hairstyle)));
+        }));
+
+        const armorQuery = collection(db, 'armorPieces');
+        unsubs.push(onSnapshot(armorQuery, (snapshot) => {
+            setAllArmor(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ArmorPiece)));
+        }));
+        
+        const bodiesQuery = query(collection(db, 'baseBodies'), orderBy('order'));
+        unsubs.push(onSnapshot(bodiesQuery, (snapshot) => {
+            setAllBodies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BaseBody)));
+        }));
+
+        // A small delay to ensure all assets are loaded before hiding skeleton
+        setTimeout(() => setIsLoadingAssets(false), 500);
+
+        return () => {
+            unsubs.forEach(unsub => unsub());
+        };
+    }, [isOpen, student?.teacherUid]);
+
+
+    const companyName = members[0]?.companyId ? `Company Roster` : 'Your Company';
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -48,11 +89,41 @@ export function CompanyDisplay({ isOpen, onOpenChange, members }: CompanyDisplay
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {members.map(member => (
+                            {members.map(member => {
+                                const equipment = {
+                                    bodyId: member.equippedBodyId,
+                                    hairstyleId: member.equippedHairstyleId,
+                                    hairstyleColor: member.equippedHairstyleColor,
+                                    backgroundUrl: member.backgroundUrl,
+                                    headId: member.equippedHeadId,
+                                    shouldersId: member.equippedShouldersId,
+                                    chestId: member.equippedChestId,
+                                    handsId: member.equippedHandsId,
+                                    legsId: member.equippedLegsId,
+                                    feetId: member.equippedFeetId,
+                                    petId: member.equippedPetId,
+                                };
+                                const equippedPet = allArmor.find(p => p.id === equipment.petId);
+
+                                return (
                                 <TableRow key={member.uid}>
                                     <TableCell>
                                         <div className="w-16 h-16 rounded-md overflow-hidden bg-secondary border">
-                                            <AvatarDisplay student={member} />
+                                            {isLoadingAssets ? <div className="w-full h-full bg-muted animate-pulse" /> : (
+                                                <CharacterCanvas 
+                                                    student={member}
+                                                    allBodies={allBodies}
+                                                    equipment={equipment}
+                                                    allHairstyles={allHairstyles}
+                                                    allArmor={allArmor}
+                                                    equippedPet={equippedPet}
+                                                    selectedStaticAvatarUrl={member.useCustomAvatar ? null : member.avatarUrl}
+                                                    isPreviewMode={true}
+                                                    localHairstyleTransforms={member.equippedHairstyleTransforms}
+                                                    localArmorTransforms={member.armorTransforms}
+                                                    localArmorTransforms2={member.armorTransforms2}
+                                                />
+                                            )}
                                         </div>
                                     </TableCell>
                                     <TableCell>{member.studentName}</TableCell>
@@ -62,7 +133,7 @@ export function CompanyDisplay({ isOpen, onOpenChange, members }: CompanyDisplay
                                     <TableCell>{member.mp} / {member.maxMp}</TableCell>
                                     <TableCell>{member.gold.toLocaleString()}</TableCell>
                                 </TableRow>
-                            ))}
+                            )})}
                         </TableBody>
                     </Table>
                 </ScrollArea>
