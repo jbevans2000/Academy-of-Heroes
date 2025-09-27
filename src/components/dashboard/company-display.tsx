@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { AvatarDisplay } from './avatar-display';
 
 interface CompanyDisplayProps {
   isOpen: boolean;
@@ -37,6 +38,7 @@ export function CompanyDisplay({ isOpen, onOpenChange, members }: CompanyDisplay
                      <Table>
                         <TableHeader>
                             <TableRow>
+                                <TableHead className="w-[80px]">Avatar</TableHead>
                                 <TableHead>Student Name</TableHead>
                                 <TableHead>Class</TableHead>
                                 <TableHead>Level</TableHead>
@@ -48,6 +50,11 @@ export function CompanyDisplay({ isOpen, onOpenChange, members }: CompanyDisplay
                         <TableBody>
                             {members.map(member => (
                                 <TableRow key={member.uid}>
+                                    <TableCell>
+                                        <div className="w-16 h-16 rounded-md overflow-hidden bg-secondary border">
+                                            <AvatarDisplay student={member} />
+                                        </div>
+                                    </TableCell>
                                     <TableCell>{member.studentName}</TableCell>
                                     <TableCell>{member.class}</TableCell>
                                     <TableCell>{member.level}</TableCell>
