@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, onSnapshot, query, where, orderBy, getDocs, limit, doc, getDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, getDoc, doc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student, ClassType, Company } from '@/lib/data';
 import type { Hairstyle, ArmorPiece, BaseBody } from '@/lib/forge';
@@ -64,6 +64,7 @@ const ChampionCard = ({ student, rank, assets }: { student: Student | null; rank
             <div className="text-center mt-2">
                 <p className="text-2xl font-bold">{student.characterName}</p>
                 <div className="flex justify-center gap-4 text-lg">
+                    <span className="flex items-center gap-1"><Trophy className="h-5 w-5 text-orange-400"/> {student.level}</span>
                     <span className="flex items-center gap-1"><Star className="h-5 w-5 text-yellow-500"/> {student.xp.toLocaleString()}</span>
                     <span className="flex items-center gap-1"><Coins className="h-5 w-5 text-amber-600"/> {student.gold.toLocaleString()}</span>
                 </div>
@@ -122,7 +123,7 @@ export default function LeaderboardPage() {
         // Fetch assets
         unsubs.push(onSnapshot(collection(db, 'hairstyles'), s => setAllHairstyles(s.docs.map(d => ({id: d.id, ...d.data()} as Hairstyle)))));
         unsubs.push(onSnapshot(collection(db, 'armorPieces'), s => setAllArmor(s.docs.map(d => ({id: d.id, ...d.data()} as ArmorPiece)))));
-        unsubs.push(onSnapshot(query(collection(db, 'baseBodies'), orderBy('order')), s => setAllBodies(s.docs.map(d => ({id: d.id, ...d.data()} as BaseBody)))));
+        unsubs.push(onSnapshot(collection(db, 'baseBodies'), s => setAllBodies(s.docs.map(d => ({id: d.id, ...d.data()} as BaseBody)))));
 
         setIsLoading(false);
 
@@ -241,6 +242,7 @@ export default function LeaderboardPage() {
                                         <TableHead>Avatar</TableHead>
                                         <TableHead>Name</TableHead>
                                         <TableHead>Class</TableHead>
+                                        <TableHead>Level</TableHead>
                                         <TableHead>XP</TableHead>
                                         <TableHead>Gold</TableHead>
                                     </TableRow>
@@ -273,6 +275,7 @@ export default function LeaderboardPage() {
                                             </TableCell>
                                             <TableCell>{student.characterName}</TableCell>
                                             <TableCell>{student.class}</TableCell>
+                                            <TableCell>{student.level}</TableCell>
                                             <TableCell>{student.xp.toLocaleString()}</TableCell>
                                             <TableCell>{student.gold.toLocaleString()}</TableCell>
                                         </TableRow>
