@@ -348,32 +348,27 @@ export async function setStudentQuestProgress(input: SetStudentQuestProgressInpu
             const studentData = studentSnap.data() as Student;
             const newQuestProgress = { ...(studentData.questProgress || {}) };
             
+            const targetHub = allHubs.find(h => h.id === hubId);
+            if (!targetHub) continue;
+
             // Set the new target progress for the specified hub
-            newQuestProgress[hubId] = chapterNumber > 0 ? chapterNumber : 0;
-            
-            // ** CORRECTED LOGIC **
-            // Rebuild the completed chapters array from scratch based on the new progress state
-            const newRewardedChapters = new Set<string>();
+            newQuestProgress[hubId] = chapterNumber;
 
+            // Backfill progress for all hubs with a lower order number
             for (const hub of allHubs) {
-                // Determine the number of completed chapters for this hub
-                let chaptersCompletedInHub = 0;
-                if (hub.id === hubId) {
-                    chaptersCompletedInHub = newQuestProgress[hub.id];
-                } else if (newQuestProgress[hub.id]) {
-                    // Use existing progress for other hubs
-                    chaptersCompletedInHub = newQuestProgress[hub.id];
-                } else {
-                     // If no progress is set for this hub, check if it should be considered complete
-                     // based on the order relative to the target hub
-                     const targetHubOrder = allHubs.find(h => h.id === hubId)?.hubOrder || 0;
-                     if (hub.hubOrder < targetHubOrder) {
-                         chaptersCompletedInHub = allChapters.filter(c => c.hubId === hub.id).length;
-                         newQuestProgress[hub.id] = chaptersCompletedInHub; // Also backfill progress map
-                     }
+                if (hub.hubOrder < targetHub.hubOrder) {
+                    const chaptersInThisHub = allChapters.filter(c => c.hubId === hub.id);
+                    newQuestProgress[hub.id] = chaptersInThisHub.length;
+                } else if (hub.hubOrder > targetHub.hubOrder) {
+                     // Clear progress for all hubs with a higher order number
+                    delete newQuestProgress[hub.id];
                 }
-
-                // Add the corresponding chapter IDs to the set
+            }
+            
+            // Rebuild the completed chapters array from scratch
+            const newRewardedChapters = new Set<string>();
+            for (const hub of allHubs) {
+                const chaptersCompletedInHub = newQuestProgress[hub.id] || 0;
                 if (chaptersCompletedInHub > 0) {
                     const chaptersInThisHub = allChapters.filter(c => c.hubId === hub.id);
                     for (let i = 1; i <= chaptersCompletedInHub; i++) {
@@ -400,7 +395,7 @@ export async function setStudentQuestProgress(input: SetStudentQuestProgressInpu
             batch.update(studentRef, { 
                 questProgress: newQuestProgress,
                 hubsCompleted: highestCompletedOrder,
-                completedChapters: Array.from(newRewardedChapters) // Use the newly constructed array
+                completedChapters: Array.from(newRewardedChapters)
             });
         }
         
@@ -429,13 +424,33 @@ export async function uncompleteChapter(input: UncompleteChapterInput): Promise<
             throw new Error("Student not found.");
         }
         const student = studentSnap.data() as Student;
-
-        // Set progress to one chapter *before* the one they want to uncomplete
-        const newProgressNumber = chapterNumber - 1;
-
-        const newQuestProgress = { ...(student.questProgress || {}), [hubId]: newProgressNumber };
         
-        await updateDoc(studentRef, { questProgress: newQuestProgress });
+        const newProgressNumber = chapterNumber - 1;
+        const newQuestProgress = { ...(student.questProgress || {}), [hubId]: newProgressNumber };
+
+        // Recalculate hubsCompleted
+        const hubsRef = collection(db, 'teachers', teacherUid, 'questHubs');
+        const chaptersRef = collection(db, 'teachers', teacherUid, 'chapters');
+        const [hubsSnapshot, chaptersSnapshot] = await Promise.all([getDocs(hubsRef), getDocs(chaptersRef)]);
+        
+        const allHubs = hubsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub)).sort((a,b) => a.hubOrder - b.hubOrder);
+        const allChapters = chaptersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
+
+        let highestCompletedOrder = 0;
+        for (const hub of allHubs) {
+            const chaptersInHub = allChapters.filter(c => c.hubId === hub.id);
+            if (newQuestProgress[hub.id] === chaptersInHub.length && chaptersInHub.length > 0) {
+                 if (hub.hubOrder > highestCompletedOrder) {
+                    highestCompletedOrder = hub.hubOrder;
+                }
+            }
+        }
+        
+        await updateDoc(studentRef, { 
+            questProgress: newQuestProgress,
+            hubsCompleted: highestCompletedOrder,
+        });
+
         await logGameEvent(teacherUid, 'CHAPTER', `${student.characterName} has returned to Chapter ${chapterNumber} to review their lessons.`);
 
         return { success: true, message: "Your progress has been reset. You may now proceed from this chapter again." };
@@ -488,6 +503,3 @@ export async function deleteQuestHub(input: DeleteHubInput): Promise<ActionRespo
         return { success: false, error: error.message || 'Failed to delete the quest hub.' };
     }
 }
-
-    
-    
