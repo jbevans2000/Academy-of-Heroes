@@ -17,6 +17,7 @@ import { setChampionStatus } from '@/ai/flows/manage-student';
 
 interface StatsCardProps {
   student: Student;
+  isProfileDialog?: boolean;
 }
 
 const classIconMap: { [key in ClassType]?: React.ReactNode } = {
@@ -26,7 +27,7 @@ const classIconMap: { [key in ClassType]?: React.ReactNode } = {
     '': null
 }
 
-export function StatsCard({ student }: StatsCardProps) {
+export function StatsCard({ student, isProfileDialog = false }: StatsCardProps) {
   const [isPowersSheetOpen, setIsPowersSheetOpen] = useState(false);
   const [company, setCompany] = useState<Company | null>(null);
   const [isChampion, setIsChampion] = useState(student.isChampion || false);
@@ -163,29 +164,33 @@ export function StatsCard({ student }: StatsCardProps) {
                 <p className="text-xl font-bold">{gold.toLocaleString()}</p>
               </div>
             </div>
-            <div className="flex flex-col items-center justify-center space-y-2 bg-secondary/80 p-4 rounded-lg col-span-2 sm:col-span-1">
-                <div className="flex items-center space-x-2">
-                    <UserCheck className="h-8 w-8 text-purple-500" />
-                    <Label htmlFor="champion-status" className="font-bold">Champion Status</Label>
-                    <Switch
-                        id="champion-status"
-                        checked={isChampion}
-                        onCheckedChange={handleChampionToggle}
-                        disabled={isUpdatingChampion}
-                    />
+             {!isProfileDialog && (
+              <>
+                <div className="flex flex-col items-center justify-center space-y-2 bg-secondary/80 p-4 rounded-lg col-span-2 sm:col-span-1">
+                    <div className="flex items-center space-x-2">
+                        <UserCheck className="h-8 w-8 text-purple-500" />
+                        <Label htmlFor="champion-status" className="font-bold">Champion Status</Label>
+                        <Switch
+                            id="champion-status"
+                            checked={isChampion}
+                            onCheckedChange={handleChampionToggle}
+                            disabled={isUpdatingChampion}
+                        />
+                    </div>
                 </div>
-            </div>
-            <div className="flex flex-col items-center justify-center space-y-4 bg-secondary/80 p-4 rounded-lg col-span-2 sm:col-span-1">
-                <Button
-                    size="lg"
-                    variant="outline"
-                    onClick={() => setIsPowersSheetOpen(true)}
-                    className="w-full bg-background/50 hover:bg-background/80"
-                >
-                    <Flame className="mr-2 h-5 w-5" />
-                    View Powers
-                </Button>
-            </div>
+                <div className="flex flex-col items-center justify-center space-y-4 bg-secondary/80 p-4 rounded-lg col-span-2 sm:col-span-1">
+                    <Button
+                        size="lg"
+                        variant="outline"
+                        onClick={() => setIsPowersSheetOpen(true)}
+                        className="w-full bg-background/50 hover:bg-background/80"
+                    >
+                        <Flame className="mr-2 h-5 w-5" />
+                        View Powers
+                    </Button>
+                </div>
+              </>
+            )}
           </div>
         </CardContent>
       </div>
