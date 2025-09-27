@@ -70,12 +70,12 @@ export function StudentProfileDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="text-center text-2xl font-headline">{student.characterName}'s Profile</DialogTitle>
+          <DialogTitle className="text-center text-3xl font-headline">{student.characterName}'s Profile</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-            <div className="w-full h-96 relative rounded-lg overflow-hidden border bg-black/20">
+            <div className="w-full h-[60vh] relative rounded-lg overflow-hidden border bg-black/20">
                  <CharacterCanvas 
                     student={student}
                     allBodies={allBodies}
@@ -90,12 +90,12 @@ export function StudentProfileDialog({
                     localArmorTransforms2={student.armorTransforms2}
                 />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
                 <StatItem icon={classIconMap[student.class]} label="Class" value={student.class} />
                 <StatItem icon={<Trophy className="h-6 w-6 text-orange-400" />} label="Level" value={student.level} />
-                <StatItem icon={<Heart className="h-6 w-6 text-red-500" />} label="HP" value={`${student.hp} / ${student.maxHp}`} />
-                <StatItem icon={<Zap className="h-6 w-6 text-yellow-500" />} label="MP" value={`${student.mp} / ${student.maxMp}`} />
                 <StatItem icon={<Star className="h-6 w-6 text-yellow-400" />} label="Experience" value={student.xp} />
+                <StatItem icon={<Heart className="h-6 w-6 text-red-500" />} label="HP" value={`${student.hp} / ${student.maxHp}`} />
+                <StatItem icon={<Zap className="h-6 w-6 text-blue-400" />} label="MP" value={`${student.mp} / ${student.maxMp}`} />
                 <StatItem icon={<Coins className="h-6 w-6 text-amber-500" />} label="Gold" value={student.gold} />
             </div>
         </div>
