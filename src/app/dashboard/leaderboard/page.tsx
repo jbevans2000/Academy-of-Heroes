@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, onSnapshot, query, getDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, getDoc, doc, where } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student, ClassType, Company } from '@/lib/data';
 import type { Hairstyle, ArmorPiece, BaseBody } from '@/lib/forge';
