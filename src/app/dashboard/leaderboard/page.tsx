@@ -111,7 +111,7 @@ export default function LeaderboardPage() {
 
         const unsubs: (()=>void)[] = [];
 
-        const studentsQuery = query(collection(db, 'teachers', teacherUid, 'students'));
+        const studentsQuery = collection(db, 'teachers', teacherUid, 'students');
         unsubs.push(onSnapshot(studentsQuery, (snapshot) => {
             const allStudentsData = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
             const activeStudents = allStudentsData.filter(s => !s.isArchived && !s.isHidden);
@@ -182,7 +182,7 @@ export default function LeaderboardPage() {
     return (
         <div 
             className="flex min-h-screen w-full flex-col bg-cover bg-center"
-            style={{ backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fleaderboards.jpg?alt=media&token=c198f3b9-a9a3-4856-b072-a72517852c00')`}}
+            style={{ backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Sep%2027%2C%202025%2C%2009_04_40%20AM.png?alt=media&token=94ba1150-487b-4a2e-8b52-d64f5f504572')`}}
         >
             <DashboardHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
