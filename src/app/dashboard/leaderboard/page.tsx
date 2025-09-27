@@ -12,7 +12,7 @@ import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Trophy, Star, Coins, Crown } from 'lucide-react';
+import { ArrowLeft, Trophy, Star, Coins, Crown, Loader2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CharacterViewerFallback } from '@/components/dashboard/character-viewer-3d';
 import Image from 'next/image';
@@ -284,4 +284,3 @@ export default function LeaderboardPage() {
         </div>
     );
 }
-
