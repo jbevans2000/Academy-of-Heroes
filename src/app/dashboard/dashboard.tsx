@@ -172,7 +172,7 @@ export default function Dashboard() {
   };
   
   const approvedClassName = searchParams.get('className');
-  const backgroundUrl = company?.backgroundUrl || '';
+  const backgroundUrl = company?.backgroundUrl || 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Sep%2027%2C%202025%2C%2009_44_04%20AM.png?alt=media&token=0920ef19-d5d9-43b1-bab7-5ab134373ed3';
 
   if (isLoading || !student) {
     return (

@@ -27,6 +27,9 @@ const classIconMap: { [key in ClassType]?: React.ReactNode } = {
     '': null
 }
 
+const freelancerLogoUrl = "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Sep%2027%2C%202025%2C%2009_44_04%20AM.png?alt=media&token=0920ef19-d5d9-43b1-bab7-5ab134373ed3";
+
+
 export function StatsCard({ student, isProfileDialog = false }: StatsCardProps) {
   const [isPowersSheetOpen, setIsPowersSheetOpen] = useState(false);
   const [company, setCompany] = useState<Company | null>(null);
@@ -129,7 +132,7 @@ export function StatsCard({ student, isProfileDialog = false }: StatsCardProps) 
               {company?.logoUrl ? (
                   <Image src={company.logoUrl} alt="Company Logo" width={32} height={32} className="rounded-full object-cover" />
               ) : (
-                  <Briefcase className="h-8 w-8 text-indigo-500" />
+                  <Image src={freelancerLogoUrl} alt="Freelancer Logo" width={32} height={32} className="rounded-full object-cover" />
               )}
               <div>
                 <p className="text-sm text-muted-foreground">Company</p>
