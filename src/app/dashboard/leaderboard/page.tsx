@@ -107,9 +107,11 @@ export default function LeaderboardPage() {
 
         const unsubs: (()=>void)[] = [];
 
-        const studentsQuery = query(collection(db, 'teachers', teacherUid, 'students'), where('isArchived', 'not-in', [true]), where('isHidden', 'not-in', [true]));
+        const studentsQuery = query(collection(db, 'teachers', teacherUid, 'students'));
         unsubs.push(onSnapshot(studentsQuery, (snapshot) => {
-            setStudents(snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student)));
+            const allStudentsData = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
+            const activeStudents = allStudentsData.filter(s => !s.isArchived && !s.isHidden);
+            setStudents(activeStudents);
         }));
 
         const companiesQuery = query(collection(db, 'teachers', teacherUid, 'companies'));
