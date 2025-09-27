@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, onSnapshot, query, getDoc, doc, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, getDoc, doc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student, ClassType, Company } from '@/lib/data';
 import type { Hairstyle, ArmorPiece, BaseBody } from '@/lib/forge';
@@ -250,6 +250,7 @@ export default function LeaderboardPage() {
                                         <TableHead>Name</TableHead>
                                         <TableHead>Class</TableHead>
                                         <TableHead>Level</TableHead>
+                                        <TableHead>Company</TableHead>
                                         <TableHead>XP</TableHead>
                                         <TableHead>Gold</TableHead>
                                     </TableRow>
@@ -263,6 +264,7 @@ export default function LeaderboardPage() {
                                             feetId: student.equippedFeetId, petId: student.equippedPetId,
                                         };
                                         const equippedPet = allArmor.find(p => p.id === equipment.petId);
+                                        const companyName = companies.find(c => c.id === student.companyId)?.name || 'Freelancer';
 
                                         return (
                                         <TableRow key={student.uid}>
@@ -283,6 +285,7 @@ export default function LeaderboardPage() {
                                             <TableCell>{student.characterName}</TableCell>
                                             <TableCell>{student.class}</TableCell>
                                             <TableCell>{student.level}</TableCell>
+                                            <TableCell>{companyName}</TableCell>
                                             <TableCell>{student.xp.toLocaleString()}</TableCell>
                                             <TableCell>{student.gold.toLocaleString()}</TableCell>
                                         </TableRow>
