@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { Student, Company } from '@/lib/data';
+import type { Student } from '@/lib/data';
 import {
   Dialog,
   DialogContent,
@@ -14,11 +14,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import CharacterCanvas from './character-canvas'; // Changed from AvatarDisplay
+import CharacterCanvas from './character-canvas';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Hairstyle, ArmorPiece, BaseBody } from '@/lib/forge';
-
+import { StudentProfileDialog } from './student-profile-dialog';
 
 interface CompanyDisplayProps {
   isOpen: boolean;
@@ -31,11 +31,20 @@ export function CompanyDisplay({ isOpen, onOpenChange, members }: CompanyDisplay
     const [allArmor, setAllArmor] = useState<ArmorPiece[]>([]);
     const [allBodies, setAllBodies] = useState<BaseBody[]>([]);
     const [isLoadingAssets, setIsLoadingAssets] = useState(true);
+    const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-    const student = members[0]; // Assuming at least one member to get teacherUid
-    
+    const studentForTeacher = members[0]; 
+
     useEffect(() => {
-        if (!isOpen || !student?.teacherUid) return;
+        if (!isOpen) return;
+
+        // Only fetch if we have members and thus a teacherUid
+        if (!studentForTeacher?.teacherUid) {
+            setIsLoadingAssets(false);
+            return;
+        };
+
         setIsLoadingAssets(true);
 
         const unsubs: (()=>void)[] = [];
@@ -61,86 +70,103 @@ export function CompanyDisplay({ isOpen, onOpenChange, members }: CompanyDisplay
         return () => {
             unsubs.forEach(unsub => unsub());
         };
-    }, [isOpen, student?.teacherUid]);
+    }, [isOpen, studentForTeacher?.teacherUid]);
+    
+    const handleStudentClick = (student: Student) => {
+        setSelectedStudent(student);
+        setIsProfileOpen(true);
+    }
 
 
     const companyName = members[0]?.companyId ? `Company Roster` : 'Your Company';
 
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-4xl">
-                <DialogHeader>
-                    <DialogTitle>{companyName}</DialogTitle>
-                    <DialogDescription>
-                        Check the status of your fellow company members.
-                    </DialogDescription>
-                </DialogHeader>
-                <ScrollArea className="max-h-[60vh] mt-4">
-                     <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-[80px]">Avatar</TableHead>
-                                <TableHead>Student Name</TableHead>
-                                <TableHead>Class</TableHead>
-                                <TableHead>Level</TableHead>
-                                <TableHead>HP</TableHead>
-                                <TableHead>MP</TableHead>
-                                <TableHead>Gold</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {members.map(member => {
-                                const equipment = {
-                                    bodyId: member.equippedBodyId,
-                                    hairstyleId: member.equippedHairstyleId,
-                                    hairstyleColor: member.equippedHairstyleColor,
-                                    backgroundUrl: member.backgroundUrl,
-                                    headId: member.equippedHeadId,
-                                    shouldersId: member.equippedShouldersId,
-                                    chestId: member.equippedChestId,
-                                    handsId: member.equippedHandsId,
-                                    legsId: member.equippedLegsId,
-                                    feetId: member.equippedFeetId,
-                                    petId: member.equippedPetId,
-                                };
-                                const equippedPet = allArmor.find(p => p.id === equipment.petId);
-
-                                return (
-                                <TableRow key={member.uid}>
-                                    <TableCell>
-                                        <div className="w-16 h-16 rounded-md overflow-hidden bg-secondary border">
-                                            {isLoadingAssets ? <div className="w-full h-full bg-muted animate-pulse" /> : (
-                                                <CharacterCanvas 
-                                                    student={member}
-                                                    allBodies={allBodies}
-                                                    equipment={equipment}
-                                                    allHairstyles={allHairstyles}
-                                                    allArmor={allArmor}
-                                                    equippedPet={equippedPet}
-                                                    selectedStaticAvatarUrl={member.useCustomAvatar ? null : member.avatarUrl}
-                                                    isPreviewMode={true}
-                                                    localHairstyleTransforms={member.equippedHairstyleTransforms}
-                                                    localArmorTransforms={member.armorTransforms}
-                                                    localArmorTransforms2={member.armorTransforms2}
-                                                />
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>{member.studentName}</TableCell>
-                                    <TableCell>{member.class}</TableCell>
-                                    <TableCell>{member.level}</TableCell>
-                                    <TableCell>{member.hp} / {member.maxHp}</TableCell>
-                                    <TableCell>{member.mp} / {member.maxMp}</TableCell>
-                                    <TableCell>{member.gold.toLocaleString()}</TableCell>
+        <>
+            <Dialog open={isOpen} onOpenChange={onOpenChange}>
+                <DialogContent className="max-w-4xl">
+                    <DialogHeader>
+                        <DialogTitle>{companyName}</DialogTitle>
+                        <DialogDescription>
+                            Check the status of your fellow company members.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <ScrollArea className="max-h-[60vh] mt-4">
+                         <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-[80px]">Avatar</TableHead>
+                                    <TableHead>Student Name</TableHead>
+                                    <TableHead>Class</TableHead>
+                                    <TableHead>Level</TableHead>
+                                    <TableHead>HP</TableHead>
+                                    <TableHead>MP</TableHead>
+                                    <TableHead>Gold</TableHead>
                                 </TableRow>
-                            )})}
-                        </TableBody>
-                    </Table>
-                </ScrollArea>
-                <DialogFooter>
-                    <Button onClick={() => onOpenChange(false)}>Close</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                            </TableHeader>
+                            <TableBody>
+                                {members.map(member => {
+                                    const equipment = {
+                                        bodyId: member.equippedBodyId,
+                                        hairstyleId: member.equippedHairstyleId,
+                                        hairstyleColor: member.equippedHairstyleColor,
+                                        backgroundUrl: member.backgroundUrl,
+                                        headId: member.equippedHeadId,
+                                        shouldersId: member.equippedShouldersId,
+                                        chestId: member.equippedChestId,
+                                        handsId: member.equippedHandsId,
+                                        legsId: member.equippedLegsId,
+                                        feetId: member.equippedFeetId,
+                                        petId: member.equippedPetId,
+                                    };
+                                    const equippedPet = allArmor.find(p => p.id === equipment.petId);
+
+                                    return (
+                                    <TableRow key={member.uid}>
+                                        <TableCell>
+                                            <div className="w-16 h-16 rounded-md overflow-hidden bg-secondary border cursor-pointer" onClick={() => handleStudentClick(member)}>
+                                                {isLoadingAssets ? <div className="w-full h-full bg-muted animate-pulse" /> : (
+                                                    <CharacterCanvas 
+                                                        student={member}
+                                                        allBodies={allBodies}
+                                                        equipment={equipment}
+                                                        allHairstyles={allHairstyles}
+                                                        allArmor={allArmor}
+                                                        equippedPet={equippedPet}
+                                                        selectedStaticAvatarUrl={member.useCustomAvatar ? null : member.avatarUrl}
+                                                        isPreviewMode={true}
+                                                        localHairstyleTransforms={member.equippedHairstyleTransforms}
+                                                        localArmorTransforms={member.armorTransforms}
+                                                        localArmorTransforms2={member.armorTransforms2}
+                                                    />
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>{member.studentName}</TableCell>
+                                        <TableCell>{member.class}</TableCell>
+                                        <TableCell>{member.level}</TableCell>
+                                        <TableCell>{member.hp} / {member.maxHp}</TableCell>
+                                        <TableCell>{member.mp} / {member.maxMp}</TableCell>
+                                        <TableCell>{member.gold.toLocaleString()}</TableCell>
+                                    </TableRow>
+                                )})}
+                            </TableBody>
+                        </Table>
+                    </ScrollArea>
+                    <DialogFooter>
+                        <Button onClick={() => onOpenChange(false)}>Close</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            {selectedStudent && (
+                 <StudentProfileDialog 
+                    isOpen={isProfileOpen}
+                    onOpenChange={setIsProfileOpen}
+                    student={selectedStudent}
+                    allArmor={allArmor}
+                    allBodies={allBodies}
+                    allHairstyles={allHairstyles}
+                />
+            )}
+        </>
     );
 }
