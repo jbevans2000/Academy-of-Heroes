@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, doc, getDoc, query, orderBy, updateDoc, addDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, query, orderBy, updateDoc, addDoc, serverTimestamp, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { getAuth, type UserRecord } from 'firebase-admin/auth';
 import { db, auth, app } from '@/lib/firebase';
@@ -21,7 +21,7 @@ import { deleteFeedback } from '@/ai/flows/submit-feedback';
 import { moderateStudent } from '@/ai/flows/manage-student';
 import { deleteTeacher } from '@/ai/flows/manage-teacher';
 import { getAdminNotepadContent, updateAdminNotepadContent } from '@/ai/flows/manage-admin-notepad';
-import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle, HelpCircle, Edit, Reply, FileText, Save } from 'lucide-react';
+import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle, HelpCircle, Edit, Reply, FileText, Save, CreditCard } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -150,6 +150,10 @@ export default function AdminDashboardPage() {
     // Message Center State
     const [isMessageCenterOpen, setIsMessageCenterOpen] = useState(false);
     const [initialTeacherToView, setInitialTeacherToView] = useState<Teacher | null>(null);
+
+    // Stripe Test State
+    const [isTestingPayment, setIsTestingPayment] = useState(false);
+
 
     const router = useRouter();
     const { toast } = useToast();
@@ -611,6 +615,43 @@ export default function AdminDashboardPage() {
         setIsMessageCenterOpen(true);
     };
 
+    const handleTestPayment = async () => {
+        if (!user) return;
+        setIsTestingPayment(true);
+        try {
+            // Create a document in the checkout_sessions collection
+            const checkoutSessionRef = await addDoc(collection(db, `customers/${user.uid}/checkout_sessions`), {
+                price: 'price_1SC5V921ZNZraEkCYszD6ZFv', // Price ID for the test product
+                success_url: window.location.origin,
+                cancel_url: window.location.origin,
+                mode: 'subscription', // or 'payment' for one-time
+            });
+
+            // Listen for the URL to be added by the extension
+            const unsubscribe = onSnapshot(checkoutSessionRef, (snap) => {
+                const data = snap.data();
+                if (data?.url) {
+                    unsubscribe(); // Stop listening
+                    window.open(data.url, '_blank'); // Open Stripe checkout in a new tab
+                    setIsTestingPayment(false);
+                } else if (data?.error) {
+                    unsubscribe();
+                    toast({
+                        variant: 'destructive',
+                        title: 'Stripe Error',
+                        description: data.error.message,
+                    });
+                    setIsTestingPayment(false);
+                }
+            });
+
+        } catch (error: any) {
+            console.error("Error creating checkout session:", error);
+            toast({ variant: 'destructive', title: 'Error', description: "Could not initiate Stripe checkout." });
+            setIsTestingPayment(false);
+        }
+    };
+
 
     if (isLoading || !user) {
         return (
@@ -726,6 +767,20 @@ export default function AdminDashboardPage() {
                             </CollapsibleContent>
                         </Card>
                     </Collapsible>
+
+                     <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><CreditCard className="h-6 w-6 text-primary" /> Stripe Integration Test</CardTitle>
+                            <CardDescription>Use this tool to test the payment flow with Stripe.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                           <p className="text-sm text-muted-foreground">This will create a checkout session for a test product and open the Stripe checkout page in a new tab. Product ID: <span className="font-mono">prod_T8MDcDyBn2wr0n</span></p>
+                            <Button onClick={handleTestPayment} disabled={isTestingPayment}>
+                                {isTestingPayment ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                Test Purchase
+                            </Button>
+                        </CardContent>
+                    </Card>
                     
                     <Collapsible>
                         <Card>
