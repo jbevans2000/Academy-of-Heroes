@@ -15,6 +15,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import type { QuestHub } from '@/lib/quests';
 import type { Student } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 
 export default function WorldMapPage() {
@@ -118,8 +119,14 @@ export default function WorldMapPage() {
                             </div>
                          ) : (
                             unlockedHubs.map(hub => {
-                                const isUnlocked = hub.hubOrder <= (student.hubsCompleted || 0) + 1;
-                                if (!isUnlocked) return null;
+                                const isCompleted = hub.hubOrder <= (student.hubsCompleted || 0);
+                                const isCurrent = hub.hubOrder === (student.hubsCompleted || 0) + 1;
+                                if (!isCompleted && !isCurrent) return null;
+
+                                const markerColorClass = isCompleted 
+                                    ? "bg-green-500" 
+                                    : "bg-yellow-400 animate-pulse-glow";
+
                                 return (
                                 <Link key={hub.id} href={`/dashboard/map/${hub.id}`} passHref>
                                     <div
@@ -132,7 +139,7 @@ export default function WorldMapPage() {
                                         <div className="absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-white font-bold text-shadow-lg transition-transform duration-300 group-hover:scale-110 bg-black/50 rounded px-2 py-1">
                                             {hub.name}
                                         </div>
-                                        <div className="w-5 h-5 bg-yellow-400 rounded-full ring-2 ring-white shadow-xl animate-pulse-glow"></div>
+                                        <div className={cn("w-5 h-5 rounded-full ring-2 ring-white shadow-xl", markerColorClass)}></div>
                                     </div>
                                 </Link>
                             )})
