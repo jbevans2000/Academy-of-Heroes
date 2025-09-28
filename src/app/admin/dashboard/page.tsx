@@ -52,6 +52,7 @@ import { DirectPromptInterface } from '@/components/admin/direct-prompt-interfac
 import { Textarea } from '@/components/ui/textarea';
 import { HelpArticleEditor } from '@/components/admin/help-article-editor';
 import { AdminMessageCenter } from '@/components/admin/admin-message-center';
+import PayPalTestButton from '@/components/admin/paypal-test-button';
 
 type SortDirection = 'asc' | 'desc';
 type TeacherSortKey = 'className' | 'name' | 'email' | 'schoolName' | 'studentCount' | 'createdAt' | 'contactEmail';
@@ -741,6 +742,16 @@ export default function AdminDashboardPage() {
                             </a>
                         </CardContent>
                     </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><CreditCard className="h-6 w-6 text-blue-500" /> PayPal Subscription Test</CardTitle>
+                            <CardDescription>Use this tool to test the PayPal subscription flow.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <PayPalTestButton />
+                        </CardContent>
+                    </Card>
                     
                     <Collapsible>
                         <Card>
@@ -1125,5 +1136,3 @@ export default function AdminDashboardPage() {
         </div>
     );
 }
-
-    
