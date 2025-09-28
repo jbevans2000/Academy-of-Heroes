@@ -450,7 +450,7 @@ export default function SizerPage() {
                                                     </div>
                                                     <div className="space-y-2">
                                                         <Label htmlFor="scale">Scale: {activeTransform.scale}%</Label>
-                                                        <Slider id="scale" value={[activeTransform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={200} step={0.5} disabled={isPreviewMode} />
+                                                        <Slider id="scale" value={[activeTransform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={100} step={0.5} disabled={isPreviewMode} />
                                                     </div>
                                                      <div className="space-y-2">
                                                         <Label htmlFor="rotation">Rotation: {activeTransform.rotation || 0}°</Label>
@@ -469,7 +469,7 @@ export default function SizerPage() {
                                                     </div>
                                                     <div className="space-y-2">
                                                         <Label htmlFor="scale2">Scale 2: {activeTransform.scale2}%</Label>
-                                                        <Slider id="scale2" value={[activeTransform.scale2]} onValueChange={([val]) => handleSliderChange('scale2', val)} min={10} max={200} step={0.5} disabled={isPreviewMode} />
+                                                        <Slider id="scale2" value={[activeTransform.scale2]} onValueChange={([val]) => handleSliderChange('scale2', val)} min={10} max={100} step={0.5} disabled={isPreviewMode} />
                                                     </div>
                                                     <div className="space-y-2">
                                                         <Label htmlFor="rotation2">Rotation 2: {activeTransform.rotation2 || 0}°</Label>
