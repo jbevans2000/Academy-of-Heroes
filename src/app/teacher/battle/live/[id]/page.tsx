@@ -467,24 +467,19 @@ export default function TeacherLiveBattlePage() {
                 continue; // Skip to next student
             }
             
-            const xpFromAnswers = studentRewards.correctAnswers * 5;
+            const xpFromAnswers = studentRewards.correctAnswers * 10; // Changed from 5 to 10
             const goldFromAnswers = studentRewards.correctAnswers * 10;
             
             const xpFromPowers = studentRewards.powersUsed * 2;
             const goldFromPowers = studentRewards.powersUsed * 1;
 
-            let xpFromParticipation = 0;
-            let goldFromParticipation = 0;
-            let xpFromDamageShare = 0;
+            // Always award participation bonus to participants
+            const xpFromParticipation = 25;
+            const goldFromParticipation = 10;
+            const xpFromDamageShare = Math.floor(totalDamageDealt * 0.10);
 
-            const hasFullParticipation = participationCount[uid] === totalRounds;
+            const hasFullParticipation = true; // Always true for participants now
 
-            if (hasFullParticipation) {
-                xpFromParticipation = 25;
-                goldFromParticipation = 10;
-                xpFromDamageShare = Math.floor(totalDamageDealt * 0.10);
-            }
-            
             const baseTotalXp = xpFromAnswers + xpFromPowers + xpFromParticipation + xpFromDamageShare;
             const baseTotalGold = goldFromAnswers + goldFromPowers + goldFromParticipation;
 
