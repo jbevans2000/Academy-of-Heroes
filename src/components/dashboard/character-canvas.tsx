@@ -112,13 +112,15 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>((
                                     activePieceId !== hairstyle.id && !isPreviewMode && "opacity-75"
                                 )}
                                 style={{
-                                    top: `${hairstyleTransform.y}%`,
-                                    left: `${hairstyleTransform.x}%`,
-                                    transform: `translate(-50%, -50%) scale(${hairstyleTransform.scale / 100}) rotate(${hairstyleTransform.rotation || 0}deg)`,
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    transform: `translateX(${hairstyleTransform.x}%) translateY(${hairstyleTransform.y}%) translate(-50%, -50%) scale(${hairstyleTransform.scale / 100}) rotate(${hairstyleTransform.rotation || 0}deg)`,
                                     zIndex: isPreviewMode ? 10 : (activePieceId === hairstyle.id ? 20 : 10)
                                 }}
                             >
-                                <Image src={hairstyleColor} alt="Hairstyle" width={500} height={500} className="object-contain pointer-events-none" />
+                                <Image src={hairstyleColor} alt="Hairstyle" width={500} height={500} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 object-contain pointer-events-none" />
                             </div>
                         )}
                         
@@ -158,13 +160,15 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>((
                                             !isActive && !isPreviewMode && "opacity-75"
                                         )}
                                         style={{
-                                            top: `${transform.y}%`,
-                                            left: `${transform.x}%`,
-                                            transform: `translate(-50%, -50%) scale(${transform.scale / 100}) rotate(${transform.rotation || 0}deg)`,
+                                            top: 0,
+                                            left: 0,
+                                            width: '100%',
+                                            height: '100%',
+                                            transform: `translateX(${transform.x}%) translateY(${transform.y}%) translate(-50%, -50%) scale(${transform.scale / 100}) rotate(${transform.rotation || 0}deg)`,
                                             zIndex: isPreviewMode ? zIndex : (isActive && editingLayer === 'primary' ? 20 : zIndex),
                                         }}
                                     >
-                                        <Image src={primaryImageUrl} alt={piece.name} width={500} height={500} className="object-contain pointer-events-none" />
+                                        <Image src={primaryImageUrl} alt={piece.name} width={500} height={500} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 object-contain pointer-events-none" />
                                     </div>
                                     {piece.modularImageUrl2 && (
                                         <div
@@ -175,13 +179,15 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>((
                                                 !isActive && !isPreviewMode && "opacity-75"
                                             )}
                                             style={{
-                                                top: `${transform2.y}%`,
-                                                left: `${transform2.x}%`,
-                                                transform: `translate(-50%, -50%) scale(${transform2.scale / 100}) rotate(${transform2.rotation || 0}deg)`,
+                                                top: 0,
+                                                left: 0,
+                                                width: '100%',
+                                                height: '100%',
+                                                transform: `translateX(${transform2.x}%) translateY(${transform2.y}%) translate(-50%, -50%) scale(${transform2.scale / 100}) rotate(${transform2.rotation || 0}deg)`,
                                                 zIndex: isPreviewMode ? zIndex : (isActive && editingLayer === 'secondary' ? 20 : zIndex),
                                             }}
                                         >
-                                            <Image src={piece.modularImageUrl2} alt={`${piece.name} (secondary)`} width={500} height={500} className="object-contain pointer-events-none" />
+                                            <Image src={piece.modularImageUrl2} alt={`${piece.name} (secondary)`} width={500} height={500} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 object-contain pointer-events-none" />
                                         </div>
                                     )}
                                 </React.Fragment>
