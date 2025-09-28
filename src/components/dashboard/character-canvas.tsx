@@ -47,24 +47,6 @@ interface CharacterCanvasProps {
     localArmorTransforms?: Student['armorTransforms'];
     localArmorTransforms2?: Student['armorTransforms2'];
     localPetTransforms?: Student['petTransforms'];
-}
-
-const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>(({ 
-    student, 
-    allBodies,
-    equipment, 
-    allHairstyles,
-    allArmor,
-    equippedPet,
-    selectedStaticAvatarUrl,
-    onMouseDown, 
-    activePieceId, 
-    editingLayer = 'primary', 
-    isPreviewMode = false,
-    localHairstyleTransforms,
-    localArmorTransforms,
-    localArmorTransforms2,
-    localPetTransforms,
 }, ref) => {
     if (!student) return <Skeleton className="w-full h-full" />;
     
@@ -74,7 +56,6 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>((
     const hairstyle = allHairstyles.find(h => h.id === equipment.hairstyleId);
     const hairstyleColor = equipment.hairstyleColor || hairstyle?.colors[0]?.imageUrl;
     
-    // Corrected Logic: Prioritize student override, then admin default, then fallback.
     const hairstyleTransform = localHairstyleTransforms?.[baseBody?.id || ''] 
         || hairstyle?.transforms?.[baseBody?.id || ''] 
         || (defaultBodyId && hairstyle?.transforms?.[defaultBodyId])
@@ -82,9 +63,16 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>((
     
     const equippedArmorPieces = Object.values(equipment)
         .map(id => allArmor.find(a => a.id === id))
-        .filter((p): p is ArmorPiece => !!p && p.slot !== 'Pet'); // Exclude pets from this list
+        .filter((p): p is ArmorPiece => !!p && p.slot !== 'Pet');
 
     const handleHairMouseDown = onMouseDown && hairstyle ? (e: React.MouseEvent<HTMLDivElement>) => onMouseDown(e, hairstyle, 'primary') : undefined;
+
+    // Determine the correct key for pet transforms. Use a special key for static avatars.
+    const petTransformKey = baseBody ? baseBody.id : 'static';
+    const petTransform = localPetTransforms?.[petTransformKey] 
+        || equippedPet?.transforms?.[petTransformKey] 
+        || { x: 50, y: 50, scale: 40, rotation: 0 };
+
 
     return (
         <div 
@@ -128,14 +116,12 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>((
                         )}
                         
                         {baseBody && equippedArmorPieces.map(piece => {
-                            // Corrected Logic for Primary Transform
                             const customTransform = localArmorTransforms?.[piece.id]?.[baseBody!.id];
                             const defaultTransform = piece.transforms?.[baseBody!.id] 
                                 || (defaultBodyId && piece.transforms?.[defaultBodyId])
                                 || { x: 50, y: 50, scale: 40, rotation: 0 };
                             const transform = customTransform || defaultTransform;
                             
-                            // Corrected Logic for Secondary Transform
                             const customTransform2 = localArmorTransforms2?.[piece.id]?.[baseBody!.id];
                             const defaultTransform2 = piece.transforms2?.[baseBody!.id] 
                                 || (defaultBodyId && piece.transforms2?.[defaultBodyId]) 
@@ -200,7 +186,7 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>((
                 )}
 
                 {/* Pet Overlay - Rendered on top of static OR custom avatar */}
-                {equippedPet && baseBody && (
+                {equippedPet && (
                     <div 
                         onMouseDown={onMouseDown ? (e) => onMouseDown(e, equippedPet, 'primary') : undefined}
                         className={cn(
@@ -213,11 +199,11 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>((
                             left: 0,
                             width: '100%',
                             height: '100%',
-                            transform: `translateX(${(localPetTransforms?.[baseBody.id] || equippedPet.transforms?.[baseBody.id] || {x:50}).x}%) translateY(${(localPetTransforms?.[baseBody.id] || equippedPet.transforms?.[baseBody.id] || {y:50}).y}%) translate(-50%, -50%) scale(${(localPetTransforms?.[baseBody.id] || equippedPet.transforms?.[baseBody.id] || {scale:40}).scale / 100}) rotate(${(localPetTransforms?.[baseBody.id] || equippedPet.transforms?.[baseBody.id] || {rotation:0}).rotation || 0}deg)`,
-                            zIndex: slotZIndex.Pet,
+                            transform: `translateX(${petTransform.x}%) translateY(${petTransform.y}%) translate(-50%, -50%) scale(${petTransform.scale / 100}) rotate(${petTransform.rotation || 0}deg)`,
+                            zIndex: isPreviewMode ? slotZIndex.Pet : (activePieceId === equippedPet.id ? 20 : slotZIndex.Pet),
                         }}
                     >
-                         <Image src={equippedPet.modularImageUrl} alt={equippedPet.name} layout="fill" className="object-contain"/>
+                         <Image src={equippedPet.modularImageUrl} alt={equippedPet.name} layout="fill" className="object-contain pointer-events-none"/>
                     </div>
                 )}
             </div>

@@ -202,7 +202,7 @@ export default function ForgePage() {
                     chestId: studentData.equippedChestId || null,
                     handsId: studentData.equippedHandsId || null,
                     legsId: studentData.equippedLegsId || null,
-                    feetId: studentData.equippedFeetId || null,
+                    feetId: studentData.equippedFeetId,
                     petId: studentData.equippedPetId || null,
                 });
                 
@@ -290,9 +290,9 @@ export default function ForgePage() {
     const equippedPet = allArmor.find(p => p.id === equipment.petId);
 
     const handleSliderChange = (type: 'x' | 'y' | 'scale' | 'rotation', value: number) => {
-        if (!activePiece || !equipment.bodyId) return;
+        if (!activePiece) return;
 
-        const bodyId = equipment.bodyId;
+        const bodyId = equipment.bodyId || 'static';
 
         const updateTransform = (prev: any) => {
             const currentPieceTransforms = prev[activePiece.id] || {};
@@ -363,7 +363,7 @@ export default function ForgePage() {
     const handleUnequipAll = () => {
         setEquipment(prev => ({
             ...prev,
-            bodyId: null, // Clear the body as well
+            bodyId: null,
             hairstyleId: null, hairstyleColor: null,
             backgroundUrl: null,
             headId: null, shouldersId: null, chestId: null, handsId: null, legsId: null, feetId: null, petId: null
@@ -400,7 +400,6 @@ export default function ForgePage() {
             let updates: Partial<Student> = {};
 
             if (selectedStaticAvatarUrl) {
-                // If a static avatar is selected, save its URL and clear custom fields, but keep background and pet
                 updates = {
                     avatarUrl: selectedStaticAvatarUrl,
                     backgroundUrl: equipment.backgroundUrl || '', 
@@ -417,12 +416,10 @@ export default function ForgePage() {
                     equippedFeetId: '',
                     armorTransforms: {},
                     armorTransforms2: {},
-                    equippedPetId: equipment.petId || '', // Persist pet
+                    equippedPetId: equipment.petId || '',
                     petTransforms: localPetTransforms || {},
                 };
             } else {
-                 // If a custom character is built, save the recipe
-                 // CRITICAL: Do NOT clear avatarUrl. Leave the last static one for the teacher's view.
                  updates = {
                     avatarUrl: student.avatarUrl,
                     useCustomAvatar: true,
@@ -469,24 +466,23 @@ export default function ForgePage() {
     
     
     const activeTransform = useMemo(() => {
-        if (!activePiece || !equipment.bodyId) return null;
+        const bodyId = equipment.bodyId || 'static'; // Use 'static' as key if no body is selected
 
-        const bodyId = equipment.bodyId;
+        if (!activePiece) return null;
 
         if (activePiece.id === equippedPet?.id) {
             return localPetTransforms?.[bodyId] || equippedPet?.transforms?.[bodyId] || { x: 50, y: 50, scale: 40, rotation: 0 };
         }
         
         if ('slot' in activePiece) { // Armor
-            const armorTransforms = editingLayer === 'primary' ? localArmorTransforms : localArmorTransforms2;
+            const transforms = editingLayer === 'primary' ? localArmorTransforms : localArmorTransforms2;
             const defaultTransforms = editingLayer === 'primary' ? activePiece.transforms : activePiece.transforms2;
-            const customTransform = armorTransforms?.[activePiece.id]?.[bodyId];
-            const defaultTransform = defaultTransforms?.[bodyId] || { x: 50, y: 50, scale: 40 };
-            return customTransform || defaultTransform;
+            return transforms?.[activePiece.id]?.[bodyId] || defaultTransforms?.[bodyId] || { x: 50, y: 50, scale: 40, rotation: 0 };
         } else { // Hairstyle
-            return localHairstyleTransforms?.[bodyId] || hairstyle?.transforms?.[bodyId] || { x: 50, y: 50, scale: 100 };
+            if (!equipment.bodyId) return null; // Hairstyles can't be sized without a body
+            return localHairstyleTransforms?.[bodyId] || hairstyle?.transforms?.[bodyId] || { x: 50, y: 50, scale: 100, rotation: 0 };
         }
-    }, [activePiece, equipment.bodyId, localArmorTransforms, localArmorTransforms2, localHairstyleTransforms, localPetTransforms, editingLayer, hairstyle, equippedPet]);
+    }, [activePiece, equipment.bodyId, localArmorTransforms, localArmorTransforms2, localHairstyleTransforms, editingLayer, hairstyle, equippedPet, localPetTransforms]);
     
     const handleStaticAvatarClick = (url: string) => {
         setSelectedStaticAvatarUrl(url);
@@ -584,7 +580,7 @@ export default function ForgePage() {
                                 The Stable
                              </Button>
                              <Button variant="secondary" onClick={handleUnequipAll}><ShirtIcon className="mr-2 h-4 w-4" />Unequip All</Button>
-                            <Button variant="default" onClick={handleSetAvatar} disabled={isSettingAvatar || (!selectedStaticAvatarUrl && !equipment.bodyId)}>
+                            <Button variant="default" onClick={handleSetAvatar} disabled={isSettingAvatar || (!selectedStaticAvatarUrl && !equipment.bodyId && !equipment.petId)}>
                                 {isSettingAvatar ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Camera className="mr-2 h-4 w-4" />}
                                 Set as Custom Avatar
                             </Button>
