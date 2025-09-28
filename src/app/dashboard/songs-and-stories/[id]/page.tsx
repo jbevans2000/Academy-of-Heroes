@@ -10,7 +10,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Star, Coins, CheckCircle, XCircle, ScrollText, HeartCrack, Sparkles, Shield, UserCheck, BarChart, Dices, Trophy, Heart, Wand2 } from 'lucide-react';
+import { ArrowLeft, Star, Coins, CheckCircle, XCircle, ScrollText, HeartCrack, Sparkles, ShieldCheck, UserCheck, BarChart, Dices, Trophy, Heart, Wand2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -211,12 +211,12 @@ export default function BattleSummaryDetailPage() {
                                         <span className="font-semibold">+{breakdown.xpFromPowers} XP, +{breakdown.goldFromPowers} Gold</span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <span className="flex items-center gap-2"><UserCheck className="h-5 w-5 text-purple-500" />Full Participation Bonus</span>
-                                        <span className="font-semibold">{breakdown.hadFullParticipation ? `+${breakdown.xpFromParticipation} XP, +${breakdown.goldFromParticipation} Gold` : <XCircle className="h-5 w-5 text-destructive" />}</span>
+                                        <span className="flex items-center gap-2"><UserCheck className="h-5 w-5 text-purple-500" />Participation Bonus</span>
+                                        <span className="font-semibold">+{breakdown.xpFromParticipation} XP, +{breakdown.goldFromParticipation} Gold</span>
                                     </div>
                                      <div className="flex justify-between items-center">
                                         <span className="flex items-center gap-2"><BarChart className="h-5 w-5 text-orange-500" />Damage Share Bonus</span>
-                                        <span className="font-semibold">{breakdown.hadFullParticipation ? `+${breakdown.xpFromDamageShare} XP` : <XCircle className="h-5 w-5 text-destructive" />}</span>
+                                        <span className="font-semibold">+{breakdown.xpFromDamageShare} XP</span>
                                     </div>
                                     {breakdown.martialSacrificeBonus && <div className="flex justify-between items-center text-amber-600"><span className="flex items-center gap-2"><Shield className="h-5 w-5" />Martial Sacrifice Bonus</span><span className="font-semibold">+25% XP/Gold</span></div>}
                                     {breakdown.arcaneSacrificeBonus && <div className="flex justify-between items-center text-blue-600"><span className="flex items-center gap-2"><Wand2 className="h-5 w-5" />Arcane Sacrifice Bonus</span><span className="font-semibold">+25% XP</span></div>}
