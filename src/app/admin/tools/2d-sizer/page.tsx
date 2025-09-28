@@ -347,7 +347,7 @@ export default function SizerPage() {
                                             return (
                                                 <React.Fragment key={piece.id}>
                                                     <div 
-                                                        className={cn("absolute cursor-move w-48 h-auto", isPreviewMode ? 'opacity-100 pointer-events-none' : (!isActive && 'opacity-50 pointer-events-none'))}
+                                                        className={cn("absolute cursor-move", isPreviewMode ? 'opacity-100 pointer-events-none' : (!isActive && 'opacity-50 pointer-events-none'))}
                                                         style={{ 
                                                             left: `${itemTransforms.x}%`, 
                                                             top: `${itemTransforms.y}%`, 
@@ -360,7 +360,7 @@ export default function SizerPage() {
                                                     </div>
                                                     {piece.modularImageUrl2 && (
                                                         <div 
-                                                            className={cn("absolute cursor-move w-48 h-auto", isPreviewMode ? 'opacity-100 pointer-events-none' : (!isActive && 'opacity-50 pointer-events-none'))}
+                                                            className={cn("absolute cursor-move", isPreviewMode ? 'opacity-100 pointer-events-none' : (!isActive && 'opacity-50 pointer-events-none'))}
                                                             style={{ 
                                                                 left: `${itemTransforms.x2}%`, 
                                                                 top: `${itemTransforms.y2}%`, 
@@ -379,7 +379,7 @@ export default function SizerPage() {
                                             return (
                                                 <div 
                                                     key={hairstyle.id}
-                                                    className={cn("absolute cursor-move w-48 h-auto", isPreviewMode ? 'opacity-100 pointer-events-none' : (!isActive && 'opacity-50 pointer-events-none'))}
+                                                    className={cn("absolute cursor-move", isPreviewMode ? 'opacity-100 pointer-events-none' : (!isActive && 'opacity-50 pointer-events-none'))}
                                                     style={{ 
                                                         left: `${itemTransforms.x}%`, 
                                                         top: `${itemTransforms.y}%`, 
@@ -447,7 +447,7 @@ export default function SizerPage() {
                                                     </div>
                                                     <div className="space-y-2">
                                                         <Label htmlFor="scale">Scale: {activeTransform.scale.toFixed(1)}%</Label>
-                                                        <Slider id="scale" value={[activeTransform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={100} step={0.5} disabled={isPreviewMode} />
+                                                        <Slider id="scale" value={[activeTransform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={150} step={0.5} disabled={isPreviewMode} />
                                                     </div>
                                                      <div className="space-y-2">
                                                         <Label htmlFor="rotation">Rotation: {activeTransform.rotation || 0}°</Label>
@@ -466,7 +466,7 @@ export default function SizerPage() {
                                                     </div>
                                                     <div className="space-y-2">
                                                         <Label htmlFor="scale2">Scale 2: {activeTransform.scale2.toFixed(1)}%</Label>
-                                                        <Slider id="scale2" value={[activeTransform.scale2]} onValueChange={([val]) => handleSliderChange('scale2', val)} min={10} max={100} step={0.5} disabled={isPreviewMode} />
+                                                        <Slider id="scale2" value={[activeTransform.scale2]} onValueChange={([val]) => handleSliderChange('scale2', val)} min={10} max={150} step={0.5} disabled={isPreviewMode} />
                                                     </div>
                                                     <div className="space-y-2">
                                                         <Label htmlFor="rotation2">Rotation 2: {activeTransform.rotation2 || 0}°</Label>
