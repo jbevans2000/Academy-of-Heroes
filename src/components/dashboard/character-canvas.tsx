@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -45,6 +46,7 @@ interface CharacterCanvasProps {
     localHairstyleTransforms?: Student['equippedHairstyleTransforms'];
     localArmorTransforms?: Student['armorTransforms'];
     localArmorTransforms2?: Student['armorTransforms2'];
+    localPetTransforms?: Student['petTransforms'];
 }
 
 const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>(({ 
@@ -62,6 +64,7 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>((
     localHairstyleTransforms,
     localArmorTransforms,
     localArmorTransforms2,
+    localPetTransforms,
 }, ref) => {
     if (!student) return <Skeleton className="w-full h-full" />;
     
@@ -197,10 +200,22 @@ const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>((
                 )}
 
                 {/* Pet Overlay - Rendered on top of static OR custom avatar */}
-                {equippedPet && (
+                {equippedPet && baseBody && (
                     <div 
-                        className="absolute bottom-0 left-0 w-1/3 h-1/3 pointer-events-none"
-                        style={{ zIndex: slotZIndex.Pet }}
+                        onMouseDown={onMouseDown ? (e) => onMouseDown(e, equippedPet, 'primary') : undefined}
+                        className={cn(
+                            "absolute",
+                            isPreviewMode ? "cursor-default pointer-events-none" : "cursor-move pointer-events-auto",
+                            activePieceId !== equippedPet.id && !isPreviewMode && "opacity-75"
+                        )}
+                        style={{
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            transform: `translateX(${(localPetTransforms?.[baseBody.id] || equippedPet.transforms?.[baseBody.id] || {x:50}).x}%) translateY(${(localPetTransforms?.[baseBody.id] || equippedPet.transforms?.[baseBody.id] || {y:50}).y}%) translate(-50%, -50%) scale(${(localPetTransforms?.[baseBody.id] || equippedPet.transforms?.[baseBody.id] || {scale:40}).scale / 100}) rotate(${(localPetTransforms?.[baseBody.id] || equippedPet.transforms?.[baseBody.id] || {rotation:0}).rotation || 0}deg)`,
+                            zIndex: slotZIndex.Pet,
+                        }}
                     >
                          <Image src={equippedPet.modularImageUrl} alt={equippedPet.name} layout="fill" className="object-contain"/>
                     </div>

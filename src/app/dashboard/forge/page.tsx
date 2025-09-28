@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
@@ -132,6 +133,7 @@ export default function ForgePage() {
     const [localHairstyleTransforms, setLocalHairstyleTransforms] = useState<Student['equippedHairstyleTransforms']>({});
     const [localArmorTransforms, setLocalArmorTransforms] = useState<Student['armorTransforms']>({});
     const [localArmorTransforms2, setLocalArmorTransforms2] = useState<Student['armorTransforms2']>({});
+    const [localPetTransforms, setLocalPetTransforms] = useState<Student['petTransforms']>({});
     
     const [editingLayer, setEditingLayer] = useState<'primary' | 'secondary'>('primary');
     const [isDragging, setIsDragging] = useState(false);
@@ -187,6 +189,7 @@ export default function ForgePage() {
                 setLocalHairstyleTransforms(studentData.equippedHairstyleTransforms || {});
                 setLocalArmorTransforms(studentData.armorTransforms || {});
                 setLocalArmorTransforms2(studentData.armorTransforms2 || {});
+                setLocalPetTransforms(studentData.petTransforms || {});
 
                 // Set equipment based on saved data
                 setEquipment({
@@ -284,6 +287,7 @@ export default function ForgePage() {
     };
     
     const hairstyle = useMemo(() => allHairstyles.find(h => h.id === equipment.hairstyleId), [allHairstyles, equipment.hairstyleId]);
+    const equippedPet = allArmor.find(p => p.id === equipment.petId);
 
     const handleSliderChange = (type: 'x' | 'y' | 'scale' | 'rotation', value: number) => {
         if (!activePiece || !equipment.bodyId) return;
@@ -315,21 +319,24 @@ export default function ForgePage() {
             const newTransform = { ...baseTransform, [type]: value };
             return { ...prev, [bodyId]: newTransform };
         };
+
+        const updatePetTransform = (prev: any) => {
+            const baseTransform = prev[bodyId] || (activePiece as ArmorPiece).transforms?.[bodyId] || {x:50, y:50, scale: 40, rotation: 0 };
+            const newTransform = { ...baseTransform, [type]: value };
+            return { ...prev, [bodyId]: newTransform };
+        };
         
-        if ('slot' in activePiece) { // ArmorPiece
+        if (activePiece.id === equippedPet?.id) {
+            setLocalPetTransforms(updatePetTransform);
+        } else if ('slot' in activePiece) { // ArmorPiece
              (editingLayer === 'primary' ? setLocalArmorTransforms : setLocalArmorTransforms2)(updateTransform);
         } else { // Hairstyle
             setLocalHairstyleTransforms(updateHairTransform);
         }
     };
     
-    const handlePieceClick = (piece: ArmorPiece | Hairstyle | null) => {
-        if (isPreviewMode) return;
-        setActivePiece(current => current?.id === piece?.id ? null : piece);
-    };
-
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece | Hairstyle, layer: 'primary' | 'secondary') => {
-        if (isPreviewMode || ('slot' in piece && piece.slot === 'Pet')) return;
+        if (isPreviewMode) return;
         
         e.preventDefault();
         e.stopPropagation();
@@ -411,6 +418,7 @@ export default function ForgePage() {
                     armorTransforms: {},
                     armorTransforms2: {},
                     equippedPetId: equipment.petId || '', // Persist pet
+                    petTransforms: localPetTransforms || {},
                 };
             } else {
                  // If a custom character is built, save the recipe
@@ -432,6 +440,7 @@ export default function ForgePage() {
                     armorTransforms: localArmorTransforms,
                     armorTransforms2: localArmorTransforms2,
                     equippedPetId: equipment.petId,
+                    petTransforms: localPetTransforms,
                 };
             }
             
@@ -461,16 +470,23 @@ export default function ForgePage() {
     
     const activeTransform = useMemo(() => {
         if (!activePiece || !equipment.bodyId) return null;
+
+        const bodyId = equipment.bodyId;
+
+        if (activePiece.id === equippedPet?.id) {
+            return localPetTransforms?.[bodyId] || equippedPet?.transforms?.[bodyId] || { x: 50, y: 50, scale: 40, rotation: 0 };
+        }
+        
         if ('slot' in activePiece) { // Armor
             const armorTransforms = editingLayer === 'primary' ? localArmorTransforms : localArmorTransforms2;
             const defaultTransforms = editingLayer === 'primary' ? activePiece.transforms : activePiece.transforms2;
-            const customTransform = armorTransforms?.[activePiece.id]?.[equipment.bodyId];
-            const defaultTransform = defaultTransforms?.[equipment.bodyId] || { x: 50, y: 50, scale: 40 };
+            const customTransform = armorTransforms?.[activePiece.id]?.[bodyId];
+            const defaultTransform = defaultTransforms?.[bodyId] || { x: 50, y: 50, scale: 40 };
             return customTransform || defaultTransform;
         } else { // Hairstyle
-            return localHairstyleTransforms?.[equipment.bodyId] || hairstyle?.transforms?.[equipment.bodyId] || { x: 50, y: 50, scale: 100 };
+            return localHairstyleTransforms?.[bodyId] || hairstyle?.transforms?.[bodyId] || { x: 50, y: 50, scale: 100 };
         }
-    }, [activePiece, equipment.bodyId, localArmorTransforms, localArmorTransforms2, localHairstyleTransforms, editingLayer, hairstyle]);
+    }, [activePiece, equipment.bodyId, localArmorTransforms, localArmorTransforms2, localHairstyleTransforms, localPetTransforms, editingLayer, hairstyle, equippedPet]);
     
     const handleStaticAvatarClick = (url: string) => {
         setSelectedStaticAvatarUrl(url);
@@ -529,7 +545,6 @@ export default function ForgePage() {
         ));
     };
 
-    const equippedPet = allArmor.find(p => p.id === equipment.petId);
     
     if (isLoading || !student) {
         return <div className="flex items-center justify-center h-screen"><Loader2 className="h-16 w-16 animate-spin"/></div>
@@ -724,6 +739,7 @@ export default function ForgePage() {
                                         localHairstyleTransforms={localHairstyleTransforms}
                                         localArmorTransforms={localArmorTransforms}
                                         localArmorTransforms2={localArmorTransforms2}
+                                        localPetTransforms={localPetTransforms}
                                         selectedStaticAvatarUrl={selectedStaticAvatarUrl}
                                     />
                                 </Suspense>
@@ -755,8 +771,8 @@ export default function ForgePage() {
                                                         </div>
                                                         {activePiece ? (
                                                             <div className="space-y-4">
-                                                                <p className="font-bold text-center">Editing: <span className="text-primary">{'styleName' in activePiece ? activePiece.styleName : activePiece.name}</span></p>
-                                                                {'slot' in activePiece && activePiece.modularImageUrl2 && (
+                                                                <p className="font-bold text-center">Editing: <span className="text-primary">{('styleName' in activePiece ? activePiece.styleName : activePiece.name)}</span></p>
+                                                                {('slot' in activePiece && activePiece.modularImageUrl2) && (
                                                                     <div className="space-y-2 p-2 border rounded-md">
                                                                         <Label className="flex items-center gap-2"><Layers/> Editing Layer</Label>
                                                                         <div className="grid grid-cols-2 gap-2">
@@ -776,7 +792,7 @@ export default function ForgePage() {
                                                                             <Slider id="y-pos" value={[activeTransform.y]} onValueChange={([val]) => handleSliderChange('y', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
                                                                         </div>
                                                                         <div className="space-y-2">
-                                                                            <Label htmlFor="scale">Scale</Label>
+                                                                            <Label htmlFor="scale">Scale: {activeTransform.scale.toFixed(1)}%</Label>
                                                                             <Slider id="scale" value={[activeTransform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={150} step={0.5} disabled={isPreviewMode}/>
                                                                         </div>
                                                                         <div className="space-y-2">

@@ -62,6 +62,14 @@ export type Student = {
     equippedLegsId?: string;
     equippedFeetId?: string;
     equippedPetId?: string; // New field for pets
+    petTransforms?: { // Student-specific overrides for pet positions
+        [bodyId: string]: {
+            x: number;
+            y: number;
+            scale: number;
+            rotation?: number;
+        }
+    };
     equippedBodyId?: string; // The ID of the base body model
     equippedHairstyleId?: string;
     equippedHairstyleColor?: string; // The URL of the specific color variation
