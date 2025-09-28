@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Image from 'next/image';
+import type { Student } from '@/lib/data';
 
 
 interface Question {
@@ -47,6 +48,22 @@ interface RoundSnapshot {
     lastRoundPowersUsed?: string[];
 }
 
+interface RewardBreakdown {
+    xpFromAnswers: number;
+    goldFromAnswers: number;
+    xpFromPowers: number;
+    goldFromPowers: number;
+    xpFromParticipation: number;
+    goldFromParticipation: number;
+    xpFromDamageShare: number;
+    hadFullParticipation: boolean;
+    totalDamageDealt: number;
+    martialSacrificeBonus: boolean;
+    arcaneSacrificeBonus: boolean;
+    divineSacrificeBonus: boolean;
+}
+
+
 interface PowerLogEntry {
     round: number;
     casterName: string;
@@ -64,6 +81,13 @@ interface SavedBattle {
   totalPowerDamage?: number;
   fallenAtEnd?: string[];
   participantUids: string[];
+  rewardsByStudent?: {
+    [uid: string]: {
+        xpGained: number;
+        goldGained: number;
+        breakdown: RewardBreakdown;
+    }
+  };
 }
 
 export default function TeacherBattleSummaryPage() {
@@ -73,6 +97,7 @@ export default function TeacherBattleSummaryPage() {
 
   const [summary, setSummary] = useState<SavedBattle | null>(null);
   const [allRounds, setAllRounds] = useState<RoundSnapshot[]>([]);
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCleaning, setIsCleaning] = useState(false);
@@ -95,33 +120,38 @@ export default function TeacherBattleSummaryPage() {
 
     const fetchSummary = async () => {
       setIsLoading(true);
-      const summaryRef = doc(db, 'teachers', teacher.uid, 'savedBattles', savedBattleId);
-      const summarySnap = await getDoc(summaryRef);
+      try {
+        const summaryRef = doc(db, 'teachers', teacher.uid, 'savedBattles', savedBattleId);
+        const summarySnap = await getDoc(summaryRef);
 
-      if (summarySnap.exists()) {
-        const summaryData = { id: summarySnap.id, ...summarySnap.data() } as SavedBattle;
-        setSummary(summaryData);
-        
-        // Fetch original battle for questions
-        const battleTemplateRef = doc(db, 'teachers', teacher.uid, 'bossBattles', summaryData.battleId);
-        const battleTemplateSnap = await getDoc(battleTemplateRef);
-        if (battleTemplateSnap.exists()) {
-            setQuestions(battleTemplateSnap.data().questions as Question[]);
+        if (summarySnap.exists()) {
+          const summaryData = { id: summarySnap.id, ...summarySnap.data() } as SavedBattle;
+          setSummary(summaryData);
+          
+          const battleTemplateRef = doc(db, 'teachers', teacher.uid, 'bossBattles', summaryData.battleId);
+          const battleTemplateSnap = await getDoc(battleTemplateRef);
+          if (battleTemplateSnap.exists()) {
+              setQuestions(battleTemplateSnap.data().questions as Question[]);
+          }
+
+          const roundsRef = collection(db, 'teachers', teacher.uid, 'savedBattles', savedBattleId, 'rounds');
+          const roundsQuery = query(roundsRef, orderBy('currentQuestionIndex'));
+          const roundsSnapshot = await getDocs(roundsQuery);
+          setAllRounds(roundsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as RoundSnapshot));
+          
+          const studentsSnapshot = await getDocs(collection(db, 'teachers', teacher.uid, 'students'));
+          setAllStudents(studentsSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student)));
+
+        } else {
+          toast({ title: "Summary Not Found", description: "This battle summary may have already been cleaned up."})
+          router.push('/teacher/battles/summary');
         }
-
-        // Fetch the `rounds` subcollection
-        const roundsRef = collection(db, 'teachers', teacher.uid, 'savedBattles', savedBattleId, 'rounds');
-        const roundsQuery = query(roundsRef, orderBy('currentQuestionIndex'));
-        const roundsSnapshot = await getDocs(roundsQuery);
-        const roundsData = roundsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as RoundSnapshot);
-        setAllRounds(roundsData);
-
-      } else {
-        console.error("No summary found for this battle.");
-        toast({ title: "Summary Not Found", description: "This battle summary may have already been cleaned up. Redirecting to battles list."})
-        router.push('/teacher/battles/summary');
+      } catch (error) {
+        console.error("Error fetching summary data:", error);
+        toast({ variant: 'destructive', title: "Error", description: "Could not load summary data." });
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     fetchSummary();
@@ -163,26 +193,18 @@ export default function TeacherBattleSummaryPage() {
     }
   };
 
+  const participantDetails = useMemo(() => {
+    if (!summary || !allStudents.length) return [];
+    
+    return allStudents
+        .filter(student => summary.participantUids.includes(student.uid))
+        .map(student => ({
+            ...student,
+            rewards: summary.rewardsByStudent?.[student.uid] || { xpGained: 0, goldGained: 0 }
+        }))
+        .sort((a,b) => b.rewards.xpGained - a.rewards.xpGained);
 
-  const participantStats = useMemo(() => {
-    const stats: { [uid: string]: { name: string; correct: number; incorrect: number } } = {};
-    if (!summary || !allRounds) return [];
-
-    allRounds.forEach(round => {
-        round.responses.forEach(res => {
-            if (!stats[res.studentUid]) {
-                stats[res.studentUid] = { name: res.characterName, correct: 0, incorrect: 0 };
-            }
-            if (res.isCorrect) {
-                stats[res.studentUid].correct++;
-            } else {
-                stats[res.studentUid].incorrect++;
-            }
-        });
-    });
-
-    return Object.values(stats).sort((a,b) => b.correct - a.correct);
-  }, [summary, allRounds]);
+  }, [summary, allStudents]);
 
 
   if (isLoading) {
@@ -211,8 +233,8 @@ export default function TeacherBattleSummaryPage() {
               <CardDescription>The summary for this battle could not be loaded. It may have already been cleaned up.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button onClick={() => router.push('/teacher/battles')}>
-                <ArrowLeft className="mr-2 h-4 w-4" /> Back to Battles
+              <Button onClick={() => router.push('/teacher/battles/summary')}>
+                <ArrowLeft className="mr-2 h-4 w-4" /> Back to Summaries
               </Button>
             </CardContent>
           </Card>
@@ -253,7 +275,7 @@ export default function TeacherBattleSummaryPage() {
                 </Button>
                 <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
                   <LayoutDashboard className="mr-2 h-4 w-4" />
-                  Return to Dashboard
+                  Return to Podium
                 </Button>
             </div>
              <AlertDialog>
@@ -310,6 +332,32 @@ export default function TeacherBattleSummaryPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Participant Rewards</CardTitle>
+                </CardHeader>
+                <CardContent>
+                     <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Student</TableHead>
+                                <TableHead className="text-right">XP Gained</TableHead>
+                                <TableHead className="text-right">Gold Gained</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {participantDetails.map(student => (
+                                <TableRow key={student.uid}>
+                                    <TableCell className="font-medium">{student.studentName} ({student.characterName})</TableCell>
+                                    <TableCell className="text-right font-semibold text-green-600">+{student.rewards.xpGained.toLocaleString()}</TableCell>
+                                    <TableCell className="text-right font-semibold text-amber-600">+{student.rewards.goldGained.toLocaleString()}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
             
             <Card>
                  <CardHeader>
@@ -353,7 +401,7 @@ export default function TeacherBattleSummaryPage() {
                                             <div className="mt-2 p-2 bg-blue-900/10 rounded-md">
                                                 <h4 className="font-semibold text-sm">Powers Used:</h4>
                                                 <ul className="text-xs text-muted-foreground list-disc list-inside">
-                                                    {battleLogByRound[round.currentQuestionIndex + 1].map((log, index) => (
+                                                    {battleLogByRound[parseInt(round.id)].map((log, index) => (
                                                         <li key={index}>
                                                             <span className="font-bold">{log.casterName}</span> used <span className="font-semibold text-primary">{log.powerName}</span>. Effect: {log.description}
                                                         </li>
@@ -369,31 +417,35 @@ export default function TeacherBattleSummaryPage() {
                 </CardContent>
             </Card>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Users /> Participant Summary</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Character Name</TableHead>
-                                <TableHead className="text-center">Correct Answers</TableHead>
-                                <TableHead className="text-center">Incorrect Answers</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {participantStats.map(stat => (
-                                <TableRow key={stat.name}>
-                                    <TableCell className="font-semibold">{stat.name}</TableCell>
-                                    <TableCell className="text-center text-green-600 font-bold">{stat.correct}</TableCell>
-                                    <TableCell className="text-center text-red-600 font-bold">{stat.incorrect}</TableCell>
-                                </TableRow>
+            {(summary.powerLog && summary.powerLog.length > 0) && (
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><ScrollText /> Power Usage Log</CardTitle>
+                        <CardDescription>A record of all powers used during the battle, grouped by round.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Accordion type="multiple" className="w-full">
+                            {Object.keys(battleLogByRound).map(roundNumber => (
+                                <AccordionItem key={roundNumber} value={`round-${roundNumber}`}>
+                                    <AccordionTrigger>Round {roundNumber}</AccordionTrigger>
+                                    <AccordionContent>
+                                        <ul className="space-y-2 pl-4">
+                                            {battleLogByRound[parseInt(roundNumber)].map((log, index) => (
+                                                <li key={index} className="flex justify-between items-center p-2 rounded-md bg-secondary/50">
+                                                    <div>
+                                                        <span className="font-bold">{log.casterName}</span> used <span className="font-semibold text-primary">{log.powerName}</span>.
+                                                        <p className="text-sm text-muted-foreground">Effect: {log.description}</p>
+                                                    </div>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </AccordionContent>
+                                </AccordionItem>
                             ))}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+                        </Accordion>
+                    </CardContent>
+                </Card>
+            )}
 
         </div>
       </main>
