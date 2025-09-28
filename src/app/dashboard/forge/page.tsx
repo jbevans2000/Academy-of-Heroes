@@ -285,36 +285,22 @@ export default function ForgePage() {
     
     const hairstyle = useMemo(() => allHairstyles.find(h => h.id === equipment.hairstyleId), [allHairstyles, equipment.hairstyleId]);
 
-    const handleSliderChange = (type: 'x' | 'y' | 'slider', value: number) => {
+    const handleSliderChange = (type: 'x' | 'y' | 'scale' | 'rotation', value: number) => {
         if (!activePiece || !equipment.bodyId) return;
 
         const bodyId = equipment.bodyId;
 
-        const getBaseScale = () => {
-            if ('slot' in activePiece) {
-                const defaultTransforms = editingLayer === 'primary' ? activePiece.transforms : activePiece.transforms2;
-                return defaultTransforms?.[bodyId]?.scale || (Object.values(defaultTransforms || {})[0]?.scale || 40);
-            } else {
-                 return hairstyle?.transforms?.[bodyId]?.scale || (Object.values(hairstyle?.transforms || {})[0]?.scale || 100);
-            }
-        };
-
-        const baseScale = getBaseScale();
-        const newScale = baseScale * (0.1 + (value / 100) * 1.4);
-
         const updateTransform = (prev: any) => {
             const currentPieceTransforms = prev[activePiece.id] || {};
-            const baseTransform = currentPieceTransforms[bodyId] || (editingLayer === 'primary' 
-                ? (activePiece.transforms?.[bodyId] || {x:50, y:50, scale: baseScale})
-                : (activePiece.transforms2?.[bodyId] || {x:50, y:50, scale: baseScale})
-            );
-            const newTransform = { ...baseTransform };
+            
+            const baseTransforms = 'slot' in activePiece 
+                ? (editingLayer === 'primary' ? activePiece.transforms : activePiece.transforms2)
+                : activePiece.transforms;
+                
+            const baseTransform = currentPieceTransforms[bodyId] || baseTransforms?.[bodyId] || {x:50, y:50, scale: ('slot' in activePiece ? 40 : 100), rotation: 0 };
+            
+            const newTransform = { ...baseTransform, [type]: value };
 
-            switch(type) {
-                case 'x': newTransform.x = value; break;
-                case 'y': newTransform.y = value; break;
-                case 'slider': newTransform.scale = newScale; break;
-            }
             return {
                 ...prev,
                 [activePiece.id]: {
@@ -325,18 +311,13 @@ export default function ForgePage() {
         };
 
         const updateHairTransform = (prev: any) => {
-             const baseTransform = prev[bodyId] || activePiece.transforms?.[bodyId] || {x:50, y:50, scale: baseScale};
-             const newTransform = { ...baseTransform };
-              switch(type) {
-                case 'x': newTransform.x = value; break;
-                case 'y': newTransform.y = value; break;
-                case 'slider': newTransform.scale = newScale; break
-              }
+            const baseTransform = prev[bodyId] || activePiece.transforms?.[bodyId] || {x:50, y:50, scale: 100, rotation: 0 };
+            const newTransform = { ...baseTransform, [type]: value };
             return { ...prev, [bodyId]: newTransform };
         };
-
+        
         if ('slot' in activePiece) { // ArmorPiece
-            (editingLayer === 'primary' ? setLocalArmorTransforms : setLocalArmorTransforms2)(updateTransform);
+             (editingLayer === 'primary' ? setLocalArmorTransforms : setLocalArmorTransforms2)(updateTransform);
         } else { // Hairstyle
             setLocalHairstyleTransforms(updateHairTransform);
         }
@@ -490,24 +471,6 @@ export default function ForgePage() {
             return localHairstyleTransforms?.[equipment.bodyId] || hairstyle?.transforms?.[equipment.bodyId] || { x: 50, y: 50, scale: 100 };
         }
     }, [activePiece, equipment.bodyId, localArmorTransforms, localArmorTransforms2, localHairstyleTransforms, editingLayer, hairstyle]);
-
-    const activeScaleForSlider = useMemo(() => {
-        if (!activeTransform || !activePiece || !equipment.bodyId) return 50;
-
-        const getBaseScale = () => {
-            if ('slot' in activePiece) { // Armor
-                const defaultTransforms = editingLayer === 'primary' ? activePiece.transforms : activePiece.transforms2;
-                return defaultTransforms?.[equipment.bodyId as string]?.scale || Object.values(defaultTransforms || {})[0]?.scale || 40;
-            } else { // Hairstyle
-                return hairstyle?.transforms?.[equipment.bodyId as string]?.scale || Object.values(hairstyle?.transforms || {})[0]?.scale || 100;
-            }
-        };
-
-        const baseScale = getBaseScale();
-        // The new calculation maps the 0-100 slider to a 0.1-1.5 multiplier range
-        return ((activeTransform.scale / baseScale) - 0.1) / 1.4 * 100;
-
-    }, [activeTransform, activePiece, equipment.bodyId, editingLayer, hairstyle]);
     
     const handleStaticAvatarClick = (url: string) => {
         setSelectedStaticAvatarUrl(url);
@@ -813,8 +776,12 @@ export default function ForgePage() {
                                                                             <Slider id="y-pos" value={[activeTransform.y]} onValueChange={([val]) => handleSliderChange('y', val)} min={0} max={100} step={0.1} disabled={isPreviewMode}/>
                                                                         </div>
                                                                         <div className="space-y-2">
-                                                                            <Label htmlFor="scale">Scale Modifier</Label>
-                                                                            <Slider id="scale" value={[activeScaleForSlider]} onValueChange={([val]) => handleSliderChange('slider', val)} min={0} max={100} step={0.5} disabled={isPreviewMode}/>
+                                                                            <Label htmlFor="scale">Scale</Label>
+                                                                            <Slider id="scale" value={[activeTransform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={150} step={0.5} disabled={isPreviewMode}/>
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            <Label htmlFor="rotation">Rotation: {activeTransform.rotation || 0}°</Label>
+                                                                            <Slider id="rotation" value={[activeTransform.rotation || 0]} onValueChange={([val]) => handleSliderChange('rotation', val)} min={-180} max={180} step={1} disabled={isPreviewMode} />
                                                                         </div>
                                                                     </div>
                                                                 )}
@@ -858,4 +825,3 @@ export default function ForgePage() {
         </div>
     );
 }
-
