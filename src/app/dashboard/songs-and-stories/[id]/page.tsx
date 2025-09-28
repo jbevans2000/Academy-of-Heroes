@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -10,7 +9,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Star, Coins, CheckCircle, XCircle, ScrollText, HeartCrack, Sparkles, ShieldCheck, UserCheck, BarChart, Dices, Trophy, Heart, Wand2 } from 'lucide-react';
+import { ArrowLeft, Star, Coins, CheckCircle, XCircle, ScrollText, HeartCrack, Sparkles, ShieldCheck, UserCheck, BarChart, Dices, Trophy, Heart, Wand2, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -65,6 +64,9 @@ interface SavedBattle {
     totalDamage?: number;
     totalBaseDamage?: number;
     totalPowerDamage?: number;
+    martialSacrificeCasterUid?: string | null;
+    arcaneSacrificeCasterUid?: string | null;
+    divineSacrificeCasterUid?: string | null;
 }
 
 export default function BattleSummaryDetailPage() {
@@ -161,15 +163,19 @@ export default function BattleSummaryDetailPage() {
     const breakdown = userRewards?.breakdown;
     const date = summary.startedAt ?? summary.savedAt;
 
+    const madeSacrifice = summary.martialSacrificeCasterUid === user.uid ||
+                          summary.arcaneSacrificeCasterUid === user.uid ||
+                          summary.divineSacrificeCasterUid === user.uid;
+
     return (
         <div 
             className="flex flex-col min-h-screen bg-cover bg-center"
             style={{ backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-a832e841-3a85-4ec7-91a5-3a2168391745.jpg?alt=media&token=c5608d4b-d703-455b-8664-32b7194f4a38')`}}
         >
              <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
-                <Button variant="outline" onClick={() => window.location.href = '/dashboard'}>
+                <Button variant="outline" onClick={() => window.location.href = '/dashboard/songs-and-stories'}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to Dashboard
+                    Back to Songs & Stories
                 </Button>
             </header>
              <main className="flex-1 p-4 md:p-6 lg:p-8 flex items-center justify-center">
@@ -199,6 +205,15 @@ export default function BattleSummaryDetailPage() {
                                     <p className="text-4xl font-bold flex items-center justify-center gap-2"><Coins className="h-8 w-8 text-amber-500" /> {userRewards?.goldGained || 0}</p>
                                 </div>
                             </div>
+
+                            {madeSacrifice && (
+                                <div className="p-4 rounded-lg bg-purple-100 dark:bg-purple-900/50 border border-purple-500 text-center">
+                                    <Shield className="h-8 w-8 mx-auto text-purple-600 dark:text-purple-300 mb-2"/>
+                                    <h4 className="font-bold text-lg text-purple-800 dark:text-purple-200">A Hero's Sacrifice</h4>
+                                    <p className="text-purple-700 dark:text-purple-300">You sacrificed your personal rewards to grant your allies a powerful bonus. Your guild will remember your selflessness!</p>
+                                </div>
+                            )}
+
                             {breakdown && (
                                 <div className="p-4 border rounded-lg space-y-3">
                                     <h4 className="font-semibold text-lg text-center">Reward Breakdown</h4>
@@ -210,14 +225,18 @@ export default function BattleSummaryDetailPage() {
                                         <span className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-blue-500" />Powers Used</span>
                                         <span className="font-semibold">+{breakdown.xpFromPowers} XP, +{breakdown.goldFromPowers} Gold</span>
                                     </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="flex items-center gap-2"><UserCheck className="h-5 w-5 text-purple-500" />Participation Bonus</span>
-                                        <span className="font-semibold">+{breakdown.xpFromParticipation} XP, +{breakdown.goldFromParticipation} Gold</span>
-                                    </div>
-                                     <div className="flex justify-between items-center">
-                                        <span className="flex items-center gap-2"><BarChart className="h-5 w-5 text-orange-500" />Damage Share Bonus</span>
-                                        <span className="font-semibold">+{breakdown.xpFromDamageShare} XP</span>
-                                    </div>
+                                     {breakdown.hadFullParticipation && (
+                                        <>
+                                            <div className="flex justify-between items-center">
+                                                <span className="flex items-center gap-2"><UserCheck className="h-5 w-5 text-purple-500" />Full Participation Bonus</span>
+                                                <span className="font-semibold">+{breakdown.xpFromParticipation} XP, +{breakdown.goldFromParticipation} Gold</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="flex items-center gap-2"><BarChart className="h-5 w-5 text-orange-500" />Damage Share Bonus</span>
+                                                <span className="font-semibold">+{breakdown.xpFromDamageShare} XP</span>
+                                            </div>
+                                        </>
+                                     )}
                                     {breakdown.martialSacrificeBonus && <div className="flex justify-between items-center text-amber-600"><span className="flex items-center gap-2"><Shield className="h-5 w-5" />Martial Sacrifice Bonus</span><span className="font-semibold">+25% XP/Gold</span></div>}
                                     {breakdown.arcaneSacrificeBonus && <div className="flex justify-between items-center text-blue-600"><span className="flex items-center gap-2"><Wand2 className="h-5 w-5" />Arcane Sacrifice Bonus</span><span className="font-semibold">+25% XP</span></div>}
                                     {breakdown.divineSacrificeBonus && <div className="flex justify-between items-center text-green-600"><span className="flex items-center gap-2"><Heart className="h-5 w-5" />Divine Sacrifice Bonus</span><span className="font-semibold">+25% XP</span></div>}
