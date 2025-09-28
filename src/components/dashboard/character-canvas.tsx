@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React from 'react';
@@ -33,11 +32,11 @@ interface CharacterCanvasProps {
         handsId: string | null;
         legsId: string | null;
         feetId: string | null;
-        petId: string | null; // Added petId
+        petId: string | null;
     };
     allHairstyles: Hairstyle[];
     allArmor: ArmorPiece[];
-    equippedPet?: ArmorPiece | null; // Make pet optional
+    equippedPet?: ArmorPiece | null;
     selectedStaticAvatarUrl?: string | null;
     onMouseDown?: (e: React.MouseEvent<HTMLDivElement>, piece: ArmorPiece | Hairstyle, layer: 'primary' | 'secondary') => void;
     activePieceId?: string | null;
@@ -47,6 +46,24 @@ interface CharacterCanvasProps {
     localArmorTransforms?: Student['armorTransforms'];
     localArmorTransforms2?: Student['armorTransforms2'];
     localPetTransforms?: Student['petTransforms'];
+}
+
+const CharacterCanvas = React.forwardRef<HTMLDivElement, CharacterCanvasProps>(({ 
+    student,
+    allBodies,
+    equipment,
+    allHairstyles,
+    allArmor,
+    equippedPet,
+    selectedStaticAvatarUrl,
+    onMouseDown,
+    activePieceId,
+    editingLayer,
+    isPreviewMode,
+    localHairstyleTransforms,
+    localArmorTransforms,
+    localArmorTransforms2,
+    localPetTransforms,
 }, ref) => {
     if (!student) return <Skeleton className="w-full h-full" />;
     
