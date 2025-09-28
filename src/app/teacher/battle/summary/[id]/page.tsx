@@ -10,7 +10,7 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Star, Coins, ShieldCheck, Sparkles, ScrollText, Trash2, Loader2, Swords, Shield, Skull, Users } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, LayoutDashboard, HeartCrack, Star, Coins, ShieldCheck, Sparkles, ScrollText, Trash2, Loader2, Swords, Shield, Skull } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -27,6 +27,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Image from 'next/image';
 import type { Student } from '@/lib/data';
+import { cn } from '@/lib/utils';
 
 
 interface Question {
@@ -88,6 +89,9 @@ interface SavedBattle {
         breakdown: RewardBreakdown;
     }
   };
+  martialSacrificeCasterUid?: string;
+  arcaneSacrificeCasterUid?: string;
+  divineSacrificeCasterUid?: string;
 }
 
 export default function TeacherBattleSummaryPage() {
@@ -253,6 +257,12 @@ export default function TeacherBattleSummaryPage() {
         });
     }
 
+  const sacrificedUids = [
+      summary.martialSacrificeCasterUid,
+      summary.arcaneSacrificeCasterUid,
+      summary.divineSacrificeCasterUid
+  ].filter(Boolean) as string[];
+
   return (
     <div className="relative flex min-h-screen w-full flex-col">
         <div 
@@ -316,7 +326,7 @@ export default function TeacherBattleSummaryPage() {
                 </CardHeader>
                 <CardContent className="flex flex-wrap justify-around items-center text-center gap-6">
                      <div className="flex flex-col items-center gap-2 p-2">
-                        <Shield className="h-8 w-8 text-blue-500" />
+                        <Swords className="h-8 w-8 text-blue-500" />
                         <p className="text-2xl font-bold">{summary.totalBaseDamage ?? 0}</p>
                         <p className="text-sm font-medium">Base Damage</p>
                     </div>
@@ -335,25 +345,49 @@ export default function TeacherBattleSummaryPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Participant Rewards</CardTitle>
+                    <CardTitle>Participant Rewards & Status</CardTitle>
                 </CardHeader>
                 <CardContent>
                      <Table>
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Student</TableHead>
+                                <TableHead>Status</TableHead>
                                 <TableHead className="text-right">XP Gained</TableHead>
                                 <TableHead className="text-right">Gold Gained</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {participantDetails.map(student => (
-                                <TableRow key={student.uid}>
-                                    <TableCell className="font-medium">{student.studentName} ({student.characterName})</TableCell>
-                                    <TableCell className="text-right font-semibold text-green-600">+{student.rewards.xpGained.toLocaleString()}</TableCell>
-                                    <TableCell className="text-right font-semibold text-amber-600">+{student.rewards.goldGained.toLocaleString()}</TableCell>
-                                </TableRow>
-                            ))}
+                            {participantDetails.map(student => {
+                                const isFallen = summary.fallenAtEnd?.includes(student.uid);
+                                const didSacrifice = sacrificedUids.includes(student.uid);
+                                let statusIcon;
+                                let statusText;
+                                if (didSacrifice) {
+                                    statusIcon = <Shield className="h-5 w-5 text-blue-500" />;
+                                    statusText = 'Sacrificed';
+                                } else if (isFallen) {
+                                    statusIcon = <Skull className="h-5 w-5 text-red-600" />;
+                                    statusText = 'Fallen';
+                                } else {
+                                    statusIcon = <CheckCircle className="h-5 w-5 text-green-600" />;
+                                    statusText = 'Victorious';
+                                }
+                                
+                                return (
+                                    <TableRow key={student.uid}>
+                                        <TableCell className="font-medium">{student.studentName} ({student.characterName})</TableCell>
+                                        <TableCell className="font-semibold">
+                                            <div className="flex items-center gap-2">
+                                                {statusIcon}
+                                                <span>{statusText}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right font-semibold text-green-600">+{student.rewards.xpGained.toLocaleString()}</TableCell>
+                                        <TableCell className="text-right font-semibold text-amber-600">+{student.rewards.goldGained.toLocaleString()}</TableCell>
+                                    </TableRow>
+                                );
+                            })}
                         </TableBody>
                     </Table>
                 </CardContent>
@@ -376,7 +410,7 @@ export default function TeacherBattleSummaryPage() {
                                     <AccordionTrigger className="text-lg hover:no-underline">
                                         <div className="flex justify-between w-full pr-4">
                                             <div className="flex items-center gap-2 text-left">
-                                                {question.imageUrl && <img src={question.imageUrl} alt="Question visual" width={40} height={40} className="rounded-md" />}
+                                                {question.imageUrl && <Image src={question.imageUrl} alt="Question visual" width={40} height={40} className="rounded-md" />}
                                                 <span>Q{round.currentQuestionIndex + 1}: {question.questionText}</span>
                                             </div>
                                             <div className="flex gap-4">
@@ -401,7 +435,7 @@ export default function TeacherBattleSummaryPage() {
                                             <div className="mt-2 p-2 bg-blue-900/10 rounded-md">
                                                 <h4 className="font-semibold text-sm">Powers Used:</h4>
                                                 <ul className="text-xs text-muted-foreground list-disc list-inside">
-                                                    {battleLogByRound[parseInt(round.id)].map((log, index) => (
+                                                    {battleLogByRound[round.currentQuestionIndex + 1].map((log, index) => (
                                                         <li key={index}>
                                                             <span className="font-bold">{log.casterName}</span> used <span className="font-semibold text-primary">{log.powerName}</span>. Effect: {log.description}
                                                         </li>
