@@ -347,12 +347,11 @@ export default function SizerPage() {
                                             return (
                                                 <React.Fragment key={piece.id}>
                                                     <div 
-                                                        className={cn("absolute cursor-move", isPreviewMode ? 'opacity-100 pointer-events-none' : (!isActive && 'opacity-50 pointer-events-none'))}
+                                                        className={cn("absolute cursor-move w-48 h-auto", isPreviewMode ? 'opacity-100 pointer-events-none' : (!isActive && 'opacity-50 pointer-events-none'))}
                                                         style={{ 
                                                             left: `${itemTransforms.x}%`, 
                                                             top: `${itemTransforms.y}%`, 
-                                                            width: `${itemTransforms.scale}%`, 
-                                                            transform: `translate(-50%, -50%) rotate(${itemTransforms.rotation || 0}deg)`, 
+                                                            transform: `translate(-50%, -50%) scale(${itemTransforms.scale / 100}) rotate(${itemTransforms.rotation || 0}deg)`,
                                                             zIndex: isPreviewMode ? zIndex : (isActive && editingLayer === 'primary' ? 20 : zIndex) 
                                                         }}
                                                         onMouseDown={(e) => handleMouseDown(e, piece.id, 'primary')}
@@ -361,12 +360,11 @@ export default function SizerPage() {
                                                     </div>
                                                     {piece.modularImageUrl2 && (
                                                         <div 
-                                                            className={cn("absolute cursor-move", isPreviewMode ? 'opacity-100 pointer-events-none' : (!isActive && 'opacity-50 pointer-events-none'))}
+                                                            className={cn("absolute cursor-move w-48 h-auto", isPreviewMode ? 'opacity-100 pointer-events-none' : (!isActive && 'opacity-50 pointer-events-none'))}
                                                             style={{ 
                                                                 left: `${itemTransforms.x2}%`, 
                                                                 top: `${itemTransforms.y2}%`, 
-                                                                width: `${itemTransforms.scale2}%`, 
-                                                                transform: `translate(-50%, -50%) rotate(${itemTransforms.rotation2 || 0}deg)`, 
+                                                                transform: `translate(-50%, -50%) scale(${itemTransforms.scale2 / 100}) rotate(${itemTransforms.rotation2 || 0}deg)`,
                                                                 zIndex: isPreviewMode ? zIndex : (isActive && editingLayer === 'secondary' ? 20 : zIndex) 
                                                             }}
                                                             onMouseDown={(e) => handleMouseDown(e, piece.id, 'secondary')}
@@ -381,12 +379,11 @@ export default function SizerPage() {
                                             return (
                                                 <div 
                                                     key={hairstyle.id}
-                                                    className={cn("absolute cursor-move", isPreviewMode ? 'opacity-100 pointer-events-none' : (!isActive && 'opacity-50 pointer-events-none'))}
+                                                    className={cn("absolute cursor-move w-48 h-auto", isPreviewMode ? 'opacity-100 pointer-events-none' : (!isActive && 'opacity-50 pointer-events-none'))}
                                                     style={{ 
                                                         left: `${itemTransforms.x}%`, 
                                                         top: `${itemTransforms.y}%`, 
-                                                        width: `${itemTransforms.scale}%`, 
-                                                        transform: `translate(-50%, -50%) rotate(${itemTransforms.rotation || 0}deg)`, 
+                                                        transform: `translate(-50%, -50%) scale(${itemTransforms.scale / 100}) rotate(${itemTransforms.rotation || 0}deg)`, 
                                                         zIndex: isPreviewMode ? 10 : (isActive ? 20 : 10) 
                                                     }}
                                                     onMouseDown={(e) => handleMouseDown(e, hairstyle.id, 'primary')}
@@ -449,7 +446,7 @@ export default function SizerPage() {
                                                         <Slider id="y-pos" value={[activeTransform.y]} onValueChange={([val]) => handleSliderChange('y', val)} min={0} max={100} step={0.1} disabled={isPreviewMode} />
                                                     </div>
                                                     <div className="space-y-2">
-                                                        <Label htmlFor="scale">Scale: {activeTransform.scale}%</Label>
+                                                        <Label htmlFor="scale">Scale: {activeTransform.scale.toFixed(1)}%</Label>
                                                         <Slider id="scale" value={[activeTransform.scale]} onValueChange={([val]) => handleSliderChange('scale', val)} min={10} max={100} step={0.5} disabled={isPreviewMode} />
                                                     </div>
                                                      <div className="space-y-2">
@@ -468,7 +465,7 @@ export default function SizerPage() {
                                                         <Slider id="y2-pos" value={[activeTransform.y2]} onValueChange={([val]) => handleSliderChange('y2', val)} min={0} max={100} step={0.1} disabled={isPreviewMode} />
                                                     </div>
                                                     <div className="space-y-2">
-                                                        <Label htmlFor="scale2">Scale 2: {activeTransform.scale2}%</Label>
+                                                        <Label htmlFor="scale2">Scale 2: {activeTransform.scale2.toFixed(1)}%</Label>
                                                         <Slider id="scale2" value={[activeTransform.scale2]} onValueChange={([val]) => handleSliderChange('scale2', val)} min={10} max={100} step={0.5} disabled={isPreviewMode} />
                                                     </div>
                                                     <div className="space-y-2">
