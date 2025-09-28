@@ -74,6 +74,13 @@ export function AvatarDisplay({ student }: AvatarDisplayProps) {
   
   const isFallen = student.hp <= 0;
 
+  // Determine the correct key for pet transforms. Use a special key for static avatars.
+  const petTransformKey = equipment.bodyId ? equipment.bodyId : 'static';
+  const petTransform = student.petTransforms?.[petTransformKey] 
+        || equippedPet?.transforms?.[petTransformKey] 
+        || { x: 50, y: 50, scale: 40, rotation: 0 };
+
+
   return (
     <div className="flex justify-center items-center py-4">
         <div className={cn("relative w-96 h-96 border-8 bg-black/20 p-2 shadow-inner", avatarBorderColor)}>
@@ -95,6 +102,7 @@ export function AvatarDisplay({ student }: AvatarDisplayProps) {
                         localHairstyleTransforms={student.equippedHairstyleTransforms}
                         localArmorTransforms={student.armorTransforms}
                         localArmorTransforms2={student.armorTransforms2}
+                        localPetTransforms={student.petTransforms}
                     />
                 </Suspense>
             ) : (
@@ -110,8 +118,15 @@ export function AvatarDisplay({ student }: AvatarDisplayProps) {
                     />
                      {equippedPet && (
                         <div 
-                            className="absolute bottom-0 left-0 w-1/3 h-1/3 pointer-events-none"
-                            style={{ zIndex: 12 }}
+                            className="absolute pointer-events-none"
+                            style={{ 
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                zIndex: 12,
+                                transform: `translateX(${petTransform.x}%) translateY(${petTransform.y}%) translate(-50%, -50%) scale(${petTransform.scale / 100}) rotate(${petTransform.rotation || 0}deg)`,
+                            }}
                         >
                             <Image src={equippedPet.modularImageUrl} alt={equippedPet.name} layout="fill" className="object-contain"/>
                         </div>
