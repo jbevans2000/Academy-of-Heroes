@@ -349,9 +349,9 @@ export default function SizerPage() {
                                                     <div 
                                                         className={cn("absolute cursor-move", isPreviewMode ? 'opacity-100 pointer-events-none' : (!isActive && 'opacity-50 pointer-events-none'))}
                                                         style={{ 
-                                                            left: `${itemTransforms.x}%`, 
-                                                            top: `${itemTransforms.y}%`, 
-                                                            transform: `translate(-50%, -50%) scale(${itemTransforms.scale / 100}) rotate(${itemTransforms.rotation || 0}deg)`,
+                                                            top: 0,
+                                                            left: 0,
+                                                            transform: `translate(${itemTransforms.x}%, ${itemTransforms.y}%) translate(-50%, -50%) scale(${itemTransforms.scale / 100}) rotate(${itemTransforms.rotation || 0}deg)`,
                                                             zIndex: isPreviewMode ? zIndex : (isActive && editingLayer === 'primary' ? 20 : zIndex) 
                                                         }}
                                                         onMouseDown={(e) => handleMouseDown(e, piece.id, 'primary')}
@@ -362,9 +362,9 @@ export default function SizerPage() {
                                                         <div 
                                                             className={cn("absolute cursor-move", isPreviewMode ? 'opacity-100 pointer-events-none' : (!isActive && 'opacity-50 pointer-events-none'))}
                                                             style={{ 
-                                                                left: `${itemTransforms.x2}%`, 
-                                                                top: `${itemTransforms.y2}%`, 
-                                                                transform: `translate(-50%, -50%) scale(${itemTransforms.scale2 / 100}) rotate(${itemTransforms.rotation2 || 0}deg)`,
+                                                                top: 0,
+                                                                left: 0,
+                                                                transform: `translate(${itemTransforms.x2}%, ${itemTransforms.y2}%) translate(-50%, -50%) scale(${itemTransforms.scale2 / 100}) rotate(${itemTransforms.rotation2 || 0}deg)`,
                                                                 zIndex: isPreviewMode ? zIndex : (isActive && editingLayer === 'secondary' ? 20 : zIndex) 
                                                             }}
                                                             onMouseDown={(e) => handleMouseDown(e, piece.id, 'secondary')}
@@ -381,9 +381,9 @@ export default function SizerPage() {
                                                     key={hairstyle.id}
                                                     className={cn("absolute cursor-move", isPreviewMode ? 'opacity-100 pointer-events-none' : (!isActive && 'opacity-50 pointer-events-none'))}
                                                     style={{ 
-                                                        left: `${itemTransforms.x}%`, 
-                                                        top: `${itemTransforms.y}%`, 
-                                                        transform: `translate(-50%, -50%) scale(${itemTransforms.scale / 100}) rotate(${itemTransforms.rotation || 0}deg)`, 
+                                                        top: 0,
+                                                        left: 0,
+                                                        transform: `translate(${itemTransforms.x}%, ${itemTransforms.y}%) translate(-50%, -50%) scale(${itemTransforms.scale / 100}) rotate(${itemTransforms.rotation || 0}deg)`, 
                                                         zIndex: isPreviewMode ? 10 : (isActive ? 20 : 10) 
                                                     }}
                                                     onMouseDown={(e) => handleMouseDown(e, hairstyle.id, 'primary')}
