@@ -8,7 +8,7 @@ import { AvatarDisplay } from "@/components/dashboard/avatar-display";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, Map, Swords, Sparkles, BookHeart, Gem, Package, Hammer, Briefcase, Loader2, Trophy, ScrollText } from "lucide-react";
+import { User, Map, Swords, Sparkles, BookHeart, Gem, Package, Hammer, Briefcase, Loader2, Trophy, ScrollText, BookOpen } from "lucide-react";
 import { doc, updateDoc, collection, query, where, getDocs, onSnapshot, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -37,6 +37,12 @@ import { AvatarLogDialog } from '@/components/dashboard/avatar-log-dialog';
 interface DashboardClientProps {
   student: Student;
   isTeacherPreview?: boolean;
+}
+
+const isSameDay = (d1: Date, d2: Date) => {
+    return d1.getFullYear() === d2.getFullYear() &&
+           d1.getMonth() === d2.getMonth() &&
+           d1.getDate() === d2.getDate();
 }
 
 export function DashboardClient({ student, isTeacherPreview = false }: DashboardClientProps) {
@@ -157,6 +163,13 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
   };
   
   const teacherPreviewQuery = `?teacherPreview=true&studentUid=${student.uid}`;
+  
+  let isTrainingDone = false;
+  if (student.lastDailyTraining) {
+      const today = new Date();
+      const lastTrainingDate = student.lastDailyTraining.toDate();
+      isTrainingDone = isSameDay(today, lastTrainingDate);
+  }
 
   return (
     <>
@@ -232,6 +245,12 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                         Embark on Your Quest
                     </Button>
                 </Link>
+                <Link href="/dashboard/training" passHref className="col-span-2">
+                    <Button size="lg" className="w-full py-8 text-lg justify-center bg-yellow-500 text-black hover:bg-yellow-600" disabled={isTrainingDone}>
+                        <BookOpen className="mr-4 h-8 w-8" />
+                        {isTrainingDone ? 'Training Complete for Today' : 'Daily Training'}
+                    </Button>
+                </Link>
                 <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setIsChallengeDialogOpen(true)}>
                     <Swords className="mr-4 h-8 w-8" />
                     Training Grounds
@@ -292,7 +311,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                           <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
                               <Package className="h-12 w-12 text-purple-500" />
                               <div>
-                                  <h3 className="text-xl font-bold">My Inventory</h3>
+                                  <h3 className="text-xl font-bold">My Rewards</h3>
                                   <p className="text-muted-foreground">View your items!</p>
                               </div>
                           </div>
