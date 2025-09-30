@@ -1,8 +1,7 @@
 
-
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -298,6 +297,23 @@ export default function EditQuestPage() {
         handleQuizChange('questions', updatedQuestions);
     };
     
+    const handleCorrectQuizAnswerChange = (qId: string, aIndex: number) => {
+        const updatedQuestions = chapter?.quiz?.questions.map(q => {
+            if (q.id === qId) {
+                if (q.questionType === 'single' || q.questionType === 'true-false') {
+                    return { ...q, correctAnswer: [aIndex] };
+                } else {
+                    const newCorrect = q.correctAnswer.includes(aIndex) 
+                        ? q.correctAnswer.filter(i => i !== aIndex)
+                        : [...q.correctAnswer, aIndex];
+                    return { ...q, correctAnswer: newCorrect.sort((a,b) => a-b) };
+                }
+            }
+            return q;
+        }) || [];
+        handleQuizChange('questions', updatedQuestions);
+    };
+    
     const handleAddAnswerChoice = (qId: string) => {
         const updatedQuestions = chapter?.quiz?.questions.map(q => 
             q.id === qId ? { ...q, answers: [...q.answers, ''] } : q
@@ -317,23 +333,6 @@ export default function EditQuestPage() {
         handleQuizChange('questions', updatedQuestions);
     };
 
-    const handleCorrectQuizAnswerChange = (qId: string, aIndex: number) => {
-        const updatedQuestions = chapter?.quiz?.questions.map(q => {
-            if (q.id === qId) {
-                if (q.questionType === 'single' || q.questionType === 'true-false') {
-                    return { ...q, correctAnswer: [aIndex] };
-                } else {
-                    const newCorrect = q.correctAnswer.includes(aIndex) 
-                        ? q.correctAnswer.filter(i => i !== aIndex)
-                        : [...q.correctAnswer, aIndex];
-                    return { ...q, correctAnswer: newCorrect.sort((a,b) => a-b) };
-                }
-            }
-            return q;
-        }) || [];
-        handleQuizChange('questions', updatedQuestions);
-    };
-    
     const handleAddQuizQuestion = () => {
         const newQuestion: QuizQuestion = { id: uuidv4(), text: '', answers: ['', '', '', ''], correctAnswer: [], questionType: 'single' };
         const updatedQuestions = [...(chapter?.quiz?.questions || []), newQuestion];
@@ -501,6 +500,13 @@ export default function EditQuestPage() {
         toast({ variant: 'destructive', title: 'Cannot Delete', description: 'A lesson must have at least one part.' });
     }
   };
+  
+    const currentChapterIndex = useMemo(() => {
+        return chaptersInHub.findIndex(c => c.id === chapterId);
+    }, [chaptersInHub, chapterId]);
+
+    const prevChapter = currentChapterIndex > 0 ? chaptersInHub[currentChapterIndex - 1] : null;
+    const nextChapter = currentChapterIndex < chaptersInHub.length - 1 ? chaptersInHub[currentChapterIndex + 1] : null;
 
 
   if (isLoading || !chapter || !teacher) {
@@ -536,10 +542,24 @@ export default function EditQuestPage() {
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="max-w-4xl mx-auto space-y-6">
-          <Button variant="outline" onClick={() => router.push('/teacher/quests')} className="mb-4">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to All Quests
-          </Button>
+           <div className="flex justify-between items-center">
+            <Button variant="outline" onClick={() => router.push('/teacher/quests')} className="mb-4">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to All Quests
+            </Button>
+            <div className="flex gap-2">
+              {prevChapter && (
+                <Button variant="outline" onClick={() => router.push(`/teacher/quests/edit/${prevChapter.id}`)}>
+                  <ArrowLeft className="mr-2 h-4 w-4" /> Previous Chapter
+                </Button>
+              )}
+              {nextChapter && (
+                <Button variant="outline" onClick={() => router.push(`/teacher/quests/edit/${nextChapter.id}`)}>
+                  Next Chapter <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
           <Card className="shadow-lg bg-card/90">
             <CardHeader>
               <CardTitle className="text-3xl">Edit Quest</CardTitle>
