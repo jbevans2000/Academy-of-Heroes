@@ -51,6 +51,7 @@ export type Student = {
     isNewlyApproved?: boolean;
     lastChapterCompletion?: any; // Firestore ServerTimestamp
     lastDailyRegen?: any; // Firestore ServerTimestamp
+    lastDailyTraining?: any; // Firestore ServerTimestamp
     companyId?: string;
     inBattle: boolean; 
     inDuel?: boolean;

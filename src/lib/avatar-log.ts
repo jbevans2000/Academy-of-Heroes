@@ -9,6 +9,7 @@ export type LogEventSource =
     | 'Boss Battle'
     | 'Group Battle'
     | 'Duel Victory'
+    | 'Daily Training'
     | 'Teacher Award'
     | 'Manual Edit';
 

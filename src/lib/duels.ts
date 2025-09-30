@@ -24,6 +24,8 @@ export interface DuelSettings {
     isDailyLimitEnabled?: boolean;
     numNormalQuestions?: number;
     numSuddenDeathQuestions?: number;
+    dailyTrainingXpReward?: number;
+    dailyTrainingGoldReward?: number;
 }
 
     
