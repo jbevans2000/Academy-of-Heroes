@@ -542,23 +542,11 @@ export default function EditQuestPage() {
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="max-w-4xl mx-auto space-y-6">
-           <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center">
             <Button variant="outline" onClick={() => router.push('/teacher/quests')} className="mb-4">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to All Quests
             </Button>
-            <div className="flex gap-2">
-              {prevChapter && (
-                <Button variant="outline" onClick={() => router.push(`/teacher/quests/edit/${prevChapter.id}`)}>
-                  <ArrowLeft className="mr-2 h-4 w-4" /> Previous Chapter
-                </Button>
-              )}
-              {nextChapter && (
-                <Button variant="outline" onClick={() => router.push(`/teacher/quests/edit/${nextChapter.id}`)}>
-                  Next Chapter <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              )}
-            </div>
           </div>
           <Card className="shadow-lg bg-card/90">
             <CardHeader>
@@ -846,11 +834,23 @@ export default function EditQuestPage() {
                   </div>
               
 
-              <div className="flex justify-end pt-4 border-t">
+              <div className="flex justify-between items-center pt-4 border-t">
+                {prevChapter ? (
+                  <Button variant="outline" size="lg" onClick={() => router.push(`/teacher/quests/edit/${prevChapter.id}`)}>
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Previous Chapter
+                  </Button>
+                ) : <div />}
+                
                 <Button size="lg" onClick={handleSaveChanges} disabled={isSaving}>
                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                     Save Changes
                 </Button>
+
+                {nextChapter ? (
+                  <Button variant="outline" size="lg" onClick={() => router.push(`/teacher/quests/edit/${nextChapter.id}`)}>
+                    Next Chapter <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                ) : <div />}
               </div>
 
             </CardContent>
