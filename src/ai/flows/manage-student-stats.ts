@@ -1,7 +1,7 @@
 
 'use server';
 
-import { doc, writeBatch, getDoc } from 'firebase/firestore';
+import { doc, writeBatch, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { logAvatarEvent, type LogEventSource } from '@/lib/avatar-log';
 import { calculateLevel, calculateBaseMaxHp, MAX_LEVEL, XP_FOR_MAX_LEVEL } from '@/lib/game-mechanics';
