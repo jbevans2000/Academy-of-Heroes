@@ -252,7 +252,12 @@ export default function DailyTrainingPage() {
 
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-muted/40 p-4">
+        <div
+            className="flex items-center justify-center min-h-screen bg-cover bg-center p-4"
+            style={{
+                backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Sep%2029%2C%202025%2C%2009_36_12%20PM.png?alt=media&token=0efae8ff-e31f-4797-9cbd-594db6c445fc')`,
+            }}
+        >
             <div className="w-full max-w-2xl">
                  {quizState === 'in_progress' && currentQuestion && (
                     <Card>
