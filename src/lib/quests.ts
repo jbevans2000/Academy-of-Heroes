@@ -36,6 +36,7 @@ export interface QuestHub {
     // New Visibility Fields
     isVisibleToAll?: boolean;
     assignedCompanyIds?: string[];
+    isActive?: boolean; // New field to control hub visibility
 }
 
 export interface LessonPart {

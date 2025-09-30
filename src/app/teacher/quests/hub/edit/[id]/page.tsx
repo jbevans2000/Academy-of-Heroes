@@ -216,6 +216,7 @@ export default function EditQuestHubPage() {
                 rewardGold: hub.rewardGold ?? 0,
                 isVisibleToAll,
                 assignedCompanyIds: isVisibleToAll ? [] : assignedCompanyIds,
+                isActive: hub.isActive ?? true,
             };
 
             await updateDoc(hubRef, dataToSave);
@@ -317,10 +318,17 @@ export default function EditQuestHubPage() {
 
                                 <Card className="bg-secondary/50">
                                     <CardHeader>
-                                        <CardTitle>Hub Visibility</CardTitle>
-                                        <CardDescription>Control which companies can access the chapters in this hub.</CardDescription>
+                                        <CardTitle>Hub Visibility & Status</CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
+                                        <div className="flex items-center space-x-2">
+                                            <Switch
+                                                id="hub-active"
+                                                checked={hub.isActive ?? true}
+                                                onCheckedChange={(checked) => handleFieldChange('isActive', checked)}
+                                            />
+                                            <Label htmlFor="hub-active">{hub.isActive ?? true ? "Hub is Active" : "Hub is Deactivated"}</Label>
+                                        </div>
                                         <div className="flex items-center space-x-2">
                                             <Checkbox
                                                 id="visible-to-all"

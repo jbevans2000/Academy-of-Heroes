@@ -83,6 +83,10 @@ export default function WorldMapPage() {
 
     const unlockedHubs = student
       ? hubs.filter(hub => {
+          // New logic: Check isActive status
+          const isActive = hub.isActive ?? true; // Default to active if not set
+          if (!isActive) return false;
+
           const isVisible = hub.isVisibleToAll ?? true;
           if (isVisible) return true;
           return hub.assignedCompanyIds?.includes(student.companyId || '') ?? false;
