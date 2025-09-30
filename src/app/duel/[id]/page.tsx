@@ -16,6 +16,7 @@ import type { DuelQuestion, DuelQuestionSection, DuelSettings } from '@/lib/duel
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { logGameEvent } from '@/lib/gamelog';
+import { logAvatarEvent } from '@/lib/avatar-log';
 import { calculateLevel } from '@/lib/game-mechanics';
 import { getDuelSettings, updateDuelSettings } from '@/ai/flows/manage-duels';
 import { format } from 'date-fns';
@@ -259,37 +260,49 @@ export default function DuelPage() {
         const loserDoc = await transaction.get(loserRef);
         if (!winnerDoc.exists() || !loserDoc.exists()) throw new Error("A duelist could not be found.");
 
-        const winnerData = winnerDoc.data();
+        const winnerData = winnerDoc.data() as Student;
+        const loserData = loserDoc.data() as Student;
         
         if (isDrawByExhaustion) {
             const refundAmount = duel.cost || 0;
             if (refundAmount > 0) {
                 transaction.update(winnerRef, { gold: (winnerData.gold || 0) + refundAmount });
-                transaction.update(loserRef, { gold: (loserDoc.data().gold || 0) + refundAmount });
+                transaction.update(loserRef, { gold: (loserData.gold || 0) + refundAmount });
             }
             transaction.update(duelRef, { status: 'finished', isDraw: true, winnerUid: null }); 
         } else {
             const duelCost = duel.cost || 0;
-            const winnerFinalXp = (winnerData.xp || 0) + duelSettings.rewardXp;
-            const winnerFinalGold = (winnerData.gold || 0) + duelSettings.rewardGold + (isForfeit ? 0 : duelCost);
+            const xpGained = duelSettings.rewardXp;
+            const goldGained = duelSettings.rewardGold;
+            const totalGoldChange = goldGained + (isForfeit ? 0 : duelCost);
+
+            const winnerFinalXp = (winnerData.xp || 0) + xpGained;
+            const winnerFinalGold = (winnerData.gold || 0) + totalGoldChange;
             
             transaction.update(winnerRef, { xp: winnerFinalXp, gold: winnerFinalGold });
             
             if (!isForfeit) {
                 const refundAmount = Math.floor(duelCost / 2);
                  if (refundAmount > 0) {
-                    const loserData = loserDoc.data();
                     transaction.update(loserRef, { gold: (loserData.gold || 0) + refundAmount });
                 }
             }
+
+            logAvatarEvent(teacherUid, winnerUid, {
+                source: 'Duel Victory',
+                xp: xpGained,
+                gold: totalGoldChange,
+                reason: `Defeated ${loserData.characterName} in a duel.`
+            });
+
             transaction.update(duelRef, { status: 'finished', winnerUid, isDraw: duel.isDraw ?? false });
         }
 
         transaction.update(winnerRef, { dailyDuelCount: increment(1) });
         transaction.update(loserRef, { dailyDuelCount: increment(1) });
 
-        const winnerName = winnerUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
-        const loserName = loserUid === duel.challengerUid ? duel.challengerName : duel.opponentName;
+        const winnerName = winnerData.characterName;
+        const loserName = loserData.characterName;
         await logGameEvent(teacherUid, 'DUEL', `${winnerName} defeated ${loserName} in a duel.`);
     }, [duel, teacherUid, duelSettings, duelRef]);
 
@@ -901,3 +914,5 @@ export default function DuelPage() {
         </div>
     )
 }
+
+    
