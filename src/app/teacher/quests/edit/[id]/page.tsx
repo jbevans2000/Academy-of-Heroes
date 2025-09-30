@@ -620,7 +620,7 @@ export default function EditQuestPage() {
                          <div className="flex items-center space-x-2">
                             <Switch id="chapter-active" checked={chapter.isActive ?? true} onCheckedChange={(checked) => handleFieldChange('isActive', checked)} />
                             <Label htmlFor="chapter-active">{chapter.isActive ?? true ? "Chapter is Active" : "Chapter is Deactivated"}</Label>
-                        </div>
+                           </div>
                         <ImageUploader label="Main Story Image" imageUrl={chapter.mainImageUrl || ''} onUploadSuccess={(url) => handleFieldChange('mainImageUrl', url)} teacherUid={teacher.uid} storagePath="quest-images" />
                         <div className="space-y-2">
                             <Label htmlFor="story-content">Story Content</Label>
@@ -833,9 +833,8 @@ export default function EditQuestPage() {
                       </Tabs>
                   </div>
               
-
               <div className="flex justify-between items-center pt-4 border-t">
-                {prevChapter ? (
+                  {prevChapter ? (
                   <Button variant="outline" size="lg" onClick={() => router.push(`/teacher/quests/edit/${prevChapter.id}`)}>
                     <ArrowLeft className="mr-2 h-4 w-4" /> Previous Chapter
                   </Button>
@@ -852,9 +851,15 @@ export default function EditQuestPage() {
                   </Button>
                 ) : <div />}
               </div>
-
             </CardContent>
           </Card>
+          
+           <div className="flex justify-center mt-4">
+              <Button variant="outline" onClick={() => router.push('/teacher/quests')} className="mb-4">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to All Quests
+              </Button>
+            </div>
         </div>
       </main>
     </div>
