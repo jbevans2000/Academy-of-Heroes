@@ -26,6 +26,7 @@ export interface DuelSettings {
     numSuddenDeathQuestions?: number;
     dailyTrainingXpReward?: number;
     dailyTrainingGoldReward?: number;
+    isDailyTrainingEnabled?: boolean;
 }
 
     

@@ -1,4 +1,5 @@
 
+
 'use server';
 /**
  * @fileOverview Server-side functions for managing duel question sections.
@@ -127,6 +128,7 @@ export async function getDuelSettings(teacherUid: string): Promise<DuelSettings>
             numSuddenDeathQuestions: data.duelSettings?.numSuddenDeathQuestions ?? 10,
             dailyTrainingXpReward: data.duelSettings?.dailyTrainingXpReward ?? 50,
             dailyTrainingGoldReward: data.duelSettings?.dailyTrainingGoldReward ?? 25,
+            isDailyTrainingEnabled: data.duelSettings?.isDailyTrainingEnabled ?? true,
         };
     }
     // Default values if settings document doesn't exist
@@ -141,6 +143,7 @@ export async function getDuelSettings(teacherUid: string): Promise<DuelSettings>
         numSuddenDeathQuestions: 10,
         dailyTrainingXpReward: 50,
         dailyTrainingGoldReward: 25,
+        isDailyTrainingEnabled: true,
     };
 }
 

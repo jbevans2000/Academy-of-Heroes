@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -52,7 +53,7 @@ export default function TrainingGroundsPage() {
   const [isToggling, setIsToggling] = useState<string | null>(null);
 
   // Settings State
-  const [duelSettings, setDuelSettings] = useState<DuelSettings>({ rewardXp: 25, rewardGold: 10, isDuelsEnabled: true, duelCost: 0, dailyDuelLimit: 5, isDailyLimitEnabled: true, numNormalQuestions: 10, numSuddenDeathQuestions: 10, dailyTrainingXpReward: 50, dailyTrainingGoldReward: 25 });
+  const [duelSettings, setDuelSettings] = useState<DuelSettings>({ rewardXp: 25, rewardGold: 10, isDuelsEnabled: true, duelCost: 0, dailyDuelLimit: 5, isDailyLimitEnabled: true, numNormalQuestions: 10, numSuddenDeathQuestions: 10, dailyTrainingXpReward: 50, dailyTrainingGoldReward: 25, isDailyTrainingEnabled: true });
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
 
@@ -143,14 +144,15 @@ export default function TrainingGroundsPage() {
     }
   }
 
-  const handleToggleDuelsEnabled = async () => {
+  const handleToggleFeature = async (feature: 'isDuelsEnabled' | 'isDailyTrainingEnabled') => {
     if(!teacher) return;
-    const newStatus = !(duelSettings.isDuelsEnabled ?? true);
-    setIsToggling('main_switch');
+    const newStatus = !(duelSettings[feature] ?? true);
+    setIsToggling(feature);
     try {
-        await updateDuelSettings({ teacherUid: teacher.uid, settings: { isDuelsEnabled: newStatus } });
-        setDuelSettings(prev => ({...prev, isDuelsEnabled: newStatus}));
-        toast({ title: `Training Grounds ${newStatus ? 'Opened' : 'Closed'}` });
+        await updateDuelSettings({ teacherUid: teacher.uid, settings: { [feature]: newStatus } });
+        setDuelSettings(prev => ({...prev, [feature]: newStatus}));
+        const featureName = feature === 'isDuelsEnabled' ? 'Training Grounds' : 'Daily Training';
+        toast({ title: `${featureName} ${newStatus ? 'Enabled' : 'Disabled'}` });
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
     } finally {
@@ -197,6 +199,7 @@ export default function TrainingGroundsPage() {
   }
 
   const isDuelsEnabled = duelSettings.isDuelsEnabled ?? true;
+  const isDailyTrainingEnabled = duelSettings.isDailyTrainingEnabled ?? true;
 
   return (
     <>
@@ -262,11 +265,11 @@ export default function TrainingGroundsPage() {
             </Button>
             <div className="flex gap-2">
                  <Button 
-                    onClick={handleToggleDuelsEnabled} 
-                    disabled={isToggling === 'main_switch'}
+                    onClick={() => handleToggleFeature('isDuelsEnabled')} 
+                    disabled={isToggling === 'isDuelsEnabled'}
                     className={cn(isDuelsEnabled ? 'bg-destructive hover:bg-destructive/90' : 'bg-green-600 hover:bg-green-700')}
                  >
-                    {isToggling === 'main_switch' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {isToggling === 'isDuelsEnabled' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     {isDuelsEnabled ? 'Close Training Grounds' : 'Open Training Grounds'}
                 </Button>
                  <Button onClick={() => handleOpenDialog(null)}><PlusCircle className="mr-2 h-4 w-4"/> New Section</Button>
@@ -280,6 +283,13 @@ export default function TrainingGroundsPage() {
                     The Training Grounds are currently {isDuelsEnabled ? 'OPEN' : 'CLOSED'}. Students {isDuelsEnabled ? 'CAN' : 'CANNOT'} challenge each other to duels.
                 </AlertDescription>
             </Alert>
+            <Alert variant={isDailyTrainingEnabled ? 'default' : 'destructive'} className={cn('bg-opacity-80 backdrop-blur-sm', isDailyTrainingEnabled ? 'bg-green-100 dark:bg-green-900/50 border-green-500' : 'bg-red-100 dark:bg-red-900/50 border-red-500')}>
+                <BookOpen className={cn("h-4 w-4", isDailyTrainingEnabled ? 'text-green-600' : 'text-destructive')} />
+                <AlertTitle className="font-bold text-lg">Daily Training Status</AlertTitle>
+                <AlertDescription className="font-semibold text-base">
+                    Daily Training is currently {isDailyTrainingEnabled ? 'ENABLED' : 'DISABLED'}. Students {isDailyTrainingEnabled ? 'CAN' : 'CANNOT'} access this feature.
+                </AlertDescription>
+            </Alert>
 
            <Card>
                 <CardHeader>
@@ -287,8 +297,11 @@ export default function TrainingGroundsPage() {
                     <CardDescription>Configure rewards, costs, and limits for student activities.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    <div className="border-b pb-4">
-                        <h3 className="text-lg font-semibold mb-2">Student vs. Student Duels</h3>
+                    <div className="border-b pb-4 space-y-4">
+                        <div className="flex items-center space-x-2">
+                            <Switch id="duels-enabled" checked={isDuelsEnabled} onCheckedChange={() => handleToggleFeature('isDuelsEnabled')} disabled={isToggling === 'isDuelsEnabled'} />
+                            <Label htmlFor="duels-enabled" className="text-lg font-semibold">Student vs. Student Duels</Label>
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1">
                                 <Label htmlFor="num-normal-questions"># of Normal Questions</Label>
@@ -359,9 +372,12 @@ export default function TrainingGroundsPage() {
                             </div>
                         </div>
                     </div>
-                     <div className="pt-4">
-                        <h3 className="text-lg font-semibold mb-2">Daily Training</h3>
-                        <p className="text-sm text-muted-foreground mb-2">Note: Questions for Daily Training are pulled from all ACTIVE duel sections below, as well as from any quizzes in chapters that a student has completed.</p>
+                     <div className="pt-4 space-y-4">
+                        <div className="flex items-center space-x-2">
+                             <Switch id="daily-training-enabled" checked={isDailyTrainingEnabled} onCheckedChange={() => handleToggleFeature('isDailyTrainingEnabled')} disabled={isToggling === 'isDailyTrainingEnabled'} />
+                             <Label htmlFor="daily-training-enabled" className="text-lg font-semibold">Daily Training</Label>
+                        </div>
+                        <p className="text-sm text-muted-foreground">Note: Questions for Daily Training are pulled from all ACTIVE duel sections below, as well as from any quizzes in chapters that a student has completed.</p>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1">
                                 <Label htmlFor="training-reward-xp" className="flex items-center gap-1"><Star className="h-4 w-4" /> Max XP Reward</Label>
