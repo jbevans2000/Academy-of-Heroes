@@ -810,31 +810,33 @@ export default function EditQuestPage() {
                                 <div className="space-y-2">
                                     <Textarea placeholder="Question text" value={q.text} onChange={e => handleQuizQuestionChange(q.id, 'text', e.target.value)} />
                                     <div className="space-y-2">
-                                        <Label>Image URL (Optional)</Label>
+                                        <Label htmlFor={`q-image-url-${q.id}`} className="text-base">Image URL (Optional)</Label>
                                         <div className="flex items-center gap-2">
                                             <Input
+                                                id={`q-image-url-${q.id}`}
                                                 placeholder="https://example.com/image.png"
                                                 value={q.imageUrl || ''}
                                                 onChange={(e) => handleQuizQuestionChange(q.id, 'imageUrl', e.target.value)}
+                                                className="mt-2"
                                             />
                                             <Label htmlFor={`q-image-upload-${q.id}`} className={cn(buttonVariants({ variant: 'outline' }), "cursor-pointer")}>
                                                 <Upload className="h-4 w-4" />
                                             </Label>
-                                            <Input
+                                             <Input 
                                                 id={`q-image-upload-${q.id}`}
-                                                type="file"
+                                                type="file" 
                                                 accept="image/*"
                                                 className="hidden"
                                                 onChange={(e) => {
                                                     if(e.target.files && e.target.files[0]){
-                                                        handleQuestionImageUpload(q.id, e.target.files[0]);
+                                                        handleQuestionImageUpload(q.id, e.target.files[0])
                                                     }
                                                 }}
                                                 disabled={uploadingQuestionImage === q.id}
                                             />
-                                            {uploadingQuestionImage === q.id && <Loader2 className="h-5 w-5 animate-spin" />}
+                                             {uploadingQuestionImage === q.id && <Loader2 className="h-5 w-5 animate-spin" />}
                                         </div>
-                                        {q.imageUrl && <Image src={q.imageUrl} alt="Question preview" width={100} height={100} className="rounded-md border mt-2" />}
+                                        {q.imageUrl && <img src={q.imageUrl} alt="Question preview" width={100} height={100} className="rounded-md border mt-2" />}
                                     </div>
                                     <Select value={q.questionType} onValueChange={(value) => handleQuizQuestionChange(q.id, 'questionType', value)}>
                                         <SelectTrigger><SelectValue/></SelectTrigger>
@@ -879,8 +881,7 @@ export default function EditQuestPage() {
                       </TabsContent>
                       </Tabs>
                   </div>
-                )}
-
+                
                 <div className="flex justify-between items-center pt-4 border-t">
                   {prevChapter ? (
                   <Button variant="outline" size="lg" onClick={() => router.push(`/teacher/quests/edit/${prevChapter.id}`)}>
@@ -913,5 +914,3 @@ export default function EditQuestPage() {
     </div>
   );
 }
-
-    
