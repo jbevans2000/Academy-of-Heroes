@@ -4,7 +4,7 @@
 /**
  * @fileOverview Server-side functions for managing duel question sections.
  */
-import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, writeBatch, getDocs, getDoc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, writeBatch, getDocs, getDoc, deleteField } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { DuelSettings } from '@/lib/duels';
 
@@ -203,5 +203,33 @@ export async function resetAllDuelStatuses(teacherUid: string): Promise<ActionRe
     } catch (error: any) {
         console.error("Error resetting duel statuses:", error);
         return { success: false, error: error.message || 'Failed to reset duel statuses.' };
+    }
+}
+
+export async function resetAllDailyTrainings(teacherUid: string): Promise<ActionResponse> {
+    if (!teacherUid) {
+        return { success: false, error: 'Teacher UID is required.' };
+    }
+    try {
+        const studentsRef = collection(db, 'teachers', teacherUid, 'students');
+        const studentsSnapshot = await getDocs(studentsRef);
+
+        if (studentsSnapshot.empty) {
+            return { success: true, message: 'No students found to reset.' };
+        }
+
+        const batch = writeBatch(db);
+        studentsSnapshot.forEach(studentDoc => {
+            batch.update(studentDoc.ref, { 
+                lastDailyTraining: deleteField()
+            });
+        });
+
+        await batch.commit();
+
+        return { success: true, message: 'All student Daily Training sessions have been reset.' };
+    } catch (error: any) {
+        console.error("Error resetting daily trainings:", error);
+        return { success: false, error: error.message || 'Failed to reset daily trainings.' };
     }
 }

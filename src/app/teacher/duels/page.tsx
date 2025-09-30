@@ -22,7 +22,8 @@ import {
     toggleDuelSectionActive, 
     getDuelSettings,
     updateDuelSettings,
-    resetAllDuelStatuses
+    resetAllDuelStatuses,
+    resetAllDailyTrainings
 } from '@/ai/flows/manage-duels';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -56,6 +57,7 @@ export default function TrainingGroundsPage() {
   const [duelSettings, setDuelSettings] = useState<DuelSettings>({ rewardXp: 25, rewardGold: 10, isDuelsEnabled: true, duelCost: 0, dailyDuelLimit: 5, isDailyLimitEnabled: true, numNormalQuestions: 10, numSuddenDeathQuestions: 10, dailyTrainingXpReward: 50, dailyTrainingGoldReward: 25, isDailyTrainingEnabled: true });
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [isResettingTraining, setIsResettingTraining] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -197,6 +199,23 @@ export default function TrainingGroundsPage() {
         setIsResetting(false);
     }
   }
+  
+  const handleResetTrainings = async () => {
+    if (!teacher) return;
+    setIsResettingTraining(true);
+    try {
+        const result = await resetAllDailyTrainings(teacher.uid);
+        if (result.success) {
+            toast({ title: 'Daily Trainings Reset', description: result.message });
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (error: any) {
+         toast({ variant: 'destructive', title: 'Reset Failed', description: error.message });
+    } finally {
+        setIsResettingTraining(false);
+    }
+  };
 
   const isDuelsEnabled = duelSettings.isDuelsEnabled ?? true;
   const isDailyTrainingEnabled = duelSettings.isDailyTrainingEnabled ?? true;
@@ -398,6 +417,10 @@ export default function TrainingGroundsPage() {
                                 />
                             </div>
                         </div>
+                         <Button variant="secondary" onClick={handleResetTrainings} disabled={isResettingTraining}>
+                            {isResettingTraining ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
+                            Reset All Daily Trainings
+                        </Button>
                     </div>
                     <div className="flex justify-between items-center pt-6 border-t">
                         <Button variant="secondary" onClick={handleResetStatuses} disabled={isResetting}>
