@@ -552,14 +552,6 @@ export default function Dashboard() {
             await updateDoc(teacherRef, { hasUnreadTeacherMessages: false });
         }
     };
-    
-    const handleCloseBroadcastDialog = async () => {
-      setIsBroadcastDialogOpen(false);
-      if (teacher) {
-        const teacherRef = doc(db, 'teachers', teacher.uid);
-        await updateDoc(teacherRef, { lastSeenBroadcastTimestamp: serverTimestamp() });
-      }
-    };
   
   const handleRestoreAll = async (stat: 'hp' | 'mp') => {
       if (!teacher) return;
@@ -587,7 +579,7 @@ export default function Dashboard() {
         <TeacherHeader />
         <main className="flex-1 p-4 md:p-6 lg:p-8">
             <h1 className="text-2xl font-bold mb-4">Your Guild Roster</h1>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {Array.from({ length: 8 }).map((_, i) => (
                     <div key={i} className="space-y-2">
                         <Skeleton className="h-48 w-full rounded-xl" />
@@ -615,22 +607,6 @@ export default function Dashboard() {
       />
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
-        <AlertDialog open={isBroadcastDialogOpen} onOpenChange={setIsBroadcastDialogOpen}>
-            <AlertDialogContent className="max-w-2xl">
-                <AlertDialogHeader>
-                    <AlertDialogTitle className="text-2xl">A Message from the Grandmaster</AlertDialogTitle>
-                </AlertDialogHeader>
-                <ScrollArea className="max-h-[60vh] pr-4">
-                    <AlertDialogDescription className="text-base text-black whitespace-pre-wrap">
-                        {broadcastMessage}
-                    </AlertDialogDescription>
-                </ScrollArea>
-                <AlertDialogFooter>
-                    <AlertDialogAction onClick={handleCloseBroadcastDialog}>I Understand</AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-
         <AlertDialog open={showWelcomeDialog} onOpenChange={setShowWelcomeDialog}>
             <AlertDialogContent className="max-w-2xl">
                 <AlertDialogHeader>
@@ -821,6 +797,10 @@ export default function Dashboard() {
                         <Check className="mr-2 h-4 w-4" />
                         <span>Manage Quest Completion</span>
                     </DropdownMenuItem>
+                     <DropdownMenuItem onClick={() => router.push('/teacher/settings/leveling')}>
+                        <BarChart className="mr-2 h-4 w-4" />
+                        <span>Custom Leveling Curve</span>
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/teacher/gamelog')}>
                         <BookOpen className="mr-2 h-4 w-4" />
                         <span>The Chronicler's Scroll</span>
@@ -856,37 +836,6 @@ export default function Dashboard() {
                             <DropdownMenuRadioItem value="company">Company</DropdownMenuRadioItem>
                         </DropdownMenuRadioGroup>
                       </DropdownMenuSubContent>
-                    </DropdownMenuSub>
-                     <DropdownMenuSub>
-                        <DropdownMenuSubTrigger>
-                            <Briefcase className="mr-2 h-4 w-4" />
-                            <span>Filter by Company</span>
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuSubContent>
-                            <DropdownMenuCheckboxItem
-                                checked={companyFilters.includes('all')}
-                                onCheckedChange={() => handleCompanyFilterChange('all')}
-                            >
-                                All Companies
-                            </DropdownMenuCheckboxItem>
-                            <DropdownMenuSeparator />
-                            {companies.map(company => (
-                                <DropdownMenuCheckboxItem
-                                    key={company.id}
-                                    checked={companyFilters.includes(company.id)}
-                                    onCheckedChange={() => handleCompanyFilterChange(company.id)}
-                                >
-                                    {company.name}
-                                </DropdownMenuCheckboxItem>
-                            ))}
-                            <DropdownMenuSeparator />
-                            <DropdownMenuCheckboxItem
-                                checked={companyFilters.includes('freelancers')}
-                                onCheckedChange={() => handleCompanyFilterChange('freelancers')}
-                            >
-                                Freelancers
-                            </DropdownMenuCheckboxItem>
-                        </DropdownMenuSubContent>
                     </DropdownMenuSub>
                 </DropdownMenuContent>
             </DropdownMenu>
