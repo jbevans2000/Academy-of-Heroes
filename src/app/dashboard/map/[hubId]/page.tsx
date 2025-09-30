@@ -75,11 +75,10 @@ export default function HubMapPage() {
                 });
 
 
-                // Fetch active chapters for this hub, ordered by chapter number
+                // Fetch chapters for this hub, ordered by chapter number
                 const chaptersQuery = query(
                     collection(db, 'teachers', teacherUid, 'chapters'), 
-                    where('hubId', '==', hubId),
-                    where('isActive', '==', true)
+                    where('hubId', '==', hubId)
                 );
                 unsubChapters = onSnapshot(chaptersQuery, (chaptersSnapshot) => {
                     let chaptersData = chaptersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
@@ -105,7 +104,13 @@ export default function HubMapPage() {
     }, [hubId, teacherUid]);
 
     const lastCompletedChapter = student?.questProgress?.[hubId] || 0;
-    const unlockedChapters = chapters.filter(chapter => chapter.chapterNumber <= lastCompletedChapter + 1);
+    
+    // Show all chapters up to the last completed one, regardless of active status
+    const completedChapters = chapters.filter(c => c.chapterNumber <= lastCompletedChapter);
+    
+    // The current chapter is the next one, but ONLY if it's active
+    const currentChapter = chapters.find(c => c.chapterNumber === lastCompletedChapter + 1 && (c.isActive ?? true));
+
 
     if (isLoading || !student) {
         return (
@@ -122,9 +127,6 @@ export default function HubMapPage() {
     if (!hub) {
         return <p>Hub not found.</p>;
     }
-    
-    const completedChapters = unlockedChapters.filter(c => c.chapterNumber <= lastCompletedChapter);
-    const currentChapter = unlockedChapters.find(c => c.chapterNumber === lastCompletedChapter + 1);
 
     return (
         <div className="relative flex flex-col items-center justify-start bg-background p-2">
