@@ -981,36 +981,6 @@ export default function Dashboard() {
                         </DropdownMenuRadioGroup>
                       </DropdownMenuSubContent>
                     </DropdownMenuSub>
-                     <DropdownMenuSub>
-                      <DropdownMenuSubTrigger>
-                        <Briefcase className="mr-2 h-4 w-4" />
-                        <span>Filter by Company</span>
-                      </DropdownMenuSubTrigger>
-                       <DropdownMenuSubContent>
-                            <DropdownMenuCheckboxItem
-                                checked={companyFilters.includes('all')}
-                                onCheckedChange={() => setCompanyFilters(['all'])}
-                            >
-                                All Students
-                            </DropdownMenuCheckboxItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuCheckboxItem
-                                checked={companyFilters.includes('freelancers')}
-                                onCheckedChange={() => handleCompanyFilterChange('freelancers')}
-                            >
-                                Freelancers
-                            </DropdownMenuCheckboxItem>
-                            {companies.map(company => (
-                                <DropdownMenuCheckboxItem
-                                    key={company.id}
-                                    checked={companyFilters.includes(company.id)}
-                                    onCheckedChange={() => handleCompanyFilterChange(company.id)}
-                                >
-                                    {company.name}
-                                </DropdownMenuCheckboxItem>
-                            ))}
-                        </DropdownMenuSubContent>
-                    </DropdownMenuSub>
                 </DropdownMenuContent>
             </DropdownMenu>
 

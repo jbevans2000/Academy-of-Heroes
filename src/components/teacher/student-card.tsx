@@ -24,17 +24,17 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { DashboardClient } from '@/components/dashboard/dashboard-client';
 import { Input } from '@/components/ui/input';
-import { doc, getDoc, updateDoc, collection, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { calculateLevel, calculateHpGain, calculateMpGain, calculateBaseMaxHp, MAX_LEVEL, XP_FOR_MAX_LEVEL } from '@/lib/game-mechanics';
 import { Label } from '../ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { TeacherNotesDialog } from './teacher-notes-dialog';
 import { toggleStudentVisibility, updateStudentDetails } from '@/ai/flows/manage-student';
 import { SetQuestProgressDialog } from './set-quest-progress-dialog';
+import { setStudentStat } from '@/ai/flows/manage-student-stats';
 
 interface EditableStatProps {
     student: Student;
@@ -172,7 +172,7 @@ function EditableStat({ student, stat, icon, label, teacherUid }: EditableStatPr
 
     const handleSave = async () => {
         setIsLoading(true);
-        let amount = Number(value);
+        const amount = Number(value);
         if (isNaN(amount) || amount < 0) {
             toast({ variant: 'destructive', title: 'Invalid Input', description: 'Please enter a non-negative number.' });
             setValue(student[stat] ?? 0);
@@ -181,51 +181,17 @@ function EditableStat({ student, stat, icon, label, teacherUid }: EditableStatPr
             return;
         }
 
-        const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
         try {
-            const studentDoc = await getDoc(studentRef);
-            if (!studentDoc.exists()) throw new Error("Student not found");
-
-            const studentData = studentDoc.data() as Student;
-            const updates: Partial<Student> = {};
-            
-            if (stat === 'xp') {
-                const currentLevel = studentData.level || 1;
-                
-                if (currentLevel >= MAX_LEVEL && amount > studentData.xp) {
-                    toast({ title: 'Max Level Reached', description: `${student.characterName} is at the maximum level. XP cannot be increased.`});
-                    amount = studentData.xp; // Revert to old value
-                }
-                
-                if (amount > XP_FOR_MAX_LEVEL) {
-                    amount = XP_FOR_MAX_LEVEL;
-                    toast({ title: 'XP Capped', description: `XP has been capped at the amount for Level ${MAX_LEVEL}.` });
-                }
-
-                updates.xp = amount;
-                const newLevel = calculateLevel(updates.xp);
-
-                if (newLevel !== currentLevel) {
-                    updates.level = newLevel;
-                    const newMaxHp = calculateBaseMaxHp(studentData.class, newLevel, 'hp');
-                    const newMaxMp = calculateBaseMaxHp(studentData.class, newLevel, 'mp');
-                    updates.maxHp = newMaxHp;
-                    updates.maxMp = newMaxMp;
-                    // Cap current stats to new max
-                    updates.hp = Math.min(studentData.hp || 0, newMaxHp);
-                    updates.mp = Math.min(studentData.mp || 0, newMaxMp);
-                }
+            const result = await setStudentStat({ teacherUid, studentUid: student.uid, stat, value: amount });
+            if (result.success) {
+                toast({ title: 'Stat Updated!', description: `${student.characterName}'s ${label} has been set to ${amount}.` });
             } else {
-                updates[stat] = amount;
+                throw new Error(result.error);
             }
-
-            await updateDoc(studentRef, updates);
-            toast({ title: 'Stat Updated!', description: `${student.characterName}'s ${label} has been set to ${amount}.` });
-
-        } catch (error) {
+        } catch (error: any) {
             console.error(`Error updating ${stat}:`, error);
-            toast({ variant: 'destructive', title: 'Update Failed', description: `Could not update ${label}.` });
-            setValue(student[stat] ?? 0);
+            toast({ variant: 'destructive', title: 'Update Failed', description: error.message || `Could not update ${label}.` });
+            setValue(student[stat] ?? 0); // Revert on failure
         } finally {
             setIsEditing(false);
             setIsLoading(false);
@@ -285,8 +251,7 @@ function EditablePairedStat({ student, stat, maxStat, icon, label, teacherUid }:
 
     const handleSave = async () => {
         setIsLoading(true);
-        let wasAdjusted = false;
-        let currentAmount = Number(currentValue);
+        const currentAmount = Number(currentValue);
         const maxAmount = Number(maxValue);
 
         if (isNaN(currentAmount) || isNaN(maxAmount) || currentAmount < 0 || maxAmount < 0) {
@@ -295,32 +260,19 @@ function EditablePairedStat({ student, stat, maxStat, icon, label, teacherUid }:
             return;
         }
 
-        if (currentAmount > maxAmount) {
-            toast({
-                title: 'Value Adjusted',
-                description: `Current ${label} cannot exceed the maximum. It has been set to ${maxAmount}.`,
-            });
-            currentAmount = maxAmount;
-            setCurrentValue(maxAmount);
-            wasAdjusted = true;
-        }
-
-        const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
+        const cappedCurrentAmount = Math.min(currentAmount, maxAmount);
+        
         try {
-            const updates: Partial<Student> = {
-                [stat]: currentAmount,
-                [maxStat]: maxAmount,
-            };
+            const currentResult = await setStudentStat({ teacherUid, studentUid: student.uid, stat, value: cappedCurrentAmount });
+            const maxResult = await setStudentStat({ teacherUid, studentUid: student.uid, stat: maxStat, value: maxAmount });
 
-            await updateDoc(studentRef, updates);
-            
-            if (!wasAdjusted) {
-                toast({ title: 'Stat Updated!', description: `${student.characterName}'s ${label} has been updated.` });
+            if (currentResult.success && maxResult.success) {
+                 toast({ title: 'Stat Updated!', description: `${student.characterName}'s ${label} has been updated.` });
+            } else {
+                throw new Error(currentResult.error || maxResult.error || "An unknown error occurred.");
             }
-
-        } catch (error) {
-            console.error(`Error updating ${label}:`, error);
-            toast({ variant: 'destructive', title: 'Update Failed', description: `Could not update ${label}.` });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
         } finally {
             setIsEditing(false);
             setIsLoading(false);
