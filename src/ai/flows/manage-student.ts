@@ -324,6 +324,9 @@ export async function unarchiveStudent(input: UnarchiveStudentInput): Promise<Ac
     const { teacherUid, studentUid } = input;
     
     try {
+        const auth = getAuth(getFirebaseAdminApp());
+        await auth.updateUser(studentUid, { disabled: false });
+        
         const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
         await updateDoc(studentRef, {
             isArchived: false
@@ -347,13 +350,19 @@ export async function archiveStudents(input: ArchiveStudentsInput): Promise<Acti
     if (!teacherUid || !studentUids || studentUids.length === 0) {
         return { success: false, error: 'Invalid input provided.' };
     }
+    
+    const auth = getAuth(getFirebaseAdminApp());
 
     try {
         const batch = writeBatch(db);
-        studentUids.forEach(uid => {
+        for (const uid of studentUids) {
+            // Disable in Firebase Auth
+            await auth.updateUser(uid, { disabled: true });
+            
+            // Mark as archived in Firestore
             const studentRef = doc(db, 'teachers', teacherUid, 'students', uid);
             batch.update(studentRef, { isArchived: true });
-        });
+        }
         await batch.commit();
 
         return { success: true };

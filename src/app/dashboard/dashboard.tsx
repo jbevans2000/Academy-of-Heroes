@@ -55,6 +55,11 @@ export default function Dashboard() {
 
         if (studentMetaSnap.exists()) {
           const { teacherUid, approved } = studentMetaSnap.data();
+
+          if (user.disabled) {
+            router.push('/account-archived');
+            return;
+          }
           
           if (!approved) {
              router.push('/awaiting-approval');
