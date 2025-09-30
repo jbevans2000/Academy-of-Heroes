@@ -17,6 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { calculateLevel, calculateHpGain, calculateMpGain, calculateBaseMaxHp } from '@/lib/game-mechanics';
 import type { Student } from '@/lib/data';
 import { logGameEvent } from '@/lib/gamelog';
+import { logAvatarEvent } from '@/lib/avatar-log';
 import { BattleChatBox } from '@/components/battle/chat-box';
 import { BattleDisplay } from '@/components/battle/battle-display';
 import { BattleLog } from '@/components/battle/battle-log';
@@ -376,7 +377,6 @@ export default function TeacherLiveBattlePage() {
         const finalLiveState = finalLiveStateSnap.data() as LiveBattleState;
         
         const totalDamageDealt = finalLiveState.totalDamage || 0;
-        const totalRounds = battle.questions.length;
         
         const roundsArchiveRef = collection(db, 'teachers', teacherUid, 'savedBattles', liveState.parentArchiveId, 'rounds');
         const roundsSnap = await getDocs(roundsArchiveRef);
@@ -467,18 +467,17 @@ export default function TeacherLiveBattlePage() {
                 continue; // Skip to next student
             }
             
-            const xpFromAnswers = studentRewards.correctAnswers * 10; // Changed from 5 to 10
+            const xpFromAnswers = studentRewards.correctAnswers * 10;
             const goldFromAnswers = studentRewards.correctAnswers * 10;
             
             const xpFromPowers = studentRewards.powersUsed * 2;
             const goldFromPowers = studentRewards.powersUsed * 1;
 
-            // Always award participation bonus to participants
             const xpFromParticipation = 25;
             const goldFromParticipation = 10;
             const xpFromDamageShare = Math.floor(totalDamageDealt * 0.10);
 
-            const hasFullParticipation = true; // Always true for participants now
+            const hasFullParticipation = true;
 
             const baseTotalXp = xpFromAnswers + xpFromPowers + xpFromParticipation + xpFromDamageShare;
             const baseTotalGold = goldFromAnswers + goldFromPowers + goldFromParticipation;
@@ -532,6 +531,12 @@ export default function TeacherLiveBattlePage() {
                  }
                  
                  batch.update(studentRef, updates);
+                 await logAvatarEvent(teacherUid, uid, {
+                    source: 'Boss Battle',
+                    xp: studentRewards.xpGained,
+                    gold: studentRewards.goldGained,
+                    reason: `Completed battle: ${battle.battleName}`,
+                 });
              }
         }
 

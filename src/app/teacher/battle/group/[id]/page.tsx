@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -15,6 +14,7 @@ import { ArrowLeft, Swords, CheckCircle, XCircle, Trophy, Loader2, Save, Users, 
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
+import { logAvatarEvent } from '@/lib/avatar-log';
 import type { Student, Company } from '@/lib/data';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -222,8 +222,22 @@ export default function GroupBattlePage() {
             const xpToAdd = (correctCount * xpPerAnswer) + xpParticipation;
             const goldToAdd = (correctCount * goldPerAnswer) + goldParticipation;
 
-            if(xpToAdd > 0) batch.update(studentRef, { xp: (student.xp || 0) + xpToAdd });
-            if(goldToAdd > 0) batch.update(studentRef, { gold: (student.gold || 0) + goldToAdd });
+            if(xpToAdd > 0) {
+                batch.update(studentRef, { xp: (student.xp || 0) + xpToAdd });
+                logAvatarEvent(teacher.uid, student.uid, {
+                    source: 'Group Battle',
+                    xp: xpToAdd,
+                    reason: `Completed battle: ${battle.battleName}`
+                });
+            }
+            if(goldToAdd > 0) {
+                batch.update(studentRef, { gold: (student.gold || 0) + goldToAdd });
+                 logAvatarEvent(teacher.uid, student.uid, {
+                    source: 'Group Battle',
+                    gold: goldToAdd,
+                    reason: `Completed battle: ${battle.battleName}`
+                });
+            }
         });
 
         try {
