@@ -76,25 +76,44 @@ export default function DailyTrainingPage() {
         if (!student || !teacherUid) return;
 
         try {
-            const completedChapterIds = student.completedChapters || [];
+            // New logic: Build a list of all completed chapter IDs from questProgress
+            const completedChapterIds: string[] = [];
+            const chaptersSnapshot = await getDocs(collection(db, 'teachers', teacherUid, 'chapters'));
+            const allChapters = chaptersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
+
+            if (student.questProgress) {
+                for (const hubId in student.questProgress) {
+                    const lastChapterNumber = student.questProgress[hubId];
+                    const chaptersInHub = allChapters.filter(c => c.hubId === hubId && c.chapterNumber <= lastChapterNumber);
+                    chaptersInHub.forEach(c => completedChapterIds.push(c.id));
+                }
+            }
+
             if (completedChapterIds.length === 0) {
                 setError("You haven't completed any chapters with quizzes yet. Complete some quests and come back tomorrow!");
                 setIsLoading(false);
                 return;
             }
 
+            // The rest of the logic remains the same
             const chaptersRef = collection(db, 'teachers', teacherUid, 'chapters');
-            // Firestore 'in' queries are limited to 30 items. We'll take the 30 most recent.
-            const q = query(chaptersRef, where('__name__', 'in', completedChapterIds.slice(-30)));
-            const chaptersSnapshot = await getDocs(q);
+            const chapterChunks = [];
+            for (let i = 0; i < completedChapterIds.length; i += 30) {
+                chapterChunks.push(completedChapterIds.slice(i, i + 30));
+            }
 
             let allQuizQuestions: QuizQuestion[] = [];
-            chaptersSnapshot.forEach(doc => {
-                const chapter = doc.data() as Chapter;
-                if (chapter.quiz && chapter.quiz.questions) {
-                    allQuizQuestions = allQuizQuestions.concat(chapter.quiz.questions);
-                }
-            });
+            for (const chunk of chapterChunks) {
+                if (chunk.length === 0) continue;
+                const q = query(chaptersRef, where('__name__', 'in', chunk));
+                const querySnapshot = await getDocs(q);
+                querySnapshot.forEach(doc => {
+                    const chapter = doc.data() as Chapter;
+                    if (chapter.quiz && chapter.quiz.questions) {
+                        allQuizQuestions = allQuizQuestions.concat(chapter.quiz.questions);
+                    }
+                });
+            }
 
             if (allQuizQuestions.length < 1) {
                 setError("None of your completed chapters had any quiz questions for training.");
@@ -113,6 +132,7 @@ export default function DailyTrainingPage() {
             setIsLoading(false);
         }
     }, [student, teacherUid]);
+
 
     useEffect(() => {
         if (student && teacherUid) {
@@ -152,8 +172,9 @@ export default function DailyTrainingPage() {
             
             if (student && teacherUid) {
                 const settings = await getDuelSettings(teacherUid);
-                const xpToAward = Math.ceil((settings.dailyTrainingXpReward || 0) * (finalScore / questions.length));
-                const goldToAward = Math.ceil((settings.dailyTrainingGoldReward || 0) * (finalScore / questions.length));
+                const scorePercentage = questions.length > 0 ? finalScore / questions.length : 0;
+                const xpToAward = Math.ceil((settings.dailyTrainingXpReward || 0) * scorePercentage);
+                const goldToAward = Math.ceil((settings.dailyTrainingGoldReward || 0) * scorePercentage);
                 setXpGained(xpToAward);
                 setGoldGained(goldToAward);
 
@@ -279,4 +300,3 @@ export default function DailyTrainingPage() {
         </div>
     );
 }
-
