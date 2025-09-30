@@ -552,6 +552,14 @@ export default function Dashboard() {
             await updateDoc(teacherRef, { hasUnreadTeacherMessages: false });
         }
     };
+    
+    const handleCloseBroadcastDialog = async () => {
+      setIsBroadcastDialogOpen(false);
+      if (teacher) {
+        const teacherRef = doc(db, 'teachers', teacher.uid);
+        await updateDoc(teacherRef, { lastSeenBroadcastTimestamp: serverTimestamp() });
+      }
+    };
   
   const handleRestoreAll = async (stat: 'hp' | 'mp') => {
       if (!teacher) return;
