@@ -21,6 +21,7 @@ import { deleteFeedback } from '@/ai/flows/submit-feedback';
 import { moderateStudent } from '@/ai/flows/manage-student';
 import { deleteTeacher } from '@/ai/flows/manage-teacher';
 import { getAdminNotepadContent, updateAdminNotepadContent } from '@/ai/flows/manage-admin-notepad';
+import { markAllAdminMessagesAsRead } from '@/ai/flows/manage-admin-messages';
 import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle, HelpCircle, Edit, Reply, FileText, Save, CreditCard } from 'lucide-react';
 import {
   AlertDialog,
@@ -151,6 +152,7 @@ export default function AdminDashboardPage() {
     // Message Center State
     const [isMessageCenterOpen, setIsMessageCenterOpen] = useState(false);
     const [initialTeacherToView, setInitialTeacherToView] = useState<Teacher | null>(null);
+    const [isMarkingRead, setIsMarkingRead] = useState(false);
 
 
     const router = useRouter();
@@ -613,10 +615,28 @@ export default function AdminDashboardPage() {
         setIsMessageCenterOpen(true);
     };
 
+    const handleMarkAllRead = async () => {
+        setIsMarkingRead(true);
+        try {
+            const result = await markAllAdminMessagesAsRead();
+            if (result.success) {
+                toast({ title: "Success", description: result.message });
+                // Optimistically update the UI while waiting for the listener to catch up
+                setTeachers(prev => prev.map(t => ({ ...t, hasUnreadAdminMessages: false })));
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message });
+        } finally {
+            setIsMarkingRead(false);
+        }
+    };
+
     if (isLoading || !user) {
         return (
             <div className="flex min-h-screen w-full flex-col">
-                <AdminHeader onOpenMessageCenter={() => handleOpenMessageCenter()} />
+                <AdminHeader onOpenMessageCenter={() => handleOpenMessageCenter()} onMarkAllRead={handleMarkAllRead} isMarkingRead={isMarkingRead} />
                 <main className="flex-1 p-4 md:p-6 lg:p-8">
                     <Skeleton className="h-10 w-1/3 mb-6" />
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -632,7 +652,12 @@ export default function AdminDashboardPage() {
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
-            <AdminHeader onOpenMessageCenter={() => handleOpenMessageCenter()} hasUnreadMessages={teachers.some(t => t.hasUnreadAdminMessages)} />
+            <AdminHeader 
+                onOpenMessageCenter={() => handleOpenMessageCenter()} 
+                hasUnreadMessages={teachers.some(t => t.hasUnreadAdminMessages)}
+                onMarkAllRead={handleMarkAllRead}
+                isMarkingRead={isMarkingRead}
+            />
             <AdminMessageCenter
                 isOpen={isMessageCenterOpen}
                 onOpenChange={setIsMessageCenterOpen}

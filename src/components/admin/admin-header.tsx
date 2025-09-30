@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Shield, LogOut, User, MessageSquare, Rss } from "lucide-react";
+import { Shield, LogOut, User, MessageSquare, Rss, CheckCheck } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -10,14 +10,17 @@ import { auth, db } from "@/lib/firebase";
 import { signOut, onAuthStateChanged, type User as FirebaseUser } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { Bug, Lightbulb } from "lucide-react";
+import { TeacherAdminMessageDialog } from './teacher-admin-message-dialog';
 
 interface AdminHeaderProps {
     isAdminPreview?: boolean;
     onOpenMessageCenter: () => void;
+    onMarkAllRead: () => void;
+    isMarkingRead: boolean;
     hasUnreadMessages?: boolean;
 }
 
-export function AdminHeader({ isAdminPreview = false, onOpenMessageCenter, hasUnreadMessages }: AdminHeaderProps) {
+export function AdminHeader({ isAdminPreview = false, onOpenMessageCenter, onMarkAllRead, isMarkingRead, hasUnreadMessages }: AdminHeaderProps) {
   const router = useRouter();
   const { toast } = useToast();
   
@@ -55,6 +58,12 @@ export function AdminHeader({ isAdminPreview = false, onOpenMessageCenter, hasUn
                 Message Center
                 {hasUnreadMessages && <span className="absolute top-1 right-1 flex h-3 w-3 rounded-full bg-red-600 animate-pulse" />}
             </Button>
+            {hasUnreadMessages && (
+                <Button variant="secondary" onClick={onMarkAllRead} disabled={isMarkingRead}>
+                    <CheckCheck className="mr-2 h-5 w-5" />
+                    Mark All Read
+                </Button>
+            )}
           <Button onClick={handleLogout} variant="destructive">
             <LogOut className="mr-2 h-5 w-5" />
             Logout

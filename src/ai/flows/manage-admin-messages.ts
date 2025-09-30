@@ -113,3 +113,36 @@ export async function markAdminMessagesAsRead(input: MarkMessagesAsReadInput): P
         return { success: false, error: error.message || 'Failed to update message status.' };
     }
 }
+
+export async function markAllAdminMessagesAsRead(): Promise<ActionResponse> {
+    try {
+        const teachersRef = collection(db, 'teachers');
+        const q = query(teachersRef, where('hasUnreadAdminMessages', '==', true));
+        const unreadTeachersSnapshot = await getDocs(q);
+
+        if (unreadTeachersSnapshot.empty) {
+            return { success: true, message: "No new messages to mark as read." };
+        }
+
+        const batch = writeBatch(db);
+
+        for (const teacherDoc of unreadTeachersSnapshot.docs) {
+            // Clear the unread flag on the teacher document
+            batch.update(teacherDoc.ref, { hasUnreadAdminMessages: false });
+
+            // Mark all underlying messages from the teacher as read
+            const messagesRef = collection(teacherDoc.ref, 'adminMessages');
+            const messagesQuery = query(messagesRef, where('isRead', '==', false), where('sender', '==', 'teacher'));
+            const messagesSnapshot = await getDocs(messagesQuery);
+            messagesSnapshot.forEach(msgDoc => {
+                batch.update(msgDoc.ref, { isRead: true });
+            });
+        }
+
+        await batch.commit();
+        return { success: true, message: "All messages marked as read." };
+    } catch (error: any) {
+        console.error("Error marking all admin messages as read:", error);
+        return { success: false, error: error.message || "Failed to update all messages." };
+    }
+}
