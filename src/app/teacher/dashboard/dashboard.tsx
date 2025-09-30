@@ -573,75 +573,6 @@ export default function Dashboard() {
       }
   }
 
-  const handleSaveReminder = async () => {
-    if (!teacher) return;
-    setIsSavingReminder(true);
-    try {
-        const result = await updateDailyReminder({
-            teacherUid: teacher.uid,
-            title: reminderTitle,
-            message: reminderMessage,
-            isActive: isReminderActive,
-        });
-        if (result.success) {
-            toast({ title: "Reminder Saved", description: result.message });
-            setIsReminderDialogOpen(false);
-        } else {
-            throw new Error(result.error);
-        }
-    } catch (error: any) {
-        toast({ variant: 'destructive', title: 'Error', description: error.message });
-    } finally {
-        setIsSavingReminder(false);
-    }
-  };
-
-  const handleSaveRegen = async () => {
-      if (!teacher) return;
-      const percentage = Number(regenPercentage);
-      if (isNaN(percentage) || percentage < 0 || percentage > 100) {
-          toast({ variant: 'destructive', title: 'Invalid Percentage', description: 'Please enter a number between 0 and 100.' });
-          return;
-      }
-      setIsSavingRegen(true);
-      try {
-          const result = await updateDailyRegen({ teacherUid: teacher.uid, regenPercentage: percentage });
-          if (result.success) {
-              toast({ title: 'Regen Rate Updated!', description: result.message });
-              setIsRegenDialogOpen(false);
-          } else {
-              throw new Error(result.error);
-          }
-      } catch (error: any) {
-          toast({ variant: 'destructive', title: 'Save Failed', description: error.message });
-      } finally {
-          setIsSavingRegen(false);
-      }
-  }
-  
-  const closeWelcomeDialog = async () => {
-      setShowWelcomeDialog(false);
-      copyClassCode();
-      if(teacher) {
-        const teacherRef = doc(db, 'teachers', teacher.uid);
-        await updateDoc(teacherRef, { isNewlyRegistered: false });
-      }
-  };
-  
-  const closeBetaWelcomeDialog = () => {
-    setShowBetaWelcomeDialog(false);
-    setShowWelcomeDialog(true); // Chain the next dialog
-  }
-
-  const handleCloseBroadcastDialog = async () => {
-    if (teacher) {
-        const teacherRef = doc(db, 'teachers', teacher.uid);
-        await updateDoc(teacherRef, { lastSeenBroadcastTimestamp: serverTimestamp() });
-    }
-    setIsBroadcastDialogOpen(false);
-  }
-
-
   if (isLoading || !teacher) {
     return (
        <div className="flex min-h-screen w-full flex-col">
@@ -712,70 +643,15 @@ export default function Dashboard() {
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogAction onClick={closeWelcomeDialog}>
+                    <AlertDialogAction onClick={() => {
+                        setShowWelcomeDialog(false)
+                        copyClassCode()
+                        }}>
                         <Copy className="mr-2 h-4 w-4" /> Copy Code & Close
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
-
-        <AlertDialog open={showBetaWelcomeDialog} onOpenChange={setShowBetaWelcomeDialog}>
-            <AlertDialogContent className="max-w-2xl">
-                <AlertDialogHeader>
-                    <AlertDialogTitle className="text-3xl">Welcome, Guild Leader, to the Academy of Heroes Beta Test!</AlertDialogTitle>
-                    <AlertDialogDescription asChild>
-                      <div className="text-base text-foreground space-y-4">
-                        <p>Thank you for being one of the first Guild Leaders to venture into this new world! You've joined during our Beta Testing phase, which means you get early access to our latest features, but you might also encounter some unfinished parts of the realm or the occasional grumpy bug.</p>
-                        <h4 className='font-bold'>What to Expect as a Beta Tester:</h4>
-                        <ul className="list-disc list-inside space-y-2 pt-2">
-                            <li><strong>Evolving World:</strong> Features may change, look different, or be added/removed as we refine the experience.</li>
-                            <li><strong>Potential Bugs:</strong> You might run into unexpected issues or "gremlins" in the system. Your feedback in reporting these is invaluable!</li>
-                            <li><strong>Data Resets:</strong> In rare cases, we may need to reset game data (like student XP, Gold, or quest progress) to implement major updates. We will do our best to notify you in advance if this is necessary.</li>
-                        </ul>
-                         <p>Your role is crucial. By using the app and providing feedback, you are helping us forge a better, more engaging experience for everyone. Please use the **"Report a Bug"** and **"Request a Feature"** buttons in the header to share your thoughts.</p>
-                      </div>
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogAction onClick={closeBetaWelcomeDialog}>
-                        Onward to Adventure!
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-
-        <Dialog open={isReminderDialogOpen} onOpenChange={setIsReminderDialogOpen}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Set Daily Reminder</DialogTitle>
-                    <DialogDescription>
-                        This message will be shown to students the first time they log in each day.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                    <div className="flex items-center space-x-2">
-                        <Switch id="reminder-active" checked={isReminderActive} onCheckedChange={setIsReminderActive} />
-                        <Label htmlFor="reminder-active">Reminder is Active</Label>
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="reminder-title">Reminder Title</Label>
-                        <Input id="reminder-title" value={reminderTitle} onChange={(e) => setReminderTitle(e.target.value)} />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="reminder-message">Reminder Message</Label>
-                        <Textarea id="reminder-message" value={reminderMessage} onChange={(e) => setReminderMessage(e.target.value)} rows={6} />
-                    </div>
-                </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsReminderDialogOpen(false)}>Cancel</Button>
-                    <Button onClick={handleSaveReminder} disabled={isSavingReminder}>
-                        {isSavingReminder && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                        Save Reminder
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-
 
         <Dialog open={isApprovalDialogOpen} onOpenChange={setIsApprovalDialogOpen}>
             <DialogContent className="max-w-2xl">
@@ -925,10 +801,6 @@ export default function Dashboard() {
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
-                    <DropdownMenuItem onSelect={() => setIsReminderDialogOpen(true)}>
-                        <MessageSquare className="mr-2 h-4 w-4" />
-                        Set Daily Reminder
-                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/teacher/rewards')}>
                         <Gift className="mr-2 h-4 w-4" />
                         <span>Manage Rewards</span>
@@ -940,10 +812,6 @@ export default function Dashboard() {
                     <DropdownMenuItem onClick={() => router.push('/teacher/quests/completion')}>
                         <Check className="mr-2 h-4 w-4" />
                         <span>Manage Quest Completion</span>
-                    </DropdownMenuItem>
-                     <DropdownMenuItem onClick={() => router.push('/teacher/settings/leveling')}>
-                        <BarChart className="mr-2 h-4 w-4" />
-                        <span>Leveling Curve</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/teacher/gamelog')}>
                         <BookOpen className="mr-2 h-4 w-4" />
@@ -980,6 +848,37 @@ export default function Dashboard() {
                             <DropdownMenuRadioItem value="company">Company</DropdownMenuRadioItem>
                         </DropdownMenuRadioGroup>
                       </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                     <DropdownMenuSub>
+                        <DropdownMenuSubTrigger>
+                            <Briefcase className="mr-2 h-4 w-4" />
+                            <span>Filter by Company</span>
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent>
+                            <DropdownMenuCheckboxItem
+                                checked={companyFilters.includes('all')}
+                                onCheckedChange={() => handleCompanyFilterChange('all')}
+                            >
+                                All Companies
+                            </DropdownMenuCheckboxItem>
+                            <DropdownMenuSeparator />
+                            {companies.map(company => (
+                                <DropdownMenuCheckboxItem
+                                    key={company.id}
+                                    checked={companyFilters.includes(company.id)}
+                                    onCheckedChange={() => handleCompanyFilterChange(company.id)}
+                                >
+                                    {company.name}
+                                </DropdownMenuCheckboxItem>
+                            ))}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuCheckboxItem
+                                checked={companyFilters.includes('freelancers')}
+                                onCheckedChange={() => handleCompanyFilterChange('freelancers')}
+                            >
+                                Freelancers
+                            </DropdownMenuCheckboxItem>
+                        </DropdownMenuSubContent>
                     </DropdownMenuSub>
                 </DropdownMenuContent>
             </DropdownMenu>
