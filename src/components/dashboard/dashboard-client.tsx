@@ -8,7 +8,7 @@ import { AvatarDisplay } from "@/components/dashboard/avatar-display";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, Map, Swords, Sparkles, BookHeart, ImageIcon, Gem, Package, Hammer, Briefcase, Loader2 } from "lucide-react";
+import { User, Map, Swords, Sparkles, BookHeart, Gem, Package, Hammer, Briefcase, Loader2, Trophy, ScrollText } from "lucide-react";
 import { doc, updateDoc, collection, query, where, getDocs, onSnapshot, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -32,6 +32,7 @@ import {
 import { ChallengeDialog } from '@/components/dashboard/challenge-dialog';
 import { getDuelSettings } from '@/ai/flows/manage-duels';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { AvatarLogDialog } from '@/components/dashboard/avatar-log-dialog';
 
 interface DashboardClientProps {
   student: Student;
@@ -48,6 +49,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
   const [isLoadingCompany, setIsLoadingCompany] = useState(false);
   const [isChallengeDialogOpen, setIsChallengeDialogOpen] = useState(false);
   const [activeDuelRequest, setActiveDuelRequest] = useState<any>(null);
+  const [isAvatarLogOpen, setIsAvatarLogOpen] = useState(false);
 
   useEffect(() => {
     // Check for the ready_for_battle URL parameter on page load
@@ -201,6 +203,12 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
         onOpenChange={setIsChallengeDialogOpen}
         student={student}
       />
+      
+      <AvatarLogDialog
+        isOpen={isAvatarLogOpen}
+        onOpenChange={setIsAvatarLogOpen}
+        student={student}
+      />
 
       <div className="p-4 md:p-6 lg:p-8">
         <div className="mx-auto max-w-4xl space-y-6">
@@ -254,30 +262,52 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
               student={student}
           />
           <TooltipProvider>
-              <div className="flex justify-center pt-6 gap-4">
+              <div className="flex justify-center flex-wrap pt-6 gap-4">
                   <Link href={`/armory${isTeacherPreview ? teacherPreviewQuery : ''}`} passHref>
-                      <Button variant="outline" className="h-auto py-4 px-8 border-2 border-amber-600 bg-white hover:bg-gray-100 text-gray-900">
+                      <Button variant="outline" className="h-auto py-4 px-6 border-2 border-amber-600 bg-white hover:bg-gray-100 text-gray-900">
                           <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
                               <Gem className="h-12 w-12 text-amber-500" />
                               <div>
                                   <h3 className="text-xl font-bold">The Vault</h3>
                                   <p className="text-muted-foreground">Spend your gold!</p>
                               </div>
-                              </div>
+                          </div>
                       </Button>
                   </Link>
                   
+                  <Link href={`/dashboard/leaderboard${isTeacherPreview ? teacherPreviewQuery : ''}`} passHref>
+                      <Button variant="outline" className="h-auto py-4 px-6 border-2 border-yellow-400 bg-white hover:bg-gray-100 text-gray-900">
+                           <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
+                              <Trophy className="h-12 w-12 text-yellow-400" />
+                              <div>
+                                  <h3 className="text-xl font-bold">Leaderboards</h3>
+                                  <p className="text-muted-foreground">View top heroes!</p>
+                              </div>
+                          </div>
+                      </Button>
+                  </Link>
+
                   <Link href={`/dashboard/inventory${isTeacherPreview ? teacherPreviewQuery : ''}`} passHref>
-                      <Button variant="outline" className="h-auto py-4 px-8 border-2 border-purple-600 bg-white hover:bg-gray-100 text-gray-900">
+                      <Button variant="outline" className="h-auto py-4 px-6 border-2 border-purple-600 bg-white hover:bg-gray-100 text-gray-900">
                           <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
                               <Package className="h-12 w-12 text-purple-500" />
                               <div>
                                   <h3 className="text-xl font-bold">My Rewards</h3>
                                   <p className="text-muted-foreground">View your items!</p>
                               </div>
-                              </div>
+                          </div>
                       </Button>
                   </Link>
+                  
+                  <Button variant="outline" className="h-auto py-4 px-6 border-2 border-sky-600 bg-white hover:bg-gray-100 text-gray-900" onClick={() => setIsAvatarLogOpen(true)}>
+                      <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
+                          <ScrollText className="h-12 w-12 text-sky-500" />
+                          <div>
+                              <h3 className="text-xl font-bold">Avatar Log</h3>
+                              <p className="text-muted-foreground">See your history.</p>
+                          </div>
+                      </div>
+                  </Button>
               </div>
           </TooltipProvider>
         </div>
