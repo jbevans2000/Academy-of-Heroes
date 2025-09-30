@@ -61,6 +61,7 @@ export default function DailyTrainingPage() {
     const [xpGained, setXpGained] = useState(0);
     const [goldGained, setGoldGained] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [finalMessage, setFinalMessage] = useState('');
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -91,19 +92,18 @@ export default function DailyTrainingPage() {
             let chapterQuestions: QuizQuestion[] = [];
             const allChaptersSnapshot = await getDocs(collection(db, 'teachers', teacherUid, 'chapters'));
             const completedChapterIds = new Set<string>();
+            const studentProgress = student.questProgress || {};
 
-            if (student.questProgress) {
-                for (const hubId in student.questProgress) {
-                    const lastChapterNumber = student.questProgress[hubId];
-                    allChaptersSnapshot.docs.forEach(doc => {
-                        const chapter = doc.data() as Chapter;
-                        if (chapter.hubId === hubId && chapter.chapterNumber <= lastChapterNumber) {
-                            completedChapterIds.add(doc.id);
-                        }
-                    });
-                }
+            for (const hubId in studentProgress) {
+                const lastChapterNumber = studentProgress[hubId];
+                allChaptersSnapshot.docs.forEach(doc => {
+                    const chapter = doc.data() as Chapter;
+                    if (chapter.hubId === hubId && chapter.chapterNumber <= lastChapterNumber) {
+                        completedChapterIds.add(doc.id);
+                    }
+                });
             }
-            
+
             allChaptersSnapshot.forEach(doc => {
                 if (completedChapterIds.has(doc.id)) {
                     const chapter = doc.data() as Chapter;
@@ -112,6 +112,7 @@ export default function DailyTrainingPage() {
                     }
                 }
             });
+
 
             // --- Source 2: Active Duel Sections ---
             let duelQuestions: DuelQuestion[] = [];
@@ -189,13 +190,6 @@ export default function DailyTrainingPage() {
             setScore(finalScore);
             
             if (student && teacherUid) {
-                const settings = await getDuelSettings(teacherUid);
-                const scorePercentage = questions.length > 0 ? finalScore / questions.length : 0;
-                const xpToAward = Math.ceil((settings.dailyTrainingXpReward || 0) * scorePercentage);
-                const goldToAward = Math.ceil((settings.dailyTrainingGoldReward || 0) * scorePercentage);
-                setXpGained(xpToAward);
-                setGoldGained(goldToAward);
-
                 const result = await completeDailyTraining({
                     teacherUid,
                     studentUid: student.uid,
@@ -203,8 +197,22 @@ export default function DailyTrainingPage() {
                     totalQuestions: questions.length
                 });
 
-                if (!result.success) {
+                if (result.success && result.message) {
+                    // This handles both the first completion and subsequent ones
+                    setFinalMessage(result.message);
+                    // We only parse rewards if it's the first completion message format
+                    if (result.message.includes('You earned')) {
+                        const xpMatch = result.message.match(/(\d+)\s*XP/);
+                        const goldMatch = result.message.match(/(\d+)\s*Gold/);
+                        setXpGained(xpMatch ? parseInt(xpMatch[1], 10) : 0);
+                        setGoldGained(goldMatch ? parseInt(goldMatch[1], 10) : 0);
+                    } else {
+                        setXpGained(0);
+                        setGoldGained(0);
+                    }
+                } else if (!result.success) {
                     toast({ variant: 'destructive', title: 'Error', description: result.error || 'Failed to save training results.' });
+                    setFinalMessage('An error occurred while saving your results.');
                 }
             }
             setQuizState('finished');
@@ -298,13 +306,11 @@ export default function DailyTrainingPage() {
                         <CardContent className="space-y-4">
                              <p className="text-5xl font-bold">{score} / {questions.length}</p>
                              <p className="text-xl text-muted-foreground">Correct Answers</p>
-                             <div className="p-4 bg-secondary rounded-lg space-y-2">
-                                <h3 className="font-bold">Rewards Gained</h3>
-                                <div className="flex justify-center gap-6">
-                                    <p className="flex items-center gap-2 text-lg"><Star className="h-5 w-5 text-yellow-400"/> +{xpGained} XP</p>
-                                    <p className="flex items-center gap-2 text-lg"><Coins className="h-5 w-5 text-amber-500"/> +{goldGained} Gold</p>
+                            {finalMessage && (
+                                <div className="p-4 bg-secondary rounded-lg">
+                                    <p className="font-semibold">{finalMessage}</p>
                                 </div>
-                             </div>
+                            )}
                         </CardContent>
                         <CardContent>
                             <Button size="lg" onClick={() => router.push('/dashboard')}>

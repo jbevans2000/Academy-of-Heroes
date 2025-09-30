@@ -35,18 +35,25 @@ export async function completeDailyTraining(input: CompleteTrainingInput): Promi
         if (!studentSnap.exists()) throw new Error("Student not found.");
         const student = studentSnap.data() as Student;
 
-        // Server-side check to prevent multiple completions
+        // Check if the student has already received rewards today.
+        let alreadyCompletedToday = false;
         if (student.lastDailyTraining) {
             const today = new Date();
             const lastTrainingDate = student.lastDailyTraining.toDate();
-            const isSameDay = today.getFullYear() === lastTrainingDate.getFullYear() &&
-                              today.getMonth() === lastTrainingDate.getMonth() &&
-                              today.getDate() === lastTrainingDate.getDate();
-            if (isSameDay) {
-                return { success: false, error: "You have already completed your training for today." };
+            // Using a 23-hour check to be slightly more lenient than a strict calendar day check
+            const hoursSinceLastCompletion = (today.getTime() - lastTrainingDate.getTime()) / (1000 * 60 * 60);
+            if (hoursSinceLastCompletion < 23) {
+                alreadyCompletedToday = true;
             }
         }
+        
+        if (alreadyCompletedToday) {
+            // Allow them to complete it, but don't give rewards.
+            return { success: true, message: "You successfully completed another round of training today, but can only recieve rewards once every 24 hours, as per the Guild Leader's Instructions!" };
+        }
 
+
+        // If not completed today, proceed with rewards.
         const scorePercentage = totalQuestions > 0 ? score / totalQuestions : 0;
         
         const xpToAward = Math.ceil((settings.dailyTrainingXpReward || 0) * scorePercentage);
