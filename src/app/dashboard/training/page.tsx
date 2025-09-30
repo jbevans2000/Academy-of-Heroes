@@ -19,7 +19,10 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, ArrowLeft, Star, Coins } from 'lucide-react';
+import { Loader2, ArrowLeft, Star, Coins, CheckCircle, XCircle } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { cn } from '@/lib/utils';
+
 
 // Fisher-Yates shuffle algorithm
 const shuffleArray = <T,>(array: T[]): T[] => {
@@ -58,8 +61,6 @@ export default function DailyTrainingPage() {
     
     const [quizState, setQuizState] = useState<'loading' | 'in_progress' | 'finished'>('loading');
     const [score, setScore] = useState(0);
-    const [xpGained, setXpGained] = useState(0);
-    const [goldGained, setGoldGained] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [finalMessage, setFinalMessage] = useState('');
 
@@ -198,18 +199,7 @@ export default function DailyTrainingPage() {
                 });
 
                 if (result.success && result.message) {
-                    // This handles both the first completion and subsequent ones
                     setFinalMessage(result.message);
-                    // We only parse rewards if it's the first completion message format
-                    if (result.message.includes('You earned')) {
-                        const xpMatch = result.message.match(/(\d+)\s*XP/);
-                        const goldMatch = result.message.match(/(\d+)\s*Gold/);
-                        setXpGained(xpMatch ? parseInt(xpMatch[1], 10) : 0);
-                        setGoldGained(goldMatch ? parseInt(goldMatch[1], 10) : 0);
-                    } else {
-                        setXpGained(0);
-                        setGoldGained(0);
-                    }
                 } else if (!result.success) {
                     toast({ variant: 'destructive', title: 'Error', description: result.error || 'Failed to save training results.' });
                     setFinalMessage('An error occurred while saving your results.');
@@ -311,6 +301,31 @@ export default function DailyTrainingPage() {
                                     <p className="font-semibold">{finalMessage}</p>
                                 </div>
                             )}
+
+                             <Accordion type="single" collapsible className="w-full text-left mt-6">
+                                <AccordionItem value="item-1">
+                                    <AccordionTrigger>Review Your Answers</AccordionTrigger>
+                                    <AccordionContent>
+                                        <div className="space-y-4 max-h-60 overflow-y-auto p-2">
+                                            {questions.map((q, i) => {
+                                                const studentAnswerIndices = allAnswers[i];
+                                                const correctAnswerIndices = Array.isArray(q.correctAnswer) ? q.correctAnswer : [q.correctAnswerIndex];
+                                                const isCorrect = JSON.stringify(studentAnswerIndices) === JSON.stringify(correctAnswerIndices.sort((a,b) => a-b));
+                                                
+                                                return (
+                                                    <div key={i} className={cn("p-3 border rounded-md", isCorrect ? 'border-green-500 bg-green-500/10' : 'border-red-500 bg-red-500/10')}>
+                                                        <p className="font-semibold">{i + 1}. {q.text}</p>
+                                                        <p className="text-sm mt-1">You answered: <span className="font-bold">{studentAnswerIndices?.map(idx => q.answers[idx]).join(', ') || 'No Answer'}</span></p>
+                                                        {!isCorrect && (
+                                                            <p className="text-sm mt-1 text-green-700 dark:text-green-300">Correct answer: <span className="font-bold">{correctAnswerIndices.map(idx => q.answers[idx]).join(', ')}</span></p>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            </Accordion>
                         </CardContent>
                         <CardContent>
                             <Button size="lg" onClick={() => router.push('/dashboard')}>
