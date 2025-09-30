@@ -61,6 +61,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { getGlobalSettings } from '@/ai/flows/manage-settings';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { awardRewards } from '@/ai/flows/manage-student-stats';
 
 
 interface TeacherData {
@@ -89,6 +90,7 @@ export default function Dashboard() {
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [xpAmount, setXpAmount] = useState<number | string>('');
   const [goldAmount, setGoldAmount] = useState<number | string>('');
+  const [awardReason, setAwardReason] = useState('');
   const [isAwarding, setIsAwarding] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
   const [isRewardsDialogOpen, setIsRewardsDialogOpen] = useState(false);
@@ -372,73 +374,38 @@ export default function Dashboard() {
       setIsAwarding(true);
       
       try {
-          const batch = writeBatch(db);
-          const studentsToUpdate = students.filter(s => selectedStudents.includes(s.uid));
-          let studentsAtMaxLevel = 0;
-
-          for (const studentData of studentsToUpdate) {
-              const studentRef = doc(db, 'teachers', teacher!.uid, 'students', studentData.uid);
-              const updates: Partial<Student> = {};
-
-              // Handle XP
-              if (xpValue !== 0) {
-                  const currentLevel = studentData.level || 1;
-                  if (currentLevel >= MAX_LEVEL && xpValue > 0) {
-                      studentsAtMaxLevel++;
-                  } else {
-                      const currentXp = studentData.xp || 0;
-                      const newXp = Math.max(0, currentXp + xpValue);
-                      const newLevel = calculateLevel(newXp);
-                      updates.xp = newXp;
-
-                      if (newLevel > currentLevel) {
-                          const levelsGained = newLevel - currentLevel;
-                          updates.level = newLevel;
-                          updates.hp = (studentData.hp || 0) + calculateHpGain(studentData.class, levelsGained);
-                          updates.maxHp = (studentData.maxHp || 0) + calculateHpGain(studentData.class, levelsGained);
-                          updates.mp = (studentData.mp || 0) + calculateMpGain(studentData.class, levelsGained);
-                          updates.maxMp = (studentData.maxMp || 0) + calculateMpGain(studentData.class, levelsGained);
-                      }
-                  }
-              }
-
-              // Handle Gold
-              if (goldValue !== 0) {
-                  updates.gold = Math.max(0, (studentData.gold || 0) + goldValue);
-              }
-              
-              if (Object.keys(updates).length > 0) {
-                  batch.update(studentRef, updates);
-              }
-          }
-          
-          await batch.commit();
-          
-          const xpMessage = xpValue !== 0 ? `${xpValue} XP` : '';
-          const goldMessage = goldValue !== 0 ? `${goldValue} Gold` : '';
-          const and = xpValue !== 0 && goldValue !== 0 ? ' and ' : '';
-          await logGameEvent(teacher!.uid, 'GAMEMASTER', `Bestowed ${xpMessage}${and}${goldMessage} to ${selectedStudents.length} student(s).`);
-
-          toast({
-              title: 'Rewards Bestowed!',
-              description: `Successfully awarded rewards to ${selectedStudents.length - studentsAtMaxLevel} student(s).`,
+          const result = await awardRewards({
+              teacherUid: teacher!.uid,
+              studentUids: selectedStudents,
+              xp: xpValue,
+              gold: goldValue,
+              reason: awardReason || 'Rewards bestowed by the Guild Leader.',
           });
 
-          if (studentsAtMaxLevel > 0) {
-            toast({
-                variant: 'default',
-                title: 'Note',
-                description: `${studentsAtMaxLevel} student(s) are at the max level and did not receive XP.`,
-            });
+          if (result.success) {
+                toast({
+                    title: 'Rewards Bestowed!',
+                    description: `Successfully awarded rewards to ${result.studentCount} student(s).`,
+                });
+                 if (result.maxLevelCount && result.maxLevelCount > 0) {
+                    toast({
+                        variant: 'default',
+                        title: 'Note',
+                        description: `${result.maxLevelCount} student(s) are at the max level and did not receive XP.`,
+                    });
+                }
+          } else {
+              throw new Error(result.error);
           }
 
           setSelectedStudents([]);
           setXpAmount('');
           setGoldAmount('');
+          setAwardReason('');
           setIsRewardsDialogOpen(false);
-      } catch (error) {
+      } catch (error: any) {
           console.error("Error awarding rewards: ", error);
-          toast({ variant: 'destructive', title: 'Update Failed', description: 'Could not bestow rewards. Please try again.' });
+          toast({ variant: 'destructive', title: 'Update Failed', description: error.message || 'Could not bestow rewards. Please try again.' });
       } finally {
           setIsAwarding(false);
       }
@@ -1098,6 +1065,18 @@ export default function Dashboard() {
                               onChange={(e) => setGoldAmount(e.target.value)}
                               className="col-span-3"
                               placeholder="e.g., 50 or -10"
+                              disabled={isAwarding}
+                          />
+                      </div>
+                       <div className="space-y-2 col-span-4">
+                          <Label htmlFor="award-reason">
+                              Reason for Award (Optional)
+                          </Label>
+                          <Textarea
+                              id="award-reason"
+                              value={awardReason}
+                              onChange={(e) => setAwardReason(e.target.value)}
+                              placeholder="e.g., For excellent participation in class."
                               disabled={isAwarding}
                           />
                       </div>

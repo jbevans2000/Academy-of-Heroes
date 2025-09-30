@@ -1,4 +1,5 @@
 
+import type { AvatarLogEntry } from './avatar-log';
 
 export type ClassType = 'Guardian' | 'Healer' | 'Mage' | '';
 
@@ -115,6 +116,7 @@ export type Student = {
     dailyDuelCount?: number;
     lastDuelCountReset?: any; // Firestore ServerTimestamp
     isChampion?: boolean;
+    avatarLog?: AvatarLogEntry[]; // This will likely not be stored on the student doc itself
 }
 
 export type PendingStudent = {
