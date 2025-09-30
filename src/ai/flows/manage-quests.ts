@@ -7,6 +7,7 @@ import type { Student, QuestHub, Chapter } from '@/lib/data';
 import { logGameEvent } from '@/lib/gamelog';
 import firebase from 'firebase/compat/app';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
+import { logAvatarEvent } from '@/lib/avatar-log';
 
 // --------- INTERFACES ---------
 
@@ -173,6 +174,15 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
             if (xpToAdd > 0) updates.xp = increment(xpToAdd);
             if (goldToAdd > 0) updates.gold = increment(goldToAdd);
             
+            if (xpToAdd > 0 || goldToAdd > 0) {
+                 await logAvatarEvent(teacherUid, studentUid, {
+                    source: 'Quest Completion',
+                    xp: xpToAdd,
+                    gold: goldToAdd,
+                    reason: `Completed "${chapter.title}"`,
+                });
+            }
+
             // Handle Level Up
             const newXp = (student.xp || 0) + xpToAdd;
             const currentLevel = student.level || 1;
@@ -244,6 +254,15 @@ async function approveSingleRequest(batch: firebase.firestore.WriteBatch, teache
             
             if(xpToAdd > 0) updates.xp = increment(xpToAdd);
             if(goldToAdd > 0) updates.gold = increment(goldToAdd);
+
+             if (xpToAdd > 0 || goldToAdd > 0) {
+                 await logAvatarEvent(teacherUid, studentUid, {
+                    source: 'Quest Completion',
+                    xp: xpToAdd,
+                    gold: goldToAdd,
+                    reason: `Completed "${chapterTitle}"`,
+                });
+            }
 
              const newXp = (studentData.xp || 0) + xpToAdd;
              const currentLevel = studentData.level || 1;
@@ -503,3 +522,5 @@ export async function deleteQuestHub(input: DeleteHubInput): Promise<ActionRespo
         return { success: false, error: error.message || 'Failed to delete the quest hub.' };
     }
 }
+
+    
