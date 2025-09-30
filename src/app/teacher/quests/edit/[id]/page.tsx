@@ -461,6 +461,7 @@ export default function EditQuestPage() {
             ...chapterToSave,
             hubId: selectedHubId,
             coordinates: chapterCoordinates,
+            isActive: chapter.isActive ?? true, // Default to active if not set
         }, { merge: true });
         
         toast({
@@ -607,6 +608,10 @@ export default function EditQuestPage() {
                                 <Label htmlFor="chapter-number">Chapter Number</Label>
                                 <Input id="chapter-number" type="number" placeholder="e.g., 1" value={chapter.chapterNumber ?? ''} onChange={e => handleFieldChange('chapterNumber', e.target.value === '' ? '' : Number(e.target.value))} disabled={isSaving} />
                             </div>
+                        </div>
+                         <div className="flex items-center space-x-2">
+                            <Switch id="chapter-active" checked={chapter.isActive ?? true} onCheckedChange={(checked) => handleFieldChange('isActive', checked)} />
+                            <Label htmlFor="chapter-active">{chapter.isActive ?? true ? "Chapter is Active" : "Chapter is Deactivated"}</Label>
                         </div>
                         <ImageUploader label="Main Story Image" imageUrl={chapter.mainImageUrl || ''} onUploadSuccess={(url) => handleFieldChange('mainImageUrl', url)} teacherUid={teacher.uid} storagePath="quest-images" />
                         <div className="space-y-2">

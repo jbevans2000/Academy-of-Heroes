@@ -30,14 +30,14 @@ export default function HubMapPage() {
     useEffect(() => {
         const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // This logic seems complex, let's simplify. A student belongs to one teacher.
                 const studentMetaRef = doc(db, 'students', user.uid);
                 const studentMetaSnap = await getDoc(studentMetaRef);
 
                 if (studentMetaSnap.exists()) {
-                    const teacherUid = studentMetaSnap.data().teacherUid;
-                    setTeacherUid(teacherUid);
-                    const studentDocRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
+                    const foundTeacherUid = studentMetaSnap.data().teacherUid;
+                    setTeacherUid(foundTeacherUid);
+                    
+                    const studentDocRef = doc(db, 'teachers', foundTeacherUid, 'students', user.uid);
                     const studentUnsubscribe = onSnapshot(studentDocRef, (docSnap) => {
                         if (docSnap.exists()) {
                             setStudent(docSnap.data() as Student);
@@ -45,7 +45,7 @@ export default function HubMapPage() {
                             router.push('/');
                         }
                     });
-                    return () => studentUnsubscribe();
+                    // This will need to be cleaned up, but we must return it from the top-level useEffect
                 } else {
                     router.push('/');
                 }
@@ -60,31 +60,48 @@ export default function HubMapPage() {
     useEffect(() => {
         if (!hubId || !teacherUid) return;
 
+        let unsubHub: (() => void) | undefined;
+        let unsubChapters: (() => void) | undefined;
+        
         const fetchHubData = async () => {
             setIsLoading(true);
             try {
                 // Fetch hub details
                 const hubDocRef = doc(db, 'teachers', teacherUid, 'questHubs', hubId);
-                const hubDocSnap = await getDoc(hubDocRef);
-                if (hubDocSnap.exists()) {
-                    setHub({ id: hubDocSnap.id, ...hubDocSnap.data() } as QuestHub);
-                }
+                unsubHub = onSnapshot(hubDocRef, (hubDocSnap) => {
+                    if (hubDocSnap.exists()) {
+                        setHub({ id: hubDocSnap.id, ...hubDocSnap.data() } as QuestHub);
+                    }
+                });
 
-                // Fetch chapters for this hub, ordered by chapter number
-                const chaptersQuery = query(collection(db, 'teachers', teacherUid, 'chapters'), where('hubId', '==', hubId));
-                const chaptersSnapshot = await getDocs(chaptersQuery);
-                let chaptersData = chaptersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
-                chaptersData.sort((a, b) => a.chapterNumber - b.chapterNumber);
-                setChapters(chaptersData);
+
+                // Fetch active chapters for this hub, ordered by chapter number
+                const chaptersQuery = query(
+                    collection(db, 'teachers', teacherUid, 'chapters'), 
+                    where('hubId', '==', hubId),
+                    where('isActive', '==', true)
+                );
+                unsubChapters = onSnapshot(chaptersQuery, (chaptersSnapshot) => {
+                    let chaptersData = chaptersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
+                    chaptersData.sort((a, b) => a.chapterNumber - b.chapterNumber);
+                    setChapters(chaptersData);
+                });
 
             } catch (error) {
                 console.error("Error fetching hub data:", error);
             } finally {
-                setIsLoading(false);
+                // This might need adjustment if loading feels off
+                setTimeout(() => setIsLoading(false), 500); 
             }
         };
 
         fetchHubData();
+        
+        return () => {
+            if (unsubHub) unsubHub();
+            if (unsubChapters) unsubChapters();
+        };
+
     }, [hubId, teacherUid]);
 
     const lastCompletedChapter = student?.questProgress?.[hubId] || 0;

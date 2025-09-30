@@ -49,6 +49,7 @@ export interface Chapter {
     hubId: string;
     title: string;
     chapterNumber: number;
+    isActive?: boolean; // New field to control chapter visibility
     // Story media
     storyContent: string;
     mainImageUrl: string;

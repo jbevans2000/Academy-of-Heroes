@@ -154,6 +154,7 @@ function NewQuestForm() {
   const [hubAssignedCompanyIds, setHubAssignedCompanyIds] = useState<string[]>([]);
 
   // State for the new Chapter creator
+  const [isChapterActive, setIsChapterActive] = useState(true);
   const [chapterTitle, setChapterTitle] = useState('');
   const [chapterNumber, setChapterNumber] = useState<number | ''>('');
   const [storyContent, setStoryContent] = useState('');
@@ -487,6 +488,7 @@ function NewQuestForm() {
             hubId: finalHubId,
             title: chapterTitle,
             chapterNumber: Number(chapterNumber),
+            isActive: isChapterActive,
             storyContent,
             mainImageUrl,
             videoUrl,
@@ -730,6 +732,10 @@ function NewQuestForm() {
                                   <Input id="chapter-number" type="number" placeholder="e.g., 1" value={chapterNumber} onChange={e => setChapterNumber(e.target.value === '' ? '' : Number(e.target.value))} disabled={isSaving} />
                               </div>
                           </div>
+                           <div className="flex items-center space-x-2">
+                            <Switch id="chapter-active" checked={isChapterActive} onCheckedChange={setIsChapterActive} />
+                            <Label htmlFor="chapter-active">{isChapterActive ? "Chapter is Active" : "Chapter is Deactivated"}</Label>
+                           </div>
                           <ImageUploader label="Main Story Image" imageUrl={mainImageUrl} onUploadSuccess={setMainImageUrl} teacherUid={teacher.uid} storagePath="quest-images" />
                           <div className="space-y-2">
                               <Label htmlFor="story-content">Story Content</Label>
