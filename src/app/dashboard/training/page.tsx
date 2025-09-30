@@ -76,7 +76,6 @@ export default function DailyTrainingPage() {
         if (!student || !teacherUid) return;
 
         try {
-            // New logic: Build a list of all completed chapter IDs from questProgress
             const completedChapterIds: string[] = [];
             const chaptersSnapshot = await getDocs(collection(db, 'teachers', teacherUid, 'chapters'));
             const allChapters = chaptersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
@@ -95,7 +94,6 @@ export default function DailyTrainingPage() {
                 return;
             }
 
-            // The rest of the logic remains the same
             const chaptersRef = collection(db, 'teachers', teacherUid, 'chapters');
             const chapterChunks = [];
             for (let i = 0; i < completedChapterIds.length; i += 30) {
@@ -121,7 +119,9 @@ export default function DailyTrainingPage() {
                 return;
             }
 
-            const selectedQuestions = shuffleArray(allQuizQuestions).slice(0, 10);
+            const shuffledQuestions = shuffleArray(allQuizQuestions);
+            const selectedQuestions = shuffledQuestions.slice(0, 10);
+            
             setQuestions(selectedQuestions);
             setAllAnswers(new Array(selectedQuestions.length).fill(null));
             setQuizState('in_progress');
@@ -161,7 +161,7 @@ export default function DailyTrainingPage() {
             newAnswers.forEach((studentAns, i) => {
                 if (!studentAns) return;
                 const question = questions[i];
-                const correctAns = (question.correctAnswer || [question.correctAnswerIndex]).sort((a,b) => a-b);
+                const correctAns = (Array.isArray(question.correctAnswer) ? question.correctAnswer : [question.correctAnswerIndex]).sort((a,b)=>a-b);
                 if (JSON.stringify(studentAns) === JSON.stringify(correctAns)) {
                     correctCount++;
                 }
@@ -300,3 +300,5 @@ export default function DailyTrainingPage() {
         </div>
     );
 }
+
+    
