@@ -8,6 +8,7 @@ import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firesto
 import { db, auth } from '@/lib/firebase';
 import type { Student, Chapter } from '@/lib/data';
 import type { QuizQuestion } from '@/lib/quests';
+import type { DuelQuestion, DuelQuestionSection } from '@/lib/duels';
 import { completeDailyTraining } from '@/ai/flows/daily-training';
 import { getDuelSettings } from '@/ai/flows/manage-duels';
 import { useToast } from '@/hooks/use-toast';
@@ -29,6 +30,16 @@ const shuffleArray = <T,>(array: T[]): T[] => {
     }
     return newArray;
 };
+
+// Normalize DuelQuestion to QuizQuestion format
+const normalizeDuelQuestion = (duelQuestion: DuelQuestion): QuizQuestion => ({
+    id: duelQuestion.id,
+    text: duelQuestion.text,
+    answers: duelQuestion.answers,
+    correctAnswer: [duelQuestion.correctAnswerIndex],
+    questionType: 'single', // Duel questions are always single-choice
+});
+
 
 export default function DailyTrainingPage() {
     const router = useRouter();
@@ -76,50 +87,56 @@ export default function DailyTrainingPage() {
         if (!student || !teacherUid) return;
 
         try {
-            const completedChapterIds: string[] = [];
-            const chaptersSnapshot = await getDocs(collection(db, 'teachers', teacherUid, 'chapters'));
-            const allChapters = chaptersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
+            // --- Source 1: Completed Chapter Quizzes ---
+            let chapterQuestions: QuizQuestion[] = [];
+            const allChaptersSnapshot = await getDocs(collection(db, 'teachers', teacherUid, 'chapters'));
+            const completedChapterIds = new Set<string>();
 
             if (student.questProgress) {
                 for (const hubId in student.questProgress) {
                     const lastChapterNumber = student.questProgress[hubId];
-                    const chaptersInHub = allChapters.filter(c => c.hubId === hubId && c.chapterNumber <= lastChapterNumber);
-                    chaptersInHub.forEach(c => completedChapterIds.push(c.id));
+                    allChaptersSnapshot.docs.forEach(doc => {
+                        const chapter = doc.data() as Chapter;
+                        if (chapter.hubId === hubId && chapter.chapterNumber <= lastChapterNumber) {
+                            completedChapterIds.add(doc.id);
+                        }
+                    });
                 }
             }
-
-            if (completedChapterIds.length === 0) {
-                setError("You haven't completed any chapters with quizzes yet. Complete some quests and come back tomorrow!");
-                setIsLoading(false);
-                return;
-            }
-
-            const chaptersRef = collection(db, 'teachers', teacherUid, 'chapters');
-            const chapterChunks = [];
-            for (let i = 0; i < completedChapterIds.length; i += 30) {
-                chapterChunks.push(completedChapterIds.slice(i, i + 30));
-            }
-
-            let allQuizQuestions: QuizQuestion[] = [];
-            for (const chunk of chapterChunks) {
-                if (chunk.length === 0) continue;
-                const q = query(chaptersRef, where('__name__', 'in', chunk));
-                const querySnapshot = await getDocs(q);
-                querySnapshot.forEach(doc => {
+            
+            allChaptersSnapshot.forEach(doc => {
+                if (completedChapterIds.has(doc.id)) {
                     const chapter = doc.data() as Chapter;
                     if (chapter.quiz && chapter.quiz.questions) {
-                        allQuizQuestions = allQuizQuestions.concat(chapter.quiz.questions);
+                        chapterQuestions = chapterQuestions.concat(chapter.quiz.questions);
                     }
+                }
+            });
+
+            // --- Source 2: Active Duel Sections ---
+            let duelQuestions: DuelQuestion[] = [];
+            const activeSectionsQuery = query(collection(db, 'teachers', teacherUid, 'duelQuestionSections'), where('isActive', '==', true));
+            const activeSectionsSnapshot = await getDocs(activeSectionsQuery);
+
+            for (const sectionDoc of activeSectionsSnapshot.docs) {
+                const questionsSnapshot = await getDocs(collection(sectionDoc.ref, 'questions'));
+                questionsSnapshot.forEach(qDoc => {
+                    duelQuestions.push({ id: qDoc.id, ...qDoc.data() } as DuelQuestion);
                 });
             }
 
-            if (allQuizQuestions.length < 1) {
-                setError("None of your completed chapters had any quiz questions for training.");
+            const normalizedDuelQuestions = duelQuestions.map(normalizeDuelQuestion);
+
+            // --- Combine and Select Questions ---
+            const allAvailableQuestions = [...chapterQuestions, ...normalizedDuelQuestions];
+
+            if (allAvailableQuestions.length < 1) {
+                setError("You haven't completed any chapters with quizzes, and there are no active duel questions. Complete some quests and come back tomorrow!");
                 setIsLoading(false);
                 return;
             }
 
-            const shuffledQuestions = shuffleArray(allQuizQuestions);
+            const shuffledQuestions = shuffleArray(allAvailableQuestions);
             const selectedQuestions = shuffledQuestions.slice(0, 10);
             
             setQuestions(selectedQuestions);
@@ -161,6 +178,7 @@ export default function DailyTrainingPage() {
             newAnswers.forEach((studentAns, i) => {
                 if (!studentAns) return;
                 const question = questions[i];
+                // Ensure correctAnswer is always an array for comparison
                 const correctAns = (Array.isArray(question.correctAnswer) ? question.correctAnswer : [question.correctAnswerIndex]).sort((a,b)=>a-b);
                 if (JSON.stringify(studentAns) === JSON.stringify(correctAns)) {
                     correctCount++;
@@ -249,7 +267,7 @@ export default function DailyTrainingPage() {
                              <div className="space-y-2">
                                 {currentQuestion.answers.map((answer, index) => (
                                      <div key={index} className="flex items-center space-x-3 p-3 rounded-md hover:bg-muted transition-colors">
-                                        {(currentQuestion.questionType || 'single') === 'single' ? (
+                                        {(currentQuestion.questionType || 'single') !== 'multiple' ? (
                                             <RadioGroup onValueChange={() => handleAnswerSelect(index)} value={String(selectedAnswers[0])}>
                                                 <RadioGroupItem value={String(index)} id={`q${currentQuestionIndex}-a${index}`} />
                                             </RadioGroup>
@@ -300,5 +318,3 @@ export default function DailyTrainingPage() {
         </div>
     );
 }
-
-    

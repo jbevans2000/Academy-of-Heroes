@@ -361,6 +361,7 @@ export default function TrainingGroundsPage() {
                     </div>
                      <div className="pt-4">
                         <h3 className="text-lg font-semibold mb-2">Daily Training</h3>
+                        <p className="text-sm text-muted-foreground mb-2">Note: Questions for Daily Training are pulled from all ACTIVE duel sections below, as well as from any quizzes in chapters that a student has completed.</p>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1">
                                 <Label htmlFor="training-reward-xp" className="flex items-center gap-1"><Star className="h-4 w-4" /> Max XP Reward</Label>
