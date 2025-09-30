@@ -143,6 +143,9 @@ export default function EditQuestPage() {
   // New Lesson Part State
   const [currentLessonPartIndex, setCurrentLessonPartIndex] = useState(0);
 
+  // State for question image uploads
+  const [uploadingQuestionImage, setUploadingQuestionImage] = useState<string | number | null>(null);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
         if (user) {
@@ -272,10 +275,10 @@ export default function EditQuestPage() {
         });
     };
 
-    const handleQuizQuestionChange = (id: string, field: 'text' | 'questionType', value: string) => {
+    const handleQuizQuestionChange = (id: string, field: keyof QuizQuestion, value: any) => {
         const updatedQuestions = chapter?.quiz?.questions.map(q => {
             if (q.id === id) {
-                 const updatedQ: QuizQuestion = { ...q, [field]: value as any };
+                 const updatedQ: QuizQuestion = { ...q, [field]: value };
                 if (field === 'questionType') {
                     if (value === 'true-false') {
                         updatedQ.answers = ['True', 'False'];
@@ -342,6 +345,23 @@ export default function EditQuestPage() {
     const handleRemoveQuizQuestion = (id: string) => {
         const updatedQuestions = chapter?.quiz?.questions.filter(q => q.id !== id) || [];
         handleQuizChange('questions', updatedQuestions);
+    };
+
+    const handleQuestionImageUpload = async (questionId: string | number, file: File) => {
+        if (!teacher) return;
+        setUploadingQuestionImage(questionId);
+        try {
+            const storage = getStorage(app);
+            const imageId = uuidv4();
+            const storageRef = ref(storage, `quest-question-images/${teacher.uid}/${imageId}`);
+            await uploadBytes(storageRef, file);
+            const downloadUrl = await getDownloadURL(storageRef);
+            handleQuizQuestionChange(String(questionId), 'imageUrl', downloadUrl);
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload the question image.' });
+        } finally {
+            setUploadingQuestionImage(null);
+        }
     };
 
   const handleGenerateStory = async () => {
@@ -789,6 +809,33 @@ export default function EditQuestPage() {
                                 </div>
                                 <div className="space-y-2">
                                     <Textarea placeholder="Question text" value={q.text} onChange={e => handleQuizQuestionChange(q.id, 'text', e.target.value)} />
+                                    <div className="space-y-2">
+                                        <Label>Image URL (Optional)</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                placeholder="https://example.com/image.png"
+                                                value={q.imageUrl || ''}
+                                                onChange={(e) => handleQuizQuestionChange(q.id, 'imageUrl', e.target.value)}
+                                            />
+                                            <Label htmlFor={`q-image-upload-${q.id}`} className={cn(buttonVariants({ variant: 'outline' }), "cursor-pointer")}>
+                                                <Upload className="h-4 w-4" />
+                                            </Label>
+                                            <Input
+                                                id={`q-image-upload-${q.id}`}
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={(e) => {
+                                                    if(e.target.files && e.target.files[0]){
+                                                        handleQuestionImageUpload(q.id, e.target.files[0]);
+                                                    }
+                                                }}
+                                                disabled={uploadingQuestionImage === q.id}
+                                            />
+                                            {uploadingQuestionImage === q.id && <Loader2 className="h-5 w-5 animate-spin" />}
+                                        </div>
+                                        {q.imageUrl && <Image src={q.imageUrl} alt="Question preview" width={100} height={100} className="rounded-md border mt-2" />}
+                                    </div>
                                     <Select value={q.questionType} onValueChange={(value) => handleQuizQuestionChange(q.id, 'questionType', value)}>
                                         <SelectTrigger><SelectValue/></SelectTrigger>
                                         <SelectContent>
@@ -832,8 +879,9 @@ export default function EditQuestPage() {
                       </TabsContent>
                       </Tabs>
                   </div>
-              
-              <div className="flex justify-between items-center pt-4 border-t">
+                )}
+
+                <div className="flex justify-between items-center pt-4 border-t">
                   {prevChapter ? (
                   <Button variant="outline" size="lg" onClick={() => router.push(`/teacher/quests/edit/${prevChapter.id}`)}>
                     <ArrowLeft className="mr-2 h-4 w-4" /> Previous Chapter
@@ -865,3 +913,5 @@ export default function EditQuestPage() {
     </div>
   );
 }
+
+    
