@@ -156,6 +156,45 @@ export async function setMeditationStatus(input: MeditationStatusInput): Promise
   }
 }
 
+interface BulkMeditationStatusInput {
+    teacherUid: string;
+    studentUids: string[];
+    isInMeditation: boolean;
+    message?: string;
+}
+
+export async function setBulkMeditationStatus(input: BulkMeditationStatusInput): Promise<ActionResponse> {
+    const { teacherUid, studentUids, isInMeditation, message } = input;
+    if (!studentUids || studentUids.length === 0) {
+        return { success: false, error: "No students selected." };
+    }
+
+    try {
+        const batch = writeBatch(db);
+        const updates: any = {
+            isInMeditationChamber: isInMeditation,
+        };
+
+        if (isInMeditation) {
+            updates.meditationMessage = message;
+        } else {
+            updates.meditationMessage = deleteField();
+        }
+
+        studentUids.forEach(uid => {
+            const studentRef = doc(db, 'teachers', teacherUid, 'students', uid);
+            batch.update(studentRef, updates);
+        });
+
+        await batch.commit();
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error setting bulk meditation status:", error);
+        return { success: false, error: "Failed to update meditation status for the selected students." };
+    }
+}
+
+
 interface ToggleVisibilityInput {
   teacherUid: string;
   studentUid: string;

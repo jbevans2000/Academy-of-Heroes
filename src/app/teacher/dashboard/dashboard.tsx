@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -52,7 +53,7 @@ import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Cop
 import { calculateLevel, calculateHpGain, calculateMpGain, MAX_LEVEL, XP_FOR_MAX_LEVEL } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { archiveStudents, setMeditationStatus, toggleStudentVisibility } from '@/ai/flows/manage-student';
+import { archiveStudents, setMeditationStatus, toggleStudentVisibility, setBulkMeditationStatus } from '@/ai/flows/manage-student';
 import { TeacherMessageCenter } from '@/components/teacher/teacher-message-center';
 import { restoreAllStudentsHp, restoreAllStudentsMp } from '@/ai/flows/manage-class';
 import { SetQuestProgressDialog } from '@/components/teacher/set-quest-progress-dialog';
@@ -79,7 +80,7 @@ interface TeacherData {
     isNewlyRegistered?: boolean;
 }
 
-type SortOrder = 'studentName' | 'characterName' | 'xp' | 'class' | 'company';
+type SortOrder = 'studentName' | 'characterName' | 'xp' | 'class' | 'company' | 'inMeditation';
 
 function MeditationDialog({ student, teacherUid, onOpenChange }: { student: Student; teacherUid: string; onOpenChange: (open: boolean) => void }) {
     const [message, setMessage] = useState('');
@@ -187,6 +188,9 @@ export default function Dashboard() {
 
   const [broadcastMessage, setBroadcastMessage] = useState('');
   const [isBroadcastDialogOpen, setIsBroadcastDialogOpen] = useState(false);
+  
+  const [isBulkMeditationOpen, setIsBulkMeditationOpen] = useState(false);
+  const [bulkMeditationMessage, setBulkMeditationMessage] = useState('');
 
 
   useEffect(() => {
@@ -348,6 +352,14 @@ export default function Dashboard() {
       case 'class':
         const classOrder: ClassType[] = ['Guardian', 'Healer', 'Mage'];
         return { type: 'flat', data: [...filteredStudents].sort((a, b) => classOrder.indexOf(a.class) - classOrder.indexOf(b.class)) };
+      case 'inMeditation':
+        return { type: 'flat', data: [...filteredStudents].sort((a, b) => {
+            const aMeditating = a.isInMeditationChamber ?? false;
+            const bMeditating = b.isInMeditationChamber ?? false;
+            if (aMeditating && !bMeditating) return -1;
+            if (!aMeditating && bMeditating) return 1;
+            return a.studentName.localeCompare(b.studentName);
+        })};
       case 'company':
         const grouped: { [companyId: string]: Student[] } = {};
         const freelancers: Student[] = [];
@@ -665,6 +677,34 @@ export default function Dashboard() {
         setIsSavingRegen(false);
     }
   }
+  
+    const handleBulkMeditation = async () => {
+        if (!teacher || selectedStudents.length === 0 || !bulkMeditationMessage.trim()) {
+            toast({ variant: 'destructive', title: 'Missing Info', description: 'Please select students and enter a message.' });
+            return;
+        }
+        setIsAwarding(true); // Re-use awarding state for loading
+        try {
+            const result = await setBulkMeditationStatus({
+                teacherUid: teacher.uid,
+                studentUids: selectedStudents,
+                isInMeditation: true,
+                message: bulkMeditationMessage,
+            });
+            if (result.success) {
+                toast({ title: 'Success', description: `${selectedStudents.length} student(s) have been sent to the Meditation Chamber.` });
+                setIsBulkMeditationOpen(false);
+                setBulkMeditationMessage('');
+                setSelectedStudents([]);
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message });
+        } finally {
+            setIsAwarding(false);
+        }
+    };
 
 
   if (isLoading || !teacher) {
@@ -908,6 +948,10 @@ export default function Dashboard() {
                         <HeartPulse className="mr-2 h-4 w-4" />
                         Set Daily HP/MP Regen
                     </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => setIsBulkMeditationOpen(true)} disabled={selectedStudents.length === 0}>
+                        <Moon className="mr-2 h-4 w-4" />
+                        Send Selected to Meditation
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                      <DropdownMenuItem onClick={() => router.push('/teacher/tools/data-migration')}>
                         <DatabaseZap className="mr-2 h-4 w-4" />
@@ -924,7 +968,7 @@ export default function Dashboard() {
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
-
+            
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="text-black border-black">
@@ -938,6 +982,7 @@ export default function Dashboard() {
                         <DropdownMenuRadioItem value="xp">Experience</DropdownMenuRadioItem>
                         <DropdownMenuRadioItem value="class">Class</DropdownMenuRadioItem>
                         <DropdownMenuRadioItem value="company">Company</DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="inMeditation">In Meditation</DropdownMenuRadioItem>
                     </DropdownMenuRadioGroup>
                 </DropdownMenuContent>
             </DropdownMenu>
@@ -1095,6 +1140,31 @@ export default function Dashboard() {
                     {showHidden ? 'Showing Hidden Heroes' : 'Show Hidden Heroes'}
                 </Label>
             </div>
+             <Dialog open={isBulkMeditationOpen} onOpenChange={setIsBulkMeditationOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Send {selectedStudents.length} Student(s) to Meditation</DialogTitle>
+                        <DialogDescription>
+                            Enter a message for the selected students to reflect on.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Textarea
+                            value={bulkMeditationMessage}
+                            onChange={(e) => setBulkMeditationMessage(e.target.value)}
+                            placeholder="e.g., Reflect on your focus during today's quest."
+                            rows={4}
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsBulkMeditationOpen(false)}>Cancel</Button>
+                        <Button onClick={handleBulkMeditation} disabled={isAwarding || !bulkMeditationMessage.trim()}>
+                            {isAwarding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Confirm & Send
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
         {sortOrder === 'company' && sortedStudents.type === 'grouped' ? (
              <div className="space-y-6">
