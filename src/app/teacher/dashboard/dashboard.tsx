@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -478,7 +479,7 @@ export default function Dashboard() {
     } else {
       await deleteDoc(pendingStudentRef);
       await deleteDoc(doc(db, 'students', uid));
-      
+
       await logGameEvent(teacher.uid, 'ACCOUNT', `The application for ${pendingStudent.studentName} (${pendingStudent.characterName}) was rejected.`);
       toast({ title: "Request Rejected", description: `The request for ${pendingStudent.characterName} has been deleted. You may need to delete the user from Firebase Authentication manually if they should be prevented from re-registering.` });
     }
@@ -571,6 +572,44 @@ export default function Dashboard() {
       } finally {
           setIsAwarding(false);
       }
+  }
+
+  const handleSaveReminder = async () => {
+    if (!teacher) return;
+    setIsSavingReminder(true);
+    try {
+        await updateDailyReminder({
+            teacherUid: teacher.uid,
+            title: reminderTitle,
+            message: reminderMessage,
+            isActive: isReminderActive,
+        });
+        toast({ title: 'Success', description: 'Daily reminder settings have been updated.' });
+        setIsReminderDialogOpen(false);
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Error', description: error.message });
+    } finally {
+        setIsSavingReminder(false);
+    }
+  }
+
+  const handleSaveRegen = async () => {
+    if (!teacher) return;
+    const percentage = Number(regenPercentage);
+    if (isNaN(percentage) || percentage < 0 || percentage > 100) {
+        toast({ variant: 'destructive', title: 'Invalid Value', description: 'Please enter a number between 0 and 100.' });
+        return;
+    }
+    setIsSavingRegen(true);
+    try {
+        await updateDailyRegen({ teacherUid: teacher.uid, regenPercentage: percentage });
+        toast({ title: 'Success', description: 'Daily regeneration rate updated.' });
+        setIsRegenDialogOpen(false);
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Error', description: error.message });
+    } finally {
+        setIsSavingRegen(false);
+    }
   }
 
 
@@ -798,13 +837,22 @@ export default function Dashboard() {
                         <Check className="mr-2 h-4 w-4" />
                         <span>Manage Quest Completion</span>
                     </DropdownMenuItem>
-                     <DropdownMenuItem onClick={() => router.push('/teacher/settings/leveling')}>
+                    <DropdownMenuItem onClick={() => router.push('/teacher/settings/leveling')}>
                         <BarChart className="mr-2 h-4 w-4" />
                         <span>Custom Leveling Curve</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/teacher/gamelog')}>
                         <BookOpen className="mr-2 h-4 w-4" />
                         <span>The Chronicler's Scroll</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setIsReminderDialogOpen(true)}>
+                        <Bell className="mr-2 h-4 w-4" />
+                        Set Daily Reminder
+                    </DropdownMenuItem>
+                     <DropdownMenuItem onClick={() => setIsRegenDialogOpen(true)}>
+                        <HeartPulse className="mr-2 h-4 w-4" />
+                        Set Daily HP/MP Regen
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                      <DropdownMenuItem onClick={() => router.push('/teacher/tools/data-migration')}>
@@ -1049,3 +1097,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
+    
