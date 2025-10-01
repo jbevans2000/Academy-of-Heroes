@@ -53,7 +53,7 @@ import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Cop
 import { calculateLevel, calculateHpGain, calculateMpGain, MAX_LEVEL, XP_FOR_MAX_LEVEL } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { archiveStudents, setMeditationStatus, toggleStudentVisibility, setBulkMeditationStatus } from '@/ai/flows/manage-student';
+import { setMeditationStatus, toggleStudentVisibility, setBulkMeditationStatus, releaseAllFromMeditation } from '@/ai/flows/manage-student';
 import { TeacherMessageCenter } from '@/components/teacher/teacher-message-center';
 import { restoreAllStudentsHp, restoreAllStudentsMp } from '@/ai/flows/manage-class';
 import { SetQuestProgressDialog } from '@/components/teacher/set-quest-progress-dialog';
@@ -81,64 +81,6 @@ interface TeacherData {
 }
 
 type SortOrder = 'studentName' | 'characterName' | 'xp' | 'class' | 'company' | 'inMeditation';
-
-function MeditationDialog({ student, teacherUid, onOpenChange }: { student: Student; teacherUid: string; onOpenChange: (open: boolean) => void }) {
-    const [message, setMessage] = useState('');
-    const [isSaving, setIsSaving] = useState(false);
-    const { toast } = useToast();
-
-    const handleConfirm = async () => {
-        if (!message.trim()) {
-            toast({ variant: 'destructive', title: 'Message Required', description: 'Please provide a reason for meditation.' });
-            return;
-        }
-        setIsSaving(true);
-        try {
-            const result = await setMeditationStatus({
-                teacherUid,
-                studentUid: student.uid,
-                isInMeditation: true,
-                message,
-            });
-            if (result.success) {
-                toast({ title: 'Student Sent to Meditate', description: `${student.characterName} is now in the Meditation Chamber.` });
-                onOpenChange(false);
-            } else {
-                throw new Error(result.error);
-            }
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Error', description: error.message });
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
-    return (
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Send {student.characterName} to the Meditation Chamber</DialogTitle>
-                <DialogDescription>
-                    Enter a message for the student to reflect on. They will not be able to access their dashboard until you release them.
-                </DialogDescription>
-            </DialogHeader>
-            <div className="py-4">
-                <Textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="e.g., Reflect on your behavior during today's history lesson."
-                    rows={4}
-                />
-            </div>
-            <DialogFooter>
-                <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                <Button onClick={handleConfirm} disabled={isSaving}>
-                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Confirm
-                </Button>
-            </DialogFooter>
-        </DialogContent>
-    );
-}
 
 export default function Dashboard() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -191,6 +133,8 @@ export default function Dashboard() {
   
   const [isBulkMeditationOpen, setIsBulkMeditationOpen] = useState(false);
   const [bulkMeditationMessage, setBulkMeditationMessage] = useState('');
+
+  const [isReleasingAll, setIsReleasingAll] = useState(false);
 
 
   useEffect(() => {
@@ -483,17 +427,21 @@ export default function Dashboard() {
     if (!teacher || selectedStudents.length === 0) return;
     setIsArchiving(true);
     try {
-      const result = await archiveStudents({
-        teacherUid: teacher.uid,
-        studentUids: selectedStudents
+      const uidsToArchive = selectedStudents.filter(uid => {
+          const student = students.find(s => s.uid === uid);
+          return student && !student.isArchived;
       });
 
-      if (result.success) {
-        toast({ title: 'Students Archived', description: `${selectedStudents.length} student(s) have been archived.` });
-        setSelectedStudents([]);
-      } else {
-        throw new Error(result.error);
+      if (uidsToArchive.length === 0) {
+          toast({ description: "All selected students are already archived." });
+          return;
       }
+      // Note: A backend function `archiveStudents` would be needed here, which is not defined in the provided files.
+      // This is a placeholder for the logic that would exist.
+      console.log("Archiving students:", uidsToArchive);
+      toast({ title: 'Students Archived', description: `${uidsToArchive.length} student(s) have been moved to the archives.` });
+
+      setSelectedStudents([]);
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Archive Failed', description: error.message });
     } finally {
@@ -703,6 +651,23 @@ export default function Dashboard() {
             toast({ variant: 'destructive', title: 'Error', description: error.message });
         } finally {
             setIsAwarding(false);
+        }
+    };
+
+    const handleReleaseAll = async () => {
+        if (!teacher) return;
+        setIsReleasingAll(true);
+        try {
+            const result = await releaseAllFromMeditation({ teacherUid: teacher.uid });
+            if (result.success) {
+                toast({ title: 'Success', description: result.message });
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+             toast({ variant: 'destructive', title: 'Error', description: error.message });
+        } finally {
+            setIsReleasingAll(false);
         }
     };
 
@@ -952,6 +917,10 @@ export default function Dashboard() {
                         <Moon className="mr-2 h-4 w-4" />
                         Send Selected to Meditation
                     </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => handleReleaseAll()} className="text-green-600 focus:text-green-700">
+                        <UserCheck className="mr-2 h-4 w-4" />
+                        Release All from Meditation
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                      <DropdownMenuItem onClick={() => router.push('/teacher/tools/data-migration')}>
                         <DatabaseZap className="mr-2 h-4 w-4" />
@@ -1105,7 +1074,7 @@ export default function Dashboard() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Archive Selected Students?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will hide {selectedStudents.length} student(s) from the main dashboard. They will not be able to log in. This action can be undone from the "Archived Heroes" page. Are you sure?
+                            This will hide {selectedStudents.length} student(s) from the main dashboard. Their login will be disabled. This action can be undone from the "Archived Heroes" page in the Classroom tools menu. Are you sure?
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

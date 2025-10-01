@@ -11,13 +11,14 @@
  * - getStudentStatus: Fetches the enabled/disabled status of a student's account.
  * - clearGameLog: Deletes all entries from the game log.
  */
-import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch, getDoc, runTransaction, arrayUnion, arrayRemove, setDoc, deleteField } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch, getDoc, runTransaction, arrayUnion, arrayRemove, setDoc, deleteField, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirebaseAdminApp } from '@/lib/firebase-admin';
 
 // Initialize the Firebase Admin App
 getFirebaseAdminApp();
+
 
 interface ActionResponse {
   success: boolean;
@@ -194,6 +195,33 @@ export async function setBulkMeditationStatus(input: BulkMeditationStatusInput):
     }
 }
 
+export async function releaseAllFromMeditation(input: { teacherUid: string }): Promise<ActionResponse> {
+    const { teacherUid } = input;
+    try {
+        const studentsRef = collection(db, 'teachers', teacherUid, 'students');
+        const q = query(studentsRef, where('isInMeditationChamber', '==', true));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            return { success: true, message: 'No students were in the Meditation Chamber.' };
+        }
+
+        const batch = writeBatch(db);
+        querySnapshot.forEach(doc => {
+            batch.update(doc.ref, {
+                isInMeditationChamber: false,
+                meditationMessage: deleteField(),
+            });
+        });
+
+        await batch.commit();
+        return { success: true, message: `Released ${querySnapshot.size} student(s) from the Meditation Chamber.` };
+    } catch (error: any) {
+        console.error("Error releasing all students from meditation:", error);
+        return { success: false, error: "An unexpected error occurred while releasing students." };
+    }
+}
+
 
 interface ToggleVisibilityInput {
   teacherUid: string;
@@ -210,6 +238,6 @@ export async function toggleStudentVisibility(input: ToggleVisibilityInput): Pro
     return { success: true };
   } catch (e: any) {
     console.error("Error in toggleStudentVisibility:", e);
-    return { success: false, error: e.message || 'Failed to update student visibility.' };
+    return { success: false, error: 'Failed to update student visibility.' };
   }
 }
