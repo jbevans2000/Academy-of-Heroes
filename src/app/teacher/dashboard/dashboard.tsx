@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -49,11 +48,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff, MessageSquare, Heart, Zap as ZapIcon, HeartPulse, Filter, BarChart } from 'lucide-react';
+import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff, MessageSquare, Heart, Zap as ZapIcon, HeartPulse, Filter, BarChart, Moon, UserCheck } from 'lucide-react';
 import { calculateLevel, calculateHpGain, calculateMpGain, MAX_LEVEL, XP_FOR_MAX_LEVEL } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { archiveStudents } from '@/ai/flows/manage-student';
+import { archiveStudents, setMeditationStatus, toggleStudentVisibility } from '@/ai/flows/manage-student';
 import { TeacherMessageCenter } from '@/components/teacher/teacher-message-center';
 import { restoreAllStudentsHp, restoreAllStudentsMp } from '@/ai/flows/manage-class';
 import { SetQuestProgressDialog } from '@/components/teacher/set-quest-progress-dialog';
@@ -63,6 +62,7 @@ import { getGlobalSettings } from '@/ai/flows/manage-settings';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { awardRewards } from '@/ai/flows/manage-student-stats';
+import { TeacherNotesDialog } from '@/components/teacher/teacher-notes-dialog';
 
 
 interface TeacherData {
@@ -81,6 +81,64 @@ interface TeacherData {
 
 type SortOrder = 'studentName' | 'characterName' | 'xp' | 'class' | 'company';
 
+function MeditationDialog({ student, teacherUid, onOpenChange }: { student: Student; teacherUid: string; onOpenChange: (open: boolean) => void }) {
+    const [message, setMessage] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
+    const { toast } = useToast();
+
+    const handleConfirm = async () => {
+        if (!message.trim()) {
+            toast({ variant: 'destructive', title: 'Message Required', description: 'Please provide a reason for meditation.' });
+            return;
+        }
+        setIsSaving(true);
+        try {
+            const result = await setMeditationStatus({
+                teacherUid,
+                studentUid: student.uid,
+                isInMeditation: true,
+                message,
+            });
+            if (result.success) {
+                toast({ title: 'Student Sent to Meditate', description: `${student.characterName} is now in the Meditation Chamber.` });
+                onOpenChange(false);
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    return (
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Send {student.characterName} to the Meditation Chamber</DialogTitle>
+                <DialogDescription>
+                    Enter a message for the student to reflect on. They will not be able to access their dashboard until you release them.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+                <Textarea
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="e.g., Reflect on your behavior during today's history lesson."
+                    rows={4}
+                />
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                <Button onClick={handleConfirm} disabled={isSaving}>
+                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Confirm
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    );
+}
+
 export default function Dashboard() {
   const [students, setStudents] = useState<Student[]>([]);
   const [pendingStudents, setPendingStudents] = useState<PendingStudent[]>([]);
@@ -89,9 +147,9 @@ export default function Dashboard() {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
+  const [awardReason, setAwardReason] = useState('');
   const [xpAmount, setXpAmount] = useState<number | string>('');
   const [goldAmount, setGoldAmount] = useState<number | string>('');
-  const [awardReason, setAwardReason] = useState('');
   const [isAwarding, setIsAwarding] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
   const [isRewardsDialogOpen, setIsRewardsDialogOpen] = useState(false);
@@ -114,23 +172,19 @@ export default function Dashboard() {
 
   const { toast } = useToast();
   
-  // Messaging state
   const [isMessageCenterOpen, setIsMessageCenterOpen] = useState(false);
   const [initialStudentToView, setInitialStudentToView] = useState<Student | null>(null);
   
-  // Daily Reminder state
   const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
   const [reminderTitle, setReminderTitle] = useState('');
   const [reminderMessage, setReminderMessage] = useState('');
   const [isReminderActive, setIsReminderActive] = useState(true);
   const [isSavingReminder, setIsSavingReminder] = useState(false);
 
-  // Daily Regen State
   const [isRegenDialogOpen, setIsRegenDialogOpen] = useState(false);
   const [regenPercentage, setRegenPercentage] = useState<number | string>(0);
   const [isSavingRegen, setIsSavingRegen] = useState(false);
 
-  // Broadcast message state
   const [broadcastMessage, setBroadcastMessage] = useState('');
   const [isBroadcastDialogOpen, setIsBroadcastDialogOpen] = useState(false);
 
@@ -1093,9 +1147,68 @@ export default function Dashboard() {
                 onlineUids={onlineUids}
             />
         ) : null}
+        
+        <Dialog open={isReminderDialogOpen} onOpenChange={setIsReminderDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Set Daily Reminder</DialogTitle>
+              <DialogDescription>
+                This message will appear for students the first time they log in each day.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+              <div className="flex items-center space-x-2">
+                <Switch id="reminder-active" checked={isReminderActive} onCheckedChange={setIsReminderActive} />
+                <Label htmlFor="reminder-active">Enable Daily Reminder</Label>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="reminder-title">Reminder Title</Label>
+                <Input id="reminder-title" value={reminderTitle} onChange={(e) => setReminderTitle(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="reminder-message">Reminder Message</Label>
+                <Textarea id="reminder-message" value={reminderMessage} onChange={(e) => setReminderMessage(e.target.value)} rows={6} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsReminderDialogOpen(false)}>Cancel</Button>
+              <Button onClick={handleSaveReminder} disabled={isSavingReminder}>
+                {isSavingReminder && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Reminder
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isRegenDialogOpen} onOpenChange={setIsRegenDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Set Daily HP/MP Regeneration</DialogTitle>
+              <DialogDescription>
+                Set a percentage of max HP and MP that students will recover each day.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-2">
+              <Label htmlFor="regen-percent">Regeneration Percentage (%)</Label>
+              <Input
+                id="regen-percent"
+                type="number"
+                value={regenPercentage}
+                onChange={(e) => setRegenPercentage(e.target.value)}
+                min="0"
+                max="100"
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsRegenDialogOpen(false)}>Cancel</Button>
+              <Button onClick={handleSaveRegen} disabled={isSavingRegen}>
+                {isSavingRegen && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Rate
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
 }
-
-    
