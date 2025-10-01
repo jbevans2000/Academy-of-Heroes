@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Student, Company, QuestHub, Chapter } from '@/lib/data';
-import { Star, Coins, User, Sword, Trophy, Heart, Zap, Loader2, Edit, Settings, Briefcase, FileText, Eye, EyeOff, MessageSquare, BookOpen, ShieldCheck, Moon } from 'lucide-react';
+import { Star, Coins, User, Sword, Trophy, Heart, Zap, Loader2, Edit, Settings, Briefcase, FileText, Eye, EyeOff, MessageSquare, BookOpen, ShieldCheck, Moon, UserCheck } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -605,3 +605,5 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
     </>
   );
 }
+
+    
