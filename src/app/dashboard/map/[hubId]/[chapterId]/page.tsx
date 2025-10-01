@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import { ArrowLeft, LayoutDashboard, CheckCircle, Loader2, RotateCcw, ArrowRight } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, CheckCircle, Loader2, RotateCcw, ArrowRight, Maximize } from "lucide-react";
 import Image from 'next/image';
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -29,6 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
@@ -190,7 +191,24 @@ const QuizComponent = ({ quiz, student, chapter, hub, teacherUid, onQuizComplete
                 <Progress value={((currentQuestionIndex + 1) / quiz.questions.length) * 100} className="w-full mt-2" />
             </CardHeader>
             <CardContent>
-                <p className="font-bold text-lg mb-4">{currentQuestionIndex + 1}. {currentQuestion.text}</p>
+                 {currentQuestion.imageUrl && (
+                    <div className="mb-4">
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <button className="relative group mx-auto block">
+                                    <Image src={currentQuestion.imageUrl} alt="Question Image" width={300} height={150} className="rounded-md max-h-[200px] w-auto object-contain border cursor-pointer hover:opacity-80 transition-opacity" />
+                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Maximize className="h-8 w-8 text-white" />
+                                    </div>
+                                </button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-4xl h-auto">
+                                <Image src={currentQuestion.imageUrl} alt="Question Image enlarged" width={800} height={600} className="w-full h-auto object-contain rounded-md" />
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+                )}
+                <p className="font-bold text-lg mb-4 text-center">{currentQuestionIndex + 1}. {currentQuestion.text}</p>
                 <div className="space-y-2">
                     {currentQuestion.answers.map((answer, index) => (
                         <div key={index} className="flex items-center space-x-3 p-3 rounded-md hover:bg-muted transition-colors">
