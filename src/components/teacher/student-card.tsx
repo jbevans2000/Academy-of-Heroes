@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -6,7 +7,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Student, Company, QuestHub, Chapter } from '@/lib/data';
-import { Star, Coins, User, Sword, Trophy, Heart, Zap, Loader2, Edit, Settings, Briefcase, FileText, Eye, EyeOff, MessageSquare, BookOpen, ShieldCheck } from 'lucide-react';
+import { Star, Coins, User, Sword, Trophy, Heart, Zap, Loader2, Edit, Settings, Briefcase, FileText, Eye, EyeOff, MessageSquare, BookOpen, ShieldCheck, Moon } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -32,9 +33,10 @@ import { cn } from '@/lib/utils';
 import { Label } from '../ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { TeacherNotesDialog } from './teacher-notes-dialog';
-import { toggleStudentVisibility, updateStudentDetails } from '@/ai/flows/manage-student';
+import { toggleStudentVisibility, updateStudentDetails, setMeditationStatus } from '@/ai/flows/manage-student';
 import { SetQuestProgressDialog } from './set-quest-progress-dialog';
 import { setStudentStat } from '@/ai/flows/manage-student-stats';
+import { Textarea } from '../ui/textarea';
 
 interface EditableStatProps {
     student: Student;
@@ -316,6 +318,64 @@ function EditablePairedStat({ student, stat, maxStat, icon, label, teacherUid }:
     );
 }
 
+function MeditationDialog({ student, teacherUid, onOpenChange }: { student: Student; teacherUid: string; onOpenChange: (open: boolean) => void }) {
+    const [message, setMessage] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
+    const { toast } = useToast();
+
+    const handleConfirm = async () => {
+        if (!message.trim()) {
+            toast({ variant: 'destructive', title: 'Message Required', description: 'Please provide a reason for meditation.' });
+            return;
+        }
+        setIsSaving(true);
+        try {
+            const result = await setMeditationStatus({
+                teacherUid,
+                studentUid: student.uid,
+                isInMeditation: true,
+                message,
+            });
+            if (result.success) {
+                toast({ title: 'Student Sent to Meditate', description: `${student.characterName} is now in the Meditation Chamber.` });
+                onOpenChange(false);
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    return (
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Send {student.characterName} to the Meditation Chamber</DialogTitle>
+                <DialogDescription>
+                    Enter a message for the student to reflect on. They will not be able to access their dashboard until you release them.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+                <Textarea
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="e.g., Reflect on your behavior during today's history lesson."
+                    rows={4}
+                />
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                <Button onClick={handleConfirm} disabled={isSaving}>
+                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Confirm
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    );
+}
+
 interface StudentCardProps {
   student: Student;
   isSelected: boolean;
@@ -332,6 +392,7 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
   const [company, setCompany] = useState<Company | null>(null);
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [isQuestProgressOpen, setIsQuestProgressOpen] = useState(false);
+  const [isMeditationDialogOpen, setIsMeditationDialogOpen] = useState(false);
   
   const { toast } = useToast();
 
@@ -373,6 +434,23 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
       toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
   };
+  
+    const handleReleaseFromMeditation = async () => {
+        try {
+            const result = await setMeditationStatus({
+                teacherUid,
+                studentUid: student.uid,
+                isInMeditation: false,
+            });
+            if (result.success) {
+                toast({ title: 'Released', description: `${student.characterName} has been released from the Meditation Chamber.` });
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message });
+        }
+    };
 
 
   const avatarBorderColor = {
@@ -398,6 +476,9 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
         hubs={hubs}
         chapters={chapters}
       />
+      <Dialog open={isMeditationDialogOpen} onOpenChange={setIsMeditationDialogOpen}>
+          <MeditationDialog student={student} teacherUid={teacherUid} onOpenChange={setIsMeditationDialogOpen} />
+      </Dialog>
       <Dialog>
       <TooltipProvider>
         <Card className={cn("shadow-lg rounded-xl flex flex-col overflow-hidden transition-all duration-300 relative", isSelected ? "ring-4 ring-primary scale-105" : "hover:scale-105", student.isHidden && "opacity-60 bg-gray-200")}>
@@ -423,6 +504,14 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
                             <div className="w-4 h-4 rounded-full bg-green-500 ring-2 ring-white animate-pulse" />
                             </TooltipTrigger>
                             <TooltipContent><p>Online</p></TooltipContent>
+                        </Tooltip>
+                    )}
+                    {student.isInMeditationChamber && (
+                         <Tooltip>
+                            <TooltipTrigger className="absolute -top-2 -right-2 z-10">
+                               <Image src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Sep%2030%2C%202025%2C%2005_47_41%20PM.png?alt=media&token=3c1c2e5c-03fe-4fae-a9f6-5024685166b5" alt="Meditation Icon" width={32} height={32} />
+                            </TooltipTrigger>
+                            <TooltipContent><p>In Meditation Chamber</p></TooltipContent>
                         </Tooltip>
                     )}
                     <Image
@@ -482,6 +571,15 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
                         <DropdownMenuItem onSelect={() => setIsNotesOpen(true)}><FileText className="mr-2 h-4 w-4"/> View/Edit Notes</DropdownMenuItem>
                         <DropdownMenuItem onSelect={() => setIsQuestProgressOpen(true)}><BookOpen className="mr-2 h-4 w-4" /> Set Quest Progress</DropdownMenuItem>
                         <DropdownMenuSeparator />
+                        {student.isInMeditationChamber ? (
+                             <DropdownMenuItem onSelect={handleReleaseFromMeditation} className="text-green-600 focus:text-green-700">
+                                <UserCheck className="mr-2 h-4 w-4"/> Release from Meditation
+                            </DropdownMenuItem>
+                        ) : (
+                             <DropdownMenuItem onSelect={() => setIsMeditationDialogOpen(true)}>
+                                <Moon className="mr-2 h-4 w-4"/> Send to Meditation Chamber
+                            </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem onSelect={handleToggleVisibility}>
                             {student.isHidden ? <Eye className="mr-2 h-4 w-4"/> : <EyeOff className="mr-2 h-4 w-4" />}
                             {student.isHidden ? 'Unhide Student' : 'Hide Student'}

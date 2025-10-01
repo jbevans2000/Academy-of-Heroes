@@ -148,4 +148,6 @@ export const classData = {
     baseStats: { hp: 8, mp: 12 },
   },
   Mage: {
-    baseStats: { hp: 6, mp
+    baseStats: { hp: 6, mp: 15 },
+  },
+};
