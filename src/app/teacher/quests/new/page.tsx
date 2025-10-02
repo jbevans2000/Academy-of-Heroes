@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -7,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Loader2, Save, Sparkles, Upload, X, Library, Trash2, PlusCircle, ArrowRight, BookCopy } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Trash2, Eye, GitBranch, Loader2, Save, Sparkles, Image as ImageIcon, Upload, X, Music, Library, BookCopy, ArrowRight } from 'lucide-react';
 import { doc, setDoc, addDoc, collection, getDocs, serverTimestamp, query, orderBy, where, updateDoc } from 'firebase/firestore';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -44,7 +43,6 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 
 const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
-
 
 // A reusable component for the image upload fields
 const ImageUploader = ({ label, imageUrl, onUploadSuccess, teacherUid, storagePath, onGalleryOpen }: {
@@ -471,7 +469,7 @@ function NewQuestForm() {
                 name: newHubName,
                 worldMapUrl: newHubMapUrl,
                 coordinates: hubCoordinates,
-                hubOrder: newHubOrder,
+                hubOrder: newHubType === 'sidequest' ? 99 : newHubOrder,
                 hubType: newHubType,
                 createdAt: serverTimestamp(),
                 isVisibleToAll: hubIsVisibleToAll,
@@ -643,7 +641,7 @@ function NewQuestForm() {
                                           placeholder="e.g., 2"
                                           value={newHubOrder}
                                           onChange={e => setNewHubOrder(Number(e.target.value))}
-                                          disabled={isSaving}
+                                          disabled={isSaving || newHubType === 'sidequest'}
                                       />
                                   </div>
                                   <ImageUploader label="Hub's Regional Map" imageUrl={newHubMapUrl} onUploadSuccess={setNewHubMapUrl} teacherUid={teacher.uid} storagePath="hub-maps" onGalleryOpen={() => setIsGalleryOpen(true)} />
