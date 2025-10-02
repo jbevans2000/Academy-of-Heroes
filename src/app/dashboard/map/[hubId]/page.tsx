@@ -104,12 +104,16 @@ export default function HubMapPage() {
     }, [hubId, teacherUid]);
 
     const lastCompletedChapter = student?.questProgress?.[hubId] || 0;
-    
+    const isSideQuestHub = hub?.hubType === 'sidequest';
+
     // Show all chapters up to the last completed one, regardless of active status
     const completedChapters = chapters.filter(c => c.chapterNumber <= lastCompletedChapter);
     
     // The current chapter is the next one, but ONLY if it's active
-    const currentChapter = chapters.find(c => c.chapterNumber === lastCompletedChapter + 1 && (c.isActive ?? true));
+    // For side quest hubs, all chapters are "current" if not completed
+    const currentChapters = isSideQuestHub
+        ? chapters.filter(c => c.isActive ?? true)
+        : chapters.filter(c => c.chapterNumber === lastCompletedChapter + 1 && (c.isActive ?? true));
 
 
     if (isLoading || !student) {
@@ -189,27 +193,27 @@ export default function HubMapPage() {
                                 </div>
                              </Link>
                          ))}
-                          {currentChapter && (
-                             <Link key={`current-${currentChapter.id}`} href={`/dashboard/map/${hubId}/${currentChapter.id}`} passHref>
+                          {currentChapters.map(chapter => (
+                             <Link key={`current-${chapter.id}`} href={`/dashboard/map/${hubId}/${chapter.id}`} passHref>
                                 <div
                                     className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
                                     style={{
-                                        left: `${currentChapter.coordinates.x}%`,
-                                        top: `${currentChapter.coordinates.y}%`,
+                                        left: `${chapter.coordinates.x}%`,
+                                        top: `${chapter.coordinates.y}%`,
                                     }}
                                 >
                                      <div className="absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap text-center">
                                         <div className="text-white font-bold text-shadow-lg bg-black/50 rounded px-2 py-1 mb-1">
-                                            Chapter {currentChapter.chapterNumber}
+                                            Chapter {chapter.chapterNumber}
                                         </div>
                                         <div className="text-white font-semibold text-shadow-lg bg-black/50 rounded px-2 py-1 transition-opacity duration-300 opacity-0 group-hover:opacity-100">
-                                            {currentChapter.title}
+                                            {chapter.title}
                                         </div>
                                     </div>
                                     <div className="w-5 h-5 bg-yellow-400 rounded-full ring-2 ring-white shadow-xl animate-pulse-glow"></div>
                                 </div>
                             </Link>
-                         )}
+                         ))}
                     </div>
                 </CardContent>
             </Card>
