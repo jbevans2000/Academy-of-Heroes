@@ -74,8 +74,10 @@ export async function completeDailyTraining(input: CompleteTrainingInput): Promi
         if (newLevel > currentLevel) {
             const levelsGained = newLevel - currentLevel;
             updates.level = newLevel;
-            updates.hp = (student.hp || 0) + calculateHpGain(student.class, levelsGained);
-            updates.mp = (student.mp || 0) + calculateMpGain(student.class, levelsGained);
+            updates.maxHp = (student.maxHp || 0) + calculateHpGain(student.class, levelsGained);
+            updates.maxMp = (student.maxMp || 0) + calculateMpGain(student.class, levelsGained);
+            updates.hp = updates.maxHp;
+            updates.mp = updates.maxMp;
         }
 
         await updateDoc(studentRef, updates);

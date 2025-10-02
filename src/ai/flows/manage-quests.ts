@@ -191,8 +191,10 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
             if (newLevel > currentLevel) {
                 const levelsGained = newLevel - currentLevel;
                 updates.level = newLevel;
-                updates.hp = (student.hp || 0) + calculateHpGain(student.class, levelsGained);
-                updates.mp = (student.mp || 0) + calculateMpGain(student.class, levelsGained);
+                updates.maxHp = (student.maxHp || 0) + calculateHpGain(student.class, levelsGained);
+                updates.maxMp = (student.maxMp || 0) + calculateMpGain(student.class, levelsGained);
+                updates.hp = updates.maxHp;
+                updates.mp = updates.maxMp;
             }
 
             updates.completedChapters = arrayUnion(chapterId); // Mark chapter as rewarded
@@ -269,9 +271,12 @@ async function approveSingleRequest(batch: firebase.firestore.WriteBatch, teache
              const newLevel = calculateLevel(newXp);
 
              if(newLevel > currentLevel) {
-                 updates.level = newLevel;
-                 updates.hp = (studentData.hp || 0) + calculateHpGain(studentData.class, newLevel - currentLevel);
-                 updates.mp = (studentData.mp || 0) + calculateMpGain(studentData.class, newLevel - currentLevel);
+                const levelsGained = newLevel - currentLevel;
+                updates.level = newLevel;
+                updates.maxHp = (studentData.maxHp || 0) + calculateHpGain(studentData.class, levelsGained);
+                updates.maxMp = (studentData.maxMp || 0) + calculateMpGain(studentData.class, levelsGained);
+                updates.hp = updates.maxHp;
+                updates.mp = updates.maxMp;
              }
 
             updates.completedChapters = arrayUnion(chapterId);

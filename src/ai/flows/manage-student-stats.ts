@@ -4,7 +4,7 @@
 import { doc, writeBatch, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { logAvatarEvent, type LogEventSource } from '@/lib/avatar-log';
-import { calculateLevel, calculateBaseMaxHp, MAX_LEVEL, XP_FOR_MAX_LEVEL } from '@/lib/game-mechanics';
+import { calculateLevel, calculateHpGain, calculateMpGain, MAX_LEVEL, XP_FOR_MAX_LEVEL } from '@/lib/game-mechanics';
 import type { Student } from '@/lib/data';
 
 interface AwardRewardsInput {
@@ -54,9 +54,12 @@ export async function awardRewards(input: AwardRewardsInput): Promise<AwardRewar
                         const newLevel = calculateLevel(newXp);
 
                         if (newLevel > currentLevel) {
+                            const levelsGained = newLevel - currentLevel;
                             updates.level = newLevel;
-                            updates.maxHp = calculateBaseMaxHp(studentData.class, newLevel, 'hp');
-                            updates.maxMp = calculateBaseMaxHp(studentData.class, newLevel, 'mp');
+                            updates.maxHp = (studentData.maxHp || 0) + calculateHpGain(studentData.class, levelsGained);
+                            updates.maxMp = (studentData.maxMp || 0) + calculateMpGain(studentData.class, levelsGained);
+                            updates.hp = updates.maxHp;
+                            updates.mp = updates.maxMp;
                         }
                     }
                 }
@@ -122,11 +125,19 @@ export async function setStudentStat(input: SetStatInput): Promise<{success: boo
     const updates: Partial<Student> = { [stat]: value };
 
     if (stat === 'xp') {
+      const currentLevel = studentData.level || 1;
       const newLevel = calculateLevel(value);
-      if (newLevel !== studentData.level) {
+      if (newLevel > currentLevel) {
+          const levelsGained = newLevel - currentLevel;
+          updates.level = newLevel;
+          updates.maxHp = (studentData.maxHp || 0) + calculateHpGain(studentData.class, levelsGained);
+          updates.maxMp = (studentData.maxMp || 0) + calculateMpGain(studentData.class, levelsGained);
+          updates.hp = updates.maxHp;
+          updates.mp = updates.maxMp;
+      } else if (newLevel < currentLevel) {
         updates.level = newLevel;
-        updates.maxHp = calculateBaseMaxHp(studentData.class, newLevel, 'hp');
-        updates.maxMp = calculateBaseMaxHp(studentData.class, newLevel, 'mp');
+        // Note: We are not de-leveling stats here as that logic can be complex.
+        // It's assumed the teacher will manually adjust stats if needed.
       }
     }
     
