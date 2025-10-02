@@ -96,7 +96,16 @@ export const avatarData: ClassAvatarData = {
         'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%208%20-%20Amazon%20(5).png?alt=media&token=207944c0-51a1-4bff-b91c-08aa73f14703',
         'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%208%20-%20Amazon%20(6).png?alt=media&token=b93fd5ff-d66c-437f-a184-dd308c05df06'
     ],
-    9: generatePlaceholders(8, 'templar knight'),
+    9: [
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20level%209%20-%20Forest%20Knight%20(1).png?alt=media&token=29421ff0-de7b-4321-a922-41b57f5434d6',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20level%209%20-%20Forest%20Knight%20(2).png?alt=media&token=3447ad0e-0d43-43ba-b88b-4f3324bf59f3',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20level%209%20-%20Forest%20Knight%20(3).png?alt=media&token=8be78379-b451-4e36-8a54-1ed7730201d7',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20level%209%20-%20Forest%20Knight%20(4).png?alt=media&token=e163f7b1-31a6-4f13-a674-906ec0e84062',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20level%209%20-%20Forest%20Knight%20(5).png?alt=media&token=a65e3957-9273-4756-896b-3415e73259b2',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20level%209%20-%20Forest%20Knight%20(6).png?alt=media&token=af3c25fd-e37d-448a-99cb-d107b8a613ba',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20level%209%20-%20Forest%20Knight%20(7).png?alt=media&token=a47f9d9e-4de1-419c-92eb-2d954760b17d',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20level%209%20-%20Forest%20Knight%20(8).png?alt=media&token=6244322f-aec7-431f-b1ed-52a707dd026c'
+    ],
     10: generatePlaceholders(8, 'divine guardian'),
     11: generatePlaceholders(8, 'crystal guardian'),
     12: generatePlaceholders(8, 'shadow guardian'),
