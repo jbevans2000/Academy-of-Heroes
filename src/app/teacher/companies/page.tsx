@@ -44,8 +44,8 @@ const CompanyCard = ({ company, students, onEdit, onDelete, onDrop, onRemoveStud
     return (
         <Card onDrop={handleDrop} onDragOver={handleDragOver}>
             <AccordionItem value={company.id} className="border-b-0">
-                <div className="flex items-center p-4">
-                    <AccordionTrigger className="w-full justify-start p-0 hover:no-underline">
+                <CardHeader className="flex flex-row items-center justify-between p-4">
+                     <AccordionTrigger className="w-full justify-start p-0 hover:no-underline">
                         <div className="flex items-center gap-2">
                             {company.logoUrl && <Image src={company.logoUrl} alt={company.name} width={40} height={40} className="rounded-full object-cover" />}
                             <CardTitle>{company.name} ({students.length})</CardTitle>
@@ -73,7 +73,7 @@ const CompanyCard = ({ company, students, onEdit, onDelete, onDrop, onRemoveStud
                             </AlertDialogContent>
                         </AlertDialog>
                     </div>
-                </div>
+                </CardHeader>
                 <AccordionContent>
                     <CardContent className="space-y-2 pt-0 p-4">
                         {students.length > 0 ? students.map(student => (
@@ -456,7 +456,7 @@ export default function CompaniesPage() {
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                        <Accordion type="multiple" className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                        <Accordion type="multiple" className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 w-full items-start">
                             {companies.map(company => (
                                 <CompanyCard
                                     key={company.id}
