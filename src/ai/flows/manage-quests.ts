@@ -193,8 +193,8 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
                 updates.level = newLevel;
                 updates.maxHp = (student.maxHp || 0) + calculateHpGain(student.class, levelsGained);
                 updates.maxMp = (student.maxMp || 0) + calculateMpGain(student.class, levelsGained);
-                updates.hp = updates.maxHp;
-                updates.mp = updates.maxMp;
+                updates.hp = updates.maxHp; // Restore to new max HP on level up
+                updates.mp = updates.maxMp; // Restore to new max MP on level up
             }
 
             updates.completedChapters = arrayUnion(chapterId); // Mark chapter as rewarded
@@ -275,8 +275,8 @@ async function approveSingleRequest(batch: firebase.firestore.WriteBatch, teache
                 updates.level = newLevel;
                 updates.maxHp = (studentData.maxHp || 0) + calculateHpGain(studentData.class, levelsGained);
                 updates.maxMp = (studentData.maxMp || 0) + calculateMpGain(studentData.class, levelsGained);
-                updates.hp = updates.maxHp;
-                updates.mp = updates.maxMp;
+                updates.hp = updates.maxHp; // Restore to new max HP on level up
+                updates.mp = updates.maxMp; // Restore to new max MP on level up
              }
 
             updates.completedChapters = arrayUnion(chapterId);

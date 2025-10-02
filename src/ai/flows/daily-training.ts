@@ -76,8 +76,8 @@ export async function completeDailyTraining(input: CompleteTrainingInput): Promi
             updates.level = newLevel;
             updates.maxHp = (student.maxHp || 0) + calculateHpGain(student.class, levelsGained);
             updates.maxMp = (student.maxMp || 0) + calculateMpGain(student.class, levelsGained);
-            updates.hp = updates.maxHp;
-            updates.mp = updates.maxMp;
+            updates.hp = updates.maxHp; // Restore to new max HP on level up
+            updates.mp = updates.maxMp; // Restore to new max MP on level up
         }
 
         await updateDoc(studentRef, updates);

@@ -58,8 +58,8 @@ export async function awardRewards(input: AwardRewardsInput): Promise<AwardRewar
                             updates.level = newLevel;
                             updates.maxHp = (studentData.maxHp || 0) + calculateHpGain(studentData.class, levelsGained);
                             updates.maxMp = (studentData.maxMp || 0) + calculateMpGain(studentData.class, levelsGained);
-                            updates.hp = updates.maxHp;
-                            updates.mp = updates.maxMp;
+                            updates.hp = updates.maxHp; // Restore to new max HP on level up
+                            updates.mp = updates.maxMp; // Restore to new max MP on level up
                         }
                     }
                 }
@@ -132,8 +132,8 @@ export async function setStudentStat(input: SetStatInput): Promise<{success: boo
           updates.level = newLevel;
           updates.maxHp = (studentData.maxHp || 0) + calculateHpGain(studentData.class, levelsGained);
           updates.maxMp = (studentData.maxMp || 0) + calculateMpGain(studentData.class, levelsGained);
-          updates.hp = updates.maxHp;
-          updates.mp = updates.maxMp;
+          updates.hp = updates.maxHp; // Restore to new max HP on level up
+          updates.mp = updates.maxMp; // Restore to new max MP on level up
       } else if (newLevel < currentLevel) {
         updates.level = newLevel;
         // Note: We are not de-leveling stats here as that logic can be complex.
