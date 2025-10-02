@@ -43,6 +43,7 @@ interface LiveBattleState {
     arcaneSacrificeCasterUid?: string;
     divineSacrificeCasterUid?: string;
     chaosStormCasts?: { [studentUid: string]: number };
+    solarEmpowermentUses?: { [studentUid: string]: boolean };
 }
 
 interface PowersSheetProps {
@@ -125,9 +126,11 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
     } else if (power.name === 'Focused Restoration') {
         potentialTargets = potentialTargets.filter(s => s.hp <= s.maxHp * 0.5);
     } else if (power.name === 'Solar Empowerment') {
+        const empoweredUids = Object.keys(battleState?.solarEmpowermentUses || {});
         potentialTargets = potentialTargets.filter(p => 
             p.class === 'Mage' && 
-            !(battleState?.empoweredMageUids || []).includes(p.uid)
+            !(battleState?.empoweredMageUids || []).includes(p.uid) &&
+            !empoweredUids.includes(p.uid)
         );
     } else if (power.name === 'Psionic Aura') {
         potentialTargets = potentialTargets.filter(s => s.mp <= s.maxMp * 0.75);
@@ -272,6 +275,7 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
   };
 
   const hasUsedPowerThisRound = battleState?.powerUsersThisRound?.[student.uid]?.length > 0;
+  const hasUsedSolarEmpowerment = battleState?.solarEmpowermentUses?.[student.uid];
 
   return (
     <>
@@ -319,9 +323,10 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
           </SheetHeader>
           <div className="py-4 space-y-4">
               {powers.length > 0 ? powers.map((power, index) => {
+                  const isSolarEmpowermentUsed = power.name === 'Solar Empowerment' && hasUsedSolarEmpowerment;
                   const isUnlocked = student.level >= power.level;
                   const hasEnoughMp = student.mp >= power.mpCost;
-                  const canUsePower = isUnlocked && hasEnoughMp && isBattleView && !isCasting && !hasUsedPowerThisRound;
+                  const canUsePower = isUnlocked && hasEnoughMp && isBattleView && !isCasting && !hasUsedPowerThisRound && !isSolarEmpowermentUsed;
                   
                   return (
                       <div 
@@ -338,7 +343,7 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
                               </div>
                               {isBattleView && (
                                   <Button size="sm" disabled={!canUsePower} variant={isUnlocked ? 'secondary' : 'ghost'} onClick={() => handleUsePower(power)}>
-                                      {isCasting === power.name ? <Loader2 className="h-4 w-4 animate-spin" /> : hasUsedPowerThisRound ? 'Used' : 'Use Power'}
+                                      {isCasting === power.name ? <Loader2 className="h-4 w-4 animate-spin" /> : hasUsedPowerThisRound || isSolarEmpowermentUsed ? 'Used' : 'Use Power'}
                                   </Button>
                               )}
                           </div>
@@ -357,8 +362,8 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
                                       ? `Unlocks at Level ${power.level}`
                                       : !hasEnoughMp
                                       ? `Not enough MP`
-                                      : hasUsedPowerThisRound
-                                      ? `Power Used`
+                                      : hasUsedPowerThisRound || isSolarEmpowermentUsed
+                                      ? `Used`
                                       : "Unlocked"
                                   }
                               </p>
@@ -386,5 +391,3 @@ export function PowersSheet({ isOpen, onOpenChange, student, isBattleView = fals
     </>
   );
 }
-
-    

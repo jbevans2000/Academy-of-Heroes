@@ -170,7 +170,7 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Solar Empowerment',
-      description: "You intertwine the light of the sun into the energies of up to 3 allied Mages, temporarily increasing each target's Max HP and current HP by 50% of your level (rounded up) for the duration of the battle.",
+      description: "You intertwine the light of the sun into the energies of up to 3 allied Mages, temporarily increasing each target's Max HP and current HP by 50% of your level (rounded up) for the duration of the battle. (Max 1 use per Healer per battle)",
       level: 4,
       mpCost: 8,
       type: 'support',

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -96,6 +97,7 @@ interface LiveBattleState {
   divineJudgmentUses?: { [studentUid: string]: number };
   voteState?: VoteState | null; 
   sorcerersIntuitionUses?: { [key: string]: number }; // For Sorcerer's Intuition
+  solarEmpowermentUses?: { [studentUid: string]: boolean };
   elementalFusionCasts?: { [studentUid: string]: number };
   globalElementalFusionCasts?: number;
   shielded?: { [uid: string]: { roundsRemaining: number; casterName: string; } }; // uid -> shield info
@@ -639,7 +641,7 @@ export default function TeacherLiveBattlePage() {
         
         let powerDamage = 0;
         const powersUsedThisRound: string[] = [];
-        const battleLogRef = collection(db, 'teachers', teacherUid, 'liveBattles/active-battle/battleLog');
+        const battleLogRef = collection(db, 'teachers', teacherUid!, 'liveBattles/active-battle/battleLog');
         let baseDamageFromAnswers = 0;
         
         const interceptors = currentLiveState.intercepting || {};
@@ -692,7 +694,7 @@ export default function TeacherLiveBattlePage() {
                     }
                     if (empoweredCount > 0) {
                         const cost = empoweredCount * 15;
-                        const guardianRef = doc(db, 'teachers', teacherUid, 'students', redirect.casterUid);
+                        const guardianRef = doc(db, 'teachers', teacherUid!, 'students', redirect.casterUid);
                         batch.update(guardianRef, { mp: increment(-cost) });
                     }
                 }
@@ -761,7 +763,7 @@ export default function TeacherLiveBattlePage() {
                 }
 
                 if (damageToApply > 0) {
-                    const studentRef = doc(db, 'teachers', teacherUid, 'students', student.uid);
+                    const studentRef = doc(db, 'teachers', teacherUid!, 'students', student.uid);
                     const newHp = Math.max(0, student.hp - damageToApply);
                     batch.update(studentRef, { hp: newHp });
                     if (newHp === 0 && !liveState.fallenPlayerUids?.includes(student.uid)) {
@@ -1162,7 +1164,7 @@ export default function TeacherLiveBattlePage() {
                         batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: activation.studentName, powerName: activation.powerName, description: `Healed ${targetData.characterName} for ${healAmount} HP.`, timestamp: serverTimestamp() });
                     }
                 } else if (activation.powerName === 'Solar Empowerment') {
-                    if (!activation.targets || activation.targets.length === 0) return;
+                    if (!activation.targets || activation.targets.length === 0 || battleData.solarEmpowermentUses?.[activation.studentUid]) return;
                     
                     const boostAmount = Math.ceil((studentData.level || 1) * 0.50);
                     const targetNames: string[] = [];
@@ -1174,7 +1176,11 @@ export default function TeacherLiveBattlePage() {
                         return { mageUid: targetUid, casterUid: activation.studentUid };
                     });
                     
-                    batch.update(liveBattleRef, { empoweredMages: arrayUnion(...empoweredMagesPayload), powerEventMessage: `${activation.studentName} has cast Solar Empowerment! ${targetNames.join(', ')} begin to shine with the light of the sun!` });
+                    batch.update(liveBattleRef, { 
+                        empoweredMages: arrayUnion(...empoweredMagesPayload),
+                        [`solarEmpowermentUses.${activation.studentUid}`]: true,
+                        powerEventMessage: `${activation.studentName} has cast Solar Empowerment! ${targetNames.join(', ')} begin to shine with the light of the sun!` 
+                    });
                     batch.set(doc(battleLogRef), { round: liveState.currentQuestionIndex + 1, casterName: activation.studentName, powerName: activation.powerName, description: `Empowered ${targetNames.join(', ')}.`, timestamp: serverTimestamp() });
 
                 } else if (activation.powerName === 'Divine Judgment') {
@@ -1381,6 +1387,7 @@ export default function TeacherLiveBattlePage() {
         empoweredMages: [],
         divineJudgmentUses: {},
         sorcerersIntuitionUses: {},
+        solarEmpowermentUses: {},
         elementalFusionCasts: {},
         globalElementalFusionCasts: 0,
         inspiringStrikeCasts: {},
@@ -1599,7 +1606,7 @@ export default function TeacherLiveBattlePage() {
                                         <Dialog>
                                             <DialogTrigger asChild>
                                                 <div className="mb-4 relative group cursor-pointer w-fit mx-auto">
-                                                    <img src={currentQuestion.imageUrl} alt="Question" width={200} height={100} className="rounded-md object-contain border" />
+                                                    <Image src={currentQuestion.imageUrl} alt="Question" width={200} height={100} className="rounded-md object-contain border" />
                                                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                                         <Maximize className="h-8 w-8 text-white" />
                                                     </div>
