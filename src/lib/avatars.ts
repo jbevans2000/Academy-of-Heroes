@@ -116,7 +116,16 @@ export const avatarData: ClassAvatarData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%2010%20-%20Druidic%20Warrior%20(7).png?alt=media&token=fbae1102-036e-4446-b922-58d0f2bdf815',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%2010%20-%20Druidic%20Warrior%20(8).png?alt=media&token=c0043c93-c01f-4e12-9cec-7094d4e311ab'
     ],
-    11: generatePlaceholders(8, 'crystal guardian'),
+    11: [
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%2011.png?alt=media&token=6e8be107-070b-40d6-9265-bd9edd94741d',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%2011%20-%20Crystal%20Knight%20(2)-Photoroom.png?alt=media&token=c9c8e229-655c-47cc-8686-d0ee928e62fc',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%2011%20-%20Crystal%20Knight%20(3)-Photoroom.png?alt=media&token=e6c0678d-4214-4419-b7e9-0f5745e0ae82',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%2011%20-%20Crystal%20Knight%20(1)-Photoroom.png?alt=media&token=bae548fc-0c45-41a1-b3db-d8dbccb7c8a0',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%2011%20-%20Crystal%20Knight%20(8)-Photoroom.png?alt=media&token=686de714-a723-4bcb-8b44-e08ca6c543e8',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%2011%20-%20Crystal%20Knight%20(4)-Photoroom.png?alt=media&token=b15ec4bb-c04d-4b80-97a0-c12eb46a3d0e',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%2011%20-%20Crystal%20Knight%20(5)-Photoroom.png?alt=media&token=3dfefcaa-1fb5-473f-b84c-b19e05655cec',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%2011%20-%20Crystal%20Knight%20(7)-Photoroom.png?alt=media&token=2908e771-c3f3-4260-a288-d6b4e35f16cc'
+    ],
     12: generatePlaceholders(8, 'shadow guardian'),
     13: generatePlaceholders(8, 'ancient guardian'),
     14: generatePlaceholders(8, 'celestial guardian'),
