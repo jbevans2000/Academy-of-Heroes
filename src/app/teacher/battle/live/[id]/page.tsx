@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { RoundResults, type Result } from '@/components/teacher/round-results';
 import { downloadCsv } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { calculateLevel, calculateHpGain, calculateMpGain, calculateBaseMaxHp } from '@/lib/game-mechanics';
+import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 import type { Student } from '@/lib/data';
 import { logGameEvent } from '@/lib/gamelog';
 import { logAvatarEvent } from '@/lib/avatar-log';
@@ -527,9 +527,12 @@ export default function TeacherLiveBattlePage() {
                  };
 
                  if (newLevel > currentLevel) {
+                    const levelsGained = newLevel - currentLevel;
                     updates.level = newLevel;
-                    updates.maxHp = calculateBaseMaxHp(studentData.class, newLevel, 'hp');
-                    updates.maxMp = calculateBaseMaxHp(studentData.class, newLevel, 'mp');
+                    updates.maxHp = (studentData.maxHp || 0) + calculateHpGain(studentData.class, levelsGained);
+                    updates.maxMp = (studentData.maxMp || 0) + calculateMpGain(studentData.class, levelsGained);
+                    updates.hp = updates.maxHp; // Restore HP on level up
+                    updates.mp = updates.maxMp; // Restore MP on level up
                  }
                  
                  batch.update(studentRef, updates);
