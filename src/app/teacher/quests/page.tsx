@@ -1,12 +1,12 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { PlusCircle, LayoutDashboard, Edit, Trash2, Loader2, Eye, Wrench, Image as ImageIcon, Upload, X, Library, Users } from 'lucide-react';
+import { PlusCircle, LayoutDashboard, Edit, Trash2, Loader2, Eye, Wrench, Image as ImageIcon, Upload, X, Library, Users, Swords } from 'lucide-react';
 import { collection, getDocs, doc, deleteDoc, onSnapshot, updateDoc, getDoc } from 'firebase/firestore';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -81,7 +81,6 @@ export default function QuestsPage() {
 
     const unsubHubs = onSnapshot(hubsRef, (querySnapshot) => {
         const hubsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub));
-        hubsData.sort((a,b) => a.hubOrder - b.hubOrder);
         setHubs(hubsData);
     });
     
@@ -109,6 +108,18 @@ export default function QuestsPage() {
         unsubCompanies();
     };
   }, [teacher]);
+  
+    const sortedHubs = useMemo(() => {
+        return [...hubs].sort((a, b) => {
+            const aIsSideQuest = a.hubType === 'sidequest';
+            const bIsSideQuest = b.hubType === 'sidequest';
+
+            if (aIsSideQuest && !bIsSideQuest) return -1;
+            if (!aIsSideQuest && bIsSideQuest) return 1;
+
+            return a.hubOrder - b.hubOrder;
+        });
+    }, [hubs]);
 
   const handleDeleteChapter = async (chapterId: string) => {
     if (!teacher) return;
@@ -348,18 +359,22 @@ export default function QuestsPage() {
                 </CardHeader>
                 <CardContent>
                     <Accordion type="multiple" className="w-full">
-                        {hubs.map(hub => {
+                        {sortedHubs.map(hub => {
                             const hubChapters = chapters.filter(c => c.hubId === hub.id).sort((a,b) => a.chapterNumber - b.chapterNumber);
                             const assignedCompanies = hub.assignedCompanyIds?.map(id => companies.find(c => c.id === id)?.name).filter(Boolean);
                             const visibilityText = (hub.isVisibleToAll === false && assignedCompanies && assignedCompanies.length > 0)
                                 ? assignedCompanies.join(', ')
                                 : "All Students";
+                            const isSideQuest = hub.hubType === 'sidequest';
 
                             return (
-                                <AccordionItem key={hub.id} value={hub.id}>
+                                <AccordionItem key={hub.id} value={hub.id} className={cn(isSideQuest && "bg-purple-100 dark:bg-purple-900/30 rounded-md")}>
                                     <div className="flex items-center w-full">
                                         <AccordionTrigger className="text-xl hover:no-underline flex-grow">
-                                            Hub: {hub.name}
+                                            <div className="flex items-center gap-3">
+                                                {isSideQuest && <Swords className="h-5 w-5 text-purple-500" />}
+                                                Hub: {hub.name}
+                                            </div>
                                         </AccordionTrigger>
                                         <div className="flex items-center gap-4 pr-4">
                                             <Button variant="outline" size="sm" onClick={() => router.push(`/teacher/quests/hub/edit/${hub.id}`)}>
@@ -432,7 +447,6 @@ export default function QuestsPage() {
                 </CardContent>
             </Card>
         )}
-
       </main>
     </div>
   );
