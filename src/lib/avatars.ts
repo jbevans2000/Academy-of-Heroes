@@ -358,7 +358,16 @@ export const avatarData: ClassAvatarData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%2010%20(7).png?alt=media&token=3e3249ab-8c1a-47bf-a084-027c2a4c3378',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%2010%20(8).png?alt=media&token=725fe9e6-1b3b-4c4f-82c6-3bec59734bfb'
     ],
-    11: generatePlaceholders(8, 'crystal mage'),
+    11: [
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%2011%20-%20Aetherist%20(6).png?alt=media&token=6dbe94f9-d2b1-4b3f-bfc3-47646e9ec3bc',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%2011%20-%20Aetherist%20(5).png?alt=media&token=dbeda0dc-f97d-446c-8191-075c82a2d88a',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%2011%20-%20Aetherist%20(8).png?alt=media&token=ecda930a-904e-4a19-913c-84b9a0b5af08',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%2011%20-%20Aetherist%20(11).png?alt=media&token=8b619cf3-bff3-489e-b95d-87a52c4f2c9d',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%2011%20-%20Aetherist%20(9).png?alt=media&token=0678e534-7f8f-45bf-982a-b14425db4fa5',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%2011%20-%20Aetherist%20(10).png?alt=media&token=2058b230-66c7-4183-b6b6-6f76e0e8ef4c',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%2011%20-%20Aetherist%20(7).png?alt=media&token=dd65a127-5f78-4e2b-a4c7-be53cd205c6a',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%2011%20-%20Aetherist%20(1).png?alt=media&token=2a51c3a4-acfa-4901-8ba2-7794ac746983'
+    ],
     12: generatePlaceholders(8, 'shadow mage'),
     13: generatePlaceholders(8, 'ancient mage'),
     14: generatePlaceholders(8, 'celestial mage'),
