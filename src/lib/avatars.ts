@@ -237,7 +237,16 @@ export const avatarData: ClassAvatarData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%2010%20-%20Cauterizer%20(5).png?alt=media&token=6b657ca6-018e-480e-b740-3a35d55089ed',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%2010%20-%20Cauterizer%20(6).png?alt=media&token=02bf89a9-a9db-4dc5-8379-6af396464111',
     ],
-    11: generatePlaceholders(8, 'crystal healer'),
+    11: [
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer_Level_11_-_Irridescent_Cleric___5_-removebg-preview.png?alt=media&token=10763223-fe5c-478f-a196-05050be8eb52',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer_Level_11_-_Irridescent_Cleric___8_-removebg-preview.png?alt=media&token=0899f400-deb0-4a87-8e28-45dbb0f8c360',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer_Level_11_-_Irridescent_Cleric___1_-removebg-preview.png?alt=media&token=0fff5ff3-7df5-438c-afd6-74b56e803172',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer_Level_11_-_Irridescent_Cleric___6_-removebg-preview.png?alt=media&token=4f93201f-adcb-400f-ba11-f6d311cf1cbc',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%2011%20-%20Irridescent%20Cleric%20%20(3)-Photoroom.png?alt=media&token=a0424a81-d372-4cd6-a79f-6dec28e4bf67',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%2011%20-%20Irridescent%20Cleric%20%20(2)-Photoroom.png?alt=media&token=1c12b47f-2854-4a0b-8f0d-29ee737ef4f8',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%2011%20-%20Irridescent%20Cleric%20%20(7)-Photoroom.png?alt=media&token=60c8edf6-9c4f-44b9-951e-93c56c999eec',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%2011%20-%20Irridescent%20Cleric%20%20(4)-Photoroom.png?alt=media&token=ccc01e39-7ccc-4be9-92a4-3bccc33770d0'
+    ],
     12: generatePlaceholders(8, 'shadow healer'),
     13: generatePlaceholders(8, 'ancient healer'),
     14: generatePlaceholders(8, 'celestial healer'),
