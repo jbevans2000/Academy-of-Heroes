@@ -106,7 +106,16 @@ export const avatarData: ClassAvatarData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20level%209%20-%20Forest%20Knight%20(7).png?alt=media&token=a47f9d9e-4de1-419c-92eb-2d954760b17d',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20level%209%20-%20Forest%20Knight%20(8).png?alt=media&token=6244322f-aec7-431f-b1ed-52a707dd026c'
     ],
-    10: generatePlaceholders(8, 'divine guardian'),
+    10: [
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%2010%20-%20Druidic%20Warrior%20(1).png?alt=media&token=898d0e95-fbf2-4fac-9bcb-c87021298d48',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%2010%20-%20Druidic%20Warrior%20(2).png?alt=media&token=0d074595-b72d-4549-b3ba-bb7e1ef737b4',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%2010%20-%20Druidic%20Warrior%20(3).png?alt=media&token=5c70cc46-5c57-4663-a84c-aa40856c90e0',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%2010%20-%20Druidic%20Warrior%20(4).png?alt=media&token=89533cf0-a624-48d8-9e02-519d6ea11d79',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%2010%20-%20Druidic%20Warrior%20(5).png?alt=media&token=90e7635e-a743-4afe-84cb-34d4b57c3247',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%2010%20-%20Druidic%20Warrior%20(6).png?alt=media&token=a557d23f-01f6-4467-bd85-b6c0354a8d79',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%2010%20-%20Druidic%20Warrior%20(7).png?alt=media&token=fbae1102-036e-4446-b922-58d0f2bdf815',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%2010%20-%20Druidic%20Warrior%20(8).png?alt=media&token=c0043c93-c01f-4e12-9cec-7094d4e311ab'
+    ],
     11: generatePlaceholders(8, 'crystal guardian'),
     12: generatePlaceholders(8, 'shadow guardian'),
     13: generatePlaceholders(8, 'ancient guardian'),
