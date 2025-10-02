@@ -453,14 +453,14 @@ export default function ChapterPage() {
         )
     }
 
-    if (student && !isPreviewMode) {
+    if (student && !isPreviewMode && hub.hubType !== 'sidequest') {
         const lastCompletedChapter = student.questProgress?.[hubId as string] || 0;
         const lastCompletedHub = student.hubsCompleted || 0;
         if(hub.hubOrder > lastCompletedHub + 1) {
-            return <p>You have not unlocked this area yet.</p>;
+            return <div className="flex h-screen w-full items-center justify-center"><Card className="p-8 text-center"><p className="text-xl font-bold">You have not unlocked this area yet.</p><Button className="mt-4" onClick={() => router.push('/dashboard/map')}>Return to World Map</Button></Card></div>;
         }
         if (chapter.chapterNumber > lastCompletedChapter + 1) {
-            return <p>You have not unlocked this chapter yet.</p>;
+            return <div className="flex h-screen w-full items-center justify-center"><Card className="p-8 text-center"><p className="text-xl font-bold">You have not unlocked this chapter yet.</p><Button className="mt-4" onClick={() => router.push(`/dashboard/map/${hubId}`)}>Return to Quest Map</Button></Card></div>;
         }
     }
     
