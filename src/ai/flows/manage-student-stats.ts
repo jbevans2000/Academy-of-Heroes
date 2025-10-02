@@ -4,7 +4,7 @@
 import { doc, writeBatch, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { logAvatarEvent, type LogEventSource } from '@/lib/avatar-log';
-import { calculateLevel, calculateHpGain, calculateMpGain, MAX_LEVEL, XP_FOR_MAX_LEVEL } from '@/lib/game-mechanics';
+import { calculateLevel, calculateHpGain, calculateMpGain, MAX_LEVEL, XP_FOR_MAX_LEVEL, calculateBaseMaxHp } from '@/lib/game-mechanics';
 import type { Student } from '@/lib/data';
 
 interface AwardRewardsInput {
@@ -136,8 +136,11 @@ export async function setStudentStat(input: SetStatInput): Promise<{success: boo
           updates.mp = updates.maxMp; // Restore to new max MP on level up
       } else if (newLevel < currentLevel) {
         updates.level = newLevel;
-        // Note: We are not de-leveling stats here as that logic can be complex.
-        // It's assumed the teacher will manually adjust stats if needed.
+        // Recalculate base stats for the new, lower level
+        updates.maxHp = calculateBaseMaxHp(studentData.class, newLevel, 'hp');
+        updates.maxMp = calculateBaseMaxHp(studentData.class, newLevel, 'mp');
+        updates.hp = Math.min(studentData.hp, updates.maxHp); // Cap current HP at new max
+        updates.mp = Math.min(studentData.mp, updates.maxMp); // Cap current MP at new max
       }
     }
     
