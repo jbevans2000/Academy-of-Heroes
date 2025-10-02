@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -294,7 +294,7 @@ function NewQuestForm() {
         setQuizQuestions(prev => [...prev, { id: uuidv4(), text: '', answers: ['', '', '', ''], correctAnswer: [], questionType: 'single' }]);
     };
     
-    const handleQuizQuestionChange = (id: string, field: 'text' | 'questionType', value: string) => {
+    const handleQuizQuestionChange = (id: string, field: 'text' | 'questionType' | 'imageUrl', value: string) => {
         setQuizQuestions(prev => prev.map(q => {
             if (q.id === id) {
                 const updatedQ: QuizQuestion = { ...q, [field]: value as any };
@@ -540,6 +540,12 @@ function NewQuestForm() {
     
     const currentLessonPart = lessonParts[currentLessonPartIndex];
     const hasQuizQuestions = (quizQuestions?.length || 0) > 0;
+    
+    const sortedHubs = useMemo(() => {
+        const standard = hubs.filter(h => h.hubType !== 'sidequest').sort((a, b) => a.hubOrder - b.hubOrder);
+        const sidequests = hubs.filter(h => h.hubType === 'sidequest').sort((a,b) => a.name.localeCompare(b.name));
+        return [...sidequests, ...standard];
+    }, [hubs]);
 
     if (isLoading) {
         return (
@@ -600,8 +606,10 @@ function NewQuestForm() {
                                       </SelectTrigger>
                                       <SelectContent>
                                           <SelectItem value="new">-- Create a New Hub --</SelectItem>
-                                          {hubs.map(hub => (
-                                              <SelectItem key={hub.id} value={hub.id}>{hub.name} (Order: {hub.hubOrder})</SelectItem>
+                                          {sortedHubs.map(hub => (
+                                              <SelectItem key={hub.id} value={hub.id}>
+                                                  {hub.name} {hub.hubType === 'sidequest' ? '(Side Quest)' : `(Order: ${hub.hubOrder})`}
+                                              </SelectItem>
                                           ))}
                                       </SelectContent>
                                   </Select>
@@ -639,7 +647,7 @@ function NewQuestForm() {
                                           id="new-hub-order"
                                           type="number"
                                           placeholder="e.g., 2"
-                                          value={newHubOrder}
+                                          value={newHubType === 'sidequest' ? 'N/A' : newHubOrder}
                                           onChange={e => setNewHubOrder(Number(e.target.value))}
                                           disabled={isSaving || newHubType === 'sidequest'}
                                       />
@@ -882,13 +890,13 @@ function NewQuestForm() {
                             <h3 className="text-xl font-semibold">Quiz Editor</h3>
                             <div className="p-4 border rounded-md space-y-4">
                                <div className="flex items-center space-x-2">
-                                    <Switch id="require-passing" checked={requirePassing} onCheckedChange={setRequirePassing} />
-                                    <Label htmlFor="require-passing">Require Minimum Score to Advance</Label>
+                                    <Switch id="require-passing" checked={requirePassing} onCheckedChange={setRequirePassing} disabled={!hasQuizQuestions}/>
+                                    <Label htmlFor="require-passing" className={cn(!hasQuizQuestions && "text-muted-foreground")}>Require Minimum Score to Advance</Label>
                                 </div>
                                 {requirePassing && (
                                     <div className="space-y-2 animate-in fade-in-50">
-                                        <Label htmlFor="passing-score">Passing Score (%)</Label>
-                                        <Input id="passing-score" type="number" min="0" max="100" value={passingScore} onChange={(e) => setPassingScore(Number(e.target.value))} />
+                                        <Label htmlFor="passing-score" className={cn(!hasQuizQuestions && "text-muted-foreground")}>Passing Score (%)</Label>
+                                        <Input id="passing-score" type="number" min="0" max="100" value={passingScore} onChange={(e) => setPassingScore(Number(e.target.value))} disabled={!hasQuizQuestions}/>
                                     </div>
                                 )}
                             </div>
@@ -900,6 +908,18 @@ function NewQuestForm() {
                                     </div>
                                     <div className="space-y-2">
                                         <Textarea placeholder="Question text" value={q.text} onChange={e => handleQuizQuestionChange(q.id, 'text', e.target.value)} />
+                                        <div className="space-y-2">
+                                            <Label htmlFor={`q-image-url-${q.id}`} className="text-base">Image URL (Optional)</Label>
+                                            <div className="flex items-center gap-2">
+                                                <Input
+                                                    id={`q-image-url-${q.id}`}
+                                                    placeholder="https://example.com/image.png"
+                                                    value={q.imageUrl || ''}
+                                                    onChange={(e) => handleQuizQuestionChange(q.id, 'imageUrl', e.target.value)}
+                                                    className="mt-2"
+                                                />
+                                            </div>
+                                        </div>
                                         <Select value={q.questionType} onValueChange={(value) => handleQuizQuestionChange(q.id, 'questionType', value)}>
                                             <SelectTrigger><SelectValue/></SelectTrigger>
                                             <SelectContent>

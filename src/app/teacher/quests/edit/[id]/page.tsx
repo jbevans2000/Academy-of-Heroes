@@ -328,6 +328,7 @@ export default function EditQuestPage() {
         const updatedQuestions = chapter?.quiz?.questions.map(q => {
             if (q.id === qId && q.answers.length > 2) {
                 const newAnswers = q.answers.filter((_, i) => i !== aIndex);
+                // Also adjust correct answers if the removed one was selected
                 const newCorrectAnswer = q.correctAnswer.filter(i => i !== aIndex).map(i => i > aIndex ? i - 1 : i);
                 return { ...q, answers: newAnswers, correctAnswer: newCorrectAnswer };
             }
@@ -528,6 +529,12 @@ export default function EditQuestPage() {
     const prevChapter = currentChapterIndex > 0 ? chaptersInHub[currentChapterIndex - 1] : null;
     const nextChapter = currentChapterIndex < chaptersInHub.length - 1 ? chaptersInHub[currentChapterIndex + 1] : null;
 
+    const sortedHubs = useMemo(() => {
+        const standard = hubs.filter(h => h.hubType !== 'sidequest').sort((a, b) => a.hubOrder - b.hubOrder);
+        const sidequests = hubs.filter(h => h.hubType === 'sidequest').sort((a,b) => a.name.localeCompare(b.name));
+        return [...sidequests, ...standard];
+    }, [hubs]);
+
 
   if (isLoading || !chapter || !teacher) {
     return (
@@ -586,8 +593,10 @@ export default function EditQuestPage() {
                             <SelectValue placeholder="Choose a Hub..." />
                         </SelectTrigger>
                         <SelectContent>
-                            {hubs.map(hub => (
-                                <SelectItem key={hub.id} value={hub.id}>{hub.name} (Order: {hub.hubOrder})</SelectItem>
+                            {sortedHubs.map(hub => (
+                                <SelectItem key={hub.id} value={hub.id}>
+                                    {hub.name} {hub.hubType === 'sidequest' ? '(Side Quest)' : `(Order: ${hub.hubOrder})`}
+                                </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
@@ -836,7 +845,7 @@ export default function EditQuestPage() {
                                             />
                                              {uploadingQuestionImage === q.id && <Loader2 className="h-5 w-5 animate-spin" />}
                                         </div>
-                                        {q.imageUrl && <img src={q.imageUrl} alt="Question preview" width={100} height={100} className="rounded-md border mt-2" />}
+                                        {q.imageUrl && <Image src={q.imageUrl} alt="Question preview" width={100} height={100} className="rounded-md border mt-2" />}
                                     </div>
                                     <Select value={q.questionType} onValueChange={(value) => handleQuizQuestionChange(q.id, 'questionType', value)}>
                                         <SelectTrigger><SelectValue/></SelectTrigger>
@@ -881,6 +890,7 @@ export default function EditQuestPage() {
                       </TabsContent>
                       </Tabs>
                   </div>
+                )}
                 
                 <div className="flex justify-between items-center pt-4 border-t">
                   {prevChapter ? (
