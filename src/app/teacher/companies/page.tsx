@@ -17,9 +17,11 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, Upload, Users, Briefcase, X, UserX, UserPlus } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, Upload, Users, Briefcase, X, UserX, UserPlus, ChevronDown } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+
 
 const CompanyCard = ({ company, students, onEdit, onDelete, onDrop, onRemoveStudent }: {
     company: Company;
@@ -41,42 +43,50 @@ const CompanyCard = ({ company, students, onEdit, onDelete, onDrop, onRemoveStud
 
     return (
         <Card onDrop={handleDrop} onDragOver={handleDragOver} className="flex flex-col">
-            <CardHeader className="flex-row items-center justify-between">
-                <div className="flex items-center gap-2">
-                    {company.logoUrl && <Image src={company.logoUrl} alt={company.name} width={40} height={40} className="rounded-full object-cover" />}
-                    <CardTitle>{company.name}</CardTitle>
-                </div>
-                <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => onEdit(company)}><Edit className="h-4 w-4" /></Button>
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Company: {company.name}?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This will disband the company, and all its members will become freelancers. This action cannot be undone.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => onDelete(company.id)} className="bg-destructive hover:bg-destructive/90">
-                                    Yes, Disband Company
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </div>
-            </CardHeader>
-            <CardContent className="flex-grow space-y-2">
-                {students.length > 0 ? students.map(student => (
-                    <div key={student.uid} className="flex items-center justify-between p-2 bg-secondary rounded-md">
-                        <span className="font-medium">{student.studentName}</span>
-                         <Button variant="ghost" size="icon" onClick={() => onRemoveStudent(student.uid)}><X className="h-4 w-4" /></Button>
-                    </div>
-                )) : <p className="text-muted-foreground text-sm">Drag students here to assign them.</p>}
-            </CardContent>
+            <Accordion type="single" collapsible defaultValue="item-1" className="w-full">
+                <AccordionItem value="item-1" className="border-b-0">
+                    <CardHeader className="flex-row items-center justify-between p-4">
+                        <AccordionTrigger className="w-full justify-start p-2 hover:no-underline">
+                            <div className="flex items-center gap-2">
+                                {company.logoUrl && <Image src={company.logoUrl} alt={company.name} width={40} height={40} className="rounded-full object-cover" />}
+                                <CardTitle>{company.name} ({students.length})</CardTitle>
+                            </div>
+                        </AccordionTrigger>
+                        <div className="flex gap-1 shrink-0">
+                            <Button variant="ghost" size="icon" onClick={() => onEdit(company)}><Edit className="h-4 w-4" /></Button>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Delete Company: {company.name}?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This will disband the company, and all its members will become freelancers. This action cannot be undone.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => onDelete(company.id)} className="bg-destructive hover:bg-destructive/90">
+                                            Yes, Disband Company
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                    </CardHeader>
+                    <AccordionContent>
+                        <CardContent className="space-y-2 pt-0 p-4">
+                            {students.length > 0 ? students.map(student => (
+                                <div key={student.uid} className="flex items-center justify-between p-2 bg-secondary rounded-md">
+                                    <span className="font-medium">{student.studentName}</span>
+                                     <Button variant="ghost" size="icon" onClick={() => onRemoveStudent(student.uid)}><X className="h-4 w-4" /></Button>
+                                </div>
+                            )) : <p className="text-muted-foreground text-sm p-4 text-center">Drag students here to assign them.</p>}
+                        </CardContent>
+                    </AccordionContent>
+                </AccordionItem>
+            </Accordion>
         </Card>
     );
 };
@@ -516,3 +526,5 @@ export default function CompaniesPage() {
         </>
     );
 }
+
+    
