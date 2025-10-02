@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { PlusCircle, LayoutDashboard, Edit, Trash2, Loader2, Eye, Wrench, Image as ImageIcon, Upload, X, Library, Users, Swords } from 'lucide-react';
+import { PlusCircle, LayoutDashboard, Edit, Trash2, Loader2, Eye, Wrench, Image as ImageIcon, Upload, X, Library, Users, BookOpen } from 'lucide-react';
 import { collection, getDocs, doc, deleteDoc, onSnapshot, updateDoc, getDoc } from 'firebase/firestore';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -368,11 +368,11 @@ export default function QuestsPage() {
                             const isSideQuest = hub.hubType === 'sidequest';
 
                             return (
-                                <AccordionItem key={hub.id} value={hub.id} className={cn(isSideQuest && "bg-purple-100 dark:bg-purple-900/30 rounded-md")}>
+                                <AccordionItem key={hub.id} value={hub.id} className={cn(isSideQuest && "bg-yellow-100 dark:bg-yellow-900/30 rounded-md")}>
                                     <div className="flex items-center w-full">
                                         <AccordionTrigger className="text-xl hover:no-underline flex-grow">
                                             <div className="flex items-center gap-3">
-                                                {isSideQuest && <Swords className="h-5 w-5 text-purple-500" />}
+                                                {isSideQuest && <BookOpen className="h-5 w-5 text-yellow-500" />}
                                                 Hub: {hub.name}
                                             </div>
                                         </AccordionTrigger>
