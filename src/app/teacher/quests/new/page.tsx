@@ -152,6 +152,7 @@ function NewQuestForm() {
   const [hubCoordinates, setHubCoordinates] = useState({ x: 50, y: 50 });
   const [hubIsVisibleToAll, setHubIsVisibleToAll] = useState(true);
   const [hubAssignedCompanyIds, setHubAssignedCompanyIds] = useState<string[]>([]);
+  const [newHubType, setNewHubType] = useState<'standard' | 'sidequest'>('standard');
 
   // State for the new Chapter creator
   const [isChapterActive, setIsChapterActive] = useState(true);
@@ -471,6 +472,7 @@ function NewQuestForm() {
                 worldMapUrl: newHubMapUrl,
                 coordinates: hubCoordinates,
                 hubOrder: newHubOrder,
+                hubType: newHubType,
                 createdAt: serverTimestamp(),
                 isVisibleToAll: hubIsVisibleToAll,
                 assignedCompanyIds: hubIsVisibleToAll ? [] : hubAssignedCompanyIds
@@ -610,6 +612,19 @@ function NewQuestForm() {
                           {(selectedHubId === 'new' || isHubOnlyMode) && (
                               <div className="p-4 border bg-secondary/50 rounded-md space-y-4">
                                   <h4 className="font-semibold text-md">New Hub Details</h4>
+                                  <div className="space-y-2">
+                                    <Label>Hub Type</Label>
+                                    <RadioGroup value={newHubType} onValueChange={(v) => setNewHubType(v as 'standard' | 'sidequest')}>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="standard" id="type-standard"/>
+                                            <Label htmlFor="type-standard">Standard Hub (Unlocks Sequentially)</Label>
+                                        </div>
+                                         <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="sidequest" id="type-sidequest"/>
+                                            <Label htmlFor="type-sidequest">Side Quest Hub (Always Visible)</Label>
+                                        </div>
+                                    </RadioGroup>
+                                  </div>
                                   <div className="space-y-2">
                                       <Label htmlFor="new-hub-name">New Hub Name</Label>
                                       <Input 

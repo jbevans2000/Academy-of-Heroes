@@ -87,6 +87,12 @@ export default function WorldMapPage() {
           const isActive = hub.isActive ?? true; // Default to active if not set
           if (!isActive) return false;
 
+          // Check if it's a side quest hub, which is always visible if active
+          if (hub.hubType === 'sidequest') {
+              return true;
+          }
+
+          // Existing logic for standard hubs
           const isVisible = hub.isVisibleToAll ?? true;
           if (isVisible) return true;
           return hub.assignedCompanyIds?.includes(student.companyId || '') ?? false;
@@ -123,13 +129,21 @@ export default function WorldMapPage() {
                             </div>
                          ) : (
                             unlockedHubs.map(hub => {
+                                const isSideQuest = hub.hubType === 'sidequest';
                                 const isCompleted = hub.hubOrder <= (student.hubsCompleted || 0);
                                 const isCurrent = hub.hubOrder === (student.hubsCompleted || 0) + 1;
-                                if (!isCompleted && !isCurrent) return null;
+                                
+                                // Side quests are always "current" in terms of accessibility, but we won't show them as the main quest marker
+                                if (!isSideQuest && !isCompleted && !isCurrent) return null;
 
-                                const markerColorClass = isCompleted 
-                                    ? "bg-green-500" 
-                                    : "bg-yellow-400 animate-pulse-glow";
+                                let markerColorClass = "bg-gray-400"; // Default for locked hubs (which shouldn't be rendered with current logic)
+                                if (isSideQuest) {
+                                    markerColorClass = "bg-purple-500 animate-pulse-glow";
+                                } else if (isCompleted) {
+                                    markerColorClass = "bg-green-500";
+                                } else if (isCurrent) {
+                                    markerColorClass = "bg-yellow-400 animate-pulse-glow";
+                                }
 
                                 return (
                                 <Link key={hub.id} href={`/dashboard/map/${hub.id}`} passHref>

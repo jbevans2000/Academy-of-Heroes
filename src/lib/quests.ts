@@ -37,6 +37,7 @@ export interface QuestHub {
     isVisibleToAll?: boolean;
     assignedCompanyIds?: string[];
     isActive?: boolean; // New field to control hub visibility
+    hubType?: 'standard' | 'sidequest'; // New field for hub type
 }
 
 export interface LessonPart {
