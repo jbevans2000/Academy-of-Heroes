@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -857,6 +858,7 @@ export default function AdminDashboardPage() {
                                                 <TableRow>
                                                     <TableHead><Button variant="ghost" onClick={() => requestSort('className', 'teacher')}>Guild Name <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
                                                     <TableHead><Button variant="ghost" onClick={() => requestSort('name', 'teacher')}>Leader (Teacher) <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
+                                                    <TableHead>Teacher UID</TableHead>
                                                     <TableHead><Button variant="ghost" onClick={() => requestSort('contactEmail', 'teacher')}>Contact Email<ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
                                                     <TableHead><Button variant="ghost" onClick={() => requestSort('schoolName', 'teacher')}>School <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
                                                     <TableHead><Button variant="ghost" onClick={() => requestSort('studentCount', 'teacher')}>Students <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
@@ -873,6 +875,7 @@ export default function AdminDashboardPage() {
                                                             </Link>
                                                         </TableCell>
                                                         <TableCell>{teacher.name}</TableCell>
+                                                        <TableCell className="font-mono text-xs">{teacher.id}</TableCell>
                                                         <TableCell>{teacher.contactEmail || teacher.email}</TableCell>
                                                         <TableCell>{teacher.schoolName}</TableCell>
                                                         <TableCell>{teacher.studentCount}</TableCell>
