@@ -816,7 +816,7 @@ export default function Dashboard() {
                         <BookHeart className="mr-2 h-4 w-4" />
                         <span>Battle Archives</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push('/dashboard/leaderboard?teacherPreview=true')}>
+                    <DropdownMenuItem onClick={() => router.push('/teacher/leaderboard')}>
                         <Trophy className="mr-2 h-4 w-4" />
                         <span>View Leaderboard</span>
                     </DropdownMenuItem>
@@ -1254,5 +1254,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
-    
