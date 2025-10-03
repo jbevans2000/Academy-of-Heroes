@@ -96,18 +96,20 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
     if (!teacherUid || !studentUid || !hubId || !chapterId) return { success: false, error: 'Invalid input.' };
 
     try {
+        const teacherRef = doc(db, 'teachers', teacherUid);
         const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
         const chapterRef = doc(db, 'teachers', teacherUid, 'chapters', chapterId);
         const hubRef = doc(db, 'teachers', teacherUid, 'questHubs', hubId);
         
         const questSettings = await getQuestSettings(teacherUid);
 
-        const [studentSnap, chapterSnap, hubSnap] = await Promise.all([getDoc(studentRef), getDoc(chapterRef), getDoc(hubRef)]);
+        const [teacherSnap, studentSnap, chapterSnap, hubSnap] = await Promise.all([getDoc(teacherRef), getDoc(studentRef), getDoc(chapterRef), getDoc(hubRef)]);
 
         if (!studentSnap.exists()) throw new Error("Student not found.");
         if (!chapterSnap.exists()) throw new Error("Chapter not found.");
         if (!hubSnap.exists()) throw new Error("Quest Hub not found.");
 
+        const levelingTable = teacherSnap.exists() ? teacherSnap.data().levelingTable : null;
         const student = studentSnap.data() as Student;
         const chapter = { id: chapterSnap.id, ...chapterSnap.data() } as Chapter;
         const hub = { id: hubSnap.id, ...hubSnap.data() } as QuestHub;
@@ -174,7 +176,7 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
             
             if (xpToAdd > 0) {
                  const newXp = (student.xp || 0) + xpToAdd;
-                 const levelUpdates = handleLevelChange(student, newXp);
+                 const levelUpdates = handleLevelChange(student, newXp, levelingTable);
                  updates = { ...updates, ...levelUpdates };
             }
             
@@ -209,7 +211,7 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
 }
 
 
-async function approveSingleRequest(batch: any, teacherUid: string, requestId: string, requestData: any) {
+async function approveSingleRequest(batch: any, teacherUid: string, requestId: string, requestData: any, levelingTable: any) {
     const { studentUid, hubId, chapterId, chapterNumber, chapterTitle } = requestData;
     const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
     const hubRef = doc(db, 'teachers', teacherUid, 'questHubs', hubId);
@@ -243,7 +245,7 @@ async function approveSingleRequest(batch: any, teacherUid: string, requestId: s
 
             if(xpToAdd > 0) {
                 const newXp = (studentData.xp || 0) + xpToAdd;
-                const levelUpdates = handleLevelChange(studentData, newXp);
+                const levelUpdates = handleLevelChange(studentData, newXp, levelingTable);
                 updates = { ...updates, ...levelUpdates };
             }
 
@@ -277,8 +279,12 @@ export async function approveChapterCompletion(input: ApproveChapterCompletionIn
     if (!requestSnap.exists()) return { success: false, error: 'This request no longer exists.' };
     
     try {
+        const teacherRef = doc(db, 'teachers', teacherUid);
+        const teacherSnap = await getDoc(teacherRef);
+        const levelingTable = teacherSnap.exists() ? teacherSnap.data().levelingTable : null;
+
         const batch = writeBatch(db);
-        await approveSingleRequest(batch, teacherUid, requestId, requestSnap.data());
+        await approveSingleRequest(batch, teacherUid, requestId, requestSnap.data(), levelingTable);
         await batch.commit();
         return { success: true, message: 'Quest completion approved!' };
     } catch (error: any) {
@@ -311,9 +317,13 @@ export async function approveAllPending(teacherUid: string): Promise<CountRespon
     }
     
     try {
+        const teacherRef = doc(db, 'teachers', teacherUid);
+        const teacherSnap = await getDoc(teacherRef);
+        const levelingTable = teacherSnap.exists() ? teacherSnap.data().levelingTable : null;
+
         const batch = writeBatch(db);
         for (const requestDoc of requestsSnapshot.docs) {
-            await approveSingleRequest(batch, teacherUid, requestDoc.id, requestDoc.data());
+            await approveSingleRequest(batch, teacherUid, requestDoc.id, requestDoc.data(), levelingTable);
         }
         await batch.commit();
         return { success: true, message: 'All pending requests approved.', count: requestsSnapshot.size };

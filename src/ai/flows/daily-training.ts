@@ -93,13 +93,18 @@ export async function completeDailyTraining(input: CompleteTrainingInput): Promi
 
     try {
         const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
-        const [studentSnap, settings] = await Promise.all([
+        const teacherRef = doc(db, 'teachers', teacherUid);
+        
+        const [studentSnap, teacherSnap, settings] = await Promise.all([
             getDoc(studentRef),
+            getDoc(teacherRef),
             getDuelSettings(teacherUid)
         ]);
 
         if (!studentSnap.exists()) throw new Error("Student not found.");
         const student = studentSnap.data() as Student;
+        const levelingTable = teacherSnap.exists() ? teacherSnap.data().levelingTable : null;
+
 
         // Check if the student has already received rewards today.
         let alreadyCompletedToday = false;
@@ -134,7 +139,7 @@ export async function completeDailyTraining(input: CompleteTrainingInput): Promi
         // Handle Level Up
         if (xpToAward > 0) {
             const newXp = (student.xp || 0) + xpToAward;
-            const levelUpdates = handleLevelChange(student, newXp);
+            const levelUpdates = handleLevelChange(student, newXp, levelingTable);
             updates = { ...updates, ...levelUpdates };
         }
 

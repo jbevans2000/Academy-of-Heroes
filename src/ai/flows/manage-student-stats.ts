@@ -32,6 +32,10 @@ export async function awardRewards(input: AwardRewardsInput): Promise<AwardRewar
     let studentsAtMaxLevel = 0;
 
     try {
+        const teacherRef = doc(db, 'teachers', teacherUid);
+        const teacherSnap = await getDoc(teacherRef);
+        const levelingTable = teacherSnap.exists() ? teacherSnap.data().levelingTable : null;
+
         for (const uid of studentUids) {
             const studentRef = doc(db, 'teachers', teacherUid, 'students', uid);
             const studentSnap = await getDoc(studentRef);
@@ -50,7 +54,7 @@ export async function awardRewards(input: AwardRewardsInput): Promise<AwardRewar
                         let newXp = Math.max(0, currentXp + xp);
                         if (newXp > XP_FOR_MAX_LEVEL) newXp = XP_FOR_MAX_LEVEL;
                         
-                        const levelUpdates = handleLevelChange(studentData, newXp);
+                        const levelUpdates = handleLevelChange(studentData, newXp, levelingTable);
                         updates = { ...updates, ...levelUpdates };
                     }
                 }
@@ -106,17 +110,22 @@ export async function setStudentStat(input: SetStatInput): Promise<{success: boo
   const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
 
   try {
-    const studentSnap = await getDoc(studentRef);
+    const [studentSnap, teacherSnap] = await Promise.all([
+        getDoc(studentRef),
+        getDoc(doc(db, 'teachers', teacherUid))
+    ]);
+    
     if (!studentSnap.exists()) throw new Error("Student not found.");
     
     const studentData = studentSnap.data() as Student;
+    const levelingTable = teacherSnap.exists() ? teacherSnap.data().levelingTable : null;
     const oldValue = studentData[stat] || 0;
     const change = value - oldValue;
     
     let updates: Partial<Student> = { [stat]: value };
 
     if (stat === 'xp') {
-      const levelUpdates = handleLevelChange(studentData, value);
+      const levelUpdates = handleLevelChange(studentData, value, levelingTable);
       updates = { ...updates, ...levelUpdates };
     }
     

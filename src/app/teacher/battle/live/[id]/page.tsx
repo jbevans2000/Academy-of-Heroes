@@ -151,6 +151,7 @@ interface StudentResponse {
 
 interface TeacherData {
     name: string;
+    levelingTable?: { [level: number]: number; }
 }
 
 interface PowerLogEntry {
@@ -521,7 +522,7 @@ export default function TeacherLiveBattlePage() {
                  const updates: Partial<Student> = {
                     xp: newXp,
                     gold: (studentData.gold || 0) + studentRewards.goldGained,
-                    ...handleLevelChange(studentData, newXp)
+                    ...handleLevelChange(studentData, newXp, teacherData?.levelingTable)
                  };
                  
                  batch.update(studentRef, updates);

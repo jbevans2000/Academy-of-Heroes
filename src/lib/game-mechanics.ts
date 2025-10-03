@@ -5,7 +5,7 @@ export const MAX_LEVEL = 30;
 // XP required to reach level 30 is 55000.
 export const XP_FOR_MAX_LEVEL = 55000;
 
-// XP thresholds for each level. To reach level X, you need xpForLevel[X-1] total XP.
+// XP thresholds for each level. To reach level X, you need xpForLevel[X] total XP.
 export const xpForLevel: { [level: number]: number } = {
     1: 0,
     2: 200,
@@ -110,8 +110,8 @@ export function calculateMpGain(
 
 /**
  * Calculates a non-random, deterministic base stat value for a given level.
- * This is used for de-leveling a student or resetting stats to avoid the complexity
- * of reversing random dice rolls. It should NOT be used for calculating gains during a level-up.
+ * This is used for de-leveling a student to avoid the complexity of reversing random dice rolls.
+ * It should NOT be used for calculating gains during a level-up.
  * The 'perLevel' value is the rounded-up average of the class's hit/magic die.
  * @param characterClass The student's class.
  * @param level The target level.
@@ -144,17 +144,17 @@ export function calculateBaseMaxHp(characterClass: ClassType, level: number, sta
  * @param newXp The student's new total XP.
  * @returns An object with the stats to update.
  */
-export function handleLevelChange(studentData: Student, newXp: number): Partial<Student> {
+export function handleLevelChange(studentData: Student, newXp: number, customXpTable?: { [level: number]: number }): Partial<Student> {
     const updates: Partial<Student> = { xp: newXp };
     const currentLevel = studentData.level || 1;
-    const newLevel = calculateLevel(newXp);
+    const newLevel = calculateLevel(newXp, customXpTable);
 
     if (newLevel > currentLevel) {
         const levelsGained = newLevel - currentLevel;
         updates.level = newLevel;
-        // Correctly increment max stats by adding gains to the existing values
-        updates.maxHp = (studentData.maxHp || 0) + calculateHpGain(studentData.class, levelsGained);
-        updates.maxMp = (studentData.maxMp || 0) + calculateMpGain(studentData.class, levelsGained);
+        // Correctly increment max stats by ADDING gains to existing values
+        updates.maxHp = (studentData.maxHp || calculateBaseMaxHp(studentData.class, currentLevel, 'hp')) + calculateHpGain(studentData.class, levelsGained);
+        updates.maxMp = (studentData.maxMp || calculateBaseMaxHp(studentData.class, currentLevel, 'mp')) + calculateMpGain(studentData.class, levelsGained);
         // Restore to new max on level up
         updates.hp = updates.maxHp;
         updates.mp = updates.maxMp;
