@@ -5,7 +5,7 @@ import { doc, getDoc, updateDoc, collection, query, where, getDocs, serverTimest
 import { db } from '@/lib/firebase';
 import type { Student, Chapter } from '@/lib/data';
 import { logAvatarEvent } from '@/lib/avatar-log';
-import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
+import { handleLevelChange } from '@/lib/game-mechanics';
 import { getDuelSettings } from './manage-duels';
 import type { DuelQuestion } from '@/lib/duels';
 import type { QuizQuestion } from '@/lib/quests';
@@ -125,25 +125,17 @@ export async function completeDailyTraining(input: CompleteTrainingInput): Promi
         const xpToAward = Math.ceil((settings.dailyTrainingXpReward || 0) * scorePercentage);
         const goldToAward = Math.ceil((settings.dailyTrainingGoldReward || 0) * scorePercentage);
 
-        const updates: any = {
+        let updates: Partial<Student> = {
             lastDailyTraining: serverTimestamp(),
         };
 
-        if (xpToAward > 0) updates.xp = increment(xpToAward);
         if (goldToAward > 0) updates.gold = increment(goldToAward);
 
         // Handle Level Up
-        const newXp = (student.xp || 0) + xpToAward;
-        const currentLevel = student.level || 1;
-        const newLevel = calculateLevel(newXp);
-        
-        if (newLevel > currentLevel) {
-            const levelsGained = newLevel - currentLevel;
-            updates.level = newLevel;
-            updates.maxHp = (student.maxHp || 0) + calculateHpGain(student.class, levelsGained);
-            updates.maxMp = (student.maxMp || 0) + calculateMpGain(student.class, levelsGained);
-            updates.hp = updates.maxHp; // Restore to new max HP on level up
-            updates.mp = updates.maxMp; // Restore to new max MP on level up
+        if (xpToAward > 0) {
+            const newXp = (student.xp || 0) + xpToAward;
+            const levelUpdates = handleLevelChange(student, newXp);
+            updates = { ...updates, ...levelUpdates };
         }
 
         await updateDoc(studentRef, updates);

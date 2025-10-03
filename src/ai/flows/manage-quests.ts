@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase';
 import type { Student, QuestHub, Chapter } from '@/lib/data';
 import { logGameEvent } from '@/lib/gamelog';
 import firebase from 'firebase/compat/app';
-import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
+import { handleLevelChange } from '@/lib/game-mechanics';
 import { logAvatarEvent } from '@/lib/avatar-log';
 
 // --------- INTERFACES ---------
@@ -160,7 +160,7 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
         const totalChaptersInHub = (await getDocs(chaptersInHubQuery)).size;
         
         const newProgress = { ...student.questProgress, [hubId]: chapter.chapterNumber };
-        const updates: any = {
+        let updates: Partial<Student> = {
             questProgress: newProgress,
             lastChapterCompletion: serverTimestamp() // Update the timestamp
         };
@@ -171,8 +171,13 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
             const xpToAdd = hub.rewardXp || 0;
             const goldToAdd = hub.rewardGold || 0;
 
-            if (xpToAdd > 0) updates.xp = increment(xpToAdd);
             if (goldToAdd > 0) updates.gold = increment(goldToAdd);
+            
+            if (xpToAdd > 0) {
+                 const newXp = (student.xp || 0) + xpToAdd;
+                 const levelUpdates = handleLevelChange(student, newXp);
+                 updates = { ...updates, ...levelUpdates };
+            }
             
             if (xpToAdd > 0 || goldToAdd > 0) {
                  await logAvatarEvent(teacherUid, studentUid, {
@@ -181,20 +186,6 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
                     gold: goldToAdd,
                     reason: `Completed "${chapter.title}"`,
                 });
-            }
-
-            // Handle Level Up
-            const newXp = (student.xp || 0) + xpToAdd;
-            const currentLevel = student.level || 1;
-            const newLevel = calculateLevel(newXp);
-            
-            if (newLevel > currentLevel) {
-                const levelsGained = newLevel - currentLevel;
-                updates.level = newLevel;
-                updates.maxHp = (student.maxHp || 0) + calculateHpGain(student.class, levelsGained);
-                updates.maxMp = (student.maxMp || 0) + calculateMpGain(student.class, levelsGained);
-                updates.hp = updates.maxHp; // Restore to new max HP on level up
-                updates.mp = updates.maxMp; // Restore to new max MP on level up
             }
 
             updates.completedChapters = arrayUnion(chapterId); // Mark chapter as rewarded
@@ -244,7 +235,7 @@ async function approveSingleRequest(batch: firebase.firestore.WriteBatch, teache
     // This prevents issues if a teacher accidentally approves an old request.
     if (chapterNumber === currentProgress + 1) {
         const newProgress = { ...studentData.questProgress, [hubId]: chapterNumber };
-        const updates: any = {
+        let updates: Partial<Student> = {
             questProgress: newProgress,
             lastChapterCompletion: serverTimestamp()
         };
@@ -254,8 +245,13 @@ async function approveSingleRequest(batch: firebase.firestore.WriteBatch, teache
             const xpToAdd = hubData.rewardXp || 0;
             const goldToAdd = hubData.rewardGold || 0;
             
-            if(xpToAdd > 0) updates.xp = increment(xpToAdd);
             if(goldToAdd > 0) updates.gold = increment(goldToAdd);
+
+            if(xpToAdd > 0) {
+                const newXp = (studentData.xp || 0) + xpToAdd;
+                const levelUpdates = handleLevelChange(studentData, newXp);
+                updates = { ...updates, ...levelUpdates };
+            }
 
              if (xpToAdd > 0 || goldToAdd > 0) {
                  await logAvatarEvent(teacherUid, studentUid, {
@@ -265,19 +261,6 @@ async function approveSingleRequest(batch: firebase.firestore.WriteBatch, teache
                     reason: `Completed "${chapterTitle}"`,
                 });
             }
-
-             const newXp = (studentData.xp || 0) + xpToAdd;
-             const currentLevel = studentData.level || 1;
-             const newLevel = calculateLevel(newXp);
-
-             if(newLevel > currentLevel) {
-                const levelsGained = newLevel - currentLevel;
-                updates.level = newLevel;
-                updates.maxHp = (studentData.maxHp || 0) + calculateHpGain(studentData.class, levelsGained);
-                updates.maxMp = (studentData.maxMp || 0) + calculateMpGain(studentData.class, levelsGained);
-                updates.hp = updates.maxHp; // Restore to new max HP on level up
-                updates.mp = updates.maxMp; // Restore to new max MP on level up
-             }
 
             updates.completedChapters = arrayUnion(chapterId);
         }

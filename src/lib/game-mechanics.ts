@@ -1,5 +1,5 @@
 
-import type { ClassType } from "./data";
+import type { ClassType, Student } from "./data";
 
 export const MAX_LEVEL = 30;
 // XP required to reach level 30 is 55000.
@@ -126,4 +126,38 @@ export function calculateBaseMaxHp(characterClass: ClassType, level: number, sta
     if (!stats) return 0;
     
     return stats.base + (stats.perLevel * (level - 1));
+}
+
+
+/**
+ * Centralized function to handle all level-up and level-down logic.
+ * @param studentData The current data of the student.
+ * @param newXp The student's new total XP.
+ * @returns An object with the stats to update.
+ */
+export function handleLevelChange(studentData: Student, newXp: number): Partial<Student> {
+    const updates: Partial<Student> = { xp: newXp };
+    const currentLevel = studentData.level || 1;
+    const newLevel = calculateLevel(newXp);
+
+    if (newLevel > currentLevel) {
+        const levelsGained = newLevel - currentLevel;
+        updates.level = newLevel;
+        // Correctly increment max stats
+        updates.maxHp = (studentData.maxHp || 0) + calculateHpGain(studentData.class, levelsGained);
+        updates.maxMp = (studentData.maxMp || 0) + calculateMpGain(studentData.class, levelsGained);
+        // Restore to new max on level up
+        updates.hp = updates.maxHp;
+        updates.mp = updates.maxMp;
+    } else if (newLevel < currentLevel) {
+        updates.level = newLevel;
+        // De-leveling: Recalculate base stats for the new, lower level
+        updates.maxHp = calculateBaseMaxHp(studentData.class, newLevel, 'hp');
+        updates.maxMp = calculateBaseMaxHp(studentData.class, newLevel, 'mp');
+        // Cap current HP/MP at new max values
+        updates.hp = Math.min(studentData.hp, updates.maxHp);
+        updates.mp = Math.min(studentData.mp, updates.maxMp);
+    }
+    
+    return updates;
 }

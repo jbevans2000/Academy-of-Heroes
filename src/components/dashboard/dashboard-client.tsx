@@ -33,6 +33,7 @@ import { ChallengeDialog } from '@/components/dashboard/challenge-dialog';
 import { getDuelSettings } from '@/ai/flows/manage-duels';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { AvatarLogDialog } from '@/components/dashboard/avatar-log-dialog';
+import { xpForLevel as defaultXpTable } from '@/lib/game-mechanics';
 
 interface DashboardClientProps {
   student: Student;
@@ -56,6 +57,24 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
   const [isChallengeDialogOpen, setIsChallengeDialogOpen] = useState(false);
   const [activeDuelRequest, setActiveDuelRequest] = useState<any>(null);
   const [isAvatarLogOpen, setIsAvatarLogOpen] = useState(false);
+  const [isDailyTrainingEnabled, setIsDailyTrainingEnabled] = useState(true);
+  const [levelingTable, setLevelingTable] = useState(defaultXpTable);
+
+  useEffect(() => {
+    const fetchTeacherSettings = async () => {
+        if (!student.teacherUid) return;
+        const teacherRef = doc(db, 'teachers', student.teacherUid);
+        const teacherSnap = await getDoc(teacherRef);
+        if (teacherSnap.exists()) {
+            const data = teacherSnap.data();
+            if (data.levelingTable && Object.keys(data.levelingTable).length > 0) {
+                setLevelingTable(data.levelingTable);
+            }
+        }
+    };
+    fetchTeacherSettings();
+  }, [student.teacherUid]);
+
 
   useEffect(() => {
     // Check for the ready_for_battle URL parameter on page load
@@ -81,6 +100,12 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
   
   useEffect(() => {
     if (!student.teacherUid || isTeacherPreview) return;
+    
+    // Fetch duel settings to check if daily training is enabled
+    getDuelSettings(student.teacherUid).then(settings => {
+        setIsDailyTrainingEnabled(settings.isDailyTrainingEnabled ?? true);
+    });
+
     const duelsRef = collection(db, 'teachers', student.teacherUid, 'duels');
     const q = query(duelsRef, where('opponentUid', '==', student.uid), where('status', '==', 'pending'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -101,6 +126,18 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
     currentUrl.searchParams.set('ready_for_battle', 'true');
     window.location.href = currentUrl.toString();
   };
+
+  const handleDailyTrainingClick = () => {
+    if (isDailyTrainingEnabled) {
+      router.push('/dashboard/training');
+    } else {
+      toast({
+        title: 'Training Paused',
+        description: 'The Guild Leader has currently paused Daily Training. Check back later!',
+      });
+    }
+  };
+
 
   const handleCheckCompany = async () => {
       if (!student.companyId || !student.teacherUid) {
@@ -168,7 +205,10 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
   if (student.lastDailyTraining) {
       const today = new Date();
       const lastTrainingDate = student.lastDailyTraining.toDate();
-      isTrainingDone = isSameDay(today, lastTrainingDate);
+      const hoursSinceLastCompletion = (today.getTime() - lastTrainingDate.getTime()) / (1000 * 60 * 60);
+      if (hoursSinceLastCompletion < 23) {
+          isTrainingDone = true;
+      }
   }
 
   return (
@@ -245,12 +285,10 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                         Embark on Your Quest
                     </Button>
                 </Link>
-                <Link href="/dashboard/training" passHref className="col-span-2">
-                    <Button size="lg" className="w-full py-8 text-lg justify-center bg-yellow-500 text-black hover:bg-yellow-600" disabled={isTrainingDone}>
-                        <BookOpen className="mr-4 h-8 w-8" />
-                        {isTrainingDone ? 'Training Complete for Today' : 'Daily Training'}
-                    </Button>
-                </Link>
+                <Button size="lg" className="col-span-2 w-full py-8 text-lg justify-center bg-yellow-500 text-black hover:bg-yellow-600" disabled={isTrainingDone} onClick={handleDailyTrainingClick}>
+                    <BookOpen className="mr-4 h-8 w-8" />
+                    {isTrainingDone ? 'Training Complete for Today' : 'Daily Training'}
+                </Button>
                 <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setIsChallengeDialogOpen(true)}>
                     <Swords className="mr-4 h-8 w-8" />
                     Training Grounds
@@ -279,6 +317,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
           </div>
           <StatsCard 
               student={student}
+              levelingTable={levelingTable}
           />
           <TooltipProvider>
               <div className="flex justify-center flex-wrap pt-6 gap-4">

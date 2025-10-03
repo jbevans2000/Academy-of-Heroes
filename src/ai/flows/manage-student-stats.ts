@@ -4,7 +4,7 @@
 import { doc, writeBatch, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { logAvatarEvent, type LogEventSource } from '@/lib/avatar-log';
-import { calculateLevel, calculateHpGain, calculateMpGain, MAX_LEVEL, XP_FOR_MAX_LEVEL, calculateBaseMaxHp } from '@/lib/game-mechanics';
+import { handleLevelChange, MAX_LEVEL, XP_FOR_MAX_LEVEL } from '@/lib/game-mechanics';
 import type { Student } from '@/lib/data';
 
 interface AwardRewardsInput {
@@ -38,7 +38,7 @@ export async function awardRewards(input: AwardRewardsInput): Promise<AwardRewar
 
             if (studentSnap.exists()) {
                 const studentData = studentSnap.data() as Student;
-                const updates: { [key: string]: any } = {};
+                let updates: Partial<Student> = {};
 
                 // Handle XP and Leveling
                 if (xp !== 0) {
@@ -50,17 +50,8 @@ export async function awardRewards(input: AwardRewardsInput): Promise<AwardRewar
                         let newXp = Math.max(0, currentXp + xp);
                         if (newXp > XP_FOR_MAX_LEVEL) newXp = XP_FOR_MAX_LEVEL;
                         
-                        updates.xp = newXp;
-                        const newLevel = calculateLevel(newXp);
-
-                        if (newLevel > currentLevel) {
-                            const levelsGained = newLevel - currentLevel;
-                            updates.level = newLevel;
-                            updates.maxHp = (studentData.maxHp || 0) + calculateHpGain(studentData.class, levelsGained);
-                            updates.maxMp = (studentData.maxMp || 0) + calculateMpGain(studentData.class, levelsGained);
-                            updates.hp = updates.maxHp; // Restore to new max HP on level up
-                            updates.mp = updates.maxMp; // Restore to new max MP on level up
-                        }
+                        const levelUpdates = handleLevelChange(studentData, newXp);
+                        updates = { ...updates, ...levelUpdates };
                     }
                 }
 
@@ -122,26 +113,11 @@ export async function setStudentStat(input: SetStatInput): Promise<{success: boo
     const oldValue = studentData[stat] || 0;
     const change = value - oldValue;
     
-    const updates: Partial<Student> = { [stat]: value };
+    let updates: Partial<Student> = { [stat]: value };
 
     if (stat === 'xp') {
-      const currentLevel = studentData.level || 1;
-      const newLevel = calculateLevel(value);
-      if (newLevel > currentLevel) {
-          const levelsGained = newLevel - currentLevel;
-          updates.level = newLevel;
-          updates.maxHp = (studentData.maxHp || 0) + calculateHpGain(studentData.class, levelsGained);
-          updates.maxMp = (studentData.maxMp || 0) + calculateMpGain(studentData.class, levelsGained);
-          updates.hp = updates.maxHp; // Restore to new max HP on level up
-          updates.mp = updates.maxMp; // Restore to new max MP on level up
-      } else if (newLevel < currentLevel) {
-        updates.level = newLevel;
-        // Recalculate base stats for the new, lower level
-        updates.maxHp = calculateBaseMaxHp(studentData.class, newLevel, 'hp');
-        updates.maxMp = calculateBaseMaxHp(studentData.class, newLevel, 'mp');
-        updates.hp = Math.min(studentData.hp, updates.maxHp); // Cap current HP at new max
-        updates.mp = Math.min(studentData.mp, updates.maxMp); // Cap current MP at new max
-      }
+      const levelUpdates = handleLevelChange(studentData, value);
+      updates = { ...updates, ...levelUpdates };
     }
     
     await updateDoc(studentRef, updates);
