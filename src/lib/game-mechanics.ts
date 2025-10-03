@@ -1,4 +1,3 @@
-
 import type { ClassType, Student } from "./data";
 
 export const MAX_LEVEL = 30;
