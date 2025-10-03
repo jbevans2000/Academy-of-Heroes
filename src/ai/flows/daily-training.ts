@@ -7,6 +7,8 @@ import type { Student, Chapter } from '@/lib/data';
 import { logAvatarEvent } from '@/lib/avatar-log';
 import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 import { getDuelSettings } from './manage-duels';
+import type { DuelQuestion } from '@/lib/duels';
+import type { QuizQuestion } from '@/lib/quests';
 
 interface ActionResponse {
   success: boolean;
@@ -20,6 +22,16 @@ interface CompleteTrainingInput {
     score: number; // e.g., 8
     totalQuestions: number; // e.g., 10
 }
+
+// Helper function to normalize DuelQuestions into the QuizQuestion format
+const normalizeDuelQuestion = (duelQuestion: DuelQuestion): QuizQuestion => ({
+    id: duelQuestion.id,
+    text: duelQuestion.text,
+    answers: duelQuestion.answers,
+    correctAnswer: [duelQuestion.correctAnswerIndex],
+    questionType: 'single', // Duel questions are always single-choice
+});
+
 
 export async function completeDailyTraining(input: CompleteTrainingInput): Promise<ActionResponse> {
     const { teacherUid, studentUid, score, totalQuestions } = input;
