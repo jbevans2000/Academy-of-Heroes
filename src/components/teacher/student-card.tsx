@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Student, Company, QuestHub, Chapter } from '@/lib/data';
-import { Star, Coins, User, Sword, Trophy, Heart, Zap, Loader2, Edit, Settings, Briefcase, FileText, Eye, EyeOff, MessageSquare, BookOpen, ShieldCheck, Moon, UserCheck } from 'lucide-react';
+import { Star, Coins, User, Sword, Trophy, Heart, Zap, Loader2, Edit, Settings, Briefcase, FileText, Eye, EyeOff, MessageSquare, BookOpen, ShieldCheck, Moon, UserCheck, LogOut } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -31,9 +31,9 @@ import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { Label } from '../ui/label';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider } from '../ui/tooltip';
 import { TeacherNotesDialog } from './teacher-notes-dialog';
-import { toggleStudentVisibility, updateStudentDetails, setMeditationStatus } from '@/ai/flows/manage-student';
+import { toggleStudentVisibility, updateStudentDetails, setMeditationStatus, forceStudentLogout } from '@/ai/flows/manage-student';
 import { SetQuestProgressDialog } from './set-quest-progress-dialog';
 import { setStudentStat } from '@/ai/flows/manage-student-stats';
 import { Textarea } from '../ui/textarea';
@@ -361,7 +361,7 @@ function MeditationDialog({ student, teacherUid, onOpenChange }: { student: Stud
                 <Textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    placeholder="e.g., Reflect on your behavior during today's history lesson."
+                    placeholder="e.g., Reflect on your focus during today's history lesson."
                     rows={4}
                 />
             </div>
@@ -444,6 +444,22 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
             });
             if (result.success) {
                 toast({ title: 'Released', description: `${student.characterName} has been released from the Meditation Chamber.` });
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message });
+        }
+    };
+    
+    const handleForceLogout = async () => {
+        try {
+            const result = await forceStudentLogout({
+                teacherUid,
+                studentUid: student.uid,
+            });
+            if (result.success) {
+                toast({ title: 'Logout Signal Sent', description: `${student.characterName} will be logged out on their next action.` });
             } else {
                 throw new Error(result.error);
             }
@@ -584,6 +600,9 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
                             {student.isHidden ? <Eye className="mr-2 h-4 w-4"/> : <EyeOff className="mr-2 h-4 w-4" />}
                             {student.isHidden ? 'Unhide Student' : 'Hide Student'}
                         </DropdownMenuItem>
+                         <DropdownMenuItem onSelect={handleForceLogout} className="text-destructive focus:text-destructive">
+                            <LogOut className="mr-2 h-4 w-4"/> Force Student Logout
+                        </DropdownMenuItem>
                      </DropdownMenuContent>
                 </DropdownMenu>
             </CardFooter>
@@ -605,5 +624,3 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
     </>
   );
 }
-
-    

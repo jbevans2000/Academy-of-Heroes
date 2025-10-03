@@ -50,10 +50,9 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff, MessageSquare, Heart, Zap as ZapIcon, HeartPulse, Filter, Moon, UserCheck, Trophy, BarChart } from 'lucide-react';
-import { calculateLevel, calculateHpGain, calculateMpGain, MAX_LEVEL, XP_FOR_MAX_LEVEL } from '@/lib/game-mechanics';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { setMeditationStatus, toggleStudentVisibility, setBulkMeditationStatus, releaseAllFromMeditation, forceStudentLogout } from '@/ai/flows/manage-student';
+import { setMeditationStatus, toggleStudentVisibility, setBulkMeditationStatus, releaseAllFromMeditation } from '@/ai/flows/manage-student';
 import { TeacherMessageCenter } from '@/components/teacher/teacher-message-center';
 import { restoreAllStudentsHp, restoreAllStudentsMp } from '@/ai/flows/manage-class';
 import { SetQuestProgressDialog } from '@/components/teacher/set-quest-progress-dialog';
@@ -78,6 +77,7 @@ interface TeacherData {
     dailyRegenPercentage?: number;
     lastSeenBroadcastTimestamp?: any;
     isNewlyRegistered?: boolean;
+    levelingTable?: { [level: number]: number };
 }
 
 type SortOrder = 'studentName' | 'characterName' | 'xp' | 'class' | 'company' | 'inMeditation';
@@ -258,6 +258,8 @@ export default function Dashboard() {
         setChapters(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter)))
     });
 
+
+    // Cleanup listeners on unmount
     return () => {
         unsubTeacher();
         studentsUnsubscribe();
