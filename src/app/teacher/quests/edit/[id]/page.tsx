@@ -554,7 +554,9 @@ export default function EditQuestPage() {
   const currentLessonPart = chapter?.lessonParts?.[currentLessonPartIndex];
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col">
+    <>
+      {worldMapUrl && <MapGallery isOpen={false} onOpenChange={() => {}} onMapSelect={(url) => handleFieldChange('worldMapUrl', url)} />}
+      <div className="relative flex min-h-screen w-full flex-col">
         {worldMapUrl && (
             <div 
               className="absolute inset-0 -z-10"
@@ -566,336 +568,336 @@ export default function EditQuestPage() {
               }}
             />
         )}
-      <TeacherHeader />
-      <main className="flex-1 p-4 md:p-6 lg:p-8">
-        <div className="max-w-4xl mx-auto space-y-6">
-          <div className="flex justify-between items-center">
-            <Button variant="outline" onClick={() => router.push('/teacher/quests')} className="mb-4">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to All Quests
-            </Button>
-          </div>
-          <Card className="shadow-lg bg-card/90">
-            <CardHeader>
-              <CardTitle className="text-3xl">Edit Quest</CardTitle>
-              <CardDescription>
-                Make changes to this chapter and its content.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-8">
-              
-              <div className="space-y-4 p-6 border rounded-lg">
-                <h3 className="text-xl font-semibold">Quest Hub</h3>
-                <div>
-                    <Label htmlFor="hub-select">Select Chapter's Hub</Label>
-                    <Select onValueChange={setSelectedHubId} value={selectedHubId} disabled={isSaving}>
-                        <SelectTrigger id="hub-select">
-                            <SelectValue placeholder="Choose a Hub..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {sortedHubs.map(hub => (
-                                <SelectItem key={hub.id} value={hub.id}>
-                                    {hub.name} {hub.hubType === 'sidequest' ? '(Side Quest)' : `(Order: ${hub.hubOrder})`}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+        <TeacherHeader />
+        <main className="flex-1 p-4 md:p-6 lg:p-8">
+          <div className="max-w-4xl mx-auto space-y-6">
+            <div className="flex justify-between items-center">
+              <Button variant="outline" onClick={() => router.push('/teacher/quests')} className="mb-4">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to All Quests
+              </Button>
+            </div>
+            <Card className="shadow-lg bg-card/90">
+              <CardHeader>
+                <CardTitle className="text-3xl">Edit Quest</CardTitle>
+                <CardDescription>
+                  Make changes to this chapter and its content.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-8">
+                
+                <div className="space-y-4 p-6 border rounded-lg">
+                  <h3 className="text-xl font-semibold">Quest Hub</h3>
+                  <div>
+                      <Label htmlFor="hub-select">Select Chapter's Hub</Label>
+                      <Select onValueChange={setSelectedHubId} value={selectedHubId} disabled={isSaving}>
+                          <SelectTrigger id="hub-select">
+                              <SelectValue placeholder="Choose a Hub..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                              {sortedHubs.map(hub => (
+                                  <SelectItem key={hub.id} value={hub.id}>
+                                      {hub.name} {hub.hubType === 'sidequest' ? '(Side Quest)' : `(Order: ${hub.hubOrder})`}
+                                  </SelectItem>
+                              ))}
+                          </SelectContent>
+                      </Select>
+                  </div>
                 </div>
-              </div>
-              
-              <div className="space-y-6 p-6 border rounded-lg">
-                <div className="flex justify-between items-center">
-                    <h3 className="text-xl font-semibold">Chapter Content</h3>
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                             <Button variant="outline" disabled={isGeneratingStory}>
-                                {isGeneratingStory ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
-                                Generate Story
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This will replace any existing content in the Chapter Title and Story Content fields with a new, AI-generated story. This action cannot be undone.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleGenerateStory}>
-                                    {isGeneratingStory ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : "Yes, Generate Story"}
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </div>
-                <Tabs defaultValue="story" className="w-full">
-                    <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="story">Story</TabsTrigger>
-                        <TabsTrigger value="lesson">Lesson</TabsTrigger>
-                         <TabsTrigger value="quiz">Quiz</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="story" className="mt-6 space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="chapter-title">Chapter Title</Label>
-                                <Input id="chapter-title" placeholder="e.g., A Summons from the Throne" value={chapter.title || ''} onChange={e => handleFieldChange('title', e.target.value)} disabled={isSaving} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="chapter-number">Chapter Number</Label>
-                                <Input id="chapter-number" type="number" placeholder="e.g., 1" value={chapter.chapterNumber ?? ''} onChange={e => handleFieldChange('chapterNumber', e.target.value === '' ? '' : Number(e.target.value))} disabled={isSaving} />
-                            </div>
-                        </div>
-                         <div className="flex items-center space-x-2">
-                            <Switch id="chapter-active" checked={chapter.isActive ?? true} onCheckedChange={(checked) => handleFieldChange('isActive', checked)} />
-                            <Label htmlFor="chapter-active">{chapter.isActive ?? true ? "Chapter is Active" : "Chapter is Deactivated"}</Label>
-                           </div>
-                        <ImageUploader label="Main Story Image" imageUrl={chapter.mainImageUrl || ''} onUploadSuccess={(url) => handleFieldChange('mainImageUrl', url)} teacherUid={teacher.uid} storagePath="quest-images" />
-                        <div className="space-y-2">
-                            <Label htmlFor="story-content">Story Content</Label>
-                            <RichTextEditor value={chapter.storyContent || ''} onChange={value => handleFieldChange('storyContent', value)} />
-                        </div>
-                        <ImageUploader label="Decorative Image 1" imageUrl={chapter.decorativeImageUrl1 || ''} onUploadSuccess={(url) => handleFieldChange('decorativeImageUrl1', url)} teacherUid={teacher.uid} storagePath="quest-images" />
-                        <div className="space-y-2">
-                            <Label htmlFor="story-additional-content">Additional Story Content</Label>
-                             <RichTextEditor value={chapter.storyAdditionalContent || ''} onChange={value => handleFieldChange('storyAdditionalContent', value)} />
-                        </div>
-                        <ImageUploader label="Decorative Image 2" imageUrl={chapter.decorativeImageUrl2 || ''} onUploadSuccess={(url) => handleFieldChange('decorativeImageUrl2', url)} teacherUid={teacher.uid} storagePath="quest-images" />
-                        <div className="space-y-2">
-                            <Label htmlFor="video-url">YouTube Video URL</Label>
-                            <Input id="video-url" placeholder="https://youtube.com/watch?v=..." value={chapter.videoUrl || ''} onChange={e => handleFieldChange('videoUrl', e.target.value)} disabled={isSaving} />
-                        </div>
-                        {hubMapUrl && (
-                            <div className="pt-4 space-y-2">
-                                <Label>Position Chapter on Hub Map</Label>
-                                <div 
-                                    className="relative aspect-[2048/1152] rounded-lg overflow-hidden bg-muted/50 border cursor-grab"
-                                    onMouseDown={(e) => handleMapDrag(e, 'chapter')}
-                                >
-                                    <Image
-                                        src={hubMapUrl}
-                                        alt="Hub Map for Placement"
-                                        fill
-                                        className="object-contain"
-                                        priority
-                                    />
-                                    <svg className="absolute top-0 left-0 w-full h-full" style={{ pointerEvents: 'none' }}>
-                                        {chaptersInHub.map((c, index) => {
-                                             if (c.id === chapterId) return null;
-                                             const nextChapter = chaptersInHub.find(nextC => nextC.chapterNumber === c.chapterNumber + 1);
-                                             if (nextChapter && nextChapter.id !== chapterId) {
-                                                return (
-                                                    <line key={`line-${c.id}`} x1={`${c.coordinates.x}%`} y1={`${c.coordinates.y}%`} x2={`${nextChapter.coordinates.x}%`} y2={`${nextChapter.coordinates.y}%`} stroke="#10B981" strokeWidth="3" />
-                                                )
-                                             }
-                                             return null;
-                                        })}
-                                    </svg>
-                                    {chaptersInHub.map(c => {
-                                        if (c.id === chapterId) return null;
-                                        return (
-                                            <div key={c.id} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${c.coordinates.x}%`, top: `${c.coordinates.y}%`}}>
-                                                <div className="w-5 h-5 bg-green-500 rounded-full ring-2 ring-white shadow-xl"></div>
-                                            </div>
-                                        )
-                                    })}
-                                    <div
-                                        className="absolute -translate-x-1/2 -translate-y-1/2 cursor-grabbing"
-                                        style={{
-                                            left: `${chapterCoordinates.x}%`,
-                                            top: `${chapterCoordinates.y}%`,
-                                        }}
-                                    >
-                                        <div className="w-5 h-5 bg-yellow-400 rounded-full ring-2 ring-white shadow-xl animate-pulse-glow"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </TabsContent>
-                    <TabsContent value="lesson" className="mt-6 space-y-4">
-                        <div className="flex justify-between items-center">
-                            <h3 className="text-xl font-semibold">Lesson Parts</h3>
-                            <div className="flex gap-2">
-                                <Button variant="outline" size="sm" onClick={handleAddLessonPart}>
-                                    <PlusCircle className="mr-2 h-4 w-4" /> Add Part
-                                </Button>
-                                {chapter.lessonParts && chapter.lessonParts.length > 1 && (
-                                    <Button variant="destructive" size="sm" onClick={() => handleDeleteLessonPart(currentLessonPartIndex)}>
-                                        <Trash2 className="mr-2 h-4 w-4" /> Delete Current Part
-                                    </Button>
-                                )}
-                            </div>
-                        </div>
-                        {currentLessonPart ? (
-                             <div className="p-4 border rounded-md bg-background/50 space-y-4">
-                                <RichTextEditor
-                                    value={currentLessonPart.content}
-                                    onChange={(content) => handleLessonPartChange(currentLessonPartIndex, content)}
-                                />
-                                <div className="flex justify-between items-center mt-4">
-                                    <Button onClick={() => setCurrentLessonPartIndex(p => p - 1)} disabled={currentLessonPartIndex === 0}>
-                                        <ArrowLeft className="mr-2 h-4 w-4" /> Previous
-                                    </Button>
-                                    <span className="text-sm font-semibold text-muted-foreground">
-                                        Part {currentLessonPartIndex + 1} of {chapter.lessonParts?.length || 0}
-                                    </span>
-                                    <Button onClick={() => setCurrentLessonPartIndex(p => p + 1)} disabled={currentLessonPartIndex === (chapter.lessonParts?.length || 0) - 1}>
-                                        Next <ArrowRight className="ml-2 h-4 w-4" />
-                                    </Button>
-                                </div>
-                            </div>
-                        ) : (
-                             <div className="text-center p-8 border-2 border-dashed rounded-lg">
-                                <p className="text-muted-foreground">This lesson has no content parts yet.</p>
-                                <Button onClick={handleAddLessonPart} className="mt-4">
-                                    <PlusCircle className="mr-2 h-4 w-4" /> Add the First Part
-                                </Button>
-                            </div>
-                        )}
-                    </TabsContent>
-                    <TabsContent value="quiz" className="mt-6 space-y-6">
-                        <div className="space-y-4 p-6 border rounded-lg bg-background/30">
-                            <h3 className="text-xl font-semibold flex items-center gap-2"><Sparkles className="text-primary" /> Generate Questions with the Oracle</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="ai-subject">Subject / Topic (for general questions)</Label>
-                                    <Input id="ai-subject" placeholder="e.g. Photosynthesis" value={aiSubject} onChange={(e) => setAiSubject(e.target.value)} disabled={isGeneratingQuestions} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="ai-grade">Grade Level</Label>
-                                    <Select onValueChange={setAiGradeLevel} value={aiGradeLevel} disabled={isGeneratingQuestions}>
-                                        <SelectTrigger id="ai-grade"><SelectValue placeholder="Choose a grade..." /></SelectTrigger>
-                                        <SelectContent>{gradeLevels.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="ai-num-questions">Number of Questions (1-10)</Label>
-                                <Input id="ai-num-questions" type="number" min="1" max="10" value={aiNumQuestions} onChange={(e) => setAiNumQuestions(e.target.value)} disabled={isGeneratingQuestions}/>
-                            </div>
-                            <div className="flex gap-2">
-                                <Button onClick={handleGenerateQuestions} disabled={isGeneratingQuestions || !aiSubject || !aiGradeLevel}>
-                                    {isGeneratingQuestions ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
-                                    Generate by Subject
-                                </Button>
-                                <Button onClick={handleGenerateQuestionsFromText} variant="secondary" disabled={isGeneratingQuestions || !aiNumQuestions}>
-                                    {isGeneratingQuestions ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <BookCopy className="mr-2 h-4 w-4" />}
-                                    Generate From Lesson
-                                </Button>
-                            </div>
-                        </div>
-                        <h3 className="text-xl font-semibold">Quiz Editor</h3>
-                        <div className="p-4 border rounded-md space-y-4">
+                
+                <div className="space-y-6 p-6 border rounded-lg">
+                  <div className="flex justify-between items-center">
+                      <h3 className="text-xl font-semibold">Chapter Content</h3>
+                      <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                              <Button variant="outline" disabled={isGeneratingStory}>
+                                  {isGeneratingStory ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
+                                  Generate Story
+                              </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                              <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                      This will replace any existing content in the Chapter Title and Story Content fields with a new, AI-generated story. This action cannot be undone.
+                                  </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={handleGenerateStory}>
+                                      {isGeneratingStory ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : "Yes, Generate Story"}
+                                  </AlertDialogAction>
+                              </AlertDialogFooter>
+                          </AlertDialogContent>
+                      </AlertDialog>
+                  </div>
+                  <Tabs defaultValue="story" className="w-full">
+                      <TabsList className="grid w-full grid-cols-3">
+                          <TabsTrigger value="story">Story</TabsTrigger>
+                          <TabsTrigger value="lesson">Lesson</TabsTrigger>
+                           <TabsTrigger value="quiz">Quiz</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="story" className="mt-6 space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                  <Label htmlFor="chapter-title">Chapter Title</Label>
+                                  <Input id="chapter-title" placeholder="e.g., A Summons from the Throne" value={chapter.title || ''} onChange={e => handleFieldChange('title', e.target.value)} disabled={isSaving} />
+                              </div>
+                              <div className="space-y-2">
+                                  <Label htmlFor="chapter-number">Chapter Number</Label>
+                                  <Input id="chapter-number" type="number" placeholder="e.g., 1" value={chapter.chapterNumber ?? ''} onChange={e => handleFieldChange('chapterNumber', e.target.value === '' ? '' : Number(e.target.value))} disabled={isSaving} />
+                              </div>
+                          </div>
                            <div className="flex items-center space-x-2">
-                                <Switch 
-                                    id="require-passing" 
-                                    checked={chapter.quiz?.settings?.requirePassing ?? true} 
-                                    onCheckedChange={checked => handleQuizChange('settings', { ...(chapter.quiz?.settings || { requirePassing: true, passingScore: 80, includeInDailyTraining: true }), requirePassing: checked })}
-                                    disabled={!hasQuizQuestions}
-                                />
-                                <Label htmlFor="require-passing" className={cn(!hasQuizQuestions && "text-muted-foreground")}>Require Minimum Score to Advance</Label>
-                            </div>
-                            {(chapter.quiz?.settings?.requirePassing ?? true) && (
-                                <div className="space-y-2 animate-in fade-in-50">
-                                    <Label htmlFor="passing-score" className={cn(!hasQuizQuestions && "text-muted-foreground")}>Passing Score (%)</Label>
-                                    <Input 
-                                        id="passing-score" 
-                                        type="number" 
-                                        min="0" 
-                                        max="100" 
-                                        value={chapter.quiz?.settings?.passingScore ?? 80} 
-                                        onChange={(e) => handleQuizChange('settings', { ...(chapter.quiz?.settings || { requirePassing: true, passingScore: 80, includeInDailyTraining: true }), passingScore: Number(e.target.value)})} 
-                                        disabled={!hasQuizQuestions}
-                                    />
-                                </div>
-                            )}
-                            <div className="flex items-center space-x-2">
-                                <Switch 
-                                    id="include-in-training" 
-                                    checked={chapter.quiz?.settings?.includeInDailyTraining ?? true}
-                                    onCheckedChange={checked => handleQuizChange('settings', { ...(chapter.quiz?.settings || { requirePassing: true, passingScore: 80, includeInDailyTraining: true }), includeInDailyTraining: checked })}
-                                    disabled={!hasQuizQuestions}
-                                />
-                                <Label htmlFor="include-in-training" className={cn(!hasQuizQuestions && "text-muted-foreground")}>Include Quiz in Daily Training Pool</Label>
-                            </div>
-                        </div>
-                        {(chapter.quiz?.questions || []).map((q, qIndex) => (
-                            <Card key={q.id} className="p-4 bg-secondary/50">
-                                <div className="flex justify-between items-center mb-2">
-                                    <Label className="font-semibold">Question {qIndex + 1}</Label>
-                                    <Button variant="ghost" size="icon" onClick={() => handleRemoveQuizQuestion(q.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                                </div>
-                                <div className="space-y-2">
-                                    <Textarea placeholder="Question text" value={q.text} onChange={e => handleQuizQuestionChange(q.id, 'text', e.target.value)} />
-                                    <div className="space-y-2">
-                                        <Label htmlFor={`q-image-url-${q.id}`} className="text-base">Image URL (Optional)</Label>
-                                        <div className="flex items-center gap-2">
-                                            <Input
-                                                id={`q-image-url-${q.id}`}
-                                                placeholder="https://example.com/image.png"
-                                                value={q.imageUrl || ''}
-                                                onChange={(e) => handleQuizQuestionChange(q.id, 'imageUrl', e.target.value)}
-                                                className="mt-2"
-                                            />
-                                            <Label htmlFor={`q-image-upload-${q.id}`} className={cn(buttonVariants({ variant: 'outline' }), "cursor-pointer")}>
-                                                <Upload className="h-4 w-4" />
-                                            </Label>
-                                             <Input 
-                                                id={`q-image-upload-${q.id}`}
-                                                type="file" 
-                                                accept="image/*"
-                                                className="hidden"
-                                                onChange={(e) => {
-                                                    if(e.target.files && e.target.files[0]){
-                                                        handleQuestionImageUpload(q.id, e.target.files[0])
-                                                    }
-                                                }}
-                                                disabled={uploadingQuestionImage === q.id}
-                                            />
-                                             {uploadingQuestionImage === q.id && <Loader2 className="h-5 w-5 animate-spin" />}
-                                        </div>
-                                        {q.imageUrl && <Image src={q.imageUrl} alt="Question preview" width={100} height={100} className="rounded-md border mt-2" />}
-                                    </div>
-                                    <Select value={q.questionType} onValueChange={(value) => handleQuizQuestionChange(q.id, 'questionType', value)}>
-                                        <SelectTrigger><SelectValue/></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="single">Single Choice (Radio Buttons)</SelectItem>
-                                            <SelectItem value="multiple">Multiple Choice (Checkboxes)</SelectItem>
-                                            <SelectItem value="true-false">True/False</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    
-                                    <div className="space-y-2 pt-2">
-                                        <Label>Answers (Select correct one(s))</Label>
-                                        {q.answers.map((ans, aIndex) => (
-                                            <div key={aIndex} className="flex items-center gap-2">
-                                                {q.questionType === 'single' || q.questionType === 'true-false' ? (
-                                                    <RadioGroup value={String(q.correctAnswer[0])} onValueChange={value => handleCorrectQuizAnswerChange(q.id, Number(value))} className="flex items-center">
-                                                        <RadioGroupItem value={String(aIndex)} id={`q${q.id}-a${aIndex}`} />
-                                                    </RadioGroup>
-                                                ) : (
-                                                    <Checkbox id={`q${q.id}-a${aIndex}`} checked={q.correctAnswer.includes(aIndex)} onCheckedChange={() => handleCorrectQuizAnswerChange(q.id, aIndex)} />
-                                                )}
-                                                <Input placeholder={`Answer ${aIndex + 1}`} value={ans} onChange={e => handleQuizAnswerChange(q.id, aIndex, e.target.value)} disabled={q.questionType === 'true-false'}/>
-                                                {q.questionType !== 'true-false' && (
-                                                    <Button variant="ghost" size="icon" onClick={() => handleRemoveAnswerChoice(q.id, aIndex)} disabled={q.answers.length <= 2}>
-                                                        <X className="h-4 w-4" />
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                     {q.questionType !== 'true-false' && (
-                                        <Button variant="outline" size="sm" onClick={() => handleAddAnswerChoice(q.id)}>
-                                            <PlusCircle className="mr-2 h-4 w-4" /> Add Answer Choice
-                                        </Button>
-                                     )}
-                                </div>
-                            </Card>
-                        ))}
-                        <Button variant="outline" onClick={handleAddQuizQuestion}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Add Question
-                        </Button>
+                              <Switch id="chapter-active" checked={chapter.isActive ?? true} onCheckedChange={(checked) => handleFieldChange('isActive', checked)} />
+                              <Label htmlFor="chapter-active">{chapter.isActive ?? true ? "Chapter is Active" : "Chapter is Deactivated"}</Label>
+                             </div>
+                          <ImageUploader label="Main Story Image" imageUrl={chapter.mainImageUrl || ''} onUploadSuccess={(url) => handleFieldChange('mainImageUrl', url)} teacherUid={teacher.uid} storagePath="quest-images" />
+                          <div className="space-y-2">
+                              <Label htmlFor="story-content">Story Content</Label>
+                              <RichTextEditor value={chapter.storyContent || ''} onChange={value => handleFieldChange('storyContent', value)} />
+                          </div>
+                          <ImageUploader label="Decorative Image 1" imageUrl={chapter.decorativeImageUrl1 || ''} onUploadSuccess={(url) => handleFieldChange('decorativeImageUrl1', url)} teacherUid={teacher.uid} storagePath="quest-images" />
+                          <div className="space-y-2">
+                              <Label htmlFor="story-additional-content">Additional Story Content</Label>
+                               <RichTextEditor value={chapter.storyAdditionalContent || ''} onChange={value => handleFieldChange('storyAdditionalContent', value)} />
+                          </div>
+                          <ImageUploader label="Decorative Image 2" imageUrl={chapter.decorativeImageUrl2 || ''} onUploadSuccess={(url) => handleFieldChange('decorativeImageUrl2', url)} teacherUid={teacher.uid} storagePath="quest-images" />
+                          <div className="space-y-2">
+                              <Label htmlFor="video-url">YouTube Video URL</Label>
+                              <Input id="video-url" placeholder="https://youtube.com/watch?v=..." value={chapter.videoUrl || ''} onChange={e => handleFieldChange('videoUrl', e.target.value)} disabled={isSaving} />
+                          </div>
+                          {hubMapUrl && (
+                              <div className="pt-4 space-y-2">
+                                  <Label>Position Chapter on Hub Map</Label>
+                                  <div 
+                                      className="relative aspect-[2048/1152] rounded-lg overflow-hidden bg-muted/50 border cursor-grab"
+                                      onMouseDown={(e) => handleMapDrag(e, 'chapter')}
+                                  >
+                                      <Image
+                                          src={hubMapUrl}
+                                          alt="Hub Map for Placement"
+                                          fill
+                                          className="object-contain"
+                                          priority
+                                      />
+                                      <svg className="absolute top-0 left-0 w-full h-full" style={{ pointerEvents: 'none' }}>
+                                          {chaptersInHub.map((c, index) => {
+                                               if (c.id === chapterId) return null;
+                                               const nextChapter = chaptersInHub.find(nextC => nextC.chapterNumber === c.chapterNumber + 1);
+                                               if (nextChapter && nextChapter.id !== chapterId) {
+                                                  return (
+                                                      <line key={`line-${c.id}`} x1={`${c.coordinates.x}%`} y1={`${c.coordinates.y}%`} x2={`${nextChapter.coordinates.x}%`} y2={`${nextChapter.coordinates.y}%`} stroke="#10B981" strokeWidth="3" />
+                                                  )
+                                               }
+                                               return null;
+                                          })}
+                                      </svg>
+                                      {chaptersInHub.map(c => {
+                                          if (c.id === chapterId) return null;
+                                          return (
+                                              <div key={c.id} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${c.coordinates.x}%`, top: `${c.coordinates.y}%`}}>
+                                                  <div className="w-5 h-5 bg-green-500 rounded-full ring-2 ring-white shadow-xl"></div>
+                                              </div>
+                                          )
+                                      })}
+                                      <div
+                                          className="absolute -translate-x-1/2 -translate-y-1/2 cursor-grabbing"
+                                          style={{
+                                              left: `${chapterCoordinates.x}%`,
+                                              top: `${chapterCoordinates.y}%`,
+                                          }}
+                                      >
+                                          <div className="w-5 h-5 bg-yellow-400 rounded-full ring-2 ring-white shadow-xl animate-pulse-glow"></div>
+                                      </div>
+                                  </div>
+                              </div>
+                          )}
+                      </TabsContent>
+                      <TabsContent value="lesson" className="mt-6 space-y-4">
+                          <div className="flex justify-between items-center">
+                              <h3 className="text-xl font-semibold">Lesson Parts</h3>
+                              <div className="flex gap-2">
+                                  <Button variant="outline" size="sm" onClick={handleAddLessonPart}>
+                                      <PlusCircle className="mr-2 h-4 w-4" /> Add Part
+                                  </Button>
+                                  {chapter.lessonParts && chapter.lessonParts.length > 1 && (
+                                      <Button variant="destructive" size="sm" onClick={() => handleDeleteLessonPart(currentLessonPartIndex)}>
+                                          <Trash2 className="mr-2 h-4 w-4" /> Delete Current Part
+                                      </Button>
+                                  )}
+                              </div>
+                          </div>
+                          {currentLessonPart ? (
+                               <div className="p-4 border rounded-md bg-background/50 space-y-4">
+                                  <RichTextEditor
+                                      value={currentLessonPart.content}
+                                      onChange={(content) => handleLessonPartChange(currentLessonPartIndex, content)}
+                                  />
+                                  <div className="flex justify-between items-center mt-4">
+                                      <Button onClick={() => setCurrentLessonPartIndex(p => p - 1)} disabled={currentLessonPartIndex === 0}>
+                                          <ArrowLeft className="mr-2 h-4 w-4" /> Previous
+                                      </Button>
+                                      <span className="text-sm font-semibold text-muted-foreground">
+                                          Part {currentLessonPartIndex + 1} of {chapter.lessonParts?.length || 0}
+                                      </span>
+                                      <Button onClick={() => setCurrentLessonPartIndex(p => p + 1)} disabled={currentLessonPartIndex === (chapter.lessonParts?.length || 0) - 1}>
+                                          Next <ArrowRight className="ml-2 h-4 w-4" />
+                                      </Button>
+                                  </div>
+                              </div>
+                          ) : (
+                               <div className="text-center p-8 border-2 border-dashed rounded-lg">
+                                  <p className="text-muted-foreground">This lesson has no content parts yet.</p>
+                                  <Button onClick={handleAddLessonPart} className="mt-4">
+                                      <PlusCircle className="mr-2 h-4 w-4" /> Add the First Part
+                                  </Button>
+                              </div>
+                          )}
+                      </TabsContent>
+                      <TabsContent value="quiz" className="mt-6 space-y-6">
+                          <div className="space-y-4 p-6 border rounded-lg bg-background/30">
+                              <h3 className="text-xl font-semibold flex items-center gap-2"><Sparkles className="text-primary" /> Generate Questions with the Oracle</h3>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                      <Label htmlFor="ai-subject">Subject / Topic (for general questions)</Label>
+                                      <Input id="ai-subject" placeholder="e.g. Photosynthesis" value={aiSubject} onChange={(e) => setAiSubject(e.target.value)} disabled={isGeneratingQuestions} />
+                                  </div>
+                                  <div className="space-y-2">
+                                      <Label htmlFor="ai-grade">Grade Level</Label>
+                                      <Select onValueChange={setAiGradeLevel} value={aiGradeLevel} disabled={isGeneratingQuestions}>
+                                          <SelectTrigger id="ai-grade"><SelectValue placeholder="Choose a grade..." /></SelectTrigger>
+                                          <SelectContent>{gradeLevels.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+                                      </Select>
+                                  </div>
+                              </div>
+                              <div className="space-y-2">
+                                  <Label htmlFor="ai-num-questions">Number of Questions (1-10)</Label>
+                                  <Input id="ai-num-questions" type="number" min="1" max="10" value={aiNumQuestions} onChange={(e) => setAiNumQuestions(e.target.value)} disabled={isGeneratingQuestions}/>
+                              </div>
+                              <div className="flex gap-2">
+                                  <Button onClick={handleGenerateQuestions} disabled={isGeneratingQuestions || !aiSubject || !aiGradeLevel}>
+                                      {isGeneratingQuestions ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
+                                      Generate by Subject
+                                  </Button>
+                                  <Button onClick={handleGenerateQuestionsFromText} variant="secondary" disabled={isGeneratingQuestions || !aiNumQuestions}>
+                                      {isGeneratingQuestions ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <BookCopy className="mr-2 h-4 w-4" />}
+                                      Generate From Lesson
+                                  </Button>
+                              </div>
+                          </div>
+                          <h3 className="text-xl font-semibold">Quiz Editor</h3>
+                          <div className="p-4 border rounded-md space-y-4">
+                             <div className="flex items-center space-x-2">
+                                  <Switch 
+                                      id="require-passing" 
+                                      checked={chapter.quiz?.settings?.requirePassing ?? true} 
+                                      onCheckedChange={checked => handleQuizChange('settings', { ...(chapter.quiz?.settings || { requirePassing: true, passingScore: 80, includeInDailyTraining: true }), requirePassing: checked })}
+                                      disabled={!hasQuizQuestions}
+                                  />
+                                  <Label htmlFor="require-passing" className={cn(!hasQuizQuestions && "text-muted-foreground")}>Require Minimum Score to Advance</Label>
+                              </div>
+                              {(chapter.quiz?.settings?.requirePassing ?? true) && (
+                                  <div className="space-y-2 animate-in fade-in-50">
+                                      <Label htmlFor="passing-score" className={cn(!hasQuizQuestions && "text-muted-foreground")}>Passing Score (%)</Label>
+                                      <Input 
+                                          id="passing-score" 
+                                          type="number" 
+                                          min="0" 
+                                          max="100" 
+                                          value={chapter.quiz?.settings?.passingScore ?? 80} 
+                                          onChange={(e) => handleQuizChange('settings', { ...(chapter.quiz?.settings || { requirePassing: true, passingScore: 80, includeInDailyTraining: true }), passingScore: Number(e.target.value)})} 
+                                          disabled={!hasQuizQuestions}
+                                      />
+                                  </div>
+                              )}
+                              <div className="flex items-center space-x-2">
+                                  <Switch 
+                                      id="include-in-training" 
+                                      checked={chapter.quiz?.settings?.includeInDailyTraining ?? true}
+                                      onCheckedChange={checked => handleQuizChange('settings', { ...(chapter.quiz?.settings || { requirePassing: true, passingScore: 80, includeInDailyTraining: true }), includeInDailyTraining: checked })}
+                                      disabled={!hasQuizQuestions}
+                                  />
+                                  <Label htmlFor="include-in-training" className={cn(!hasQuizQuestions && "text-muted-foreground")}>Include Quiz in Daily Training Pool</Label>
+                              </div>
+                          </div>
+                          {(chapter.quiz?.questions || []).map((q, qIndex) => (
+                              <Card key={q.id} className="p-4 bg-secondary/50">
+                                  <div className="flex justify-between items-center mb-2">
+                                      <Label className="font-semibold">Question {qIndex + 1}</Label>
+                                      <Button variant="ghost" size="icon" onClick={() => handleRemoveQuizQuestion(q.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                  </div>
+                                  <div className="space-y-2">
+                                      <Textarea placeholder="Question text" value={q.text} onChange={e => handleQuizQuestionChange(q.id, 'text', e.target.value)} />
+                                      <div className="space-y-2">
+                                          <Label htmlFor={`q-image-url-${q.id}`} className="text-base">Image URL (Optional)</Label>
+                                          <div className="flex items-center gap-2">
+                                              <Input
+                                                  id={`q-image-url-${q.id}`}
+                                                  placeholder="https://example.com/image.png"
+                                                  value={q.imageUrl || ''}
+                                                  onChange={(e) => handleQuizQuestionChange(q.id, 'imageUrl', e.target.value)}
+                                                  className="mt-2"
+                                              />
+                                              <Label htmlFor={`q-image-upload-${q.id}`} className={cn(buttonVariants({ variant: 'outline' }), "cursor-pointer")}>
+                                                  <Upload className="h-4 w-4" />
+                                              </Label>
+                                               <Input 
+                                                  id={`q-image-upload-${q.id}`}
+                                                  type="file" 
+                                                  accept="image/*"
+                                                  className="hidden"
+                                                  onChange={(e) => {
+                                                      if(e.target.files && e.target.files[0]){
+                                                          handleQuestionImageUpload(q.id, e.target.files[0])
+                                                      }
+                                                  }}
+                                                  disabled={uploadingQuestionImage === q.id}
+                                              />
+                                               {uploadingQuestionImage === q.id && <Loader2 className="h-5 w-5 animate-spin" />}
+                                          </div>
+                                          {q.imageUrl && <Image src={q.imageUrl} alt="Question preview" width={100} height={100} className="rounded-md border mt-2" />}
+                                      </div>
+                                      <Select value={q.questionType} onValueChange={(value) => handleQuizQuestionChange(q.id, 'questionType', value)}>
+                                          <SelectTrigger><SelectValue/></SelectTrigger>
+                                          <SelectContent>
+                                              <SelectItem value="single">Single Choice (Radio Buttons)</SelectItem>
+                                              <SelectItem value="multiple">Multiple Choice (Checkboxes)</SelectItem>
+                                              <SelectItem value="true-false">True/False</SelectItem>
+                                          </SelectContent>
+                                      </Select>
+                                      
+                                      <div className="space-y-2 pt-2">
+                                          <Label>Answers (Select correct one(s))</Label>
+                                          {q.answers.map((ans, aIndex) => (
+                                              <div key={aIndex} className="flex items-center gap-2">
+                                                  {q.questionType === 'single' || q.questionType === 'true-false' ? (
+                                                      <RadioGroup value={String(q.correctAnswer[0])} onValueChange={value => handleCorrectQuizAnswerChange(q.id, Number(value))} className="flex items-center">
+                                                          <RadioGroupItem value={String(aIndex)} id={`q${q.id}-a${aIndex}`} />
+                                                      </RadioGroup>
+                                                  ) : (
+                                                      <Checkbox id={`q${q.id}-a${aIndex}`} checked={q.correctAnswer.includes(aIndex)} onCheckedChange={() => handleCorrectQuizAnswerChange(q.id, aIndex)} />
+                                                  )}
+                                                  <Input placeholder={`Answer ${aIndex + 1}`} value={ans} onChange={e => handleQuizAnswerChange(q.id, aIndex, e.target.value)} disabled={q.questionType === 'true-false'}/>
+                                                  {q.questionType !== 'true-false' && (
+                                                      <Button variant="ghost" size="icon" onClick={() => handleRemoveAnswerChoice(q.id, aIndex)} disabled={q.answers.length <= 2}>
+                                                          <X className="h-4 w-4" />
+                                                      </Button>
+                                                  )}
+                                              </div>
+                                          ))}
+                                      </div>
+                                       {q.questionType !== 'true-false' && (
+                                          <Button variant="outline" size="sm" onClick={() => handleAddAnswerChoice(q.id)}>
+                                              <PlusCircle className="mr-2 h-4 w-4" /> Add Answer Choice
+                                          </Button>
+                                       )}
+                                  </div>
+                              </Card>
+                          ))}
+                          <Button variant="outline" onClick={handleAddQuizQuestion}>
+                              <PlusCircle className="mr-2 h-4 w-4" /> Add Question
+                          </Button>
                       </TabsContent>
                       </Tabs>
                   </div>
@@ -919,20 +921,19 @@ export default function EditQuestPage() {
                   </Button>
                 ) : <div />}
               </div>
-            </CardContent>
-          </Card>
-          
-           <div className="flex justify-center mt-4">
-              <Button variant="outline" onClick={() => router.push('/teacher/quests')} className="mb-4">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to All Quests
-              </Button>
-            </div>
-        </div>
-      </main>
-    </div>
-  </>
+              </CardContent>
+            </Card>
+            
+             <div className="flex justify-center mt-4">
+                <Button variant="outline" onClick={() => router.push('/teacher/quests')} className="mb-4">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to All Quests
+                </Button>
+              </div>
+          </div>
+        </main>
+      </div>
+    </>
   );
 }
 
-    
