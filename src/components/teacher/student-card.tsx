@@ -31,7 +31,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { Label } from '../ui/label';
-import { Tooltip, TooltipContent, TooltipProvider } from '../ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { TeacherNotesDialog } from './teacher-notes-dialog';
 import { toggleStudentVisibility, updateStudentDetails, setMeditationStatus, forceStudentLogout } from '@/ai/flows/manage-student';
 import { SetQuestProgressDialog } from './set-quest-progress-dialog';
