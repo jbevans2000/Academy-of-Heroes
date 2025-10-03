@@ -49,7 +49,11 @@ export async function getDailyTrainingQuestions(teacherUid: string, student: Stu
     // --- Source 1: Completed Chapter Quizzes ---
     let chapterQuestions: QuizQuestion[] = [];
     if (student.completedChapters && student.completedChapters.length > 0) {
-        const chaptersQuery = query(collection(db, 'teachers', teacherUid, 'chapters'), where('__name__', 'in', student.completedChapters.slice(0, 10)));
+        // Firestore 'in' queries are limited to 30 items in a single query.
+        // We will take the most recent 30 completed chapters.
+        const chapterIdsToQuery = student.completedChapters.slice(-30);
+        
+        const chaptersQuery = query(collection(db, 'teachers', teacherUid, 'chapters'), where('__name__', 'in', chapterIdsToQuery));
         const completedChaptersSnapshot = await getDocs(chaptersQuery);
 
         completedChaptersSnapshot.forEach(doc => {
