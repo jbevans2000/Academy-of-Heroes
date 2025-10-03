@@ -1,3 +1,4 @@
+
 import type { ClassType, Student } from "./data";
 
 export const MAX_LEVEL = 30;
@@ -107,7 +108,15 @@ export function calculateMpGain(
 }
 
 
-// New function to calculate base max HP without randomness, for resetting after battles
+/**
+ * Calculates a non-random, deterministic base stat value for a given level.
+ * This is used for de-leveling a student or resetting stats to avoid the complexity
+ * of reversing random dice rolls. It should NOT be used for calculating gains during a level-up.
+ * @param characterClass The student's class.
+ * @param level The target level.
+ * @param statType 'hp' or 'mp'.
+ * @returns The calculated base maximum for that stat.
+ */
 export function calculateBaseMaxHp(characterClass: ClassType, level: number, statType: 'hp' | 'mp' = 'hp'): number {
     const baseStats: { [key in ClassType]?: { base: number, perLevel: number } } = {
         'Mage': { base: 6, perLevel: 3 }, // Average of 1d4 is 2.5, let's say 3
