@@ -108,7 +108,8 @@ export default function DailyTrainingPage() {
             allChaptersSnapshot.forEach(doc => {
                 if (completedChapterIds.has(doc.id)) {
                     const chapter = doc.data() as Chapter;
-                    if (chapter.quiz && chapter.quiz.questions) {
+                    // Check if the quiz exists and is included in daily training
+                    if (chapter.quiz && chapter.quiz.questions && (chapter.quiz.settings?.includeInDailyTraining ?? true)) {
                         chapterQuestions = chapterQuestions.concat(chapter.quiz.questions);
                     }
                 }

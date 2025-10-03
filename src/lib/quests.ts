@@ -6,6 +6,7 @@ export interface QuizQuestion {
     answers: string[];
     correctAnswer: number[]; // Use an array to support single or multiple correct answers
     questionType: 'single' | 'multiple' | 'true-false';
+    imageUrl?: string;
 }
 
 export interface Quiz {
@@ -13,6 +14,7 @@ export interface Quiz {
     settings: {
         requirePassing: boolean;
         passingScore: number; // Percentage
+        includeInDailyTraining?: boolean; // New setting
     };
 }
 
