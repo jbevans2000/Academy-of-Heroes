@@ -33,10 +33,12 @@ import { ChallengeDialog } from '@/components/dashboard/challenge-dialog';
 import { getDuelSettings } from '@/ai/flows/manage-duels';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { AvatarLogDialog } from '@/components/dashboard/avatar-log-dialog';
+import { xpForLevel as defaultXpTable } from '@/lib/game-mechanics';
 
 interface DashboardClientProps {
   student: Student;
   isTeacherPreview?: boolean;
+  levelingTable: { [level: number]: number };
 }
 
 const isSameDay = (d1: Date, d2: Date) => {
@@ -45,7 +47,7 @@ const isSameDay = (d1: Date, d2: Date) => {
            d1.getDate() === d2.getDate();
 }
 
-export function DashboardClient({ student, isTeacherPreview = false }: DashboardClientProps) {
+export function DashboardClient({ student, isTeacherPreview = false, levelingTable }: DashboardClientProps) {
   const router = useRouter();
   const { toast } = useToast();
   
@@ -299,6 +301,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
           </div>
           <StatsCard 
               student={student}
+              levelingTable={levelingTable}
           />
           <TooltipProvider>
               <div className="flex justify-center flex-wrap pt-6 gap-4">

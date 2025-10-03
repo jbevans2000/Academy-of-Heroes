@@ -14,9 +14,12 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { setChampionStatus } from '@/ai/flows/manage-student';
+import { xpForLevel as defaultXpTable, MAX_LEVEL } from '@/lib/game-mechanics';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface StatsCardProps {
   student: Student;
+  levelingTable: { [level: number]: number };
   isProfileDialog?: boolean;
 }
 
@@ -30,7 +33,7 @@ const classIconMap: { [key in ClassType]?: React.ReactNode } = {
 const freelancerLogoUrl = "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Sep%2027%2C%202025%2C%2009_44_04%20AM.png?alt=media&token=0920ef19-d5d9-43b1-bab7-5ab134373ed3";
 
 
-export function StatsCard({ student, isProfileDialog = false }: StatsCardProps) {
+export function StatsCard({ student, levelingTable, isProfileDialog = false }: StatsCardProps) {
   const [isPowersSheetOpen, setIsPowersSheetOpen] = useState(false);
   const [company, setCompany] = useState<Company | null>(null);
   const [isChampion, setIsChampion] = useState(student.isChampion || false);
@@ -38,6 +41,12 @@ export function StatsCard({ student, isProfileDialog = false }: StatsCardProps) 
   const { toast } = useToast();
 
   const { xp, gold, level, hp, mp, maxHp, maxMp, characterName, studentName, class: characterClass } = student;
+  
+  const tableToUse = levelingTable && Object.keys(levelingTable).length > 0 ? levelingTable : defaultXpTable;
+  const nextLevel = level + 1;
+  const xpForNextLevel = tableToUse[nextLevel] || tableToUse[MAX_LEVEL];
+  const xpNeeded = level < MAX_LEVEL ? xpForNextLevel - xp : 0;
+
 
   useEffect(() => {
       let isMounted = true;
@@ -153,13 +162,26 @@ export function StatsCard({ student, isProfileDialog = false }: StatsCardProps) 
                 <p className="text-xl font-bold">{mp} / {maxMp}</p>
               </div>
             </div>
-            <div className="flex flex-col items-center justify-center space-y-2 bg-secondary/80 p-4 rounded-lg">
-              <Star className="h-8 w-8 text-yellow-400" />
-              <div>
-                <p className="text-sm text-muted-foreground">Experience</p>
-                <p className="text-xl font-bold">{xp.toLocaleString()}</p>
-              </div>
-            </div>
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                         <div className="flex flex-col items-center justify-center space-y-2 bg-secondary/80 p-4 rounded-lg cursor-help">
+                            <Star className="h-8 w-8 text-yellow-400" />
+                            <div>
+                                <p className="text-sm text-muted-foreground">Experience</p>
+                                <p className="text-xl font-bold">{xp.toLocaleString()}</p>
+                            </div>
+                        </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        {level < MAX_LEVEL ? (
+                            <p>{xpNeeded.toLocaleString()} XP until Level {nextLevel}</p>
+                        ) : (
+                             <p>You have reached the MAX level!</p>
+                        )}
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
              <div className="flex flex-col items-center justify-center space-y-2 bg-secondary/80 p-4 rounded-lg col-span-2 sm:col-span-1">
               <Coins className="h-8 w-8 text-amber-500" />
               <div>

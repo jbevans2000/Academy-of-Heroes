@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
+import { xpForLevel as defaultXpTable } from '@/lib/game-mechanics';
 
 const isSameDay = (d1: Date, d2: Date) => {
     return d1.getFullYear() === d2.getFullYear() &&
@@ -29,9 +30,19 @@ const isSameDay = (d1: Date, d2: Date) => {
            d1.getDate() === d2.getDate();
 }
 
+interface TeacherData {
+    levelingTable?: { [level: number]: number };
+    dailyRegenPercentage?: number;
+    isDailyReminderActive?: boolean;
+    dailyReminderTitle?: string;
+    dailyReminderMessage?: string;
+    worldMapUrl?: string;
+}
+
 export default function Dashboard() {
   const [student, setStudent] = useState<Student | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
+  const [teacherData, setTeacherData] = useState<TeacherData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showApprovedDialog, setShowApprovedDialog] = useState(false);
 
@@ -77,6 +88,11 @@ export default function Dashboard() {
                 return;
               }
               
+              const teacherRef = doc(db, 'teachers', teacherUid);
+              const teacherSnap = await getDoc(teacherRef);
+              const fetchedTeacherData = teacherSnap.exists() ? (teacherSnap.data() as TeacherData) : null;
+              setTeacherData(fetchedTeacherData);
+
               if (studentData.companyId) {
                 const companyRef = doc(db, 'teachers', teacherUid, 'companies', studentData.companyId);
                 const companySnap = await getDoc(companyRef);
@@ -96,9 +112,7 @@ export default function Dashboard() {
               // --- DAILY REGENERATION LOGIC ---
               const lastRegenDate = studentData.lastDailyRegen?.toDate();
               if (!lastRegenDate || !isSameDay(today, lastRegenDate)) {
-                  const teacherRef = doc(db, 'teachers', teacherUid);
-                  const teacherSnap = await getDoc(teacherRef);
-                  const regenPercent = (teacherSnap.exists() ? (teacherSnap.data().dailyRegenPercentage || 0) : 0) / 100;
+                  const regenPercent = (fetchedTeacherData?.dailyRegenPercentage || 0) / 100;
 
                   if (regenPercent > 0) {
                       const hpRegen = Math.ceil(studentData.maxHp * regenPercent);
@@ -127,18 +141,13 @@ export default function Dashboard() {
               
               // --- DAILY REMINDER LOGIC ---
               const reminderShown = sessionStorage.getItem('dailyReminderShown');
-              if (!reminderShown) {
-                const teacherRef = doc(db, 'teachers', teacherUid);
-                const teacherSnap = await getDoc(teacherRef);
-                if (teacherSnap.exists()) {
-                    const teacherData = teacherSnap.data();
-                    if (teacherData.isDailyReminderActive) {
-                        const title = teacherData.dailyReminderTitle || "A Hero's Duty Awaits!";
-                        const message = teacherData.dailyReminderMessage || "Greetings, adventurer! A new day dawns, and the realm of Luminaria has a quest with your name on it. Your legend will not write itself! Embark on a chapter from the World Map to continue your training. For each quest you complete, you will be rewarded with valuable **Experience (XP)** to grow stronger and **Gold** to fill your coffers. Your next great deed awaits!";
-                        setReminder({ title, message });
-                        setShowReminderDialog(true);
-                        sessionStorage.setItem('dailyReminderShown', 'true');
-                    }
+              if (!reminderShown && fetchedTeacherData) {
+                if (fetchedTeacherData.isDailyReminderActive) {
+                    const title = fetchedTeacherData.dailyReminderTitle || "A Hero's Duty Awaits!";
+                    const message = fetchedTeacherData.dailyReminderMessage || "Greetings, adventurer! A new day dawns, and the realm of Luminaria has a quest with your name on it. Your legend will not write itself! Embark on a chapter from the World Map to continue your training. For each quest you complete, you will be rewarded with valuable **Experience (XP)** to grow stronger and **Gold** to fill your coffers. Your next great deed awaits!";
+                    setReminder({ title, message });
+                    setShowReminderDialog(true);
+                    sessionStorage.setItem('dailyReminderShown', 'true');
                 }
               }
               // --- END REMINDER LOGIC ---
@@ -179,9 +188,9 @@ export default function Dashboard() {
   };
   
   const approvedClassName = searchParams.get('className');
-  const backgroundUrl = company?.backgroundUrl || 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Sep%2027%2C%202025%2C%2009_44_04%20AM.png?alt=media&token=0920ef19-d5d9-43b1-bab7-5ab134373ed3';
+  const backgroundUrl = company?.backgroundUrl || teacherData?.worldMapUrl || 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Sep%2027%2C%202025%2C%2009_44_04%20AM.png?alt=media&token=0920ef19-d5d9-43b1-bab7-5ab134373ed3';
 
-  if (isLoading || !student) {
+  if (isLoading || !student || !teacherData) {
     return (
         <div className="flex min-h-screen w-full flex-col">
             <DashboardHeader />
@@ -258,7 +267,7 @@ export default function Dashboard() {
 
       <DashboardHeader characterName={student.characterName}/>
       <main className="flex-1 bg-background/50 backdrop-blur-sm">
-        <DashboardClient student={student} />
+        <DashboardClient student={student} levelingTable={teacherData?.levelingTable || defaultXpTable} />
       </main>
     </div>
   );
