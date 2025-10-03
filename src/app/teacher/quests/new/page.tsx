@@ -173,6 +173,7 @@ function NewQuestForm() {
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
   const [requirePassing, setRequirePassing] = useState(true);
   const [passingScore, setPassingScore] = useState(80);
+  const [includeInDailyTraining, setIncludeInDailyTraining] = useState(true);
 
 
   useEffect(() => {
@@ -510,7 +511,8 @@ function NewQuestForm() {
                 questions: finalQuizQuestions,
                 settings: {
                     requirePassing,
-                    passingScore
+                    passingScore,
+                    includeInDailyTraining,
                 }
             };
         }
@@ -899,6 +901,10 @@ function NewQuestForm() {
                                         <Input id="passing-score" type="number" min="0" max="100" value={passingScore} onChange={(e) => setPassingScore(Number(e.target.value))} disabled={!hasQuizQuestions}/>
                                     </div>
                                 )}
+                                <div className="flex items-center space-x-2">
+                                    <Switch id="include-in-training" checked={includeInDailyTraining} onCheckedChange={setIncludeInDailyTraining} disabled={!hasQuizQuestions}/>
+                                    <Label htmlFor="include-in-training" className={cn(!hasQuizQuestions && "text-muted-foreground")}>Include Quiz in Daily Training Pool</Label>
+                                </div>
                             </div>
                             {quizQuestions.map((q, qIndex) => (
                                 <Card key={q.id} className="p-4 bg-secondary/50">
@@ -908,18 +914,6 @@ function NewQuestForm() {
                                     </div>
                                     <div className="space-y-2">
                                         <Textarea placeholder="Question text" value={q.text} onChange={e => handleQuizQuestionChange(q.id, 'text', e.target.value)} />
-                                        <div className="space-y-2">
-                                            <Label htmlFor={`q-image-url-${q.id}`} className="text-base">Image URL (Optional)</Label>
-                                            <div className="flex items-center gap-2">
-                                                <Input
-                                                    id={`q-image-url-${q.id}`}
-                                                    placeholder="https://example.com/image.png"
-                                                    value={q.imageUrl || ''}
-                                                    onChange={(e) => handleQuizQuestionChange(q.id, 'imageUrl', e.target.value)}
-                                                    className="mt-2"
-                                                />
-                                            </div>
-                                        </div>
                                         <Select value={q.questionType} onValueChange={(value) => handleQuizQuestionChange(q.id, 'questionType', value)}>
                                             <SelectTrigger><SelectValue/></SelectTrigger>
                                             <SelectContent>
@@ -988,3 +982,5 @@ export default function NewQuestPage() {
         </Suspense>
     )
 }
+
+    

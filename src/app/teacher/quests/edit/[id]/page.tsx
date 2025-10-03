@@ -269,7 +269,7 @@ export default function EditQuestPage() {
     const handleQuizChange = (field: keyof Quiz, value: any) => {
         setChapter(prev => {
             if (!prev) return null;
-            const currentQuiz = prev.quiz || { questions: [], settings: { requirePassing: true, passingScore: 80 } };
+            const currentQuiz = prev.quiz || { questions: [], settings: { requirePassing: true, passingScore: 80, includeInDailyTraining: true } };
             const updatedQuiz = { ...currentQuiz, [field]: value };
             return { ...prev, quiz: updatedQuiz as Quiz };
         });
@@ -790,7 +790,7 @@ export default function EditQuestPage() {
                                 <Switch 
                                     id="require-passing" 
                                     checked={chapter.quiz?.settings?.requirePassing ?? true} 
-                                    onCheckedChange={checked => handleQuizChange('settings', { ...(chapter.quiz?.settings || { requirePassing: true, passingScore: 80 }), requirePassing: checked })}
+                                    onCheckedChange={checked => handleQuizChange('settings', { ...(chapter.quiz?.settings || { requirePassing: true, passingScore: 80, includeInDailyTraining: true }), requirePassing: checked })}
                                     disabled={!hasQuizQuestions}
                                 />
                                 <Label htmlFor="require-passing" className={cn(!hasQuizQuestions && "text-muted-foreground")}>Require Minimum Score to Advance</Label>
@@ -804,11 +804,20 @@ export default function EditQuestPage() {
                                         min="0" 
                                         max="100" 
                                         value={chapter.quiz?.settings?.passingScore ?? 80} 
-                                        onChange={(e) => handleQuizChange('settings', { ...(chapter.quiz?.settings || { requirePassing: true, passingScore: 80 }), passingScore: Number(e.target.value)})} 
+                                        onChange={(e) => handleQuizChange('settings', { ...(chapter.quiz?.settings || { requirePassing: true, passingScore: 80, includeInDailyTraining: true }), passingScore: Number(e.target.value)})} 
                                         disabled={!hasQuizQuestions}
                                     />
                                 </div>
                             )}
+                            <div className="flex items-center space-x-2">
+                                <Switch 
+                                    id="include-in-training" 
+                                    checked={chapter.quiz?.settings?.includeInDailyTraining ?? true}
+                                    onCheckedChange={checked => handleQuizChange('settings', { ...(chapter.quiz?.settings || { requirePassing: true, passingScore: 80, includeInDailyTraining: true }), includeInDailyTraining: checked })}
+                                    disabled={!hasQuizQuestions}
+                                />
+                                <Label htmlFor="include-in-training" className={cn(!hasQuizQuestions && "text-muted-foreground")}>Include Quiz in Daily Training Pool</Label>
+                            </div>
                         </div>
                         {(chapter.quiz?.questions || []).map((q, qIndex) => (
                             <Card key={q.id} className="p-4 bg-secondary/50">
@@ -922,5 +931,8 @@ export default function EditQuestPage() {
         </div>
       </main>
     </div>
+  </>
   );
 }
+
+    

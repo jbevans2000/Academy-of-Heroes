@@ -92,18 +92,7 @@ export default function DailyTrainingPage() {
             // --- Source 1: Completed Chapter Quizzes ---
             let chapterQuestions: QuizQuestion[] = [];
             const allChaptersSnapshot = await getDocs(collection(db, 'teachers', teacherUid, 'chapters'));
-            const completedChapterIds = new Set<string>();
-            const studentProgress = student.questProgress || {};
-
-            for (const hubId in studentProgress) {
-                const lastChapterNumber = studentProgress[hubId];
-                allChaptersSnapshot.docs.forEach(doc => {
-                    const chapter = doc.data() as Chapter;
-                    if (chapter.hubId === hubId && chapter.chapterNumber <= lastChapterNumber) {
-                        completedChapterIds.add(doc.id);
-                    }
-                });
-            }
+            const completedChapterIds = new Set(student.completedChapters || []);
 
             allChaptersSnapshot.forEach(doc => {
                 if (completedChapterIds.has(doc.id)) {
@@ -345,3 +334,5 @@ export default function DailyTrainingPage() {
         </div>
     );
 }
+
+    
