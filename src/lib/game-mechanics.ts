@@ -112,6 +112,7 @@ export function calculateMpGain(
  * Calculates a non-random, deterministic base stat value for a given level.
  * This is used for de-leveling a student or resetting stats to avoid the complexity
  * of reversing random dice rolls. It should NOT be used for calculating gains during a level-up.
+ * The 'perLevel' value is the rounded-up average of the class's hit/magic die.
  * @param characterClass The student's class.
  * @param level The target level.
  * @param statType 'hp' or 'mp'.
@@ -119,15 +120,15 @@ export function calculateMpGain(
  */
 export function calculateBaseMaxHp(characterClass: ClassType, level: number, statType: 'hp' | 'mp' = 'hp'): number {
     const baseStats: { [key in ClassType]?: { base: number, perLevel: number } } = {
-        'Mage': { base: 6, perLevel: 3 }, // Average of 1d4 is 2.5, let's say 3
-        'Healer': { base: 8, perLevel: 4 }, // Average of 1d6 is 3.5, let's say 4
-        'Guardian': { base: 12, perLevel: 5 } // Average of 1d8 is 4.5, let's say 5
+        'Guardian': { base: 12, perLevel: 5 }, // Avg of 1d8 (4.5) rounded up
+        'Healer': { base: 8, perLevel: 4 },   // Avg of 1d6 (3.5) rounded up
+        'Mage': { base: 6, perLevel: 3 },     // Avg of 1d4 (2.5) rounded up
     };
     
     const magicStats: { [key in ClassType]?: { base: number, perLevel: number } } = {
-        'Mage': { base: 15, perLevel: 5 }, // Avg of 1d8
-        'Healer': { base: 12, perLevel: 4 }, // Avg of 1d6
-        'Guardian': { base: 8, perLevel: 3 } // Avg of 1d4
+        'Guardian': { base: 8, perLevel: 3 }, // Avg of 1d4 (2.5) rounded up
+        'Healer': { base: 12, perLevel: 4 },  // Avg of 1d6 (3.5) rounded up
+        'Mage': { base: 15, perLevel: 5 },   // Avg of 1d8 (4.5) rounded up
     };
 
     const stats = statType === 'hp' ? baseStats[characterClass] : magicStats[characterClass];
@@ -151,7 +152,7 @@ export function handleLevelChange(studentData: Student, newXp: number): Partial<
     if (newLevel > currentLevel) {
         const levelsGained = newLevel - currentLevel;
         updates.level = newLevel;
-        // Correctly increment max stats
+        // Correctly increment max stats by adding gains to the existing values
         updates.maxHp = (studentData.maxHp || 0) + calculateHpGain(studentData.class, levelsGained);
         updates.maxMp = (studentData.maxMp || 0) + calculateMpGain(studentData.class, levelsGained);
         // Restore to new max on level up

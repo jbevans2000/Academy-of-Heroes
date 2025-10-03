@@ -5,7 +5,6 @@ import { doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs, writeBatch
 import { db } from '@/lib/firebase';
 import type { Student, QuestHub, Chapter } from '@/lib/data';
 import { logGameEvent } from '@/lib/gamelog';
-import firebase from 'firebase/compat/app';
 import { handleLevelChange } from '@/lib/game-mechanics';
 import { logAvatarEvent } from '@/lib/avatar-log';
 
@@ -210,13 +209,11 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
 }
 
 
-async function approveSingleRequest(batch: firebase.firestore.WriteBatch, teacherUid: string, requestId: string, requestData: any) {
+async function approveSingleRequest(batch: any, teacherUid: string, requestId: string, requestData: any) {
     const { studentUid, hubId, chapterId, chapterNumber, chapterTitle } = requestData;
     const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
     const hubRef = doc(db, 'teachers', teacherUid, 'questHubs', hubId);
     
-    // We need to fetch the student and hub data within the transaction/batch context if possible, but for simplicity we fetch here.
-    // For a strict transaction, these would need to be passed in or fetched with transaction.get()
     const studentSnap = await getDoc(studentRef);
     const hubSnap = await getDoc(hubRef);
 
@@ -231,8 +228,6 @@ async function approveSingleRequest(batch: firebase.firestore.WriteBatch, teache
     const hubData = hubSnap.data() as QuestHub;
     const currentProgress = studentData.questProgress?.[hubId] || 0;
 
-    // We only approve if this is the next sequential chapter.
-    // This prevents issues if a teacher accidentally approves an old request.
     if (chapterNumber === currentProgress + 1) {
         const newProgress = { ...studentData.questProgress, [hubId]: chapterNumber };
         let updates: Partial<Student> = {
@@ -240,7 +235,6 @@ async function approveSingleRequest(batch: firebase.firestore.WriteBatch, teache
             lastChapterCompletion: serverTimestamp()
         };
 
-        // --- Award Rewards on Approval ---
         if (hubData.areRewardsEnabled && !(studentData.completedChapters || []).includes(chapterId)) {
             const xpToAdd = hubData.rewardXp || 0;
             const goldToAdd = hubData.rewardGold || 0;

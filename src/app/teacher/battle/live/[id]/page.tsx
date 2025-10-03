@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -15,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { RoundResults, type Result } from '@/components/teacher/round-results';
 import { downloadCsv } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { calculateLevel, calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
+import { handleLevelChange } from '@/lib/game-mechanics';
 import type { Student } from '@/lib/data';
 import { logGameEvent } from '@/lib/gamelog';
 import { logAvatarEvent } from '@/lib/avatar-log';
@@ -518,22 +517,12 @@ export default function TeacherLiveBattlePage() {
                  const studentRef = doc(db, 'teachers', teacherUid, 'students', uid);
                  const currentXp = studentData.xp || 0;
                  const newXp = currentXp + studentRewards.xpGained;
-                 const currentLevel = studentData.level || 1;
-                 const newLevel = calculateLevel(newXp);
                  
-                 const updates: any = {
+                 const updates: Partial<Student> = {
                     xp: newXp,
                     gold: (studentData.gold || 0) + studentRewards.goldGained,
+                    ...handleLevelChange(studentData, newXp)
                  };
-
-                 if (newLevel > currentLevel) {
-                    const levelsGained = newLevel - currentLevel;
-                    updates.level = newLevel;
-                    updates.maxHp = (studentData.maxHp || 0) + calculateHpGain(studentData.class, levelsGained);
-                    updates.maxMp = (studentData.maxMp || 0) + calculateMpGain(studentData.class, levelsGained);
-                    updates.hp = updates.maxHp; // Restore HP on level up
-                    updates.mp = updates.maxMp; // Restore MP on level up
-                 }
                  
                  batch.update(studentRef, updates);
                  await logAvatarEvent(teacherUid, uid, {
