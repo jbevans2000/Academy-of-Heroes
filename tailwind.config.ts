@@ -10,8 +10,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['Lora', 'serif'],
-        headline: ['Cinzel', 'serif'],
+        body: ['var(--font-lora)', 'serif'],
+        headline: ['var(--font-cinzel)', 'serif'],
       },
       colors: {
         background: 'hsl(var(--background))',
