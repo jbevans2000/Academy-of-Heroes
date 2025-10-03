@@ -121,6 +121,7 @@ export type Student = {
     avatarLog?: AvatarLogEntry[]; // This will likely not be stored on the student doc itself
     isInMeditationChamber?: boolean;
     meditationMessage?: string;
+    forceLogout?: boolean; // Flag to trigger client-side logout
 }
 
 export type PendingStudent = {

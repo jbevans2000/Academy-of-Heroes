@@ -22,7 +22,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { xpForLevel as defaultXpTable } from '@/lib/game-mechanics';
+import { useToast } from '@/hooks/use-toast';
+
 
 const isSameDay = (d1: Date, d2: Date) => {
     return d1.getFullYear() === d2.getFullYear() &&
@@ -52,6 +53,7 @@ export default function Dashboard() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { toast } = useToast();
 
   useEffect(() => {
     const isApproved = searchParams.get('approved') === 'true';
@@ -83,6 +85,18 @@ export default function Dashboard() {
           const unsub = onSnapshot(studentRef, async (docSnap) => {
             if (docSnap.exists()) {
               const studentData = { uid: docSnap.id, ...docSnap.data() } as Student;
+              
+              if (studentData.forceLogout) {
+                  await auth.signOut();
+                  // No need to reset the flag here, as the user will be redirected.
+                  // The teacher can manually clear it if needed.
+                  toast({
+                      title: "Session Expired",
+                      description: "Your Guild Leader has ended your session. Please log in again.",
+                  });
+                  return;
+              }
+
               if (studentData.isArchived) {
                 router.push('/account-archived');
                 return;
@@ -144,7 +158,7 @@ export default function Dashboard() {
               if (!reminderShown && fetchedTeacherData) {
                 if (fetchedTeacherData.isDailyReminderActive) {
                     const title = fetchedTeacherData.dailyReminderTitle || "A Hero's Duty Awaits!";
-                    const message = fetchedTeacherData.dailyReminderMessage || "Greetings, adventurer! A new day dawns, and the realm of Luminaria has a quest with your name on it. Your legend will not write itself! Embark on a chapter from the World Map to continue your training. For each quest you complete, you will be rewarded with valuable **Experience (XP)** to grow stronger and **Gold** to fill your coffers. Your next great deed awaits!";
+                    const message = fetchedTeacherData.dailyReminderMessage || "Greetings, adventurer! A new day dawns, and the realm of Luminaria has a quest with your name on it. Your legend will not write itself! Embark on a chapter from the World Map to continue your training. For each quest you complete, you will be rewarded with valuable **Experience (XP)** to grow stronger and **Gold** to fill your coffers.\\n\\nYour next great deed awaits!";
                     setReminder({ title, message });
                     setShowReminderDialog(true);
                     sessionStorage.setItem('dailyReminderShown', 'true');
@@ -172,7 +186,7 @@ export default function Dashboard() {
     });
 
     return () => authUnsubscribe();
-  }, [router]);
+  }, [router, toast]);
   
   const handleCloseApprovedDialog = async () => {
     setShowApprovedDialog(false);
@@ -267,7 +281,7 @@ export default function Dashboard() {
 
       <DashboardHeader characterName={student.characterName}/>
       <main className="flex-1 bg-background/50 backdrop-blur-sm">
-        <DashboardClient student={student} levelingTable={teacherData?.levelingTable || defaultXpTable} />
+        <DashboardClient student={student} />
       </main>
     </div>
   );

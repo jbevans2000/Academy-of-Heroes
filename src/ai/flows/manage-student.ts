@@ -241,3 +241,21 @@ export async function toggleStudentVisibility(input: ToggleVisibilityInput): Pro
     return { success: false, error: 'Failed to update student visibility.' };
   }
 }
+
+interface ForceLogoutInput {
+  teacherUid: string;
+  studentUid: string;
+}
+
+export async function forceStudentLogout(input: ForceLogoutInput): Promise<ActionResponse> {
+  try {
+    const studentRef = doc(db, 'teachers', input.teacherUid, 'students', input.studentUid);
+    await updateDoc(studentRef, {
+      forceLogout: true,
+    });
+    return { success: true, message: "The student will be logged out on their next action." };
+  } catch (e: any) {
+    console.error("Error setting forceLogout flag:", e);
+    return { success: false, error: 'Failed to set logout flag.' };
+  }
+}
