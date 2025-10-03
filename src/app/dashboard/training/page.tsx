@@ -4,13 +4,11 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
-import type { Student, Chapter } from '@/lib/data';
+import type { Student } from '@/lib/data';
 import type { QuizQuestion } from '@/lib/quests';
-import type { DuelQuestion, DuelQuestionSection } from '@/lib/duels';
-import { completeDailyTraining } from '@/ai/flows/daily-training';
-import { getDuelSettings } from '@/ai/flows/manage-duels';
+import { completeDailyTraining, getDailyTrainingQuestions } from '@/ai/flows/daily-training';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
@@ -19,29 +17,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, ArrowLeft, Star, Coins, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, ArrowLeft } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { cn } from '@/lib/utils';
-
-
-// Fisher-Yates shuffle algorithm
-const shuffleArray = <T,>(array: T[]): T[] => {
-    const newArray = [...array];
-    for (let i = newArray.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-    }
-    return newArray;
-};
-
-// Normalize DuelQuestion to QuizQuestion format
-const normalizeDuelQuestion = (duelQuestion: DuelQuestion): QuizQuestion => ({
-    id: duelQuestion.id,
-    text: duelQuestion.text,
-    answers: duelQuestion.answers,
-    correctAnswer: [duelQuestion.correctAnswerIndex],
-    questionType: 'single', // Duel questions are always single-choice
-});
 
 
 export default function DailyTrainingPage() {
@@ -89,50 +67,16 @@ export default function DailyTrainingPage() {
         if (!student || !teacherUid) return;
 
         try {
-            // --- Source 1: Completed Chapter Quizzes ---
-            let chapterQuestions: QuizQuestion[] = [];
-            const allChaptersSnapshot = await getDocs(collection(db, 'teachers', teacherUid, 'chapters'));
-            const completedChapterIds = new Set(student.completedChapters || []);
+            const fetchedQuestions = await getDailyTrainingQuestions(teacherUid, student);
 
-            allChaptersSnapshot.forEach(doc => {
-                if (completedChapterIds.has(doc.id)) {
-                    const chapter = doc.data() as Chapter;
-                    // Check if the quiz exists and is included in daily training
-                    if (chapter.quiz && chapter.quiz.questions && (chapter.quiz.settings?.includeInDailyTraining ?? true)) {
-                        chapterQuestions = chapterQuestions.concat(chapter.quiz.questions);
-                    }
-                }
-            });
-
-
-            // --- Source 2: Active Duel Sections ---
-            let duelQuestions: DuelQuestion[] = [];
-            const activeSectionsQuery = query(collection(db, 'teachers', teacherUid, 'duelQuestionSections'), where('isActive', '==', true));
-            const activeSectionsSnapshot = await getDocs(activeSectionsQuery);
-
-            for (const sectionDoc of activeSectionsSnapshot.docs) {
-                const questionsSnapshot = await getDocs(collection(sectionDoc.ref, 'questions'));
-                questionsSnapshot.forEach(qDoc => {
-                    duelQuestions.push({ id: qDoc.id, ...qDoc.data() } as DuelQuestion);
-                });
-            }
-
-            const normalizedDuelQuestions = duelQuestions.map(normalizeDuelQuestion);
-
-            // --- Combine and Select Questions ---
-            const allAvailableQuestions = [...chapterQuestions, ...normalizedDuelQuestions];
-
-            if (allAvailableQuestions.length < 1) {
+            if (fetchedQuestions.length < 1) {
                 setError("You haven't completed any chapters with quizzes, and there are no active duel questions. Complete some quests and come back tomorrow!");
                 setIsLoading(false);
                 return;
             }
-
-            const shuffledQuestions = shuffleArray(allAvailableQuestions);
-            const selectedQuestions = shuffledQuestions.slice(0, 10);
             
-            setQuestions(selectedQuestions);
-            setAllAnswers(new Array(selectedQuestions.length).fill(null));
+            setQuestions(fetchedQuestions);
+            setAllAnswers(new Array(fetchedQuestions.length).fill(null));
             setQuizState('in_progress');
         } catch (err) {
             console.error(err);

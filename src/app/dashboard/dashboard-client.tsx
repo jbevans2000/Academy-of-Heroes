@@ -275,7 +275,7 @@ export function DashboardClient({ student, isTeacherPreview = false, levelingTab
                 </Button>
                 <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setIsChallengeDialogOpen(true)}>
                     <Swords className="mr-4 h-8 w-8" />
-                    Dueling Arena
+                    Training Grounds
                 </Button>
                 <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleReadyForBattle}>
                     <Sparkles className="mr-4 h-8 w-8" />

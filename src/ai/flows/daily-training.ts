@@ -32,6 +32,60 @@ const normalizeDuelQuestion = (duelQuestion: DuelQuestion): QuizQuestion => ({
     questionType: 'single', // Duel questions are always single-choice
 });
 
+// Fisher-Yates shuffle algorithm
+const shuffleArray = <T,>(array: T[]): T[] => {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+};
+
+
+export async function getDailyTrainingQuestions(teacherUid: string, student: Student): Promise<QuizQuestion[]> {
+    if (!student || !teacherUid) return [];
+
+    // --- Source 1: Completed Chapter Quizzes ---
+    let chapterQuestions: QuizQuestion[] = [];
+    if (student.completedChapters && student.completedChapters.length > 0) {
+        const chaptersQuery = query(collection(db, 'teachers', teacherUid, 'chapters'), where('__name__', 'in', student.completedChapters.slice(0, 10)));
+        const completedChaptersSnapshot = await getDocs(chaptersQuery);
+
+        completedChaptersSnapshot.forEach(doc => {
+            const chapter = doc.data() as Chapter;
+            if (chapter.quiz && chapter.quiz.questions && (chapter.quiz.settings?.includeInDailyTraining ?? true)) {
+                chapterQuestions = chapterQuestions.concat(chapter.quiz.questions);
+            }
+        });
+    }
+
+
+    // --- Source 2: Active Duel Sections ---
+    let duelQuestions: DuelQuestion[] = [];
+    const activeSectionsQuery = query(collection(db, 'teachers', teacherUid, 'duelQuestionSections'), where('isActive', '==', true));
+    const activeSectionsSnapshot = await getDocs(activeSectionsQuery);
+
+    for (const sectionDoc of activeSectionsSnapshot.docs) {
+        const questionsSnapshot = await getDocs(collection(sectionDoc.ref, 'questions'));
+        questionsSnapshot.forEach(qDoc => {
+            duelQuestions.push({ id: qDoc.id, ...qDoc.data() } as DuelQuestion);
+        });
+    }
+
+    const normalizedDuelQuestions = duelQuestions.map(normalizeDuelQuestion);
+
+    // --- Combine and Select Questions ---
+    const allAvailableQuestions = [...chapterQuestions, ...normalizedDuelQuestions];
+
+    if (allAvailableQuestions.length === 0) {
+        return [];
+    }
+
+    const shuffledQuestions = shuffleArray(allAvailableQuestions);
+    return shuffledQuestions.slice(0, 10);
+}
+
 
 export async function completeDailyTraining(input: CompleteTrainingInput): Promise<ActionResponse> {
     const { teacherUid, studentUid, score, totalQuestions } = input;
