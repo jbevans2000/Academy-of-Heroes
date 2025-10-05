@@ -19,10 +19,7 @@ import { Loader2, MessageSquare, Send } from 'lucide-react';
 import { sendMessageToStudents, markMessagesAsRead } from '@/ai/flows/manage-messages';
 import { onSnapshot, collection, query, orderBy, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Checkbox } from '../ui/checkbox';
-import { Label } from '../ui/label';
 import { ClientOnlyTime } from '../client-only-time';
 
 interface TeacherMessageCenterProps {
@@ -47,14 +44,12 @@ export function TeacherMessageCenter({
     const [newMessage, setNewMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
     
-    // For viewing conversations
     const [currentThreadMessages, setCurrentThreadMessages] = useState<Message[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // Sort students: unread first, then alphabetically by character name
     const sortedStudents = useMemo(() => {
         const visibleStudents = students.filter(s => !s.isHidden);
-
+        
         const unread = visibleStudents
             .filter(s => s.hasUnreadMessages)
             .sort((a, b) => a.studentName.localeCompare(b.studentName));
@@ -68,7 +63,7 @@ export function TeacherMessageCenter({
 
     useEffect(() => {
         if (!isOpen) {
-            onConversationSelect(null); // Reset selected student when dialog closes
+            onConversationSelect(null);
         }
     }, [isOpen, onConversationSelect]);
     
@@ -79,7 +74,6 @@ export function TeacherMessageCenter({
                 setCurrentThreadMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message)));
              });
              
-             // Mark messages as read
              markMessagesAsRead({ teacherUid: teacher.uid, studentUid: initialStudent.uid, reader: 'teacher' });
              
              return () => unsubscribe();
