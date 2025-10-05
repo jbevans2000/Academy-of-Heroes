@@ -492,7 +492,7 @@ function NewQuestForm() {
                 name: newHubName,
                 worldMapUrl: newHubMapUrl,
                 coordinates: hubCoordinates,
-                hubOrder: newHubType === 'sidequest' ? 99 : newHubOrder,
+                hubOrder: newHubType === 'sidequest' ? 0 : newHubOrder,
                 hubType: newHubType,
                 createdAt: serverTimestamp(),
                 isVisibleToAll: hubIsVisibleToAll,
@@ -674,10 +674,10 @@ function NewQuestForm() {
                                           id="new-hub-order"
                                           type="number"
                                           placeholder="e.g., 2"
-                                          value={newHubType === 'sidequest' ? 'N/A' : newHubOrder}
+                                          value={newHubType === 'sidequest' ? '' : newHubOrder}
                                           onChange={e => setNewHubOrder(Number(e.target.value))}
                                           disabled={isSaving || newHubType === 'sidequest'}
-                                      />
+                                          />
                                   </div>
                                   <ImageUploader label="Hub's Regional Map" imageUrl={newHubMapUrl} onUploadSuccess={setNewHubMapUrl} teacherUid={teacher.uid} storagePath="hub-maps" onGalleryOpen={() => setIsGalleryOpen(true)} />
                                   <Label>Position New Hub on World Map</Label>
@@ -705,7 +705,7 @@ function NewQuestForm() {
                                   
                                     <div className="pt-4 border-t space-y-4">
                                         <div className="flex items-center space-x-2">
-                                            <Switch
+                                            <Switch 
                                                 id="enable-rewards-hub" 
                                                 checked={hubAreRewardsEnabled} 
                                                 onCheckedChange={setHubAreRewardsEnabled} 

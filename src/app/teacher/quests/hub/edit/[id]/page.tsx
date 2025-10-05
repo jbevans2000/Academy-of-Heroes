@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -208,7 +207,7 @@ export default function EditQuestHubPage() {
             const hubRef = doc(db, 'teachers', teacher.uid, 'questHubs', hub.id);
             const dataToSave: Partial<QuestHub> = {
                 name: hub.name,
-                hubOrder: hub.hubOrder,
+                hubOrder: hub.hubType === 'sidequest' ? 0 : hub.hubOrder,
                 worldMapUrl: hub.worldMapUrl,
                 coordinates: hub.coordinates,
                 areRewardsEnabled: hub.areRewardsEnabled ?? false,
@@ -277,7 +276,14 @@ export default function EditQuestHubPage() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="hub-order">Hub Order</Label>
-                                    <Input id="hub-order" type="number" value={hub.hubOrder ?? ''} onChange={(e) => handleFieldChange('hubOrder', Number(e.target.value))} disabled={isSaving} />
+                                    <Input 
+                                        id="hub-order" 
+                                        type="number" 
+                                        value={hub.hubType === 'sidequest' ? '' : (hub.hubOrder ?? '')} 
+                                        onChange={(e) => handleFieldChange('hubOrder', Number(e.target.value))} 
+                                        disabled={isSaving || hub.hubType === 'sidequest'} 
+                                    />
+                                    {hub.hubType === 'sidequest' && <p className="text-xs text-muted-foreground">Order is not applicable for Side Quest hubs.</p>}
                                 </div>
                                 
                                 <ImageUploader 

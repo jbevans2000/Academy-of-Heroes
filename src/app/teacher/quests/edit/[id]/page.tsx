@@ -644,8 +644,8 @@ export default function EditQuestPage() {
                                   <Input id="chapter-title" placeholder="e.g., A Summons from the Throne" value={chapter.title || ''} onChange={e => handleFieldChange('title', e.target.value)} disabled={isSaving} />
                               </div>
                               <div className="space-y-2">
-                                  <Label htmlFor="chapter-number">Chapter Number</Label>
-                                  <Input id="chapter-number" type="number" placeholder="e.g., 1" value={chapter.chapterNumber ?? ''} onChange={e => handleFieldChange('chapterNumber', e.target.value === '' ? '' : Number(e.target.value))} disabled={isSaving} />
+                                  <Label htmlFor="chapter-number">Chapter Order</Label>
+                                  <Input id="chapter-number" type="number" placeholder="e.g., 1" value={chapter.chapterNumber ?? ''} onChange={e => handleFieldChange('chapterNumber', e.target.value === '' ? '' : Number(e.target.value))} disabled={isSaving || selectedHub?.hubType === 'sidequest'} />
                               </div>
                           </div>
                            <div className="flex items-center space-x-2">
@@ -672,7 +672,7 @@ export default function EditQuestPage() {
                                   <Label>Position Chapter on Hub Map</Label>
                                   <div 
                                       className="relative aspect-[2048/1152] rounded-lg overflow-hidden bg-muted/50 border cursor-grab"
-                                      onMouseDown={(e) => handleMapDrag(e, 'chapter')}
+                                      onMouseDown={(e) => handleMapDrag(e)}
                                   >
                                       <Image
                                           src={hubMapUrl}
@@ -830,18 +830,8 @@ export default function EditQuestPage() {
                                   <div className="space-y-2">
                                       <Textarea placeholder="Question text" value={q.text} onChange={e => handleQuizQuestionChange(q.id, 'text', e.target.value)} />
                                       <div className="space-y-2">
-                                          <Label htmlFor={`q-image-url-${q.id}`} className="text-base">Image URL (Optional)</Label>
+                                          <Label htmlFor={`q-image-upload-${q.id}`} className="text-base">Image (Optional)</Label>
                                           <div className="flex items-center gap-2">
-                                              <Input
-                                                  id={`q-image-url-${q.id}`}
-                                                  placeholder="https://example.com/image.png"
-                                                  value={q.imageUrl || ''}
-                                                  onChange={(e) => handleQuizQuestionChange(q.id, 'imageUrl', e.target.value)}
-                                                  className="mt-2"
-                                              />
-                                              <Label htmlFor={`q-image-upload-${q.id}`} className={cn(buttonVariants({ variant: 'outline' }), "cursor-pointer")}>
-                                                  <Upload className="h-4 w-4" />
-                                              </Label>
                                                <Input 
                                                   id={`q-image-upload-${q.id}`}
                                                   type="file" 
@@ -854,9 +844,12 @@ export default function EditQuestPage() {
                                                   }}
                                                   disabled={uploadingQuestionImage === q.id}
                                               />
+                                               <Label htmlFor={`q-image-upload-${q.id}`} className={cn(buttonVariants({ variant: 'outline' }), "cursor-pointer")}>
+                                                  <Upload className="h-4 w-4" />
+                                              </Label>
                                                {uploadingQuestionImage === q.id && <Loader2 className="h-5 w-5 animate-spin" />}
+                                               {q.imageUrl && <Image src={q.imageUrl} alt="Question preview" width={50} height={50} className="rounded-md border"/>}
                                           </div>
-                                          {q.imageUrl && <Image src={q.imageUrl} alt="Question preview" width={100} height={100} className="rounded-md border mt-2" />}
                                       </div>
                                       <Select value={q.questionType} onValueChange={(value) => handleQuizQuestionChange(q.id, 'questionType', value)}>
                                           <SelectTrigger><SelectValue/></SelectTrigger>
@@ -901,8 +894,8 @@ export default function EditQuestPage() {
                       </TabsContent>
                       </Tabs>
                   </div>
-                
-                
+                )}
+
                 <div className="flex justify-between items-center pt-4 border-t">
                   {prevChapter ? (
                   <Button variant="outline" size="lg" onClick={() => router.push(`/teacher/quests/edit/${prevChapter.id}`)}>
@@ -936,4 +929,3 @@ export default function EditQuestPage() {
     </>
   );
 }
-
