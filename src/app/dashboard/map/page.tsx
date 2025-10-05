@@ -130,15 +130,14 @@ export default function WorldMapPage() {
                          ) : (
                             unlockedHubs.map(hub => {
                                 const isSideQuest = hub.hubType === 'sidequest';
-                                const isCompleted = hub.hubOrder <= (student.hubsCompleted || 0);
-                                const isCurrent = hub.hubOrder === (student.hubsCompleted || 0) + 1;
+                                const isCompleted = !isSideQuest && hub.hubOrder <= (student.hubsCompleted || 0);
+                                const isCurrent = !isSideQuest && hub.hubOrder === (student.hubsCompleted || 0) + 1;
                                 
-                                // Side quests are always "current" in terms of accessibility, but we won't show them as the main quest marker
                                 if (!isSideQuest && !isCompleted && !isCurrent) return null;
 
-                                let markerColorClass = "bg-gray-400"; // Default for locked hubs (which shouldn't be rendered with current logic)
+                                let markerColorClass = "bg-gray-400";
                                 if (isSideQuest) {
-                                    markerColorClass = "bg-purple-500 animate-pulse-glow";
+                                    markerColorClass = "bg-purple-500";
                                 } else if (isCompleted) {
                                     markerColorClass = "bg-green-500";
                                 } else if (isCurrent) {
