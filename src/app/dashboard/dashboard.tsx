@@ -101,10 +101,6 @@ export default function Dashboard() {
                 return;
               }
               
-              // This is the old check, which we are now moving to the MeditationChamber component
-              // to handle it actively on the client. We still check the main flag here to decide
-              // which component to render.
-              
               const teacherRef = doc(db, 'teachers', teacherUid);
               const teacherSnap = await getDoc(teacherRef);
               const fetchedTeacherData = teacherSnap.exists() ? (teacherSnap.data() as TeacherData) : null;
@@ -266,7 +262,7 @@ export default function Dashboard() {
 
       <DashboardHeader characterName={student.characterName}/>
       <main className="flex-1 bg-background/50 backdrop-blur-sm">
-        <DashboardClient student={student} />
+        <DashboardClient student={student} levelingTable={teacherData.levelingTable} />
       </main>
     </div>
   );
