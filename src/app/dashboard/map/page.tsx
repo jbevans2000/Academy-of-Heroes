@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -138,10 +137,10 @@ export default function WorldMapPage() {
                                 let markerColorClass = "bg-gray-400";
                                 if (isSideQuest) {
                                     markerColorClass = "bg-purple-500";
-                                } else if (isCompleted) {
-                                    markerColorClass = "bg-green-500";
                                 } else if (isCurrent) {
                                     markerColorClass = "bg-yellow-400 animate-pulse-glow";
+                                } else if (isCompleted) {
+                                    markerColorClass = "bg-green-500";
                                 }
 
                                 return (
