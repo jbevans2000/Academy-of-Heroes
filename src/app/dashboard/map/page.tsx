@@ -129,12 +129,17 @@ export default function WorldMapPage() {
                          ) : (
                             unlockedHubs.map(hub => {
                                 const isSideQuest = hub.hubType === 'sidequest';
-                                const isCompleted = !isSideQuest && hub.hubOrder <= (student.hubsCompleted || 0);
-                                const isCurrent = !isSideQuest && hub.hubOrder === (student.hubsCompleted || 0) + 1;
+                                const hubsCompleted = student.hubsCompleted || 0;
                                 
-                                if (!isSideQuest && !isCompleted && !isCurrent) return null;
+                                const isCompleted = !isSideQuest && hub.hubOrder <= hubsCompleted;
+                                const isCurrent = !isSideQuest && hub.hubOrder === hubsCompleted + 1;
+                                
+                                // A hub is only visible if it's a side quest, completed, or the current one.
+                                if (!isSideQuest && !isCompleted && !isCurrent) {
+                                    return null;
+                                }
 
-                                let markerColorClass = "bg-gray-400";
+                                let markerColorClass = "bg-gray-400"; // Default/locked
                                 if (isSideQuest) {
                                     markerColorClass = "bg-purple-500";
                                 } else if (isCurrent) {
