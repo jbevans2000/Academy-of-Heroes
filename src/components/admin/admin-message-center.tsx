@@ -13,11 +13,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, MessageSquare, Send } from 'lucide-react';
-import { sendMessageToTeacherFromAdmin, markAdminMessagesAsRead } from '@/ai/flows/manage-admin-messages';
+import { Loader2, MessageSquare, Send, Trash2 } from 'lucide-react';
+import { sendMessageToTeacherFromAdmin, markAdminMessagesAsRead, clearAdminMessageHistory } from '@/ai/flows/manage-admin-messages';
 import { cn } from '@/lib/utils';
 import { ClientOnlyTime } from '../client-only-time';
 
@@ -62,6 +72,10 @@ export function AdminMessageCenter({
     const [currentThreadMessages, setCurrentThreadMessages] = useState<AdminMessage[]>([]);
     const [conversations, setConversations] = useState<TeacherConversation[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // New state for clearing history
+    const [isClearing, setIsClearing] = useState(false);
+    const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
 
     useEffect(() => {
         if (!admin) return;
@@ -145,6 +159,28 @@ export function AdminMessageCenter({
             setIsSending(false);
         }
     };
+    
+    const handleClearHistory = async () => {
+        if (!admin || !selectedTeacher) return;
+        setIsClearing(true);
+        try {
+            const result = await clearAdminMessageHistory({
+                adminUid: admin.uid,
+                teacherId: selectedTeacher.id,
+            });
+            if (result.success) {
+                toast({ title: "History Cleared", description: `The message history for ${selectedTeacher.name} has been deleted.` });
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message });
+        } finally {
+            setIsClearing(false);
+            setIsClearConfirmOpen(false);
+        }
+    }
+
 
     const sortedConversations = useMemo(() => {
         return [...conversations].sort((a, b) => {
@@ -157,86 +193,109 @@ export function AdminMessageCenter({
     }, [conversations]);
 
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-4xl h-[90vh] flex">
-                <div className="w-1/3 border-r pr-4 flex flex-col">
-                    <DialogHeader>
-                        <DialogTitle>Master Message Center</DialogTitle>
-                         <DialogDescription>Select a Guild Leader to view your conversation.</DialogDescription>
-                    </DialogHeader>
-                    <ScrollArea className="flex-grow mt-4">
-                        <div className="space-y-2">
-                            {sortedConversations.map(convo => (
-                                <div 
-                                    key={convo.id}
-                                    onClick={() => onConversationSelect(convo)}
-                                    className={cn(
-                                        "p-2 rounded-md cursor-pointer hover:bg-accent",
-                                        selectedTeacher?.id === convo.id && "bg-accent"
-                                    )}
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            {convo.hasUnreadAdminMessages && (
-                                                <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
-                                            )}
-                                            <p className="font-semibold">{convo.name}</p>
-                                        </div>
-                                    </div>
-                                    <p className="text-sm text-muted-foreground ml-4">{convo.className}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </ScrollArea>
-                </div>
-
-                <div className="w-2/3 flex flex-col">
-                   {selectedTeacher ? (
-                        <>
-                             <DialogHeader>
-                                <DialogTitle>Conversation with {selectedTeacher.name}</DialogTitle>
-                            </DialogHeader>
-                             <div className="flex-grow overflow-hidden my-4">
-                                <ScrollArea className="h-full pr-4">
-                                    <div className="space-y-4">
-                                        {currentThreadMessages.map(msg => (
-                                            <div key={msg.id} className={cn("flex flex-col", msg.sender === 'admin' ? 'items-end' : 'items-start')}>
-                                                <div className={cn(
-                                                    "p-3 rounded-lg max-w-[80%]",
-                                                    msg.sender === 'admin' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
-                                                )}>
-                                                    <p className="whitespace-pre-wrap">{msg.text}</p>
-                                                </div>
-                                                <p className="text-xs text-muted-foreground mt-1">
-                                                     {msg.timestamp ? <ClientOnlyTime date={new Date(msg.timestamp.seconds * 1000)} /> : 'Sending...'}
-                                                </p>
+        <>
+            <Dialog open={isOpen} onOpenChange={onOpenChange}>
+                <DialogContent className="max-w-4xl h-[90vh] flex">
+                    <div className="w-1/3 border-r pr-4 flex flex-col">
+                        <DialogHeader>
+                            <DialogTitle>Master Message Center</DialogTitle>
+                            <DialogDescription>Select a Guild Leader to view your conversation.</DialogDescription>
+                        </DialogHeader>
+                        <ScrollArea className="flex-grow mt-4">
+                            <div className="space-y-2">
+                                {sortedConversations.map(convo => (
+                                    <div 
+                                        key={convo.id}
+                                        onClick={() => onConversationSelect(convo)}
+                                        className={cn(
+                                            "p-2 rounded-md cursor-pointer hover:bg-accent",
+                                            selectedTeacher?.id === convo.id && "bg-accent"
+                                        )}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                {convo.hasUnreadAdminMessages && (
+                                                    <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
+                                                )}
+                                                <p className="font-semibold">{convo.name}</p>
                                             </div>
-                                        ))}
-                                        <div ref={messagesEndRef} />
+                                        </div>
+                                        <p className="text-sm text-muted-foreground ml-4">{convo.className}</p>
                                     </div>
-                                </ScrollArea>
+                                ))}
                             </div>
-                            <form onSubmit={handleSendMessage} className="flex gap-2 pt-4 border-t">
-                                <Textarea 
-                                    value={messageText} 
-                                    onChange={(e) => setMessageText(e.target.value)} 
-                                    placeholder={`Message ${selectedTeacher.name}...`}
-                                    rows={2}
-                                    disabled={isSending}
-                                />
-                                <Button type="submit" disabled={isSending || !messageText.trim()}>
-                                    {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                                </Button>
-                            </form>
-                        </>
-                   ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-                            <MessageSquare className="h-16 w-16 mb-4"/>
-                            <p>Select a Guild Leader from the list to begin messaging.</p>
-                        </div>
-                   )}
-                </div>
-            </DialogContent>
-        </Dialog>
+                        </ScrollArea>
+                    </div>
+
+                    <div className="w-2/3 flex flex-col">
+                    {selectedTeacher ? (
+                            <>
+                                <DialogHeader className="flex-row justify-between items-center">
+                                    <DialogTitle>Conversation with {selectedTeacher.name}</DialogTitle>
+                                    <Button variant="destructive" size="sm" onClick={() => setIsClearConfirmOpen(true)}>
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Clear History
+                                    </Button>
+                                </DialogHeader>
+                                <div className="flex-grow overflow-hidden my-4">
+                                    <ScrollArea className="h-full pr-4">
+                                        <div className="space-y-4">
+                                            {currentThreadMessages.map(msg => (
+                                                <div key={msg.id} className={cn("flex flex-col", msg.sender === 'admin' ? 'items-end' : 'items-start')}>
+                                                    <div className={cn(
+                                                        "p-3 rounded-lg max-w-[80%]",
+                                                        msg.sender === 'admin' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
+                                                    )}>
+                                                        <p className="whitespace-pre-wrap">{msg.text}</p>
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                        {msg.timestamp ? <ClientOnlyTime date={new Date(msg.timestamp.seconds * 1000)} /> : 'Sending...'}
+                                                    </p>
+                                                </div>
+                                            ))}
+                                            <div ref={messagesEndRef} />
+                                        </div>
+                                    </ScrollArea>
+                                </div>
+                                <form onSubmit={handleSendMessage} className="flex gap-2 pt-4 border-t">
+                                    <Textarea 
+                                        value={messageText} 
+                                        onChange={(e) => setMessageText(e.target.value)} 
+                                        placeholder={`Message ${selectedTeacher.name}...`}
+                                        rows={2}
+                                        disabled={isSending}
+                                    />
+                                    <Button type="submit" disabled={isSending || !messageText.trim()}>
+                                        {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                    </Button>
+                                </form>
+                            </>
+                    ) : (
+                            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                                <MessageSquare className="h-16 w-16 mb-4"/>
+                                <p>Select a Guild Leader from the list to begin messaging.</p>
+                            </div>
+                    )}
+                    </div>
+                </DialogContent>
+            </Dialog>
+            <AlertDialog open={isClearConfirmOpen} onOpenChange={setIsClearConfirmOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete the entire message history with {selectedTeacher?.name}. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isClearing}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleClearHistory} disabled={isClearing} className="bg-destructive hover:bg-destructive/90">
+                            {isClearing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Yes, Clear History
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
     );
 }

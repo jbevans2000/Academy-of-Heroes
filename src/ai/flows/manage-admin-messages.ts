@@ -164,3 +164,36 @@ export async function markAllAdminMessagesAsRead(input: MarkAllAdminMessagesInpu
         return { success: false, error: error.message || "Failed to update all messages." };
     }
 }
+
+
+interface ClearHistoryInput {
+  adminUid: string;
+  teacherId: string;
+}
+
+export async function clearAdminMessageHistory(input: ClearHistoryInput): Promise<ActionResponse> {
+  const { adminUid, teacherId } = input;
+  if (!adminUid || !teacherId) {
+    return { success: false, error: 'Invalid input provided.' };
+  }
+
+  try {
+    const messagesRef = collection(db, 'admins', adminUid, 'teacherMessages', teacherId, 'conversation');
+    const messagesSnapshot = await getDocs(messagesRef);
+
+    if (messagesSnapshot.empty) {
+      return { success: true, message: 'No messages to clear.' };
+    }
+
+    const batch = writeBatch(db);
+    messagesSnapshot.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+
+    await batch.commit();
+    return { success: true, message: 'Message history cleared.' };
+  } catch (error: any) {
+    console.error('Error clearing message history:', error);
+    return { success: false, error: 'An unexpected error occurred while clearing the history.' };
+  }
+}
