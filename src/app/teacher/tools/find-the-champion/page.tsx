@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -20,14 +20,6 @@ import { Label } from '@/components/ui/label';
 const runeImageSrc = 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-1b1a5535-ccec-4d95-b6ba-5199715edc4c.jpg?alt=media&token=b0a366fe-a4d4-46d7-b5f3-c13df8c2e69a';
 const numRunes = 12;
 
-const selectionCaptions = [
-    "The runes have chosen a champion!",
-    "The stones reveal a name!",
-    "A mysterious glyph glows, calling you forth!",
-    "Destiny calls! Step forward, hero!",
-    "The ancient symbols align to choose you!",
-];
-
 export default function FindTheChampionPage() {
     const router = useRouter();
     const { toast } = useToast();
@@ -37,7 +29,6 @@ export default function FindTheChampionPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isShuffling, setIsShuffling] = useState(false);
     const [pickedChampions, setPickedChampions] = useState<Student[]>([]);
-    const [pickedCaption, setPickedCaption] = useState('');
     const [teacher, setTeacher] = useState<User | null>(null);
     const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>(['all']);
 
@@ -84,7 +75,7 @@ export default function FindTheChampionPage() {
     
      const handleCompanyFilterChange = (companyId: string) => {
         if (companyId === 'all') {
-            setSelectedCompanyIds(prev => prev.includes('all') ? prev.filter(id => id !== 'all') : ['all']);
+            setSelectedCompanyIds(prev => prev.includes('all') ? [] : ['all']);
             return;
         }
 
@@ -101,7 +92,6 @@ export default function FindTheChampionPage() {
     const handleSelectChampions = (mode: 'guild' | 'company') => {
         setIsShuffling(true);
         setPickedChampions([]);
-        setPickedCaption('');
 
         setTimeout(() => {
             const freelancers = championData?.freelancerChampions || [];
@@ -128,13 +118,17 @@ export default function FindTheChampionPage() {
             const candidates = allStudents.filter(s => candidateUids.includes(s.uid) && s.isChampion === true && !s.isHidden);
 
             if (candidates.length === 0) {
-                setPickedCaption("No champions have volunteered from the selected groups! Make sure students have toggled their Champion Status ON in their dashboard.");
+                toast({
+                    variant: 'destructive',
+                    title: 'No Champions Found',
+                    description: 'No champions have volunteered from the selected groups. Make sure students have toggled their Champion Status ON.',
+                    duration: 6000
+                });
                 setPickedChampions([]);
                 setIsShuffling(false);
                 return;
             }
 
-            const caption = selectionCaptions[Math.floor(Math.random() * selectionCaptions.length)];
             let champions: Student[] = [];
 
             if (mode === 'guild') {
@@ -151,23 +145,28 @@ export default function FindTheChampionPage() {
                     }
                 });
 
-                for (const companyId in championsByCompany) {
-                    if (selectedCompanyIds.includes('all') || selectedCompanyIds.includes(companyId)) {
-                        const companyCandidates = championsByCompany[companyId];
-                        if (companyCandidates.length > 0) {
-                            const randomIndex = Math.floor(Math.random() * companyCandidates.length);
-                            champions.push(companyCandidates[randomIndex]);
-                        }
+                const companiesToSelectFrom = selectedCompanyIds.includes('all') 
+                    ? companies.map(c => c.id) 
+                    : selectedCompanyIds;
+
+                companiesToSelectFrom.forEach(companyId => {
+                    const companyCandidates = championsByCompany[companyId];
+                    if (companyCandidates && companyCandidates.length > 0) {
+                        const randomIndex = Math.floor(Math.random() * companyCandidates.length);
+                        champions.push(companyCandidates[randomIndex]);
                     }
-                }
+                });
 
                 if (champions.length === 0) {
-                    setPickedCaption("No champions in any of the selected companies have volunteered.");
+                    toast({
+                        title: 'No Champions Found',
+                        description: 'No champions in any of the selected companies have volunteered.',
+                        duration: 6000
+                    });
                 }
             }
             
             setPickedChampions(champions);
-            setPickedCaption(caption);
             setIsShuffling(false);
         }, 3000); // 3-second animation
     };
@@ -238,41 +237,37 @@ export default function FindTheChampionPage() {
                                     
                                     <div className={cn(
                                         "absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-500",
-                                        !isShuffling && pickedCaption ? "opacity-100" : "opacity-0 pointer-events-none",
+                                        !isShuffling && pickedChampions.length > 0 ? "opacity-100" : "opacity-0 pointer-events-none",
                                         "animate-in fade-in-50"
                                     )}>
                                         <div className="space-y-4">
-                                            <h3 className="text-2xl font-bold font-headline text-black">{pickedCaption}</h3>
-                                            {pickedChampions.length > 0 ? (
-                                                <div className={cn(
-                                                    "grid gap-4",
-                                                    pickedChampions.length === 1 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-                                                )}>
-                                                    {pickedChampions.map(champion => {
-                                                        const companyName = companies.find(c => c.id === champion.companyId)?.name;
-                                                        return (
-                                                        <div key={champion.uid} className={cn(
-                                                            "flex flex-col items-center space-y-2 p-4 bg-background/50 rounded-lg",
-                                                            pickedChampions.length === 1 && "scale-125"
-                                                        )}>
-                                                            <div className="relative w-24 h-24">
-                                                                <Image src={champion.avatarUrl} alt={champion.characterName} fill className="object-contain drop-shadow-lg" />
-                                                            </div>
-                                                            <h4 className="text-xl font-bold">{champion.characterName}</h4>
-                                                            <p className="text-sm text-muted-foreground">{champion.studentName}</p>
-                                                            {companyName && <p className="text-sm font-semibold text-primary">{companyName}</p>}
+                                            <h3 className="text-2xl font-bold font-headline text-black">The runes have chosen!</h3>
+                                            <div className={cn(
+                                                "grid gap-4",
+                                                pickedChampions.length === 1 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+                                            )}>
+                                                {pickedChampions.map(champion => {
+                                                    const companyName = companies.find(c => c.id === champion.companyId)?.name;
+                                                    return (
+                                                    <div key={champion.uid} className={cn(
+                                                        "flex flex-col items-center space-y-2 p-4 bg-background/50 rounded-lg",
+                                                        pickedChampions.length === 1 && "scale-125"
+                                                    )}>
+                                                        <div className="relative w-24 h-24">
+                                                            <Image src={champion.avatarUrl} alt={champion.characterName} fill className="object-contain drop-shadow-lg" />
                                                         </div>
-                                                    )})}
-                                                </div>
-                                            ) : (
-                                                <p className="text-destructive font-semibold">No champions were found.</p>
-                                            )}
+                                                        <h4 className="text-xl font-bold">{champion.characterName}</h4>
+                                                        <p className="text-sm text-muted-foreground">{champion.studentName}</p>
+                                                        {companyName && <p className="text-sm font-semibold text-primary">{companyName}</p>}
+                                                    </div>
+                                                )})}
+                                            </div>
                                         </div>
                                     </div>
                                     
                                     <div className={cn(
                                         "flex flex-col items-center justify-center transition-opacity duration-500 w-full",
-                                        isShuffling || pickedCaption ? "opacity-0 pointer-events-none" : "opacity-100"
+                                        isShuffling || pickedChampions.length > 0 ? "opacity-0 pointer-events-none" : "opacity-100"
                                     )}>
                                         <Card className="p-4 mb-4 bg-background/50 w-full">
                                             <CardTitle className="text-lg mb-2">Filter by Company</CardTitle>
@@ -307,17 +302,8 @@ export default function FindTheChampionPage() {
                                                 ))}
                                             </CardContent>
                                         </Card>
-                                        <p className="text-muted-foreground text-lg mb-4">Choose how to select your champion(s)!</p>
+                                        <p className="text-muted-foreground text-lg mb-4">Click a button below to begin the selection!</p>
                                     </div>
-
-                                    {(pickedCaption) && (
-                                        <div className="absolute bottom-6">
-                                            <Button size="lg" className="text-xl py-8" onClick={() => handleSelectChampions('guild')} disabled={isLoading || isShuffling}>
-                                                <RefreshCw className="mr-4 h-6 w-6" />
-                                                Consult Again
-                                            </Button>
-                                        </div>
-                                    )}
                                 </div>
                             )}
                         </CardContent>
