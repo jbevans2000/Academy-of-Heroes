@@ -1,5 +1,4 @@
 
-
 'use server';
 /**
  * @fileOverview A server-side flow for managing student accounts and data.
@@ -155,6 +154,7 @@ export async function setMeditationStatus(input: MeditationStatusInput): Promise
         updates.meditationReleaseAt = deleteField(); // Clear any previous timer if duration is not set
       }
     } else {
+      // This is the fix: Ensure timer fields are deleted on manual release.
       updates.meditationMessage = deleteField();
       updates.meditationReleaseAt = deleteField();
     }
@@ -278,4 +278,5 @@ export async function forceStudentLogout(input: ForceLogoutInput): Promise<Actio
     return { success: false, error: 'Failed to set logout flag.' };
   }
 }
+
 
