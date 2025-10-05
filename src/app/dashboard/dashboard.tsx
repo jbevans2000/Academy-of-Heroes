@@ -100,6 +100,23 @@ export default function Dashboard() {
                 router.push('/account-archived');
                 return;
               }
+
+              // Handle automatic release from meditation
+              if (studentData.isInMeditationChamber && studentData.meditationReleaseAt) {
+                  const releaseTime = (studentData.meditationReleaseAt as Timestamp).toDate();
+                  if (new Date() >= releaseTime) {
+                      // Automatically release the student
+                      await updateDoc(studentRef, {
+                          isInMeditationChamber: false,
+                          meditationMessage: deleteField(),
+                          meditationReleaseAt: deleteField(),
+                          meditationDuration: deleteField(),
+                      });
+                      // studentData will be updated by the onSnapshot listener,
+                      // so we don't need to setStudent here. The component will re-render.
+                      return; // Exit this snapshot handler to wait for the next one
+                  }
+              }
               
               const teacherRef = doc(db, 'teachers', teacherUid);
               const teacherSnap = await getDoc(teacherRef);
@@ -267,3 +284,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
+    

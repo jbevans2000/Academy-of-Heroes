@@ -146,18 +146,18 @@ export async function setMeditationStatus(input: MeditationStatusInput): Promise
     };
     if (isInMeditation) {
       updates.meditationMessage = message;
+      updates.meditationDuration = durationInMinutes || null; // Store the duration
       if (durationInMinutes && durationInMinutes > 0) {
         const releaseTime = new Date();
         releaseTime.setMinutes(releaseTime.getMinutes() + durationInMinutes);
         updates.meditationReleaseAt = Timestamp.fromDate(releaseTime);
       } else {
-        // Explicitly remove any existing timer if no new duration is set.
         updates.meditationReleaseAt = deleteField(); 
       }
     } else {
-      // This is the fix: Ensure timer fields are deleted on manual release.
       updates.meditationMessage = deleteField();
       updates.meditationReleaseAt = deleteField();
+      updates.meditationDuration = deleteField();
     }
     await updateDoc(studentRef, updates);
     return { success: true };
@@ -189,6 +189,7 @@ export async function setBulkMeditationStatus(input: BulkMeditationStatusInput):
 
         if (isInMeditation) {
             updates.meditationMessage = message;
+            updates.meditationDuration = durationInMinutes || null; // Store duration
             if (durationInMinutes && durationInMinutes > 0) {
                 const releaseTime = new Date();
                 releaseTime.setMinutes(releaseTime.getMinutes() + durationInMinutes);
@@ -199,6 +200,7 @@ export async function setBulkMeditationStatus(input: BulkMeditationStatusInput):
         } else {
             updates.meditationMessage = deleteField();
             updates.meditationReleaseAt = deleteField();
+            updates.meditationDuration = deleteField();
         }
 
         studentUids.forEach(uid => {
@@ -231,6 +233,7 @@ export async function releaseAllFromMeditation(input: { teacherUid: string }): P
                 isInMeditationChamber: false,
                 meditationMessage: deleteField(),
                 meditationReleaseAt: deleteField(),
+                meditationDuration: deleteField(),
             });
         });
 
@@ -282,3 +285,6 @@ export async function forceStudentLogout(input: ForceLogoutInput): Promise<Actio
 
 
 
+
+
+    

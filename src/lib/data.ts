@@ -121,6 +121,8 @@ export type Student = {
     avatarLog?: AvatarLogEntry[]; // This will likely not be stored on the student doc itself
     isInMeditationChamber?: boolean;
     meditationMessage?: string;
+    meditationReleaseAt?: any; // Firestore ServerTimestamp
+    meditationDuration?: number | null; // Duration in minutes
     forceLogout?: boolean; // Flag to trigger client-side logout
 }
 
@@ -152,3 +154,5 @@ export const classData = {
     baseStats: { hp: 6, mp: 15 },
   },
 };
+
+    

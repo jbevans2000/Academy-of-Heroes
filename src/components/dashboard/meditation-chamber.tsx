@@ -24,45 +24,33 @@ export function MeditationChamber({ student, teacherUid }: MeditationChamberProp
     const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
     useEffect(() => {
-        if (!student.meditationReleaseAt) {
+        if (!student.meditationDuration) {
             setTimeLeft(null);
             return;
         }
 
-        const releaseTime = (student.meditationReleaseAt as Timestamp).toDate().getTime();
-        
-        const updateTimer = () => {
-            const now = new Date().getTime();
-            const remaining = Math.round((releaseTime - now) / 1000);
-            
-            if (remaining <= 0) {
-                setTimeLeft(0);
-                // The main dashboard component will handle the actual release
-                // by re-checking the timestamp against the current time.
-                // This just updates the UI.
-            } else {
-                setTimeLeft(remaining);
-            }
-        };
+        let interval: NodeJS.Timeout;
+        setTimeLeft(student.meditationDuration * 60);
 
-        updateTimer();
-        const interval = setInterval(updateTimer, 1000);
+        interval = setInterval(() => {
+            setTimeLeft(prev => {
+                if (prev === null || prev <= 1) {
+                    clearInterval(interval);
+                    // Automatically release the student
+                    setMeditationStatus({
+                        teacherUid: teacherUid,
+                        studentUid: student.uid,
+                        isInMeditation: false
+                    });
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
         
         return () => clearInterval(interval);
 
-    }, [student.meditationReleaseAt]);
-
-    const handleManualRelease = async () => {
-        // This is a student-side initiated release ONLY if timer is done
-        if (timeLeft === 0) {
-            await setMeditationStatus({
-                teacherUid: teacherUid,
-                studentUid: student.uid,
-                isInMeditation: false
-            });
-            // The main dashboard's onSnapshot will handle the re-render.
-        }
-    }
+    }, [student.meditationDuration, student.uid, teacherUid]);
 
     return (
         <div className="relative flex min-h-screen w-full flex-col items-center justify-center p-4">
@@ -90,8 +78,7 @@ export function MeditationChamber({ student, teacherUid }: MeditationChamberProp
                 
                 {timeLeft === 0 && (
                      <div className="mt-6 animate-pulse">
-                        <p className="text-2xl font-bold text-green-400">Your meditation is complete.</p>
-                        <Button onClick={handleManualRelease} className="mt-4 bg-green-600 hover:bg-green-700">Return to Dashboard</Button>
+                        <p className="text-2xl font-bold text-green-400">Your meditation is complete. You may now return to your duties.</p>
                     </div>
                 )}
 
@@ -104,3 +91,5 @@ export function MeditationChamber({ student, teacherUid }: MeditationChamberProp
         </div>
     );
 }
+
+    
