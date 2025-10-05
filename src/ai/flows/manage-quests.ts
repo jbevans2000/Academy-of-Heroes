@@ -505,7 +505,7 @@ export async function deleteQuestHub(input: DeleteHubInput): Promise<ActionRespo
         const chaptersSnapshot = await getDocs(chaptersQuery);
         
         if (!chaptersSnapshot.empty) {
-            chaptersSnapshot.forEach(doc => {
+            chaptersSnapshot.docs.forEach(doc => {
                 batch.delete(doc.ref);
             });
         }
@@ -526,3 +526,33 @@ export async function deleteQuestHub(input: DeleteHubInput): Promise<ActionRespo
     }
 }
 
+interface DeleteChapterInput {
+    teacherUid: string;
+    chapterId: string;
+}
+
+export async function deleteChapter(input: DeleteChapterInput): Promise<ActionResponse> {
+    const { teacherUid, chapterId } = input;
+    if (!teacherUid || !chapterId) {
+        return { success: false, error: "Invalid input provided." };
+    }
+
+    try {
+        const chapterRef = doc(db, 'teachers', teacherUid, 'chapters', chapterId);
+        await deleteDoc(chapterRef);
+
+        // We are intentionally NOT cleaning up student progress here per the user's request.
+        // The Daily Training function is resilient to missing chapter documents.
+
+        await logGameEvent(teacherUid, 'GAMEMASTER', `Deleted Chapter with ID: ${chapterId}.`);
+        return { success: true, message: 'Chapter has been deleted.' };
+
+    } catch (error: any) {
+        console.error("Error deleting chapter:", error);
+        return { success: false, error: error.message || 'Failed to delete the chapter.' };
+    }
+}
+
+
+
+  
