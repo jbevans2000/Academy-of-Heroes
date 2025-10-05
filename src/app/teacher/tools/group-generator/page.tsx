@@ -20,7 +20,8 @@ const guildNames = [
     "The Griffin Guard", "The Shadow Syndicate", "The Crimson Blades", "The Golden Lions",
     "The Azure Order", "The Iron Wolves", "The Serpent's Coil", "The Dragon Riders",
     "The Phoenix Fellowship", "The Obsidian Circle", "The Emerald Enclave", "The Silver Hand",
-    "The Nightfall Guild", "The Sunstone Clan", "The Stormbringers", "The Whisperwind Society"
+    "The Nightfall Guild", "The Sunstone Clan", "The Stormbringers", "The Whisperwind Society",
+    "The Astral Vanguard", "The Onyx Legion", "The Wyvern Watch", "The Runic Scribes"
 ];
 
 // Fisher-Yates shuffle algorithm
