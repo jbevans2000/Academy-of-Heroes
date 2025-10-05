@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -9,10 +9,13 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, RefreshCw, Loader2, Sparkles } from 'lucide-react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
-import type { Student } from '@/lib/data';
+import type { Student, Company } from '@/lib/data';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { onAuthStateChanged, type User } from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 const runeImageSrc = 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-1b1a5535-ccec-4d95-b6ba-5199715edc4c.jpg?alt=media&token=b0a366fe-a4d4-46d7-b5f3-c13df8c2e69a';
 const numRunes = 12; // Number of runes to display in the animation
@@ -27,12 +30,15 @@ const selectionCaptions = [
 
 export default function RandomStudentPage() {
     const router = useRouter();
-    const [students, setStudents] = useState<Student[]>([]);
+    const { toast } = useToast();
+    const [allStudents, setAllStudents] = useState<Student[]>([]);
+    const [companies, setCompanies] = useState<Company[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isShuffling, setIsShuffling] = useState(false);
     const [pickedStudent, setPickedStudent] = useState<Student | null>(null);
     const [pickedCaption, setPickedCaption] = useState('');
     const [teacher, setTeacher] = useState<User | null>(null);
+    const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>(['all']);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -47,31 +53,64 @@ export default function RandomStudentPage() {
 
     useEffect(() => {
         if (!teacher) return;
-        const fetchStudents = async () => {
+        const fetchStudentsAndCompanies = async () => {
             setIsLoading(true);
             try {
-                const querySnapshot = await getDocs(collection(db, "teachers", teacher.uid, "students"));
-                const studentsData = querySnapshot.docs.map(doc => ({ ...doc.data() } as Student));
-                // Filter out hidden students
-                const activeStudents = studentsData.filter(student => !student.isHidden);
-                setStudents(activeStudents);
+                const studentsSnapshot = await getDocs(collection(db, "teachers", teacher.uid, "students"));
+                const studentsData = studentsSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
+                setAllStudents(studentsData);
+
+                const companiesSnapshot = await getDocs(collection(db, 'teachers', teacher.uid, 'companies'));
+                const companiesData = companiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
+                setCompanies(companiesData);
+
             } catch (error) {
-                console.error("Error fetching students: ", error);
+                console.error("Error fetching data: ", error);
+                 toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch student or company data.' });
             } finally {
                 setIsLoading(false);
             }
         };
-        fetchStudents();
-    }, [teacher]);
+        fetchStudentsAndCompanies();
+    }, [teacher, toast]);
+
+    const activeStudents = useMemo(() => {
+        let filtered = allStudents.filter(student => !student.isHidden);
+
+        if (!selectedCompanyIds.includes('all') && selectedCompanyIds.length > 0) {
+            filtered = filtered.filter(student => selectedCompanyIds.includes(student.companyId || ''));
+        }
+        
+        return filtered;
+    }, [allStudents, selectedCompanyIds]);
+
+    const handleCompanyFilterChange = (companyId: string) => {
+        if (companyId === 'all') {
+            setSelectedCompanyIds(prev => prev.includes('all') ? prev.filter(id => id !== 'all') : ['all']);
+            return;
+        }
+
+        setSelectedCompanyIds(prev => {
+            const newFilters = prev.filter(id => id !== 'all');
+            if (newFilters.includes(companyId)) {
+                return newFilters.filter(id => id !== companyId);
+            } else {
+                return [...newFilters, companyId];
+            }
+        });
+    };
 
     const generateStudent = () => {
-        if (students.length === 0) return;
+        if (activeStudents.length === 0) {
+            toast({ variant: 'destructive', title: 'No Students Found', description: 'There are no active students matching the current filter.' });
+            return;
+        };
         
         setPickedStudent(null); 
         setIsShuffling(true);
 
-        const randomIndex = Math.floor(Math.random() * students.length);
-        const student = students[randomIndex];
+        const randomIndex = Math.floor(Math.random() * activeStudents.length);
+        const student = activeStudents[randomIndex];
 
         const randomCaptionIndex = Math.floor(Math.random() * selectionCaptions.length);
         const caption = selectionCaptions[randomCaptionIndex];
@@ -95,6 +134,7 @@ export default function RandomStudentPage() {
                     backgroundPosition: 'center',
                 }}
             />
+            <div className="absolute inset-0 bg-black/30 -z-10" />
             <TeacherHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8 flex flex-col items-center justify-center">
                 <div className="w-full max-w-2xl space-y-6">
@@ -145,7 +185,7 @@ export default function RandomStudentPage() {
                                     </div>
 
                                      <div className={cn(
-                                        "absolute inset-0 flex items-center justify-center transition-opacity duration-500",
+                                        "absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-500",
                                         !isShuffling && pickedStudent ? "opacity-100" : "opacity-0 pointer-events-none",
                                         "animate-in fade-in-50"
                                     )}>
@@ -171,16 +211,40 @@ export default function RandomStudentPage() {
                                         "flex flex-col items-center justify-center transition-opacity duration-500",
                                         isShuffling || pickedStudent ? "opacity-0 pointer-events-none" : "opacity-100"
                                     )}>
+                                         <Card className="p-4 mb-4 bg-background/50 w-full">
+                                            <CardTitle className="text-lg mb-2">Filter by Company</CardTitle>
+                                            <CardContent className="flex flex-wrap justify-center gap-x-4 gap-y-2 p-0">
+                                                <div className="flex items-center space-x-2">
+                                                    <Checkbox
+                                                        id="filter-all"
+                                                        checked={selectedCompanyIds.includes('all')}
+                                                        onCheckedChange={() => handleCompanyFilterChange('all')}
+                                                    />
+                                                    <Label htmlFor="filter-all" className="font-semibold">All Students</Label>
+                                                </div>
+                                                {companies.map(company => (
+                                                    <div key={company.id} className="flex items-center space-x-2">
+                                                        <Checkbox
+                                                            id={`filter-${company.id}`}
+                                                            checked={selectedCompanyIds.includes(company.id)}
+                                                            onCheckedChange={() => handleCompanyFilterChange(company.id)}
+                                                            disabled={selectedCompanyIds.includes('all')}
+                                                        />
+                                                        <Label htmlFor={`filter-${company.id}`}>{company.name}</Label>
+                                                    </div>
+                                                ))}
+                                            </CardContent>
+                                        </Card>
                                         <p className="text-muted-foreground text-lg mb-4">Click the button to consult the runes!</p>
-                                         <Button size="lg" className="w-full max-w-xs text-xl py-8" onClick={generateStudent} disabled={isLoading || isShuffling || students.length === 0}>
+                                         <Button size="lg" className="w-full max-w-xs text-xl py-8" onClick={generateStudent} disabled={isLoading || isShuffling || activeStudents.length === 0}>
                                             <RefreshCw className="mr-4 h-6 w-6" />
-                                            {students.length === 0 ? 'No Students in Roster' : 'Consult the Runes!'}
+                                            {activeStudents.length === 0 ? 'No Students to Select' : 'Consult the Runes!'}
                                         </Button>
                                     </div>
 
                                     {pickedStudent && !isShuffling && (
                                         <div className="absolute bottom-6">
-                                            <Button size="lg" className="text-xl py-8" onClick={generateStudent} disabled={isLoading || isShuffling || students.length === 0}>
+                                            <Button size="lg" className="text-xl py-8" onClick={generateStudent} disabled={isLoading || isShuffling || activeStudents.length === 0}>
                                                 <RefreshCw className="mr-4 h-6 w-6" />
                                                 Consult Again
                                             </Button>
@@ -195,3 +259,5 @@ export default function RandomStudentPage() {
         </div>
     );
 }
+
+    
