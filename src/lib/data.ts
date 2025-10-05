@@ -123,6 +123,7 @@ export type Student = {
     meditationMessage?: string;
     meditationReleaseAt?: any; // Firestore ServerTimestamp
     meditationDuration?: number | null; // Duration in minutes
+    meditationShowTimer?: boolean; // Show timer to student
     forceLogout?: boolean; // Flag to trigger client-side logout
 }
 
@@ -154,5 +155,3 @@ export const classData = {
     baseStats: { hp: 6, mp: 15 },
   },
 };
-
-    

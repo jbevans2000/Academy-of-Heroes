@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -75,7 +76,7 @@ export function MeditationChamber({ student, teacherUid }: MeditationChamberProp
                     {student.meditationMessage || "A moment of quiet contemplation."}
                 </div>
                 
-                {timeLeft !== null && timeLeft > 0 && !isTimerFinished && (
+                {student.meditationShowTimer && timeLeft !== null && timeLeft > 0 && !isTimerFinished && (
                     <div className="mt-6">
                         <p className="text-lg">Time Remaining:</p>
                         <p className="text-6xl font-mono font-bold">{formatTime(timeLeft)}</p>
@@ -89,7 +90,7 @@ export function MeditationChamber({ student, teacherUid }: MeditationChamberProp
                     </div>
                 )}
 
-                {timeLeft === null && (
+                {!student.meditationDuration && (
                     <p className="mt-4 text-sm text-muted-foreground">You may not access your dashboard until the Guild Leader releases you.</p>
                 )}
 

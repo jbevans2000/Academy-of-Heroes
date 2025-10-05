@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -37,6 +38,7 @@ import { toggleStudentVisibility, updateStudentDetails, setMeditationStatus, for
 import { SetQuestProgressDialog } from './set-quest-progress-dialog';
 import { setStudentStat } from '@/ai/flows/manage-student-stats';
 import { Textarea } from '../ui/textarea';
+import { Switch } from '../ui/switch';
 
 interface EditableStatProps {
     student: Student;
@@ -321,6 +323,7 @@ function EditablePairedStat({ student, stat, maxStat, icon, label, teacherUid }:
 function MeditationDialog({ student, teacherUid, onOpenChange }: { student: Student; teacherUid: string; onOpenChange: (open: boolean) => void }) {
     const [message, setMessage] = useState('');
     const [duration, setDuration] = useState<number | string>('');
+    const [showTimer, setShowTimer] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
 
@@ -336,7 +339,8 @@ function MeditationDialog({ student, teacherUid, onOpenChange }: { student: Stud
                 studentUid: student.uid,
                 isInMeditation: true,
                 message,
-                durationInMinutes: Number(duration) || undefined
+                durationInMinutes: Number(duration) || undefined,
+                showTimer,
             });
             if (result.success) {
                 toast({ title: 'Student Sent to Meditate', description: `${student.characterName} is now in the Meditation Chamber.` });
@@ -366,7 +370,7 @@ function MeditationDialog({ student, teacherUid, onOpenChange }: { student: Stud
                     placeholder="e.g., Reflect on your focus during today's history lesson."
                     rows={4}
                 />
-                <div className="space-y-2">
+                 <div className="space-y-2">
                     <Label htmlFor="meditation-duration">Release After (Minutes, Optional)</Label>
                     <Input 
                         id="meditation-duration" 
@@ -375,6 +379,10 @@ function MeditationDialog({ student, teacherUid, onOpenChange }: { student: Stud
                         onChange={e => setDuration(e.target.value)}
                         placeholder="e.g., 15"
                     />
+                </div>
+                <div className="flex items-center space-x-2">
+                    <Switch id="show-timer" checked={showTimer} onCheckedChange={setShowTimer} />
+                    <Label htmlFor="show-timer">Show timer to student</Label>
                 </div>
             </div>
             <DialogFooter>

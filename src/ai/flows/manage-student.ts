@@ -1,4 +1,5 @@
 
+
 'use server';
 /**
  * @fileOverview A server-side flow for managing student accounts and data.
@@ -135,10 +136,11 @@ interface MeditationStatusInput {
   isInMeditation: boolean;
   message?: string;
   durationInMinutes?: number;
+  showTimer?: boolean;
 }
 
 export async function setMeditationStatus(input: MeditationStatusInput): Promise<ActionResponse> {
-  const { teacherUid, studentUid, isInMeditation, message, durationInMinutes } = input;
+  const { teacherUid, studentUid, isInMeditation, message, durationInMinutes, showTimer } = input;
   try {
     const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
     const updates: any = {
@@ -146,11 +148,10 @@ export async function setMeditationStatus(input: MeditationStatusInput): Promise
     };
     if (isInMeditation) {
       updates.meditationMessage = message;
-      updates.meditationDuration = durationInMinutes || null; // Store the duration
+      updates.meditationDuration = durationInMinutes || null;
+      updates.meditationShowTimer = showTimer ?? false;
       if (durationInMinutes && durationInMinutes > 0) {
-        const releaseTime = new Date();
-        releaseTime.setMinutes(releaseTime.getMinutes() + durationInMinutes);
-        updates.meditationReleaseAt = Timestamp.fromDate(releaseTime);
+        updates.meditationReleaseAt = Timestamp.fromMillis(Date.now() + durationInMinutes * 60 * 1000);
       } else {
         updates.meditationReleaseAt = deleteField(); 
       }
@@ -158,6 +159,7 @@ export async function setMeditationStatus(input: MeditationStatusInput): Promise
       updates.meditationMessage = deleteField();
       updates.meditationReleaseAt = deleteField();
       updates.meditationDuration = deleteField();
+      updates.meditationShowTimer = deleteField();
     }
     await updateDoc(studentRef, updates);
     return { success: true };
@@ -172,11 +174,12 @@ interface BulkMeditationStatusInput {
     studentUids: string[];
     isInMeditation: boolean;
     message?: string;
-    durationInMinutes?: number; // New optional field
+    durationInMinutes?: number;
+    showTimer?: boolean;
 }
 
 export async function setBulkMeditationStatus(input: BulkMeditationStatusInput): Promise<ActionResponse> {
-    const { teacherUid, studentUids, isInMeditation, message, durationInMinutes } = input;
+    const { teacherUid, studentUids, isInMeditation, message, durationInMinutes, showTimer } = input;
     if (!studentUids || studentUids.length === 0) {
         return { success: false, error: "No students selected." };
     }
@@ -189,11 +192,10 @@ export async function setBulkMeditationStatus(input: BulkMeditationStatusInput):
 
         if (isInMeditation) {
             updates.meditationMessage = message;
-            updates.meditationDuration = durationInMinutes || null; // Store duration
+            updates.meditationDuration = durationInMinutes || null;
+            updates.meditationShowTimer = showTimer ?? false;
             if (durationInMinutes && durationInMinutes > 0) {
-                const releaseTime = new Date();
-                releaseTime.setMinutes(releaseTime.getMinutes() + durationInMinutes);
-                updates.meditationReleaseAt = Timestamp.fromDate(releaseTime);
+                updates.meditationReleaseAt = Timestamp.fromMillis(Date.now() + durationInMinutes * 60 * 1000);
             } else {
                 updates.meditationReleaseAt = deleteField();
             }
@@ -201,6 +203,7 @@ export async function setBulkMeditationStatus(input: BulkMeditationStatusInput):
             updates.meditationMessage = deleteField();
             updates.meditationReleaseAt = deleteField();
             updates.meditationDuration = deleteField();
+            updates.meditationShowTimer = deleteField();
         }
 
         studentUids.forEach(uid => {
@@ -234,6 +237,7 @@ export async function releaseAllFromMeditation(input: { teacherUid: string }): P
                 meditationMessage: deleteField(),
                 meditationReleaseAt: deleteField(),
                 meditationDuration: deleteField(),
+                meditationShowTimer: deleteField(),
             });
         });
 
