@@ -22,26 +22,23 @@ const formatTime = (totalSeconds: number) => {
 
 export function MeditationChamber({ student, teacherUid }: MeditationChamberProps) {
     const [timeLeft, setTimeLeft] = useState<number | null>(null);
+    const [isTimerFinished, setIsTimerFinished] = useState(false);
 
     useEffect(() => {
         if (!student.meditationDuration) {
             setTimeLeft(null);
+            setIsTimerFinished(false);
             return;
         }
 
-        let interval: NodeJS.Timeout;
-        setTimeLeft(student.meditationDuration * 60);
+        const initialSeconds = student.meditationDuration * 60;
+        setTimeLeft(initialSeconds);
 
-        interval = setInterval(() => {
+        const interval = setInterval(() => {
             setTimeLeft(prev => {
                 if (prev === null || prev <= 1) {
                     clearInterval(interval);
-                    // Automatically release the student
-                    setMeditationStatus({
-                        teacherUid: teacherUid,
-                        studentUid: student.uid,
-                        isInMeditation: false
-                    });
+                    setIsTimerFinished(true); // Set finished state instead of auto-releasing
                     return 0;
                 }
                 return prev - 1;
@@ -50,7 +47,16 @@ export function MeditationChamber({ student, teacherUid }: MeditationChamberProp
         
         return () => clearInterval(interval);
 
-    }, [student.meditationDuration, student.uid, teacherUid]);
+    }, [student.meditationDuration]);
+
+    const handleRelease = async () => {
+        await setMeditationStatus({
+            teacherUid: teacherUid,
+            studentUid: student.uid,
+            isInMeditation: false
+        });
+        // The dashboard component will handle the re-render automatically.
+    };
 
     return (
         <div className="relative flex min-h-screen w-full flex-col items-center justify-center p-4">
@@ -69,16 +75,17 @@ export function MeditationChamber({ student, teacherUid }: MeditationChamberProp
                     {student.meditationMessage || "A moment of quiet contemplation."}
                 </div>
                 
-                {timeLeft !== null && timeLeft > 0 && (
+                {timeLeft !== null && timeLeft > 0 && !isTimerFinished && (
                     <div className="mt-6">
                         <p className="text-lg">Time Remaining:</p>
                         <p className="text-6xl font-mono font-bold">{formatTime(timeLeft)}</p>
                     </div>
                 )}
                 
-                {timeLeft === 0 && (
-                     <div className="mt-6 animate-pulse">
-                        <p className="text-2xl font-bold text-green-400">Your meditation is complete. You may now return to your duties.</p>
+                {isTimerFinished && (
+                     <div className="mt-6 animate-pulse space-y-4">
+                        <p className="text-2xl font-bold text-green-400">Your meditation is complete.</p>
+                        <Button size="lg" onClick={handleRelease}>Return to Dashboard</Button>
                     </div>
                 )}
 
@@ -91,5 +98,3 @@ export function MeditationChamber({ student, teacherUid }: MeditationChamberProp
         </div>
     );
 }
-
-    
