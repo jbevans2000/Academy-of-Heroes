@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -63,19 +64,23 @@ export default function RandomActivityPage() {
 
         const doc = new jsPDF();
         
-        // This is a simplified conversion. For complex markdown, a more robust library would be needed.
-        // For now, we'll replace some basic markdown for PDF output.
-        const html = marked(currentActivity.documentContent);
+        // Remove markdown for clean text processing
+        const plainText = currentActivity.documentContent
+            .replace(/### (.*)/g, '$1')
+            .replace(/## (.*)/g, '$1')
+            .replace(/# (.*)/g, '$1')
+            .replace(/\*\*(.*)\*\*/g, '$1')
+            .replace(/\*(.*)\*/g, '$1')
+            .replace(/^- /gm, '• ');
+
+        doc.setFontSize(18);
+        doc.text(currentActivity.title, 10, 20);
+
+        doc.setFontSize(12);
+        const splitText = doc.splitTextToSize(plainText, 180);
+        doc.text(splitText, 10, 30);
         
-        doc.html(html, {
-            callback: function(doc) {
-                doc.save(`${currentActivity.title.replace(/ /g, '_')}.pdf`);
-            },
-            x: 10,
-            y: 10,
-            width: 180,
-            windowWidth: 800 
-        });
+        doc.save(`${currentActivity.title.replace(/ /g, '_')}.pdf`);
     };
 
     return (
