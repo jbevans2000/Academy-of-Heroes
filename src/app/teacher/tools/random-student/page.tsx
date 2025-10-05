@@ -236,6 +236,7 @@ export default function RandomStudentPage() {
                                                             id={`filter-${company.id}`}
                                                             checked={selectedCompanyIds.includes(company.id)}
                                                             onCheckedChange={() => handleCompanyFilterChange(company.id)}
+                                                            disabled={selectedCompanyIds.includes('all')}
                                                         />
                                                         <Label htmlFor={`filter-${company.id}`}>{company.name}</Label>
                                                     </div>
@@ -243,24 +244,17 @@ export default function RandomStudentPage() {
                                             </CardContent>
                                         </Card>
                                         <p className="text-muted-foreground text-lg mb-4">Click the button to consult the runes!</p>
-                                         <Button size="lg" className="w-full max-w-xs text-xl py-8" onClick={generateStudent} disabled={isLoading || isShuffling || activeStudents.length === 0}>
-                                            <RefreshCw className="mr-4 h-6 w-6" />
-                                            {activeStudents.length === 0 ? 'No Students to Select' : 'Consult the Runes!'}
-                                        </Button>
                                     </div>
-
-                                    {pickedStudent && !isShuffling && (
-                                        <div className="absolute bottom-6">
-                                            <Button size="lg" className="text-xl py-8" onClick={generateStudent} disabled={isLoading || isShuffling || activeStudents.length === 0}>
-                                                <RefreshCw className="mr-4 h-6 w-6" />
-                                                Consult Again
-                                            </Button>
-                                        </div>
-                                    )}
                                 </div>
                             )}
                         </CardContent>
                     </Card>
+                    <div className="text-center">
+                        <Button size="lg" className="w-full max-w-xs text-xl py-8" onClick={generateStudent} disabled={isLoading || isShuffling || activeStudents.length === 0}>
+                            {isShuffling ? <Loader2 className="h-6 w-6 animate-spin" /> : <RefreshCw className="mr-4 h-6 w-6" />}
+                            {pickedStudent ? 'Consult Again' : 'Consult the Runes!'}
+                        </Button>
+                    </div>
                 </div>
             </main>
         </div>
