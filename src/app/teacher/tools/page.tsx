@@ -133,7 +133,7 @@ export default function ClassroomToolsPage() {
                 <div className="max-w-5xl mx-auto space-y-6">
                     <Button variant="outline" onClick={() => router.push('/teacher/dashboard')} className="bg-background/80 hover:bg-background/90">
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Dais
+                        Return to Podium
                     </Button>
 
                     <div className="p-6 rounded-lg bg-background/80 backdrop-blur-sm">
@@ -150,8 +150,11 @@ export default function ClassroomToolsPage() {
                            <ToolCard key={index} tool={tool} />
                         ))}
                     </div>
+                    
                 </div>
             </main>
         </div>
     );
 }
+
+    
