@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -11,9 +11,10 @@ import { Label } from '@/components/ui/label';
 import { ArrowLeft, Swords, Loader2, RefreshCw } from 'lucide-react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
-import type { Student } from '@/lib/data';
+import type { Student, Company } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { onAuthStateChanged, type User } from 'firebase/auth';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const guildNames = [
     "The Griffin Guard", "The Shadow Syndicate", "The Crimson Blades", "The Golden Lions",
@@ -37,11 +38,14 @@ export default function GroupGeneratorPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [students, setStudents] = useState<Student[]>([]);
+    const [companies, setCompanies] = useState<Company[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [groupSize, setGroupSize] = useState<number | string>(2);
     const [generatedGroups, setGeneratedGroups] = useState<Student[][]>([]);
     const [generatedGuildNames, setGeneratedGuildNames] = useState<string[]>([]);
     const [teacher, setTeacher] = useState<User | null>(null);
+    const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>(['all']);
+
 
      useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -56,21 +60,42 @@ export default function GroupGeneratorPage() {
     
     useEffect(() => {
         if (!teacher) return;
-        const fetchStudents = async () => {
+        const fetchStudentsAndCompanies = async () => {
             setIsLoading(true);
             try {
-                const querySnapshot = await getDocs(collection(db, "teachers", teacher.uid, "students"));
-                const studentsData = querySnapshot.docs.map(doc => ({ ...doc.data() } as Student));
+                const studentsSnapshot = await getDocs(collection(db, "teachers", teacher.uid, "students"));
+                const studentsData = studentsSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
                 setStudents(studentsData);
+
+                const companiesSnapshot = await getDocs(collection(db, 'teachers', teacher.uid, 'companies'));
+                const companiesData = companiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
+                setCompanies(companiesData);
+
             } catch (error) {
-                console.error("Error fetching students: ", error);
-                toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch student data.' });
+                console.error("Error fetching data: ", error);
+                toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch student or company data.' });
             } finally {
                 setIsLoading(false);
             }
         };
-        fetchStudents();
+        fetchStudentsAndCompanies();
     }, [teacher, toast]);
+
+    const handleCompanyFilterChange = (companyId: string) => {
+        if (companyId === 'all') {
+            setSelectedCompanyIds(prev => prev.includes('all') ? [] : ['all']);
+            return;
+        }
+
+        setSelectedCompanyIds(prev => {
+            const newFilters = prev.filter(id => id !== 'all');
+            if (newFilters.includes(companyId)) {
+                return newFilters.filter(id => id !== companyId);
+            } else {
+                return [...newFilters, companyId];
+            }
+        });
+    };
 
     const handleGenerateGroups = () => {
         const size = Number(groupSize);
@@ -78,11 +103,19 @@ export default function GroupGeneratorPage() {
             toast({ variant: 'destructive', title: 'Invalid Size', description: 'Please enter a valid group size greater than zero.' });
             return;
         }
+        
+        let activeStudents = students.filter(student => !student.isHidden);
 
-        const activeStudents = students.filter(student => !student.isHidden);
+        if (!selectedCompanyIds.includes('all') && selectedCompanyIds.length > 0) {
+             activeStudents = activeStudents.filter(student => selectedCompanyIds.includes(student.companyId || ''));
+        } else if (selectedCompanyIds.length === 0 && !selectedCompanyIds.includes('all')) {
+             toast({ variant: 'destructive', title: 'No Selection', description: 'Please select at least one company or "All Companies".' });
+            return;
+        }
+
 
         if (activeStudents.length === 0) {
-            toast({ variant: 'destructive', title: 'No Active Students', description: 'There are no active students to sort into groups.' });
+            toast({ variant: 'destructive', title: 'No Active Students', description: 'There are no active students matching your criteria.' });
             return;
         }
 
@@ -124,6 +157,32 @@ export default function GroupGeneratorPage() {
                             <CardDescription>Randomly assign students to guilds for their next great quest!</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Filter by Company</CardTitle>
+                                </CardHeader>
+                                <CardContent className="flex flex-wrap justify-center gap-4">
+                                     <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                            id="filter-all"
+                                            checked={selectedCompanyIds.includes('all')}
+                                            onCheckedChange={() => handleCompanyFilterChange('all')}
+                                        />
+                                        <Label htmlFor="filter-all" className="font-semibold">All Companies</Label>
+                                    </div>
+                                    {companies.map(company => (
+                                         <div key={company.id} className="flex items-center space-x-2">
+                                            <Checkbox
+                                                id={`filter-${company.id}`}
+                                                checked={selectedCompanyIds.includes(company.id)}
+                                                onCheckedChange={() => handleCompanyFilterChange(company.id)}
+                                                disabled={selectedCompanyIds.includes('all')}
+                                            />
+                                            <Label htmlFor={`filter-${company.id}`}>{company.name}</Label>
+                                        </div>
+                                    ))}
+                                </CardContent>
+                            </Card>
                            <div className="flex justify-center items-end gap-4">
                              <div className="w-full max-w-xs space-y-2">
                                 <Label htmlFor="group-size">Students per Guild</Label>
