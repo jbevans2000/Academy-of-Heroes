@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, query, orderBy, onSnapshot, doc, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, getDoc, getDocs, where, limit } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Message, Teacher } from '@/lib/data';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
