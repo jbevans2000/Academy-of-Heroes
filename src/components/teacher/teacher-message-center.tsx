@@ -48,16 +48,14 @@ export function TeacherMessageCenter({
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const sortedStudents = useMemo(() => {
-        // Create a copy to avoid mutating the original prop array
-        const studentList = [...students];
+        const unreadStudents = students
+            .filter(s => s.hasUnreadMessages)
+            .sort((a, b) => a.studentName.localeCompare(b.studentName));
 
-        // First, sort everyone alphabetically by their real name
-        studentList.sort((a, b) => a.studentName.localeCompare(b.studentName));
-        
-        // Then, pull students with unread messages to the top
-        const unreadStudents = studentList.filter(s => s.hasUnreadMessages);
-        const readStudents = studentList.filter(s => !s.hasUnreadMessages);
-        
+        const readStudents = students
+            .filter(s => !s.hasUnreadMessages)
+            .sort((a, b) => a.studentName.localeCompare(b.studentName));
+            
         return [...unreadStudents, ...readStudents];
     }, [students]);
 
