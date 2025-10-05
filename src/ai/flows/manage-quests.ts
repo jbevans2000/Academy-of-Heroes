@@ -125,10 +125,14 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
             }
         }
         
-        const currentProgress = student.questProgress?.[hubId] || 0;
-        if (chapter.chapterNumber !== currentProgress + 1) {
-            return { success: false, error: "This chapter cannot be marked as complete yet. Complete the previous chapter first." };
+        // This is the crucial check. We only enforce sequential completion for standard hubs.
+        if (hub.hubType !== 'sidequest') {
+            const currentProgress = student.questProgress?.[hubId] || 0;
+            if (chapter.chapterNumber !== currentProgress + 1) {
+                return { success: false, error: "This chapter cannot be marked as complete yet. Complete the previous chapter first." };
+            }
         }
+
 
         // Check if approval is required
         const isGlobalApprovalOn = questSettings.globalApprovalRequired;
@@ -138,8 +142,11 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
         if (studentOverride !== undefined) {
             needsApproval = studentOverride; // Override takes precedence
         }
+        
+        // Don't send for approval if the chapter is already completed.
+        const isAlreadyCompleted = (student.completedChapters || []).includes(chapterId);
 
-        if (needsApproval) {
+        if (needsApproval && !isAlreadyCompleted) {
             const requestsRef = collection(db, 'teachers', teacherUid, 'pendingQuestRequests');
             await addDoc(requestsRef, {
                 studentUid,
@@ -168,7 +175,7 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
 
         // --- Award Rewards if applicable ---
         let rewardMessage = '';
-        if (hub.areRewardsEnabled && !(student.completedChapters || []).includes(chapterId)) {
+        if (hub.areRewardsEnabled && !isAlreadyCompleted) {
             const xpToAdd = hub.rewardXp || 0;
             const goldToAdd = hub.rewardGold || 0;
 
@@ -200,7 +207,9 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
         }
         
         await updateDoc(studentRef, updates);
-        await logGameEvent(teacherUid, 'CHAPTER', `${student.characterName} completed Chapter ${chapter.chapterNumber}: ${chapter.title}.`);
+        if(!isAlreadyCompleted) {
+            await logGameEvent(teacherUid, 'CHAPTER', `${student.characterName} completed Chapter ${chapter.chapterNumber}: ${chapter.title}.`);
+        }
 
         return { success: true, message: `You have completed Chapter ${chapter.chapterNumber}: ${chapter.title}!${rewardMessage}` };
 
@@ -514,5 +523,3 @@ export async function deleteQuestHub(input: DeleteHubInput): Promise<ActionRespo
         return { success: false, error: error.message || 'Failed to delete the quest hub.' };
     }
 }
-
-    
