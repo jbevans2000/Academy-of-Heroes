@@ -2,7 +2,7 @@
 
 'use server';
 
-import { doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs, writeBatch, deleteDoc, serverTimestamp, query as firestoreQuery, where, arrayUnion, increment } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs, writeBatch, deleteDoc, serverTimestamp, query as firestoreQuery, where, arrayUnion, increment, arrayRemove } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Student, QuestHub, Chapter } from '@/lib/data';
 import { logGameEvent } from '@/lib/gamelog';
@@ -493,32 +493,57 @@ interface DeleteHubInput {
 
 export async function deleteQuestHub(input: DeleteHubInput): Promise<ActionResponse> {
     const { teacherUid, hubId } = input;
-    if (!teacherUid || !hubId) {
-        return { success: false, error: "Invalid input provided." };
-    }
-
-    const batch = writeBatch(db);
+    if (!teacherUid || !hubId) return { success: false, error: "Invalid input provided." };
 
     try {
-        // 1. Find and delete all chapters associated with this hub
+        const batch = writeBatch(db);
+        const studentsRef = collection(db, 'teachers', teacherUid, 'students');
+
+        // 1. Get all chapters in the hub to identify them for cleanup
         const chaptersQuery = firestoreQuery(collection(db, 'teachers', teacherUid, 'chapters'), where('hubId', '==', hubId));
         const chaptersSnapshot = await getDocs(chaptersQuery);
-        
+        const deletedChapterIds = chaptersSnapshot.docs.map(doc => doc.id);
+
+        // 2. Delete all chapters associated with this hub
         if (!chaptersSnapshot.empty) {
             chaptersSnapshot.docs.forEach(doc => {
                 batch.delete(doc.ref);
             });
         }
 
-        // 2. Delete the hub itself
+        // 3. Delete the hub itself
         const hubRef = doc(db, 'teachers', teacherUid, 'questHubs', hubId);
         batch.delete(hubRef);
+
+        // 4. Update all students
+        if (deletedChapterIds.length > 0) {
+            const studentsSnapshot = await getDocs(studentsRef);
+            studentsSnapshot.forEach(studentDoc => {
+                const studentRef = studentDoc.ref;
+                const studentData = studentDoc.data() as Student;
+                const questProgress = studentData.questProgress || {};
+
+                // Remove the hub from their progress map
+                if (questProgress[hubId]) {
+                    delete questProgress[hubId];
+                }
+                
+                // This is the critical step for Daily Training.
+                // It removes the "ghost" references.
+                const newCompletedChapters = studentData.completedChapters?.filter(id => !deletedChapterIds.includes(id)) || [];
+
+                batch.update(studentRef, {
+                    questProgress: questProgress,
+                    completedChapters: newCompletedChapters,
+                });
+            });
+        }
 
         await batch.commit();
         
         await logGameEvent(teacherUid, 'GAMEMASTER', `Deleted Quest Hub with ID: ${hubId} and its ${chaptersSnapshot.size} chapter(s).`);
 
-        return { success: true, message: 'Hub and all its chapters have been deleted.' };
+        return { success: true, message: 'Hub and all its chapters have been deleted. Student records have been cleaned up.' };
 
     } catch (error: any) {
         console.error("Error deleting quest hub:", error);
@@ -533,26 +558,68 @@ interface DeleteChapterInput {
 
 export async function deleteChapter(input: DeleteChapterInput): Promise<ActionResponse> {
     const { teacherUid, chapterId } = input;
-    if (!teacherUid || !chapterId) {
-        return { success: false, error: "Invalid input provided." };
-    }
+    if (!teacherUid || !chapterId) return { success: false, error: "Invalid input provided." };
 
     try {
+        const batch = writeBatch(db);
         const chapterRef = doc(db, 'teachers', teacherUid, 'chapters', chapterId);
-        await deleteDoc(chapterRef);
+        const chapterSnap = await getDoc(chapterRef);
 
-        // We are intentionally NOT cleaning up student progress here per the user's request.
-        // The Daily Training function is resilient to missing chapter documents.
+        if (!chapterSnap.exists()) {
+            throw new Error("Chapter does not exist.");
+        }
+        const deletedChapter = chapterSnap.data() as Chapter;
+        const hubId = deletedChapter.hubId;
+        const deletedChapterNumber = deletedChapter.chapterNumber;
 
-        await logGameEvent(teacherUid, 'GAMEMASTER', `Deleted Chapter with ID: ${chapterId}.`);
-        return { success: true, message: 'Chapter has been deleted.' };
+        // 1. Delete the chapter document itself
+        batch.delete(chapterRef);
+        
+        // 2. Adjust all students' progress
+        const studentsRef = collection(db, 'teachers', teacherUid, 'students');
+        const studentsSnapshot = await getDocs(studentsRef);
+
+        studentsSnapshot.forEach(studentDoc => {
+            const studentRef = studentDoc.ref;
+            const studentData = studentDoc.data() as Student;
+            const questProgress = studentData.questProgress || {};
+            const completedInHub = questProgress[hubId] || 0;
+
+            const updates: { [key: string]: any } = {};
+
+            // Remove from completedChapters array
+            if (studentData.completedChapters?.includes(chapterId)) {
+                updates.completedChapters = arrayRemove(chapterId);
+            }
+
+            // If the student's progress was beyond the deleted chapter, decrement it.
+            if (completedInHub >= deletedChapterNumber) {
+                updates[`questProgress.${hubId}`] = completedInHub - 1;
+            }
+
+            if (Object.keys(updates).length > 0) {
+                batch.update(studentRef, updates);
+            }
+        });
+        
+        // 3. Adjust chapter numbers for subsequent chapters in the same hub
+        const subsequentChaptersQuery = firestoreQuery(
+            collection(db, 'teachers', teacherUid, 'chapters'), 
+            where('hubId', '==', hubId), 
+            where('chapterNumber', '>', deletedChapterNumber)
+        );
+        const subsequentChaptersSnapshot = await getDocs(subsequentChaptersQuery);
+        subsequentChaptersSnapshot.forEach(doc => {
+            batch.update(doc.ref, { chapterNumber: increment(-1) });
+        });
+
+        await batch.commit();
+
+        await logGameEvent(teacherUid, 'GAMEMASTER', `Deleted Chapter ${deletedChapter.chapterNumber}: "${deletedChapter.title}".`);
+        return { success: true, message: 'Chapter has been deleted and student progress has been adjusted.' };
 
     } catch (error: any) {
         console.error("Error deleting chapter:", error);
         return { success: false, error: error.message || 'Failed to delete the chapter.' };
     }
 }
-
-
-
-  
