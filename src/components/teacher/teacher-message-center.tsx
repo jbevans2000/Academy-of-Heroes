@@ -44,7 +44,7 @@ export function TeacherMessageCenter({
 }: TeacherMessageCenterProps) {
     const { toast } = useToast();
     
-    const [newMessage, setMessageText] = useState('');
+    const [newMessage, setNewMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
     
     // For viewing conversations
@@ -55,14 +55,15 @@ export function TeacherMessageCenter({
     const sortedStudents = useMemo(() => {
         const visibleStudents = students.filter(s => !s.isHidden);
 
-        return [...visibleStudents].sort((a, b) => {
-            const aHasUnread = a.hasUnreadMessages ?? false;
-            const bHasUnread = b.hasUnreadMessages ?? false;
+        const unread = visibleStudents
+            .filter(s => s.hasUnreadMessages)
+            .sort((a, b) => a.studentName.localeCompare(b.studentName));
+        
+        const read = visibleStudents
+            .filter(s => !s.hasUnreadMessages)
+            .sort((a, b) => a.studentName.localeCompare(b.studentName));
 
-            if (aHasUnread && !bHasUnread) return -1;
-            if (!aHasUnread && bHasUnread) return 1;
-            return a.characterName.localeCompare(b.characterName);
-        });
+        return [...unread, ...read];
     }, [students]);
 
     useEffect(() => {
@@ -105,7 +106,7 @@ export function TeacherMessageCenter({
                 message: newMessage,
             });
             if (result.success) {
-                setMessageText('');
+                setNewMessage('');
             } else {
                 throw new Error(result.error);
             }
@@ -181,7 +182,7 @@ export function TeacherMessageCenter({
                             <form onSubmit={handleSendMessage} className="flex gap-2 pt-4 border-t">
                                 <Textarea 
                                     value={newMessage} 
-                                    onChange={(e) => setMessageText(e.target.value)} 
+                                    onChange={(e) => setNewMessage(e.target.value)} 
                                     placeholder={`Message ${initialStudent.characterName}...`}
                                     rows={2}
                                     disabled={isSending}
