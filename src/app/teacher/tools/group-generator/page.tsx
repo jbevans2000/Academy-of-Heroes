@@ -150,10 +150,11 @@ export default function GroupGeneratorPage() {
                                         <CardTitle className="text-xl text-primary">{generatedGuildNames[index] || `Guild ${index + 1}`}</CardTitle>
                                     </CardHeader>
                                     <CardContent>
-                                        <ul className="space-y-2 text-left">
+                                        <ul className="space-y-4 text-left">
                                             {group.map(student => (
-                                                <li key={student.uid} className="font-medium text-lg">
-                                                    {student.characterName}
+                                                <li key={student.uid}>
+                                                    <p className="font-bold text-lg">{student.studentName}</p>
+                                                    <p className="text-sm text-muted-foreground">{student.characterName}</p>
                                                 </li>
                                             ))}
                                         </ul>
