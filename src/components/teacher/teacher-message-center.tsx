@@ -187,7 +187,7 @@ export function TeacherMessageCenter({
                                     rows={2}
                                     disabled={isSending}
                                 />
-                                <Button type="submit" disabled={isSending || !messageText.trim()}>
+                                <Button type="submit" disabled={isSending || !newMessage.trim()}>
                                     {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                                 </Button>
                             </form>
