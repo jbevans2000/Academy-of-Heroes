@@ -20,6 +20,14 @@ import { Label } from '@/components/ui/label';
 const runeImageSrc = 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-1b1a5535-ccec-4d95-b6ba-5199715edc4c.jpg?alt=media&token=b0a366fe-a4d4-46d7-b5f3-c13df8c2e69a';
 const numRunes = 12;
 
+const selectionCaptions = [
+    "The runes have chosen a champion!",
+    "The stones reveal a name!",
+    "A mysterious glyph glows, calling you forth!",
+    "Destiny calls! Step forward, hero!",
+    "The ancient symbols align to choose you!",
+];
+
 export default function FindTheChampionPage() {
     const router = useRouter();
     const { toast } = useToast();
@@ -186,7 +194,7 @@ export default function FindTheChampionPage() {
             <div className="absolute inset-0 bg-black/30 -z-10" />
             <TeacherHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8 flex flex-col items-center justify-center">
-                <div className="w-full max-w-4xl space-y-6">
+                <div className="w-full max-w-5xl space-y-6">
                      <div className="flex justify-between items-center">
                         <Button variant="outline" onClick={() => router.push('/teacher/tools')} className="bg-background/80">
                             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -242,23 +250,17 @@ export default function FindTheChampionPage() {
                                     )}>
                                         <div className="space-y-4">
                                             <h3 className="text-2xl font-bold font-headline text-black">The runes have chosen!</h3>
-                                            <div className={cn(
-                                                "grid gap-4",
-                                                pickedChampions.length === 1 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-                                            )}>
+                                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                                 {pickedChampions.map(champion => {
                                                     const companyName = companies.find(c => c.id === champion.companyId)?.name;
                                                     return (
-                                                    <div key={champion.uid} className={cn(
-                                                        "flex flex-col items-center space-y-2 p-4 bg-background/50 rounded-lg",
-                                                        pickedChampions.length === 1 && "scale-125"
-                                                    )}>
-                                                        <div className="relative w-24 h-24">
+                                                    <div key={champion.uid} className="flex flex-col items-center space-y-1 p-2 bg-background/50 rounded-lg">
+                                                        <div className="relative w-20 h-20">
                                                             <Image src={champion.avatarUrl} alt={champion.characterName} fill className="object-contain drop-shadow-lg" />
                                                         </div>
-                                                        <h4 className="text-xl font-bold">{champion.characterName}</h4>
-                                                        <p className="text-sm text-muted-foreground">{champion.studentName}</p>
-                                                        {companyName && <p className="text-sm font-semibold text-primary">{companyName}</p>}
+                                                        <h4 className="text-lg font-bold">{champion.characterName}</h4>
+                                                        <p className="text-xs text-muted-foreground">{champion.studentName}</p>
+                                                        {companyName && <p className="text-xs font-semibold text-primary">{companyName}</p>}
                                                     </div>
                                                 )})}
                                             </div>
