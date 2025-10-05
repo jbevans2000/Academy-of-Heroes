@@ -781,7 +781,7 @@ export default function AdminDashboardPage() {
                             <CardDescription>Use this tool to test the PayPal subscription flow.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <PayPalTestButton />
+                            {!isMessageCenterOpen && <PayPalTestButton />}
                         </CardContent>
                     </Card>
                     
