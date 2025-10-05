@@ -45,6 +45,8 @@ const shuffleArray = <T,>(array: T[]): T[] => {
 
 export async function getDailyTrainingQuestions(teacherUid: string, student: Student): Promise<QuizQuestion[]> {
     if (!student || !teacherUid) return [];
+    
+    const duelSettings = await getDuelSettings(teacherUid);
 
     // --- Source 1: Completed Chapter Quizzes ---
     let chapterQuestions: QuizQuestion[] = [];
@@ -65,16 +67,18 @@ export async function getDailyTrainingQuestions(teacherUid: string, student: Stu
     }
 
 
-    // --- Source 2: Active Duel Sections ---
+    // --- Source 2: Active Duel Sections (Conditional) ---
     let duelQuestions: DuelQuestion[] = [];
-    const activeSectionsQuery = query(collection(db, 'teachers', teacherUid, 'duelQuestionSections'), where('isActive', '==', true));
-    const activeSectionsSnapshot = await getDocs(activeSectionsQuery);
+    if (duelSettings.includeDuelsInDailyTraining) {
+        const activeSectionsQuery = query(collection(db, 'teachers', teacherUid, 'duelQuestionSections'), where('isActive', '==', true));
+        const activeSectionsSnapshot = await getDocs(activeSectionsQuery);
 
-    for (const sectionDoc of activeSectionsSnapshot.docs) {
-        const questionsSnapshot = await getDocs(collection(sectionDoc.ref, 'questions'));
-        questionsSnapshot.forEach(qDoc => {
-            duelQuestions.push({ id: qDoc.id, ...qDoc.data() } as DuelQuestion);
-        });
+        for (const sectionDoc of activeSectionsSnapshot.docs) {
+            const questionsSnapshot = await getDocs(collection(sectionDoc.ref, 'questions'));
+            questionsSnapshot.forEach(qDoc => {
+                duelQuestions.push({ id: qDoc.id, ...qDoc.data() } as DuelQuestion);
+            });
+        }
     }
 
     const normalizedDuelQuestions = duelQuestions.map(normalizeDuelQuestion);

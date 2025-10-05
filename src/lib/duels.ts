@@ -1,5 +1,4 @@
 
-
 export interface DuelQuestion {
     id: string;
     text: string;
@@ -22,11 +21,10 @@ export interface DuelSettings {
     duelCost?: number;
     dailyDuelLimit?: number;
     isDailyLimitEnabled?: boolean;
+    includeDuelsInDailyTraining?: boolean; // New setting
     numNormalQuestions?: number;
     numSuddenDeathQuestions?: number;
     dailyTrainingXpReward?: number;
     dailyTrainingGoldReward?: number;
     isDailyTrainingEnabled?: boolean;
 }
-
-    

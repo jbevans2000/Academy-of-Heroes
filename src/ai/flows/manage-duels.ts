@@ -1,5 +1,4 @@
 
-
 'use server';
 /**
  * @fileOverview Server-side functions for managing duel question sections.
@@ -124,6 +123,7 @@ export async function getDuelSettings(teacherUid: string): Promise<DuelSettings>
             duelCost: data.duelSettings?.duelCost ?? 0,
             dailyDuelLimit: data.duelSettings?.dailyDuelLimit ?? 5,
             isDailyLimitEnabled: data.duelSettings?.isDailyLimitEnabled ?? true,
+            includeDuelsInDailyTraining: data.duelSettings?.includeDuelsInDailyTraining ?? true,
             numNormalQuestions: data.duelSettings?.numNormalQuestions ?? 10,
             numSuddenDeathQuestions: data.duelSettings?.numSuddenDeathQuestions ?? 10,
             dailyTrainingXpReward: data.duelSettings?.dailyTrainingXpReward ?? 50,
@@ -139,6 +139,7 @@ export async function getDuelSettings(teacherUid: string): Promise<DuelSettings>
         duelCost: 0, 
         dailyDuelLimit: 5, 
         isDailyLimitEnabled: true,
+        includeDuelsInDailyTraining: true,
         numNormalQuestions: 10,
         numSuddenDeathQuestions: 10,
         dailyTrainingXpReward: 50,

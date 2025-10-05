@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -54,7 +53,7 @@ export default function TrainingGroundsPage() {
   const [isToggling, setIsToggling] = useState<string | null>(null);
 
   // Settings State
-  const [duelSettings, setDuelSettings] = useState<DuelSettings>({ rewardXp: 25, rewardGold: 10, isDuelsEnabled: true, duelCost: 0, dailyDuelLimit: 5, isDailyLimitEnabled: true, numNormalQuestions: 10, numSuddenDeathQuestions: 10, dailyTrainingXpReward: 50, dailyTrainingGoldReward: 25, isDailyTrainingEnabled: true });
+  const [duelSettings, setDuelSettings] = useState<DuelSettings>({ rewardXp: 25, rewardGold: 10, isDuelsEnabled: true, duelCost: 0, dailyDuelLimit: 5, isDailyLimitEnabled: true, includeDuelsInDailyTraining: true, numNormalQuestions: 10, numSuddenDeathQuestions: 10, dailyTrainingXpReward: 50, dailyTrainingGoldReward: 25, isDailyTrainingEnabled: true });
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [isResettingTraining, setIsResettingTraining] = useState(false);
@@ -146,14 +145,18 @@ export default function TrainingGroundsPage() {
     }
   }
 
-  const handleToggleFeature = async (feature: 'isDuelsEnabled' | 'isDailyTrainingEnabled') => {
+  const handleToggleFeature = async (feature: 'isDuelsEnabled' | 'isDailyTrainingEnabled' | 'includeDuelsInDailyTraining') => {
     if(!teacher) return;
     const newStatus = !(duelSettings[feature] ?? true);
     setIsToggling(feature);
     try {
         await updateDuelSettings({ teacherUid: teacher.uid, settings: { [feature]: newStatus } });
         setDuelSettings(prev => ({...prev, [feature]: newStatus}));
-        const featureName = feature === 'isDuelsEnabled' ? 'Training Grounds' : 'Daily Training';
+        let featureName = '';
+        if (feature === 'isDuelsEnabled') featureName = 'Training Grounds';
+        else if (feature === 'isDailyTrainingEnabled') featureName = 'Daily Training';
+        else if (feature === 'includeDuelsInDailyTraining') featureName = 'Duel Questions in Daily Training';
+        
         toast({ title: `${featureName} ${newStatus ? 'Enabled' : 'Disabled'}` });
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
@@ -219,6 +222,7 @@ export default function TrainingGroundsPage() {
 
   const isDuelsEnabled = duelSettings.isDuelsEnabled ?? true;
   const isDailyTrainingEnabled = duelSettings.isDailyTrainingEnabled ?? true;
+  const includeDuelsInDailyTraining = duelSettings.includeDuelsInDailyTraining ?? true;
 
   return (
     <>
@@ -396,7 +400,11 @@ export default function TrainingGroundsPage() {
                              <Switch id="daily-training-enabled" checked={isDailyTrainingEnabled} onCheckedChange={() => handleToggleFeature('isDailyTrainingEnabled')} disabled={isToggling === 'isDailyTrainingEnabled'} />
                              <Label htmlFor="daily-training-enabled" className="text-lg font-semibold">Daily Training</Label>
                         </div>
-                        <p className="text-sm text-muted-foreground">Note: Questions for Daily Training are pulled from all ACTIVE duel sections below, as well as from any quizzes in chapters that a student has completed.</p>
+                        <div className="flex items-center space-x-2">
+                            <Switch id="include-duels-in-training" checked={includeDuelsInDailyTraining} onCheckedChange={() => handleToggleFeature('includeDuelsInDailyTraining')} disabled={isToggling === 'includeDuelsInDailyTraining'} />
+                            <Label htmlFor="include-duels-in-training">Include Duel Questions in Daily Training</Label>
+                        </div>
+                        <p className="text-sm text-muted-foreground">Note: Questions for Daily Training are also pulled from any quizzes in chapters that a student has completed.</p>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1">
                                 <Label htmlFor="training-reward-xp" className="flex items-center gap-1"><Star className="h-4 w-4" /> Max XP Reward</Label>
