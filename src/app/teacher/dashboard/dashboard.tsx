@@ -49,7 +49,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff, MessageSquare, Heart, Zap as ZapIcon, HeartPulse, Filter, Moon, UserCheck, Trophy, BarChart } from 'lucide-react';
+import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff, MessageSquare, Heart, Zap as ZapIcon, HeartPulse, Filter, Moon, UserCheck, LogOut } from 'lucide-react';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { setMeditationStatus, toggleStudentVisibility, setBulkMeditationStatus, releaseAllFromMeditation } from '@/ai/flows/manage-student';
@@ -561,13 +561,10 @@ export default function Dashboard() {
     setIsMessageCenterOpen(true);
   };
   
-    const handleCloseMessageCenter = async () => {
-        setIsMessageCenterOpen(false);
-        if (teacher && teacherData?.hasUnreadTeacherMessages) {
-            const teacherRef = doc(db, 'teachers', teacher.uid);
-            await updateDoc(teacherRef, { hasUnreadTeacherMessages: false });
-        }
-    };
+  const handleCloseMessageCenter = async () => {
+      setIsMessageCenterOpen(false);
+      // No need to change global flag here, it's handled in the flow.
+  };
   
   const handleRestoreAll = async (stat: 'hp' | 'mp') => {
       if (!teacher) return;
@@ -679,7 +676,7 @@ export default function Dashboard() {
         <TeacherHeader />
         <main className="flex-1 p-4 md:p-6 lg:p-8">
             <h1 className="text-2xl font-bold mb-4">Your Guild Roster</h1>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                 {Array.from({ length: 8 }).map((_, i) => (
                     <div key={i} className="space-y-2">
                         <Skeleton className="h-48 w-full rounded-xl" />

@@ -48,18 +48,17 @@ export function TeacherMessageCenter({
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const sortedStudents = useMemo(() => {
-        const visibleStudents = students.filter(s => !s.isHidden);
+        // Create a copy to avoid mutating the original prop array
+        const studentList = [...students];
+
+        // First, sort everyone alphabetically by their real name
+        studentList.sort((a, b) => a.studentName.localeCompare(b.studentName));
         
-        // Separate students with unread messages
-        const unread = visibleStudents.filter(s => s.hasUnreadMessages);
-        const read = visibleStudents.filter(s => !s.hasUnreadMessages);
-
-        // Sort each group alphabetically by student's real name
-        unread.sort((a, b) => a.studentName.localeCompare(b.studentName));
-        read.sort((a, b) => a.studentName.localeCompare(b.studentName));
-
-        // Combine the arrays, with unread students at the top
-        return [...unread, ...read];
+        // Then, pull students with unread messages to the top
+        const unreadStudents = studentList.filter(s => s.hasUnreadMessages);
+        const readStudents = studentList.filter(s => !s.hasUnreadMessages);
+        
+        return [...unreadStudents, ...readStudents];
     }, [students]);
 
     useEffect(() => {
@@ -135,7 +134,7 @@ export function TeacherMessageCenter({
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             {student.hasUnreadMessages && (
-                                                <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+                                                <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
                                             )}
                                             <p className="font-semibold">{student.studentName}</p>
                                         </div>
