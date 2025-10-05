@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, PlusCircle, Trash2, Eye, GitBranch, Loader2, Save, Sparkles, Image as ImageIcon, Upload, X, Music, Library, BookCopy, ArrowRight } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Trash2, Eye, GitBranch, Loader2, Save, Sparkles, Image as ImageIcon, Upload, X, Music, Library, BookCopy, ArrowRight, Star, Coins } from 'lucide-react';
 import { doc, setDoc, addDoc, collection, getDocs, serverTimestamp, query, orderBy, where, updateDoc } from 'firebase/firestore';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -151,6 +151,9 @@ function NewQuestForm() {
   const [hubIsVisibleToAll, setHubIsVisibleToAll] = useState(true);
   const [hubAssignedCompanyIds, setHubAssignedCompanyIds] = useState<string[]>([]);
   const [newHubType, setNewHubType] = useState<'standard' | 'sidequest'>('standard');
+  const [hubAreRewardsEnabled, setHubAreRewardsEnabled] = useState(false);
+  const [hubRewardXp, setHubRewardXp] = useState<number | ''>(0);
+  const [hubRewardGold, setHubRewardGold] = useState<number | ''>(0);
 
   // State for the new Chapter creator
   const [isChapterActive, setIsChapterActive] = useState(true);
@@ -175,6 +178,8 @@ function NewQuestForm() {
   const [passingScore, setPassingScore] = useState(80);
   const [includeInDailyTraining, setIncludeInDailyTraining] = useState(true);
 
+  // State for question image uploads
+  const [uploadingQuestionImage, setUploadingQuestionImage] = useState<string | number | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -355,51 +360,68 @@ function NewQuestForm() {
         setQuizQuestions(prev => prev.filter(q => q.id !== id));
     };
 
-    const handleGenerateStory = async () => {
-        setIsGeneratingStory(true);
+    const handleQuestionImageUpload = async (questionId: string | number, file: File) => {
+        if (!teacher) return;
+        setUploadingQuestionImage(questionId);
         try {
-            const result = await generateStory();
-            setChapterTitle(result.title);
-            setStoryContent(result.storyContent);
-            toast({ title: "Story Generated!", description: "The Oracle has provided a new tale for your heroes." });
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Generation Failed', description: 'The Oracle is silent. Please try again.' });
+            const storage = getStorage(app);
+            const imageId = uuidv4();
+            const storageRef = ref(storage, `quest-question-images/${teacher.uid}/${imageId}`);
+            await uploadBytes(storageRef, file);
+            const downloadUrl = await getDownloadURL(storageRef);
+            handleQuizQuestionChange(String(questionId), 'imageUrl', downloadUrl);
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload the question image.' });
         } finally {
-            setIsGeneratingStory(false);
+            setUploadingQuestionImage(null);
         }
-    }
-    
-    const handleGenerateQuestions = async () => {
-        if (!aiSubject || !aiGradeLevel || !aiNumQuestions) {
-            toast({ variant: 'destructive', title: 'Missing Info', description: 'Please provide a subject, grade, and number of questions.' });
-            return;
-        }
-        setIsGeneratingQuestions(true);
-        try {
-            const result = await generateQuestions({
-                subject: aiSubject,
-                gradeLevel: aiGradeLevel,
-                numQuestions: Number(aiNumQuestions)
-            });
-            const newQuestions: QuizQuestion[] = result.questions.map(q => ({
-                id: uuidv4(),
-                text: q.questionText,
-                answers: q.answers,
-                correctAnswer: [q.correctAnswerIndex],
-                questionType: 'single'
-            }));
-            
-            setQuizQuestions(prev => [...prev, ...newQuestions]);
-            toast({ title: 'Questions Generated!', description: `${newQuestions.length} questions have been added to the quiz.` });
+    };
 
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Generation Failed', description: error.message });
-        } finally {
-            setIsGeneratingQuestions(false);
-        }
+  const handleGenerateStory = async () => {
+    setIsGeneratingStory(true);
+    try {
+        const result = await generateStory();
+        setChapterTitle(result.title);
+        setStoryContent(result.storyContent);
+        toast({ title: "Story Generated!", description: "The Oracle has provided a new tale for your heroes." });
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Generation Failed', description: 'The Oracle is silent. Please try again.' });
+    } finally {
+        setIsGeneratingStory(false);
     }
+  }
+  
+  const handleGenerateQuestions = async () => {
+    if (!aiSubject || !aiGradeLevel || !aiNumQuestions) {
+        toast({ variant: 'destructive', title: 'Missing Info', description: 'Please provide a subject, grade, and number of questions.' });
+        return;
+    }
+    setIsGeneratingQuestions(true);
+    try {
+        const result = await generateQuestions({
+            subject: aiSubject,
+            gradeLevel: aiGradeLevel,
+            numQuestions: Number(aiNumQuestions)
+        });
+        const newQuestions: QuizQuestion[] = result.questions.map(q => ({
+            id: uuidv4(),
+            text: q.questionText,
+            answers: q.answers,
+            correctAnswer: [q.correctAnswerIndex],
+            questionType: 'single'
+        }));
+        
+        setQuizQuestions(prev => [...prev, ...newQuestions]);
+        toast({ title: 'Questions Generated!', description: `${newQuestions.length} questions have been added to the quiz.` });
 
-    const handleGenerateQuestionsFromText = async () => {
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Generation Failed', description: error.message });
+    } finally {
+        setIsGeneratingQuestions(false);
+    }
+  }
+
+  const handleGenerateQuestionsFromText = async () => {
         if (!aiNumQuestions) {
             toast({ variant: 'destructive', title: 'Missing Info', description: 'Please enter the number of questions to generate.' });
             return;
@@ -474,7 +496,10 @@ function NewQuestForm() {
                 hubType: newHubType,
                 createdAt: serverTimestamp(),
                 isVisibleToAll: hubIsVisibleToAll,
-                assignedCompanyIds: hubIsVisibleToAll ? [] : hubAssignedCompanyIds
+                assignedCompanyIds: hubIsVisibleToAll ? [] : hubAssignedCompanyIds,
+                areRewardsEnabled: hubAreRewardsEnabled,
+                rewardXp: Number(hubRewardXp) || 0,
+                rewardGold: Number(hubRewardGold) || 0,
             });
             finalHubId = newHubRef.id;
             toast({ title: 'Hub Created!', description: 'The new quest hub has been added to your world map.' });
@@ -677,6 +702,31 @@ function NewQuestForm() {
                                           <div className="w-5 h-5 bg-yellow-400 rounded-full ring-2 ring-white shadow-xl animate-pulse-glow"></div>
                                       </div>
                                   </div>
+                                  
+                                    <div className="pt-4 border-t space-y-4">
+                                        <div className="flex items-center space-x-2">
+                                            <Switch
+                                                id="enable-rewards-hub" 
+                                                checked={hubAreRewardsEnabled} 
+                                                onCheckedChange={setHubAreRewardsEnabled} 
+                                            />
+                                            <Label htmlFor="enable-rewards-hub">Enable Chapter Completion Rewards for this Hub</Label>
+                                        </div>
+
+                                        {hubAreRewardsEnabled && (
+                                            <div className="grid grid-cols-2 gap-4 animate-in fade-in-50">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="hub-reward-xp" className="flex items-center gap-1"><Star className="h-4 w-4 text-yellow-400" /> XP Reward</Label>
+                                                    <Input id="hub-reward-xp" type="number" value={hubRewardXp} onChange={(e) => setHubRewardXp(e.target.value === '' ? '' : Number(e.target.value))} placeholder="e.g., 25" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="hub-reward-gold" className="flex items-center gap-1"><Coins className="h-4 w-4 text-amber-500" /> Gold Reward</Label>
+                                                    <Input id="hub-reward-gold" type="number" value={hubRewardGold} onChange={(e) => setHubRewardGold(e.target.value === '' ? '' : Number(e.target.value))} placeholder="e.g., 10" />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
                                   <div className="space-y-2 pt-4 border-t">
                                     <h4 className="font-semibold">Hub Visibility</h4>
                                      <div className="flex items-center space-x-2">
@@ -767,7 +817,7 @@ function NewQuestForm() {
                           <ImageUploader label="Decorative Image 1" imageUrl={decorativeImageUrl1} onUploadSuccess={setDecorativeImageUrl1} teacherUid={teacher.uid} storagePath="quest-images" />
                           <div className="space-y-2">
                               <Label htmlFor="story-additional-content">Additional Story Content</Label>
-                              <RichTextEditor value={storyAdditionalContent} onChange={setStoryAdditionalContent} />
+                               <RichTextEditor value={storyAdditionalContent} onChange={setStoryAdditionalContent} />
                           </div>
                           <ImageUploader label="Decorative Image 2" imageUrl={decorativeImageUrl2} onUploadSuccess={setDecorativeImageUrl2} teacherUid={teacher.uid} storagePath="quest-images" />
                           <div className="space-y-2">
@@ -914,6 +964,28 @@ function NewQuestForm() {
                                     </div>
                                     <div className="space-y-2">
                                         <Textarea placeholder="Question text" value={q.text} onChange={e => handleQuizQuestionChange(q.id, 'text', e.target.value)} />
+                                        <div className="space-y-2">
+                                            <Label htmlFor={`q-image-upload-${q.id}`} className="text-base">Image (Optional)</Label>
+                                            <div className="flex items-center gap-2">
+                                                 <Input 
+                                                    id={`q-image-upload-${q.id}`}
+                                                    type="file" 
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={(e) => {
+                                                        if(e.target.files && e.target.files[0]){
+                                                            handleQuestionImageUpload(q.id, e.target.files[0])
+                                                        }
+                                                    }}
+                                                    disabled={uploadingQuestionImage === q.id}
+                                                />
+                                                 <Label htmlFor={`q-image-upload-${q.id}`} className={cn(buttonVariants({ variant: 'outline' }), "cursor-pointer")}>
+                                                    <Upload className="h-4 w-4" />
+                                                </Label>
+                                                 {uploadingQuestionImage === q.id && <Loader2 className="h-5 w-5 animate-spin" />}
+                                                 {q.imageUrl && <Image src={q.imageUrl} alt="Question preview" width={50} height={50} className="rounded-md border"/>}
+                                            </div>
+                                        </div>
                                         <Select value={q.questionType} onValueChange={(value) => handleQuizQuestionChange(q.id, 'questionType', value)}>
                                             <SelectTrigger><SelectValue/></SelectTrigger>
                                             <SelectContent>
@@ -982,5 +1054,3 @@ export default function NewQuestPage() {
         </Suspense>
     )
 }
-
-    
