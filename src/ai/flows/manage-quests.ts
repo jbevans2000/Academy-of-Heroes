@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs, writeBatch, deleteDoc, serverTimestamp, query as firestoreQuery, where, arrayUnion, increment } from 'firebase/firestore';
@@ -128,7 +129,7 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
         // This is the crucial check. We only enforce sequential completion for standard hubs.
         if (hub.hubType !== 'sidequest') {
             const currentProgress = student.questProgress?.[hubId] || 0;
-            if (chapter.chapterNumber !== currentProgress + 1) {
+            if (chapter.chapterNumber > currentProgress + 1) {
                 return { success: false, error: "This chapter cannot be marked as complete yet. Complete the previous chapter first." };
             }
         }
@@ -167,7 +168,7 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
         const chaptersInHubQuery = firestoreQuery(collection(db, 'teachers', teacherUid, 'chapters'), where('hubId', '==', hubId));
         const totalChaptersInHub = (await getDocs(chaptersInHubQuery)).size;
         
-        const newProgress = { ...student.questProgress, [hubId]: chapter.chapterNumber };
+        const newProgress = { ...student.questProgress, [hubId]: Math.max(student.questProgress?.[hubId] || 0, chapter.chapterNumber) };
         let updates: Partial<Student> = {
             questProgress: newProgress,
             lastChapterCompletion: serverTimestamp() // Update the timestamp
@@ -200,7 +201,7 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
             rewardMessage = ` You have been awarded ${xpToAdd} XP and ${goldToAdd} Gold!`;
         }
 
-        if (chapter.chapterNumber === totalChaptersInHub) {
+        if (chapter.chapterNumber === totalChaptersInHub && hub.hubType !== 'sidequest') {
              if ((student.hubsCompleted || 0) < hub.hubOrder) {
                 updates.hubsCompleted = hub.hubOrder;
             }
@@ -239,8 +240,9 @@ async function approveSingleRequest(batch: any, teacherUid: string, requestId: s
     const hubData = hubSnap.data() as QuestHub;
     const currentProgress = studentData.questProgress?.[hubId] || 0;
 
-    if (chapterNumber === currentProgress + 1) {
-        const newProgress = { ...studentData.questProgress, [hubId]: chapterNumber };
+    if (chapterNumber === currentProgress + 1 || hubData.hubType === 'sidequest') {
+        const newProgressNumber = Math.max(currentProgress, chapterNumber);
+        const newProgress = { ...studentData.questProgress, [hubId]: newProgressNumber };
         let updates: Partial<Student> = {
             questProgress: newProgress,
             lastChapterCompletion: serverTimestamp()
@@ -523,3 +525,4 @@ export async function deleteQuestHub(input: DeleteHubInput): Promise<ActionRespo
         return { success: false, error: error.message || 'Failed to delete the quest hub.' };
     }
 }
+
