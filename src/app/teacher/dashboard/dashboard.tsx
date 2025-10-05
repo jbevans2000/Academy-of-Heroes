@@ -48,7 +48,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff, MessageSquare, Heart, Zap as ZapIcon, Trophy, HeartPulse, Filter, Moon, UserCheck, LogOut, BarChart } from 'lucide-react';
+import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff, MessageSquare, Heart, Zap as ZapIcon, Trophy, HeartPulse, Filter, Moon, UserCheck, LogOut, Save } from 'lucide-react';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { setMeditationStatus, toggleStudentVisibility, setBulkMeditationStatus, releaseAllFromMeditation } from '@/ai/flows/manage-student';
@@ -1134,6 +1134,65 @@ export default function Dashboard() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            <Dialog open={isReminderDialogOpen} onOpenChange={setIsReminderDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Set Daily Reminder</DialogTitle>
+                        <DialogDescription>
+                            This message will pop up for students the first time they log in each day.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                        <div className="flex items-center space-x-2">
+                            <Switch id="reminder-active" checked={isReminderActive} onCheckedChange={setIsReminderActive} />
+                            <Label htmlFor="reminder-active">Daily Reminder Active</Label>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="reminder-title">Title</Label>
+                            <Input id="reminder-title" value={reminderTitle} onChange={(e) => setReminderTitle(e.target.value)} />
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="reminder-message">Message</Label>
+                            <Textarea id="reminder-message" value={reminderMessage.replace(/\\n/g, '\n')} onChange={(e) => setReminderMessage(e.target.value)} rows={6} />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsReminderDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleSaveReminder} disabled={isSavingReminder}>
+                            {isSavingReminder ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                            Save Settings
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+             <Dialog open={isRegenDialogOpen} onOpenChange={setIsRegenDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Daily HP/MP Regeneration</DialogTitle>
+                        <DialogDescription>
+                            Set the percentage of Max HP and MP that students will regenerate automatically each day. This happens on their first login of the day.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-2">
+                        <Label htmlFor="regen-percent">Regeneration Percentage (%)</Label>
+                        <Input 
+                            id="regen-percent" 
+                            type="number" 
+                            min="0" 
+                            max="100" 
+                            value={regenPercentage}
+                            onChange={e => setRegenPercentage(e.target.value)}
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsRegenDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleSaveRegen} disabled={isSavingRegen}>
+                             {isSavingRegen ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                            Save Rate
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
         {sortOrder === 'company' && sortedStudents.type === 'grouped' ? (
              <div className="space-y-6">
@@ -1190,3 +1249,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
+    
