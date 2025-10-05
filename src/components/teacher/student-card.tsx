@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -570,7 +570,7 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
                 </div>
             </CardContent>
             <CardFooter className="p-2 bg-secondary/30 mt-auto grid grid-cols-3 gap-2">
-                 <Button className={cn("w-full", student.hasUnreadMessages && "bg-red-500 hover:bg-red-600 text-white animate-pulse")} variant="outline" onClick={() => onSendMessage(student)}>
+                 <Button className={cn("w-full relative", student.hasUnreadMessages && "bg-red-500 hover:bg-red-600 text-white animate-pulse")} variant="outline" onClick={() => onSendMessage(student)}>
                     <MessageSquare className="h-4 w-4" />
                 </Button>
                 <DialogTrigger asChild>
