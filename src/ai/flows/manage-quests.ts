@@ -390,9 +390,13 @@ export async function setStudentQuestProgress(input: SetStudentQuestProgressInpu
             // Rebuild the completed chapters array from scratch
             const newRewardedChapters = new Set<string>();
             for (const hub of allHubs) {
+                // Get the number of chapters completed in the current hub, according to the new progress map
                 const chaptersCompletedInHub = newQuestProgress[hub.id] || 0;
+                
                 if (chaptersCompletedInHub > 0) {
+                    // Filter all chapters to get just the ones in this hub
                     const chaptersInThisHub = allChapters.filter(c => c.hubId === hub.id);
+                    // Iterate up to the number completed and add their IDs
                     for (let i = 1; i <= chaptersCompletedInHub; i++) {
                         const chapterToMark = chaptersInThisHub.find(c => c.chapterNumber === i);
                         if (chapterToMark) {
@@ -402,12 +406,13 @@ export async function setStudentQuestProgress(input: SetStudentQuestProgressInpu
                 }
             }
 
-
             // Determine highest completed hub order based on the updated progress
             let highestCompletedOrder = 0;
             for (const hub of allHubs) {
+                if(hub.hubType === 'sidequest') continue;
                 const chaptersInHub = allChapters.filter(c => c.hubId === hub.id);
-                if(newQuestProgress[hub.id] === chaptersInHub.length && chaptersInHub.length > 0) {
+                // Check if the student has completed all chapters in this hub
+                if (chaptersInHub.length > 0 && newQuestProgress[hub.id] === chaptersInHub.length) {
                     if (hub.hubOrder > highestCompletedOrder) {
                         highestCompletedOrder = hub.hubOrder;
                     }
