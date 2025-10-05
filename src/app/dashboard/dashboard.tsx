@@ -87,13 +87,15 @@ export default function Dashboard() {
               const studentData = { uid: docSnap.id, ...docSnap.data() } as Student;
               
               if (studentData.forceLogout) {
+                  // Reset the flag in Firestore first
+                  await updateDoc(studentRef, { forceLogout: false });
+                  // Then sign the user out
                   await auth.signOut();
-                  // No need to reset the flag here, as the user will be redirected.
-                  // The teacher can manually clear it if needed.
                   toast({
                       title: "Session Expired",
                       description: "Your Guild Leader has ended your session. Please log in again.",
                   });
+                  // No need to do anything else, the onAuthStateChanged listener will redirect
                   return;
               }
 
