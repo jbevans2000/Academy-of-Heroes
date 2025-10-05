@@ -114,14 +114,14 @@ export async function markMessagesAsRead(input: MarkMessagesAsReadInput): Promis
             });
         }
         
-        // After marking, update the student's unread flag
-        const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
-        batch.update(studentRef, { hasUnreadMessages: false });
-        
-        await batch.commit();
-        
-        // After committing the reads, check if any other students have unread messages for the teacher.
+        // Only the teacher reading the message should clear the unread flags.
         if (reader === 'teacher') {
+            const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
+            batch.update(studentRef, { hasUnreadMessages: false });
+            
+            await batch.commit();
+            
+            // After committing the reads for this student, check if any OTHER students have unread messages for the teacher.
             const allStudentsQuery = query(collection(db, 'teachers', teacherUid, 'students'), where('hasUnreadMessages', '==', true));
             const remainingUnreadSnapshot = await getDocs(allStudentsQuery);
             if (remainingUnreadSnapshot.empty) {
@@ -129,8 +129,10 @@ export async function markMessagesAsRead(input: MarkMessagesAsReadInput): Promis
                 const teacherRef = doc(db, 'teachers', teacherUid);
                 await updateDoc(teacherRef, { hasUnreadTeacherMessages: false });
             }
+        } else {
+            // If the student is the reader, just commit the read status of the messages
+            await batch.commit();
         }
-
 
         return { success: true };
     } catch (error: any) {
