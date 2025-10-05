@@ -44,8 +44,7 @@ export function TeacherMessageCenter({
 }: TeacherMessageCenterProps) {
     const { toast } = useToast();
     
-    // For bulk messages
-    const [messageText, setMessageText] = useState('');
+    const [newMessage, setMessageText] = useState('');
     const [isSending, setIsSending] = useState(false);
     
     // For viewing conversations
@@ -96,14 +95,14 @@ export function TeacherMessageCenter({
     
     const handleSendMessage = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
-        if (!teacher || !initialStudent || !messageText.trim()) return;
+        if (!teacher || !initialStudent || !newMessage.trim()) return;
 
         setIsSending(true);
         try {
             const result = await sendMessageToStudents({
                 teacherUid: teacher.uid,
                 studentUids: [initialStudent.uid],
-                message: messageText,
+                message: newMessage,
             });
             if (result.success) {
                 setMessageText('');
@@ -181,8 +180,8 @@ export function TeacherMessageCenter({
                             </div>
                             <form onSubmit={handleSendMessage} className="flex gap-2 pt-4 border-t">
                                 <Textarea 
-                                    value={messageText} 
-                                    onChange={(e) => setNewMessage(e.target.value)} 
+                                    value={newMessage} 
+                                    onChange={(e) => setMessageText(e.target.value)} 
                                     placeholder={`Message ${initialStudent.characterName}...`}
                                     rows={2}
                                     disabled={isSending}
