@@ -320,6 +320,7 @@ function EditablePairedStat({ student, stat, maxStat, icon, label, teacherUid }:
 
 function MeditationDialog({ student, teacherUid, onOpenChange }: { student: Student; teacherUid: string; onOpenChange: (open: boolean) => void }) {
     const [message, setMessage] = useState('');
+    const [duration, setDuration] = useState<number | string>('');
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
 
@@ -335,6 +336,7 @@ function MeditationDialog({ student, teacherUid, onOpenChange }: { student: Stud
                 studentUid: student.uid,
                 isInMeditation: true,
                 message,
+                durationInMinutes: Number(duration) || undefined
             });
             if (result.success) {
                 toast({ title: 'Student Sent to Meditate', description: `${student.characterName} is now in the Meditation Chamber.` });
@@ -354,16 +356,26 @@ function MeditationDialog({ student, teacherUid, onOpenChange }: { student: Stud
             <DialogHeader>
                 <DialogTitle>Send {student.characterName} to the Meditation Chamber</DialogTitle>
                 <DialogDescription>
-                    Enter a message for the student to reflect on. They will not be able to access their dashboard until you release them.
+                    Enter a message for the student to reflect on. They will not be able to access their dashboard until you release them, or the optional timer expires.
                 </DialogDescription>
             </DialogHeader>
-            <div className="py-4">
+            <div className="py-4 space-y-4">
                 <Textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="e.g., Reflect on your focus during today's history lesson."
                     rows={4}
                 />
+                <div className="space-y-2">
+                    <Label htmlFor="meditation-duration">Release After (Minutes, Optional)</Label>
+                    <Input 
+                        id="meditation-duration" 
+                        type="number" 
+                        value={duration}
+                        onChange={e => setDuration(e.target.value)}
+                        placeholder="e.g., 15"
+                    />
+                </div>
             </div>
             <DialogFooter>
                 <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
