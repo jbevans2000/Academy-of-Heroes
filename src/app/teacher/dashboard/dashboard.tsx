@@ -49,7 +49,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff, MessageSquare, Heart, Zap as ZapIcon, HeartPulse, Filter, Moon, UserCheck, LogOut } from 'lucide-react';
+import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff, MessageSquare, Heart, Zap as ZapIcon, Trophy, HeartPulse, Filter, Moon, UserCheck, LogOut } from 'lucide-react';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { setMeditationStatus, toggleStudentVisibility, setBulkMeditationStatus, releaseAllFromMeditation } from '@/ai/flows/manage-student';
@@ -562,8 +562,10 @@ export default function Dashboard() {
   };
   
   const handleCloseMessageCenter = async () => {
-      setIsMessageCenterOpen(false);
-      // No need to change global flag here, it's handled in the flow.
+    setIsMessageCenterOpen(false);
+    if (teacher && teacherData?.hasUnreadTeacherMessages) {
+      // Logic is now inside the component, but we keep this shell.
+    }
   };
   
   const handleRestoreAll = async (stat: 'hp' | 'mp') => {
@@ -1092,7 +1094,7 @@ export default function Dashboard() {
                 teacher={teacher} 
                 students={students}
                 isOpen={isMessageCenterOpen}
-                onOpenChange={handleCloseMessageCenter}
+                onOpenChange={isMessageCenterOpen ? handleCloseMessageCenter : setIsMessageCenterOpen}
                 initialStudent={initialStudentToView}
                 onConversationSelect={setInitialStudentToView}
             />
@@ -1253,3 +1255,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
+    
