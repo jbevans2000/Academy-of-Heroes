@@ -40,7 +40,7 @@ export default function RandomStudentPage() {
     const [teacher, setTeacher] = useState<User | null>(null);
     const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>(['all']);
 
-    useEffect(() => {
+     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
             if (user) {
                 setTeacher(user);
@@ -49,8 +49,8 @@ export default function RandomStudentPage() {
             }
         });
         return () => unsubscribe();
-    }, [router]);
-
+     }, [router]);
+    
     useEffect(() => {
         if (!teacher) return;
         const fetchStudentsAndCompanies = async () => {
@@ -78,7 +78,7 @@ export default function RandomStudentPage() {
         let filtered = allStudents.filter(student => !student.isHidden);
 
         if (!selectedCompanyIds.includes('all') && selectedCompanyIds.length > 0) {
-            filtered = filtered.filter(student => selectedCompanyIds.includes(student.companyId || ''));
+             filtered = filtered.filter(student => selectedCompanyIds.includes(student.companyId || ''));
         }
         
         return filtered;
@@ -86,17 +86,25 @@ export default function RandomStudentPage() {
 
     const handleCompanyFilterChange = (companyId: string) => {
         if (companyId === 'all') {
-            setSelectedCompanyIds(prev => prev.includes('all') ? prev.filter(id => id !== 'all') : ['all']);
+            setSelectedCompanyIds(['all']);
             return;
         }
 
         setSelectedCompanyIds(prev => {
-            const newFilters = prev.filter(id => id !== 'all');
+            let newFilters = prev.includes('all') ? [] : [...prev];
+            
             if (newFilters.includes(companyId)) {
-                return newFilters.filter(id => id !== companyId);
+                newFilters = newFilters.filter(id => id !== companyId);
             } else {
-                return [...newFilters, companyId];
+                newFilters.push(companyId);
             }
+
+            // If no specific companies are selected, default back to 'all'
+            if (newFilters.length === 0) {
+                return ['all'];
+            }
+
+            return newFilters;
         });
     };
 
@@ -138,7 +146,7 @@ export default function RandomStudentPage() {
             <TeacherHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8 flex flex-col items-center justify-center">
                 <div className="w-full max-w-2xl space-y-6">
-                    <Button variant="outline" onClick={() => router.push('/teacher/tools')} className="bg-background/80">
+                     <Button variant="outline" onClick={() => router.push('/teacher/tools')} className="bg-background/80">
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Back to All Tools
                     </Button>
@@ -208,7 +216,7 @@ export default function RandomStudentPage() {
                                     </div>
                                     
                                     <div className={cn(
-                                        "flex flex-col items-center justify-center transition-opacity duration-500",
+                                        "flex flex-col items-center justify-center transition-opacity duration-500 w-full",
                                         isShuffling || pickedStudent ? "opacity-0 pointer-events-none" : "opacity-100"
                                     )}>
                                          <Card className="p-4 mb-4 bg-background/50 w-full">
@@ -228,7 +236,6 @@ export default function RandomStudentPage() {
                                                             id={`filter-${company.id}`}
                                                             checked={selectedCompanyIds.includes(company.id)}
                                                             onCheckedChange={() => handleCompanyFilterChange(company.id)}
-                                                            disabled={selectedCompanyIds.includes('all')}
                                                         />
                                                         <Label htmlFor={`filter-${company.id}`}>{company.name}</Label>
                                                     </div>
@@ -259,5 +266,3 @@ export default function RandomStudentPage() {
         </div>
     );
 }
-
-    
