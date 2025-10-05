@@ -79,12 +79,14 @@ export default function GroupGeneratorPage() {
             return;
         }
 
-        if (students.length === 0) {
-            toast({ variant: 'destructive', title: 'No Students', description: 'There are no students to sort into groups.' });
+        const activeStudents = students.filter(student => !student.isHidden);
+
+        if (activeStudents.length === 0) {
+            toast({ variant: 'destructive', title: 'No Active Students', description: 'There are no active students to sort into groups.' });
             return;
         }
 
-        const shuffledStudents = shuffleArray(students);
+        const shuffledStudents = shuffleArray(activeStudents);
         const newGroups: Student[][] = [];
         
         for (let i = 0; i < shuffledStudents.length; i += size) {
