@@ -145,18 +145,17 @@ export default function FindTheChampionPage() {
             } else { // 'company' mode
                 const championsByCompany: { [companyId: string]: Student[] } = {};
                 candidates.forEach(c => {
-                    if (c.companyId) {
-                        if (!championsByCompany[c.companyId]) {
-                            championsByCompany[c.companyId] = [];
-                        }
-                        championsByCompany[c.companyId].push(c);
+                    const companyId = c.companyId || 'freelancers';
+                    if (!championsByCompany[companyId]) {
+                        championsByCompany[companyId] = [];
                     }
+                    championsByCompany[companyId].push(c);
                 });
 
                 const companiesToSelectFrom = selectedCompanyIds.includes('all') 
-                    ? companies.map(c => c.id) 
+                    ? ['freelancers', ...companies.map(c => c.id)] 
                     : selectedCompanyIds;
-
+                
                 companiesToSelectFrom.forEach(companyId => {
                     const companyCandidates = championsByCompany[companyId];
                     if (companyCandidates && companyCandidates.length > 0) {
@@ -227,7 +226,7 @@ export default function FindTheChampionPage() {
                                                         width={120}
                                                         height={120}
                                                         className="object-contain rounded-lg"
-                                                        style={{ animation: `shuffle ${Math.random() * 2 + 2}s linear infinite` }}
+                                                        style={{ animation: `shuffle ${'${Math.random() * 2 + 2}'}s linear infinite` }}
                                                     />
                                                 </div>
                                             ))}
@@ -250,15 +249,15 @@ export default function FindTheChampionPage() {
                                     )}>
                                         <div className="space-y-4">
                                             <h3 className="text-2xl font-bold font-headline text-black">The runes have chosen!</h3>
-                                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                            <div className="flex justify-center flex-wrap gap-4">
                                                 {pickedChampions.map(champion => {
                                                     const companyName = companies.find(c => c.id === champion.companyId)?.name;
                                                     return (
-                                                    <div key={champion.uid} className="flex flex-col items-center space-y-1 p-2 bg-background/50 rounded-lg">
+                                                    <div key={champion.uid} className="flex flex-col items-center space-y-1 p-2 bg-background/50 rounded-lg w-40">
                                                         <div className="relative w-20 h-20">
                                                             <Image src={champion.avatarUrl} alt={champion.characterName} fill className="object-contain drop-shadow-lg" />
                                                         </div>
-                                                        <h4 className="text-lg font-bold">{champion.characterName}</h4>
+                                                        <h4 className="text-lg font-bold truncate">{champion.characterName}</h4>
                                                         <p className="text-xs text-muted-foreground">{champion.studentName}</p>
                                                         {companyName && <p className="text-xs font-semibold text-primary">{companyName}</p>}
                                                     </div>
