@@ -48,7 +48,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff, MessageSquare, Heart, Zap as ZapIcon, Trophy, HeartPulse, Filter, Moon, UserCheck, LogOut, Save } from 'lucide-react';
+import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff, MessageSquare, Heart, Zap as ZapIcon, Trophy, HeartPulse, Filter, Moon, UserCheck, LogOut, Save, BarChart } from 'lucide-react';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { setMeditationStatus, toggleStudentVisibility, setBulkMeditationStatus, releaseAllFromMeditation } from '@/ai/flows/manage-student';
@@ -560,8 +560,12 @@ export default function Dashboard() {
     setIsMessageCenterOpen(true);
   };
   
-    const handleCloseMessageCenter = () => {
+    const handleCloseMessageCenter = async () => {
         setIsMessageCenterOpen(false);
+        if (teacher && teacherData?.hasUnreadTeacherMessages) {
+            const teacherRef = doc(db, 'teachers', teacher.uid);
+            await updateDoc(teacherRef, { hasUnreadTeacherMessages: false });
+        }
     };
   
   const handleRestoreAll = async (stat: 'hp' | 'mp') => {
@@ -1249,5 +1253,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
-    
