@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Send } from 'lucide-react';
-import { sendMessageToAdmin, markAdminMessagesAsRead } from '@/ai/flows/manage-admin-messages';
+import { sendMessageToAdmin } from '@/ai/flows/manage-admin-messages';
 import { cn } from '@/lib/utils';
 import { ClientOnlyTime } from '../client-only-time';
 
@@ -66,9 +66,6 @@ export function TeacherAdminMessageDialog({ isOpen, onOpenChange }: TeacherAdmin
             const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
                 setMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message)));
             });
-            
-            // This needs to be adapted for the new structure
-            // markAdminMessagesAsRead({ adminUid: adminUid, teacherId: teacher.id });
             
             return () => unsubscribe();
         }

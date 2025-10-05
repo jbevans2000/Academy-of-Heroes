@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { School, LogOut, LifeBuoy, Shield, User as UserIcon, MessageSquare, Rss } from "lucide-react";
+import { School, LogOut, LifeBuoy, Shield, User as UserIcon, MessageSquare, Rss, CheckCheck } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
