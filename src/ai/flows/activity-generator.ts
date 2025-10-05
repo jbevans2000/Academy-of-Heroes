@@ -17,6 +17,7 @@ const ActivityGeneratorOutputSchema = z.object({
   title: z.string().describe('A creative, fantasy-themed title for the activity.'),
   description: z.string().describe('A short, engaging description of the activity for the teacher.'),
   documentContent: z.string().optional().describe('Optional: Any detailed instructions, prompts, or printable content for the activity. Use markdown for formatting.'),
+  answerKey: z.string().optional().describe('An optional answer key if the activity is a riddle or puzzle. Otherwise, this should be null or omitted.'),
 });
 
 export type ActivityGeneratorInput = z.infer<typeof ActivityGeneratorInputSchema>;
@@ -35,8 +36,8 @@ Task Type: {{{taskType}}}
 
 The activity should be something a teacher can do with their class in real-time with minimal preparation.
 
-For 'Mental' tasks, focus on puzzles, creative thinking, short writing prompts, or problem-solving.
-For 'Physical' tasks, focus on short, classroom-appropriate movements, actions, or light exercises.
+For 'Mental' tasks, focus on puzzles, creative thinking, short writing prompts, or problem-solving. If the mental task is a riddle or puzzle that requires a specific solution, you MUST provide the answer in the 'answerKey' field. If it's an open-ended creative prompt, the 'answerKey' should be omitted.
+For 'Physical' tasks, focus on short, classroom-appropriate movements, actions, or light exercises. Physical tasks should never have an answer key.
 
 Provide a response in the specified JSON format with a creative title, a simple description, and if necessary, some content for a printable document. The document content should be formatted with markdown.
 `,

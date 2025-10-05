@@ -14,6 +14,7 @@ import { marked } from 'marked';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { generateActivity, type ActivityGeneratorOutput } from '@/ai/flows/activity-generator';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
@@ -64,21 +65,31 @@ export default function RandomActivityPage() {
 
         const doc = new jsPDF();
         
-        // Remove markdown for clean text processing
-        const plainText = currentActivity.documentContent
+        // Sanitize text by removing markdown for PDF processing
+        const sanitizeText = (text: string) => text
             .replace(/### (.*)/g, '$1')
             .replace(/## (.*)/g, '$1')
             .replace(/# (.*)/g, '$1')
-            .replace(/\*\*(.*)\*\*/g, '$1')
-            .replace(/\*(.*)\*/g, '$1')
+            .replace(/\*\*(.*?)\*\*/g, '$1')
+            .replace(/\*(.*?)\*/g, '$1')
             .replace(/^- /gm, '• ');
 
         doc.setFontSize(18);
         doc.text(currentActivity.title, 10, 20);
 
         doc.setFontSize(12);
-        const splitText = doc.splitTextToSize(plainText, 180);
+        const splitText = doc.splitTextToSize(sanitizeText(currentActivity.documentContent), 180);
         doc.text(splitText, 10, 30);
+
+        // Add answer key on a new page if it exists
+        if (currentActivity.answerKey) {
+            doc.addPage();
+            doc.setFontSize(16);
+            doc.text("Answer Key", 10, 20);
+            doc.setFontSize(12);
+            const answerSplit = doc.splitTextToSize(sanitizeText(currentActivity.answerKey), 180);
+            doc.text(answerSplit, 10, 30);
+        }
         
         doc.save(`${currentActivity.title.replace(/ /g, '_')}.pdf`);
     };
@@ -152,6 +163,16 @@ export default function RandomActivityPage() {
                                                     </Button>
                                                 </div>
                                             </>
+                                        )}
+                                        {currentActivity.answerKey && (
+                                            <Accordion type="single" collapsible className="w-full mt-4">
+                                                <AccordionItem value="item-1">
+                                                    <AccordionTrigger>Show Answer</AccordionTrigger>
+                                                    <AccordionContent>
+                                                        <p className="font-semibold text-black">{currentActivity.answerKey}</p>
+                                                    </AccordionContent>
+                                                </AccordionItem>
+                                            </Accordion>
                                         )}
                                     </div>
                                 ) : (
