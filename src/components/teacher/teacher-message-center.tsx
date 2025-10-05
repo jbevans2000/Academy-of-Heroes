@@ -52,18 +52,17 @@ export function TeacherMessageCenter({
     const [currentThreadMessages, setCurrentThreadMessages] = useState<Message[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // Sort students: unread first, then alphabetically by student name
+    // Sort students: unread first, then alphabetically by character name
     const sortedStudents = useMemo(() => {
-        // Filter out hidden students first
         const visibleStudents = students.filter(s => !s.isHidden);
 
-        return visibleStudents.sort((a, b) => {
+        return [...visibleStudents].sort((a, b) => {
             const aHasUnread = a.hasUnreadMessages ?? false;
             const bHasUnread = b.hasUnreadMessages ?? false;
 
             if (aHasUnread && !bHasUnread) return -1;
             if (!aHasUnread && bHasUnread) return 1;
-            return a.studentName.localeCompare(b.studentName);
+            return a.characterName.localeCompare(b.characterName);
         });
     }, [students]);
 
@@ -143,10 +142,10 @@ export function TeacherMessageCenter({
                                             {student.hasUnreadMessages && (
                                                 <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
                                             )}
-                                            <p className="font-semibold">{student.studentName}</p>
+                                            <p className="font-semibold">{student.characterName}</p>
                                         </div>
                                     </div>
-                                    <p className="text-sm text-muted-foreground ml-4">{student.characterName}</p>
+                                    <p className="text-sm text-muted-foreground ml-4">{student.studentName}</p>
                                 </div>
                             ))}
                         </div>
@@ -158,7 +157,7 @@ export function TeacherMessageCenter({
                    {initialStudent ? (
                         <>
                              <DialogHeader>
-                                <DialogTitle>Conversation with {initialStudent.studentName}</DialogTitle>
+                                <DialogTitle>Conversation with {initialStudent.characterName}</DialogTitle>
                             </DialogHeader>
                              <div className="flex-grow overflow-hidden my-4">
                                 <ScrollArea className="h-full pr-4">
@@ -184,7 +183,7 @@ export function TeacherMessageCenter({
                                 <Textarea 
                                     value={messageText} 
                                     onChange={(e) => setNewMessage(e.target.value)} 
-                                    placeholder={`Message ${initialStudent.studentName}...`}
+                                    placeholder={`Message ${initialStudent.characterName}...`}
                                     rows={2}
                                     disabled={isSending}
                                 />
