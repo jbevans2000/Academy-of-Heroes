@@ -52,7 +52,9 @@ export default function RandomStudentPage() {
             try {
                 const querySnapshot = await getDocs(collection(db, "teachers", teacher.uid, "students"));
                 const studentsData = querySnapshot.docs.map(doc => ({ ...doc.data() } as Student));
-                setStudents(studentsData);
+                // Filter out hidden students
+                const activeStudents = studentsData.filter(student => !student.isHidden);
+                setStudents(activeStudents);
             } catch (error) {
                 console.error("Error fetching students: ", error);
             } finally {
@@ -133,9 +135,9 @@ export default function RandomStudentPage() {
                                             <style jsx global>{`
                                                 @keyframes shuffle {
                                                     0% { transform: translate(0, 0) rotate(0deg); }
-                                                    25% { transform: translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px) rotate(${Math.random() * 180}deg); }
-                                                    50% { transform: translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px) rotate(${Math.random() * 360}deg); }
-                                                    75% { transform: translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px) rotate(${Math.random() * 180}deg); }
+                                                    25% { transform: translate(${'${Math.random() * 200 - 100}'}px, ${'${Math.random() * 200 - 100}'}px) rotate(${'${Math.random() * 180}'}deg); }
+                                                    50% { transform: translate(${'${Math.random() * 200 - 100}'}px, ${'${Math.random() * 200 - 100}'}px) rotate(${'${Math.random() * 360}'}deg); }
+                                                    75% { transform: translate(${'${Math.random() * 200 - 100}'}px, ${'${Math.random() * 200 - 100}'}px) rotate(${'${Math.random() * 180}'}deg); }
                                                     100% { transform: translate(0, 0) rotate(0deg); }
                                                 }
                                             `}</style>
