@@ -99,8 +99,8 @@ export default function GroupGeneratorPage() {
 
     const handleGenerateGroups = () => {
         const size = Number(groupSize);
-        if (isNaN(size) || size <= 0) {
-            toast({ variant: 'destructive', title: 'Invalid Size', description: 'Please enter a valid group size greater than zero.' });
+        if (isNaN(size) || size <= 1) {
+            toast({ variant: 'destructive', title: 'Invalid Size', description: 'Please enter a valid group size of 2 or more.' });
             return;
         }
         
@@ -114,8 +114,8 @@ export default function GroupGeneratorPage() {
         }
 
 
-        if (activeStudents.length === 0) {
-            toast({ variant: 'destructive', title: 'No Active Students', description: 'There are no active students matching your criteria.' });
+        if (activeStudents.length < size) {
+            toast({ variant: 'destructive', title: 'Not Enough Students', description: `You need at least ${size} active students to form a group.` });
             return;
         }
 
@@ -124,6 +124,17 @@ export default function GroupGeneratorPage() {
         
         for (let i = 0; i < shuffledStudents.length; i += size) {
             newGroups.push(shuffledStudents.slice(i, i + size));
+        }
+
+        // Check for a remainder group and distribute its members if it exists
+        if (newGroups.length > 1 && newGroups[newGroups.length - 1].length < size) {
+            const remainderGroup = newGroups.pop();
+            if (remainderGroup) {
+                remainderGroup.forEach(student => {
+                    const randomIndex = Math.floor(Math.random() * newGroups.length);
+                    newGroups[randomIndex].push(student);
+                });
+            }
         }
         
         const shuffledGuildNames = shuffleArray(guildNames);
@@ -192,7 +203,7 @@ export default function GroupGeneratorPage() {
                                     value={groupSize}
                                     onChange={(e) => setGroupSize(e.target.value)}
                                     placeholder="e.g., 4"
-                                    min="1"
+                                    min="2"
                                 />
                              </div>
                               <Button onClick={handleGenerateGroups} disabled={isLoading}>
