@@ -3,7 +3,8 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import type { User } from 'firebase/auth';
-import type { Message, Teacher } from '@/lib/data';
+import { db } from '@/lib/firebase';
+import { collection, query, orderBy, onSnapshot, doc, getDocs, where } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -17,49 +18,83 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, MessageSquare, Send } from 'lucide-react';
 import { sendMessageToTeacherFromAdmin, markAdminMessagesAsRead } from '@/ai/flows/manage-admin-messages';
-import { onSnapshot, collection, query, orderBy, doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ClientOnlyTime } from '../client-only-time';
 
+// Define more specific types based on the new structure
+interface TeacherConversation {
+    id: string; // This will be the teacher's UID
+    name?: string;
+    className?: string;
+    hasUnreadAdminMessages?: boolean;
+}
+
+interface AdminMessage {
+  id: string;
+  text: string;
+  sender: 'teacher' | 'admin';
+  timestamp: any;
+  isRead: boolean;
+  senderName?: string;
+}
+
 interface AdminMessageCenterProps {
     admin: User | null;
-    teachers: Teacher[];
+    teachers: any[]; // Using any for now as the shape might not match the new structure perfectly
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
-    initialTeacher: Teacher | null;
-    onConversationSelect: (teacher: Teacher | null) => void;
+    initialTeacher: any | null;
+    onConversationSelect: (teacher: TeacherConversation | null) => void;
 }
 
 export function AdminMessageCenter({ 
     admin, 
-    teachers,
+    teachers: initialTeachers, // Renamed to avoid confusion
     isOpen,
     onOpenChange,
-    initialTeacher,
+    initialTeacher: selectedTeacher,
     onConversationSelect,
 }: AdminMessageCenterProps) {
     const { toast } = useToast();
     
     const [messageText, setMessageText] = useState('');
     const [isSending, setIsSending] = useState(false);
-    const [currentThreadMessages, setCurrentThreadMessages] = useState<Message[]>([]);
+    const [currentThreadMessages, setCurrentThreadMessages] = useState<AdminMessage[]>([]);
+    const [conversations, setConversations] = useState<TeacherConversation[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    const sortedTeachers = useMemo(() => {
-        return [...teachers].sort((a, b) => {
-            const aHasUnread = a.hasUnreadAdminMessages ?? false;
-            const bHasUnread = b.hasUnreadAdminMessages ?? false;
-            if (aHasUnread && !bHasUnread) return -1;
-            if (!aHasUnread && bHasUnread) return 1;
-            // Fallback to name sorting if unread status is the same
-            if (a.name && b.name) {
-                return a.name.localeCompare(b.name);
-            }
-            return 0;
+    useEffect(() => {
+        if (!admin) return;
+
+        // Fetch teachers to get their names and class names
+        const teachersRef = collection(db, 'teachers');
+        const unsubTeachers = onSnapshot(teachersRef, (snapshot) => {
+            const allTeachers = snapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name, className: doc.data().className, hasUnreadAdminMessages: doc.data().hasUnreadAdminMessages }));
+            
+            // Now, fetch the conversations from the admin's subcollection
+            const convosRef = collection(db, 'admins', admin.uid, 'teacherMessages');
+            const unsubConvos = onSnapshot(query(convosRef, orderBy('lastMessageAt', 'desc')), (convoSnapshot) => {
+                const convoData = convoSnapshot.docs.map(doc => {
+                    const teacherInfo = allTeachers.find(t => t.id === doc.id);
+                    return {
+                        id: doc.id,
+                        name: teacherInfo?.name || 'Unknown Teacher',
+                        className: teacherInfo?.className,
+                        hasUnreadAdminMessages: teacherInfo?.hasUnreadAdminMessages
+                    };
+                });
+                 // Add teachers who haven't had a conversation yet
+                const teachersWithConvos = new Set(convoData.map(c => c.id));
+                const teachersWithoutConvos = allTeachers.filter(t => !teachersWithConvos.has(t.id));
+
+                setConversations([...convoData, ...teachersWithoutConvos]);
+            });
+            
+            return unsubConvos;
         });
-    }, [teachers]);
+
+        return () => unsubTeachers();
+    }, [admin]);
 
     useEffect(() => {
         if (!isOpen) {
@@ -68,19 +103,19 @@ export function AdminMessageCenter({
     }, [isOpen, onConversationSelect]);
     
     useEffect(() => {
-        if (initialTeacher && admin) {
-             const messagesQuery = query(collection(db, 'teachers', initialTeacher.id, 'adminMessages'), orderBy('timestamp', 'asc'));
+        if (selectedTeacher && admin) {
+             const messagesQuery = query(collection(db, 'admins', admin.uid, 'teacherMessages', selectedTeacher.id, 'conversation'), orderBy('timestamp', 'asc'));
              const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
-                setCurrentThreadMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message)));
+                setCurrentThreadMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AdminMessage)));
              });
              
-             markAdminMessagesAsRead({ teacherId: initialTeacher.id });
+             markAdminMessagesAsRead({ adminUid: admin.uid, teacherId: selectedTeacher.id });
              
              return () => unsubscribe();
         } else {
             setCurrentThreadMessages([]);
         }
-    }, [initialTeacher, admin]);
+    }, [selectedTeacher, admin]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -90,13 +125,13 @@ export function AdminMessageCenter({
     
     const handleSendMessage = async (e?: React.FormEvent) => {
         e?.preventDefault();
-        if (!admin || !initialTeacher || !messageText.trim()) return;
+        if (!admin || !selectedTeacher || !messageText.trim()) return;
 
         setIsSending(true);
         try {
             const result = await sendMessageToTeacherFromAdmin({
                 adminUid: admin.uid,
-                teacherUid: initialTeacher.id,
+                teacherUid: selectedTeacher.id,
                 message: messageText,
             });
             if (result.success) {
@@ -111,6 +146,16 @@ export function AdminMessageCenter({
         }
     };
 
+    const sortedConversations = useMemo(() => {
+        return [...conversations].sort((a, b) => {
+            const aHasUnread = a.hasUnreadAdminMessages ?? false;
+            const bHasUnread = b.hasUnreadAdminMessages ?? false;
+            if (aHasUnread && !bHasUnread) return -1;
+            if (!aHasUnread && bHasUnread) return 1;
+            return (a.name || '').localeCompare(b.name || '');
+        });
+    }, [conversations]);
+
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-4xl h-[90vh] flex">
@@ -121,24 +166,24 @@ export function AdminMessageCenter({
                     </DialogHeader>
                     <ScrollArea className="flex-grow mt-4">
                         <div className="space-y-2">
-                            {sortedTeachers.map(teacher => (
+                            {sortedConversations.map(convo => (
                                 <div 
-                                    key={teacher.id}
-                                    onClick={() => onConversationSelect(teacher)}
+                                    key={convo.id}
+                                    onClick={() => onConversationSelect(convo)}
                                     className={cn(
                                         "p-2 rounded-md cursor-pointer hover:bg-accent",
-                                        initialTeacher?.id === teacher.id && "bg-accent"
+                                        selectedTeacher?.id === convo.id && "bg-accent"
                                     )}
                                 >
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
-                                            {teacher.hasUnreadAdminMessages && (
+                                            {convo.hasUnreadAdminMessages && (
                                                 <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
                                             )}
-                                            <p className="font-semibold">{teacher.name}</p>
+                                            <p className="font-semibold">{convo.name}</p>
                                         </div>
                                     </div>
-                                    <p className="text-sm text-muted-foreground ml-4">{teacher.className}</p>
+                                    <p className="text-sm text-muted-foreground ml-4">{convo.className}</p>
                                 </div>
                             ))}
                         </div>
@@ -146,10 +191,10 @@ export function AdminMessageCenter({
                 </div>
 
                 <div className="w-2/3 flex flex-col">
-                   {initialTeacher ? (
+                   {selectedTeacher ? (
                         <>
                              <DialogHeader>
-                                <DialogTitle>Conversation with {initialTeacher.name}</DialogTitle>
+                                <DialogTitle>Conversation with {selectedTeacher.name}</DialogTitle>
                             </DialogHeader>
                              <div className="flex-grow overflow-hidden my-4">
                                 <ScrollArea className="h-full pr-4">
@@ -175,7 +220,7 @@ export function AdminMessageCenter({
                                 <Textarea 
                                     value={messageText} 
                                     onChange={(e) => setMessageText(e.target.value)} 
-                                    placeholder={`Message ${initialTeacher.name}...`}
+                                    placeholder={`Message ${selectedTeacher.name}...`}
                                     rows={2}
                                     disabled={isSending}
                                 />

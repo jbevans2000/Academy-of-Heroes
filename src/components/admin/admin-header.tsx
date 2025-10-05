@@ -10,7 +10,7 @@ import { auth, db } from "@/lib/firebase";
 import { signOut, onAuthStateChanged, type User as FirebaseUser } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { Bug, Lightbulb } from "lucide-react";
-import { TeacherAdminMessageDialog } from './teacher-admin-message-dialog';
+import { AdminMessageCenter } from './admin-message-center';
 
 interface AdminHeaderProps {
     isAdminPreview?: boolean;

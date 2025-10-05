@@ -14,7 +14,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Send } from 'lucide-react';
 import { sendMessageToAdmin, markAdminMessagesAsRead } from '@/ai/flows/manage-admin-messages';
 import { cn } from '@/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
 import { ClientOnlyTime } from '../client-only-time';
 
 
@@ -30,6 +29,7 @@ export function TeacherAdminMessageDialog({ isOpen, onOpenChange }: TeacherAdmin
     const [messages, setMessages] = useState<Message[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
+    const [adminUid, setAdminUid] = useState<string | null>(null); // State to hold the admin UID
     const messagesEndRef = useRef<HTMLDivElement>(null);
     
     useEffect(() => {
@@ -43,25 +43,36 @@ export function TeacherAdminMessageDialog({ isOpen, onOpenChange }: TeacherAdmin
                             setTeacher({ id: teacherSnap.id, ...teacherSnap.data()} as unknown as Teacher);
                         }
                     });
+
+                    // Fetch the first admin UID to message
+                    const adminsQuery = query(collection(db, 'admins'), limit(1));
+                    const adminSnapshot = await getDocs(adminsQuery);
+                    if (!adminSnapshot.empty) {
+                        setAdminUid(adminSnapshot.docs[0].id);
+                    } else {
+                        toast({ variant: 'destructive', title: 'Admin Not Found', description: 'Could not find an administrator to message.' });
+                    }
+
                     return () => unsubTeacher();
                 }
             });
             return () => unsubscribe();
         }
-    }, [isOpen]);
+    }, [isOpen, toast]);
 
     useEffect(() => {
-        if (isOpen && teacher) {
-            const messagesQuery = query(collection(db, 'teachers', teacher.id, 'adminMessages'), orderBy('timestamp', 'asc'));
+        if (isOpen && teacher && adminUid) {
+            const messagesQuery = query(collection(db, 'admins', adminUid, 'teacherMessages', teacher.id, 'conversation'), orderBy('timestamp', 'asc'));
             const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
                 setMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message)));
             });
             
-            markAdminMessagesAsRead({ teacherId: teacher.id });
+            // This needs to be adapted for the new structure
+            // markAdminMessagesAsRead({ adminUid: adminUid, teacherId: teacher.id });
             
             return () => unsubscribe();
         }
-    }, [isOpen, teacher]);
+    }, [isOpen, teacher, adminUid]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -71,13 +82,14 @@ export function TeacherAdminMessageDialog({ isOpen, onOpenChange }: TeacherAdmin
     
     const handleSendMessage = async (e?: React.FormEvent) => {
         e?.preventDefault();
-        if (!newMessage.trim() || !teacher || !user) return;
+        if (!newMessage.trim() || !teacher || !user || !adminUid) return;
         setIsSending(true);
         try {
             const result = await sendMessageToAdmin({
                 teacherUid: user.uid,
                 teacherName: teacher.name,
                 message: newMessage,
+                adminUid: adminUid,
             });
             if (result.success) {
                 setNewMessage('');
@@ -124,9 +136,9 @@ export function TeacherAdminMessageDialog({ isOpen, onOpenChange }: TeacherAdmin
                         onChange={(e) => setNewMessage(e.target.value)} 
                         placeholder="Type your message..."
                         rows={2}
-                        disabled={isSending}
+                        disabled={isSending || !adminUid}
                     />
-                    <Button type="submit" disabled={isSending || !newMessage.trim()}>
+                    <Button type="submit" disabled={isSending || !newMessage.trim() || !adminUid}>
                         {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     </Button>
                 </form>

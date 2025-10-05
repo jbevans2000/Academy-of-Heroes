@@ -617,9 +617,10 @@ export default function AdminDashboardPage() {
     };
 
     const handleMarkAllRead = async () => {
+        if (!user) return;
         setIsMarkingRead(true);
         try {
-            const result = await markAllAdminMessagesAsRead();
+            const result = await markAllAdminMessagesAsRead({ adminUid: user.uid });
             if (result.success) {
                 toast({ title: "Success", description: result.message });
                 // Optimistically update the UI while waiting for the listener to catch up
@@ -665,7 +666,7 @@ export default function AdminDashboardPage() {
                 admin={user}
                 teachers={teachers}
                 initialTeacher={initialTeacherToView}
-                onConversationSelect={setInitialTeacherToView}
+                onConversationSelect={(teacher) => setInitialTeacherToView(teacher as Teacher)}
             />
             <main className="flex-1 p-4 md:p-6 lg:p-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                  
