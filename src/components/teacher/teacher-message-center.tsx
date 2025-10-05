@@ -12,11 +12,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, MessageSquare, Send } from 'lucide-react';
-import { sendMessageToStudents, markMessagesAsRead } from '@/ai/flows/manage-messages';
+import { Loader2, MessageSquare, Send, Trash2 } from 'lucide-react';
+import { sendMessageToStudents, markMessagesAsRead, clearMessageHistory } from '@/ai/flows/manage-messages';
 import { onSnapshot, collection, query, orderBy, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { cn } from '@/lib/utils';
@@ -43,6 +54,8 @@ export function TeacherMessageCenter({
     
     const [newMessage, setNewMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
+    const [isClearing, setIsClearing] = useState(false);
+    const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
     
     const [currentThreadMessages, setCurrentThreadMessages] = useState<Message[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -69,7 +82,6 @@ export function TeacherMessageCenter({
                 setCurrentThreadMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message)));
              });
              
-             // This is the key part: when a conversation is selected, we mark its messages as read.
              if (initialStudent.hasUnreadMessages) {
                 markMessagesAsRead({ teacherUid: teacher.uid, studentUid: initialStudent.uid, reader: 'teacher' });
              }
@@ -109,10 +121,31 @@ export function TeacherMessageCenter({
         }
     };
 
+    const handleClearHistory = async () => {
+        if (!teacher || !initialStudent) return;
+        setIsClearing(true);
+        try {
+            const result = await clearMessageHistory({
+                teacherUid: teacher.uid,
+                studentUid: initialStudent.uid,
+            });
+            if (result.success) {
+                toast({ title: "History Cleared", description: `The message history for ${initialStudent.studentName} has been deleted.` });
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message });
+        } finally {
+            setIsClearing(false);
+            setIsClearConfirmOpen(false);
+        }
+    }
+
     return (
+        <>
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-4xl h-[90vh] flex">
-                {/* Left Panel: Student List */}
                 <div className="w-1/3 border-r pr-4 flex flex-col">
                     <DialogHeader>
                         <DialogTitle>Message Center</DialogTitle>
@@ -144,12 +177,15 @@ export function TeacherMessageCenter({
                     </ScrollArea>
                 </div>
 
-                {/* Right Panel: Conversation View */}
                 <div className="w-2/3 flex flex-col">
                    {initialStudent ? (
                         <>
-                             <DialogHeader>
+                             <DialogHeader className="flex-row justify-between items-center">
                                 <DialogTitle>Conversation with {initialStudent.studentName}</DialogTitle>
+                                <Button variant="destructive" size="sm" onClick={() => setIsClearConfirmOpen(true)}>
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Clear History
+                                </Button>
                             </DialogHeader>
                              <div className="flex-grow overflow-hidden my-4">
                                 <ScrollArea className="h-full pr-4">
@@ -193,5 +229,23 @@ export function TeacherMessageCenter({
                 </div>
             </DialogContent>
         </Dialog>
+        <AlertDialog open={isClearConfirmOpen} onOpenChange={setIsClearConfirmOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This will permanently delete the entire message history with {initialStudent?.studentName}. This action cannot be undone.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isClearing}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleClearHistory} disabled={isClearing} className="bg-destructive hover:bg-destructive/90">
+                        {isClearing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        Yes, Clear History
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+        </>
     );
 }

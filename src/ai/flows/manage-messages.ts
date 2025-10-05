@@ -1,7 +1,7 @@
 
 'use server';
 
-import { collection, addDoc, writeBatch, serverTimestamp, doc, updateDoc, getDocs, query, where } from 'firebase/firestore';
+import { collection, addDoc, writeBatch, serverTimestamp, doc, updateDoc, getDocs, query, where, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 interface ActionResponse {
@@ -103,7 +103,6 @@ export async function markMessagesAsRead(input: MarkMessagesAsReadInput): Promis
 
     try {
         const messagesRef = collection(db, 'teachers', teacherUid, 'students', studentUid, 'messages');
-        // We only mark messages from the other party as read.
         const q = query(messagesRef, where('isRead', '==', false), where('sender', '==', reader === 'teacher' ? 'student' : 'teacher'));
         
         const unreadSnapshot = await getDocs(q);
@@ -144,4 +143,36 @@ export async function markMessagesAsRead(input: MarkMessagesAsReadInput): Promis
         console.error('Error marking messages as read:', error);
         return { success: false, error: error.message || 'Failed to update message status.' };
     }
+}
+
+interface ClearMessageHistoryInput {
+  teacherUid: string;
+  studentUid: string;
+}
+
+export async function clearMessageHistory(input: ClearMessageHistoryInput): Promise<ActionResponse> {
+  const { teacherUid, studentUid } = input;
+  if (!teacherUid || !studentUid) {
+    return { success: false, error: 'Invalid input provided.' };
+  }
+
+  try {
+    const messagesRef = collection(db, 'teachers', teacherUid, 'students', studentUid, 'messages');
+    const messagesSnapshot = await getDocs(messagesRef);
+
+    if (messagesSnapshot.empty) {
+      return { success: true, message: 'No messages to clear.' };
+    }
+
+    const batch = writeBatch(db);
+    messagesSnapshot.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+
+    await batch.commit();
+    return { success: true, message: 'Message history cleared.' };
+  } catch (error: any) {
+    console.error('Error clearing message history:', error);
+    return { success: false, error: 'An unexpected error occurred while clearing the history.' };
+  }
 }
