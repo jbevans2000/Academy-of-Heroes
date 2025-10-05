@@ -678,6 +678,7 @@ function NewQuestForm() {
                                           onChange={e => setNewHubOrder(Number(e.target.value))}
                                           disabled={isSaving || newHubType === 'sidequest'}
                                           />
+                                          {newHubType === 'sidequest' && <p className="text-xs text-muted-foreground">Order is not applicable for Side Quest hubs.</p>}
                                   </div>
                                   <ImageUploader label="Hub's Regional Map" imageUrl={newHubMapUrl} onUploadSuccess={setNewHubMapUrl} teacherUid={teacher.uid} storagePath="hub-maps" onGalleryOpen={() => setIsGalleryOpen(true)} />
                                   <Label>Position New Hub on World Map</Label>
