@@ -96,7 +96,7 @@ export function TeacherMessageCenter({
     useEffect(scrollToBottom, [currentThreadMessages]);
     
     const handleSendMessage = async (e?: React.FormEvent) => {
-        e?.preventDefault();
+        if (e) e.preventDefault();
         if (!teacher || !initialStudent || !messageText.trim()) return;
 
         setIsSending(true);
@@ -183,7 +183,7 @@ export function TeacherMessageCenter({
                             <form onSubmit={handleSendMessage} className="flex gap-2 pt-4 border-t">
                                 <Textarea 
                                     value={messageText} 
-                                    onChange={(e) => setMessageText(e.target.value)} 
+                                    onChange={(e) => setNewMessage(e.target.value)} 
                                     placeholder={`Message ${initialStudent.studentName}...`}
                                     rows={2}
                                     disabled={isSending}
