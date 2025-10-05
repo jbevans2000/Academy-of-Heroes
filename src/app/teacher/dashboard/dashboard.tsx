@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -132,6 +133,8 @@ export default function Dashboard() {
   
   const [isBulkMeditationOpen, setIsBulkMeditationOpen] = useState(false);
   const [bulkMeditationMessage, setBulkMeditationMessage] = useState('');
+  const [bulkMeditationDuration, setBulkMeditationDuration] = useState<number | string>('');
+
 
   const [isReleasingAll, setIsReleasingAll] = useState(false);
 
@@ -638,11 +641,13 @@ export default function Dashboard() {
                 studentUids: selectedStudents,
                 isInMeditation: true,
                 message: bulkMeditationMessage,
+                durationInMinutes: Number(bulkMeditationDuration) || undefined
             });
             if (result.success) {
                 toast({ title: 'Success', description: `${selectedStudents.length} student(s) have been sent to the Meditation Chamber.` });
                 setIsBulkMeditationOpen(false);
                 setBulkMeditationMessage('');
+                setBulkMeditationDuration('');
                 setSelectedStudents([]);
             } else {
                 throw new Error(result.error);
@@ -921,7 +926,7 @@ export default function Dashboard() {
                         <Moon className="mr-2 h-4 w-4" />
                         Send Selected to Meditation
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => handleReleaseAll()} className="text-green-600 focus:text-green-700">
+                    <DropdownMenuItem onSelect={handleReleaseAll} className="text-green-600 focus:text-green-700">
                         <UserCheck className="mr-2 h-4 w-4" />
                         Release All from Meditation
                     </DropdownMenuItem>
@@ -1121,13 +1126,23 @@ export default function Dashboard() {
                             Enter a message for the selected students to reflect on.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="py-4">
+                    <div className="py-4 space-y-4">
                         <Textarea
                             value={bulkMeditationMessage}
                             onChange={(e) => setBulkMeditationMessage(e.target.value)}
                             placeholder="e.g., Reflect on your focus during today's quest."
                             rows={4}
                         />
+                         <div className="space-y-2">
+                            <Label htmlFor="meditation-duration">Release After (Minutes, Optional)</Label>
+                            <Input
+                                id="meditation-duration"
+                                type="number"
+                                value={bulkMeditationDuration}
+                                onChange={e => setBulkMeditationDuration(e.target.value)}
+                                placeholder="e.g., 15"
+                            />
+                        </div>
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsBulkMeditationOpen(false)}>Cancel</Button>
@@ -1253,3 +1268,4 @@ export default function Dashboard() {
     </div>
   );
 }
+

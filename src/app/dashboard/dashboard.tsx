@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -83,18 +84,15 @@ export default function Dashboard() {
           const studentRef = doc(db, 'teachers', teacherUid, 'students', user.uid);
           const unsub = onSnapshot(studentRef, async (docSnap) => {
             if (docSnap.exists()) {
-              const studentData = { uid: docSnap.id, ...docSnap.data() } as Student;
+              let studentData = { uid: docSnap.id, ...docSnap.data() } as Student;
               
               if (studentData.forceLogout) {
-                  // Reset the flag in Firestore first
                   await updateDoc(studentRef, { forceLogout: false });
-                  // Then sign the user out
                   await auth.signOut();
                   toast({
                       title: "Session Expired",
                       description: "Your Guild Leader has ended your session. Please log in again.",
                   });
-                  // No need to do anything else, the onAuthStateChanged listener will redirect
                   return;
               }
 
@@ -103,6 +101,18 @@ export default function Dashboard() {
                 return;
               }
               
+              if (studentData.isInMeditationChamber && studentData.meditationReleaseAt) {
+                const releaseTime = (studentData.meditationReleaseAt as Timestamp).toDate();
+                if (new Date() >= releaseTime) {
+                    studentData.isInMeditationChamber = false;
+                    await updateDoc(studentRef, {
+                        isInMeditationChamber: false,
+                        meditationMessage: deleteField(),
+                        meditationReleaseAt: deleteField(),
+                    });
+                }
+              }
+
               const teacherRef = doc(db, 'teachers', teacherUid);
               const teacherSnap = await getDoc(teacherRef);
               const fetchedTeacherData = teacherSnap.exists() ? (teacherSnap.data() as TeacherData) : null;
@@ -287,3 +297,4 @@ export default function Dashboard() {
     </div>
   );
 }
+

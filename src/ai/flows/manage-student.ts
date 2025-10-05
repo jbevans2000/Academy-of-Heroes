@@ -11,7 +11,7 @@
  * - getStudentStatus: Fetches the enabled/disabled status of a student's account.
  * - clearGameLog: Deletes all entries from the game log.
  */
-import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch, getDoc, runTransaction, arrayUnion, arrayRemove, setDoc, deleteField, query, where } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch, getDoc, runTransaction, arrayUnion, arrayRemove, setDoc, deleteField, query, where, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirebaseAdminApp } from '@/lib/firebase-admin';
@@ -135,10 +135,11 @@ interface MeditationStatusInput {
   studentUid: string;
   isInMeditation: boolean;
   message?: string;
+  durationInMinutes?: number; // New optional field
 }
 
 export async function setMeditationStatus(input: MeditationStatusInput): Promise<ActionResponse> {
-  const { teacherUid, studentUid, isInMeditation, message } = input;
+  const { teacherUid, studentUid, isInMeditation, message, durationInMinutes } = input;
   try {
     const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
     const updates: any = {
@@ -146,8 +147,16 @@ export async function setMeditationStatus(input: MeditationStatusInput): Promise
     };
     if (isInMeditation) {
       updates.meditationMessage = message;
+      if (durationInMinutes && durationInMinutes > 0) {
+        const releaseTime = new Date();
+        releaseTime.setMinutes(releaseTime.getMinutes() + durationInMinutes);
+        updates.meditationReleaseAt = Timestamp.fromDate(releaseTime);
+      } else {
+        updates.meditationReleaseAt = deleteField(); // Clear any previous timer if duration is not set
+      }
     } else {
       updates.meditationMessage = deleteField();
+      updates.meditationReleaseAt = deleteField();
     }
     await updateDoc(studentRef, updates);
     return { success: true };
@@ -162,10 +171,11 @@ interface BulkMeditationStatusInput {
     studentUids: string[];
     isInMeditation: boolean;
     message?: string;
+    durationInMinutes?: number; // New optional field
 }
 
 export async function setBulkMeditationStatus(input: BulkMeditationStatusInput): Promise<ActionResponse> {
-    const { teacherUid, studentUids, isInMeditation, message } = input;
+    const { teacherUid, studentUids, isInMeditation, message, durationInMinutes } = input;
     if (!studentUids || studentUids.length === 0) {
         return { success: false, error: "No students selected." };
     }
@@ -178,8 +188,16 @@ export async function setBulkMeditationStatus(input: BulkMeditationStatusInput):
 
         if (isInMeditation) {
             updates.meditationMessage = message;
+            if (durationInMinutes && durationInMinutes > 0) {
+                const releaseTime = new Date();
+                releaseTime.setMinutes(releaseTime.getMinutes() + durationInMinutes);
+                updates.meditationReleaseAt = Timestamp.fromDate(releaseTime);
+            } else {
+                updates.meditationReleaseAt = deleteField();
+            }
         } else {
             updates.meditationMessage = deleteField();
+            updates.meditationReleaseAt = deleteField();
         }
 
         studentUids.forEach(uid => {
@@ -211,6 +229,7 @@ export async function releaseAllFromMeditation(input: { teacherUid: string }): P
             batch.update(doc.ref, {
                 isInMeditationChamber: false,
                 meditationMessage: deleteField(),
+                meditationReleaseAt: deleteField(),
             });
         });
 
@@ -259,3 +278,4 @@ export async function forceStudentLogout(input: ForceLogoutInput): Promise<Actio
     return { success: false, error: 'Failed to set logout flag.' };
   }
 }
+
