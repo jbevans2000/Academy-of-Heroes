@@ -48,15 +48,12 @@ export function TeacherMessageCenter({
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const sortedStudents = useMemo(() => {
-        const unreadStudents = students
-            .filter(s => s.hasUnreadMessages)
-            .sort((a, b) => a.studentName.localeCompare(b.studentName));
+        const unread = students.filter(s => s.hasUnreadMessages);
+        const read = students.filter(s => !s.hasUnreadMessages);
+        
+        const sortByName = (a: Student, b: Student) => a.studentName.localeCompare(b.studentName);
 
-        const readStudents = students
-            .filter(s => !s.hasUnreadMessages)
-            .sort((a, b) => a.studentName.localeCompare(b.studentName));
-            
-        return [...unreadStudents, ...readStudents];
+        return [...unread.sort(sortByName), ...read.sort(sortByName)];
     }, [students]);
 
     useEffect(() => {
@@ -72,7 +69,10 @@ export function TeacherMessageCenter({
                 setCurrentThreadMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message)));
              });
              
-             markMessagesAsRead({ teacherUid: teacher.uid, studentUid: initialStudent.uid, reader: 'teacher' });
+             // This is the key part: when a conversation is selected, we mark its messages as read.
+             if (initialStudent.hasUnreadMessages) {
+                markMessagesAsRead({ teacherUid: teacher.uid, studentUid: initialStudent.uid, reader: 'teacher' });
+             }
              
              return () => unsubscribe();
         } else {
