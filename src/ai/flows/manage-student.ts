@@ -134,7 +134,7 @@ interface MeditationStatusInput {
   studentUid: string;
   isInMeditation: boolean;
   message?: string;
-  durationInMinutes?: number; // New optional field
+  durationInMinutes?: number;
 }
 
 export async function setMeditationStatus(input: MeditationStatusInput): Promise<ActionResponse> {
@@ -151,7 +151,8 @@ export async function setMeditationStatus(input: MeditationStatusInput): Promise
         releaseTime.setMinutes(releaseTime.getMinutes() + durationInMinutes);
         updates.meditationReleaseAt = Timestamp.fromDate(releaseTime);
       } else {
-        updates.meditationReleaseAt = deleteField(); // Clear any previous timer if duration is not set
+        // Explicitly remove any existing timer if no new duration is set.
+        updates.meditationReleaseAt = deleteField(); 
       }
     } else {
       // This is the fix: Ensure timer fields are deleted on manual release.
@@ -278,5 +279,6 @@ export async function forceStudentLogout(input: ForceLogoutInput): Promise<Actio
     return { success: false, error: 'Failed to set logout flag.' };
   }
 }
+
 
 

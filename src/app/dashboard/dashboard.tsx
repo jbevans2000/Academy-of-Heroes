@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -23,6 +22,7 @@ import {
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { MeditationChamber } from '@/components/dashboard/meditation-chamber';
 
 
 const isSameDay = (d1: Date, d2: Date) => {
@@ -101,18 +101,10 @@ export default function Dashboard() {
                 return;
               }
               
-              if (studentData.isInMeditationChamber && studentData.meditationReleaseAt) {
-                const releaseTime = (studentData.meditationReleaseAt as Timestamp).toDate();
-                if (new Date() >= releaseTime) {
-                    studentData.isInMeditationChamber = false;
-                    await updateDoc(studentRef, {
-                        isInMeditationChamber: false,
-                        meditationMessage: deleteField(),
-                        meditationReleaseAt: deleteField(),
-                    });
-                }
-              }
-
+              // This is the old check, which we are now moving to the MeditationChamber component
+              // to handle it actively on the client. We still check the main flag here to decide
+              // which component to render.
+              
               const teacherRef = doc(db, 'teachers', teacherUid);
               const teacherSnap = await getDoc(teacherRef);
               const fetchedTeacherData = teacherSnap.exists() ? (teacherSnap.data() as TeacherData) : null;
@@ -231,25 +223,7 @@ export default function Dashboard() {
 
   if (student.isInMeditationChamber) {
     return (
-        <div className="relative flex min-h-screen w-full flex-col items-center justify-center p-4">
-             <Image
-                src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FMeditation%20Chamber.jpg?alt=media&token=0496e561-c1df-425b-9384-81b5ada03853"
-                alt="Meditation Chamber"
-                fill
-                className="object-cover -z-10"
-                priority
-            />
-            <div className="absolute inset-0 bg-black/60 -z-10" />
-            <div className="z-10 text-center w-full max-w-2xl bg-black/70 p-8 rounded-xl shadow-2xl backdrop-blur-sm text-white">
-                <h1 className="text-4xl font-headline text-primary">The Meditation Chamber</h1>
-                <p className="mt-4 text-lg">The Guild Leader has placed you here to reflect on the following:</p>
-                <div className="mt-4 text-2xl font-semibold border-t border-b border-primary/50 py-4">
-                    {student.meditationMessage}
-                </div>
-                <p className="mt-4 text-sm text-muted-foreground">You may not access your dashboard until the Guild Leader releases you.</p>
-                 <Button onClick={() => auth.signOut()} className="mt-6">Logout</Button>
-            </div>
-        </div>
+        <MeditationChamber student={student} teacherUid={student.teacherUid} />
     );
   }
 
@@ -292,9 +266,8 @@ export default function Dashboard() {
 
       <DashboardHeader characterName={student.characterName}/>
       <main className="flex-1 bg-background/50 backdrop-blur-sm">
-        <DashboardClient student={student} levelingTable={teacherData.levelingTable} />
+        <DashboardClient student={student} />
       </main>
     </div>
   );
 }
-
