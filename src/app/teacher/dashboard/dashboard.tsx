@@ -560,12 +560,8 @@ export default function Dashboard() {
     setIsMessageCenterOpen(true);
   };
   
-    const handleCloseMessageCenter = async () => {
+    const handleCloseMessageCenter = () => {
         setIsMessageCenterOpen(false);
-        if (teacher && teacherData?.hasUnreadTeacherMessages) {
-            const teacherRef = doc(db, 'teachers', teacher.uid);
-            await updateDoc(teacherRef, { hasUnreadTeacherMessages: false });
-        }
     };
   
   const handleRestoreAll = async (stat: 'hp' | 'mp') => {
@@ -1190,67 +1186,6 @@ export default function Dashboard() {
                 onlineUids={onlineUids}
             />
         ) : null}
-        
-        <Dialog open={isReminderDialogOpen} onOpenChange={setIsReminderDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Set Daily Reminder</DialogTitle>
-              <DialogDescription>
-                This message will appear for students the first time they log in each day.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-4 space-y-4">
-              <div className="flex items-center space-x-2">
-                <Switch id="reminder-active" checked={isReminderActive} onCheckedChange={setIsReminderActive} />
-                <Label htmlFor="reminder-active">Enable Daily Reminder</Label>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="reminder-title">Reminder Title</Label>
-                <Input id="reminder-title" value={reminderTitle} onChange={(e) => setReminderTitle(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="reminder-message">Reminder Message</Label>
-                <Textarea id="reminder-message" value={reminderMessage} onChange={(e) => setReminderMessage(e.target.value)} rows={6} />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsReminderDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleSaveReminder} disabled={isSavingReminder}>
-                {isSavingReminder && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Reminder
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={isRegenDialogOpen} onOpenChange={setIsRegenDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Set Daily HP/MP Regeneration</DialogTitle>
-              <DialogDescription>
-                Set a percentage of max HP and MP that students will recover each day.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-4 space-y-2">
-              <Label htmlFor="regen-percent">Regeneration Percentage (%)</Label>
-              <Input
-                id="regen-percent"
-                type="number"
-                value={regenPercentage}
-                onChange={(e) => setRegenPercentage(e.target.value)}
-                min="0"
-                max="100"
-              />
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsRegenDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleSaveRegen} disabled={isSavingRegen}>
-                {isSavingRegen && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Rate
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </main>
     </div>
   );
