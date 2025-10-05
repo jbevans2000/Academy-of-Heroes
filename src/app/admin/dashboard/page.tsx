@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, doc, getDoc, query, orderBy, updateDoc, addDoc, serverTimestamp, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, query, orderBy, updateDoc, addDoc, serverTimestamp, deleteDoc, onSnapshot, where } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { getAuth, type UserRecord } from 'firebase-admin/auth';
 import { db, auth, app } from '@/lib/firebase';
@@ -160,6 +160,32 @@ export default function AdminDashboardPage() {
     const { toast } = useToast();
 
     useEffect(() => {
+        const teachersQuery = query(collection(db, 'teachers'), orderBy('name'));
+        const unsubscribe = onSnapshot(teachersQuery, async (snapshot) => {
+            const teachersData: Teacher[] = [];
+            for (const teacherDoc of snapshot.docs) {
+                const teacherInfo = teacherDoc.data();
+                const studentsSnapshot = await getDocs(collection(db, 'teachers', teacherDoc.id, 'students'));
+                teachersData.push({
+                    id: teacherDoc.id,
+                    name: teacherInfo.name || '[No Name]',
+                    email: teacherInfo.email || '[No Email]',
+                    contactEmail: teacherInfo.contactEmail || '-',
+                    address: teacherInfo.address || '-',
+                    className: teacherInfo.className || '[No Class Name]',
+                    schoolName: teacherInfo.schoolName || '[No School]',
+                    studentCount: studentsSnapshot.size,
+                    createdAt: teacherInfo.createdAt?.toDate() || null,
+                    hasUnreadAdminMessages: teacherInfo.hasUnreadAdminMessages || false,
+                });
+            }
+            setTeachers(teachersData);
+        });
+
+        return () => unsubscribe();
+    }, []);
+
+    useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
                 const adminRef = doc(db, 'admins', currentUser.uid);
@@ -183,7 +209,7 @@ export default function AdminDashboardPage() {
     const fetchInitialData = async () => {
         setIsLoading(true);
         await Promise.all([
-            fetchTeachersAndStudents(),
+            fetchStudents(),
             fetchSettings(),
             fetchFeedback(),
             fetchBroadcasts(),
@@ -192,35 +218,18 @@ export default function AdminDashboardPage() {
         setIsLoading(false);
     };
 
-    const fetchTeachersAndStudents = async () => {
+    const fetchStudents = async () => {
         try {
             const teachersSnapshot = await getDocs(collection(db, 'teachers'));
-            const teachersData: Teacher[] = [];
             const studentsData: Student[] = [];
 
-            for (const teacherDoc of teachersSnapshot.docs) {
+             for (const teacherDoc of teachersSnapshot.docs) {
                 const teacherInfo = teacherDoc.data();
                 const studentsSnapshot = await getDocs(collection(db, 'teachers', teacherDoc.id, 'students'));
-                
-                teachersData.push({
-                    id: teacherDoc.id,
-                    name: teacherInfo.name || '[No Name]',
-                    email: teacherInfo.email || '[No Email]',
-                    contactEmail: teacherInfo.contactEmail || '-',
-                    address: teacherInfo.address || '-',
-                    className: teacherInfo.className || '[No Class Name]',
-                    schoolName: teacherInfo.schoolName || '[No School]',
-                    studentCount: studentsSnapshot.size,
-                    createdAt: teacherInfo.createdAt?.toDate() || null,
-                    hasUnreadAdminMessages: teacherInfo.hasUnreadAdminMessages || false,
-                });
-
-                for (const studentDoc of studentsSnapshot.docs) {
+                 for (const studentDoc of studentsSnapshot.docs) {
                     const studentInfo = studentDoc.data();
                     let lastLoginDate = null;
-                    // This is a placeholder. A server-side function would be needed to get real Auth data.
-                    // For now, we simulate or leave it null.
-                    if (studentInfo.lastLogin) { // Assuming you might store this on login
+                    if (studentInfo.lastLogin) {
                         lastLoginDate = studentInfo.lastLogin.toDate();
                     }
 
@@ -236,19 +245,12 @@ export default function AdminDashboardPage() {
                     });
                 }
             }
-            
-            setTeachers(teachersData);
             setAllStudents(studentsData);
-
-             toast({
-                title: 'Data Refreshed',
-                description: 'The latest guild and student data has been loaded.',
-            });
         } catch (error) {
-            console.error("Error fetching data:", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not load teacher and student data.' });
+             console.error("Error fetching students:", error);
+             toast({ variant: 'destructive', title: 'Error', description: 'Could not load student data.' });
         }
-    };
+    }
 
      const sortedTeachers = useMemo(() => {
         let sortableItems = [...teachers];
@@ -634,11 +636,14 @@ export default function AdminDashboardPage() {
             setIsMarkingRead(false);
         }
     };
+    
+    const hasUnreadMessages = useMemo(() => teachers.some(t => t.hasUnreadAdminMessages), [teachers]);
+
 
     if (isLoading || !user) {
         return (
             <div className="flex min-h-screen w-full flex-col">
-                <AdminHeader onOpenMessageCenter={() => handleOpenMessageCenter()} onMarkAllRead={handleMarkAllRead} isMarkingRead={isMarkingRead} />
+                <AdminHeader onOpenMessageCenter={() => handleOpenMessageCenter()} onMarkAllRead={handleMarkAllRead} isMarkingRead={isMarkingRead} hasUnreadMessages={hasUnreadMessages} />
                 <main className="flex-1 p-4 md:p-6 lg:p-8">
                     <Skeleton className="h-10 w-1/3 mb-6" />
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -656,7 +661,7 @@ export default function AdminDashboardPage() {
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
             <AdminHeader 
                 onOpenMessageCenter={() => handleOpenMessageCenter()} 
-                hasUnreadMessages={teachers.some(t => t.hasUnreadAdminMessages)}
+                hasUnreadMessages={hasUnreadMessages}
                 onMarkAllRead={handleMarkAllRead}
                 isMarkingRead={isMarkingRead}
             />
@@ -997,7 +1002,7 @@ export default function AdminDashboardPage() {
                                     <h4 className="font-semibold">Refresh Data</h4>
                                     <p className="text-sm text-muted-foreground">Reload all guild and student info.</p>
                                 </div>
-                                <Button onClick={fetchTeachersAndStudents} disabled={isLoading} size="icon">
+                                <Button onClick={fetchStudents} disabled={isLoading} size="icon">
                                     {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4"/>}
                                 </Button>
                             </div>
