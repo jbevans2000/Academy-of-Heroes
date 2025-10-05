@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -283,7 +282,7 @@ export default function Dashboard() {
 
       <DashboardHeader characterName={student.characterName}/>
       <main className="flex-1 bg-background/50 backdrop-blur-sm">
-        <DashboardClient student={student} />
+        <DashboardClient student={student} levelingTable={teacherData.levelingTable} />
       </main>
     </div>
   );
