@@ -13,6 +13,9 @@ import type { Student, Company } from '@/lib/data';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { onAuthStateChanged, type User } from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 const runeImageSrc = 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-1b1a5535-ccec-4d95-b6ba-5199715edc4c.jpg?alt=media&token=b0a366fe-a4d4-46d7-b5f3-c13df8c2e69a';
 const numRunes = 12;
@@ -27,6 +30,7 @@ const selectionCaptions = [
 
 export default function FindTheChampionPage() {
     const router = useRouter();
+    const { toast } = useToast();
     const [allStudents, setAllStudents] = useState<Student[]>([]);
     const [championData, setChampionData] = useState<{ championsByCompany: Record<string, string[]>, freelancerChampions: string[] }>({ championsByCompany: {}, freelancerChampions: [] });
     const [companies, setCompanies] = useState<Company[]>([]);
@@ -35,6 +39,7 @@ export default function FindTheChampionPage() {
     const [pickedChampions, setPickedChampions] = useState<Student[]>([]);
     const [pickedCaption, setPickedCaption] = useState('');
     const [teacher, setTeacher] = useState<User | null>(null);
+    const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>(['all']);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -77,7 +82,22 @@ export default function FindTheChampionPage() {
         };
     }, [teacher]);
     
-    
+     const handleCompanyFilterChange = (companyId: string) => {
+        if (companyId === 'all') {
+            setSelectedCompanyIds(prev => prev.includes('all') ? prev.filter(id => id !== 'all') : ['all']);
+            return;
+        }
+
+        setSelectedCompanyIds(prev => {
+            const newFilters = prev.filter(id => id !== 'all');
+            if (newFilters.includes(companyId)) {
+                return newFilters.filter(id => id !== companyId);
+            } else {
+                return [...newFilters, companyId];
+            }
+        });
+    };
+
     const handleSelectChampions = (mode: 'guild' | 'company') => {
         setIsShuffling(true);
         setPickedChampions([]);
@@ -87,16 +107,28 @@ export default function FindTheChampionPage() {
             const freelancers = championData?.freelancerChampions || [];
             const companyChampions = championData?.championsByCompany || {};
 
-            const allChampionUids = [
-                ...freelancers,
-                ...Object.values(companyChampions).flat()
-            ];
-            
-            const candidates = allStudents.filter(s => allChampionUids.includes(s.uid) && s.isChampion === true && !s.isHidden);
+            let candidateUids: string[] = [];
 
+            if (selectedCompanyIds.includes('all')) {
+                candidateUids = [
+                    ...freelancers,
+                    ...Object.values(companyChampions).flat()
+                ];
+            } else {
+                if (selectedCompanyIds.includes('freelancers')) {
+                    candidateUids.push(...freelancers);
+                }
+                selectedCompanyIds.forEach(id => {
+                    if(companyChampions[id]) {
+                        candidateUids.push(...companyChampions[id]);
+                    }
+                });
+            }
+            
+            const candidates = allStudents.filter(s => candidateUids.includes(s.uid) && s.isChampion === true && !s.isHidden);
 
             if (candidates.length === 0) {
-                setPickedCaption("No champions have volunteered! Make sure students have toggled their Champion Status ON in their dashboard.");
+                setPickedCaption("No champions have volunteered from the selected groups! Make sure students have toggled their Champion Status ON in their dashboard.");
                 setPickedChampions([]);
                 setIsShuffling(false);
                 return;
@@ -120,15 +152,17 @@ export default function FindTheChampionPage() {
                 });
 
                 for (const companyId in championsByCompany) {
-                    const companyCandidates = championsByCompany[companyId];
-                    if (companyCandidates.length > 0) {
-                        const randomIndex = Math.floor(Math.random() * companyCandidates.length);
-                        champions.push(companyCandidates[randomIndex]);
+                    if (selectedCompanyIds.includes('all') || selectedCompanyIds.includes(companyId)) {
+                        const companyCandidates = championsByCompany[companyId];
+                        if (companyCandidates.length > 0) {
+                            const randomIndex = Math.floor(Math.random() * companyCandidates.length);
+                            champions.push(companyCandidates[randomIndex]);
+                        }
                     }
                 }
 
                 if (champions.length === 0) {
-                    setPickedCaption("No champions in any company have volunteered.");
+                    setPickedCaption("No champions in any of the selected companies have volunteered.");
                 }
             }
             
@@ -237,12 +271,53 @@ export default function FindTheChampionPage() {
                                     </div>
                                     
                                     <div className={cn(
-                                        "flex flex-col items-center justify-center transition-opacity duration-500",
+                                        "flex flex-col items-center justify-center transition-opacity duration-500 w-full",
                                         isShuffling || pickedCaption ? "opacity-0 pointer-events-none" : "opacity-100"
                                     )}>
+                                        <Card className="p-4 mb-4 bg-background/50 w-full">
+                                            <CardTitle className="text-lg mb-2">Filter by Company</CardTitle>
+                                            <CardContent className="flex flex-wrap justify-center gap-x-4 gap-y-2 p-0">
+                                                <div className="flex items-center space-x-2">
+                                                    <Checkbox
+                                                        id="filter-all"
+                                                        checked={selectedCompanyIds.includes('all')}
+                                                        onCheckedChange={() => handleCompanyFilterChange('all')}
+                                                    />
+                                                    <Label htmlFor="filter-all" className="font-semibold">All Companies</Label>
+                                                </div>
+                                                <div className="flex items-center space-x-2">
+                                                    <Checkbox
+                                                        id="filter-freelancers"
+                                                        checked={selectedCompanyIds.includes('freelancers')}
+                                                        onCheckedChange={() => handleCompanyFilterChange('freelancers')}
+                                                        disabled={selectedCompanyIds.includes('all')}
+                                                    />
+                                                    <Label htmlFor="filter-freelancers">Freelancers</Label>
+                                                </div>
+                                                {companies.map(company => (
+                                                    <div key={company.id} className="flex items-center space-x-2">
+                                                        <Checkbox
+                                                            id={`filter-${company.id}`}
+                                                            checked={selectedCompanyIds.includes(company.id)}
+                                                            onCheckedChange={() => handleCompanyFilterChange(company.id)}
+                                                            disabled={selectedCompanyIds.includes('all')}
+                                                        />
+                                                        <Label htmlFor={`filter-${company.id}`}>{company.name}</Label>
+                                                    </div>
+                                                ))}
+                                            </CardContent>
+                                        </Card>
                                         <p className="text-muted-foreground text-lg mb-4">Choose how to select your champion(s)!</p>
                                     </div>
 
+                                    {(pickedCaption) && (
+                                        <div className="absolute bottom-6">
+                                            <Button size="lg" className="text-xl py-8" onClick={() => handleSelectChampions('guild')} disabled={isLoading || isShuffling}>
+                                                <RefreshCw className="mr-4 h-6 w-6" />
+                                                Consult Again
+                                            </Button>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </CardContent>
