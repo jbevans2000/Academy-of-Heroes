@@ -467,7 +467,10 @@ export default function ChapterPage() {
     const storyVideoSrc = chapter.videoUrl ? getYouTubeEmbedUrl(chapter.videoUrl) : '';
 
     const lastCompletedChapterForHub = student?.questProgress?.[hubId as string] || 0;
-    const isCompletedChapter = chapter.chapterNumber <= lastCompletedChapterForHub;
+    const isCompletedChapter = hub.hubType === 'sidequest'
+        ? (student?.completedChapters || []).includes(chapter.id)
+        : chapter.chapterNumber <= lastCompletedChapterForHub;
+
     const isCurrentChapter = chapter.chapterNumber === lastCompletedChapterForHub + 1;
     
     const returnPath = isPreviewMode ? '/teacher/quests' : `/dashboard/map/${hubId}`;
