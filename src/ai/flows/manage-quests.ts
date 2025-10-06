@@ -2,7 +2,7 @@
 
 'use server';
 
-import { doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs, writeBatch, deleteDoc, serverTimestamp, query as firestoreQuery, where, arrayUnion, increment, arrayRemove } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs, writeBatch, deleteDoc, serverTimestamp, query as firestoreQuery, where, arrayUnion, increment, arrayRemove, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Student, QuestHub, Chapter } from '@/lib/data';
 import { logGameEvent } from '@/lib/gamelog';
@@ -648,5 +648,3 @@ export async function deleteChapter(input: DeleteChapterInput): Promise<ActionRe
         return { success: false, error: error.message || 'Failed to delete the chapter.' };
     }
 }
-
-    
