@@ -67,7 +67,7 @@ export default function TeacherHelpPage() {
 
                     <Card className="bg-card/90">
                         <CardHeader>
-                            <CardTitle>Teacher Features Guide</CardTitle>
+                            <CardTitle>Guild Leader Features Guide</CardTitle>
                         </CardHeader>
                         <CardContent>
                              {isLoading ? (
