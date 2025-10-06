@@ -22,7 +22,15 @@ import { moderateStudent } from '@/ai/flows/manage-student';
 import { deleteTeacher } from '@/ai/flows/manage-teacher';
 import { getAdminNotepadContent, updateAdminNotepadContent } from '@/ai/flows/manage-admin-notepad';
 import { markAllAdminMessagesAsRead } from '@/ai/flows/manage-admin-messages';
-import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle, HelpCircle, Edit, Reply, FileText, Save, CreditCard } from 'lucide-react';
+import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle, HelpCircle, Edit, Reply, FileText, Save, CreditCard, View } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -154,6 +162,16 @@ export default function AdminDashboardPage() {
     const [isMessageCenterOpen, setIsMessageCenterOpen] = useState(false);
     const [initialTeacherToView, setInitialTeacherToView] = useState<Teacher | null>(null);
     const [isMarkingRead, setIsMarkingRead] = useState(false);
+
+    // Column Visibility
+    const [columnVisibility, setColumnVisibility] = useState({
+        teacherUid: false,
+        authEmail: true,
+        contactEmail: true,
+        school: true,
+        studentCount: true,
+        createdAt: true,
+    });
     
     const router = useRouter();
     const { toast } = useToast();
@@ -864,11 +882,34 @@ export default function AdminDashboardPage() {
                         <Card>
                             <CollapsibleTrigger asChild>
                                 <div className="flex w-full cursor-pointer items-center justify-between p-6">
-                                    <div>
+                                    <div className='flex-grow'>
                                         <CardTitle>All Guilds</CardTitle>
                                         <CardDescription>A list of all registered teachers and their guilds. Click the guild name to view that teacher's dashboard.</CardDescription>
                                     </div>
-                                    <ChevronDown className="h-6 w-6 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                                     <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="outline" size="sm" className="ml-4">
+                                                <View className="mr-2 h-4 w-4" />
+                                                View
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                            <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
+                                            <DropdownMenuSeparator />
+                                            {Object.keys(columnVisibility).map((key) => (
+                                                <DropdownMenuCheckboxItem
+                                                    key={key}
+                                                    checked={columnVisibility[key as keyof typeof columnVisibility]}
+                                                    onCheckedChange={(checked) =>
+                                                        setColumnVisibility(prev => ({ ...prev, [key]: checked }))
+                                                    }
+                                                >
+                                                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                                                </DropdownMenuCheckboxItem>
+                                            ))}
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                    <ChevronDown className="h-6 w-6 transition-transform duration-200 group-data-[state=open]:rotate-180 ml-2" />
                                 </div>
                             </CollapsibleTrigger>
                             <CollapsibleContent>
@@ -879,12 +920,12 @@ export default function AdminDashboardPage() {
                                                 <TableRow>
                                                     <TableHead><Button variant="ghost" onClick={() => requestSort('className', 'teacher')}>Guild Name <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
                                                     <TableHead><Button variant="ghost" onClick={() => requestSort('name', 'teacher')}>Leader (Teacher) <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
-                                                    <TableHead>Teacher UID</TableHead>
-                                                    <TableHead><Button variant="ghost" onClick={() => requestSort('email', 'teacher')}>Auth Email (from profile) <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
-                                                    <TableHead><Button variant="ghost" onClick={() => requestSort('contactEmail', 'teacher')}>Contact Email <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
-                                                    <TableHead><Button variant="ghost" onClick={() => requestSort('schoolName', 'teacher')}>School <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
-                                                    <TableHead><Button variant="ghost" onClick={() => requestSort('studentCount', 'teacher')}>Students <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
-                                                    <TableHead><Button variant="ghost" onClick={() => requestSort('createdAt', 'teacher')}>Date Created <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
+                                                    {columnVisibility.teacherUid && <TableHead>Teacher UID</TableHead>}
+                                                    {columnVisibility.authEmail && <TableHead><Button variant="ghost" onClick={() => requestSort('email', 'teacher')}>Auth Email (from profile) <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>}
+                                                    {columnVisibility.contactEmail && <TableHead><Button variant="ghost" onClick={() => requestSort('contactEmail', 'teacher')}>Contact Email <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>}
+                                                    {columnVisibility.school && <TableHead><Button variant="ghost" onClick={() => requestSort('schoolName', 'teacher')}>School <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>}
+                                                    {columnVisibility.studentCount && <TableHead><Button variant="ghost" onClick={() => requestSort('studentCount', 'teacher')}>Students <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>}
+                                                    {columnVisibility.createdAt && <TableHead><Button variant="ghost" onClick={() => requestSort('createdAt', 'teacher')}>Date Created <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>}
                                                     <TableHead className="text-right">Actions</TableHead>
                                                 </TableRow>
                                             </TableHeader>
@@ -897,12 +938,12 @@ export default function AdminDashboardPage() {
                                                             </Link>
                                                         </TableCell>
                                                         <TableCell>{teacher.name}</TableCell>
-                                                        <TableCell className="font-mono text-xs">{teacher.id}</TableCell>
-                                                        <TableCell>{teacher.email}</TableCell>
-                                                        <TableCell>{teacher.contactEmail}</TableCell>
-                                                        <TableCell>{teacher.schoolName}</TableCell>
-                                                        <TableCell>{teacher.studentCount}</TableCell>
-                                                        <TableCell>{teacher.createdAt ? format(teacher.createdAt, 'PP') : 'N/A'}</TableCell>
+                                                        {columnVisibility.teacherUid && <TableCell className="font-mono text-xs">{teacher.id}</TableCell>}
+                                                        {columnVisibility.authEmail && <TableCell>{teacher.email}</TableCell>}
+                                                        {columnVisibility.contactEmail && <TableCell>{teacher.contactEmail}</TableCell>}
+                                                        {columnVisibility.school && <TableCell>{teacher.schoolName}</TableCell>}
+                                                        {columnVisibility.studentCount && <TableCell>{teacher.studentCount}</TableCell>}
+                                                        {columnVisibility.createdAt && <TableCell>{teacher.createdAt ? format(teacher.createdAt, 'PP') : 'N/A'}</TableCell>}
                                                         <TableCell className="text-right">
                                                             <Button variant="destructive" size="sm" onClick={() => setTeacherToDelete(teacher)}>
                                                                 <Trash2 className="h-4 w-4" />
