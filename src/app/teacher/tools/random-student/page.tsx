@@ -38,7 +38,7 @@ export default function RandomStudentPage() {
     const [pickedStudent, setPickedStudent] = useState<Student | null>(null);
     const [pickedCaption, setPickedCaption] = useState('');
     const [teacher, setTeacher] = useState<User | null>(null);
-    const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>(['all']);
+    const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>([]);
 
      useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -82,9 +82,11 @@ export default function RandomStudentPage() {
     }, [teacher, toast]);
 
     const activeStudents = useMemo(() => {
+        if (selectedCompanyIds.length === 0) return [];
+        
         let filtered = allStudents.filter(student => !student.isHidden);
 
-        if (!selectedCompanyIds.includes('all') && selectedCompanyIds.length > 0) {
+        if (!selectedCompanyIds.includes('all')) {
              filtered = filtered.filter(student => selectedCompanyIds.includes(student.companyId || ''));
         }
         
@@ -93,29 +95,23 @@ export default function RandomStudentPage() {
 
     const handleCompanyFilterChange = (companyId: string) => {
         if (companyId === 'all') {
-            setSelectedCompanyIds(prev => prev.length === companies.length + 1 && prev.includes('all') ? [] : ['all', ...companies.map(c => c.id)]);
+            setSelectedCompanyIds(prev => prev.includes('all') ? [] : ['all']);
             return;
         }
 
         setSelectedCompanyIds(prev => {
-            let newFilters = prev.includes('all') ? [] : [...prev];
-            
+            const newFilters = prev.filter(id => id !== 'all');
             if (newFilters.includes(companyId)) {
-                newFilters = newFilters.filter(id => id !== companyId);
+                return newFilters.filter(id => id !== companyId);
             } else {
-                newFilters.push(companyId);
+                return [...newFilters, companyId];
             }
-            
-            if (newFilters.length === 0) return ['all'];
-            if (newFilters.length === companies.length) return ['all'];
-
-            return newFilters;
         });
     };
 
     const generateStudent = () => {
         if (activeStudents.length === 0) {
-            toast({ variant: 'destructive', title: 'No Students Found', description: 'There are no active students matching the current filter.' });
+            toast({ variant: 'destructive', title: 'No Students Found', description: 'There are no active students matching the current filter. Please select at least one group.' });
             return;
         };
         
@@ -181,7 +177,7 @@ export default function RandomStudentPage() {
                                                         width={120}
                                                         height={120}
                                                         className="object-contain rounded-lg"
-                                                        style={{ animation: `shuffle ${Math.random() * 2 + 2}s linear infinite` }}
+                                                        style={{ animation: `shuffle ${'${Math.random() * 2 + 2}'}s linear infinite` }}
                                                     />
                                                 </div>
                                             ))}
@@ -221,7 +217,7 @@ export default function RandomStudentPage() {
                                     </div>
                                     
                                     <div className={cn(
-                                        "flex flex-col items-center justify-center transition-opacity duration-500 w-full",
+                                        "flex flex-col items-center justify-center transition-opacity duration-500 w-full pointer-events-auto",
                                         isShuffling || pickedStudent ? "opacity-0 pointer-events-none" : "opacity-100"
                                     )}>
                                          <Card className="p-4 mb-4 bg-background/50 w-full">
@@ -255,7 +251,7 @@ export default function RandomStudentPage() {
                         </CardContent>
                     </Card>
                     <div className="text-center">
-                        <Button size="lg" className="w-full max-w-xs text-xl py-8" onClick={generateStudent} disabled={isLoading || isShuffling || activeStudents.length === 0}>
+                        <Button size="lg" className="w-full max-w-xs text-xl py-8" onClick={generateStudent} disabled={isLoading || isShuffling || selectedCompanyIds.length === 0}>
                             {isShuffling ? <Loader2 className="h-6 w-6 animate-spin" /> : <RefreshCw className="mr-4 h-6 w-6" />}
                             {pickedStudent ? 'Consult Again' : 'Consult the Runes!'}
                         </Button>
