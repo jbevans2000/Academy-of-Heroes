@@ -107,6 +107,11 @@ interface Broadcast {
     };
 }
 
+interface AuthUser {
+    uid: string;
+    email?: string;
+}
+
 export default function AdminDashboardPage() {
     const [user, setUser] = useState<User | null>(null);
     const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -154,12 +159,37 @@ export default function AdminDashboardPage() {
     const [isMessageCenterOpen, setIsMessageCenterOpen] = useState(false);
     const [initialTeacherToView, setInitialTeacherToView] = useState<Teacher | null>(null);
     const [isMarkingRead, setIsMarkingRead] = useState(false);
+    
+    const [authEmails, setAuthEmails] = useState<{[uid: string]: string}>({});
 
 
     const router = useRouter();
     const { toast } = useToast();
 
+    // Fetch auth emails
     useEffect(() => {
+        const fetchAuthEmails = async () => {
+            try {
+                const response = await fetch('/api/get-teacher-emails');
+                if (!response.ok) throw new Error('Failed to fetch emails');
+                const users: AuthUser[] = await response.json();
+                const emailMap = users.reduce((acc, user) => {
+                    if (user.email) {
+                        acc[user.uid] = user.email;
+                    }
+                    return acc;
+                }, {} as {[uid: string]: string});
+                setAuthEmails(emailMap);
+            } catch (error) {
+                console.error("Error fetching auth emails:", error);
+            }
+        };
+        fetchAuthEmails();
+    }, []);
+
+    useEffect(() => {
+        if(Object.keys(authEmails).length === 0) return;
+
         const teachersQuery = query(collection(db, 'teachers'), orderBy('name'));
         const unsubscribe = onSnapshot(teachersQuery, async (snapshot) => {
             const teachersData: Teacher[] = [];
@@ -169,8 +199,8 @@ export default function AdminDashboardPage() {
                 teachersData.push({
                     id: teacherDoc.id,
                     name: teacherInfo.name || '[No Name]',
-                    email: teacherInfo.email || '[No Email]',
-                    contactEmail: teacherInfo.contactEmail || '-',
+                    email: authEmails[teacherDoc.id] || teacherInfo.email || '[No Email]',
+                    contactEmail: teacherInfo.contactEmail || authEmails[teacherDoc.id] || '-',
                     address: teacherInfo.address || '-',
                     className: teacherInfo.className || '[No Class Name]',
                     schoolName: teacherInfo.schoolName || '[No School]',
@@ -183,7 +213,7 @@ export default function AdminDashboardPage() {
         });
 
         return () => unsubscribe();
-    }, []);
+    }, [authEmails]);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -865,7 +895,7 @@ export default function AdminDashboardPage() {
                                                     <TableHead><Button variant="ghost" onClick={() => requestSort('className', 'teacher')}>Guild Name <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
                                                     <TableHead><Button variant="ghost" onClick={() => requestSort('name', 'teacher')}>Leader (Teacher) <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
                                                     <TableHead>Teacher UID</TableHead>
-                                                    <TableHead><Button variant="ghost" onClick={() => requestSort('contactEmail', 'teacher')}>Contact Email<ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
+                                                    <TableHead><Button variant="ghost" onClick={() => requestSort('contactEmail', 'teacher')}>Registration Email<ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
                                                     <TableHead><Button variant="ghost" onClick={() => requestSort('schoolName', 'teacher')}>School <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
                                                     <TableHead><Button variant="ghost" onClick={() => requestSort('studentCount', 'teacher')}>Students <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
                                                     <TableHead><Button variant="ghost" onClick={() => requestSort('createdAt', 'teacher')}>Date Created <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
@@ -882,7 +912,7 @@ export default function AdminDashboardPage() {
                                                         </TableCell>
                                                         <TableCell>{teacher.name}</TableCell>
                                                         <TableCell className="font-mono text-xs">{teacher.id}</TableCell>
-                                                        <TableCell>{teacher.contactEmail || teacher.email}</TableCell>
+                                                        <TableCell>{teacher.email}</TableCell>
                                                         <TableCell>{teacher.schoolName}</TableCell>
                                                         <TableCell>{teacher.studentCount}</TableCell>
                                                         <TableCell>{teacher.createdAt ? format(teacher.createdAt, 'PP') : 'N/A'}</TableCell>
