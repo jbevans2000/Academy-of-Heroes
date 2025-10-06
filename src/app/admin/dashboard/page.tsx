@@ -892,7 +892,7 @@ export default function AdminDashboardPage() {
                                                     <TableHead><Button variant="ghost" onClick={() => requestSort('className', 'teacher')}>Guild Name <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
                                                     <TableHead><Button variant="ghost" onClick={() => requestSort('name', 'teacher')}>Leader (Teacher) <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
                                                     <TableHead>Teacher UID</TableHead>
-                                                    <TableHead><Button variant="ghost" onClick={() => requestSort('contactEmail', 'teacher')}>Registration Email<ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
+                                                    <TableHead><Button variant="ghost" onClick={() => requestSort('email', 'teacher')}>Registration Email<ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
                                                     <TableHead><Button variant="ghost" onClick={() => requestSort('schoolName', 'teacher')}>School <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
                                                     <TableHead><Button variant="ghost" onClick={() => requestSort('studentCount', 'teacher')}>Students <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
                                                     <TableHead><Button variant="ghost" onClick={() => requestSort('createdAt', 'teacher')}>Date Created <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
