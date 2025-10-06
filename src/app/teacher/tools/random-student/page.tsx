@@ -7,7 +7,7 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, RefreshCw, Loader2, Sparkles } from 'lucide-react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot, query } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student, Company } from '@/lib/data';
 import Image from 'next/image';
@@ -53,25 +53,32 @@ export default function RandomStudentPage() {
     
     useEffect(() => {
         if (!teacher) return;
-        const fetchStudentsAndCompanies = async () => {
+        const fetchStudentsAndCompanies = () => {
             setIsLoading(true);
             try {
-                const studentsSnapshot = await getDocs(collection(db, "teachers", teacher.uid, "students"));
-                const studentsData = studentsSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
-                setAllStudents(studentsData);
+                const studentsQuery = query(collection(db, "teachers", teacher.uid, "students"));
+                const unsubStudents = onSnapshot(studentsQuery, (snapshot) => {
+                    const studentsData = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
+                    setAllStudents(studentsData);
+                });
 
-                const companiesSnapshot = await getDocs(collection(db, 'teachers', teacher.uid, 'companies'));
-                const companiesData = companiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
-                setCompanies(companiesData);
-
+                const companiesQuery = query(collection(db, 'teachers', teacher.uid, 'companies'));
+                const unsubCompanies = onSnapshot(companiesQuery, (snapshot) => {
+                    const companiesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
+                    setCompanies(companiesData);
+                });
+                
+                setIsLoading(false);
+                return [unsubStudents, unsubCompanies];
             } catch (error) {
                 console.error("Error fetching data: ", error);
                  toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch student or company data.' });
-            } finally {
-                setIsLoading(false);
+                 setIsLoading(false);
+                 return [];
             }
         };
-        fetchStudentsAndCompanies();
+        const unsubs = fetchStudentsAndCompanies();
+        return () => unsubs.forEach(unsub => unsub && unsub());
     }, [teacher, toast]);
 
     const activeStudents = useMemo(() => {
@@ -86,7 +93,7 @@ export default function RandomStudentPage() {
 
     const handleCompanyFilterChange = (companyId: string) => {
         if (companyId === 'all') {
-            setSelectedCompanyIds(['all']);
+            setSelectedCompanyIds(prev => prev.length === companies.length + 1 && prev.includes('all') ? [] : ['all', ...companies.map(c => c.id)]);
             return;
         }
 
@@ -98,11 +105,9 @@ export default function RandomStudentPage() {
             } else {
                 newFilters.push(companyId);
             }
-
-            // If no specific companies are selected, default back to 'all'
-            if (newFilters.length === 0) {
-                return ['all'];
-            }
+            
+            if (newFilters.length === 0) return ['all'];
+            if (newFilters.length === companies.length) return ['all'];
 
             return newFilters;
         });
