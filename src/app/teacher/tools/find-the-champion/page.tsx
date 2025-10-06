@@ -38,7 +38,7 @@ export default function FindTheChampionPage() {
     const [isShuffling, setIsShuffling] = useState(false);
     const [pickedChampions, setPickedChampions] = useState<Student[]>([]);
     const [teacher, setTeacher] = useState<User | null>(null);
-    const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>(['all']);
+    const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>([]);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -83,7 +83,7 @@ export default function FindTheChampionPage() {
     
      const handleCompanyFilterChange = (companyId: string) => {
         if (companyId === 'all') {
-            setSelectedCompanyIds(prev => prev.includes('all') ? [] : ['all']);
+            setSelectedCompanyIds(prev => prev.length === companies.length + 1 ? [] : ['freelancers', ...companies.map(c => c.id)]);
             return;
         }
 
@@ -107,8 +107,8 @@ export default function FindTheChampionPage() {
 
             let candidateUids: string[] = [];
 
-            if (selectedCompanyIds.includes('all')) {
-                candidateUids = [
+            if (selectedCompanyIds.includes('all') || selectedCompanyIds.length === 0) {
+                 candidateUids = [
                     ...freelancers,
                     ...Object.values(companyChampions).flat()
                 ];
@@ -151,8 +151,8 @@ export default function FindTheChampionPage() {
                     }
                     championsByCompany[companyId].push(c);
                 });
-
-                const companiesToSelectFrom = selectedCompanyIds.includes('all') 
+                
+                const companiesToSelectFrom = (selectedCompanyIds.includes('all') || selectedCompanyIds.length === 0)
                     ? ['freelancers', ...companies.map(c => c.id)] 
                     : selectedCompanyIds;
                 
@@ -276,7 +276,7 @@ export default function FindTheChampionPage() {
                                                 <div className="flex items-center space-x-2">
                                                     <Checkbox
                                                         id="filter-all"
-                                                        checked={selectedCompanyIds.includes('all')}
+                                                        checked={selectedCompanyIds.includes('all') || selectedCompanyIds.length === companies.length + 1}
                                                         onCheckedChange={() => handleCompanyFilterChange('all')}
                                                     />
                                                     <Label htmlFor="filter-all" className="font-semibold">All Companies</Label>
