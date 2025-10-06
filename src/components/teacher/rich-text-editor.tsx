@@ -37,6 +37,7 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
 
   useEffect(() => {
     const editor = editorRef.current;
+    // Only update if the editor's content is different from the prop value
     if (editor && value !== editor.innerHTML) {
       editor.innerHTML = value;
     }
