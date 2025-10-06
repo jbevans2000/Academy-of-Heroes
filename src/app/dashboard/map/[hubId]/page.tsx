@@ -103,18 +103,24 @@ export default function HubMapPage() {
 
     }, [hubId, teacherUid]);
 
-    const lastCompletedChapter = student?.questProgress?.[hubId] || 0;
     const isSideQuestHub = hub?.hubType === 'sidequest';
 
-    // Show all chapters up to the last completed one, regardless of active status
-    const completedChapters = chapters.filter(c => c.chapterNumber <= lastCompletedChapter);
-    
-    // The current chapter is the next one, but ONLY if it's active
-    // For side quest hubs, all chapters are "current" if not completed
-    const currentChapters = isSideQuestHub
-        ? chapters.filter(c => c.isActive ?? true)
-        : chapters.filter(c => c.chapterNumber === lastCompletedChapter + 1 && (c.isActive ?? true));
+    const { completedChapters, currentChapters } = (() => {
+        if (!student) return { completedChapters: [], currentChapters: [] };
 
+        const lastCompletedChapter = student.questProgress?.[hubId] || 0;
+        
+        if (isSideQuestHub) {
+            const studentCompletedInHub = student.completedChapters || [];
+            const completed = chapters.filter(c => studentCompletedInHub.includes(c.id));
+            const current = chapters.filter(c => c.isActive && !studentCompletedInHub.includes(c.id));
+            return { completedChapters: completed, currentChapters: current };
+        } else {
+            const completed = chapters.filter(c => c.chapterNumber <= lastCompletedChapter);
+            const current = chapters.filter(c => c.chapterNumber === lastCompletedChapter + 1 && (c.isActive ?? true));
+            return { completedChapters: completed, currentChapters: current };
+        }
+    })();
 
     if (isLoading || !student) {
         return (
@@ -159,17 +165,20 @@ export default function HubMapPage() {
                          <svg className="absolute top-0 left-0 w-full h-full" style={{ pointerEvents: 'none' }}>
                             {completedChapters.slice(0, -1).map((chapter, index) => {
                                 const nextChapter = completedChapters[index + 1];
-                                return (
-                                    <line
-                                        key={`line-${chapter.id}`}
-                                        x1={`${chapter.coordinates.x}%`}
-                                        y1={`${chapter.coordinates.y}%`}
-                                        x2={`${nextChapter.coordinates.x}%`}
-                                        y2={`${nextChapter.coordinates.y}%`}
-                                        stroke="#10B981"
-                                        strokeWidth="3"
-                                    />
-                                );
+                                if (!isSideQuestHub && nextChapter) { // Only draw lines for standard hubs
+                                    return (
+                                        <line
+                                            key={`line-${chapter.id}`}
+                                            x1={`${chapter.coordinates.x}%`}
+                                            y1={`${chapter.coordinates.y}%`}
+                                            x2={`${nextChapter.coordinates.x}%`}
+                                            y2={`${nextChapter.coordinates.y}%`}
+                                            stroke="#10B981"
+                                            strokeWidth="3"
+                                        />
+                                    );
+                                }
+                                return null;
                             })}
                          </svg>
                          {completedChapters.map(chapter => (
