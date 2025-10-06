@@ -167,28 +167,48 @@ export default function AdminDashboardPage() {
     const { toast } = useToast();
 
     // Fetch auth emails from API route
-    useEffect(() => {
-        const fetchAuthEmails = async () => {
-            try {
-                const response = await fetch('/api/get-teacher-emails');
-                if (!response.ok) throw new Error('Failed to fetch emails');
-                const users: AuthUser[] = await response.json();
-                const emailMap = users.reduce((acc, user) => {
-                    if (user.email) {
-                        acc[user.uid] = user.email;
-                    }
-                    return acc;
-                }, {} as {[uid: string]: string});
-                setAuthEmails(emailMap);
-            } catch (error) {
-                console.error("Error fetching auth emails:", error);
-            }
-        };
-        fetchAuthEmails();
-    }, []);
+    const fetchAuthEmails = async () => {
+        try {
+            const response = await fetch('/api/get-teacher-emails');
+            if (!response.ok) throw new Error('Failed to fetch emails');
+            const users: AuthUser[] = await response.json();
+            const emailMap = users.reduce((acc, user) => {
+                if (user.email) {
+                    acc[user.uid] = user.email;
+                }
+                return acc;
+            }, {} as {[uid: string]: string});
+            setAuthEmails(emailMap);
+        } catch (error) {
+            console.error("Error fetching auth emails:", error);
+            toast({ variant: 'destructive', title: 'Email Fetch Failed', description: 'Could not load registration emails.' });
+        }
+    };
 
-    // Fetch teachers from Firestore
     useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            if (currentUser) {
+                const adminRef = doc(db, 'admins', currentUser.uid);
+                const adminSnap = await getDoc(adminRef);
+
+                if (adminSnap.exists()) {
+                    setUser(currentUser);
+                    handleRefreshData();
+                } else {
+                    router.push('/teacher/dashboard');
+                }
+            } else {
+                router.push('/teacher/login');
+            }
+        });
+
+        return () => unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [router]);
+
+    // Firestore listener for teachers data
+    useEffect(() => {
+        if (!user) return;
         const teachersQuery = query(collection(db, 'teachers'), orderBy('name'));
         const unsubscribe = onSnapshot(teachersQuery, async (snapshot) => {
             const teachersData: Omit<Teacher, 'email'>[] = [];
@@ -208,43 +228,11 @@ export default function AdminDashboardPage() {
                 });
             }
             setTeachers(teachersData);
+            if(isLoading) setIsLoading(false);
         });
 
         return () => unsubscribe();
-    }, []);
-
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-            if (currentUser) {
-                const adminRef = doc(db, 'admins', currentUser.uid);
-                const adminSnap = await getDoc(adminRef);
-
-                if (adminSnap.exists()) {
-                    setUser(currentUser);
-                    fetchInitialData();
-                } else {
-                    router.push('/teacher/dashboard');
-                }
-            } else {
-                router.push('/teacher/login');
-            }
-        });
-
-        return () => unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [router]);
-
-    const fetchInitialData = async () => {
-        setIsLoading(true);
-        await Promise.all([
-            fetchStudents(),
-            fetchSettings(),
-            fetchFeedback(),
-            fetchBroadcasts(),
-            fetchNotepad(),
-        ]);
-        setIsLoading(false);
-    };
+    }, [user, isLoading]);
 
     const fetchStudents = async () => {
         try {
@@ -279,6 +267,20 @@ export default function AdminDashboardPage() {
              toast({ variant: 'destructive', title: 'Error', description: 'Could not load student data.' });
         }
     }
+    
+    const handleRefreshData = async () => {
+        setIsLoading(true);
+        await Promise.all([
+            fetchAuthEmails(),
+            fetchStudents(),
+            fetchSettings(),
+            fetchFeedback(),
+            fetchBroadcasts(),
+            fetchNotepad(),
+        ]);
+        setIsLoading(false);
+        toast({ title: "Data Refreshed", description: "All dashboard data has been updated." });
+    };
 
     const sortedTeachers = useMemo(() => {
         const combinedTeachers = teachers.map(t => ({
@@ -600,7 +602,7 @@ export default function AdminDashboardPage() {
             const result = await deleteTeacher(teacherToDelete.id);
             if (result.success) {
                  toast({ title: "Teacher Deleted", description: `${teacherToDelete.name}'s guild has been removed from the system.`});
-                 fetchInitialData();
+                 handleRefreshData();
             } else {
                  throw new Error(result.error);
             }
@@ -1033,9 +1035,9 @@ export default function AdminDashboardPage() {
                             <div className="flex items-center justify-between rounded-lg border p-4">
                                 <div>
                                     <h4 className="font-semibold">Refresh Data</h4>
-                                    <p className="text-sm text-muted-foreground">Reload all guild and student info.</p>
+                                    <p className="text-sm text-muted-foreground">Reload all dashboard info.</p>
                                 </div>
-                                <Button onClick={fetchStudents} disabled={isLoading} size="icon">
+                                <Button onClick={handleRefreshData} disabled={isLoading} size="icon">
                                     {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4"/>}
                                 </Button>
                             </div>
@@ -1203,4 +1205,3 @@ export default function AdminDashboardPage() {
         </div>
     );
 }
-
