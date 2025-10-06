@@ -188,19 +188,16 @@ export default function AdminDashboardPage() {
     }, []);
 
     useEffect(() => {
-        if(Object.keys(authEmails).length === 0) return;
-
         const teachersQuery = query(collection(db, 'teachers'), orderBy('name'));
         const unsubscribe = onSnapshot(teachersQuery, async (snapshot) => {
-            const teachersData: Teacher[] = [];
+            const teachersData: Omit<Teacher, 'email'>[] = [];
             for (const teacherDoc of snapshot.docs) {
                 const teacherInfo = teacherDoc.data();
                 const studentsSnapshot = await getDocs(collection(db, 'teachers', teacherDoc.id, 'students'));
                 teachersData.push({
                     id: teacherDoc.id,
                     name: teacherInfo.name || '[No Name]',
-                    email: authEmails[teacherDoc.id] || teacherInfo.email || '[No Email]',
-                    contactEmail: teacherInfo.contactEmail || authEmails[teacherDoc.id] || '-',
+                    contactEmail: teacherInfo.contactEmail || '-',
                     address: teacherInfo.address || '-',
                     className: teacherInfo.className || '[No Class Name]',
                     schoolName: teacherInfo.schoolName || '[No School]',
@@ -209,7 +206,7 @@ export default function AdminDashboardPage() {
                     hasUnreadAdminMessages: teacherInfo.hasUnreadAdminMessages || false,
                 });
             }
-            setTeachers(teachersData);
+            setTeachers(teachersData.map(t => ({...t, email: authEmails[t.id] || t.contactEmail || '[No Email]'})));
         });
 
         return () => unsubscribe();
