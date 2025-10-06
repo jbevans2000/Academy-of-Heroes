@@ -6,7 +6,6 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, getDocs, doc, getDoc, query, orderBy, updateDoc, addDoc, serverTimestamp, deleteDoc, onSnapshot, where } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { getAuth, type UserRecord } from 'firebase-admin/auth';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
@@ -63,8 +62,8 @@ type StudentSortKey = 'studentName' | 'characterName' | 'studentId' | 'teacherNa
 interface Teacher {
     id: string;
     name: string;
-    email: string;
-    contactEmail?: string;
+    email: string; // Auth email
+    contactEmail?: string; // Firestore contact email
     address?: string;
     className: string;
     schoolName: string;
@@ -107,14 +106,10 @@ interface Broadcast {
     };
 }
 
-interface AuthUser {
-    uid: string;
-    email?: string;
-}
 
 export default function AdminDashboardPage() {
     const [user, setUser] = useState<User | null>(null);
-    const [teachers, setTeachers] = useState<Omit<Teacher, 'email'>[]>([]);
+    const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [allStudents, setAllStudents] = useState<Student[]>([]);
     const [feedback, setFeedback] = useState<Feedback[]>([]);
     const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
@@ -160,30 +155,35 @@ export default function AdminDashboardPage() {
     const [initialTeacherToView, setInitialTeacherToView] = useState<Teacher | null>(null);
     const [isMarkingRead, setIsMarkingRead] = useState(false);
     
-    const [authEmails, setAuthEmails] = useState<{[uid: string]: string}>({});
-
-
     const router = useRouter();
     const { toast } = useToast();
 
-    // Fetch auth emails from API route
-    const fetchAuthEmails = async () => {
-        try {
-            const response = await fetch('/api/get-teacher-emails');
-            if (!response.ok) throw new Error('Failed to fetch emails');
-            const users: AuthUser[] = await response.json();
-            const emailMap = users.reduce((acc, user) => {
-                if (user.email) {
-                    acc[user.uid] = user.email;
-                }
-                return acc;
-            }, {} as {[uid: string]: string});
-            setAuthEmails(emailMap);
-        } catch (error) {
-            console.error("Error fetching auth emails:", error);
-            toast({ variant: 'destructive', title: 'Email Fetch Failed', description: 'Could not load registration emails.' });
-        }
-    };
+    const fetchTeacherData = async () => {
+        const teachersQuery = query(collection(db, 'teachers'), orderBy('name'));
+        const unsubscribe = onSnapshot(teachersQuery, async (snapshot) => {
+            const teachersData: Teacher[] = [];
+            for (const teacherDoc of snapshot.docs) {
+                const teacherInfo = teacherDoc.data();
+                const studentsSnapshot = await getDocs(collection(db, 'teachers', teacherDoc.id, 'students'));
+                teachersData.push({
+                    id: teacherDoc.id,
+                    name: teacherInfo.name || '[No Name]',
+                    email: teacherInfo.email || '[No Auth Email]',
+                    contactEmail: teacherInfo.contactEmail || teacherInfo.email || '-',
+                    address: teacherInfo.address || '-',
+                    className: teacherInfo.className || '[No Class Name]',
+                    schoolName: teacherInfo.schoolName || '[No School]',
+                    studentCount: studentsSnapshot.size,
+                    createdAt: teacherInfo.createdAt?.toDate() || null,
+                    hasUnreadAdminMessages: teacherInfo.hasUnreadAdminMessages || false,
+                });
+            }
+            setTeachers(teachersData);
+            if(isLoading) setIsLoading(false);
+        });
+        return unsubscribe;
+    }
+
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -209,30 +209,15 @@ export default function AdminDashboardPage() {
     // Firestore listener for teachers data
     useEffect(() => {
         if (!user) return;
-        const teachersQuery = query(collection(db, 'teachers'), orderBy('name'));
-        const unsubscribe = onSnapshot(teachersQuery, async (snapshot) => {
-            const teachersData: Omit<Teacher, 'email'>[] = [];
-            for (const teacherDoc of snapshot.docs) {
-                const teacherInfo = teacherDoc.data();
-                const studentsSnapshot = await getDocs(collection(db, 'teachers', teacherDoc.id, 'students'));
-                teachersData.push({
-                    id: teacherDoc.id,
-                    name: teacherInfo.name || '[No Name]',
-                    contactEmail: teacherInfo.contactEmail || '-',
-                    address: teacherInfo.address || '-',
-                    className: teacherInfo.className || '[No Class Name]',
-                    schoolName: teacherInfo.schoolName || '[No School]',
-                    studentCount: studentsSnapshot.size,
-                    createdAt: teacherInfo.createdAt?.toDate() || null,
-                    hasUnreadAdminMessages: teacherInfo.hasUnreadAdminMessages || false,
-                });
+        
+        const unsub = fetchTeacherData();
+        
+        return () => {
+            if (typeof unsub === 'function') {
+                unsub();
             }
-            setTeachers(teachersData);
-            if(isLoading) setIsLoading(false);
-        });
-
-        return () => unsubscribe();
-    }, [user, isLoading]);
+        };
+    }, [user]);
 
     const fetchStudents = async () => {
         try {
@@ -271,7 +256,7 @@ export default function AdminDashboardPage() {
     const handleRefreshData = async () => {
         setIsLoading(true);
         await Promise.all([
-            fetchAuthEmails(),
+            fetchTeacherData(),
             fetchStudents(),
             fetchSettings(),
             fetchFeedback(),
@@ -283,12 +268,7 @@ export default function AdminDashboardPage() {
     };
 
     const sortedTeachers = useMemo(() => {
-        const combinedTeachers = teachers.map(t => ({
-            ...t,
-            email: authEmails[t.id] || t.contactEmail || '[No Email]'
-        }));
-
-        let sortableItems = [...combinedTeachers];
+        let sortableItems = [...teachers];
         if (teacherSortConfig !== null) {
             sortableItems.sort((a, b) => {
                 const aValue = a[teacherSortConfig.key] || '';
@@ -299,7 +279,7 @@ export default function AdminDashboardPage() {
             });
         }
         return sortableItems;
-    }, [teachers, authEmails, teacherSortConfig]);
+    }, [teachers, teacherSortConfig]);
 
     const sortedStudentsByTeacher = useMemo(() => {
         const groupedStudents: { [teacherId: string]: Student[] } = {};
@@ -900,7 +880,8 @@ export default function AdminDashboardPage() {
                                                     <TableHead><Button variant="ghost" onClick={() => requestSort('className', 'teacher')}>Guild Name <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
                                                     <TableHead><Button variant="ghost" onClick={() => requestSort('name', 'teacher')}>Leader (Teacher) <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
                                                     <TableHead>Teacher UID</TableHead>
-                                                    <TableHead><Button variant="ghost" onClick={() => requestSort('email', 'teacher')}>Registration Email<ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
+                                                    <TableHead><Button variant="ghost" onClick={() => requestSort('email', 'teacher')}>Auth Email (from profile) <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
+                                                    <TableHead><Button variant="ghost" onClick={() => requestSort('contactEmail', 'teacher')}>Contact Email <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
                                                     <TableHead><Button variant="ghost" onClick={() => requestSort('schoolName', 'teacher')}>School <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
                                                     <TableHead><Button variant="ghost" onClick={() => requestSort('studentCount', 'teacher')}>Students <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
                                                     <TableHead><Button variant="ghost" onClick={() => requestSort('createdAt', 'teacher')}>Date Created <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>
@@ -918,6 +899,7 @@ export default function AdminDashboardPage() {
                                                         <TableCell>{teacher.name}</TableCell>
                                                         <TableCell className="font-mono text-xs">{teacher.id}</TableCell>
                                                         <TableCell>{teacher.email}</TableCell>
+                                                        <TableCell>{teacher.contactEmail}</TableCell>
                                                         <TableCell>{teacher.schoolName}</TableCell>
                                                         <TableCell>{teacher.studentCount}</TableCell>
                                                         <TableCell>{teacher.createdAt ? format(teacher.createdAt, 'PP') : 'N/A'}</TableCell>
