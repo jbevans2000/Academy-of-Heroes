@@ -114,7 +114,7 @@ interface AuthUser {
 
 export default function AdminDashboardPage() {
     const [user, setUser] = useState<User | null>(null);
-    const [teachers, setTeachers] = useState<Teacher[]>([]);
+    const [teachers, setTeachers] = useState<Omit<Teacher, 'email'>[]>([]);
     const [allStudents, setAllStudents] = useState<Student[]>([]);
     const [feedback, setFeedback] = useState<Feedback[]>([]);
     const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
@@ -166,7 +166,7 @@ export default function AdminDashboardPage() {
     const router = useRouter();
     const { toast } = useToast();
 
-    // Fetch auth emails
+    // Fetch auth emails from API route
     useEffect(() => {
         const fetchAuthEmails = async () => {
             try {
@@ -187,6 +187,7 @@ export default function AdminDashboardPage() {
         fetchAuthEmails();
     }, []);
 
+    // Fetch teachers from Firestore
     useEffect(() => {
         const teachersQuery = query(collection(db, 'teachers'), orderBy('name'));
         const unsubscribe = onSnapshot(teachersQuery, async (snapshot) => {
@@ -206,11 +207,11 @@ export default function AdminDashboardPage() {
                     hasUnreadAdminMessages: teacherInfo.hasUnreadAdminMessages || false,
                 });
             }
-            setTeachers(teachersData.map(t => ({...t, email: authEmails[t.id] || t.contactEmail || '[No Email]'})));
+            setTeachers(teachersData);
         });
 
         return () => unsubscribe();
-    }, [authEmails]);
+    }, []);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -279,8 +280,13 @@ export default function AdminDashboardPage() {
         }
     }
 
-     const sortedTeachers = useMemo(() => {
-        let sortableItems = [...teachers];
+    const sortedTeachers = useMemo(() => {
+        const combinedTeachers = teachers.map(t => ({
+            ...t,
+            email: authEmails[t.id] || t.contactEmail || '[No Email]'
+        }));
+
+        let sortableItems = [...combinedTeachers];
         if (teacherSortConfig !== null) {
             sortableItems.sort((a, b) => {
                 const aValue = a[teacherSortConfig.key] || '';
@@ -291,7 +297,7 @@ export default function AdminDashboardPage() {
             });
         }
         return sortableItems;
-    }, [teachers, teacherSortConfig]);
+    }, [teachers, authEmails, teacherSortConfig]);
 
     const sortedStudentsByTeacher = useMemo(() => {
         const groupedStudents: { [teacherId: string]: Student[] } = {};
@@ -640,7 +646,7 @@ export default function AdminDashboardPage() {
     };
     
     const handleOpenMessageCenter = (teacherId?: string) => {
-        const teacher = teacherId ? teachers.find(t => t.id === teacherId) : null;
+        const teacher = teacherId ? sortedTeachers.find(t => t.id === teacherId) : null;
         setInitialTeacherToView(teacher || null);
         setIsMessageCenterOpen(true);
     };
@@ -696,7 +702,7 @@ export default function AdminDashboardPage() {
                 isOpen={isMessageCenterOpen}
                 onOpenChange={setIsMessageCenterOpen}
                 admin={user}
-                teachers={teachers}
+                teachers={sortedTeachers}
                 initialTeacher={initialTeacherToView}
                 onConversationSelect={(teacher) => setInitialTeacherToView(teacher as Teacher)}
             />
@@ -1197,3 +1203,4 @@ export default function AdminDashboardPage() {
         </div>
     );
 }
+
