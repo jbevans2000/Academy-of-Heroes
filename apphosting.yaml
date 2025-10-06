@@ -6,9 +6,5 @@ runConfig:
   # more instances in response to increased traffic.
   maxInstances: 1
 runtime: nodejs20
-# Add the serviceAccount configuration to grant necessary permissions.
-serviceAccount:
-  roles:
-    - firebaseauth.admin
 secrets:
   - GEMINI_API_KEY
