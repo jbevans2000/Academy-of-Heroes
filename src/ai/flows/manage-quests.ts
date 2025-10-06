@@ -446,29 +446,49 @@ export async function uncompleteChapter(input: UncompleteChapterInput): Promise<
 
     try {
         const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
-        const studentSnap = await getDoc(studentRef);
-        if (!studentSnap.exists()) {
-            throw new Error("Student not found.");
-        }
+        const hubRef = doc(db, 'teachers', teacherUid, 'questHubs', hubId);
+
+        const [studentSnap, hubSnap] = await Promise.all([getDoc(studentRef), getDoc(hubRef)]);
+
+        if (!studentSnap.exists()) throw new Error("Student not found.");
+        if (!hubSnap.exists()) throw new Error("Quest Hub not found.");
+
         const student = studentSnap.data() as Student;
-        
+        const hub = hubSnap.data() as QuestHub;
+
+        // NEW LOGIC: Check if it's a side quest hub
+        if (hub.hubType === 'sidequest') {
+            const chaptersQuery = firestoreQuery(collection(db, 'teachers', teacherUid, 'chapters'), where('hubId', '==', hubId), where('chapterNumber', '==', chapterNumber), limit(1));
+            const chapterSnapshot = await getDocs(chaptersQuery);
+            if (chapterSnapshot.empty) {
+                throw new Error("Chapter to uncomplete not found in the side quest hub.");
+            }
+            const chapterIdToUncomplete = chapterSnapshot.docs[0].id;
+            
+            await updateDoc(studentRef, {
+                completedChapters: arrayRemove(chapterIdToUncomplete)
+            });
+            await logGameEvent(teacherUid, 'CHAPTER', `${student.characterName} is reviewing the side quest chapter: ${chapterSnapshot.docs[0].data().title}.`);
+            return { success: true, message: "Your progress for this side quest has been reset." };
+        }
+
+        // --- Original logic for standard hubs ---
         const newProgressNumber = chapterNumber - 1;
         const newQuestProgress = { ...(student.questProgress || {}), [hubId]: newProgressNumber };
 
-        // Recalculate hubsCompleted
         const hubsRef = collection(db, 'teachers', teacherUid, 'questHubs');
         const chaptersRef = collection(db, 'teachers', teacherUid, 'chapters');
         const [hubsSnapshot, chaptersSnapshot] = await Promise.all([getDocs(hubsRef), getDocs(chaptersRef)]);
         
         const allHubs = hubsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as QuestHub)).sort((a,b) => a.hubOrder - b.hubOrder);
-        const allChapters = chaptersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
-
+        
         let highestCompletedOrder = 0;
-        for (const hub of allHubs) {
-            const chaptersInHub = allChapters.filter(c => c.hubId === hub.id);
-            if (newQuestProgress[hub.id] === chaptersInHub.length && chaptersInHub.length > 0) {
-                 if (hub.hubOrder > highestCompletedOrder) {
-                    highestCompletedOrder = hub.hubOrder;
+        for (const h of allHubs) {
+            if (h.hubType === 'sidequest') continue;
+            const chaptersInHub = chaptersSnapshot.docs.filter(doc => doc.data().hubId === h.id);
+            if (newQuestProgress[h.id] === chaptersInHub.length && chaptersInHub.length > 0) {
+                 if (h.hubOrder > highestCompletedOrder) {
+                    highestCompletedOrder = h.hubOrder;
                 }
             }
         }
@@ -628,3 +648,5 @@ export async function deleteChapter(input: DeleteChapterInput): Promise<ActionRe
         return { success: false, error: error.message || 'Failed to delete the chapter.' };
     }
 }
+
+    
