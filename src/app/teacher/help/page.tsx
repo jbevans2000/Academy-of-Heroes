@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -48,10 +49,10 @@ export default function TeacherHelpPage() {
                 }}
             />
             <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
-                <Link href="/" passHref>
+                <Link href="/teacher/dashboard" passHref>
                     <Button variant="outline">
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Return to Home
+                        Return to Podium
                     </Button>
                 </Link>
             </header>
@@ -98,9 +99,9 @@ export default function TeacherHelpPage() {
                         </CardContent>
                     </Card>
                      <div className="text-center">
-                         <Link href="/teacher/register" passHref>
+                         <Link href="/teacher/dashboard" passHref>
                             <Button size="lg" variant="default">
-                                Register Your Guild
+                                Return to Podium
                             </Button>
                         </Link>
                     </div>
