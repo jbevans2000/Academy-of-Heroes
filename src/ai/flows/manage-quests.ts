@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs, writeBatch, deleteDoc, serverTimestamp, query as firestoreQuery, where, arrayUnion, increment, arrayRemove, limit } from 'firebase/firestore';
@@ -126,7 +125,6 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
             }
         }
         
-        // This is the crucial check. We only enforce sequential completion for standard hubs.
         if (hub.hubType !== 'sidequest') {
             const currentProgress = student.questProgress?.[hubId] || 0;
             if (chapter.chapterNumber > currentProgress + 1) {
@@ -134,17 +132,13 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
             }
         }
 
-
-        // Check if approval is required
         const isGlobalApprovalOn = questSettings.globalApprovalRequired;
         const studentOverride = questSettings.studentOverrides?.[student.uid];
-        
         let needsApproval = isGlobalApprovalOn;
         if (studentOverride !== undefined) {
-            needsApproval = studentOverride; // Override takes precedence
+            needsApproval = studentOverride;
         }
         
-        // Don't send for approval if the chapter is already completed.
         const isAlreadyCompleted = (student.completedChapters || []).includes(chapterId);
 
         if (needsApproval && !isAlreadyCompleted) {
@@ -164,41 +158,53 @@ export async function completeChapter(input: CompleteChapterInput): Promise<Acti
             return { success: true, message: 'Request sent for approval.' };
         }
 
-        // --- If no approval needed, complete it directly ---
         const chaptersInHubQuery = firestoreQuery(collection(db, 'teachers', teacherUid, 'chapters'), where('hubId', '==', hubId));
         const totalChaptersInHub = (await getDocs(chaptersInHubQuery)).size;
         
         const newProgress = { ...student.questProgress, [hubId]: Math.max(student.questProgress?.[hubId] || 0, chapter.chapterNumber) };
         let updates: Partial<Student> = {
             questProgress: newProgress,
-            lastChapterCompletion: serverTimestamp() // Update the timestamp
+            lastChapterCompletion: serverTimestamp()
         };
 
-        // --- Award Rewards if applicable ---
         let rewardMessage = '';
-        if (hub.areRewardsEnabled && !isAlreadyCompleted) {
-            const xpToAdd = hub.rewardXp || 0;
-            const goldToAdd = hub.rewardGold || 0;
+        let wasRewardGiven = false;
 
-            if (goldToAdd > 0) updates.gold = increment(goldToAdd);
-            
-            if (xpToAdd > 0) {
-                 const newXp = (student.xp || 0) + xpToAdd;
-                 const levelUpdates = handleLevelChange(student, newXp, levelingTable);
-                 updates = { ...updates, ...levelUpdates };
-            }
-            
-            if (xpToAdd > 0 || goldToAdd > 0) {
-                 await logAvatarEvent(teacherUid, studentUid, {
-                    source: 'Quest Completion',
-                    xp: xpToAdd,
-                    gold: goldToAdd,
-                    reason: `Completed "${chapter.title}"`,
-                });
+        if (hub.areRewardsEnabled) {
+            let canReceiveReward = true;
+            if (hub.hubType === 'sidequest') {
+                canReceiveReward = !(student.rewardedSideQuestChapters || []).includes(chapter.id);
+            } else {
+                canReceiveReward = !(student.completedChapters || []).includes(chapter.id);
             }
 
-            updates.completedChapters = arrayUnion(chapterId); // Mark chapter as rewarded
-            rewardMessage = ` You have been awarded ${xpToAdd} XP and ${goldToAdd} Gold!`;
+            if (canReceiveReward) {
+                wasRewardGiven = true;
+                const xpToAdd = hub.rewardXp || 0;
+                const goldToAdd = hub.rewardGold || 0;
+
+                if (goldToAdd > 0) updates.gold = increment(goldToAdd);
+                if (xpToAdd > 0) {
+                     const newXp = (student.xp || 0) + xpToAdd;
+                     const levelUpdates = handleLevelChange(student, newXp, levelingTable);
+                     updates = { ...updates, ...levelUpdates };
+                }
+                
+                if (xpToAdd > 0 || goldToAdd > 0) {
+                     await logAvatarEvent(teacherUid, studentUid, {
+                        source: 'Quest Completion',
+                        xp: xpToAdd,
+                        gold: goldToAdd,
+                        reason: `Completed "${chapter.title}"`,
+                    });
+                }
+                rewardMessage = ` You have been awarded ${xpToAdd} XP and ${goldToAdd} Gold!`;
+            }
+        }
+        
+        updates.completedChapters = arrayUnion(chapter.id);
+        if (hub.hubType === 'sidequest' && wasRewardGiven) {
+            updates.rewardedSideQuestChapters = arrayUnion(chapter.id);
         }
 
         if (chapter.chapterNumber === totalChaptersInHub && hub.hubType !== 'sidequest') {
@@ -248,7 +254,14 @@ async function approveSingleRequest(batch: any, teacherUid: string, requestId: s
             lastChapterCompletion: serverTimestamp()
         };
 
-        if (hubData.areRewardsEnabled && !(studentData.completedChapters || []).includes(chapterId)) {
+        let canReceiveReward = true;
+        if (hubData.hubType === 'sidequest') {
+            canReceiveReward = !(studentData.rewardedSideQuestChapters || []).includes(chapterId);
+        } else {
+            canReceiveReward = !(studentData.completedChapters || []).includes(chapterId);
+        }
+
+        if (hubData.areRewardsEnabled && canReceiveReward) {
             const xpToAdd = hubData.rewardXp || 0;
             const goldToAdd = hubData.rewardGold || 0;
             
@@ -268,10 +281,12 @@ async function approveSingleRequest(batch: any, teacherUid: string, requestId: s
                     reason: `Completed "${chapterTitle}"`,
                 });
             }
-
-            updates.completedChapters = arrayUnion(chapterId);
+             if (hubData.hubType === 'sidequest') {
+                updates.rewardedSideQuestChapters = arrayUnion(chapterId);
+            }
         }
-
+        
+        updates.completedChapters = arrayUnion(chapterId);
         batch.update(studentRef, updates);
         await logGameEvent(teacherUid, 'CHAPTER', `${studentData.characterName}'s completion of "${chapterTitle}" was approved.`);
     }
@@ -354,7 +369,6 @@ export async function setStudentQuestProgress(input: SetStudentQuestProgressInpu
 
     const batch = writeBatch(db);
     try {
-        // Fetch all hub and chapter data once
         const hubsRef = collection(db, 'teachers', teacherUid, 'questHubs');
         const chaptersRef = collection(db, 'teachers', teacherUid, 'chapters');
         const [hubsSnapshot, chaptersSnapshot] = await Promise.all([getDocs(hubsRef), getDocs(chaptersRef)]);
@@ -365,7 +379,7 @@ export async function setStudentQuestProgress(input: SetStudentQuestProgressInpu
         for (const studentUid of studentUids) {
             const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
             const studentSnap = await getDoc(studentRef);
-            if (!studentSnap.exists()) continue; // Skip if student doesn't exist
+            if (!studentSnap.exists()) continue;
 
             const studentData = studentSnap.data() as Student;
             const newQuestProgress = { ...(studentData.questProgress || {}) };
@@ -373,30 +387,23 @@ export async function setStudentQuestProgress(input: SetStudentQuestProgressInpu
             const targetHub = allHubs.find(h => h.id === hubId);
             if (!targetHub) continue;
 
-            // Set the new target progress for the specified hub
             newQuestProgress[hubId] = chapterNumber;
 
-            // Backfill progress for all hubs with a lower order number
             for (const hub of allHubs) {
                 if (hub.hubOrder < targetHub.hubOrder) {
                     const chaptersInThisHub = allChapters.filter(c => c.hubId === hub.id);
                     newQuestProgress[hub.id] = chaptersInThisHub.length;
                 } else if (hub.hubOrder > targetHub.hubOrder) {
-                     // Clear progress for all hubs with a higher order number
-                    delete newQuestProgress[hub.id];
+                     delete newQuestProgress[hub.id];
                 }
             }
             
-            // Rebuild the completed chapters array from scratch
             const newRewardedChapters = new Set<string>();
             for (const hub of allHubs) {
-                // Get the number of chapters completed in the current hub, according to the new progress map
                 const chaptersCompletedInHub = newQuestProgress[hub.id] || 0;
                 
                 if (chaptersCompletedInHub > 0) {
-                    // Filter all chapters to get just the ones in this hub
                     const chaptersInThisHub = allChapters.filter(c => c.hubId === hub.id);
-                    // Iterate up to the number completed and add their IDs
                     for (let i = 1; i <= chaptersCompletedInHub; i++) {
                         const chapterToMark = chaptersInThisHub.find(c => c.chapterNumber === i);
                         if (chapterToMark) {
@@ -406,12 +413,10 @@ export async function setStudentQuestProgress(input: SetStudentQuestProgressInpu
                 }
             }
 
-            // Determine highest completed hub order based on the updated progress
             let highestCompletedOrder = 0;
             for (const hub of allHubs) {
                 if(hub.hubType === 'sidequest') continue;
                 const chaptersInHub = allChapters.filter(c => c.hubId === hub.id);
-                // Check if the student has completed all chapters in this hub
                 if (chaptersInHub.length > 0 && newQuestProgress[hub.id] === chaptersInHub.length) {
                     if (hub.hubOrder > highestCompletedOrder) {
                         highestCompletedOrder = hub.hubOrder;
@@ -456,7 +461,6 @@ export async function uncompleteChapter(input: UncompleteChapterInput): Promise<
         const student = studentSnap.data() as Student;
         const hub = hubSnap.data() as QuestHub;
 
-        // NEW LOGIC: Check if it's a side quest hub
         if (hub.hubType === 'sidequest') {
             const chaptersQuery = firestoreQuery(collection(db, 'teachers', teacherUid, 'chapters'), where('hubId', '==', hubId), where('chapterNumber', '==', chapterNumber), limit(1));
             const chapterSnapshot = await getDocs(chaptersQuery);
@@ -472,7 +476,6 @@ export async function uncompleteChapter(input: UncompleteChapterInput): Promise<
             return { success: true, message: "Your progress for this side quest has been reset." };
         }
 
-        // --- Original logic for standard hubs ---
         const newProgressNumber = chapterNumber - 1;
         const newQuestProgress = { ...(student.questProgress || {}), [hubId]: newProgressNumber };
 
@@ -524,23 +527,19 @@ export async function deleteQuestHub(input: DeleteHubInput): Promise<ActionRespo
         const batch = writeBatch(db);
         const studentsRef = collection(db, 'teachers', teacherUid, 'students');
 
-        // 1. Get all chapters in the hub to identify them for cleanup
         const chaptersQuery = firestoreQuery(collection(db, 'teachers', teacherUid, 'chapters'), where('hubId', '==', hubId));
         const chaptersSnapshot = await getDocs(chaptersQuery);
         const deletedChapterIds = chaptersSnapshot.docs.map(doc => doc.id);
 
-        // 2. Delete all chapters associated with this hub
         if (!chaptersSnapshot.empty) {
             chaptersSnapshot.docs.forEach(doc => {
                 batch.delete(doc.ref);
             });
         }
 
-        // 3. Delete the hub itself
         const hubRef = doc(db, 'teachers', teacherUid, 'questHubs', hubId);
         batch.delete(hubRef);
 
-        // 4. Update all students
         if (deletedChapterIds.length > 0) {
             const studentsSnapshot = await getDocs(studentsRef);
             studentsSnapshot.forEach(studentDoc => {
@@ -548,13 +547,10 @@ export async function deleteQuestHub(input: DeleteHubInput): Promise<ActionRespo
                 const studentData = studentDoc.data() as Student;
                 const questProgress = studentData.questProgress || {};
 
-                // Remove the hub from their progress map
                 if (questProgress[hubId]) {
                     delete questProgress[hubId];
                 }
                 
-                // This is the critical step for Daily Training.
-                // It removes the "ghost" references.
                 const newCompletedChapters = studentData.completedChapters?.filter(id => !deletedChapterIds.includes(id)) || [];
 
                 batch.update(studentRef, {
@@ -597,10 +593,8 @@ export async function deleteChapter(input: DeleteChapterInput): Promise<ActionRe
         const hubId = deletedChapter.hubId;
         const deletedChapterNumber = deletedChapter.chapterNumber;
 
-        // 1. Delete the chapter document itself
         batch.delete(chapterRef);
         
-        // 2. Adjust all students' progress
         const studentsRef = collection(db, 'teachers', teacherUid, 'students');
         const studentsSnapshot = await getDocs(studentsRef);
 
@@ -612,12 +606,10 @@ export async function deleteChapter(input: DeleteChapterInput): Promise<ActionRe
 
             const updates: { [key: string]: any } = {};
 
-            // Remove from completedChapters array
             if (studentData.completedChapters?.includes(chapterId)) {
                 updates.completedChapters = arrayRemove(chapterId);
             }
 
-            // If the student's progress was beyond the deleted chapter, decrement it.
             if (completedInHub >= deletedChapterNumber) {
                 updates[`questProgress.${hubId}`] = completedInHub - 1;
             }
@@ -627,7 +619,6 @@ export async function deleteChapter(input: DeleteChapterInput): Promise<ActionRe
             }
         });
         
-        // 3. Adjust chapter numbers for subsequent chapters in the same hub
         const subsequentChaptersQuery = firestoreQuery(
             collection(db, 'teachers', teacherUid, 'chapters'), 
             where('hubId', '==', hubId), 
