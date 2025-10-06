@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -35,10 +34,10 @@ export default function StudentHelpPage() {
   return (
     <div className="flex flex-col min-h-screen bg-muted/40">
       <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
-        <Link href="/" passHref>
+        <Link href="/dashboard" passHref>
           <Button variant="outline">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Return to Home
+            Return to Dashboard
           </Button>
         </Link>
       </header>
@@ -86,7 +85,7 @@ export default function StudentHelpPage() {
             </CardContent>
           </Card>
            <div className="text-center">
-             <Link href="/login" passHref>
+             <Link href="/dashboard" passHref>
                 <Button size="lg" variant="default">
                     Begin Your Adventure
                 </Button>
