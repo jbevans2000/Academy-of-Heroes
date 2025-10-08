@@ -723,6 +723,9 @@ export default function Dashboard() {
             setIsReleasingAll(false);
         }
     };
+    
+    const visibleStudentUids = getVisibleStudentUids();
+    const allVisibleSelected = visibleStudentUids.length > 0 && visibleStudentUids.every(uid => selectedStudents.includes(uid));
 
 
   if (isLoading || !teacher) {
@@ -834,12 +837,12 @@ export default function Dashboard() {
 
                 <div className="flex flex-wrap items-center gap-2 mb-6">
                     <Button 
-                    onClick={handleSelectAllToggle}
-                    disabled={students.length === 0}
-                    variant="outline"
-                    className="text-black border-black"
+                        onClick={handleSelectAllToggle}
+                        disabled={students.length === 0}
+                        variant="outline"
+                        className="text-black border-black"
                     >
-                    {selectedStudents.length === students.filter(s => !s.isArchived).length ? 'Deselect All' : 'Select All'}
+                        {allVisibleSelected ? 'Deselect All' : 'Select All'}
                     </Button>
                     
                     <DropdownMenu>
