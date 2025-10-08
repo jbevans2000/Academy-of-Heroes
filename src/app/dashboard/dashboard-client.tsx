@@ -38,7 +38,6 @@ import { xpForLevel as defaultXpTable } from '@/lib/game-mechanics';
 interface DashboardClientProps {
   student: Student;
   isTeacherPreview?: boolean;
-  levelingTable: { [level: number]: number };
 }
 
 const isSameDay = (d1: Date, d2: Date) => {
@@ -47,7 +46,7 @@ const isSameDay = (d1: Date, d2: Date) => {
            d1.getDate() === d2.getDate();
 }
 
-export function DashboardClient({ student, isTeacherPreview = false, levelingTable }: DashboardClientProps) {
+export function DashboardClient({ student, isTeacherPreview = false }: DashboardClientProps) {
   const router = useRouter();
   const { toast } = useToast();
   
@@ -59,6 +58,23 @@ export function DashboardClient({ student, isTeacherPreview = false, levelingTab
   const [activeDuelRequest, setActiveDuelRequest] = useState<any>(null);
   const [isAvatarLogOpen, setIsAvatarLogOpen] = useState(false);
   const [isDailyTrainingEnabled, setIsDailyTrainingEnabled] = useState(true);
+  const [levelingTable, setLevelingTable] = useState(defaultXpTable);
+
+  useEffect(() => {
+    const fetchTeacherSettings = async () => {
+        if (!student.teacherUid) return;
+        const teacherRef = doc(db, 'teachers', student.teacherUid);
+        const teacherSnap = await getDoc(teacherRef);
+        if (teacherSnap.exists()) {
+            const data = teacherSnap.data();
+            if (data.levelingTable && Object.keys(data.levelingTable).length > 0) {
+                setLevelingTable(data.levelingTable);
+            }
+        }
+    };
+    fetchTeacherSettings();
+  }, [student.teacherUid]);
+
 
   useEffect(() => {
     // Check for the ready_for_battle URL parameter on page load
@@ -334,7 +350,7 @@ export function DashboardClient({ student, isTeacherPreview = false, levelingTab
                           <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
                               <Package className="h-12 w-12 text-purple-500" />
                               <div>
-                                  <h3 className="text-xl font-bold">My Rewards</h3>
+                                  <h3 className="text-xl font-bold">My Inventory</h3>
                                   <p className="text-muted-foreground">View your items!</p>
                               </div>
                           </div>
