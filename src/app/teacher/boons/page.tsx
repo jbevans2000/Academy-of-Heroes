@@ -218,7 +218,7 @@ export default function BoonsPage() {
                                 <DropdownMenuContent>
                                     <DropdownMenuRadioGroup value={sortOrder} onValueChange={(value) => setSortOrder(value as SortOption)}>
                                         <DropdownMenuRadioItem value="visibility">Visibility</DropdownMenuRadioItem>
-                                        <DropdownMenuRadioItem value="name">Alphabetically</DropdownMenuRadioItem>
+                                        <DropdownMenuRadioItem value="name">Title</DropdownMenuRadioItem>
                                         <DropdownMenuRadioItem value="cost">Cost</DropdownMenuRadioItem>
                                         <DropdownMenuRadioItem value="level">Required Level</DropdownMenuRadioItem>
                                     </DropdownMenuRadioGroup>
