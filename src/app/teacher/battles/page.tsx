@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -231,7 +230,7 @@ export default function BossBattlesPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col">
+    <div className="flex min-h-screen w-full flex-col">
         {/* Main Mode Dialog */}
         <Dialog open={isModeDialogOpen} onOpenChange={setIsModeDialogOpen}>
             <DialogContent>
@@ -330,14 +329,10 @@ export default function BossBattlesPage() {
                 </DialogFooter>
             </DialogContent>
         </Dialog>
-
         <div 
-            className="absolute inset-0 -z-10"
+            className="fixed inset-0 -z-10 bg-cover bg-center"
             style={{
                 backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-21eb570e-7d33-47da-8e3a-4a9f4c5ea0de.jpg?alt=media&token=a6ea0696-903a-4056-9fad-2d053078fcb9')`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                opacity: 0.25,
             }}
         />
       <TeacherHeader />
