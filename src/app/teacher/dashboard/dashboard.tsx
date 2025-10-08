@@ -394,16 +394,31 @@ export default function Dashboard() {
       prev.includes(uid) ? prev.filter(id => id !== uid) : [...prev, uid]
     );
   };
+  
+    const getVisibleStudentUids = () => {
+        if (sortedStudents.type === 'flat') {
+            return sortedStudents.data.map(s => s.uid);
+        } else { // grouped
+            const allVisibleStudents = [...sortedStudents.freelancers];
+            Object.values(sortedStudents.data).forEach(companyMembers => {
+                allVisibleStudents.push(...companyMembers);
+            });
+            return allVisibleStudents.map(s => s.uid);
+        }
+    };
 
-  const handleSelectAllToggle = () => {
-    const allVisibleUids = students.filter(s => !s.isArchived).map(s => s.uid);
 
-    if (selectedStudents.length === allVisibleUids.length) {
-      setSelectedStudents([]);
-    } else {
-      setSelectedStudents(allVisibleUids);
-    }
-  };
+    const handleSelectAllToggle = () => {
+        const allVisibleUids = getVisibleStudentUids();
+        const allSelected = allVisibleUids.length > 0 && allVisibleUids.every(uid => selectedStudents.includes(uid));
+
+        if (allSelected) {
+            setSelectedStudents(prev => prev.filter(uid => !allVisibleUids.includes(uid)));
+        } else {
+            setSelectedStudents(prev => [...new Set([...prev, ...allVisibleUids])]);
+        }
+    };
+
 
   const handleAwardRewards = async () => {
       const xpValue = Number(xpAmount) || 0;
