@@ -163,7 +163,7 @@ export default function HubMapPage() {
                             </div>
                         </Link>
                     </TooltipTrigger>
-                    <TooltipContent className="p-2 bg-yellow-100 text-yellow-900 border-yellow-200">
+                    <TooltipContent side="right" sideOffset={5} className="p-2 bg-yellow-100 text-yellow-900 border-yellow-200">
                         <p className="font-semibold">Chapter {chapter.chapterNumber}</p>
                         <p>{chapter.title}</p>
                     </TooltipContent>
