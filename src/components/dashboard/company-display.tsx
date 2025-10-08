@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import type { Student } from '@/lib/data';
+import { useState, useEffect, useMemo } from 'react';
+import type { Student, Company } from '@/lib/data';
 import {
   Dialog,
   DialogContent,
@@ -85,6 +85,10 @@ export function CompanyDisplay({ isOpen, onOpenChange, members }: CompanyDisplay
         setIsProfileOpen(true);
     }
 
+    const sortedMembers = useMemo(() => {
+        return [...members].sort((a, b) => (b.xp || 0) - (a.xp || 0));
+    }, [members]);
+
 
     const companyName = members[0]?.companyId ? `Company Roster` : 'Your Company';
 
@@ -112,7 +116,7 @@ export function CompanyDisplay({ isOpen, onOpenChange, members }: CompanyDisplay
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {members.map(member => {
+                                {sortedMembers.map(member => {
                                     const equipment = {
                                         bodyId: member.equippedBodyId,
                                         hairstyleId: member.equippedHairstyleId,
