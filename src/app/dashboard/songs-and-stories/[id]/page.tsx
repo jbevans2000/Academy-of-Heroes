@@ -9,7 +9,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Star, Coins, CheckCircle, XCircle, ScrollText, HeartCrack, Sparkles, ShieldCheck, UserCheck, BarChart, Dices, Trophy, Heart, Wand2, Shield } from 'lucide-react';
+import { ArrowLeft, Star, Coins, CheckCircle, XCircle, ScrollText, HeartCrack, Sparkles, ShieldCheck, UserCheck, BarChart, Dices, Trophy, Heart, Wand2, Shield, LayoutDashboard } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -299,6 +299,12 @@ export default function BattleSummaryDetailPage() {
                             </Accordion>
                         </CardContent>
                      </Card>
+                     <div className="text-center">
+                        <Button size="lg" onClick={() => router.push('/dashboard')}>
+                            <LayoutDashboard className="mr-2 h-4 w-4" />
+                            Return to Dashboard
+                        </Button>
+                    </div>
                 </div>
              </main>
         </div>
