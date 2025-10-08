@@ -44,6 +44,7 @@ For each question:
 - Clearly indicate which of the four answers is the correct one.
 - The incorrect answers should be plausible but clearly wrong based on the text.
 - Ensure the questions are distinct from one another.
+- Do not use phrases like "According to the text," "Based on the lesson content," or similar attributions in the questions themselves.
 
 Provide a response in the specified JSON format.
 `,
