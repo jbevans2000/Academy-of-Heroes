@@ -964,10 +964,6 @@ export default function Dashboard() {
                         Release All from Meditation
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                     <DropdownMenuItem onClick={() => router.push('/teacher/tools/data-migration')}>
-                        <DatabaseZap className="mr-2 h-4 w-4" />
-                        <span>Data Migration Tool</span>
-                    </DropdownMenuItem>
                      <DropdownMenuItem onClick={() => router.push('/teacher/tools/archived-heroes')}>
                         <Archive className="mr-2 h-4 w-4" />
                         <span>Archived Heroes</span>
