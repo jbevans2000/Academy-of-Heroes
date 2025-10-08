@@ -246,7 +246,7 @@ export default function Dashboard() {
         style={{ 
             backgroundImage: backgroundUrl ? `url('${backgroundUrl}')` : 'none',
             backgroundColor: backgroundUrl ? '' : 'hsl(var(--background))',
-            backgroundSize: '75%',
+            backgroundSize: '60%',
         }}
     >
       <AlertDialog open={showApprovedDialog} onOpenChange={setShowApprovedDialog}>
@@ -279,10 +279,8 @@ export default function Dashboard() {
 
       <DashboardHeader characterName={student.characterName}/>
       <main className="flex-1 bg-background/50 backdrop-blur-sm">
-        <DashboardClient student={student} levelingTable={teacherData.levelingTable} />
+        <DashboardClient student={student} />
       </main>
     </div>
   );
 }
-
-    
