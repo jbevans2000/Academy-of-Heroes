@@ -123,7 +123,16 @@ export default function Dashboard() {
     }
     return 'studentName';
   });
-  const [companyFilters, setCompanyFilters] = useState<string[]>(['all']);
+  
+  const [companyFilters, setCompanyFilters] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const savedFilters = localStorage.getItem('teacherDashboardCompanyFilters');
+      if (savedFilters) {
+        return JSON.parse(savedFilters);
+      }
+    }
+    return ['all'];
+  });
 
   const { toast } = useToast();
   
@@ -155,6 +164,12 @@ export default function Dashboard() {
       localStorage.setItem('teacherDashboardSortOrder', sortOrder);
     }
   }, [sortOrder]);
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        localStorage.setItem('teacherDashboardCompanyFilters', JSON.stringify(companyFilters));
+    }
+  }, [companyFilters]);
 
 
   useEffect(() => {
