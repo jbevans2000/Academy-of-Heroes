@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -15,6 +14,12 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import type { QuestHub, Chapter } from '@/lib/quests';
 import type { Student } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 export default function HubMapPage() {
     const router = useRouter();
@@ -137,6 +142,35 @@ export default function HubMapPage() {
     if (!hub) {
         return <p>Hub not found.</p>;
     }
+    
+    const renderChapterMarker = (chapter: Chapter, status: 'completed' | 'current') => {
+        const colorClass = status === 'completed' ? 'bg-green-500' : 'bg-yellow-400 animate-pulse-glow';
+        return (
+            <TooltipProvider key={`${status}-${chapter.id}`} delayDuration={100}>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Link href={`/dashboard/map/${hubId}/${chapter.id}`} passHref>
+                            <div
+                                className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
+                                style={{
+                                    left: `${chapter.coordinates.x}%`,
+                                    top: `${chapter.coordinates.y}%`,
+                                }}
+                            >
+                                <div className={`w-8 h-8 rounded-full ring-2 ring-white shadow-xl flex items-center justify-center font-bold text-white text-sm ${colorClass}`}>
+                                    {chapter.chapterNumber}
+                                </div>
+                            </div>
+                        </Link>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p className="font-semibold">Chapter {chapter.chapterNumber}</p>
+                        <p>{chapter.title}</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+        );
+    };
 
     return (
         <div className="relative flex flex-col items-center justify-start bg-background p-2">
@@ -181,48 +215,8 @@ export default function HubMapPage() {
                                 return null;
                             })}
                          </svg>
-                         {completedChapters.map(chapter => (
-                             <Link key={`completed-${chapter.id}`} href={`/dashboard/map/${hubId}/${chapter.id}`} passHref>
-                                <div
-                                    className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
-                                    style={{
-                                        left: `${chapter.coordinates.x}%`,
-                                        top: `${chapter.coordinates.y}%`,
-                                    }}
-                                >
-                                     <div className="absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap text-center">
-                                        <div className="text-white font-bold text-shadow-lg bg-black/50 rounded px-2 py-1 mb-1">
-                                            Chapter {chapter.chapterNumber}
-                                        </div>
-                                        <div className="text-white font-semibold text-shadow-lg bg-black/50 rounded px-2 py-1 transition-opacity duration-300 opacity-0 group-hover:opacity-100">
-                                            {chapter.title}
-                                        </div>
-                                    </div>
-                                    <div className="w-5 h-5 bg-green-500 rounded-full ring-2 ring-white shadow-xl"></div>
-                                </div>
-                             </Link>
-                         ))}
-                          {currentChapters.map(chapter => (
-                             <Link key={`current-${chapter.id}`} href={`/dashboard/map/${hubId}/${chapter.id}`} passHref>
-                                <div
-                                    className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
-                                    style={{
-                                        left: `${chapter.coordinates.x}%`,
-                                        top: `${chapter.coordinates.y}%`,
-                                    }}
-                                >
-                                     <div className="absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap text-center">
-                                        <div className="text-white font-bold text-shadow-lg bg-black/50 rounded px-2 py-1 mb-1">
-                                            Chapter {chapter.chapterNumber}
-                                        </div>
-                                        <div className="text-white font-semibold text-shadow-lg bg-black/50 rounded px-2 py-1 transition-opacity duration-300 opacity-0 group-hover:opacity-100">
-                                            {chapter.title}
-                                        </div>
-                                    </div>
-                                    <div className="w-5 h-5 bg-yellow-400 rounded-full ring-2 ring-white shadow-xl animate-pulse-glow"></div>
-                                </div>
-                            </Link>
-                         ))}
+                         {completedChapters.map(chapter => renderChapterMarker(chapter, 'completed'))}
+                         {currentChapters.map(chapter => renderChapterMarker(chapter, 'current'))}
                     </div>
                 </CardContent>
             </Card>
@@ -245,3 +239,4 @@ export default function HubMapPage() {
         </div>
     );
 }
+
