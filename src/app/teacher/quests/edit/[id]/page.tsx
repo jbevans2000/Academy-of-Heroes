@@ -488,8 +488,6 @@ export default function EditQuestPage() {
             title: 'Quest Updated!',
             description: 'The chapter has been saved successfully.',
         });
-        
-        router.push('/teacher/quests');
 
     } catch (error) {
         console.error("Error saving quest:", error);
@@ -756,141 +754,141 @@ export default function EditQuestPage() {
                           )}
                       </TabsContent>
                       <TabsContent value="quiz" className="mt-6 space-y-6">
-                          <div className="space-y-4 p-6 border rounded-lg bg-background/30">
-                              <h3 className="text-xl font-semibold flex items-center gap-2"><Sparkles className="text-primary" /> Generate Questions with the Oracle</h3>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <div className="space-y-2">
-                                      <Label htmlFor="ai-subject">Subject / Topic (for general questions)</Label>
-                                      <Input id="ai-subject" placeholder="e.g. Photosynthesis" value={aiSubject} onChange={(e) => setAiSubject(e.target.value)} disabled={isGeneratingQuestions} />
-                                  </div>
-                                  <div className="space-y-2">
-                                      <Label htmlFor="ai-grade">Grade Level</Label>
-                                      <Select onValueChange={setAiGradeLevel} value={aiGradeLevel} disabled={isGeneratingQuestions}>
-                                          <SelectTrigger id="ai-grade"><SelectValue placeholder="Choose a grade..." /></SelectTrigger>
-                                          <SelectContent>{gradeLevels.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
-                                      </Select>
-                                  </div>
-                              </div>
-                              <div className="space-y-2">
-                                  <Label htmlFor="ai-num-questions">Number of Questions (1-10)</Label>
-                                  <Input id="ai-num-questions" type="number" min="1" max="10" value={aiNumQuestions} onChange={(e) => setAiNumQuestions(e.target.value)} disabled={isGeneratingQuestions}/>
-                              </div>
-                              <div className="flex gap-2">
-                                  <Button onClick={handleGenerateQuestions} disabled={isGeneratingQuestions || !aiSubject || !aiGradeLevel}>
-                                      {isGeneratingQuestions ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
-                                      Generate by Subject
-                                  </Button>
-                                  <Button onClick={handleGenerateQuestionsFromText} variant="secondary" disabled={isGeneratingQuestions || !aiNumQuestions}>
-                                      {isGeneratingQuestions ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <BookCopy className="mr-2 h-4 w-4" />}
-                                      Generate From Lesson
-                                  </Button>
-                              </div>
-                          </div>
-                          <h3 className="text-xl font-semibold">Quiz Editor</h3>
-                          <div className="p-4 border rounded-md space-y-4">
-                             <div className="flex items-center space-x-2">
-                                  <Switch 
-                                      id="require-passing" 
-                                      checked={chapter.quiz?.settings?.requirePassing ?? true} 
-                                      onCheckedChange={checked => handleQuizChange('settings', { ...(chapter.quiz?.settings || { requirePassing: true, passingScore: 80, includeInDailyTraining: true }), requirePassing: checked })}
-                                      disabled={!hasQuizQuestions}
-                                  />
-                                  <Label htmlFor="require-passing" className={cn(!hasQuizQuestions && "text-muted-foreground")}>Require Minimum Score to Advance</Label>
-                              </div>
-                              {(chapter.quiz?.settings?.requirePassing ?? true) && (
-                                  <div className="space-y-2 animate-in fade-in-50">
-                                      <Label htmlFor="passing-score" className={cn(!hasQuizQuestions && "text-muted-foreground")}>Passing Score (%)</Label>
-                                      <Input 
-                                          id="passing-score" 
-                                          type="number" 
-                                          min="0" 
-                                          max="100" 
-                                          value={chapter.quiz?.settings?.passingScore ?? 80} 
-                                          onChange={(e) => handleQuizChange('settings', { ...(chapter.quiz?.settings || { requirePassing: true, passingScore: 80, includeInDailyTraining: true }), passingScore: Number(e.target.value)})} 
-                                          disabled={!hasQuizQuestions}
-                                      />
-                                  </div>
-                              )}
-                              <div className="flex items-center space-x-2">
-                                  <Switch 
-                                      id="include-in-training" 
-                                      checked={chapter.quiz?.settings?.includeInDailyTraining ?? true}
-                                      onCheckedChange={checked => handleQuizChange('settings', { ...(chapter.quiz?.settings || { requirePassing: true, passingScore: 80, includeInDailyTraining: true }), includeInDailyTraining: checked })}
-                                      disabled={!hasQuizQuestions}
-                                  />
-                                  <Label htmlFor="include-in-training" className={cn(!hasQuizQuestions && "text-muted-foreground")}>Include Quiz in Daily Training Pool</Label>
-                              </div>
-                          </div>
-                          {(chapter.quiz?.questions || []).map((q, qIndex) => (
-                              <Card key={q.id} className="p-4 bg-secondary/50">
-                                  <div className="flex justify-between items-center mb-2">
-                                      <Label className="font-semibold">Question {qIndex + 1}</Label>
-                                      <Button variant="ghost" size="icon" onClick={() => handleRemoveQuizQuestion(q.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                                  </div>
-                                  <div className="space-y-2">
-                                      <Textarea placeholder="Question text" value={q.text} onChange={e => handleQuizQuestionChange(q.id, 'text', e.target.value)} />
-                                      <div className="space-y-2">
-                                          <Label htmlFor={`q-image-upload-${q.id}`} className="text-base">Image (Optional)</Label>
-                                          <div className="flex items-center gap-2">
-                                               <Input 
-                                                  id={`q-image-upload-${q.id}`}
-                                                  type="file" 
-                                                  accept="image/*"
-                                                  className="hidden"
-                                                  onChange={(e) => {
-                                                      if(e.target.files && e.target.files[0]){
-                                                          handleQuestionImageUpload(q.id, e.target.files[0])
-                                                      }
-                                                  }}
-                                                  disabled={uploadingQuestionImage === q.id}
-                                              />
-                                               <Label htmlFor={`q-image-upload-${q.id}`} className={cn(buttonVariants({ variant: 'outline' }), "cursor-pointer")}>
-                                                  <Upload className="h-4 w-4" />
-                                              </Label>
-                                               {uploadingQuestionImage === q.id && <Loader2 className="h-5 w-5 animate-spin" />}
-                                               {q.imageUrl && <Image src={q.imageUrl} alt="Question preview" width={50} height={50} className="rounded-md border"/>}
-                                          </div>
-                                      </div>
-                                      <Select value={q.questionType} onValueChange={(value) => handleQuizQuestionChange(q.id, 'questionType', value)}>
-                                          <SelectTrigger><SelectValue/></SelectTrigger>
-                                          <SelectContent>
-                                              <SelectItem value="single">Single Choice (Radio Buttons)</SelectItem>
-                                              <SelectItem value="multiple">Multiple Choice (Checkboxes)</SelectItem>
-                                              <SelectItem value="true-false">True/False</SelectItem>
-                                          </SelectContent>
-                                      </Select>
-                                      
-                                      <div className="space-y-2 pt-2">
-                                          <Label>Answers (Select correct one(s))</Label>
-                                          {q.answers.map((ans, aIndex) => (
-                                              <div key={aIndex} className="flex items-center gap-2">
-                                                  {q.questionType === 'single' || q.questionType === 'true-false' ? (
-                                                      <RadioGroup value={String(q.correctAnswer[0])} onValueChange={value => handleCorrectQuizAnswerChange(q.id, Number(value))} className="flex items-center">
-                                                          <RadioGroupItem value={String(aIndex)} id={`q${q.id}-a${aIndex}`} />
-                                                      </RadioGroup>
-                                                  ) : (
-                                                      <Checkbox id={`q${q.id}-a${aIndex}`} checked={q.correctAnswer.includes(aIndex)} onCheckedChange={() => handleCorrectQuizAnswerChange(q.id, aIndex)} />
-                                                  )}
-                                                  <Input placeholder={`Answer ${aIndex + 1}`} value={ans} onChange={e => handleQuizAnswerChange(q.id, aIndex, e.target.value)} disabled={q.questionType === 'true-false'}/>
-                                                  {q.questionType !== 'true-false' && (
-                                                      <Button variant="ghost" size="icon" onClick={() => handleRemoveAnswerChoice(q.id, aIndex)} disabled={q.answers.length <= 2}>
-                                                          <X className="h-4 w-4" />
-                                                      </Button>
-                                                  )}
-                                              </div>
-                                          ))}
-                                      </div>
-                                       {q.questionType !== 'true-false' && (
-                                          <Button variant="outline" size="sm" onClick={() => handleAddAnswerChoice(q.id)}>
-                                              <PlusCircle className="mr-2 h-4 w-4" /> Add Answer Choice
-                                          </Button>
-                                       )}
-                                  </div>
-                              </Card>
-                          ))}
-                          <Button variant="outline" onClick={handleAddQuizQuestion}>
-                              <PlusCircle className="mr-2 h-4 w-4" /> Add Question
-                          </Button>
+                            <div className="space-y-4 p-6 border rounded-lg bg-background/30">
+                                <h3 className="text-xl font-semibold flex items-center gap-2"><Sparkles className="text-primary" /> Generate Questions with the Oracle</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="ai-subject">Subject / Topic (for general questions)</Label>
+                                        <Input id="ai-subject" placeholder="e.g. Photosynthesis" value={aiSubject} onChange={(e) => setAiSubject(e.target.value)} disabled={isGeneratingQuestions} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="ai-grade">Grade Level</Label>
+                                        <Select onValueChange={setAiGradeLevel} value={aiGradeLevel} disabled={isGeneratingQuestions}>
+                                            <SelectTrigger id="ai-grade"><SelectValue placeholder="Choose a grade..." /></SelectTrigger>
+                                            <SelectContent>{gradeLevels.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="ai-num-questions">Number of Questions (1-10)</Label>
+                                    <Input id="ai-num-questions" type="number" min="1" max="10" value={aiNumQuestions} onChange={(e) => setAiNumQuestions(e.target.value)} disabled={isGeneratingQuestions}/>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button onClick={handleGenerateQuestions} disabled={isGeneratingQuestions || !aiSubject || !aiGradeLevel}>
+                                        {isGeneratingQuestions ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
+                                        Generate by Subject
+                                    </Button>
+                                    <Button onClick={handleGenerateQuestionsFromText} variant="secondary" disabled={isGeneratingQuestions || !aiNumQuestions}>
+                                        {isGeneratingQuestions ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <BookCopy className="mr-2 h-4 w-4" />}
+                                        Generate From Lesson
+                                    </Button>
+                                </div>
+                            </div>
+                            <h3 className="text-xl font-semibold">Quiz Editor</h3>
+                            <div className="p-4 border rounded-md space-y-4">
+                               <div className="flex items-center space-x-2">
+                                    <Switch 
+                                        id="require-passing" 
+                                        checked={chapter.quiz?.settings?.requirePassing ?? true} 
+                                        onCheckedChange={checked => handleQuizChange('settings', { ...(chapter.quiz?.settings || { requirePassing: true, passingScore: 80, includeInDailyTraining: true }), requirePassing: checked })}
+                                        disabled={!hasQuizQuestions}
+                                    />
+                                    <Label htmlFor="require-passing" className={cn(!hasQuizQuestions && "text-muted-foreground")}>Require Minimum Score to Advance</Label>
+                                </div>
+                                {(chapter.quiz?.settings?.requirePassing ?? true) && (
+                                    <div className="space-y-2 animate-in fade-in-50">
+                                        <Label htmlFor="passing-score" className={cn(!hasQuizQuestions && "text-muted-foreground")}>Passing Score (%)</Label>
+                                        <Input 
+                                            id="passing-score" 
+                                            type="number" 
+                                            min="0" 
+                                            max="100" 
+                                            value={chapter.quiz?.settings?.passingScore ?? 80} 
+                                            onChange={(e) => handleQuizChange('settings', { ...(chapter.quiz?.settings || { requirePassing: true, passingScore: 80, includeInDailyTraining: true }), passingScore: Number(e.target.value)})} 
+                                            disabled={!hasQuizQuestions}
+                                        />
+                                    </div>
+                                )}
+                                <div className="flex items-center space-x-2">
+                                    <Switch 
+                                        id="include-in-training" 
+                                        checked={chapter.quiz?.settings?.includeInDailyTraining ?? true}
+                                        onCheckedChange={checked => handleQuizChange('settings', { ...(chapter.quiz?.settings || { requirePassing: true, passingScore: 80, includeInDailyTraining: true }), includeInDailyTraining: checked })}
+                                        disabled={!hasQuizQuestions}
+                                    />
+                                    <Label htmlFor="include-in-training" className={cn(!hasQuizQuestions && "text-muted-foreground")}>Include Quiz in Daily Training Pool</Label>
+                                </div>
+                            </div>
+                            {(chapter.quiz?.questions || []).map((q, qIndex) => (
+                                <Card key={q.id} className="p-4 bg-secondary/50">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <Label className="font-semibold">Question {qIndex + 1}</Label>
+                                        <Button variant="ghost" size="icon" onClick={() => handleRemoveQuizQuestion(q.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Textarea placeholder="Question text" value={q.text} onChange={e => handleQuizQuestionChange(q.id, 'text', e.target.value)} />
+                                        <div className="space-y-2">
+                                            <Label htmlFor={`q-image-upload-${q.id}`} className="text-base">Image (Optional)</Label>
+                                            <div className="flex items-center gap-2">
+                                                 <Input 
+                                                    id={`q-image-upload-${q.id}`}
+                                                    type="file" 
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={(e) => {
+                                                        if(e.target.files && e.target.files[0]){
+                                                            handleQuestionImageUpload(q.id, e.target.files[0])
+                                                        }
+                                                    }}
+                                                    disabled={uploadingQuestionImage === q.id}
+                                                />
+                                                 <Label htmlFor={`q-image-upload-${q.id}`} className={cn(buttonVariants({ variant: 'outline' }), "cursor-pointer")}>
+                                                    <Upload className="h-4 w-4" />
+                                                </Label>
+                                                 {uploadingQuestionImage === q.id && <Loader2 className="h-5 w-5 animate-spin" />}
+                                                 {q.imageUrl && <Image src={q.imageUrl} alt="Question preview" width={50} height={50} className="rounded-md border"/>}
+                                            </div>
+                                        </div>
+                                        <Select value={q.questionType} onValueChange={(value) => handleQuizQuestionChange(q.id, 'questionType', value)}>
+                                            <SelectTrigger><SelectValue/></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="single">Single Choice (Radio Buttons)</SelectItem>
+                                                <SelectItem value="multiple">Multiple Choice (Checkboxes)</SelectItem>
+                                                <SelectItem value="true-false">True/False</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        
+                                        <div className="space-y-2 pt-2">
+                                            <Label>Answers (Select correct one(s))</Label>
+                                            {q.answers.map((ans, aIndex) => (
+                                                <div key={aIndex} className="flex items-center gap-2">
+                                                    {q.questionType === 'single' || q.questionType === 'true-false' ? (
+                                                        <RadioGroup value={String(q.correctAnswer[0])} onValueChange={value => handleCorrectQuizAnswerChange(q.id, Number(value))} className="flex items-center">
+                                                            <RadioGroupItem value={String(aIndex)} id={`q${q.id}-a${aIndex}`} />
+                                                        </RadioGroup>
+                                                    ) : (
+                                                        <Checkbox id={`q${q.id}-a${aIndex}`} checked={q.correctAnswer.includes(aIndex)} onCheckedChange={() => handleCorrectQuizAnswerChange(q.id, aIndex)} />
+                                                    )}
+                                                    <Input placeholder={`Answer ${aIndex + 1}`} value={ans} onChange={e => handleQuizAnswerChange(q.id, aIndex, e.target.value)} disabled={q.questionType === 'true-false'}/>
+                                                    {q.questionType !== 'true-false' && (
+                                                        <Button variant="ghost" size="icon" onClick={() => handleRemoveAnswerChoice(q.id, aIndex)} disabled={q.answers.length <= 2}>
+                                                            <X className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                         {q.questionType !== 'true-false' && (
+                                            <Button variant="outline" size="sm" onClick={() => handleAddAnswerChoice(q.id)}>
+                                                <PlusCircle className="mr-2 h-4 w-4" /> Add Answer Choice
+                                            </Button>
+                                         )}
+                                    </div>
+                                </Card>
+                            ))}
+                            <Button variant="outline" onClick={handleAddQuizQuestion}>
+                                <PlusCircle className="mr-2 h-4 w-4" /> Add Question
+                            </Button>
                       </TabsContent>
                       </Tabs>
                   </div>
@@ -929,3 +927,5 @@ export default function EditQuestPage() {
     </>
   );
 }
+
+    
