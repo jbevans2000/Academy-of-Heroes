@@ -20,6 +20,17 @@ import { purchaseBoon } from '@/ai/flows/manage-inventory';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { User as UserIcon } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 
 const BoonCard = ({ boon, onPurchase, student, disabled }: { boon: Boon, onPurchase: (boonId: string) => void, student: Student | null, disabled: boolean }) => {
@@ -83,10 +94,28 @@ const BoonCard = ({ boon, onPurchase, student, disabled }: { boon: Boon, onPurch
                         </>
                     )}
                 </div>
-                 <Button className="w-full" onClick={handlePurchase} disabled={isButtonDisabled}>
-                    {isPurchasing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShoppingCart className="mr-2 h-4 w-4" />}
-                    {buttonText}
-                </Button>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button className="w-full" disabled={isButtonDisabled}>
+                            {isPurchasing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShoppingCart className="mr-2 h-4 w-4" />}
+                            {buttonText}
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Confirm Purchase</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Are you sure you want to purchase "{boon.name}" for {boon.cost} Gold?
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel disabled={isPurchasing}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handlePurchase} disabled={isPurchasing}>
+                                {isPurchasing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirm"}
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </CardFooter>
         </Card>
     )

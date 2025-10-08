@@ -905,8 +905,7 @@ export default function EditQuestPage() {
                             </Button>
                       </TabsContent>
                       </Tabs>
-                  </div>
-                )}
+                  </div>                
 
                 <div className="flex justify-between items-center pt-4 border-t">
                   {prevChapter ? (
