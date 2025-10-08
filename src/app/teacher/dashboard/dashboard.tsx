@@ -81,6 +81,11 @@ interface TeacherData {
 
 type SortOrder = 'studentName' | 'characterName' | 'xp' | 'class' | 'company' | 'inMeditation';
 
+const isValidSortOrder = (value: any): value is SortOrder => {
+  const validSortOrders: SortOrder[] = ['studentName', 'characterName', 'xp', 'class', 'company', 'inMeditation'];
+  return validSortOrders.includes(value);
+};
+
 export default function Dashboard() {
   const [students, setStudents] = useState<Student[]>([]);
   const [pendingStudents, setPendingStudents] = useState<PendingStudent[]>([]);
@@ -109,7 +114,15 @@ export default function Dashboard() {
   const [showBetaWelcomeDialog, setShowBetaWelcomeDialog] = useState(false);
   const [showHidden, setShowHidden] = useState(false);
   
-  const [sortOrder, setSortOrder] = useState<SortOrder>('studentName');
+  const [sortOrder, setSortOrder] = useState<SortOrder>(() => {
+    if (typeof window !== 'undefined') {
+      const savedSortOrder = localStorage.getItem('teacherDashboardSortOrder');
+      if (savedSortOrder && isValidSortOrder(savedSortOrder)) {
+        return savedSortOrder;
+      }
+    }
+    return 'studentName';
+  });
   const [companyFilters, setCompanyFilters] = useState<string[]>(['all']);
 
   const { toast } = useToast();
@@ -136,6 +149,12 @@ export default function Dashboard() {
 
 
   const [isReleasingAll, setIsReleasingAll] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('teacherDashboardSortOrder', sortOrder);
+    }
+  }, [sortOrder]);
 
 
   useEffect(() => {
