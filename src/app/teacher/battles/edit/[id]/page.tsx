@@ -13,7 +13,7 @@ import { ArrowLeft, PlusCircle, Trash2, Eye, GitBranch, Loader2, Save, Sparkles,
 import { useRouter, useParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL, uploadString } from 'firebase/storage';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, auth, app } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -354,7 +354,11 @@ export default function EditBossBattlePage() {
     <>
     <MusicGallery isOpen={isMusicGalleryOpen} onOpenChange={setIsMusicGalleryOpen} onMusicSelect={setMusicUrl} />
     <BossImageGallery isOpen={isBossImageGalleryOpen} onOpenChange={setIsBossImageGalleryOpen} onImageSelect={setBossImageUrl} />
-    <div className="flex min-h-screen w-full flex-col bg-cover bg-center" style={{ backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-5c865a8c-e16c-4e32-b822-164b15894c5b.jpg?alt=media&token=11c25a8d-193a-44cf-bdfd-a752d57ccade')` }}>
+    <div className="relative flex min-h-screen w-full flex-col">
+       <div 
+            className="fixed inset-0 -z-10 bg-cover bg-center" 
+            style={{ backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-5c865a8c-e16c-4e32-b822-164b15894c5b.jpg?alt=media&token=11c25a8d-193a-44cf-bdfd-a752d57ccade')` }}
+        />
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="max-w-4xl mx-auto space-y-6">
