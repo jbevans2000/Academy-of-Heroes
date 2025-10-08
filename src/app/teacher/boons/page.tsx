@@ -56,7 +56,18 @@ export default function BoonsPage() {
     const [isToggling, setIsToggling] = useState<string | null>(null);
     const [isPopulating, setIsPopulating] = useState(false);
     const [isProcessingRequest, setIsProcessingRequest] = useState<string | null>(null);
-    const [sortOrder, setSortOrder] = useState<SortOption>('visibility');
+    
+    // Initialize sortOrder from localStorage or default to 'visibility'
+    const [sortOrder, setSortOrder] = useState<SortOption>(() => {
+        if (typeof window !== 'undefined') {
+            const savedSortOrder = localStorage.getItem('boonsSortOrder');
+            if (savedSortOrder === 'visibility' || savedSortOrder === 'name' || savedSortOrder === 'cost' || savedSortOrder === 'level') {
+                return savedSortOrder as SortOption;
+            }
+        }
+        return 'visibility';
+    });
+
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -68,6 +79,14 @@ export default function BoonsPage() {
         });
         return () => unsubscribe();
     }, [router]);
+    
+    // Effect to save sortOrder to localStorage whenever it changes
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('boonsSortOrder', sortOrder);
+        }
+    }, [sortOrder]);
+
 
     useEffect(() => {
         if (!teacher) return;
