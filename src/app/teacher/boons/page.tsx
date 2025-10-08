@@ -25,12 +25,22 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, Star, Coins, EyeOff, Eye, Bell, Check, X, History } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Edit, Trash2, Loader2, Star, Coins, EyeOff, Eye, Bell, Check, X, History, ChevronDown } from 'lucide-react';
 import Image from 'next/image';
 import { deleteBoon, updateBoonVisibility, populateDefaultBoons, approveBoonRequest, denyBoonRequest } from '@/ai/flows/manage-boons';
 import { cn } from '@/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
 import { ClientOnlyTime } from '@/components/client-only-time';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+
+type SortOption = 'visibility' | 'name' | 'cost' | 'level';
 
 
 export default function BoonsPage() {
@@ -46,6 +56,7 @@ export default function BoonsPage() {
     const [isToggling, setIsToggling] = useState<string | null>(null);
     const [isPopulating, setIsPopulating] = useState(false);
     const [isProcessingRequest, setIsProcessingRequest] = useState<string | null>(null);
+    const [sortOrder, setSortOrder] = useState<SortOption>('visibility');
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -61,7 +72,7 @@ export default function BoonsPage() {
     useEffect(() => {
         if (!teacher) return;
         
-        const boonsQuery = query(collection(db, 'teachers', teacher.uid, 'boons'), orderBy('createdAt', 'desc'));
+        const boonsQuery = query(collection(db, 'teachers', teacher.uid, 'boons'));
         const pendingQuery = query(collection(db, 'teachers', teacher.uid, 'pendingBoonRequests'), orderBy('requestedAt', 'desc'));
         const transactionsQuery = query(collection(db, 'teachers', teacher.uid, 'boonTransactions'), orderBy('timestamp', 'desc'), limit(15));
         
@@ -91,15 +102,24 @@ export default function BoonsPage() {
     
     const sortedBoons = useMemo(() => {
         return [...boons].sort((a, b) => {
-            const aVisible = a.isVisibleToStudents ?? false;
-            const bVisible = b.isVisibleToStudents ?? false;
-            if (aVisible === bVisible) {
-                // If visibility is the same, sort by creation date (already done by query)
-                return 0; 
+            if (sortOrder === 'visibility') {
+                const aVisible = a.isVisibleToStudents ?? false;
+                const bVisible = b.isVisibleToStudents ?? false;
+                if (aVisible === bVisible) return 0;
+                return aVisible ? -1 : 1;
             }
-            return aVisible ? -1 : 1; // Visible items first
+            if (sortOrder === 'name') {
+                return a.name.localeCompare(b.name);
+            }
+            if (sortOrder === 'cost') {
+                return a.cost - b.cost;
+            }
+            if (sortOrder === 'level') {
+                return (a.levelRequirement || 1) - (b.levelRequirement || 1);
+            }
+            return 0;
         });
-    }, [boons]);
+    }, [boons, sortOrder]);
 
     const handlePopulateBoons = async () => {
         if (!teacher) return;
@@ -188,6 +208,22 @@ export default function BoonsPage() {
                             <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
                                 <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
                             </Button>
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline">
+                                        Sort By
+                                        <ChevronDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuRadioGroup value={sortOrder} onValueChange={(value) => setSortOrder(value as SortOption)}>
+                                        <DropdownMenuRadioItem value="visibility">Visibility</DropdownMenuRadioItem>
+                                        <DropdownMenuRadioItem value="name">Alphabetically</DropdownMenuRadioItem>
+                                        <DropdownMenuRadioItem value="cost">Cost</DropdownMenuRadioItem>
+                                        <DropdownMenuRadioItem value="level">Required Level</DropdownMenuRadioItem>
+                                    </DropdownMenuRadioGroup>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                             <Button onClick={() => router.push('/teacher/boons/new')}>
                                 <PlusCircle className="mr-2 h-4 w-4" /> Create New Reward
                             </Button>
