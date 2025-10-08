@@ -45,7 +45,7 @@ export default function TeacherHelpPage() {
                     backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FArchives.jpg?alt=media&token=1bbfbdcd-fb4a-4139-9a8d-44603c19a86c')`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
-                    opacity: 0.25,
+                    backgroundAttachment: 'fixed',
                 }}
             />
             <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
