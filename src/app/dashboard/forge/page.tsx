@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
@@ -587,11 +586,11 @@ export default function ForgePage() {
                         </div>
                     </div>
 
-                    <Alert>
-                        <Wand2 className="h-4 w-4" />
-                        <AlertTitle>Welcome to The Forge!</AlertTitle>
+                    <Alert variant="destructive" className="bg-yellow-100/90 border-yellow-500 text-yellow-900 dark:bg-yellow-900/80 dark:text-yellow-100">
+                        <Hammer className="h-5 w-5 !text-yellow-900 dark:!text-yellow-100" />
+                        <AlertTitle className="font-bold">Message from the Blacksmiths!</AlertTitle>
                         <AlertDescription>
-                           Here you can mix and match your owned armor pieces, hairstyles, and backgrounds. Or, choose from a pre-made avatar below. When you're happy with your look, click "Set as Custom Avatar".
+                            The Dwarven Blacksmiths are still working on The Forge! The 2D customizable images are still under construction, but the Static Avatar Images, Backgrounds, and Pet Images are all up and running! Please select a STATIC Avatar Image from the bottom of this page to ensure a proper look!
                         </AlertDescription>
                     </Alert>
 
