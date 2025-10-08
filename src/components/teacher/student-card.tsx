@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -39,6 +38,16 @@ import { SetQuestProgressDialog } from './set-quest-progress-dialog';
 import { setStudentStat } from '@/ai/flows/manage-student-stats';
 import { Textarea } from '../ui/textarea';
 import { Switch } from '../ui/switch';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface EditableStatProps {
     student: Student;
@@ -518,11 +527,6 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
       <Dialog>
       <TooltipProvider>
         <Card className={cn("shadow-lg rounded-xl flex flex-col overflow-hidden transition-all duration-300 relative", isSelected ? "ring-4 ring-primary scale-105" : "hover:scale-105", student.isHidden && "opacity-60 bg-gray-200")}>
-            {company?.logoUrl && (
-                <div className="absolute inset-0 z-0">
-                    <Image src={company.backgroundUrl || company.logoUrl} alt="Company Logo" fill className="object-cover opacity-50" />
-                </div>
-            )}
            <div className="relative z-10 flex flex-col h-full bg-card/80 backdrop-blur-sm">
             <CardHeader className="p-4 relative flex flex-row items-center gap-4 bg-secondary/30">
                  <div className="absolute top-2 right-2 z-10">
