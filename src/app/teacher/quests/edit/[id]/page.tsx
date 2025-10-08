@@ -80,6 +80,10 @@ const ImageUploader = ({ label, imageUrl, onUploadSuccess, teacherUid, storagePa
             setFile(null);
         }
     };
+    
+    const handleRemoveImage = () => {
+        onUploadSuccess('');
+    }
 
     return (
         <div className="space-y-2 p-3 border rounded-md">
@@ -103,8 +107,16 @@ const ImageUploader = ({ label, imageUrl, onUploadSuccess, teacherUid, storagePa
             </div>
             {file && <p className="text-sm text-muted-foreground">Selected: {file.name}</p>}
             {imageUrl && (
-                <div className="mt-2">
+                <div className="mt-2 relative w-fit">
                     <Image src={imageUrl} alt={`${label} preview`} width={200} height={100} className="rounded-md object-contain border bg-secondary" />
+                     <Button 
+                        variant="destructive" 
+                        size="icon" 
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                        onClick={handleRemoveImage}
+                    >
+                        <X className="h-4 w-4" />
+                    </Button>
                 </div>
             )}
         </div>
@@ -498,14 +510,16 @@ export default function EditQuestPage() {
   }
   
   const handleLessonPartChange = (index: number, content: string) => {
-    const newParts = [...(chapter?.lessonParts || [])];
+    if (!chapter) return;
+    const newParts = [...(chapter.lessonParts || [])];
     newParts[index] = { ...newParts[index], content };
     handleFieldChange('lessonParts', newParts);
   };
 
   const handleAddLessonPart = () => {
+    if (!chapter) return;
     const newPart: LessonPart = { id: uuidv4(), content: '' };
-    const newParts = [...(chapter?.lessonParts || []), newPart];
+    const newParts = [...(chapter.lessonParts || []), newPart];
     handleFieldChange('lessonParts', newParts);
     setCurrentLessonPartIndex(newParts.length - 1);
   };
@@ -553,7 +567,7 @@ export default function EditQuestPage() {
 
   return (
     <>
-      {worldMapUrl && <MapGallery isOpen={false} onOpenChange={() => {}} onMapSelect={(url) => handleFieldChange('worldMapUrl', url)} />}
+      {worldMapUrl && <MapGallery isOpen={isGalleryOpen} onOpenChange={setIsGalleryOpen} onMapSelect={(url) => handleFieldChange('worldMapUrl', url)} />}
       <div className="relative flex min-h-screen w-full flex-col">
         {worldMapUrl && (
             <div 
@@ -670,7 +684,7 @@ export default function EditQuestPage() {
                                   <Label>Position Chapter on Hub Map</Label>
                                   <div 
                                       className="relative aspect-[2048/1152] rounded-lg overflow-hidden bg-muted/50 border cursor-grab"
-                                      onMouseDown={(e) => handleMapDrag(e)}
+                                      onMouseDown={(e) => handleMapDrag(e, 'chapter')}
                                   >
                                       <Image
                                           src={hubMapUrl}
@@ -892,7 +906,7 @@ export default function EditQuestPage() {
                       </TabsContent>
                       </Tabs>
                   </div>
-                
+                )}
 
                 <div className="flex justify-between items-center pt-4 border-t">
                   {prevChapter ? (
