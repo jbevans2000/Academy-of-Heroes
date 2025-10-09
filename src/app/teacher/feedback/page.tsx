@@ -20,7 +20,7 @@ import { getUpcomingFeaturesContent } from '@/ai/flows/manage-upcoming-features'
 import { DashboardHeader } from '@/components/dashboard/header';
 
 
-interface TeacherData {
+interface UserData {
     name: string;
     email: string;
 }
@@ -34,7 +34,7 @@ function FeedbackFormComponent() {
     const from = searchParams.get('from') || 'teacher';
 
     const [user, setUser] = useState<User | null>(null);
-    const [teacherData, setTeacherData] = useState<TeacherData | null>(null);
+    const [userData, setUserData] = useState<UserData | null>(null);
     const [message, setMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     
@@ -46,17 +46,35 @@ function FeedbackFormComponent() {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
                 setUser(currentUser);
-                const teacherRef = doc(db, 'teachers', currentUser.uid);
-                const teacherSnap = await getDoc(teacherRef);
-                if(teacherSnap.exists()) {
-                    setTeacherData(teacherSnap.data() as TeacherData);
+                const userDocRef = from === 'teacher' 
+                    ? doc(db, 'teachers', currentUser.uid)
+                    : doc(db, 'students', currentUser.uid);
+                
+                const userDocSnap = await getDoc(userDocRef);
+
+                if(userDocSnap.exists()) {
+                    const data = userDocSnap.data();
+                    if (from === 'teacher') {
+                        setUserData({ name: data.name, email: data.email });
+                    } else {
+                        // For students, we need to fetch their main document from the teacher's subcollection
+                        const teacherUid = data.teacherUid;
+                        if (teacherUid) {
+                            const studentRef = doc(db, 'teachers', teacherUid, 'students', currentUser.uid);
+                            const studentSnap = await getDoc(studentRef);
+                            if (studentSnap.exists()) {
+                                const studentData = studentSnap.data();
+                                setUserData({ name: studentData.studentName, email: studentData.email });
+                            }
+                        }
+                    }
                 }
             } else {
                 router.push('/');
             }
         });
         return () => unsubscribe();
-    }, [router]);
+    }, [router, from]);
     
     useEffect(() => {
         const fetchInfoContent = async () => {
@@ -79,8 +97,8 @@ function FeedbackFormComponent() {
     }, [feedbackType]);
     
     const handleSubmit = async () => {
-        if (!user || !message.trim() || !teacherData) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Message cannot be empty and user must be identifiable.' });
+        if (!user || !message.trim() || !userData) {
+            toast({ variant: 'destructive', title: 'Error', description: 'User information is missing or message is empty.' });
             return;
         }
         setIsSubmitting(true);
@@ -89,8 +107,8 @@ function FeedbackFormComponent() {
               feedbackType,
               message,
               teacherUid: user.uid,
-              teacherName: teacherData.name,
-              teacherEmail: teacherData.email,
+              teacherName: userData.name,
+              teacherEmail: userData.email,
             });
             if (result.success) {
                 toast({ title: 'Feedback Sent!', description: 'Thank you for helping us improve The Academy of Heroes.' });
@@ -159,11 +177,11 @@ function FeedbackFormComponent() {
                                 </Button>
                             </div>
 
-                             {infoContent && (
+                             {(feedbackType === 'bug' && infoContent) && (
                                 <Card className="bg-secondary">
                                     <CardHeader>
                                         <CardTitle className="flex items-center gap-2">
-                                            {feedbackType === 'bug' ? <Bug className="h-5 w-5" /> : <Lightbulb className="h-5 w-5" />}
+                                            <Bug className="h-5 w-5" />
                                             {details.infoTitle}
                                         </CardTitle>
                                         <CardDescription>{details.infoDescription}</CardDescription>
@@ -171,7 +189,26 @@ function FeedbackFormComponent() {
                                     <CardContent>
                                         <div
                                             className="text-sm"
-                                            style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+                                            style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}
+                                        >
+                                            {infoContent}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+                             {(feedbackType === 'feature' && infoContent) && (
+                                <Card className="bg-secondary">
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2">
+                                            <Lightbulb className="h-5 w-5" />
+                                            {details.infoTitle}
+                                        </CardTitle>
+                                        <CardDescription>{details.infoDescription}</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div
+                                            className="text-sm"
+                                            style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}
                                         >
                                             {infoContent}
                                         </div>
