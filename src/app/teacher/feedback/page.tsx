@@ -16,6 +16,7 @@ import { ArrowLeft, Loader2, Send, Bug, Lightbulb } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { submitFeedback } from '@/ai/flows/submit-feedback';
 import { getKnownBugsContent } from '@/ai/flows/manage-known-bugs';
+import { getUpcomingFeaturesContent } from '@/ai/flows/manage-upcoming-features';
 import { DashboardHeader } from '@/components/dashboard/header';
 
 
@@ -37,9 +38,9 @@ function FeedbackFormComponent() {
     const [message, setMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     
-    // Known Bugs state
-    const [knownBugs, setKnownBugs] = useState('');
-    const [isLoadingBugs, setIsLoadingBugs] = useState(true);
+    // State for informational content
+    const [infoContent, setInfoContent] = useState('');
+    const [isLoadingContent, setIsLoadingContent] = useState(true);
     
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -58,20 +59,23 @@ function FeedbackFormComponent() {
     }, [router]);
     
     useEffect(() => {
-        if (feedbackType === 'bug') {
-            const fetchKnownBugs = async () => {
-                setIsLoadingBugs(true);
-                try {
-                    const content = await getKnownBugsContent();
-                    setKnownBugs(content);
-                } catch (error) {
-                    console.error("Failed to fetch known bugs:", error);
-                } finally {
-                    setIsLoadingBugs(false);
+        const fetchInfoContent = async () => {
+            setIsLoadingContent(true);
+            try {
+                let content = '';
+                if (feedbackType === 'bug') {
+                    content = await getKnownBugsContent();
+                } else if (feedbackType === 'feature') {
+                    content = await getUpcomingFeaturesContent();
                 }
-            };
-            fetchKnownBugs();
-        }
+                setInfoContent(content);
+            } catch (error) {
+                console.error("Failed to fetch info content:", error);
+            } finally {
+                setIsLoadingContent(false);
+            }
+        };
+        fetchInfoContent();
     }, [feedbackType]);
     
     const handleSubmit = async () => {
@@ -105,12 +109,16 @@ function FeedbackFormComponent() {
         bug: {
             icon: <Bug className="h-12 w-12 text-destructive" />,
             title: 'Report a Bug',
-            description: 'Encountered an issue or something not working as expected? Let us know the details so we can investigate.'
+            description: 'Encountered an issue or something not working as expected? Let us know the details so we can investigate.',
+            infoTitle: 'Known Issues',
+            infoDescription: 'Our scribes are already aware of these reports and are working on them!',
         },
         feature: {
             icon: <Lightbulb className="h-12 w-12 text-yellow-500" />,
             title: 'Request a Feature',
-            description: 'Have a great idea for a new tool or improvement? We would love to hear your thoughts!'
+            description: 'Have a great idea for a new tool or improvement? We would love to hear your thoughts!',
+            infoTitle: 'Upcoming Features',
+            infoDescription: 'Here are some of the features we are currently building!',
         }
     }
 
@@ -144,18 +152,21 @@ function FeedbackFormComponent() {
                                     disabled={isSubmitting}
                                 />
                             </div>
-                             {feedbackType === 'bug' && knownBugs && (
+                             {infoContent && (
                                 <Card className="bg-secondary">
                                     <CardHeader>
-                                        <CardTitle className="flex items-center gap-2"><Bug className="h-5 w-5" /> Known Issues</CardTitle>
-                                        <CardDescription>Our scribes are already aware of these reports and are working on them!</CardDescription>
+                                        <CardTitle className="flex items-center gap-2">
+                                            {feedbackType === 'bug' ? <Bug className="h-5 w-5" /> : <Lightbulb className="h-5 w-5" />}
+                                            {details.infoTitle}
+                                        </CardTitle>
+                                        <CardDescription>{details.infoDescription}</CardDescription>
                                     </CardHeader>
                                     <CardContent>
                                         <div
                                             className="text-sm"
                                             style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
                                         >
-                                            {knownBugs}
+                                            {infoContent}
                                         </div>
                                     </CardContent>
                                 </Card>

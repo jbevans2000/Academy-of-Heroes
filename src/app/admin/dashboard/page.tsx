@@ -22,6 +22,7 @@ import { moderateStudent } from '@/ai/flows/manage-student';
 import { deleteTeacher } from '@/ai/flows/manage-teacher';
 import { getAdminNotepadContent, updateAdminNotepadContent } from '@/ai/flows/manage-admin-notepad';
 import { getKnownBugsContent, updateKnownBugsContent } from '@/ai/flows/manage-known-bugs';
+import { getUpcomingFeaturesContent, updateUpcomingFeaturesContent } from '@/ai/flows/manage-upcoming-features';
 import { markAllAdminMessagesAsRead } from '@/ai/flows/manage-admin-messages';
 import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle, HelpCircle, Edit, Reply, FileText, Save, CreditCard, View } from 'lucide-react';
 import {
@@ -141,6 +142,12 @@ export default function AdminDashboardPage() {
     const [isKnownBugsLoading, setIsKnownBugsLoading] = useState(true);
     const [isSavingKnownBugs, setIsSavingKnownBugs] = useState(false);
     const initialKnownBugsContent = useRef('');
+
+    // Upcoming Features State
+    const [upcomingFeaturesContent, setUpcomingFeaturesContent] = useState('');
+    const [isUpcomingFeaturesLoading, setIsUpcomingFeaturesLoading] = useState(true);
+    const [isSavingUpcomingFeatures, setIsSavingUpcomingFeatures] = useState(false);
+    const initialUpcomingFeaturesContent = useRef('');
 
 
     // Broadcast message state
@@ -289,6 +296,7 @@ export default function AdminDashboardPage() {
             fetchBroadcasts(),
             fetchNotepad(),
             fetchKnownBugs(),
+            fetchUpcomingFeatures(),
         ]);
         setIsLoading(false);
         toast({ title: "Data Refreshed", description: "All dashboard data has been updated." });
@@ -381,6 +389,19 @@ export default function AdminDashboardPage() {
         }
     }
 
+    const fetchUpcomingFeatures = async () => {
+        setIsUpcomingFeaturesLoading(true);
+        try {
+            const content = await getUpcomingFeaturesContent();
+            setUpcomingFeaturesContent(content);
+            initialUpcomingFeaturesContent.current = content;
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not load upcoming features content.' });
+        } finally {
+            setIsUpcomingFeaturesLoading(false);
+        }
+    }
+
     const handleSaveNotepad = async () => {
         setIsSavingNotepad(true);
         try {
@@ -414,6 +435,23 @@ export default function AdminDashboardPage() {
             setIsSavingKnownBugs(false);
         }
     }
+    
+    const handleSaveUpcomingFeatures = async () => {
+        setIsSavingUpcomingFeatures(true);
+        try {
+            const result = await updateUpcomingFeaturesContent(upcomingFeaturesContent);
+            if (result.success) {
+                toast({ title: 'Upcoming Features Saved', description: 'The list of upcoming features has been updated.' });
+                initialUpcomingFeaturesContent.current = upcomingFeaturesContent;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Save Failed', description: error.message });
+        } finally {
+            setIsSavingUpcomingFeatures(false);
+        }
+    };
 
     const fetchSettings = async () => {
         setIsSettingsLoading(true);
@@ -797,6 +835,31 @@ export default function AdminDashboardPage() {
                             )}
                         </CardContent>
                      </Card>
+
+                     {/* Upcoming Features Card */}
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle className="flex items-center gap-2"><Lightbulb className="h-6 w-6 text-yellow-500" /> Upcoming Features List</CardTitle>
+                                <CardDescription>This content will be displayed on the "Request a Feature" page.</CardDescription>
+                            </div>
+                            <Button onClick={handleSaveUpcomingFeatures} disabled={isSavingUpcomingFeatures || upcomingFeaturesContent === initialUpcomingFeaturesContent.current}>
+                                {isSavingUpcomingFeatures ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                Save Features
+                            </Button>
+                        </CardHeader>
+                        <CardContent>
+                            {isUpcomingFeaturesLoading ? <Skeleton className="h-40" /> : (
+                                <Textarea
+                                    placeholder="List features currently being worked on."
+                                    value={upcomingFeaturesContent}
+                                    onChange={(e) => setUpcomingFeaturesContent(e.target.value)}
+                                    rows={8}
+                                    disabled={isSavingUpcomingFeatures}
+                                />
+                            )}
+                        </CardContent>
+                    </Card>
 
                     {/* Broadcast Message Card */}
                     <Collapsible>
