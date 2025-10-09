@@ -152,7 +152,7 @@ function FeedbackFormComponent() {
                                     </CardHeader>
                                     <CardContent>
                                         <div
-                                            className="prose prose-sm max-w-none dark:prose-invert"
+                                            className="prose prose-sm max-w-none dark:prose-invert whitespace-pre-wrap"
                                             dangerouslySetInnerHTML={{ __html: marked(knownBugs) as string }}
                                         />
                                     </CardContent>
