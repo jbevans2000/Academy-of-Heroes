@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -152,7 +151,7 @@ function FeedbackFormComponent() {
                                     </CardHeader>
                                     <CardContent>
                                         <div
-                                            className="prose prose-sm max-w-none dark:prose-invert whitespace-pre-wrap"
+                                            className="text-sm whitespace-pre-wrap"
                                             dangerouslySetInnerHTML={{ __html: marked(knownBugs) as string }}
                                         />
                                     </CardContent>
