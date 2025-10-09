@@ -152,8 +152,9 @@ function FeedbackFormComponent() {
                                     <CardContent>
                                         <div
                                             className="text-sm whitespace-pre-wrap"
-                                            dangerouslySetInnerHTML={{ __html: marked(knownBugs) as string }}
-                                        />
+                                        >
+                                            {knownBugs}
+                                        </div>
                                     </CardContent>
                                 </Card>
                             )}
