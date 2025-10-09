@@ -152,6 +152,13 @@ function FeedbackFormComponent() {
                                     disabled={isSubmitting}
                                 />
                             </div>
+                            <div className="flex justify-end">
+                                <Button onClick={handleSubmit} disabled={isSubmitting || !message.trim()}>
+                                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                                    Submit
+                                </Button>
+                            </div>
+
                              {infoContent && (
                                 <Card className="bg-secondary">
                                     <CardHeader>
@@ -171,12 +178,6 @@ function FeedbackFormComponent() {
                                     </CardContent>
                                 </Card>
                             )}
-                            <div className="flex justify-end">
-                                <Button onClick={handleSubmit} disabled={isSubmitting || !message.trim()}>
-                                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                                    Submit
-                                </Button>
-                            </div>
                         </CardContent>
                     </Card>
                 </div>
