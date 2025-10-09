@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -15,7 +16,10 @@ import { Label } from '@/components/ui/label';
 import { ArrowLeft, Loader2, Send, Bug, Lightbulb } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { submitFeedback } from '@/ai/flows/submit-feedback';
+import { getKnownBugsContent } from '@/ai/flows/manage-known-bugs';
 import { DashboardHeader } from '@/components/dashboard/header';
+import { marked } from 'marked';
+
 
 interface TeacherData {
     name: string;
@@ -35,6 +39,10 @@ function FeedbackFormComponent() {
     const [message, setMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     
+    // Known Bugs state
+    const [knownBugs, setKnownBugs] = useState('');
+    const [isLoadingBugs, setIsLoadingBugs] = useState(true);
+    
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
@@ -50,6 +58,21 @@ function FeedbackFormComponent() {
         });
         return () => unsubscribe();
     }, [router]);
+    
+    useEffect(() => {
+        const fetchKnownBugs = async () => {
+            setIsLoadingBugs(true);
+            try {
+                const content = await getKnownBugsContent();
+                setKnownBugs(content);
+            } catch (error) {
+                console.error("Failed to fetch known bugs:", error);
+            } finally {
+                setIsLoadingBugs(false);
+            }
+        };
+        fetchKnownBugs();
+    }, []);
     
     const handleSubmit = async () => {
         if (!user || !message.trim() || !teacherData) {
@@ -121,6 +144,20 @@ function FeedbackFormComponent() {
                                     disabled={isSubmitting}
                                 />
                             </div>
+                             {knownBugs && (
+                                <Card className="bg-secondary">
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2"><Bug className="h-5 w-5" /> Known Issues</CardTitle>
+                                        <CardDescription>Our scribes are already aware of these reports and are working on them!</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div
+                                            className="prose prose-sm max-w-none dark:prose-invert"
+                                            dangerouslySetInnerHTML={{ __html: marked(knownBugs) as string }}
+                                        />
+                                    </CardContent>
+                                </Card>
+                            )}
                             <div className="flex justify-end">
                                 <Button onClick={handleSubmit} disabled={isSubmitting || !message.trim()}>
                                     {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}

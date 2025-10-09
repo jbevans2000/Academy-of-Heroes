@@ -21,6 +21,7 @@ import { deleteFeedback } from '@/ai/flows/submit-feedback';
 import { moderateStudent } from '@/ai/flows/manage-student';
 import { deleteTeacher } from '@/ai/flows/manage-teacher';
 import { getAdminNotepadContent, updateAdminNotepadContent } from '@/ai/flows/manage-admin-notepad';
+import { getKnownBugsContent, updateKnownBugsContent } from '@/ai/flows/manage-known-bugs';
 import { markAllAdminMessagesAsRead } from '@/ai/flows/manage-admin-messages';
 import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle, HelpCircle, Edit, Reply, FileText, Save, CreditCard, View } from 'lucide-react';
 import {
@@ -134,6 +135,13 @@ export default function AdminDashboardPage() {
     const [isNotepadLoading, setIsNotepadLoading] = useState(true);
     const [isSavingNotepad, setIsSavingNotepad] = useState(false);
     const initialNotepadContent = useRef('');
+    
+    // Known Bugs State
+    const [knownBugsContent, setKnownBugsContent] = useState('');
+    const [isKnownBugsLoading, setIsKnownBugsLoading] = useState(true);
+    const [isSavingKnownBugs, setIsSavingKnownBugs] = useState(false);
+    const initialKnownBugsContent = useRef('');
+
 
     // Broadcast message state
     const [broadcastMessage, setBroadcastMessage] = useState('');
@@ -280,6 +288,7 @@ export default function AdminDashboardPage() {
             fetchFeedback(),
             fetchBroadcasts(),
             fetchNotepad(),
+            fetchKnownBugs(),
         ]);
         setIsLoading(false);
         toast({ title: "Data Refreshed", description: "All dashboard data has been updated." });
@@ -358,6 +367,19 @@ export default function AdminDashboardPage() {
             setIsNotepadLoading(false);
         }
     }
+    
+    const fetchKnownBugs = async () => {
+        setIsKnownBugsLoading(true);
+        try {
+            const content = await getKnownBugsContent();
+            setKnownBugsContent(content);
+            initialKnownBugsContent.current = content;
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not load known bugs content.' });
+        } finally {
+            setIsKnownBugsLoading(false);
+        }
+    }
 
     const handleSaveNotepad = async () => {
         setIsSavingNotepad(true);
@@ -373,6 +395,23 @@ export default function AdminDashboardPage() {
             toast({ variant: 'destructive', title: 'Save Failed', description: error.message });
         } finally {
             setIsSavingNotepad(false);
+        }
+    }
+    
+    const handleSaveKnownBugs = async () => {
+        setIsSavingKnownBugs(true);
+        try {
+            const result = await updateKnownBugsContent(knownBugsContent);
+            if(result.success) {
+                toast({ title: 'Known Bugs Saved', description: 'The known bugs list has been updated.' });
+                initialKnownBugsContent.current = knownBugsContent;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Save Failed', description: error.message });
+        } finally {
+            setIsSavingKnownBugs(false);
         }
     }
 
@@ -729,6 +768,31 @@ export default function AdminDashboardPage() {
                                     onChange={(e) => setNotepadContent(e.target.value)}
                                     rows={8}
                                     disabled={isSavingNotepad}
+                                />
+                            )}
+                        </CardContent>
+                     </Card>
+
+                    {/* Known Bugs Card */}
+                     <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle className="flex items-center gap-2"><Bug className="h-6 w-6 text-destructive" /> Known Bugs List</CardTitle>
+                                <CardDescription>This content will be displayed to users on the feedback page.</CardDescription>
+                            </div>
+                            <Button onClick={handleSaveKnownBugs} disabled={isSavingKnownBugs || knownBugsContent === initialKnownBugsContent.current}>
+                                {isSavingKnownBugs ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
+                                Save Bugs
+                            </Button>
+                        </CardHeader>
+                        <CardContent>
+                            {isKnownBugsLoading ? <Skeleton className="h-40" /> : (
+                                <Textarea
+                                    placeholder="List known bugs here, one per line. Use markdown for formatting (e.g., - Bug description)."
+                                    value={knownBugsContent}
+                                    onChange={(e) => setKnownBugsContent(e.target.value)}
+                                    rows={8}
+                                    disabled={isSavingKnownBugs}
                                 />
                             )}
                         </CardContent>
