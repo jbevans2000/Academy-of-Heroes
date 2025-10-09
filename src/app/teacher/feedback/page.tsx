@@ -17,7 +17,6 @@ import { useToast } from '@/hooks/use-toast';
 import { submitFeedback } from '@/ai/flows/submit-feedback';
 import { getKnownBugsContent } from '@/ai/flows/manage-known-bugs';
 import { DashboardHeader } from '@/components/dashboard/header';
-import { marked } from 'marked';
 
 
 interface TeacherData {
@@ -59,19 +58,21 @@ function FeedbackFormComponent() {
     }, [router]);
     
     useEffect(() => {
-        const fetchKnownBugs = async () => {
-            setIsLoadingBugs(true);
-            try {
-                const content = await getKnownBugsContent();
-                setKnownBugs(content);
-            } catch (error) {
-                console.error("Failed to fetch known bugs:", error);
-            } finally {
-                setIsLoadingBugs(false);
-            }
-        };
-        fetchKnownBugs();
-    }, []);
+        if (feedbackType === 'bug') {
+            const fetchKnownBugs = async () => {
+                setIsLoadingBugs(true);
+                try {
+                    const content = await getKnownBugsContent();
+                    setKnownBugs(content);
+                } catch (error) {
+                    console.error("Failed to fetch known bugs:", error);
+                } finally {
+                    setIsLoadingBugs(false);
+                }
+            };
+            fetchKnownBugs();
+        }
+    }, [feedbackType]);
     
     const handleSubmit = async () => {
         if (!user || !message.trim() || !teacherData) {
@@ -143,7 +144,7 @@ function FeedbackFormComponent() {
                                     disabled={isSubmitting}
                                 />
                             </div>
-                             {knownBugs && (
+                             {feedbackType === 'bug' && knownBugs && (
                                 <Card className="bg-secondary">
                                     <CardHeader>
                                         <CardTitle className="flex items-center gap-2"><Bug className="h-5 w-5" /> Known Issues</CardTitle>
@@ -151,7 +152,8 @@ function FeedbackFormComponent() {
                                     </CardHeader>
                                     <CardContent>
                                         <div
-                                            className="text-sm whitespace-pre-wrap"
+                                            className="text-sm"
+                                            style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
                                         >
                                             {knownBugs}
                                         </div>
