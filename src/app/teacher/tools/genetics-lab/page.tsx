@@ -408,10 +408,10 @@ export default function GeneticsLabPage() {
                     </Card>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <HatchlingTable title="Chromosomes 1" tableIndex={1} />
-                        <HatchlingTable title="Chromosomes 2" tableIndex={2} />
-                        <HatchlingTable title="Chromosomes 3" tableIndex={3} />
-                        <HatchlingTable title="Chromosomes 4" tableIndex={4} />
+                        <HatchlingTable title="Chromosome 1" tableIndex={1} />
+                        <HatchlingTable title="Chromosome 2" tableIndex={2} />
+                        <HatchlingTable title="Chromosome 3" tableIndex={3} />
+                        <HatchlingTable title="Chromosome 4" tableIndex={4} />
                     </div>
 
                 </div>
