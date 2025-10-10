@@ -12,7 +12,7 @@ import type { Student } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Loader2, Save, Send, Upload, File as FileIcon } from 'lucide-react';
@@ -28,6 +28,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Alert, AlertTitle } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 
 
 interface SubmissionData {
@@ -51,7 +53,7 @@ export default function StudentMissionDetailPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showEmbedInstructionsDialog, setShowEmbedInstructionsDialog] = useState(false);
+    const [showEmbedInstructionsAlert, setShowEmbedInstructionsAlert] = useState(false);
 
     const [fileToUpload, setFileToUpload] = useState<File | null>(null);
 
@@ -98,7 +100,7 @@ export default function StudentMissionDetailPage() {
                         const iframeSrcMatch = missionData.content.match(/<iframe.*?src=["'](.*?)["']/);
                         if (iframeSrcMatch && iframeSrcMatch[1]) {
                             window.open(iframeSrcMatch[1], '_blank');
-                            setShowEmbedInstructionsDialog(true);
+                            setShowEmbedInstructionsAlert(true);
                         }
                     }
 
@@ -207,36 +209,33 @@ export default function StudentMissionDetailPage() {
     }
     
     const isSubmitted = submission.status === 'submitted';
-    const isEditorDisabled = isSubmitted || isSaving || showEmbedInstructionsDialog;
+    const isEditorDisabled = isSubmitted || isSaving || showEmbedInstructionsAlert;
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
-            <AlertDialog open={showEmbedInstructionsDialog} onOpenChange={setShowEmbedInstructionsDialog}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle className="text-2xl">External Assignment Instructions</AlertDialogTitle>
-                        <AlertDialogDescription className="text-lg text-black">
-                            Please Complete this Mission on the Second Browser Tab that Just opened. When complete, please press Control + P, and SAVE the mission as a PDF file. Upload your PDF file for your Guild Leader's review using the upload box below!
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogAction onClick={() => setShowEmbedInstructionsDialog(false)}>Understood</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
             <DashboardHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="max-w-4xl mx-auto space-y-6">
                     <Button variant="outline" onClick={() => router.push('/dashboard/missions')}>
                         <ArrowLeft className="mr-2 h-4 w-4" /> Back to All Missions
                     </Button>
+                    
+                    {showEmbedInstructionsAlert && (
+                        <Alert variant="default" className="bg-yellow-100/90 dark:bg-yellow-900/80 border-yellow-500 text-black dark:text-white">
+                            <AlertTitle className="text-2xl font-bold">External Assignment Instructions</AlertTitle>
+                            <p className="text-lg">
+                                Please Complete this Mission on the Second Browser Tab that Just opened. When complete, please press Control + P, and SAVE the mission as a PDF file. Upload your PDF file for your Guild Leader's review using the upload box below!
+                            </p>
+                        </Alert>
+                    )}
+
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-3xl font-headline">{mission.title}</CardTitle>
                         </CardHeader>
                         <CardContent className="relative">
-                             {showEmbedInstructionsDialog && (
-                                <div className="absolute inset-0 bg-white/70 z-10" />
+                             {showEmbedInstructionsAlert && (
+                                <div className="absolute inset-0 bg-white/70 dark:bg-black/70 z-10" />
                             )}
                             <div
                                 className="prose dark:prose-invert max-w-none"
@@ -290,5 +289,3 @@ export default function StudentMissionDetailPage() {
         </div>
     );
 }
-
-    
