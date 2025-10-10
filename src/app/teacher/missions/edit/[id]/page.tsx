@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import RichTextEditor from '@/components/teacher/rich-text-editor';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Save, Loader2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Trash2, Download } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { saveMission, deleteMission } from '@/ai/flows/manage-missions';
 import {
@@ -28,13 +28,17 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
+import jsPDF from 'jspdf';
+import { toPng } from 'html-to-image';
+
 
 export default function EditMissionPage() {
     const router = useRouter();
     const params = useParams();
     const missionId = params.id as string;
     const { toast } = useToast();
+    const contentRef = useRef<HTMLDivElement>(null);
 
     const [teacher, setTeacher] = useState<User | null>(null);
     const [mission, setMission] = useState<Partial<Mission> | null>(null);
@@ -119,6 +123,49 @@ export default function EditMissionPage() {
         }
     }
 
+    const handleDownloadPdf = async () => {
+        if (!contentRef.current) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not find the content to download.' });
+            return;
+        }
+    
+        const editorContentElement = contentRef.current;
+    
+        try {
+            const dataUrl = await toPng(editorContentElement, { 
+                quality: 0.95,
+                style: { margin: '0' }
+            });
+    
+            const pdf = new jsPDF('p', 'px', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            
+            const imgProps = pdf.getImageProperties(dataUrl);
+            const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+            let heightLeft = imgHeight;
+            let position = 0;
+
+            pdf.addImage(dataUrl, 'PNG', 0, position, pdfWidth, imgHeight);
+            heightLeft -= pdfHeight;
+
+            while (heightLeft > 0) {
+                position -= pdfHeight;
+                pdf.addPage();
+                pdf.addImage(dataUrl, 'PNG', 0, position, pdfWidth, imgHeight);
+                heightLeft -= pdfHeight;
+            }
+
+            pdf.save(`${mission?.title || 'mission'}.pdf`);
+    
+        } catch (error) {
+            console.error('oops, something went wrong!', error);
+            toast({ variant: 'destructive', title: 'Download Failed', description: 'Could not generate the PDF.' });
+        }
+    };
+
+
     if (isLoading || !mission) {
          return (
             <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -146,6 +193,9 @@ export default function EditMissionPage() {
                              <Button variant="destructive" onClick={() => setIsDeleteDialogOpen(true)}>
                                 <Trash2 className="mr-2 h-4 w-4" /> Delete Mission
                             </Button>
+                             <Button variant="secondary" onClick={handleDownloadPdf}>
+                                <Download className="mr-2 h-4 w-4" /> Download as PDF
+                            </Button>
                             <Button onClick={handleSave} disabled={isSaving}>
                                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                                 Save Changes
@@ -171,7 +221,8 @@ export default function EditMissionPage() {
                                 <Label>Mission Content</Label>
                                 <RichTextEditor 
                                     value={mission.content || ''} 
-                                    onChange={(value) => setMission(prev => ({...prev, content: value}))} 
+                                    onChange={(value) => setMission(prev => ({...prev, content: value}))}
+                                    ref={contentRef}
                                 />
                             </div>
                             <div className="flex items-center space-x-2 pt-4">
