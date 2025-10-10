@@ -234,7 +234,10 @@ export default function StudentMissionDetailPage() {
                         <CardHeader>
                             <CardTitle className="text-3xl font-headline">{mission.title}</CardTitle>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="relative">
+                            {showEmbedInstructionsDialog && (
+                                <div className="absolute inset-0 bg-white/70 z-10" />
+                            )}
                             <div
                                 className="prose dark:prose-invert max-w-none"
                                 dangerouslySetInnerHTML={{ __html: mission.content }}
@@ -287,4 +290,3 @@ export default function StudentMissionDetailPage() {
         </div>
     );
 }
-
