@@ -20,6 +20,8 @@ interface Submission {
     fileUrl?: string;
     grade?: string;
     feedback?: string;
+    xpAwarded?: number;
+    goldAwarded?: number;
 }
 
 interface ReviewSubmissionDialogProps {
@@ -103,6 +105,13 @@ export function ReviewSubmissionDialog({ isOpen, onOpenChange, student, submissi
              action === 'complete' ? setIsSaving(false) : setIsRequestingResubmission(false);
         }
     };
+    
+    const isEmbedded = mission.content.includes('<iframe');
+    const submissionContentHtml = submission.submissionContent 
+        ? submission.submissionContent
+        : isEmbedded
+        ? '<p class="text-muted-foreground">This was an embedded assignment. Please view the student\'s submitted file to see their work.</p>'
+        : '<p class="text-muted-foreground">No written response submitted.</p>';
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -115,7 +124,7 @@ export function ReviewSubmissionDialog({ isOpen, onOpenChange, student, submissi
                     <div className="flex flex-col space-y-4">
                         <h3 className="font-semibold">Student's Response</h3>
                         <ScrollArea className="h-full border rounded-md p-4 bg-secondary/50">
-                           <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: submission.submissionContent || '<p class="text-muted-foreground">No written response submitted.</p>' }} />
+                           <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: submissionContentHtml }} />
                         </ScrollArea>
                         {submission.fileUrl && (
                             <Button asChild variant="outline">
