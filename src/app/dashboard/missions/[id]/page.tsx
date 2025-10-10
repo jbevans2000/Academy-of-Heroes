@@ -12,7 +12,7 @@ import type { Student } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Loader2, Save, Send, Upload, File as FileIcon } from 'lucide-react';
@@ -44,7 +44,10 @@ export default function StudentMissionDetailPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    // State for embedded content UI
     const [showEmbedInstructionsAlert, setShowEmbedInstructionsAlert] = useState(false);
+    const [embedUrl, setEmbedUrl] = useState<string | null>(null);
 
     const [fileToUpload, setFileToUpload] = useState<File | null>(null);
 
@@ -90,7 +93,9 @@ export default function StudentMissionDetailPage() {
                     if (missionData.content.includes('<iframe')) {
                         const iframeSrcMatch = missionData.content.match(/<iframe.*?src=["'](.*?)["']/);
                         if (iframeSrcMatch && iframeSrcMatch[1]) {
-                            window.open(iframeSrcMatch[1], '_blank');
+                            const url = iframeSrcMatch[1];
+                            setEmbedUrl(url);
+                            window.open(url, '_blank');
                             setShowEmbedInstructionsAlert(true);
                         }
                     }
@@ -200,7 +205,7 @@ export default function StudentMissionDetailPage() {
     }
     
     const isSubmitted = submission.status === 'submitted';
-    const isEditorDisabled = isSubmitted || isSaving || showEmbedInstructionsAlert;
+    const isEditorDisabled = isSubmitted || isSaving;
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -216,6 +221,11 @@ export default function StudentMissionDetailPage() {
                             <AlertTitle className="text-2xl font-bold text-black">External Assignment Instructions</AlertTitle>
                             <p className="text-lg text-black">
                                 Please Complete this Mission on the Second Browser Tab that Just opened. When complete, please press Control + P, and SAVE the mission as a PDF file. Upload your PDF file for your Guild Leader's review using the upload box below!
+                                <br/><br/>
+                                If you closed the tab by mistake, you can reopen it by{' '}
+                                <a href={embedUrl!} target="_blank" rel="noopener noreferrer" className="font-bold underline text-blue-800">
+                                    clicking HERE.
+                                </a>
                             </p>
                         </Alert>
                     )}
