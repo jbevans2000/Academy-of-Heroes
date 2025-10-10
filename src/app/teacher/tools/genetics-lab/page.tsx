@@ -247,13 +247,11 @@ export default function GeneticsLabPage() {
                             </div>
                         </CardContent>
                     </Card>
-
-                    <Card>
-                        <CardContent className="p-4">
+                     <Card>
+                        <CardContent className="p-4 prose max-w-none text-center">
                             <p>An Upper Case, or Capital letter is used to represent a dominant trait. A Lower Case, or small letter, is used to represent a recessive trait. Dominant Traits Completely mask and/or suppress recessive traits. Refer to the Key, and answer the following questions:</p>
                         </CardContent>
                     </Card>
-
                     <Card>
                         <CardHeader>
                             <CardTitle>Question 5</CardTitle>
@@ -272,7 +270,6 @@ export default function GeneticsLabPage() {
                             </div>
                         </CardContent>
                     </Card>
-
                      <Card>
                         <CardHeader>
                             <CardTitle>Question 6</CardTitle>
@@ -291,7 +288,6 @@ export default function GeneticsLabPage() {
                             </div>
                         </CardContent>
                     </Card>
-
                     <Card>
                         <CardHeader className="text-center">
                             <CardTitle className="text-3xl font-headline">Silvaria's Chromosomes</CardTitle>
@@ -365,6 +361,15 @@ export default function GeneticsLabPage() {
                             {geneticsKey.map((trait, index) => (
                                 <PunnettSquare key={trait.trait} traitName={`Trait ${index + 1}: ${trait.trait}`} squareIndex={index} />
                             ))}
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="text-center">
+                            <CardTitle className="text-3xl font-headline">The Hatchling</CardTitle>
+                        </CardHeader>
+                        <CardContent className="prose max-w-none text-center">
+                            <p>Pick ONE QUADRANT from the Parental Punnett Squares. Put together the GENOTYPES and PHENOTYPES of the Hatchling!</p>
                         </CardContent>
                     </Card>
 
