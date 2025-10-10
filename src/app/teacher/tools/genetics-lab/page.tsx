@@ -22,7 +22,66 @@ const geneticsKey = [
   { trait: 'Back', dominantAllele: 'K', dominant: 'Freckled Back', recessiveAllele: 'k', recessive: 'No freckles on back' },
   { trait: 'Breath', dominantAllele: 'F', dominant: 'Fire Breathing', recessiveAllele: 'f', recessive: 'No Fire Breathing' },
   { trait: 'Toes', dominantAllele: 'T', dominant: 'Three Toes', recessiveAllele: 't', recessive: 'Four Toes' },
+  { trait: 'Wing Color', dominantAllele: 'W', dominant: 'Black Wings', recessiveAllele: 'w', recessive: 'Colored Wings' },
 ];
+
+const PunnettSquare = ({ traitName, squareIndex }: { traitName: string, squareIndex: number }) => {
+    const [alleles, setAlleles] = useState({
+        top1: '', top2: '',
+        left1: '', left2: '',
+        grid1: '', grid2: '',
+        grid3: '', grid4: ''
+    });
+
+    const storageKey = `punnettSquare-${squareIndex}`;
+
+    useEffect(() => {
+        try {
+            const savedState = localStorage.getItem(storageKey);
+            if (savedState) {
+                setAlleles(JSON.parse(savedState));
+            }
+        } catch (error) {
+            console.error(`Could not load state for Punnett Square ${squareIndex}:`, error);
+        }
+    }, [storageKey, squareIndex]);
+
+    const handleChange = (field: keyof typeof alleles, value: string) => {
+        const newAlleles = { ...alleles, [field]: value };
+        setAlleles(newAlleles);
+        try {
+            localStorage.setItem(storageKey, JSON.stringify(newAlleles));
+        } catch (error) {
+            console.error(`Could not save state for Punnett Square ${squareIndex}:`, error);
+        }
+    };
+    
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>{traitName}</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="grid grid-cols-3 gap-1 w-48 mx-auto">
+                    {/* Top Row Headers */}
+                    <div />
+                    <Input className="text-center font-bold" value={alleles.top1} onChange={(e) => handleChange('top1', e.target.value)} />
+                    <Input className="text-center font-bold" value={alleles.top2} onChange={(e) => handleChange('top2', e.target.value)} />
+
+                    {/* First Row */}
+                    <Input className="text-center font-bold" value={alleles.left1} onChange={(e) => handleChange('left1', e.target.value)} />
+                    <Input className="text-center" value={alleles.grid1} onChange={(e) => handleChange('grid1', e.target.value)} />
+                    <Input className="text-center" value={alleles.grid2} onChange={(e) => handleChange('grid2', e.target.value)} />
+
+                    {/* Second Row */}
+                    <Input className="text-center font-bold" value={alleles.left2} onChange={(e) => handleChange('left2', e.target.value)} />
+                    <Input className="text-center" value={alleles.grid3} onChange={(e) => handleChange('grid3', e.target.value)} />
+                    <Input className="text-center" value={alleles.grid4} onChange={(e) => handleChange('grid4', e.target.value)} />
+                </div>
+            </CardContent>
+        </Card>
+    );
+};
 
 
 export default function GeneticsLabPage() {
@@ -98,11 +157,6 @@ export default function GeneticsLabPage() {
                     <Card className="text-center">
                         <CardHeader>
                             <CardTitle className="text-3xl font-headline flex items-center justify-center gap-4"><Dna className="h-8 w-8 text-primary"/>Dragon Genetics</CardTitle>
-                            <CardDescription>
-                                DRAGON TRAITS KEY <br/>
-                                Upper Case Letters = Dominant <br/>
-                                Lower Case Letters = Recessive
-                            </CardDescription>
                         </CardHeader>
                     </Card>
 
@@ -162,13 +216,13 @@ export default function GeneticsLabPage() {
                             </div>
                         </CardContent>
                     </Card>
-                    
-                     <Card>
+
+                    <Card>
                         <CardContent className="p-4">
                             <p>An Upper Case, or Capital letter is used to represent a dominant trait. A Lower Case, or small letter, is used to represent a recessive trait. Dominant Traits Completely mask and/or suppress recessive traits. Refer to the Key, and answer the following questions:</p>
                         </CardContent>
                     </Card>
-
+                    
                     <Card>
                         <CardHeader>
                             <CardTitle>Question 5</CardTitle>
@@ -272,6 +326,14 @@ export default function GeneticsLabPage() {
                             <p>Do Punnett Square Crosses for the 11 Traits!</p>
                             <p>Silvaria’s Alleles on the Top Row</p>
                             <p>Aurelio’s Traits on the Left Side</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {geneticsKey.map((trait, index) => (
+                                <PunnettSquare key={trait.trait} traitName={`Trait ${index + 1}: ${trait.trait}`} squareIndex={index} />
+                            ))}
                         </CardContent>
                     </Card>
 
