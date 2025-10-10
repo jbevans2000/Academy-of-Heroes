@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -13,8 +13,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import RichTextEditor from '@/components/teacher/rich-text-editor';
-import { ArrowLeft, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Download } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import jsPDF from 'jspdf';
+import { toPng } from 'html-to-image';
 
 export default function NewMissionPage() {
     const router = useRouter();
@@ -24,6 +26,7 @@ export default function NewMissionPage() {
     const [content, setContent] = useState('');
     const [isAssigned, setIsAssigned] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const editorRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -64,6 +67,29 @@ export default function NewMissionPage() {
         }
     };
     
+    const handleDownloadPdf = async () => {
+        if (!editorRef.current) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not find the content to download.' });
+            return;
+        }
+    
+        try {
+            const dataUrl = await toPng(editorRef.current, { quality: 0.95 });
+    
+            const pdf = new jsPDF();
+            const imgProps = pdf.getImageProperties(dataUrl);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    
+            pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save(`${title || 'mission'}.pdf`);
+    
+        } catch (error) {
+            console.error('oops, something went wrong!', error);
+            toast({ variant: 'destructive', title: 'Download Failed', description: 'Could not generate the PDF.' });
+        }
+    };
+
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
             <TeacherHeader />
@@ -73,10 +99,15 @@ export default function NewMissionPage() {
                          <Button variant="outline" onClick={() => router.push('/teacher/missions')}>
                             <ArrowLeft className="mr-2 h-4 w-4" /> Back to All Missions
                         </Button>
-                        <Button onClick={handleSave} disabled={isSaving}>
-                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                            Save Mission
-                        </Button>
+                        <div className="flex gap-2">
+                             <Button variant="secondary" onClick={handleDownloadPdf}>
+                                <Download className="mr-2 h-4 w-4" /> Download as PDF
+                            </Button>
+                            <Button onClick={handleSave} disabled={isSaving}>
+                                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                Save Mission
+                            </Button>
+                        </div>
                     </div>
                     <Card>
                         <CardHeader>
@@ -90,7 +121,9 @@ export default function NewMissionPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label>Mission Content</Label>
-                                <RichTextEditor value={content} onChange={setContent} />
+                                <div ref={editorRef}>
+                                    <RichTextEditor value={content} onChange={setContent} />
+                                </div>
                             </div>
                              <div className="flex items-center space-x-2 pt-4">
                                 <Switch id="is-assigned" checked={isAssigned} onCheckedChange={setIsAssigned} />
