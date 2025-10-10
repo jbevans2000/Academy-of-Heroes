@@ -64,18 +64,6 @@ export default function NewMissionPage() {
         }
     };
     
-    // Example content for Dragon Genetics
-    const handleAddGeneticsExample = () => {
-        setTitle('Dragon Genetics Lab');
-        setContent(`<p>Welcome to the Dragon Genetics Lab! In this special mission, you will explore the principles of heredity by breeding dragons. Please open and complete the embedded genetics worksheet below.</p>
-        <div style="text-align: center; margin: 2rem 0;">
-            <div style="aspect-ratio: 4 / 3; max-width: 800px; margin: auto; border: 1px solid #ccc; border-radius: 8px;">
-                <iframe style="width: 100%; height: 100%;" src="/teacher/tools/genetics-lab"></iframe>
-            </div>
-        </div>
-        <p>Once you have completed the worksheet, click the "Submit Mission" button that will appear below the worksheet.</p>`);
-    };
-
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
             <TeacherHeader />
@@ -90,9 +78,6 @@ export default function NewMissionPage() {
                             Save Mission
                         </Button>
                     </div>
-                     <Button onClick={handleAddGeneticsExample} variant="secondary">
-                        Load Dragon Genetics Example
-                    </Button>
                     <Card>
                         <CardHeader>
                             <CardTitle>Mission Editor</CardTitle>
