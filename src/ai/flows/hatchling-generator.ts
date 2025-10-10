@@ -32,6 +32,11 @@ const generateHatchlingFlow = ai.defineFlow(
     outputSchema: z.string().describe("A data URI of the generated image."),
   },
   async (input) => {
+    // Modify the belly description based on input
+    const bellyDescription = input['Belly'] === 'Armored Belly'
+        ? 'thick ridges'
+        : 'smooth scales';
+
     // Dynamically construct the prompt string from the input traits
     const promptText = `Generate a high-quality, fantasy art style image of a newly hatched baby dragon with the following specific physical traits. The dragon should look cute but majestic, like it has great potential.
 
@@ -40,7 +45,7 @@ const generateHatchlingFlow = ai.defineFlow(
     - Horns: ${input['Horns']}
     - Wing Claws: ${input['Wing Claws']}
     - Main Body Color: ${input['Body Color']}
-    - Belly Type: ${input['Belly']}
+    - Belly Type: ${bellyDescription}
     - Tail Style: ${input['Tail']}
     - Back Pattern: ${input['Back']}
     - Breath Ability: ${input['Breath']}
