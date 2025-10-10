@@ -120,8 +120,10 @@ export default function MissionSubmissionsPage() {
         });
     };
 
-    const filteredStudents = useMemo(() => {
+    const sortedFilteredStudents = useMemo(() => {
         let studentsToList = allStudents.filter(s => !s.isArchived && !s.isHidden);
+        
+        // Filter by company
         if (!companyFilters.includes('all')) {
             studentsToList = studentsToList.filter(s => {
                 const isFreelancer = !s.companyId;
@@ -134,8 +136,24 @@ export default function MissionSubmissionsPage() {
                 return false;
             });
         }
+        
+        // Sort by submission status then by name
+        studentsToList.sort((a, b) => {
+            const submissionA = submissions.find(s => s.id === a.uid);
+            const submissionB = submissions.find(s => s.id === b.uid);
+            
+            const statusA = submissionA?.status === 'submitted' ? 0 : 1;
+            const statusB = submissionB?.status === 'submitted' ? 0 : 1;
+
+            if (statusA !== statusB) {
+                return statusA - statusB;
+            }
+            
+            return a.studentName.localeCompare(b.studentName);
+        });
+
         return studentsToList;
-    }, [allStudents, companyFilters]);
+    }, [allStudents, companyFilters, submissions]);
     
     const handleReviewClick = (student: Student, submission: Submission) => {
         setSelectedSubmission({ student, submission });
@@ -225,7 +243,7 @@ export default function MissionSubmissionsPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {filteredStudents.map(student => {
+                                        {sortedFilteredStudents.map(student => {
                                             const submission = submissions.find(s => s.id === student.uid);
                                             const status = submission?.status || 'Not Submitted';
                                             
