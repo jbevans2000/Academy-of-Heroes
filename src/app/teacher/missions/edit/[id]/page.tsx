@@ -122,34 +122,58 @@ export default function EditMissionPage() {
     }
 
     const handleDownloadPdf = () => {
-        if (!mission?.content) {
+        const contentHtml = mission?.content;
+        if (!contentHtml) {
             toast({ variant: 'destructive', title: 'Error', description: 'No content to download.' });
             return;
         }
+        
+        // Check for an iframe
+        const iframeMatch = contentHtml.match(/<iframe.*?src=["'](.*?)["']/);
+        if (iframeMatch && iframeMatch[1]) {
+            const iframeUrl = iframeMatch[1];
+            // Open the iframe source in a new tab for printing
+            const printWindow = window.open(iframeUrl, '_blank');
+            if (printWindow) {
+                printWindow.focus();
+                // We can't reliably call print() due to cross-origin policies,
+                // so we instruct the user.
+                toast({
+                    title: "Printing Embedded Content",
+                    description: "Your embedded page has been opened in a new tab. Please use your browser's Print function (Ctrl/Cmd + P) to save it as a PDF.",
+                    duration: 10000,
+                });
+            } else {
+                 toast({ variant: 'destructive', title: 'Popup Blocked', description: 'Could not open the content in a new tab. Please disable your popup blocker for this site.' });
+            }
+            return;
+        }
 
+        // Fallback to jsPDF for regular HTML content
         const pdf = new jsPDF('p', 'pt', 'a4');
         const margin = 40;
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const contentWidth = pdfWidth - margin * 2;
-
-        const htmlContent = `
+        
+        const completeHtml = `
             <!DOCTYPE html>
             <html>
             <head>
                 <style>
-                    body { font-family: Times, serif; }
+                    body { font-family: Times, serif; font-size: 12pt; }
                     img, iframe { max-width: 100%; height: auto; }
-                    blockquote { border-left: 2px solid #ccc; margin-left: 0; padding-left: 1rem; }
+                    blockquote { border-left: 2px solid #ccc; margin-left: 0; padding-left: 1rem; font-style: italic; }
+                    h1, h2, h3, h4, h5, h6 { font-family: sans-serif; }
                 </style>
             </head>
             <body>
                 <h1>${mission.title || 'Mission'}</h1>
-                ${mission.content}
+                ${contentHtml}
             </body>
             </html>
         `;
 
-        pdf.html(htmlContent, {
+        pdf.html(completeHtml, {
             callback: function (doc) {
                 doc.save(`${mission?.title || 'mission'}.pdf`);
             },
