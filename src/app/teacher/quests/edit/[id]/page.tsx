@@ -47,12 +47,13 @@ import { Textarea } from '@/components/ui/textarea';
 const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
 // A reusable component for the image upload fields
-const ImageUploader = ({ label, imageUrl, onUploadSuccess, teacherUid, storagePath }: {
+const ImageUploader = ({ label, imageUrl, onUploadSuccess, teacherUid, storagePath, onGalleryOpen }: {
   label: string;
   imageUrl: string;
   onUploadSuccess: (url: string) => void;
   teacherUid: string;
   storagePath: string;
+  onGalleryOpen?: () => void;
 }) => {
     const { toast } = useToast();
     const [file, setFile] = useState<File | null>(null);
@@ -95,7 +96,11 @@ const ImageUploader = ({ label, imageUrl, onUploadSuccess, teacherUid, storagePa
                     Choose File
                 </Label>
                 <Input id={`upload-${label}`} type="file" accept="image/*" onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)} className="hidden" disabled={isUploading}/>
-                
+                {onGalleryOpen && (
+                     <Button variant="outline" onClick={onGalleryOpen}>
+                        <Library className="mr-2 h-4 w-4" /> Choose From Library
+                    </Button>
+                )}
                 {file && (
                     <>
                         <Button onClick={handleUpload} disabled={!file || isUploading}>
@@ -162,6 +167,8 @@ export default function EditQuestPage() {
 
   // State for question image uploads
   const [uploadingQuestionImage, setUploadingQuestionImage] = useState<string | number | null>(null);
+  const [isGalleryOpen, setIsGalleryOpen] = React.useState(false);
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -282,6 +289,13 @@ export default function EditQuestPage() {
   const handleFieldChange = (field: keyof Chapter, value: any) => {
       setChapter(prev => prev ? ({ ...prev, [field]: value }) : null);
   }
+  
+  const handleMainImageUploadSuccess = (url: string) => {
+      handleFieldChange('mainImageUrl', url);
+      const imgHtml = `<p><img src="${url}" alt="Story Image" style="width: 100%; height: auto; border-radius: 8px;" /></p>`;
+      handleFieldChange('storyContent', imgHtml + (chapter?.storyContent || ''));
+  };
+
   
     const handleQuizChange = (field: keyof Quiz, value: any) => {
         setChapter(prev => {
@@ -572,6 +586,7 @@ export default function EditQuestPage() {
 
   return (
     <>
+      <MapGallery isOpen={isGalleryOpen} onOpenChange={setIsGalleryOpen} onMapSelect={(url) => handleFieldChange('worldMapUrl', url)} />
       <div className="relative flex min-h-screen w-full flex-col">
         {worldMapUrl && (
             <div 
@@ -668,15 +683,15 @@ export default function EditQuestPage() {
                               <Switch id="chapter-active" checked={chapter.isActive ?? true} onCheckedChange={(checked) => handleFieldChange('isActive', checked)} />
                               <Label htmlFor="chapter-active">{chapter.isActive ?? true ? "Chapter is Active" : "Chapter is Deactivated"}</Label>
                              </div>
-                          <ImageUploader label="Main Story Image" imageUrl={chapter.mainImageUrl || ''} onUploadSuccess={(url) => handleFieldChange('mainImageUrl', url)} teacherUid={teacher.uid} storagePath="quest-images" />
+                          <ImageUploader label="Main Story Image" imageUrl={chapter.mainImageUrl || ''} onUploadSuccess={handleMainImageUploadSuccess} teacherUid={teacher.uid} storagePath="quest-images" />
                           <div className="space-y-2">
                               <Label htmlFor="story-content">Story Content</Label>
-                              <RichTextEditor value={chapter.storyContent || ''} onChange={value => handleFieldChange('storyContent', value)} ref={storyContentRef}/>
+                              <RichTextEditor value={chapter.storyContent || ''} onChange={value => handleFieldChange('storyContent', value)} />
                           </div>
                           <ImageUploader label="Decorative Image 1" imageUrl={chapter.decorativeImageUrl1 || ''} onUploadSuccess={(url) => handleFieldChange('decorativeImageUrl1', url)} teacherUid={teacher.uid} storagePath="quest-images" />
                           <div className="space-y-2">
                               <Label htmlFor="story-additional-content">Additional Story Content</Label>
-                               <RichTextEditor value={chapter.storyAdditionalContent || ''} onChange={value => handleFieldChange('storyAdditionalContent', value)} ref={storyAdditionalContentRef}/>
+                               <RichTextEditor value={chapter.storyAdditionalContent || ''} onChange={value => handleFieldChange('storyAdditionalContent', value)} />
                           </div>
                           <ImageUploader label="Decorative Image 2" imageUrl={chapter.decorativeImageUrl2 || ''} onUploadSuccess={(url) => handleFieldChange('decorativeImageUrl2', url)} teacherUid={teacher.uid} storagePath="quest-images" />
                           <div className="space-y-2">
@@ -946,5 +961,3 @@ export default function EditQuestPage() {
     </>
   );
 }
-
-    
