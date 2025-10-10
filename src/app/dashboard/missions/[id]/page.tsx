@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -101,6 +101,9 @@ export default function StudentMissionDetailPage() {
                 const subSnap = await getDoc(subRef);
                 if (subSnap.exists()) {
                     setSubmission(subSnap.data() as SubmissionData);
+                } else {
+                    // Initialize a new submission document if it doesn't exist
+                    await setDoc(subRef, { status: 'draft', submissionContent: '', fileUrl: '' });
                 }
 
             } catch (error) {
@@ -263,4 +266,3 @@ export default function StudentMissionDetailPage() {
         </div>
     );
 }
-
