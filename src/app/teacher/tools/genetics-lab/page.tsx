@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -163,16 +163,19 @@ export default function GeneticsLabPage() {
                         </CardContent>
                     </Card>
                     
-                    <Card>
+                     <Card>
                         <CardContent className="p-4">
                             <p>An Upper Case, or Capital letter is used to represent a dominant trait. A Lower Case, or small letter, is used to represent a recessive trait. Dominant Traits Completely mask and/or suppress recessive traits. Refer to the Key, and answer the following questions:</p>
                         </CardContent>
                     </Card>
 
                     <Card>
+                        <CardHeader>
+                            <CardTitle>Question 5</CardTitle>
+                        </CardHeader>
                         <CardContent className="p-6 space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="q5">5. List 6 Dominant Traits Shown in the Key.</Label>
+                                <Label htmlFor="q5">List 6 Dominant Traits Shown in the Key.</Label>
                                 <div className="grid grid-cols-2 gap-4">
                                     <Input id="q5-1" placeholder="Trait 1" />
                                     <Input id="q5-2" placeholder="Trait 2" />
@@ -186,9 +189,12 @@ export default function GeneticsLabPage() {
                     </Card>
                     
                      <Card>
+                        <CardHeader>
+                            <CardTitle>Question 6</CardTitle>
+                        </CardHeader>
                         <CardContent className="p-6 space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="q6">6. List 6 Recessive Traits Shown in the Key.</Label>
+                                <Label htmlFor="q6">List 6 Recessive Traits Shown in the Key.</Label>
                                 <div className="grid grid-cols-2 gap-4">
                                     <Input id="q6-1" placeholder="Trait 1" />
                                     <Input id="q6-2" placeholder="Trait 2" />
@@ -229,7 +235,7 @@ export default function GeneticsLabPage() {
                                         placeholder={`Trait ${i + 1}`}
                                         value={text}
                                         onChange={(e) => handleTextChange(i, e.target.value)}
-                                        className={`w-full h-36 rounded-[30px] p-4 text-center text-lg font-semibold ${pastelColors[i]} focus:outline-none focus:ring-2 focus:ring-primary`}
+                                        className={`w-full h-48 rounded-[50px] p-4 text-center text-lg font-semibold ${pastelColors[i]} focus:outline-none focus:ring-2 focus:ring-primary`}
                                     />
                                 ))}
                             </div>
@@ -251,10 +257,21 @@ export default function GeneticsLabPage() {
                                         placeholder={`Trait ${i + 1}`}
                                         value={text}
                                         onChange={(e) => handleAureliosTextChange(i, e.target.value)}
-                                        className={`w-full h-36 rounded-[30px] p-4 text-center text-lg font-semibold ${pastelColors[i]} focus:outline-none focus:ring-2 focus:ring-primary`}
+                                        className={`w-full h-48 rounded-[50px] p-4 text-center text-lg font-semibold ${pastelColors[i]} focus:outline-none focus:ring-2 focus:ring-primary`}
                                     />
                                 ))}
                             </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="text-center">
+                            <CardTitle className="text-3xl font-headline">Punnett Squares</CardTitle>
+                        </CardHeader>
+                        <CardContent className="prose max-w-none text-center">
+                            <p>Do Punnett Square Crosses for the 11 Traits!</p>
+                            <p>Silvaria’s Alleles on the Top Row</p>
+                            <p>Aurelio’s Traits on the Left Side</p>
                         </CardContent>
                     </Card>
 
