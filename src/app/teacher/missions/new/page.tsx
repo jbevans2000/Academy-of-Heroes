@@ -72,13 +72,13 @@ export default function NewMissionPage() {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not find the content to download.' });
             return;
         }
-
-        const editorContent = contentRef.current;
+    
+        const editorContentElement = contentRef.current;
     
         try {
-            const dataUrl = await toPng(editorContent, { 
+            const dataUrl = await toPng(editorContentElement, { 
                 quality: 0.95,
-                style: { margin: '0' } // Ensure no extra margins are added to the image
+                style: { margin: '0' }
             });
     
             const pdf = new jsPDF('p', 'px', 'a4');
@@ -140,7 +140,7 @@ export default function NewMissionPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label>Mission Content</Label>
-                                <RichTextEditor value={content} onChange={setContent} editorRef={contentRef} />
+                                <RichTextEditor value={content} onChange={setContent} ref={contentRef} />
                             </div>
                              <div className="flex items-center space-x-2 pt-4">
                                 <Switch id="is-assigned" checked={isAssigned} onCheckedChange={setIsAssigned} />

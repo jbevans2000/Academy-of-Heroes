@@ -22,10 +22,10 @@ interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
   className?: string;
-  editorRef: React.RefObject<HTMLDivElement>;
 }
 
-const RichTextEditor = ({ value, onChange, className, editorRef }: RichTextEditorProps) => {
+const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ value, onChange, className }, ref) => {
+  const editorRef = ref as React.RefObject<HTMLDivElement>;
   const selectionRef = useRef<Range | null>(null);
 
   // Dialog States
@@ -339,7 +339,7 @@ const RichTextEditor = ({ value, onChange, className, editorRef }: RichTextEdito
             </div>
         </div>
         <div
-          ref={editorRef}
+          ref={ref}
           contentEditable
           onInput={handleInput}
           onBlur={saveSelection}
@@ -350,6 +350,8 @@ const RichTextEditor = ({ value, onChange, className, editorRef }: RichTextEdito
       </div>
     </>
   );
-};
+});
+
+RichTextEditor.displayName = "RichTextEditor";
 
 export default RichTextEditor;

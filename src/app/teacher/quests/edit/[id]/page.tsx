@@ -6,7 +6,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, PlusCircle, Trash2, Eye, GitBranch, Loader2, Save, Sparkles, Image as ImageIcon, Upload, X, Music, Library, BookCopy, ArrowRight } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Trash2, Eye, GitBranch, Loader2, Save, Sparkles, Image as ImageIcon, Upload, X, Music, Library, BookCopy, ArrowRight, Star, Coins } from 'lucide-react';
 import { doc, getDoc, setDoc, collection, getDocs, serverTimestamp, query, orderBy, where, updateDoc } from 'firebase/firestore';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { QuestHub, Chapter, QuizQuestion, Quiz, LessonPart } from '@/lib/quests';
+import { QuestHub, Chapter, QuizQuestion, Quiz, Company, LessonPart } from '@/lib/quests';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -154,6 +154,10 @@ export default function EditQuestPage() {
 
   // New Lesson Part State
   const [currentLessonPartIndex, setCurrentLessonPartIndex] = useState(0);
+  const storyContentRef = React.useRef<HTMLDivElement>(null);
+  const lessonContentRef = React.useRef<HTMLDivElement>(null);
+  const storyAdditionalContentRef = React.useRef<HTMLDivElement>(null);
+
 
   // State for question image uploads
   const [uploadingQuestionImage, setUploadingQuestionImage] = useState<string | number | null>(null);
@@ -567,7 +571,7 @@ export default function EditQuestPage() {
 
   return (
     <>
-      {worldMapUrl && <MapGallery isOpen={isGalleryOpen} onOpenChange={setIsGalleryOpen} onMapSelect={(url) => handleFieldChange('worldMapUrl', url)} />}
+      <MapGallery isOpen={isGalleryOpen} onOpenChange={setIsGalleryOpen} onMapSelect={(url) => handleFieldChange('worldMapUrl', url)} />
       <div className="relative flex min-h-screen w-full flex-col">
         {worldMapUrl && (
             <div 
@@ -667,12 +671,12 @@ export default function EditQuestPage() {
                           <ImageUploader label="Main Story Image" imageUrl={chapter.mainImageUrl || ''} onUploadSuccess={(url) => handleFieldChange('mainImageUrl', url)} teacherUid={teacher.uid} storagePath="quest-images" />
                           <div className="space-y-2">
                               <Label htmlFor="story-content">Story Content</Label>
-                              <RichTextEditor value={chapter.storyContent || ''} onChange={value => handleFieldChange('storyContent', value)} />
+                              <RichTextEditor value={chapter.storyContent || ''} onChange={value => handleFieldChange('storyContent', value)} ref={storyContentRef}/>
                           </div>
                           <ImageUploader label="Decorative Image 1" imageUrl={chapter.decorativeImageUrl1 || ''} onUploadSuccess={(url) => handleFieldChange('decorativeImageUrl1', url)} teacherUid={teacher.uid} storagePath="quest-images" />
                           <div className="space-y-2">
                               <Label htmlFor="story-additional-content">Additional Story Content</Label>
-                               <RichTextEditor value={chapter.storyAdditionalContent || ''} onChange={value => handleFieldChange('storyAdditionalContent', value)} />
+                               <RichTextEditor value={chapter.storyAdditionalContent || ''} onChange={value => handleFieldChange('storyAdditionalContent', value)} ref={storyAdditionalContentRef}/>
                           </div>
                           <ImageUploader label="Decorative Image 2" imageUrl={chapter.decorativeImageUrl2 || ''} onUploadSuccess={(url) => handleFieldChange('decorativeImageUrl2', url)} teacherUid={teacher.uid} storagePath="quest-images" />
                           <div className="space-y-2">
@@ -727,24 +731,25 @@ export default function EditQuestPage() {
                           )}
                       </TabsContent>
                       <TabsContent value="lesson" className="mt-6 space-y-4">
-                          <div className="flex justify-between items-center">
-                              <h3 className="text-xl font-semibold">Lesson Parts</h3>
-                              <div className="flex gap-2">
-                                  <Button variant="outline" size="sm" onClick={handleAddLessonPart}>
-                                      <PlusCircle className="mr-2 h-4 w-4" /> Add Part
-                                  </Button>
-                                  {chapter.lessonParts && chapter.lessonParts.length > 1 && (
-                                      <Button variant="destructive" size="sm" onClick={() => handleDeleteLessonPart(currentLessonPartIndex)}>
-                                          <Trash2 className="mr-2 h-4 w-4" /> Delete Current Part
-                                      </Button>
-                                  )}
-                              </div>
-                          </div>
-                          {currentLessonPart ? (
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-xl font-semibold">Lesson Parts</h3>
+                            <div className="flex gap-2">
+                                <Button variant="outline" size="sm" onClick={handleAddLessonPart}>
+                                    <PlusCircle className="mr-2 h-4 w-4" /> Add Part
+                                </Button>
+                                {chapter.lessonParts && chapter.lessonParts.length > 1 && (
+                                    <Button variant="destructive" size="sm" onClick={() => handleDeleteLessonPart(currentLessonPartIndex)}>
+                                        <Trash2 className="mr-2 h-4 w-4" /> Delete Current Part
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                        {currentLessonPart ? (
                                <div className="p-4 border rounded-md bg-background/50 space-y-4">
                                   <RichTextEditor
                                       value={currentLessonPart.content}
                                       onChange={(content) => handleLessonPartChange(currentLessonPartIndex, content)}
+                                      ref={lessonContentRef}
                                   />
                                   <div className="flex justify-between items-center mt-4">
                                       <Button onClick={() => setCurrentLessonPartIndex(p => p - 1)} disabled={currentLessonPartIndex === 0}>
@@ -940,5 +945,3 @@ export default function EditQuestPage() {
     </>
   );
 }
-
-    
