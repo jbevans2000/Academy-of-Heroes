@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const geneticsKey = [
   { trait: 'Neck Length', dominantAllele: 'N', dominant: 'Long Neck', recessiveAllele: 'n', recessive: 'Short Neck' },
@@ -171,13 +172,91 @@ const HatchlingTable = ({ title, tableIndex }: { title: string; tableIndex: numb
     );
 };
 
+interface TraitSelection {
+    genotype: string;
+    phenotype: 'dominant' | 'recessive' | '';
+}
+
+const HatchlingTraitSelector = () => {
+    const [traitData, setTraitData] = useState<Record<string, TraitSelection>>({});
+    const storageKey = 'hatchlingTraitSelections';
+
+    useEffect(() => {
+        try {
+            const savedData = localStorage.getItem(storageKey);
+            if (savedData) {
+                setTraitData(JSON.parse(savedData));
+            }
+        } catch (error) {
+            console.error("Could not load trait selections:", error);
+        }
+    }, []);
+
+    const handleTraitChange = (traitName: string, field: 'genotype' | 'phenotype', value: string) => {
+        const newData = {
+            ...traitData,
+            [traitName]: {
+                ...traitData[traitName],
+                [field]: value,
+            },
+        };
+        setTraitData(newData);
+        try {
+            localStorage.setItem(storageKey, JSON.stringify(newData));
+        } catch (error) {
+            console.error("Could not save trait selections:", error);
+        }
+    };
+
+    return (
+        <Card>
+            <CardHeader className="text-center">
+                <CardTitle className="text-3xl font-headline">Hatchling's Final Traits</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {geneticsKey.map((traitInfo) => (
+                    <Card key={traitInfo.trait} className="p-4 bg-secondary/50">
+                        <CardTitle className="text-lg mb-2">{traitInfo.trait}</CardTitle>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                            <div className="md:col-span-1">
+                                <Label htmlFor={`genotype-${traitInfo.trait}`}>Genotype</Label>
+                                <Input
+                                    id={`genotype-${traitInfo.trait}`}
+                                    placeholder="e.g., Nn"
+                                    value={traitData[traitInfo.trait]?.genotype || ''}
+                                    onChange={(e) => handleTraitChange(traitInfo.trait, 'genotype', e.target.value)}
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+                                <Label>Phenotype (Expressed Trait)</Label>
+                                <RadioGroup
+                                    value={traitData[traitInfo.trait]?.phenotype || ''}
+                                    onValueChange={(value) => handleTraitChange(traitInfo.trait, 'phenotype', value)}
+                                    className="mt-2 flex flex-col sm:flex-row gap-4"
+                                >
+                                    <div className="flex items-center space-x-2">
+                                        <RadioGroupItem value="dominant" id={`pheno-dom-${traitInfo.trait}`} />
+                                        <Label htmlFor={`pheno-dom-${traitInfo.trait}`}>{traitInfo.dominant} ({traitInfo.dominantAllele})</Label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <RadioGroupItem value="recessive" id={`pheno-rec-${traitInfo.trait}`} />
+                                        <Label htmlFor={`pheno-rec-${traitInfo.trait}`}>{traitInfo.recessive} ({traitInfo.recessiveAllele})</Label>
+                                    </div>
+                                </RadioGroup>
+                            </div>
+                        </div>
+                    </Card>
+                ))}
+            </CardContent>
+        </Card>
+    );
+};
+
 export default function GeneticsLabPage() {
     const router = useRouter();
     
     const [ovalTexts, setOvalTexts] = useState<string[]>(Array(6).fill(''));
     const [aureliosOvalTexts, setAureliosOvalTexts] = useState<string[]>(Array(6).fill(''));
-    const [fullGenotype, setFullGenotype] = useState('');
-    const [fullPhenotype, setFullPhenotype] = useState('');
 
     // Load from localStorage on initial render for Silvaria
     useEffect(() => {
@@ -203,15 +282,6 @@ export default function GeneticsLabPage() {
         }
     }, []);
 
-    // Load from localStorage for final genotype/phenotype
-    useEffect(() => {
-        try {
-            setFullGenotype(localStorage.getItem('hatchlingFullGenotype') || '');
-            setFullPhenotype(localStorage.getItem('hatchlingFullPhenotype') || '');
-        } catch (error) {
-            console.error("Could not load final traits from localStorage:", error);
-        }
-    }, []);
 
     const handleTextChange = (index: number, value: string) => {
         const newTexts = [...ovalTexts];
@@ -234,24 +304,6 @@ export default function GeneticsLabPage() {
             console.error("Could not write to localStorage for Aurelios:", error);
         }
     };
-
-    const handleGenotypeChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setFullGenotype(e.target.value);
-        try {
-            localStorage.setItem('hatchlingFullGenotype', e.target.value);
-        } catch (error) {
-            console.error("Could not save genotype to localStorage:", error);
-        }
-    }
-
-    const handlePhenotypeChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setFullPhenotype(e.target.value);
-        try {
-            localStorage.setItem('hatchlingFullPhenotype', e.target.value);
-        } catch (error) {
-            console.error("Could not save phenotype to localStorage:", error);
-        }
-    }
     
     const pastelColors = [
         'bg-red-100',
@@ -391,10 +443,7 @@ export default function GeneticsLabPage() {
                         <CardHeader className="text-center">
                             <CardTitle className="text-3xl font-headline">Aurelios' Chromosomes</CardTitle>
                         </CardHeader>
-                    </Card>
-                    
-                    <Card>
-                        <CardContent className="p-6">
+                         <CardContent className="p-6">
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                                 {aureliosOvalTexts.map((text, i) => (
                                     <textarea
@@ -409,26 +458,23 @@ export default function GeneticsLabPage() {
                             </div>
                         </CardContent>
                     </Card>
-
+                    
                     <Card>
                         <CardHeader className="text-center">
                             <CardTitle className="text-3xl font-headline">Punnett Squares</CardTitle>
+                             <CardContent className="prose max-w-none text-center">
+                                <p>Do Punnett Square Crosses for the 11 Traits!</p>
+                                <p>Silvaria’s Alleles on the Top Row</p>
+                                <p>Aurelio’s Traits on the Left Side</p>
+                            </CardContent>
                         </CardHeader>
-                        <CardContent className="prose max-w-none text-center">
-                            <p>Do Punnett Square Crosses for the 11 Traits!</p>
-                            <p>Silvaria’s Alleles on the Top Row</p>
-                            <p>Aurelio’s Traits on the Left Side</p>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
                         <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {geneticsKey.map((trait, index) => (
                                 <PunnettSquare key={trait.trait} traitName={`Trait ${index + 1}: ${trait.trait}`} squareIndex={index} />
                             ))}
                         </CardContent>
                     </Card>
-
+                    
                     <Card>
                         <CardHeader className="text-center">
                             <CardTitle className="text-3xl font-headline">The Hatchling</CardTitle>
@@ -445,35 +491,10 @@ export default function GeneticsLabPage() {
                         <HatchlingTable title="Chromosome 4" tableIndex={4} />
                     </div>
 
-                    <Card>
-                        <CardHeader className="text-center">
-                            <CardTitle className="text-3xl font-headline">Hatchling's Final Traits</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div>
-                                <Label htmlFor="full-genotype" className="text-lg font-semibold">Full Genotype</Label>
-                                <Textarea 
-                                    id="full-genotype" 
-                                    rows={5}
-                                    placeholder="List the full genotype of the hatchling here..."
-                                    value={fullGenotype}
-                                    onChange={handleGenotypeChange}
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="full-phenotype" className="text-lg font-semibold">Full Phenotype</Label>
-                                <Textarea 
-                                    id="full-phenotype" 
-                                    rows={5}
-                                    placeholder="List the resulting visible traits (phenotype) of the hatchling here..."
-                                    value={fullPhenotype}
-                                    onChange={handlePhenotypeChange}
-                                />
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <HatchlingTraitSelector />
+
                 </div>
             </main>
         </div>
-    );
+    )
 }
