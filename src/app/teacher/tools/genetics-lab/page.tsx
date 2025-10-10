@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -120,7 +119,8 @@ const PunnettSquare = ({ traitName, squareIndex }: { traitName: string, squareIn
 };
 
 const HatchlingTable = ({ title, tableIndex }: { title: string; tableIndex: number }) => {
-    const initialGrid = Array.from({ length: 4 }, () => Array(4).fill(''));
+    // Only 3 rows are fillable, the first is a header
+    const initialGrid = Array.from({ length: 3 }, () => Array(4).fill(''));
     const [grid, setGrid] = useState<string[][]>(initialGrid);
     const storageKey = `hatchlingTable-${tableIndex}`;
 
@@ -128,7 +128,11 @@ const HatchlingTable = ({ title, tableIndex }: { title: string; tableIndex: numb
         try {
             const savedGrid = localStorage.getItem(storageKey);
             if (savedGrid) {
-                setGrid(JSON.parse(savedGrid));
+                const parsedGrid = JSON.parse(savedGrid);
+                // Ensure the loaded grid has the correct dimensions
+                if (Array.isArray(parsedGrid) && parsedGrid.length === 3) {
+                    setGrid(parsedGrid);
+                }
             }
         } catch (error) {
             console.error(`Could not load state for ${title}:`, error);
@@ -136,7 +140,7 @@ const HatchlingTable = ({ title, tableIndex }: { title: string; tableIndex: numb
     }, [storageKey, title]);
 
     const handleCellChange = (rowIndex: number, colIndex: number, value: string) => {
-        const newGrid = grid.map((row, rIdx) => 
+        const newGrid = grid.map((row, rIdx) =>
             rIdx === rowIndex ? row.map((cell, cIdx) => (cIdx === colIndex ? value : cell)) : row
         );
         setGrid(newGrid);
@@ -150,19 +154,27 @@ const HatchlingTable = ({ title, tableIndex }: { title: string; tableIndex: numb
     return (
         <Card>
             <CardHeader>
-                <CardTitle>{title}</CardTitle>
+                <CardTitle>Chromosome {tableIndex}</CardTitle>
             </CardHeader>
             <CardContent>
                 <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="font-bold border text-center bg-gray-200">Trait</TableHead>
+                            <TableHead className="font-bold border text-center bg-gray-200">Genotype</TableHead>
+                            <TableHead className="font-bold border text-center bg-gray-200">Phenotype</TableHead>
+                            <TableHead className="font-bold border text-center bg-gray-200">Het/Hom</TableHead>
+                        </TableRow>
+                    </TableHeader>
                     <TableBody>
                         {grid.map((row, rowIndex) => (
                             <TableRow key={rowIndex}>
                                 {row.map((cell, colIndex) => (
-                                    <TableCell key={colIndex}>
-                                        <Input 
-                                            value={cell} 
+                                    <TableCell key={colIndex} className="p-1">
+                                        <Input
+                                            value={cell}
                                             onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
-                                            className="w-full text-center text-xs"
+                                            className="w-full text-center text-xs h-10"
                                         />
                                     </TableCell>
                                 ))}
@@ -535,10 +547,10 @@ export default function GeneticsLabPage() {
                     </Card>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <HatchlingTable title="Chromosome 1" tableIndex={1} />
-                        <HatchlingTable title="Chromosome 2" tableIndex={2} />
-                        <HatchlingTable title="Chromosome 3" tableIndex={3} />
-                        <HatchlingTable title="Chromosome 4" tableIndex={4} />
+                        <HatchlingTable title="Chromosome" tableIndex={1} />
+                        <HatchlingTable title="Chromosome" tableIndex={2} />
+                        <HatchlingTable title="Chromosome" tableIndex={3} />
+                        <HatchlingTable title="Chromosome" tableIndex={4} />
                     </div>
 
                     <HatchlingTraitSelector onDataChange={setTraitSelections} />
