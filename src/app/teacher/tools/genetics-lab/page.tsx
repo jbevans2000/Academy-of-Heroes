@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Dna, Sparkles, Check } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const geneticsKey = [
   { trait: 'Neck Length', dominantAllele: 'N', dominant: 'Long Neck', recessiveAllele: 'n', recessive: 'Short Neck' },
@@ -37,14 +39,12 @@ export default function GeneticsLabPage() {
                     <Card className="text-center">
                         <CardHeader>
                             <CardTitle className="text-3xl font-headline flex items-center justify-center gap-4"><Dna className="h-8 w-8 text-primary"/>Dragon Genetics</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                             <CardDescription className="text-center font-bold">
-                                DRAGON TRAITS KEY <br />
-                                Upper Case Letters = Dominant <br />
+                            <CardDescription>
+                                DRAGON TRAITS KEY <br/>
+                                Upper Case Letters = Dominant <br/>
                                 Lower Case Letters = Recessive
                             </CardDescription>
-                        </CardContent>
+                        </CardHeader>
                     </Card>
 
                     <Card>
@@ -74,6 +74,31 @@ export default function GeneticsLabPage() {
                                     ))}
                                 </TableBody>
                             </Table>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Test Your Knowledge</CardTitle>
+                            <CardDescription>Use the key above to answer the questions.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="q1">1. What letters are used to represent eye color?</Label>
+                                <Input id="q1" placeholder="Type your answer here..." />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="q2">2. What letters are used to represent neck length?</Label>
+                                <Input id="q2" placeholder="Type your answer here..." />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="q3">3. The letter "W" is used to represent what?</Label>
+                                <Input id="q3" placeholder="Type your answer here..." />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="q4">4. The letter "b" is used to represent what?</Label>
+                                <Input id="q4" placeholder="Type your answer here..." />
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
