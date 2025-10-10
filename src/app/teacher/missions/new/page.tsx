@@ -16,7 +16,7 @@ import RichTextEditor from '@/components/teacher/rich-text-editor';
 import { ArrowLeft, Loader2, Save, Download } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import jsPDF from 'jspdf';
-import { toPng } from 'html-to-image';
+
 
 export default function NewMissionPage() {
     const router = useRouter();
@@ -73,39 +73,37 @@ export default function NewMissionPage() {
             return;
         }
     
-        const editorContentElement = contentRef.current;
+        const contentElement = contentRef.current;
+        const pdf = new jsPDF('p', 'pt', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const margin = 20;
+        const contentWidth = pdfWidth - margin * 2;
     
+        // Temporarily apply styles for rendering
+        const originalStyle = contentElement.style.cssText;
+        contentElement.style.width = `${contentWidth}px`;
+        contentElement.style.padding = '0';
+        contentElement.style.margin = '0';
+        contentElement.style.fontFamily = 'Times';
+
         try {
-            const dataUrl = await toPng(editorContentElement, { 
-                quality: 0.95,
-                style: { margin: '0' }
+            await pdf.html(contentElement, {
+                callback: function (doc) {
+                    doc.save(`${title || 'mission'}.pdf`);
+                },
+                x: margin,
+                y: margin,
+                width: contentWidth,
+                windowWidth: contentWidth,
+                autoPaging: 'text'
             });
-    
-            const pdf = new jsPDF('p', 'px', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            
-            const imgProps = pdf.getImageProperties(dataUrl);
-            const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-            let heightLeft = imgHeight;
-            let position = 0;
-
-            pdf.addImage(dataUrl, 'PNG', 0, position, pdfWidth, imgHeight);
-            heightLeft -= pdfHeight;
-
-            while (heightLeft > 0) {
-                position -= pdfHeight;
-                pdf.addPage();
-                pdf.addImage(dataUrl, 'PNG', 0, position, pdfWidth, imgHeight);
-                heightLeft -= pdfHeight;
-            }
-
-            pdf.save(`${title || 'mission'}.pdf`);
-    
         } catch (error) {
             console.error('oops, something went wrong!', error);
             toast({ variant: 'destructive', title: 'Download Failed', description: 'Could not generate the PDF.' });
+        } finally {
+            // Restore original styles
+            contentElement.style.cssText = originalStyle;
         }
     };
 
