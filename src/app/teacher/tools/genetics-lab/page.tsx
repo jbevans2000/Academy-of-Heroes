@@ -157,7 +157,7 @@ const HatchlingTable = ({ title, tableIndex }: { title: string; tableIndex: numb
                                         <Input 
                                             value={cell} 
                                             onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
-                                            className="w-full"
+                                            className="w-full text-center text-xs"
                                         />
                                     </TableCell>
                                 ))}
