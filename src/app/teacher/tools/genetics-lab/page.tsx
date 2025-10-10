@@ -35,6 +35,7 @@ const PunnettSquare = ({ traitName, squareIndex }: { traitName: string, squareIn
 
     const storageKey = `punnettSquare-${squareIndex}`;
 
+    // Load state from localStorage on initial render
     useEffect(() => {
         try {
             const savedState = localStorage.getItem(storageKey);
@@ -46,13 +47,43 @@ const PunnettSquare = ({ traitName, squareIndex }: { traitName: string, squareIn
         }
     }, [storageKey, squareIndex]);
 
+    // Auto-fill grid when parental alleles change
+    useEffect(() => {
+        const newGrid1 = (alleles.top1 || '') + (alleles.left1 || '');
+        const newGrid2 = (alleles.top2 || '') + (alleles.left1 || '');
+        const newGrid3 = (alleles.top1 || '') + (alleles.left2 || '');
+        const newGrid4 = (alleles.top2 || '') + (alleles.left2 || '');
+
+        // Only update if something changed to prevent infinite loops
+        if (newGrid1 !== alleles.grid1 || newGrid2 !== alleles.grid2 || newGrid3 !== alleles.grid3 || newGrid4 !== alleles.grid4) {
+            const newAlleles = {
+                ...alleles,
+                grid1: newGrid1,
+                grid2: newGrid2,
+                grid3: newGrid3,
+                grid4: newGrid4
+            };
+            setAlleles(newAlleles);
+            try {
+                localStorage.setItem(storageKey, JSON.stringify(newAlleles));
+            } catch (error) {
+                 console.error(`Could not save state for Punnett Square ${squareIndex}:`, error);
+            }
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [alleles.top1, alleles.top2, alleles.left1, alleles.left2, storageKey]);
+
+
     const handleChange = (field: keyof typeof alleles, value: string) => {
         const newAlleles = { ...alleles, [field]: value };
         setAlleles(newAlleles);
-        try {
-            localStorage.setItem(storageKey, JSON.stringify(newAlleles));
-        } catch (error) {
-            console.error(`Could not save state for Punnett Square ${squareIndex}:`, error);
+        // Save to localStorage immediately on any change to parent alleles
+        if (field.startsWith('top') || field.startsWith('left')) {
+            try {
+                localStorage.setItem(storageKey, JSON.stringify(newAlleles));
+            } catch (error) {
+                console.error(`Could not save state for Punnett Square ${squareIndex}:`, error);
+            }
         }
     };
     
@@ -65,18 +96,18 @@ const PunnettSquare = ({ traitName, squareIndex }: { traitName: string, squareIn
                 <div className="grid grid-cols-3 gap-1 w-48 mx-auto">
                     {/* Top Row Headers */}
                     <div />
-                    <Input className="text-center font-bold" value={alleles.top1} onChange={(e) => handleChange('top1', e.target.value)} />
-                    <Input className="text-center font-bold" value={alleles.top2} onChange={(e) => handleChange('top2', e.target.value)} />
+                    <Input className="text-center font-bold" value={alleles.top1} onChange={(e) => handleChange('top1', e.target.value)} maxLength={1} />
+                    <Input className="text-center font-bold" value={alleles.top2} onChange={(e) => handleChange('top2', e.target.value)} maxLength={1} />
 
                     {/* First Row */}
-                    <Input className="text-center font-bold" value={alleles.left1} onChange={(e) => handleChange('left1', e.target.value)} />
-                    <Input className="text-center" value={alleles.grid1} onChange={(e) => handleChange('grid1', e.target.value)} />
-                    <Input className="text-center" value={alleles.grid2} onChange={(e) => handleChange('grid2', e.target.value)} />
+                    <Input className="text-center font-bold" value={alleles.left1} onChange={(e) => handleChange('left1', e.target.value)} maxLength={1} />
+                    <Input className="text-center" value={alleles.grid1} readOnly />
+                    <Input className="text-center" value={alleles.grid2} readOnly />
 
                     {/* Second Row */}
-                    <Input className="text-center font-bold" value={alleles.left2} onChange={(e) => handleChange('left2', e.target.value)} />
-                    <Input className="text-center" value={alleles.grid3} onChange={(e) => handleChange('grid3', e.target.value)} />
-                    <Input className="text-center" value={alleles.grid4} onChange={(e) => handleChange('grid4', e.target.value)} />
+                    <Input className="text-center font-bold" value={alleles.left2} onChange={(e) => handleChange('left2', e.target.value)} maxLength={1} />
+                    <Input className="text-center" value={alleles.grid3} readOnly />
+                    <Input className="text-center" value={alleles.grid4} readOnly />
                 </div>
             </CardContent>
         </Card>
@@ -222,7 +253,7 @@ export default function GeneticsLabPage() {
                             <p>An Upper Case, or Capital letter is used to represent a dominant trait. A Lower Case, or small letter, is used to represent a recessive trait. Dominant Traits Completely mask and/or suppress recessive traits. Refer to the Key, and answer the following questions:</p>
                         </CardContent>
                     </Card>
-                    
+
                     <Card>
                         <CardHeader>
                             <CardTitle>Question 5</CardTitle>
@@ -241,7 +272,7 @@ export default function GeneticsLabPage() {
                             </div>
                         </CardContent>
                     </Card>
-                    
+
                      <Card>
                         <CardHeader>
                             <CardTitle>Question 6</CardTitle>
@@ -289,7 +320,7 @@ export default function GeneticsLabPage() {
                                         placeholder={`Trait ${i + 1}`}
                                         value={text}
                                         onChange={(e) => handleTextChange(i, e.target.value)}
-                                        className={`w-full h-48 rounded-[50px] p-4 text-center text-lg font-semibold ${pastelColors[i]} focus:outline-none focus:ring-2 focus:ring-primary`}
+                                        className={`w-full h-48 rounded-[50%/50%] p-4 text-center text-lg font-semibold ${pastelColors[i]} focus:outline-none focus:ring-2 focus:ring-primary`}
                                     />
                                 ))}
                             </div>
@@ -311,7 +342,7 @@ export default function GeneticsLabPage() {
                                         placeholder={`Trait ${i + 1}`}
                                         value={text}
                                         onChange={(e) => handleAureliosTextChange(i, e.target.value)}
-                                        className={`w-full h-48 rounded-[50px] p-4 text-center text-lg font-semibold ${pastelColors[i]} focus:outline-none focus:ring-2 focus:ring-primary`}
+                                        className={`w-full h-48 rounded-[50%/50%] p-4 text-center text-lg font-semibold ${pastelColors[i]} focus:outline-none focus:ring-2 focus:ring-primary`}
                                     />
                                 ))}
                             </div>
@@ -341,4 +372,5 @@ export default function GeneticsLabPage() {
             </main>
         </div>
     );
-}
+
+    
