@@ -65,25 +65,6 @@ const aurelio: Record<Trait, [Allele, Allele]> = {
 
 // --- COMPONENTS ---
 
-const ParentGeneticsCard = ({ name, genetics, title }: { name: string, genetics: Record<Trait, [Allele, Allele]>, title: string }) => (
-    <Card>
-        <CardHeader>
-            <CardTitle>{name}'s Chromosomes</CardTitle>
-            <CardDescription>{title}</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <dl className="space-y-2">
-                {Object.entries(genetics).map(([trait, alleles]) => (
-                    <div key={trait} className="flex justify-between items-center text-sm">
-                        <dt className="font-medium">{trait}:</dt>
-                        <dd className="font-mono text-lg bg-secondary px-2 py-1 rounded-md">{alleles[0]}{alleles[1]}</dd>
-                    </div>
-                ))}
-            </dl>
-        </CardContent>
-    </Card>
-);
-
 const PunnettSquare = ({ trait, onSelectQuadrant }: { trait: Trait, onSelectQuadrant: (genotype: [Allele, Allele]) => void }) => {
     const parent1 = silvaria[trait];
     const parent2 = aurelio[trait];
@@ -140,6 +121,24 @@ export default function GeneticsLabPage() {
         <div className="bg-muted/40">
             <TeacherHeader />
             <main className="p-4 md:p-6 lg:p-8">
+                <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6" role="alert">
+                    <p className="font-bold">Instructions for the Activity</p>
+                    <pre className="whitespace-pre-wrap font-sans">
+                        {`
+Dragon Genetics is a fun and interactive way to learn about dominant and recessive traits. In this activity, you will play the role of a dragon geneticist, tasked with determining the traits of a new hatchling based on the genetic information of its parents, Silvaria and Aurelio.
+
+    1. Choose a Trait: Start by selecting a genetic trait from the list provided. Each trait is controlled by a pair of alleles (letters), one inherited from each parent.
+    
+    2. Analyze the Punnett Square: For your chosen trait, the Punnett Square shows the possible allele combinations for the offspring. Silvaria's alleles are at the top, and Aurelio's are on the side.
+    
+    3. Determine the Hatchling's Trait: Click on one of the four quadrants in the Punnett Square. This will be your hatchling's genotype (the combination of alleles) for that trait.
+    
+    4. Repeat for All Traits: Continue this process for all the available traits. As you make your selections, your hatchling's characteristics will be revealed below.
+    
+    5. Reveal Your Dragon: Once you have determined all the traits, you will see a complete description of your unique dragon hatchling!
+                        `}
+                    </pre>
+                </div>
                 <Button variant="outline" onClick={() => router.back()} className="mb-4">
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back
@@ -151,11 +150,6 @@ export default function GeneticsLabPage() {
                             <CardDescription>Help Silvaria and Aurelio predict the traits of their next hatchling!</CardDescription>
                         </CardHeader>
                     </Card>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <ParentGeneticsCard name="Silvaria" genetics={silvaria} title="Mother Dragon" />
-                        <ParentGeneticsCard name="Aurelio" genetics={aurelio} title="Father Dragon" />
-                    </div>
 
                     <Card>
                         <CardHeader>
@@ -218,4 +212,3 @@ export default function GeneticsLabPage() {
         </div>
     );
 }
-
