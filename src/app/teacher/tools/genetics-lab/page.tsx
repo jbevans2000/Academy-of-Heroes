@@ -29,8 +29,9 @@ export default function GeneticsLabPage() {
     const router = useRouter();
     
     const [ovalTexts, setOvalTexts] = useState<string[]>(Array(6).fill(''));
+    const [aureliosOvalTexts, setAureliosOvalTexts] = useState<string[]>(Array(6).fill(''));
 
-    // Load from localStorage on initial render
+    // Load from localStorage on initial render for Silvaria
     useEffect(() => {
         try {
             const loadedTexts = Array(6).fill('').map((_, i) => 
@@ -38,7 +39,19 @@ export default function GeneticsLabPage() {
             );
             setOvalTexts(loadedTexts);
         } catch (error) {
-            console.error("Could not access localStorage:", error);
+            console.error("Could not access localStorage for Silvaria:", error);
+        }
+    }, []);
+
+    // Load from localStorage on initial render for Aurelios
+    useEffect(() => {
+        try {
+            const loadedTexts = Array(6).fill('').map((_, i) => 
+                localStorage.getItem(`aureliosGeneticsLabOval${i + 1}`) || ''
+            );
+            setAureliosOvalTexts(loadedTexts);
+        } catch (error) {
+            console.error("Could not access localStorage for Aurelios:", error);
         }
     }, []);
 
@@ -49,7 +62,18 @@ export default function GeneticsLabPage() {
         try {
             localStorage.setItem(`geneticsLabOval${index + 1}`, value);
         } catch (error) {
-            console.error("Could not write to localStorage:", error);
+            console.error("Could not write to localStorage for Silvaria:", error);
+        }
+    };
+    
+    const handleAureliosTextChange = (index: number, value: string) => {
+        const newTexts = [...aureliosOvalTexts];
+        newTexts[index] = value;
+        setAureliosOvalTexts(newTexts);
+        try {
+            localStorage.setItem(`aureliosGeneticsLabOval${index + 1}`, value);
+        } catch (error) {
+            console.error("Could not write to localStorage for Aurelios:", error);
         }
     };
     
@@ -74,6 +98,11 @@ export default function GeneticsLabPage() {
                     <Card className="text-center">
                         <CardHeader>
                             <CardTitle className="text-3xl font-headline flex items-center justify-center gap-4"><Dna className="h-8 w-8 text-primary"/>Dragon Genetics</CardTitle>
+                            <CardDescription>
+                                DRAGON TRAITS KEY <br/>
+                                Upper Case Letters = Dominant <br/>
+                                Lower Case Letters = Recessive
+                            </CardDescription>
                         </CardHeader>
                     </Card>
 
@@ -133,7 +162,7 @@ export default function GeneticsLabPage() {
                             </div>
                         </CardContent>
                     </Card>
-
+                    
                     <Card>
                         <CardContent className="p-4">
                             <p>An Upper Case, or Capital letter is used to represent a dominant trait. A Lower Case, or small letter, is used to represent a recessive trait. Dominant Traits Completely mask and/or suppress recessive traits. Refer to the Key, and answer the following questions:</p>
@@ -196,11 +225,33 @@ export default function GeneticsLabPage() {
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                                 {ovalTexts.map((text, i) => (
                                     <textarea
-                                        key={i}
+                                        key={`silvaria-${i}`}
                                         placeholder={`Trait ${i + 1}`}
                                         value={text}
                                         onChange={(e) => handleTextChange(i, e.target.value)}
-                                        className={`w-full h-24 rounded-[30px] p-4 text-center text-lg font-semibold ${pastelColors[i]} focus:outline-none focus:ring-2 focus:ring-primary`}
+                                        className={`w-full h-36 rounded-[30px] p-4 text-center text-lg font-semibold ${pastelColors[i]} focus:outline-none focus:ring-2 focus:ring-primary`}
+                                    />
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="text-center">
+                            <CardTitle className="text-3xl font-headline">Aurelios' Chromosomes</CardTitle>
+                        </CardHeader>
+                    </Card>
+                    
+                    <Card>
+                        <CardContent className="p-6">
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                                {aureliosOvalTexts.map((text, i) => (
+                                    <textarea
+                                        key={`aurelios-${i}`}
+                                        placeholder={`Trait ${i + 1}`}
+                                        value={text}
+                                        onChange={(e) => handleAureliosTextChange(i, e.target.value)}
+                                        className={`w-full h-36 rounded-[30px] p-4 text-center text-lg font-semibold ${pastelColors[i]} focus:outline-none focus:ring-2 focus:ring-primary`}
                                     />
                                 ))}
                             </div>
