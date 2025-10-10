@@ -44,7 +44,7 @@ const generateHatchlingFlow = ai.defineFlow(
     - Tail Style: ${input['Tail']}
     - Back Pattern: ${input['Back']}
     - Breath Ability: ${input['Breath']}
-    - Toes: ${input['Toes']}
+    - Toes: ${input['Toes']} on both front and rear feet
     - Wing Membrane Color: ${input['Wing Color']}
 
     The hatchling should be in a simple, magical environment, like a nest with glowing runes or a mystical cave. Focus on the dragon itself.`;
