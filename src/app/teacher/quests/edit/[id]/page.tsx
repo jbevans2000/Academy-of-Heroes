@@ -1,6 +1,7 @@
 
 'use client';
 
+import * as React from 'react';
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
@@ -256,14 +257,14 @@ export default function EditQuestPage() {
     fetchChaptersForHub();
   }, [selectedHubId, teacher]);
 
-  const handleMapDrag = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+  const handleMapDrag = (e: React.MouseEvent<HTMLDivElement, MouseEvent>, type: 'hub' | 'chapter') => {
     const map = e.currentTarget;
     const rect = map.getBoundingClientRect();
 
     const updatePosition = (moveEvent: MouseEvent) => {
         const x = ((moveEvent.clientX - rect.left) / rect.width) * 100;
         const y = ((moveEvent.clientY - rect.top) / rect.height) * 100;
-        setChapterCoordinates({ x, y });
+        handleFieldChange('coordinates', { x, y });
     };
 
     const stopDragging = () => {
@@ -430,7 +431,7 @@ export default function EditQuestPage() {
             toast({ variant: 'destructive', title: 'Missing Info', description: 'Please enter the number of questions to generate.' });
             return;
         }
-        const lessonText = chapter?.lessonParts?.map(part => part.content).join('\n\n') || '';
+        const lessonText = chapter?.lessonParts?.map(part => part.content).join('\\n\\n') || '';
         if (!lessonText.trim()) {
              toast({ variant: 'destructive', title: 'No Content', description: 'There is no lesson content to generate questions from.' });
             return;
@@ -571,7 +572,6 @@ export default function EditQuestPage() {
 
   return (
     <>
-      <MapGallery isOpen={isGalleryOpen} onOpenChange={setIsGalleryOpen} onMapSelect={(url) => handleFieldChange('worldMapUrl', url)} />
       <div className="relative flex min-h-screen w-full flex-col">
         {worldMapUrl && (
             <div 
@@ -713,7 +713,7 @@ export default function EditQuestPage() {
                                           if (c.id === chapterId) return null;
                                           return (
                                               <div key={c.id} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${c.coordinates.x}%`, top: `${c.coordinates.y}%`}}>
-                                                  <div className="w-5 h-5 bg-green-500 rounded-full ring-2 ring-white shadow-xl"></div>
+                                                <div className="w-5 h-5 bg-green-500 rounded-full ring-2 ring-white shadow-xl"></div>
                                               </div>
                                           )
                                       })}
@@ -910,7 +910,8 @@ export default function EditQuestPage() {
                             </Button>
                       </TabsContent>
                       </Tabs>
-                  </div>                
+                  </div>
+                )}
 
                 <div className="flex justify-between items-center pt-4 border-t">
                   {prevChapter ? (
@@ -945,3 +946,5 @@ export default function EditQuestPage() {
     </>
   );
 }
+
+    
