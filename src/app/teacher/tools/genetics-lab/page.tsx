@@ -470,18 +470,29 @@ export default function GeneticsLabPage() {
                         <CardHeader className="text-center">
                             <CardTitle className="text-3xl font-headline font-['Cinzel']">Silvaria's Chromosomes</CardTitle>
                         </CardHeader>
-                        <CardContent className="prose max-w-none text-center">
-                            <p>Below, four of Silvaria’s (Mother’s) Chromosomes are listed.  There are a specific number of genes located on each chromosome. Determine if Silvaria is homozygous or heterozygous for each trait. Some MUST be homozygous to be expressed….others COULD be heterozygous.</p>
-                            
-                            <h4>Example 1:  Spikes on Tail</h4>
-                            <p>You can see that Silvaria has spikes on her tail.  According to the KEY, Spikes on the Tail is a DOMINANT trait, and is represented by capital letter <strong>S</strong>.<br/>
-                            So….Silvaria could be either homozygous DOMINANT (<strong>SS</strong>) OR Heterozygous (<strong>Ss</strong>).  Since Spikes on the tail is DOMINANT, she could be carrying the recessive gene, but it would not be expressed.</p>
-                            
-                            <h4>Example 2:  Claws on Wings</h4>
-                            <p>You can see that Silvaria does NOT have claws on her wings. This is a recessive trait, and It is represented in the KEY by small letter “<strong>c</strong>”<br/>
-                            So…. Since Claws on Wings is a DOMINANT trait, the only way Silvaria could NOT have claws, is if she did not have the gene for it at all. So for this trait,  she MUST be homozygous recessive (<strong>cc</strong>).</p>
-
-                            <p>Determine Silvaria’s alleles for each trait listed in the illustrations below.  Remember, she could be heterozygous for dominant traits (that’s up to you)…..but if a trait is recessive, she MUST be heterozygous recessive.</p>
+                        <CardContent className="md:flex md:gap-6 md:items-start p-6">
+                            <div className="prose max-w-none md:w-1/2">
+                                <p>Below, four of Silvaria’s (Mother’s) Chromosomes are listed. There are a specific number of genes located on each chromosome. Determine if Silvaria is homozygous or heterozygous for each trait. Some MUST be homozygous to be expressed….others COULD be heterozygous.</p>
+                                
+                                <h4>Example 1: Spikes on Tail</h4>
+                                <p>You can see that Silvaria has spikes on her tail. According to the KEY, Spikes on the Tail is a DOMINANT trait, and is represented by capital letter <strong>S</strong>.<br/>
+                                So….Silvaria could be either homozygous DOMINANT (<strong>SS</strong>) OR Heterozygous (<strong>Ss</strong>). Since Spikes on the tail is DOMINANT, she could be carrying the recessive gene, but it would not be expressed.</p>
+                                
+                                <h4>Example 2: Claws on Wings</h4>
+                                <p>You can see that Silvaria does NOT have claws on her wings. This is a recessive trait, and It is represented in the KEY by small letter “<strong>c</strong>”<br/>
+                                So…. Since Claws on Wings is a DOMINANT trait, the only way Silvaria could NOT have claws, is if she did not have the gene for it at all. So for this trait, she MUST be homozygous recessive (<strong>cc</strong>).</p>
+    
+                                <p>Determine Silvaria’s alleles for each trait listed in the illustrations below. Remember, she could be heterozygous for dominant traits (that’s up to you)…..but if a trait is recessive, she MUST be heterozygous recessive.</p>
+                            </div>
+                            <div className="md:w-1/2 mt-6 md:mt-0 flex-shrink-0">
+                                <Image 
+                                    src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/quest-images%2FICKWJ5MQl0SHFzzaSXqPuGS3NHr2%2F74245b3c-3c7f-437e-9ff8-87cc7a99a208?alt=media&token=04773da5-78c9-402a-86f6-953f8cac2ee8" 
+                                    alt="Silvaria the Dragon" 
+                                    width={500} 
+                                    height={500} 
+                                    className="rounded-lg shadow-lg w-full h-auto" 
+                                />
+                            </div>
                         </CardContent>
                     </Card>
                     
