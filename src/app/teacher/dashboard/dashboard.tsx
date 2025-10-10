@@ -858,6 +858,10 @@ export default function Dashboard() {
                                 <BookOpen className="mr-2 h-4 w-4" />
                                 <span>The Quest Archives</span>
                             </DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => router.push('/teacher/missions')}>
+                                <Star className="mr-2 h-4 w-4" />
+                                <span>Special Missions</span>
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => router.push('/teacher/boons')}>
                                 <Star className="mr-2 h-4 w-4" />
                                 <span>Guild Rewards</span>

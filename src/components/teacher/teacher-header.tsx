@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { School, LogOut, LifeBuoy, Shield, User as UserIcon, MessageSquare, Rss, CheckCheck, BookOpen, Star } from "lucide-react";
+import { School, LogOut, LifeBuoy, Shield, User as UserIcon, MessageSquare, Rss, CheckCheck, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -115,24 +115,6 @@ export function TeacherHeader({ isAdminPreview = false }: TeacherHeaderProps) {
           <School className="h-6 w-6 text-primary" />
           <span className="text-xl">The Guild Leader's Podium</span>
         </Link>
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                 <Button variant="outline">
-                    <Gamepad2 className="mr-2 h-5 w-5" />
-                    Game Management
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-                 <DropdownMenuItem onClick={() => router.push('/teacher/quests')}>
-                    <BookOpen className="mr-2 h-4 w-4" />
-                    The Quest Archives
-                </DropdownMenuItem>
-                 <DropdownMenuItem onClick={() => router.push('/teacher/missions')}>
-                    <Star className="mr-2 h-4 w-4" />
-                    Special Missions
-                </DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
         <div className="ml-auto flex items-center gap-2">
           {isFeedbackPanelVisible && (
               <>
@@ -150,7 +132,7 @@ export function TeacherHeader({ isAdminPreview = false }: TeacherHeaderProps) {
                   Return to Admin Dashboard
               </Button>
           )}
-           <Button variant="outline" onClick={() => router.push('/teacher/broadcasts')} className="relative">
+          <Button variant="outline" onClick={() => router.push('/teacher/broadcasts')} className="relative">
                 <Rss className="mr-2 h-5 w-5" />
                 Announcements
                 {hasNewBroadcasts && <span className="absolute top-1 right-1 flex h-3 w-3 rounded-full bg-red-600 animate-pulse" />}
