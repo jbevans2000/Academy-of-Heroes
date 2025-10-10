@@ -38,15 +38,17 @@ export default function GeneticsLabPage() {
                     <Card className="text-center">
                         <CardHeader>
                             <CardTitle className="text-3xl font-headline flex items-center justify-center gap-4"><Dna className="h-8 w-8 text-primary"/>Dragon Genetics</CardTitle>
+                            <CardDescription className="text-lg font-semibold">
+                                DRAGON TRAITS KEY <br/>
+                                <span className="font-normal text-sm">Upper Case Letters = Dominant</span><br/>
+                                <span className="font-normal text-sm">Lower Case Letters = Recessive</span>
+                            </CardDescription>
                         </CardHeader>
                     </Card>
+
                     <Card>
                         <CardHeader>
                             <CardTitle>Dragon Traits Key</CardTitle>
-                            <CardDescription>
-                                Upper Case Letters = Dominant <br/>
-                                Lower Case Letters = Recessive
-                            </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <Table>
@@ -95,7 +97,18 @@ export default function GeneticsLabPage() {
                                 <Label htmlFor="q4">4. The letter "b" is used to represent what?</Label>
                                 <Input id="q4" placeholder="Type your answer here..." />
                             </div>
-                             <div className="space-y-2">
+                        </CardContent>
+                    </Card>
+                    
+                    <Card>
+                        <CardContent className="p-4">
+                            <p>An Upper Case, or Capital letter is used to represent a dominant trait. A Lower Case, or small letter, is used to represent a recessive trait. Dominant Traits Completely mask and/or suppress recessive traits. Refer to the Key, and answer the following questions:</p>
+                        </CardContent>
+                    </Card>
+
+                     <Card>
+                        <CardContent className="p-6 space-y-4">
+                            <div className="space-y-2">
                                 <Label htmlFor="q5">5. List 6 Dominant Traits Shown in the Key.</Label>
                                 <div className="grid grid-cols-2 gap-4">
                                     <Input id="q5-1" placeholder="Trait 1" />
@@ -107,13 +120,7 @@ export default function GeneticsLabPage() {
                                 </div>
                             </div>
                         </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardContent className="p-4">
-                            <p>An Upper Case, or Capital letter is used to represent a dominant trait. A Lower Case, or small letter, is used to represent a recessive trait. Dominant Traits Completely mask and/or suppress recessive traits. Refer to the Key, and answer the following questions:</p>
-                        </CardContent>
-                    </Card>
+                     </Card>
                 </div>
             </main>
         </div>
