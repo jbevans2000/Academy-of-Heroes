@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -39,13 +40,14 @@ export default function GeneticsLabPage() {
                     <Card className="text-center">
                         <CardHeader>
                             <CardTitle className="text-3xl font-headline flex items-center justify-center gap-4"><Dna className="h-8 w-8 text-primary"/>Dragon Genetics</CardTitle>
+                            <CardDescription>Help Silvaria and Aurelio predict the traits of their next hatchling!</CardDescription>
                         </CardHeader>
                     </Card>
 
                     <Card>
-                        <CardHeader>
-                            <CardTitle className="text-center">DRAGON TRAITS KEY</CardTitle>
-                            <CardDescription className="text-center">
+                        <CardHeader className="text-center">
+                            <CardTitle>DRAGON TRAITS KEY</CardTitle>
+                            <CardDescription>
                                 Upper Case Letters = Dominant <br/> Lower Case Letters = Recessive
                             </CardDescription>
                         </CardHeader>
@@ -98,13 +100,13 @@ export default function GeneticsLabPage() {
                             </div>
                         </CardContent>
                     </Card>
-                    
-                    <Card>
+
+                     <Card>
                         <CardContent className="p-4">
                             <p>An Upper Case, or Capital letter is used to represent a dominant trait. A Lower Case, or small letter, is used to represent a recessive trait. Dominant Traits Completely mask and/or suppress recessive traits. Refer to the Key, and answer the following questions:</p>
                         </CardContent>
                     </Card>
-
+                    
                     <Card>
                         <CardContent className="p-6 space-y-4">
                             <div className="space-y-2">
@@ -136,7 +138,7 @@ export default function GeneticsLabPage() {
                             </div>
                         </CardContent>
                     </Card>
-                    
+
                     <Card>
                         <CardHeader className="text-center">
                             <CardTitle className="text-3xl font-headline">Silvaria's Chromosomes</CardTitle>
@@ -153,6 +155,20 @@ export default function GeneticsLabPage() {
                             So…. Since Claws on Wings is a DOMINANT trait, the only way Silvaria could NOT have claws, is if she did not have the gene for it at all. So for this trait,  she MUST be homozygous recessive (<strong>cc</strong>).</p>
 
                             <p>Determine Silvaria’s alleles for each trait listed in the illustrations below.  Remember, she could be heterozygous for dominant traits (that’s up to you)…..but if a trait is recessive, she MUST be heterozygous recessive.</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardContent className="p-6">
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                                {Array.from({ length: 6 }).map((_, i) => (
+                                    <textarea
+                                        key={i}
+                                        placeholder={`Trait ${i + 1}`}
+                                        className="w-full h-24 rounded-[30px] p-4 text-center text-lg font-semibold bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary"
+                                    />
+                                ))}
+                            </div>
                         </CardContent>
                     </Card>
 
