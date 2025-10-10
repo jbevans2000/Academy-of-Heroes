@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI flow for generating an image of a dragon hatchling based on genetic traits.
@@ -5,7 +6,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { dotprompt } from '@genkit-ai/dotprompt';
 
 // Define the input schema for the hatchling generator
 const TraitInputSchema = z.object({
@@ -24,32 +24,6 @@ const TraitInputSchema = z.object({
 
 export type HatchlingTraitInput = z.infer<typeof TraitInputSchema>;
 
-// Define the prompt template
-const hatchlingImagePrompt = ai.definePrompt(
-  {
-    name: 'hatchlingImagePrompt',
-    model: 'googleai/imagen-4.0-fast-generate-001',
-    input: { schema: TraitInputSchema },
-    output: { format: 'media' },
-    template: dotprompt`Generate a high-quality, fantasy art style image of a newly hatched baby dragon with the following specific physical traits. The dragon should look cute but majestic, like it has great potential.
-
-    - Neck: {{Neck Length}}
-    - Eyes: {{Eye Color}}
-    - Horns: {{Horns}}
-    - Wing Claws: {{Wing Claws}}
-    - Main Body Color: {{Body Color}}
-    - Belly Type: {{Belly}}
-    - Tail Style: {{Tail}}
-    - Back Pattern: {{Back}}
-    - Breath Ability: {{Breath}}
-    - Toes: {{Toes}}
-    - Wing Membrane Color: {{Wing Color}}
-
-    The hatchling should be in a simple, magical environment, like a nest with glowing runes or a mystical cave. Focus on the dragon itself.`,
-  }
-);
-
-
 // Define the main flow function
 const generateHatchlingFlow = ai.defineFlow(
   {
@@ -58,7 +32,29 @@ const generateHatchlingFlow = ai.defineFlow(
     outputSchema: z.string().describe("A data URI of the generated image."),
   },
   async (input) => {
-    const { media } = await hatchlingImagePrompt(input);
+    // Dynamically construct the prompt string from the input traits
+    const promptText = `Generate a high-quality, fantasy art style image of a newly hatched baby dragon with the following specific physical traits. The dragon should look cute but majestic, like it has great potential.
+
+    - Neck: ${input['Neck Length']}
+    - Eyes: ${input['Eye Color']}
+    - Horns: ${input['Horns']}
+    - Wing Claws: ${input['Wing Claws']}
+    - Main Body Color: ${input['Body Color']}
+    - Belly Type: ${input['Belly']}
+    - Tail Style: ${input['Tail']}
+    - Back Pattern: ${input['Back']}
+    - Breath Ability: ${input['Breath']}
+    - Toes: ${input['Toes']}
+    - Wing Membrane Color: ${input['Wing Color']}
+
+    The hatchling should be in a simple, magical environment, like a nest with glowing runes or a mystical cave. Focus on the dragon itself.`;
+    
+    const { media } = await ai.generate({
+      model: 'googleai/imagen-4.0-fast-generate-001',
+      prompt: promptText,
+      output: { format: 'media' },
+    });
+
     if (!media?.url) {
       throw new Error("The AI failed to generate a valid image.");
     }
