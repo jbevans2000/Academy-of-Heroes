@@ -149,6 +149,8 @@ const HatchlingTable = ({ title, tableIndex }: { title: string; tableIndex: numb
             console.error(`Could not save state for ${title}:`, error);
         }
     };
+    
+    const rowHeaders = ["Trait", "Genotype", "Phenotype", "Het/Hom"];
 
     return (
         <Card>
@@ -159,24 +161,31 @@ const HatchlingTable = ({ title, tableIndex }: { title: string; tableIndex: numb
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="font-bold border text-center bg-gray-200">Trait</TableHead>
-                            <TableHead className="font-bold border text-center bg-gray-200">Genotype</TableHead>
-                            <TableHead className="font-bold border text-center bg-gray-200">Phenotype</TableHead>
-                            <TableHead className="font-bold border text-center bg-gray-200">Het/Hom</TableHead>
+                            {["Trait", "Genotype", "Phenotype", "Het/Hom"].map(header => (
+                                <TableHead key={header} className="font-bold border text-center bg-gray-200">{header}</TableHead>
+                            ))}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {grid.map((row, rowIndex) => (
                             <TableRow key={rowIndex}>
-                                {row.map((cell, colIndex) => (
+                                {row.map((cell, colIndex) => {
+                                    const isFirstColumn = colIndex === 0;
+                                    return (
                                     <TableCell key={colIndex} className="p-1">
-                                        <Input
-                                            value={cell}
-                                            onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
-                                            className="w-full text-center text-xs h-10"
-                                        />
+                                         {isFirstColumn ? (
+                                            <div className="font-bold border text-center bg-gray-200 p-2 h-10 flex items-center justify-center text-xs">
+                                                {rowHeaders[rowIndex]}
+                                            </div>
+                                        ) : (
+                                            <Input
+                                                value={cell}
+                                                onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
+                                                className="w-full text-center text-xs h-10"
+                                            />
+                                        )}
                                     </TableCell>
-                                ))}
+                                )})}
                             </TableRow>
                         ))}
                     </TableBody>
@@ -507,6 +516,26 @@ export default function GeneticsLabPage() {
                                         style={{ height: '12rem' }}
                                     />
                                 ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="text-center">
+                            <CardTitle className="text-3xl font-headline font-['Cinzel']">Aurelio's Instructions</CardTitle>
+                        </CardHeader>
+                        <CardContent className="md:flex md:gap-6 md:items-start p-6">
+                            <div className="prose max-w-none md:w-1/2">
+                                <p>Now, fill in the Information for Aurelio's Chromosomes!</p>
+                            </div>
+                            <div className="md:w-1/2 mt-6 md:mt-0 flex-shrink-0">
+                                <Image 
+                                    src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/quest-images%2FICKWJ5MQl0SHFzzaSXqPuGS3NHr2%2F994eb181-2c90-4f2e-8125-e13e0ccaae43?alt=media&token=f0dfb5dd-2c1e-4178-864a-547a994dac1b" 
+                                    alt="Aurelio the Dragon" 
+                                    width={500} 
+                                    height={500} 
+                                    className="rounded-lg shadow-lg w-full h-auto" 
+                                />
                             </div>
                         </CardContent>
                     </Card>
