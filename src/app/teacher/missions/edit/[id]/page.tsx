@@ -132,17 +132,12 @@ export default function EditMissionPage() {
         const iframeMatch = contentHtml.match(/<iframe.*?src=["'](.*?)["']/);
         if (iframeMatch && iframeMatch[1]) {
             const iframeUrl = iframeMatch[1];
-            // Open the iframe source in a new tab for printing
             const printWindow = window.open(iframeUrl, '_blank');
             if (printWindow) {
-                printWindow.focus();
-                // We can't reliably call print() due to cross-origin policies,
-                // so we instruct the user.
-                toast({
-                    title: "Printing Embedded Content",
-                    description: "Your embedded page has been opened in a new tab. Please use your browser's Print function (Ctrl/Cmd + P) to save it as a PDF.",
-                    duration: 10000,
-                });
+                printWindow.onload = () => {
+                    printWindow.focus();
+                    printWindow.print();
+                };
             } else {
                  toast({ variant: 'destructive', title: 'Popup Blocked', description: 'Could not open the content in a new tab. Please disable your popup blocker for this site.' });
             }
