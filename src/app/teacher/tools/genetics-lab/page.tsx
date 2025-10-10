@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Dna, Sparkles, Check } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { ArrowLeft, Dna } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,7 +27,7 @@ export default function GeneticsLabPage() {
     const router = useRouter();
     
     return (
-        <div className="bg-muted/40">
+        <div className="bg-muted/40 min-h-screen">
             <TeacherHeader />
             <main className="p-4 md:p-6 lg:p-8">
                 <Button variant="outline" onClick={() => router.back()} className="mb-4">
@@ -39,17 +38,16 @@ export default function GeneticsLabPage() {
                     <Card className="text-center">
                         <CardHeader>
                             <CardTitle className="text-3xl font-headline flex items-center justify-center gap-4"><Dna className="h-8 w-8 text-primary"/>Dragon Genetics</CardTitle>
-                            <CardDescription>
-                                DRAGON TRAITS KEY <br/>
-                                Upper Case Letters = Dominant <br/>
-                                Lower Case Letters = Recessive
-                            </CardDescription>
                         </CardHeader>
                     </Card>
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Genetics Key</CardTitle>
+                            <CardTitle>Dragon Traits Key</CardTitle>
+                             <CardDescription>
+                                Upper Case Letters = Dominant <br/>
+                                Lower Case Letters = Recessive
+                            </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <Table>
@@ -99,6 +97,12 @@ export default function GeneticsLabPage() {
                                 <Label htmlFor="q4">4. The letter "b" is used to represent what?</Label>
                                 <Input id="q4" placeholder="Type your answer here..." />
                             </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardContent className="p-4">
+                            <p>An Upper Case, or Capital letter is used to represent a dominant trait. A Lower Case, or small letter, is used to represent a recessive trait. Dominant Traits Completely mask and/or suppress recessive traits. Refer to the Key, and answer the following questions:</p>
                         </CardContent>
                     </Card>
                 </div>
