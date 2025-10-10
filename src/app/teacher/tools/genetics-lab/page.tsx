@@ -150,7 +150,7 @@ const HatchlingTable = ({ title, tableIndex }: { title: string; tableIndex: numb
         }
     };
     
-    const rowHeaders = ["Trait", "Genotype", "Phenotype", "Het/Hom"];
+    const rowHeaders = ["Genotype", "Phenotype", "Het/Hom"];
 
     return (
         <Card>
@@ -167,25 +167,30 @@ const HatchlingTable = ({ title, tableIndex }: { title: string; tableIndex: numb
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {grid.map((row, rowIndex) => (
-                            <TableRow key={rowIndex}>
-                                {row.map((cell, colIndex) => {
-                                    const isFirstColumn = colIndex === 0;
-                                    return (
-                                    <TableCell key={colIndex} className="p-1">
-                                         {isFirstColumn ? (
-                                            <div className="font-bold border text-center bg-gray-200 p-2 h-10 flex items-center justify-center text-xs">
-                                                {rowHeaders[rowIndex]}
-                                            </div>
-                                        ) : (
-                                            <Input
-                                                value={cell}
-                                                onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
-                                                className="w-full text-center text-xs h-10"
-                                            />
-                                        )}
-                                    </TableCell>
-                                )})}
+                        <TableRow>
+                            <TableCell className="p-1 font-bold border text-center bg-gray-200">Trait</TableCell>
+                            {grid[0].slice(1).map((cell, colIndex) => (
+                                <TableCell key={colIndex} className="p-1">
+                                    <Input
+                                        value={cell}
+                                        onChange={(e) => handleCellChange(0, colIndex + 1, e.target.value)}
+                                        className="w-full text-center text-xs h-10"
+                                    />
+                                </TableCell>
+                            ))}
+                        </TableRow>
+                        {grid.slice(1).map((row, rowIndex) => (
+                            <TableRow key={rowIndex + 1}>
+                                <TableCell className="p-1 font-bold border text-center bg-gray-200">{rowHeaders[rowIndex]}</TableCell>
+                                {row.slice(1).map((cell, colIndex) => (
+                                <TableCell key={colIndex} className="p-1">
+                                    <Input
+                                    value={cell}
+                                    onChange={(e) => handleCellChange(rowIndex + 1, colIndex + 1, e.target.value)}
+                                    className="w-full text-center text-xs h-10"
+                                    />
+                                </TableCell>
+                                ))}
                             </TableRow>
                         ))}
                     </TableBody>
@@ -524,9 +529,9 @@ export default function GeneticsLabPage() {
                         <CardHeader className="text-center">
                             <CardTitle className="text-3xl font-headline font-['Cinzel']">Aurelio's Instructions</CardTitle>
                         </CardHeader>
-                        <CardContent className="md:flex md:gap-6 md:items-start p-6">
-                            <div className="prose max-w-none md:w-1/2">
-                                <p>Now, fill in the Information for Aurelio's Chromosomes!</p>
+                        <CardContent className="md:flex md:gap-6 md:items-center p-6">
+                            <div className="md:w-1/2 flex items-center justify-center">
+                                <p className="text-2xl font-semibold text-center">Now, fill in the Information for Aurelio's Chromosomes!</p>
                             </div>
                             <div className="md:w-1/2 mt-6 md:mt-0 flex-shrink-0">
                                 <Image 
