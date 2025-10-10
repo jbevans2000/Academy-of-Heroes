@@ -27,6 +27,7 @@ interface RichTextEditorProps {
 const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ value, onChange, className }, ref) => {
   const localEditorRef = useRef<HTMLDivElement>(null);
   const selectionRef = useRef<Range | null>(null);
+  const [selection, setSelection] = useState<Selection | null>(null);
   
   // This hook ensures the parent's ref and the local ref both point to the same DOM element.
   useImperativeHandle(ref, () => localEditorRef.current as HTMLDivElement);
@@ -62,6 +63,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
       const range = sel.getRangeAt(0);
       if (localEditorRef.current && localEditorRef.current.contains(range.commonAncestorContainer)) {
         selectionRef.current = range.cloneRange();
+        setSelection(sel);
       }
     }
   };
@@ -309,7 +311,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
             <option value="6">Huge</option>
             <option value="7">Giant</option>
           </select>
-          <select onChange={handleFontFamilyChange} onMouseDown={handleToolbarMouseDown} className="p-1 rounded-md border bg-background text-sm">
+          <select defaultValue="Lora, serif" onChange={handleFontFamilyChange} onMouseDown={handleToolbarMouseDown} className="p-1 rounded-md border bg-background text-sm">
             <option value="Lora, serif">Lora (Default)</option>
             <option value="Arial, sans-serif">Arial</option>
             <option value="Georgia, serif">Georgia</option>
