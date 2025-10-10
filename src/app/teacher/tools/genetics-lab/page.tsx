@@ -7,7 +7,6 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ArrowLeft, Dna, Check, Sparkles } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 // --- DATA DEFINITIONS ---
 
@@ -101,13 +100,6 @@ export default function GeneticsLabPage() {
     const [selectedTrait, setSelectedTrait] = useState<Trait>('Spikes on tail');
     const [hatchlingGenotype, setHatchlingGenotype] = useState<Partial<Record<Trait, [Allele, Allele]>>>({});
 
-    const handleSelectQuadrant = (genotype: [Allele, Allele]) => {
-        setHatchlingGenotype(prev => ({
-            ...prev,
-            [selectedTrait]: genotype,
-        }));
-    };
-    
     const getPhenotype = (trait: Trait, alleles: [Allele, Allele]) => {
         const info = geneticsKey[trait];
         return alleles.includes(info.dominantAllele) ? info.dominant : info.recessive;
@@ -117,11 +109,18 @@ export default function GeneticsLabPage() {
         return Object.keys(geneticsKey).length === Object.keys(hatchlingGenotype).length;
     }, [hatchlingGenotype]);
 
+    const handleSelectQuadrant = (genotype: [Allele, Allele]) => {
+        setHatchlingGenotype(prev => ({
+            ...prev,
+            [selectedTrait]: genotype,
+        }));
+    };
+
     return (
         <div className="bg-muted/40">
             <TeacherHeader />
             <main className="p-4 md:p-6 lg:p-8">
-                <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6" role="alert">
+                 <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6" role="alert">
                     <p className="font-bold">Instructions for the Activity</p>
                     <pre className="whitespace-pre-wrap font-sans">
                         {`
@@ -147,7 +146,11 @@ Dragon Genetics is a fun and interactive way to learn about dominant and recessi
                     <Card className="text-center">
                         <CardHeader>
                             <CardTitle className="text-3xl font-headline flex items-center justify-center gap-4"><Dna className="h-8 w-8 text-primary"/>Dragon Genetics</CardTitle>
-                            <CardDescription>Help Silvaria and Aurelio predict the traits of their next hatchling!</CardDescription>
+                            <CardDescription className="text-center font-bold">
+                                DRAGON TRAITS KEY <br />
+                                Upper Case Letters = Dominant <br />
+                                Lower Case Letters = Recessive
+                            </CardDescription>
                         </CardHeader>
                     </Card>
 
