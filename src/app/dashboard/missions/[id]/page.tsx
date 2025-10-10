@@ -12,22 +12,13 @@ import type { Student } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Loader2, Save, Send, Upload, File as FileIcon } from 'lucide-react';
 import { saveMissionDraft, submitMission } from '@/ai/flows/manage-missions';
 import { v4 as uuidv4 } from 'uuid';
 import RichTextEditor from '@/components/teacher/rich-text-editor';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Alert, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 
@@ -221,9 +212,9 @@ export default function StudentMissionDetailPage() {
                     </Button>
                     
                     {showEmbedInstructionsAlert && (
-                        <Alert variant="default" className="bg-yellow-100/90 dark:bg-yellow-900/80 border-yellow-500 text-black dark:text-white">
-                            <AlertTitle className="text-2xl font-bold">External Assignment Instructions</AlertTitle>
-                            <p className="text-lg">
+                        <Alert variant="default" className="bg-yellow-100/90 dark:bg-yellow-900/80 border-yellow-500">
+                            <AlertTitle className="text-2xl font-bold text-black">External Assignment Instructions</AlertTitle>
+                            <p className="text-lg text-black">
                                 Please Complete this Mission on the Second Browser Tab that Just opened. When complete, please press Control + P, and SAVE the mission as a PDF file. Upload your PDF file for your Guild Leader's review using the upload box below!
                             </p>
                         </Alert>
