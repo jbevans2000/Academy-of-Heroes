@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { School, LogOut, LifeBuoy, Shield, User as UserIcon, MessageSquare, Rss, CheckCheck, BookOpen } from "lucide-react";
+import { School, LogOut, LifeBuoy, Shield, User as UserIcon, MessageSquare, Rss, CheckCheck, BookOpen, Star } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -128,7 +128,7 @@ export function TeacherHeader({ isAdminPreview = false }: TeacherHeaderProps) {
                     The Quest Archives
                 </DropdownMenuItem>
                  <DropdownMenuItem onClick={() => router.push('/teacher/missions')}>
-                    <BookOpen className="mr-2 h-4 w-4" />
+                    <Star className="mr-2 h-4 w-4" />
                     Special Missions
                 </DropdownMenuItem>
             </DropdownMenuContent>
