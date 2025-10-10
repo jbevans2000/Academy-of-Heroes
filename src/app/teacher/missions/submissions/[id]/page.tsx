@@ -270,7 +270,7 @@ export default function MissionSubmissionsPage() {
                                                 <TableHead>Student</TableHead>
                                                 <TableHead>Status</TableHead>
                                                 {statusFilter === 'completed' && <TableHead>Grade</TableHead>}
-                                                <TableHead>Submitted At</TableHead>
+                                                <TableHead>Submitted On</TableHead>
                                                 <TableHead className="text-right">Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
