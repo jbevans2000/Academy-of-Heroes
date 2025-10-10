@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useImperativeHandle } from 'react';
 import { Button } from '@/components/ui/button';
 import { Bold, Italic, Underline, Strikethrough, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Youtube, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Pilcrow } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -25,9 +25,11 @@ interface RichTextEditorProps {
 }
 
 const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ value, onChange, className }, ref) => {
-  // Use the forwarded ref directly. Do not create a new one with useRef.
-  const editorRef = ref as React.RefObject<HTMLDivElement>;
+  const editorRef = useRef<HTMLDivElement>(null);
   const selectionRef = useRef<Range | null>(null);
+
+  // Combine the local ref with the forwarded ref
+  useImperativeHandle(ref, () => editorRef.current as HTMLDivElement);
 
   // Dialog States
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
@@ -46,7 +48,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
     if (editor && value !== editor.innerHTML) {
       editor.innerHTML = value;
     }
-  }, [value, editorRef]);
+  }, [value]);
 
   const handleInput = () => {
     if (editorRef.current) {
@@ -347,7 +349,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
             </div>
         </div>
         <div
-          ref={ref}
+          ref={editorRef}
           contentEditable
           onInput={handleInput}
           onBlur={saveSelection}
