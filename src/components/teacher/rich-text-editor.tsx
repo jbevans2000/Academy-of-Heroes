@@ -319,6 +319,9 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
             <option value="Verdana, sans-serif">Verdana</option>
             <option value="Cinzel, serif">Cinzel</option>
           </select>
+          <div className="flex items-center h-8 w-8 justify-center rounded-md border bg-background">
+              <Input type="color" onChange={handleFontColorChange} className="w-full h-full p-0 border-none cursor-pointer" title="Font Color" />
+          </div>
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleBold} title="Bold">
             <Bold className="h-4 w-4" />
           </Button>
@@ -367,9 +370,6 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleOpenIframeDialog} title="Embed Iframe">
             <Code className="h-4 w-4" />
           </Button>
-             <div className="flex items-center h-8 w-8 justify-center rounded-md border bg-background">
-                <Input type="color" onChange={handleFontColorChange} className="w-full h-full p-0 border-none cursor-pointer" title="Font Color" />
-            </div>
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleUndo} title="Undo">
             <Undo className="h-4 w-4" />
           </Button>
