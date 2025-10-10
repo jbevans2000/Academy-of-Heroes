@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import RichTextEditor from '@/components/teacher/rich-text-editor';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Save, Loader2, Trash2, Download } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Trash2, Download, Star, Coins } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { saveMission, deleteMission } from '@/ai/flows/manage-missions';
 import {
@@ -226,21 +226,35 @@ export default function EditMissionPage() {
                                 <Input 
                                     id="title" 
                                     value={mission.title || ''} 
-                                    onChange={(e) => setMission(prev => ({...prev, title: e.target.value}))} 
+                                    onChange={(e) => setMission(prev => prev ? ({...prev, title: e.target.value}) : null)} 
                                 />
+                            </div>
+                            <div className="space-y-4 p-4 border rounded-lg bg-secondary/50">
+                                <Label className="text-base font-semibold">Default Completion Rewards (Optional)</Label>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="default-xp" className="flex items-center gap-1"><Star className="h-4 w-4 text-yellow-400" /> Default XP</Label>
+                                        <Input id="default-xp" type="number" value={mission.defaultXpReward ?? ''} onChange={e => setMission(prev => prev ? ({...prev, defaultXpReward: Number(e.target.value)}) : null)} placeholder="e.g., 100" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="default-gold" className="flex items-center gap-1"><Coins className="h-4 w-4 text-amber-500" /> Default Gold</Label>
+                                        <Input id="default-gold" type="number" value={mission.defaultGoldReward ?? ''} onChange={e => setMission(prev => prev ? ({...prev, defaultGoldReward: Number(e.target.value)}) : null)} placeholder="e.g., 50" />
+                                    </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground">These will be auto-calculated in the grading view based on the percentage score, but you can always override them.</p>
                             </div>
                             <div className="space-y-2">
                                 <Label>Mission Content</Label>
                                 <RichTextEditor 
                                     value={mission.content || ''} 
-                                    onChange={(value) => setMission(prev => ({...prev, content: value}))}
+                                    onChange={(value) => setMission(prev => prev ? ({...prev, content: value}) : null)}
                                 />
                             </div>
                             <div className="flex items-center space-x-2 pt-4">
                                 <Switch 
                                     id="is-assigned" 
                                     checked={mission.isAssigned} 
-                                    onCheckedChange={(checked) => setMission(prev => ({...prev, isAssigned: checked}))}
+                                    onCheckedChange={(checked) => setMission(prev => prev ? ({...prev, isAssigned: checked}) : null)}
                                 />
                                 <Label htmlFor="is-assigned">{mission.isAssigned ? "Assigned to Students" : "Saved as Draft"}</Label>
                             </div>

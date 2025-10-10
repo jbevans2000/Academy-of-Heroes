@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import RichTextEditor from '@/components/teacher/rich-text-editor';
-import { ArrowLeft, Loader2, Save, Download } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Download, Star, Coins } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import jsPDF from 'jspdf';
 
@@ -26,6 +26,8 @@ export default function NewMissionPage() {
     const [content, setContent] = useState('');
     const [isAssigned, setIsAssigned] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [defaultXp, setDefaultXp] = useState<number | ''>('');
+    const [defaultGold, setDefaultGold] = useState<number | ''>('');
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -51,6 +53,8 @@ export default function NewMissionPage() {
                 title,
                 content,
                 isAssigned,
+                defaultXpReward: Number(defaultXp) || 0,
+                defaultGoldReward: Number(defaultGold) || 0,
             });
 
             if (result.success && result.id) {
@@ -152,6 +156,20 @@ export default function NewMissionPage() {
                             <div className="space-y-2">
                                 <Label htmlFor="title">Mission Title</Label>
                                 <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., The Mystery of the Missing Artifact" />
+                            </div>
+                             <div className="space-y-4 p-4 border rounded-lg bg-secondary/50">
+                                <Label className="text-base font-semibold">Default Completion Rewards (Optional)</Label>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="default-xp" className="flex items-center gap-1"><Star className="h-4 w-4 text-yellow-400" /> Default XP</Label>
+                                        <Input id="default-xp" type="number" value={defaultXp} onChange={e => setDefaultXp(e.target.value === '' ? '' : Number(e.target.value))} placeholder="e.g., 100" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="default-gold" className="flex items-center gap-1"><Coins className="h-4 w-4 text-amber-500" /> Default Gold</Label>
+                                        <Input id="default-gold" type="number" value={defaultGold} onChange={e => setDefaultGold(e.target.value === '' ? '' : Number(e.target.value))} placeholder="e.g., 50" />
+                                    </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground">These will be auto-calculated in the grading view based on the percentage score, but you can always override them.</p>
                             </div>
                             <div className="space-y-2">
                                 <Label>Mission Content</Label>
