@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -28,6 +28,31 @@ const geneticsKey = [
 export default function GeneticsLabPage() {
     const router = useRouter();
     
+    const [ovalTexts, setOvalTexts] = useState<string[]>(Array(6).fill(''));
+
+    // Load from localStorage on initial render
+    useEffect(() => {
+        try {
+            const loadedTexts = Array(6).fill('').map((_, i) => 
+                localStorage.getItem(`geneticsLabOval${i + 1}`) || ''
+            );
+            setOvalTexts(loadedTexts);
+        } catch (error) {
+            console.error("Could not access localStorage:", error);
+        }
+    }, []);
+
+    const handleTextChange = (index: number, value: string) => {
+        const newTexts = [...ovalTexts];
+        newTexts[index] = value;
+        setOvalTexts(newTexts);
+        try {
+            localStorage.setItem(`geneticsLabOval${index + 1}`, value);
+        } catch (error) {
+            console.error("Could not write to localStorage:", error);
+        }
+    };
+    
     const pastelColors = [
         'bg-red-100',
         'bg-yellow-100',
@@ -51,7 +76,7 @@ export default function GeneticsLabPage() {
                             <CardTitle className="text-3xl font-headline flex items-center justify-center gap-4"><Dna className="h-8 w-8 text-primary"/>Dragon Genetics</CardTitle>
                         </CardHeader>
                     </Card>
-                    
+
                     <Card>
                         <CardHeader className="text-center">
                             <CardTitle>DRAGON TRAITS KEY</CardTitle>
@@ -84,7 +109,7 @@ export default function GeneticsLabPage() {
                             </Table>
                         </CardContent>
                     </Card>
-
+                    
                     <Card>
                         <CardHeader>
                             <CardTitle>Test Your Knowledge</CardTitle>
@@ -108,13 +133,13 @@ export default function GeneticsLabPage() {
                             </div>
                         </CardContent>
                     </Card>
-                    
+
                     <Card>
                         <CardContent className="p-4">
                             <p>An Upper Case, or Capital letter is used to represent a dominant trait. A Lower Case, or small letter, is used to represent a recessive trait. Dominant Traits Completely mask and/or suppress recessive traits. Refer to the Key, and answer the following questions:</p>
                         </CardContent>
                     </Card>
-                    
+
                     <Card>
                         <CardContent className="p-6 space-y-4">
                             <div className="space-y-2">
@@ -131,7 +156,7 @@ export default function GeneticsLabPage() {
                         </CardContent>
                     </Card>
                     
-                    <Card>
+                     <Card>
                         <CardContent className="p-6 space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="q6">6. List 6 Recessive Traits Shown in the Key.</Label>
@@ -165,14 +190,16 @@ export default function GeneticsLabPage() {
                             <p>Determine Silvaria’s alleles for each trait listed in the illustrations below.  Remember, she could be heterozygous for dominant traits (that’s up to you)…..but if a trait is recessive, she MUST be heterozygous recessive.</p>
                         </CardContent>
                     </Card>
-
+                    
                     <Card>
                         <CardContent className="p-6">
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                                {Array.from({ length: 6 }).map((_, i) => (
+                                {ovalTexts.map((text, i) => (
                                     <textarea
                                         key={i}
                                         placeholder={`Trait ${i + 1}`}
+                                        value={text}
+                                        onChange={(e) => handleTextChange(i, e.target.value)}
                                         className={`w-full h-24 rounded-[30px] p-4 text-center text-lg font-semibold ${pastelColors[i]} focus:outline-none focus:ring-2 focus:ring-primary`}
                                     />
                                 ))}
