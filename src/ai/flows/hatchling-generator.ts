@@ -5,6 +5,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
+import { dotprompt } from '@genkit-ai/dotprompt';
 
 // Define the input schema for the hatchling generator
 const TraitInputSchema = z.object({
@@ -30,19 +31,19 @@ const hatchlingImagePrompt = ai.definePrompt(
     model: 'googleai/imagen-4.0-fast-generate-001',
     input: { schema: TraitInputSchema },
     output: { format: 'media' },
-    prompt: `Generate a high-quality, fantasy art style image of a newly hatched baby dragon with the following specific physical traits. The dragon should look cute but majestic, like it has great potential.
+    template: dotprompt`Generate a high-quality, fantasy art style image of a newly hatched baby dragon with the following specific physical traits. The dragon should look cute but majestic, like it has great potential.
 
-    - Neck: {{{Neck Length}}}
-    - Eyes: {{{Eye Color}}}
-    - Horns: {{{Horns}}}
-    - Wing Claws: {{{Wing Claws}}}
-    - Main Body Color: {{{Body Color}}}
-    - Belly Type: {{{Belly}}}
-    - Tail Style: {{{Tail}}}
-    - Back Pattern: {{{Back}}}
-    - Breath Ability: {{{Breath}}}
-    - Toes: {{{Toes}}}
-    - Wing Membrane Color: {{{Wing Color}}}
+    - Neck: {{Neck Length}}
+    - Eyes: {{Eye Color}}
+    - Horns: {{Horns}}
+    - Wing Claws: {{Wing Claws}}
+    - Main Body Color: {{Body Color}}
+    - Belly Type: {{Belly}}
+    - Tail Style: {{Tail}}
+    - Back Pattern: {{Back}}
+    - Breath Ability: {{Breath}}
+    - Toes: {{Toes}}
+    - Wing Membrane Color: {{Wing Color}}
 
     The hatchling should be in a simple, magical environment, like a nest with glowing runes or a mystical cave. Focus on the dragon itself.`,
   }
