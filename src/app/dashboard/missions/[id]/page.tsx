@@ -10,16 +10,15 @@ import { db, auth, app } from '@/lib/firebase';
 import type { Mission } from '@/lib/missions';
 import type { Student } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
-import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Loader2, Save, Send, Upload, File as FileIcon } from 'lucide-react';
 import { saveMissionDraft, submitMission } from '@/ai/flows/manage-missions';
 import { v4 as uuidv4 } from 'uuid';
+import RichTextEditor from '@/components/teacher/rich-text-editor';
 
 interface SubmissionData {
     submissionContent: string;
@@ -225,13 +224,9 @@ export default function StudentMissionDetailPage() {
                         <CardContent className="space-y-4">
                             <div>
                                 <Label htmlFor="submission-text">Your Written Response</Label>
-                                <Textarea
-                                    id="submission-text"
-                                    rows={10}
+                                <RichTextEditor
                                     value={submission.submissionContent || ''}
-                                    onChange={(e) => setSubmission(prev => ({...prev, submissionContent: e.target.value}))}
-                                    placeholder="Type your response here..."
-                                    disabled={isSubmitted}
+                                    onChange={(value) => setSubmission(prev => ({...prev, submissionContent: value}))}
                                 />
                             </div>
                              <div>
