@@ -6,12 +6,15 @@ import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Dna } from 'lucide-react';
+import { ArrowLeft, Dna, Sparkles, Loader2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { generateHatchling, type HatchlingTraitInput } from '@/ai/flows/hatchling-generator';
+import { useToast } from '@/hooks/use-toast';
+import Image from 'next/image';
 
 const geneticsKey = [
   { trait: 'Neck Length', dominantAllele: 'N', dominant: 'Long Neck', recessiveAllele: 'n', recessive: 'Short Neck' },
@@ -177,7 +180,7 @@ interface TraitSelection {
     phenotype: 'dominant' | 'recessive' | '';
 }
 
-const HatchlingTraitSelector = () => {
+const HatchlingTraitSelector = ({ onDataChange }: { onDataChange: (data: Record<string, TraitSelection>) => void }) => {
     const [traitData, setTraitData] = useState<Record<string, TraitSelection>>({});
     const storageKey = 'hatchlingTraitSelections';
 
@@ -185,12 +188,14 @@ const HatchlingTraitSelector = () => {
         try {
             const savedData = localStorage.getItem(storageKey);
             if (savedData) {
-                setTraitData(JSON.parse(savedData));
+                const parsedData = JSON.parse(savedData);
+                setTraitData(parsedData);
+                onDataChange(parsedData);
             }
         } catch (error) {
             console.error("Could not load trait selections:", error);
         }
-    }, []);
+    }, [onDataChange]);
 
     const handleTraitChange = (traitName: string, field: 'genotype' | 'phenotype', value: string) => {
         const newData = {
@@ -201,6 +206,7 @@ const HatchlingTraitSelector = () => {
             },
         };
         setTraitData(newData);
+        onDataChange(newData); // Notify parent of the change
         try {
             localStorage.setItem(storageKey, JSON.stringify(newData));
         } catch (error) {
@@ -254,31 +260,36 @@ const HatchlingTraitSelector = () => {
 
 export default function GeneticsLabPage() {
     const router = useRouter();
+    const { toast } = useToast();
     
     const [ovalTexts, setOvalTexts] = useState<string[]>(Array(6).fill(''));
     const [aureliosOvalTexts, setAureliosOvalTexts] = useState<string[]>(Array(6).fill(''));
+    const [traitSelections, setTraitSelections] = useState<Record<string, TraitSelection> | null>(null);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
+    const imageStorageKey = 'hatchlingGeneratedImage';
 
-    // Load from localStorage on initial render for Silvaria
+
+    // Load from localStorage on initial render
     useEffect(() => {
         try {
             const loadedTexts = Array(6).fill('').map((_, i) => 
                 localStorage.getItem(`geneticsLabOval${i + 1}`) || ''
             );
             setOvalTexts(loadedTexts);
-        } catch (error) {
-            console.error("Could not access localStorage for Silvaria:", error);
-        }
-    }, []);
 
-    // Load from localStorage on initial render for Aurelios
-    useEffect(() => {
-        try {
-            const loadedTexts = Array(6).fill('').map((_, i) => 
+            const aureliosLoadedTexts = Array(6).fill('').map((_, i) => 
                 localStorage.getItem(`aureliosGeneticsLabOval${i + 1}`) || ''
             );
-            setAureliosOvalTexts(loadedTexts);
+            setAureliosOvalTexts(aureliosLoadedTexts);
+            
+            const savedImage = localStorage.getItem(imageStorageKey);
+            if (savedImage) {
+                setGeneratedImageUrl(savedImage);
+            }
+
         } catch (error) {
-            console.error("Could not access localStorage for Aurelios:", error);
+            console.error("Could not access localStorage:", error);
         }
     }, []);
 
@@ -304,6 +315,45 @@ export default function GeneticsLabPage() {
             console.error("Could not write to localStorage for Aurelios:", error);
         }
     };
+
+    const handleGenerateHatchling = async () => {
+        if (!traitSelections) {
+            toast({ variant: 'destructive', title: 'Missing Traits', description: "Please select the phenotypes for your hatchling first." });
+            return;
+        }
+
+        const input: Partial<HatchlingTraitInput> = {};
+        let allTraitsDefined = true;
+
+        for (const key of geneticsKey) {
+            const selection = traitSelections[key.trait];
+            if (selection && selection.phenotype) {
+                input[key.trait as keyof HatchlingTraitInput] = selection.phenotype === 'dominant' ? key.dominant : key.recessive;
+            } else {
+                allTraitsDefined = false;
+                break;
+            }
+        }
+        
+        if (!allTraitsDefined) {
+             toast({ variant: 'destructive', title: 'Incomplete Traits', description: "Please define a phenotype for all 11 traits before generating." });
+            return;
+        }
+
+        setIsGenerating(true);
+        setGeneratedImageUrl(null);
+
+        try {
+            const imageUrl = await generateHatchling(input as HatchlingTraitInput);
+            setGeneratedImageUrl(imageUrl);
+            localStorage.setItem(imageStorageKey, imageUrl);
+        } catch (error) {
+            console.error("Hatchling generation failed:", error);
+            toast({ variant: 'destructive', title: 'Generation Failed', description: "The AI artist was unable to create a portrait. Please try again." });
+        } finally {
+            setIsGenerating(false);
+        }
+    }
     
     const pastelColors = [
         'bg-red-100',
@@ -438,7 +488,7 @@ export default function GeneticsLabPage() {
                             </div>
                         </CardContent>
                     </Card>
-
+                    
                     <Card>
                         <CardHeader className="text-center">
                             <CardTitle className="text-3xl font-headline">Aurelios' Chromosomes</CardTitle>
@@ -491,10 +541,29 @@ export default function GeneticsLabPage() {
                         <HatchlingTable title="Chromosome 4" tableIndex={4} />
                     </div>
 
-                    <HatchlingTraitSelector />
+                    <HatchlingTraitSelector onDataChange={setTraitSelections} />
+
+                    <Card>
+                        <CardHeader className="text-center">
+                            <CardTitle className="text-3xl font-headline">Hatchling Portrait</CardTitle>
+                            <CardDescription>Use the Academy's magical artist to generate a portrait of your unique dragon hatchling based on the traits you've selected above.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="text-center space-y-4">
+                            <Button onClick={handleGenerateHatchling} disabled={isGenerating}>
+                                {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4"/>}
+                                Generate Portrait
+                            </Button>
+                            {isGenerating && <p className="text-muted-foreground">The artist is sketching... this may take a moment.</p>}
+                            {generatedImageUrl && (
+                                <div className="mt-4 p-4 border rounded-lg bg-secondary/30 max-w-lg mx-auto">
+                                    <Image src={generatedImageUrl} alt="Generated hatchling portrait" width={512} height={512} className="rounded-md mx-auto" />
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
 
                 </div>
             </main>
         </div>
-    )
+    );
 }
