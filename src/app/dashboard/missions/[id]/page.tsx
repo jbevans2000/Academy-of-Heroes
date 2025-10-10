@@ -236,19 +236,27 @@ export default function StudentMissionDetailPage() {
                         </Alert>
                     )}
 
-                    {(!isCompleted || (isCompleted && !isEmbedded)) && (
+                    {(!isCompleted || !isEmbedded) && (
                         <Card>
                             <CardHeader>
                                 <CardTitle className="text-3xl font-headline">{mission.title}</CardTitle>
                             </CardHeader>
                             <CardContent className="relative">
-                                {showEmbedInstructionsAlert && <div className="absolute inset-0 bg-white/70 dark:bg-black/70 z-10" />}
+                                {(showEmbedInstructionsAlert && !isCompleted) && <div className="absolute inset-0 bg-white/70 dark:bg-black/70 z-10" />}
                                 <div
                                     className="prose dark:prose-invert max-w-none"
                                     dangerouslySetInnerHTML={{ __html: mission.content }}
                                 />
                             </CardContent>
                         </Card>
+                    )}
+                    
+                    {isCompleted && isEmbedded && (
+                         <Card>
+                            <CardHeader>
+                                <CardTitle className="text-3xl font-headline">{mission.title}</CardTitle>
+                            </CardHeader>
+                         </Card>
                     )}
 
                     {submission.status === 'completed' ? (
@@ -277,28 +285,16 @@ export default function StudentMissionDetailPage() {
                                     <div className="prose dark:prose-invert max-w-none mt-2 border p-4 rounded-md bg-background" dangerouslySetInnerHTML={{ __html: submission.feedback || '<p>No feedback provided.</p>'}} />
                                 </div>
                                 <Separator />
-                                {isEmbedded ? (
-                                     <div>
-                                        <h4 className="font-semibold">Your Submitted File:</h4>
-                                        {submission.fileUrl ? (
-                                            <Button asChild variant="link" className="mt-2 text-lg">
-                                                <a href={submission.fileUrl} target="_blank" rel="noopener noreferrer">View Your Submission</a>
-                                            </Button>
-                                        ) : (
-                                            <p className="text-muted-foreground mt-2">You did not submit a file.</p>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div>
-                                        <h4 className="font-semibold">Your Original Submission:</h4>
-                                        <div className="prose dark:prose-invert max-w-none mt-2 border p-4 rounded-md bg-muted/50" dangerouslySetInnerHTML={{ __html: submission.submissionContent || '<p>No written response.</p>'}} />
-                                        {submission.fileUrl && (
-                                            <Button asChild variant="link" className="mt-2">
-                                                <a href={submission.fileUrl} target="_blank" rel="noopener noreferrer">View Your Submitted File</a>
-                                            </Button>
-                                        )}
-                                    </div>
-                                )}
+                                <div>
+                                    <h4 className="font-semibold">Your Submitted File:</h4>
+                                    {submission.fileUrl ? (
+                                        <Button asChild variant="link" className="mt-2 text-lg">
+                                            <a href={submission.fileUrl} target="_blank" rel="noopener noreferrer">View Your Submission</a>
+                                        </Button>
+                                    ) : (
+                                        <p className="text-muted-foreground mt-2">You did not submit a file.</p>
+                                    )}
+                                </div>
                             </CardContent>
                         </Card>
                     ) : (
@@ -307,12 +303,12 @@ export default function StudentMissionDetailPage() {
                                 <CardTitle>Your Submission</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className={cn(showEmbedInstructionsAlert && 'opacity-50 pointer-events-none')}>
+                                <div className={cn(isEmbedded && 'opacity-50 pointer-events-none')}>
                                     <Label htmlFor="submission-text">Your Written Response</Label>
                                     <RichTextEditor
                                         value={submission.submissionContent || ''}
                                         onChange={(value) => setSubmission(prev => ({...prev, submissionContent: value}))}
-                                        disabled={isSubmitted || isSaving || showEmbedInstructionsAlert}
+                                        disabled={isSubmitted || isSaving || isEmbedded}
                                     />
                                 </div>
                                 <div>
