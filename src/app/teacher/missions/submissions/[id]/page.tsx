@@ -23,12 +23,18 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Loader2, BookOpen, Filter } from 'lucide-react';
 import { ClientOnlyTime } from '@/components/client-only-time';
-import { Label } from '@/components/ui/label';
+import { ReviewSubmissionDialog } from '@/components/teacher/review-submission-dialog';
 
 interface Submission {
     id: string; // student uid
     status: 'draft' | 'submitted' | 'completed';
     submittedAt?: any;
+    submissionContent?: string;
+    fileUrl?: string;
+    grade?: string;
+    feedback?: string;
+    xpAwarded?: number;
+    goldAwarded?: number;
 }
 
 export default function MissionSubmissionsPage() {
@@ -44,6 +50,11 @@ export default function MissionSubmissionsPage() {
     const [companies, setCompanies] = useState<Company[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [companyFilters, setCompanyFilters] = useState<string[]>(['all']);
+
+    // State for review dialog
+    const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
+    const [selectedSubmission, setSelectedSubmission] = useState<{ student: Student, submission: Submission } | null>(null);
+
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -125,6 +136,11 @@ export default function MissionSubmissionsPage() {
         }
         return studentsToList;
     }, [allStudents, companyFilters]);
+    
+    const handleReviewClick = (student: Student, submission: Submission) => {
+        setSelectedSubmission({ student, submission });
+        setIsReviewDialogOpen(true);
+    };
 
     if (isLoading || !mission) {
         return (
@@ -141,92 +157,109 @@ export default function MissionSubmissionsPage() {
     }
 
     return (
-        <div className="flex min-h-screen w-full flex-col bg-muted/40">
-            <TeacherHeader />
-            <main className="flex-1 p-4 md:p-6 lg:p-8">
-                <div className="max-w-4xl mx-auto space-y-6">
-                    <Button variant="outline" onClick={() => router.push('/teacher/missions')}>
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to All Missions
-                    </Button>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><BookOpen/> Submissions for: {mission.title}</CardTitle>
-                            <CardDescription>Track student submission status for this special mission.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                             <div className="flex items-center gap-4 mb-4">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="outline">
-                                            <Filter className="mr-2 h-4 w-4" />
-                                            Filter by Company
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                        <DropdownMenuCheckboxItem
-                                            checked={companyFilters.includes('all')}
-                                            onSelect={(e) => { e.preventDefault(); handleCompanyFilterChange('all'); }}
-                                        >
-                                            All Companies
-                                        </DropdownMenuCheckboxItem>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuCheckboxItem
-                                            checked={companyFilters.includes('freelancers')}
-                                            onSelect={(e) => { e.preventDefault(); handleCompanyFilterChange('freelancers'); }}
-                                        >
-                                            Freelancers
-                                        </DropdownMenuCheckboxItem>
-                                        {companies.map(company => (
+        <>
+            {selectedSubmission && teacher && mission && (
+                <ReviewSubmissionDialog
+                    isOpen={isReviewDialogOpen}
+                    onOpenChange={setIsReviewDialogOpen}
+                    student={selectedSubmission.student}
+                    submission={selectedSubmission.submission}
+                    mission={mission}
+                    teacherUid={teacher.uid}
+                />
+            )}
+            <div className="flex min-h-screen w-full flex-col bg-muted/40">
+                <TeacherHeader />
+                <main className="flex-1 p-4 md:p-6 lg:p-8">
+                    <div className="max-w-4xl mx-auto space-y-6">
+                        <Button variant="outline" onClick={() => router.push('/teacher/missions')}>
+                            <ArrowLeft className="mr-2 h-4 w-4" /> Back to All Missions
+                        </Button>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2"><BookOpen/> Submissions for: {mission.title}</CardTitle>
+                                <CardDescription>Track student submission status for this special mission.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="flex items-center gap-4 mb-4">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="outline">
+                                                <Filter className="mr-2 h-4 w-4" />
+                                                Filter by Company
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent>
                                             <DropdownMenuCheckboxItem
-                                                key={company.id}
-                                                checked={companyFilters.includes(company.id)}
-                                                onSelect={(e) => { e.preventDefault(); handleCompanyFilterChange(company.id); }}
+                                                checked={companyFilters.includes('all')}
+                                                onSelect={(e) => { e.preventDefault(); handleCompanyFilterChange('all'); }}
                                             >
-                                                {company.name}
+                                                All Companies
                                             </DropdownMenuCheckboxItem>
-                                        ))}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Student</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead>Submitted At</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {filteredStudents.map(student => {
-                                        const submission = submissions.find(s => s.id === student.uid);
-                                        const status = submission?.status || 'Not Submitted';
-                                        
-                                        return (
-                                            <TableRow key={student.uid}>
-                                                <TableCell className="font-medium">{student.studentName}</TableCell>
-                                                <TableCell className="capitalize font-semibold">
-                                                    {status === 'submitted' ? 'Pending Review' : status}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {submission?.submittedAt ? (
-                                                        <ClientOnlyTime date={new Date(submission.submittedAt.seconds * 1000)} />
-                                                    ) : 'N/A'}
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                     <Button variant="outline" size="sm" disabled={status !== 'submitted'}>
-                                                        Review Submission
-                                                    </Button>
-                                                </TableCell>
-                                            </TableRow>
-                                        )
-                                    })}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                </div>
-            </main>
-        </div>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuCheckboxItem
+                                                checked={companyFilters.includes('freelancers')}
+                                                onSelect={(e) => { e.preventDefault(); handleCompanyFilterChange('freelancers'); }}
+                                            >
+                                                Freelancers
+                                            </DropdownMenuCheckboxItem>
+                                            {companies.map(company => (
+                                                <DropdownMenuCheckboxItem
+                                                    key={company.id}
+                                                    checked={companyFilters.includes(company.id)}
+                                                    onSelect={(e) => { e.preventDefault(); handleCompanyFilterChange(company.id); }}
+                                                >
+                                                    {company.name}
+                                                </DropdownMenuCheckboxItem>
+                                            ))}
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Student</TableHead>
+                                            <TableHead>Status</TableHead>
+                                            <TableHead>Submitted At</TableHead>
+                                            <TableHead className="text-right">Actions</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {filteredStudents.map(student => {
+                                            const submission = submissions.find(s => s.id === student.uid);
+                                            const status = submission?.status || 'Not Submitted';
+                                            
+                                            return (
+                                                <TableRow key={student.uid}>
+                                                    <TableCell className="font-medium">{student.studentName}</TableCell>
+                                                    <TableCell className="capitalize font-semibold">
+                                                        {status === 'submitted' ? 'Pending Review' : status}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {submission?.submittedAt ? (
+                                                            <ClientOnlyTime date={new Date(submission.submittedAt.seconds * 1000)} />
+                                                        ) : 'N/A'}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Button 
+                                                            variant="outline" 
+                                                            size="sm" 
+                                                            disabled={status !== 'submitted' && status !== 'completed'}
+                                                            onClick={() => submission && handleReviewClick(student, submission)}
+                                                        >
+                                                            {status === 'completed' ? 'View Graded' : 'Review Submission'}
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )
+                                        })}
+                                    </TableBody>
+                                </Table>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </main>
+            </div>
+        </>
     );
 }
