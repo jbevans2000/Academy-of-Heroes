@@ -211,6 +211,7 @@ export default function StudentMissionDetailPage() {
     
     const isSubmitted = submission.status === 'submitted' || submission.status === 'completed';
     const isEmbedded = mission.content.includes('<iframe');
+    const isCompleted = submission.status === 'completed';
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -235,6 +236,7 @@ export default function StudentMissionDetailPage() {
                         </Alert>
                     )}
 
+                    {!isCompleted || (isCompleted && !isEmbedded)}
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-3xl font-headline">{mission.title}</CardTitle>
@@ -275,7 +277,7 @@ export default function StudentMissionDetailPage() {
                                 </div>
                                 <Separator />
                                 {isEmbedded ? (
-                                    <div>
+                                     <div>
                                         <h4 className="font-semibold">Your Submitted File:</h4>
                                         {submission.fileUrl ? (
                                             <Button asChild variant="link" className="mt-2 text-lg">
@@ -309,7 +311,7 @@ export default function StudentMissionDetailPage() {
                                     <RichTextEditor
                                         value={submission.submissionContent || ''}
                                         onChange={(value) => setSubmission(prev => ({...prev, submissionContent: value}))}
-                                        disabled={isSubmitted || isSaving}
+                                        disabled={isSubmitted || isSaving || showEmbedInstructionsAlert}
                                     />
                                 </div>
                                 <div>
@@ -345,3 +347,4 @@ export default function StudentMissionDetailPage() {
         </div>
     );
 }
+
