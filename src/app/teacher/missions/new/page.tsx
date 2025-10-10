@@ -67,44 +67,44 @@ export default function NewMissionPage() {
         }
     };
     
-    const handleDownloadPdf = async () => {
-        if (!contentRef.current) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not find the content to download.' });
+    const handleDownloadPdf = () => {
+        if (!content) {
+            toast({ variant: 'destructive', title: 'Error', description: 'No content to download.' });
             return;
         }
-    
-        const contentElement = contentRef.current;
-        const pdf = new jsPDF('p', 'pt', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        const margin = 20;
-        const contentWidth = pdfWidth - margin * 2;
-    
-        // Temporarily apply styles for rendering
-        const originalStyle = contentElement.style.cssText;
-        contentElement.style.width = `${contentWidth}px`;
-        contentElement.style.padding = '0';
-        contentElement.style.margin = '0';
-        contentElement.style.fontFamily = 'Times';
 
-        try {
-            await pdf.html(contentElement, {
-                callback: function (doc) {
-                    doc.save(`${title || 'mission'}.pdf`);
-                },
-                x: margin,
-                y: margin,
-                width: contentWidth,
-                windowWidth: contentWidth,
-                autoPaging: 'text'
-            });
-        } catch (error) {
-            console.error('oops, something went wrong!', error);
-            toast({ variant: 'destructive', title: 'Download Failed', description: 'Could not generate the PDF.' });
-        } finally {
-            // Restore original styles
-            contentElement.style.cssText = originalStyle;
-        }
+        const pdf = new jsPDF('p', 'pt', 'a4');
+        const margin = 40;
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const contentWidth = pdfWidth - margin * 2;
+
+        const htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body { font-family: Times, serif; }
+                    img, iframe { max-width: 100%; height: auto; }
+                    blockquote { border-left: 2px solid #ccc; margin-left: 0; padding-left: 1rem; }
+                </style>
+            </head>
+            <body>
+                <h1>${title || 'Mission'}</h1>
+                ${content}
+            </body>
+            </html>
+        `;
+
+        pdf.html(htmlContent, {
+            callback: function (doc) {
+                doc.save(`${title || 'mission'}.pdf`);
+            },
+            x: margin,
+            y: margin,
+            width: contentWidth,
+            windowWidth: contentWidth,
+            autoPaging: 'text',
+        });
     };
 
     return (
