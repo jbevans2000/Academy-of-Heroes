@@ -22,9 +22,10 @@ interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
   className?: string;
+  disabled?: boolean;
 }
 
-const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ value, onChange, className }, ref) => {
+const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ value, onChange, className, disabled = false }, ref) => {
   const localEditorRef = useRef<HTMLDivElement>(null);
   const selectionRef = useRef<Range | null>(null);
   const [selection, setSelection] = useState<Selection | null>(null);
@@ -58,6 +59,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
   };
 
   const saveSelection = () => {
+    if (disabled) return;
     const sel = window.getSelection();
     if (sel && sel.rangeCount > 0) {
       const range = sel.getRangeAt(0);
@@ -69,6 +71,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
   };
   
   const restoreSelection = () => {
+    if (disabled) return;
     if (selectionRef.current) {
       const sel = window.getSelection();
       sel?.removeAllRanges();
@@ -79,6 +82,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
   };
   
   const execCommand = (command: string, value?: string) => {
+    if (disabled) return;
     restoreSelection();
     document.execCommand(command, false, value);
     if(localEditorRef.current) {
@@ -300,9 +304,9 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
         </DialogContent>
       </Dialog>
 
-      <div className={cn("border rounded-md", className)}>
+      <div className={cn("border rounded-md", disabled && 'bg-muted opacity-50', className)}>
         <div className="flex items-center gap-1 p-2 border-b bg-muted/50 flex-wrap">
-          <select defaultValue="3" onChange={handleFontSizeChange} onMouseDown={handleToolbarMouseDown} className="p-1 rounded-md border bg-background text-sm">
+          <select defaultValue="3" onChange={handleFontSizeChange} onMouseDown={handleToolbarMouseDown} className="p-1 rounded-md border bg-background text-sm" disabled={disabled}>
             <option value="1">Smallest</option>
             <option value="2">Small</option>
             <option value="3">Normal</option>
@@ -311,7 +315,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
             <option value="6">Huge</option>
             <option value="7">Giant</option>
           </select>
-          <select defaultValue="Lora, serif" onChange={handleFontFamilyChange} onMouseDown={handleToolbarMouseDown} className="p-1 rounded-md border bg-background text-sm">
+          <select defaultValue="Lora, serif" onChange={handleFontFamilyChange} onMouseDown={handleToolbarMouseDown} className="p-1 rounded-md border bg-background text-sm" disabled={disabled}>
             <option value="Lora, serif">Lora (Default)</option>
             <option value="Arial, sans-serif">Arial</option>
             <option value="Georgia, serif">Georgia</option>
@@ -320,66 +324,66 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
             <option value="Cinzel, serif">Cinzel</option>
           </select>
           <div className="flex items-center h-8 w-8 justify-center rounded-md border bg-background">
-              <Input type="color" onChange={handleFontColorChange} className="w-full h-full p-0 border-none cursor-pointer" title="Font Color" />
+              <Input type="color" onChange={handleFontColorChange} className="w-full h-full p-0 border-none cursor-pointer" title="Font Color" disabled={disabled}/>
           </div>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleBold} title="Bold">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleBold} title="Bold" disabled={disabled}>
             <Bold className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleItalic} title="Italic">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleItalic} title="Italic" disabled={disabled}>
             <Italic className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleUnderline} title="Underline">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleUnderline} title="Underline" disabled={disabled}>
             <Underline className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleStrikethrough} title="Strikethrough">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleStrikethrough} title="Strikethrough" disabled={disabled}>
             <Strikethrough className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={() => handleFormatBlock('p')} title="Paragraph">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={() => handleFormatBlock('p')} title="Paragraph" disabled={disabled}>
             <Pilcrow className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleBulletedList} title="Bulleted List">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleBulletedList} title="Bulleted List" disabled={disabled}>
             <List className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleNumberedList} title="Numbered List">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleNumberedList} title="Numbered List" disabled={disabled}>
             <ListOrdered className="h-4 w-4" />
           </Button>
-           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleBlockquote} title="Blockquote">
+           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleBlockquote} title="Blockquote" disabled={disabled}>
             <Quote className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleHorizontalRule} title="Horizontal Rule">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleHorizontalRule} title="Horizontal Rule" disabled={disabled}>
             <Minus className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleJustifyLeft} title="Align Left">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleJustifyLeft} title="Align Left" disabled={disabled}>
               <AlignLeft className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleJustifyCenter} title="Align Center">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleJustifyCenter} title="Align Center" disabled={disabled}>
               <AlignCenter className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleJustifyRight} title="Align Right">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleJustifyRight} title="Align Right" disabled={disabled}>
               <AlignRight className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleOpenLinkDialog} title="Link">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleOpenLinkDialog} title="Link" disabled={disabled}>
             <LinkIcon className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleOpenImageDialog} title="Image">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleOpenImageDialog} title="Image" disabled={disabled}>
             <ImageIcon className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleOpenYouTubeDialog} title="YouTube Video">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleOpenYouTubeDialog} title="YouTube Video" disabled={disabled}>
             <Youtube className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleOpenIframeDialog} title="Embed Iframe">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleOpenIframeDialog} title="Embed Iframe" disabled={disabled}>
             <Code className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleUndo} title="Undo">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleUndo} title="Undo" disabled={disabled}>
             <Undo className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleRedo} title="Redo">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleRedo} title="Redo" disabled={disabled}>
             <Redo className="h-4 w-4" />
           </Button>
         </div>
         <div
           ref={localEditorRef}
-          contentEditable
+          contentEditable={!disabled}
           onInput={handleInput}
           onBlur={saveSelection}
           onMouseUp={saveSelection}
