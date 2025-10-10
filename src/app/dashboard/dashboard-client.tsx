@@ -8,7 +8,7 @@ import { AvatarDisplay } from "@/components/dashboard/avatar-display";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, Map, Swords, Sparkles, BookHeart, Gem, Package, Hammer, Briefcase, Loader2, Trophy, ScrollText, BookOpen } from "lucide-react";
+import { User, Map, Swords, Sparkles, BookHeart, Gem, Package, Hammer, Briefcase, Loader2, Trophy, ScrollText, BookOpen, Star } from "lucide-react";
 import { doc, updateDoc, collection, query, where, getDocs, onSnapshot, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
