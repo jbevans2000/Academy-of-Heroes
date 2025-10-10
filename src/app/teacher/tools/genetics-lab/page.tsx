@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -28,6 +28,15 @@ const geneticsKey = [
 export default function GeneticsLabPage() {
     const router = useRouter();
     
+    const pastelColors = [
+        'bg-red-100',
+        'bg-yellow-100',
+        'bg-green-100',
+        'bg-blue-100',
+        'bg-purple-100',
+        'bg-pink-100',
+    ];
+
     return (
         <div className="bg-muted/40 min-h-screen">
             <TeacherHeader />
@@ -40,10 +49,9 @@ export default function GeneticsLabPage() {
                     <Card className="text-center">
                         <CardHeader>
                             <CardTitle className="text-3xl font-headline flex items-center justify-center gap-4"><Dna className="h-8 w-8 text-primary"/>Dragon Genetics</CardTitle>
-                            <CardDescription>Help Silvaria and Aurelio predict the traits of their next hatchling!</CardDescription>
                         </CardHeader>
                     </Card>
-
+                    
                     <Card>
                         <CardHeader className="text-center">
                             <CardTitle>DRAGON TRAITS KEY</CardTitle>
@@ -100,8 +108,8 @@ export default function GeneticsLabPage() {
                             </div>
                         </CardContent>
                     </Card>
-
-                     <Card>
+                    
+                    <Card>
                         <CardContent className="p-4">
                             <p>An Upper Case, or Capital letter is used to represent a dominant trait. A Lower Case, or small letter, is used to represent a recessive trait. Dominant Traits Completely mask and/or suppress recessive traits. Refer to the Key, and answer the following questions:</p>
                         </CardContent>
@@ -165,7 +173,7 @@ export default function GeneticsLabPage() {
                                     <textarea
                                         key={i}
                                         placeholder={`Trait ${i + 1}`}
-                                        className="w-full h-24 rounded-[30px] p-4 text-center text-lg font-semibold bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary"
+                                        className={`w-full h-24 rounded-[30px] p-4 text-center text-lg font-semibold ${pastelColors[i]} focus:outline-none focus:ring-2 focus:ring-primary`}
                                     />
                                 ))}
                             </div>
