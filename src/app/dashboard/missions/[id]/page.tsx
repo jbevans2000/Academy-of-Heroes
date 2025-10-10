@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -15,19 +15,23 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Loader2, Save, Send, Upload, File as FileIcon } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Send, Upload, File as FileIcon, Star, Coins } from 'lucide-react';
 import { saveMissionDraft, submitMission } from '@/ai/flows/manage-missions';
 import { v4 as uuidv4 } from 'uuid';
 import RichTextEditor from '@/components/teacher/rich-text-editor';
 import { Alert, AlertTitle } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-
 
 interface SubmissionData {
     submissionContent: string;
     fileUrl?: string;
     status: 'draft' | 'submitted' | 'completed';
     submittedAt?: any;
+    grade?: string;
+    feedback?: string;
+    xpAwarded?: number;
+    goldAwarded?: number;
 }
 
 export default function StudentMissionDetailPage() {
@@ -89,13 +93,26 @@ export default function StudentMissionDetailPage() {
                     const missionData = { id: missionSnap.id, ...missionSnap.data() } as Mission;
                     setMission(missionData);
                     
-                    // Smart handling of embedded content
-                    if (missionData.content.includes('<iframe')) {
+                    const subRef = doc(db, 'teachers', student.teacherUid, 'missions', missionId, 'submissions', student.uid);
+                    const subSnap = await getDoc(subRef);
+                    let submissionData;
+                    if (subSnap.exists()) {
+                        submissionData = subSnap.data() as SubmissionData;
+                        setSubmission(submissionData);
+                    } else {
+                        await setDoc(subRef, { status: 'draft', submissionContent: '', fileUrl: '' });
+                        submissionData = { status: 'draft' };
+                    }
+                    
+                    if (missionData.content.includes('<iframe') && submissionData.status !== 'completed') {
                         const iframeSrcMatch = missionData.content.match(/<iframe.*?src=["'](.*?)["']/);
                         if (iframeSrcMatch && iframeSrcMatch[1]) {
                             const url = iframeSrcMatch[1];
                             setEmbedUrl(url);
-                            window.open(url, '_blank');
+                            if(!sessionStorage.getItem(`tab_opened_${missionId}`)) {
+                                window.open(url, '_blank');
+                                sessionStorage.setItem(`tab_opened_${missionId}`, 'true');
+                            }
                             setShowEmbedInstructionsAlert(true);
                         }
                     }
@@ -103,15 +120,6 @@ export default function StudentMissionDetailPage() {
                 } else {
                     toast({ variant: 'destructive', title: 'Mission Not Found' });
                     router.push('/dashboard/missions');
-                }
-
-                const subRef = doc(db, 'teachers', student.teacherUid, 'missions', missionId, 'submissions', student.uid);
-                const subSnap = await getDoc(subRef);
-                if (subSnap.exists()) {
-                    setSubmission(subSnap.data() as SubmissionData);
-                } else {
-                    // Initialize a new submission document if it doesn't exist
-                    await setDoc(subRef, { status: 'draft', submissionContent: '', fileUrl: '' });
                 }
 
             } catch (error) {
@@ -204,8 +212,8 @@ export default function StudentMissionDetailPage() {
         );
     }
     
-    const isSubmitted = submission.status === 'submitted';
-    const isEditorDisabled = isSubmitted || isSaving;
+    const isSubmittedOrCompleted = submission.status === 'submitted' || submission.status === 'completed';
+    const isEditorDisabled = isSubmittedOrCompleted || isSaving;
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -235,9 +243,7 @@ export default function StudentMissionDetailPage() {
                             <CardTitle className="text-3xl font-headline">{mission.title}</CardTitle>
                         </CardHeader>
                         <CardContent className="relative">
-                             {showEmbedInstructionsAlert && (
-                                <div className="absolute inset-0 bg-white/70 dark:bg-black/70 z-10" />
-                            )}
+                            {showEmbedInstructionsAlert && <div className="absolute inset-0 bg-white/70 dark:bg-black/70 z-10" />}
                             <div
                                 className="prose dark:prose-invert max-w-none"
                                 dangerouslySetInnerHTML={{ __html: mission.content }}
@@ -245,46 +251,85 @@ export default function StudentMissionDetailPage() {
                         </CardContent>
                     </Card>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Your Submission</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div>
-                                <Label htmlFor="submission-text">Your Written Response</Label>
-                                <RichTextEditor
-                                    value={submission.submissionContent || ''}
-                                    onChange={(value) => setSubmission(prev => ({...prev, submissionContent: value}))}
-                                    disabled={isEditorDisabled}
-                                />
-                            </div>
-                             <div>
-                                <Label htmlFor="file-upload">Upload a File (Optional)</Label>
-                                <Input 
-                                    id="file-upload" 
-                                    type="file" 
-                                    onChange={(e) => setFileToUpload(e.target.files ? e.target.files[0] : null)}
-                                    disabled={isSubmitted || isSaving}
-                                />
-                                {(fileToUpload || submission.fileUrl) && (
-                                    <div className="mt-2 text-sm text-muted-foreground flex items-center gap-2">
-                                        <FileIcon className="h-4 w-4" />
-                                        <span>Current file: {fileToUpload?.name || submission.fileUrl?.split('%2F').pop()?.split('?')[0]}</span>
+                    {submission.status === 'completed' ? (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Graded Report</CardTitle>
+                                <CardDescription>Your Guild Leader has reviewed your submission.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid grid-cols-3 gap-4 text-center">
+                                    <div className="p-2 bg-secondary rounded-lg">
+                                        <p className="text-sm font-medium text-muted-foreground">Grade</p>
+                                        <p className="text-2xl font-bold">{submission.grade || 'N/A'}</p>
                                     </div>
-                                )}
-                            </div>
-                        </CardContent>
-                        <CardFooter className="flex justify-end gap-2">
-                             <Button variant="secondary" onClick={handleSaveDraft} disabled={isSaving || isSubmitted}>
-                                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                                Save Draft
-                            </Button>
-                            <Button onClick={handleSubmitMission} disabled={isSubmitting || isSubmitted}>
-                                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : isSubmitted ? "Pending Review" : <Send className="mr-2 h-4 w-4" />}
-                                {isSubmitted ? "Pending Review" : "Mark as Complete"}
-                            </Button>
-                        </CardFooter>
-                    </Card>
+                                     <div className="p-2 bg-secondary rounded-lg">
+                                        <p className="text-sm font-medium text-muted-foreground flex items-center justify-center gap-1"><Star className="h-4 w-4 text-yellow-400"/> XP Awarded</p>
+                                        <p className="text-2xl font-bold">{submission.xpAwarded || 0}</p>
+                                    </div>
+                                     <div className="p-2 bg-secondary rounded-lg">
+                                        <p className="text-sm font-medium text-muted-foreground flex items-center justify-center gap-1"><Coins className="h-4 w-4 text-amber-500"/> Gold Awarded</p>
+                                        <p className="text-2xl font-bold">{submission.goldAwarded || 0}</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 className="font-semibold">Feedback from your Guild Leader:</h4>
+                                    <div className="prose dark:prose-invert max-w-none mt-2 border p-4 rounded-md bg-background" dangerouslySetInnerHTML={{ __html: submission.feedback || '<p>No feedback provided.</p>'}} />
+                                </div>
+                                <Separator />
+                                <div>
+                                    <h4 className="font-semibold">Your Original Submission:</h4>
+                                    <div className="prose dark:prose-invert max-w-none mt-2 border p-4 rounded-md bg-muted/50" dangerouslySetInnerHTML={{ __html: submission.submissionContent || '<p>No written response.</p>'}} />
+                                    {submission.fileUrl && (
+                                        <Button asChild variant="link" className="mt-2">
+                                            <a href={submission.fileUrl} target="_blank" rel="noopener noreferrer">View Your Submitted File</a>
+                                        </Button>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Your Submission</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className={cn(showEmbedInstructionsAlert && 'opacity-50 pointer-events-none')}>
+                                    <Label htmlFor="submission-text">Your Written Response</Label>
+                                    <RichTextEditor
+                                        value={submission.submissionContent || ''}
+                                        onChange={(value) => setSubmission(prev => ({...prev, submissionContent: value}))}
+                                        disabled={isEditorDisabled}
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="file-upload">Upload a File (Optional)</Label>
+                                    <Input 
+                                        id="file-upload" 
+                                        type="file" 
+                                        onChange={(e) => setFileToUpload(e.target.files ? e.target.files[0] : null)}
+                                        disabled={isEditorDisabled}
+                                    />
+                                    {(fileToUpload || submission.fileUrl) && (
+                                        <div className="mt-2 text-sm text-muted-foreground flex items-center gap-2">
+                                            <FileIcon className="h-4 w-4" />
+                                            <span>Current file: {fileToUpload?.name || submission.fileUrl?.split('%2F').pop()?.split('?')[0]}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </CardContent>
+                            <CardFooter className="flex justify-end gap-2">
+                                <Button variant="secondary" onClick={handleSaveDraft} disabled={isSaving || isSubmittedOrCompleted}>
+                                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                    Save Draft
+                                </Button>
+                                <Button onClick={handleSubmitMission} disabled={isSubmitting || isSubmittedOrCompleted}>
+                                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : isSubmittedOrCompleted ? "Pending Review" : <Send className="mr-2 h-4 w-4" />}
+                                    {isSubmittedOrCompleted ? "Pending Review" : "Mark as Complete"}
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    )}
                 </div>
             </main>
         </div>

@@ -15,12 +15,21 @@ import { ArrowLeft, BookMarked, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 
+interface Submission {
+    id: string;
+    status: 'draft' | 'submitted' | 'completed';
+}
+
+interface MissionWithSubmission extends Mission {
+    submissionStatus?: 'draft' | 'submitted' | 'completed' | 'Not Started';
+}
+
 export default function StudentMissionsPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [user, setUser] = useState<User | null>(null);
     const [student, setStudent] = useState<Student | null>(null);
-    const [missions, setMissions] = useState<Mission[]>([]);
+    const [missions, setMissions] = useState<MissionWithSubmission[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -34,7 +43,7 @@ export default function StudentMissionsPage() {
                     const studentRef = doc(db, 'teachers', teacherUid, 'students', currentUser.uid);
                     const studentSnap = await getDoc(studentRef);
                     if (studentSnap.exists()) {
-                        setStudent({ uid: studentSnap.id, ...studentSnap.data() } as Student);
+                        setStudent({ uid: studentSnap.id, teacherUid, ...studentSnap.data() } as Student);
                     }
                 } else {
                     toast({ variant: 'destructive', title: 'Error', description: 'Could not find your student data.' });
@@ -48,15 +57,26 @@ export default function StudentMissionsPage() {
     }, [router, toast]);
     
     useEffect(() => {
-        if (!student?.teacherUid) return;
+        if (!student?.teacherUid || !student?.uid) return;
 
         setIsLoading(true);
         const missionsRef = collection(db, 'teachers', student.teacherUid, 'missions');
         const q = query(missionsRef, where('isAssigned', '==', true));
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
+        const unsubscribe = onSnapshot(q, async (snapshot) => {
             const assignedMissions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Mission));
-            setMissions(assignedMissions);
+            
+            const submissionsRef = collection(db, 'teachers', student.teacherUid, 'missions');
+            const missionPromises = assignedMissions.map(async (mission) => {
+                const subRef = doc(submissionsRef, mission.id, 'submissions', student.uid);
+                const subSnap = await getDoc(subRef);
+                const submissionStatus = subSnap.exists() ? (subSnap.data() as Submission).status : 'Not Started';
+                return { ...mission, submissionStatus };
+            });
+
+            const missionsWithStatus = await Promise.all(missionPromises);
+            
+            setMissions(missionsWithStatus);
             setIsLoading(false);
         }, (error) => {
             console.error("Error fetching missions: ", error);
@@ -99,13 +119,14 @@ export default function StudentMissionsPage() {
                                 <div className="space-y-4">
                                     {missions.map(mission => (
                                         <Card key={mission.id} className="hover:bg-muted/50 transition-colors">
-                                             <CardHeader>
-                                                <div className="flex justify-between items-center">
+                                             <CardHeader className="flex flex-row items-center justify-between p-4">
+                                                <div>
                                                     <CardTitle>{mission.title}</CardTitle>
-                                                    <Button asChild>
-                                                        <Link href={`/dashboard/missions/${mission.id}`}>View Mission</Link>
-                                                    </Button>
+                                                    <CardDescription>Status: <span className="font-bold">{mission.submissionStatus}</span></CardDescription>
                                                 </div>
+                                                <Button asChild>
+                                                    <Link href={`/dashboard/missions/${mission.id}`}>{mission.submissionStatus === 'completed' ? 'View Report' : 'View Mission'}</Link>
+                                                </Button>
                                             </CardHeader>
                                         </Card>
                                     ))}
@@ -118,4 +139,3 @@ export default function StudentMissionsPage() {
         </div>
     );
 }
-
