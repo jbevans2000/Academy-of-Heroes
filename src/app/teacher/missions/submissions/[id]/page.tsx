@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -268,6 +269,7 @@ export default function MissionSubmissionsPage() {
                                             <TableRow>
                                                 <TableHead>Student</TableHead>
                                                 <TableHead>Status</TableHead>
+                                                {statusFilter === 'completed' && <TableHead>Grade</TableHead>}
                                                 <TableHead>Submitted At</TableHead>
                                                 <TableHead className="text-right">Actions</TableHead>
                                             </TableRow>
@@ -286,6 +288,11 @@ export default function MissionSubmissionsPage() {
                                                     <TableRow key={student.uid}>
                                                         <TableCell className="font-medium">{student.studentName}</TableCell>
                                                         <TableCell className="capitalize font-semibold">{statusText}</TableCell>
+                                                        {statusFilter === 'completed' && (
+                                                            <TableCell className="font-semibold">
+                                                                {submission?.grade || 'N/A'}
+                                                            </TableCell>
+                                                        )}
                                                         <TableCell>
                                                             {submission?.submittedAt ? (
                                                                 <ClientOnlyTime date={new Date(submission.submittedAt.seconds * 1000)} />
