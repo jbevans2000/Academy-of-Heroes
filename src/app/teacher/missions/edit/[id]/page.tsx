@@ -134,6 +134,7 @@ export default function EditMissionPage() {
         try {
             const dataUrl = await toPng(editorContentElement, { 
                 quality: 0.95,
+                pixelRatio: 2, // Increase resolution
                 style: { margin: '0' }
             });
     
