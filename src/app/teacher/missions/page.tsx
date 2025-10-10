@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -10,22 +9,45 @@ import type { Mission } from '@/lib/missions';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowLeft, BookOpen, PlusCircle } from 'lucide-react';
+import { ArrowLeft, BookOpen, PlusCircle, Trash2, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { deleteMission } from '@/ai/flows/manage-missions';
+import { useToast } from '@/hooks/use-toast';
 
-export default function MissionsPage() {
+interface Submission {
+    id: string;
+    status: 'draft' | 'submitted' | 'completed';
+}
+
+interface MissionWithSubmission extends Mission {
+    submissionStatus?: 'draft' | 'submitted' | 'completed' | 'Not Started';
+}
+
+export default function StudentMissionsPage() {
     const router = useRouter();
-    const [teacher, setTeacher] = useState<User | null>(null);
+    const { toast } = useToast();
+    const [user, setUser] = useState<User | null>(null);
     const [missions, setMissions] = useState<Mission[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
             if (user) {
-                setTeacher(user);
+                setUser(user);
             } else {
                 router.push('/teacher/login');
             }
@@ -34,16 +56,40 @@ export default function MissionsPage() {
     }, [router]);
 
     useEffect(() => {
-        if (!teacher) return;
+        if (!user) return;
         setIsLoading(true);
-        const missionsRef = collection(db, 'teachers', teacher.uid, 'missions');
+        const missionsRef = collection(db, 'teachers', user.uid, 'missions');
         const q = query(missionsRef, orderBy('createdAt', 'desc'));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             setMissions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Mission)));
             setIsLoading(false);
+        }, (error) => {
+            console.error("Error fetching missions: ", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not load your missions.' });
+            setIsLoading(false);
         });
+
         return () => unsubscribe();
-    }, [teacher]);
+
+    }, [user, toast]);
+    
+    const handleDeleteMission = async (missionId: string) => {
+        if (!user) return;
+        setIsDeleting(missionId);
+        try {
+            const result = await deleteMission(user.uid, missionId);
+            if (result.success) {
+                toast({ title: 'Mission Deleted', description: 'The mission has been permanently removed.' });
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Delete Failed', description: error.message });
+        } finally {
+            setIsDeleting(null);
+        }
+    };
+
 
     return (
         <div 
@@ -99,6 +145,23 @@ export default function MissionsPage() {
                                                      <Button variant="secondary" size="sm" asChild>
                                                         <Link href={`/teacher/missions/submissions/${mission.id}`}>Submissions</Link>
                                                     </Button>
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button variant="destructive" size="icon" disabled={isDeleting === mission.id}>
+                                                                {isDeleting === mission.id ? <Loader2 className="h-4 w-4 animate-spin"/> : <Trash2 className="h-4 w-4" />}
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>Delete "{mission.title}"?</AlertDialogTitle>
+                                                                <AlertDialogDescription>This will permanently delete this mission and all student submissions for it. This cannot be undone.</AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={() => handleDeleteMission(mission.id)} className="bg-destructive hover:bg-destructive/90">Delete Mission</AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
                                                 </div>
                                             </CardHeader>
                                         </Card>
