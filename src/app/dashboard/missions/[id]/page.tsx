@@ -235,7 +235,7 @@ export default function StudentMissionDetailPage() {
                             <CardTitle className="text-3xl font-headline">{mission.title}</CardTitle>
                         </CardHeader>
                         <CardContent className="relative">
-                            {showEmbedInstructionsDialog && (
+                             {showEmbedInstructionsDialog && (
                                 <div className="absolute inset-0 bg-white/70 z-10" />
                             )}
                             <div
@@ -290,3 +290,5 @@ export default function StudentMissionDetailPage() {
         </div>
     );
 }
+
+    
