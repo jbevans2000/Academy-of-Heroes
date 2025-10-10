@@ -245,7 +245,7 @@ export default function MissionSubmissionsPage() {
                                     <TableBody>
                                         {sortedFilteredStudents.map(student => {
                                             const submission = submissions.find(s => s.id === student.uid);
-                                            const status = submission?.status || 'Not Submitted';
+                                            const status = submission?.status || 'Not Started';
                                             
                                             return (
                                                 <TableRow key={student.uid}>

@@ -49,13 +49,11 @@ export default function StudentMissionDetailPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     
-    // State for embedded content UI
     const [showEmbedInstructionsAlert, setShowEmbedInstructionsAlert] = useState(false);
     const [embedUrl, setEmbedUrl] = useState<string | null>(null);
 
     const [fileToUpload, setFileToUpload] = useState<File | null>(null);
 
-    // Effect to get user and student data
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
@@ -80,7 +78,6 @@ export default function StudentMissionDetailPage() {
         return () => unsubscribe();
     }, [router, toast]);
 
-    // Effect to fetch mission and submission data once student is loaded
     useEffect(() => {
         if (!student?.teacherUid || !missionId) return;
 
@@ -212,8 +209,8 @@ export default function StudentMissionDetailPage() {
         );
     }
     
-    const isSubmittedOrCompleted = submission.status === 'submitted' || submission.status === 'completed';
-    const isEditorDisabled = isSubmittedOrCompleted || isSaving;
+    const isSubmitted = submission.status === 'submitted' || submission.status === 'completed';
+    const isEmbedded = mission.content.includes('<iframe');
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -277,15 +274,28 @@ export default function StudentMissionDetailPage() {
                                     <div className="prose dark:prose-invert max-w-none mt-2 border p-4 rounded-md bg-background" dangerouslySetInnerHTML={{ __html: submission.feedback || '<p>No feedback provided.</p>'}} />
                                 </div>
                                 <Separator />
-                                <div>
-                                    <h4 className="font-semibold">Your Original Submission:</h4>
-                                    <div className="prose dark:prose-invert max-w-none mt-2 border p-4 rounded-md bg-muted/50" dangerouslySetInnerHTML={{ __html: submission.submissionContent || '<p>No written response.</p>'}} />
-                                    {submission.fileUrl && (
-                                        <Button asChild variant="link" className="mt-2">
-                                            <a href={submission.fileUrl} target="_blank" rel="noopener noreferrer">View Your Submitted File</a>
-                                        </Button>
-                                    )}
-                                </div>
+                                {isEmbedded ? (
+                                    <div>
+                                        <h4 className="font-semibold">Your Submitted File:</h4>
+                                        {submission.fileUrl ? (
+                                            <Button asChild variant="link" className="mt-2 text-lg">
+                                                <a href={submission.fileUrl} target="_blank" rel="noopener noreferrer">View Your Submission</a>
+                                            </Button>
+                                        ) : (
+                                            <p className="text-muted-foreground mt-2">You did not submit a file.</p>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <h4 className="font-semibold">Your Original Submission:</h4>
+                                        <div className="prose dark:prose-invert max-w-none mt-2 border p-4 rounded-md bg-muted/50" dangerouslySetInnerHTML={{ __html: submission.submissionContent || '<p>No written response.</p>'}} />
+                                        {submission.fileUrl && (
+                                            <Button asChild variant="link" className="mt-2">
+                                                <a href={submission.fileUrl} target="_blank" rel="noopener noreferrer">View Your Submitted File</a>
+                                            </Button>
+                                        )}
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     ) : (
@@ -299,7 +309,7 @@ export default function StudentMissionDetailPage() {
                                     <RichTextEditor
                                         value={submission.submissionContent || ''}
                                         onChange={(value) => setSubmission(prev => ({...prev, submissionContent: value}))}
-                                        disabled={isEditorDisabled}
+                                        disabled={isSubmitted || isSaving}
                                     />
                                 </div>
                                 <div>
@@ -308,7 +318,7 @@ export default function StudentMissionDetailPage() {
                                         id="file-upload" 
                                         type="file" 
                                         onChange={(e) => setFileToUpload(e.target.files ? e.target.files[0] : null)}
-                                        disabled={isEditorDisabled}
+                                        disabled={isSubmitted || isSaving}
                                     />
                                     {(fileToUpload || submission.fileUrl) && (
                                         <div className="mt-2 text-sm text-muted-foreground flex items-center gap-2">
@@ -319,13 +329,13 @@ export default function StudentMissionDetailPage() {
                                 </div>
                             </CardContent>
                             <CardFooter className="flex justify-end gap-2">
-                                <Button variant="secondary" onClick={handleSaveDraft} disabled={isSaving || isSubmittedOrCompleted}>
+                                <Button variant="secondary" onClick={handleSaveDraft} disabled={isSaving || isSubmitted}>
                                     {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                                     Save Draft
                                 </Button>
-                                <Button onClick={handleSubmitMission} disabled={isSubmitting || isSubmittedOrCompleted}>
-                                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : isSubmittedOrCompleted ? "Pending Review" : <Send className="mr-2 h-4 w-4" />}
-                                    {isSubmittedOrCompleted ? "Pending Review" : "Mark as Complete"}
+                                <Button onClick={handleSubmitMission} disabled={isSubmitting || isSubmitted}>
+                                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : isSubmitted ? "Pending Review" : <Send className="mr-2 h-4 w-4" />}
+                                    {isSubmitted ? "Pending Review" : "Mark as Complete"}
                                 </Button>
                             </CardFooter>
                         </Card>
