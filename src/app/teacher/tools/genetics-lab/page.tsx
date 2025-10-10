@@ -119,7 +119,7 @@ const PunnettSquare = ({ traitName, squareIndex }: { traitName: string, squareIn
     );
 };
 
-const HatchlingTable = ({ title, tableIndex }: { title: string; tableIndex: number }) => {
+const HatchlingTable = ({ title, tableIndex, placeholders }: { title: string; tableIndex: number; placeholders?: string[][] }) => {
     const initialGrid = Array.from({ length: 4 }, () => Array(4).fill(''));
     const [grid, setGrid] = useState<string[][]>(initialGrid);
     const storageKey = `hatchlingTable-${tableIndex}`;
@@ -172,6 +172,7 @@ const HatchlingTable = ({ title, tableIndex }: { title: string; tableIndex: numb
                                         <Input
                                             value={cell}
                                             onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
+                                            placeholder={placeholders?.[rowIndex]?.[colIndex] || ''}
                                             className="w-full text-center text-xs h-10"
                                         />
                                     </TableCell>
@@ -372,6 +373,13 @@ export default function GeneticsLabPage() {
         'bg-blue-100',
         'bg-purple-100',
         'bg-pink-100',
+    ];
+
+    const placeholdersForTable1 = [
+        ["Neck Length", "Nn", "Long Neck", "Het"],
+        ["Tail Spikes", "ss", "No Spikes", "Hom"],
+        ["Wing Claws", "cc", "No Claws", "Hom"],
+        ["", "", "", ""],
     ];
 
     return (
@@ -576,7 +584,7 @@ export default function GeneticsLabPage() {
                     </Card>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <HatchlingTable title="Chromosome" tableIndex={1} />
+                        <HatchlingTable title="Chromosome" tableIndex={1} placeholders={placeholdersForTable1} />
                         <HatchlingTable title="Chromosome" tableIndex={2} />
                         <HatchlingTable title="Chromosome" tableIndex={3} />
                         <HatchlingTable title="Chromosome" tableIndex={4} />
