@@ -3,7 +3,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Bold, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Youtube, Code } from 'lucide-react';
+import { Bold, Italic, Underline, Strikethrough, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Youtube, Code, List, ListOrdered, Quote, Minus, Undo, Redo } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -15,16 +15,17 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { Textarea } from '../ui/textarea';
+
 
 interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
   className?: string;
+  editorRef: React.RefObject<HTMLDivElement>;
 }
 
-const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => {
-  const editorRef = useRef<HTMLDivElement>(null);
+const RichTextEditor = ({ value, onChange, className, editorRef }: RichTextEditorProps) => {
   const selectionRef = useRef<Range | null>(null);
 
   // Dialog States
@@ -44,7 +45,7 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
     if (editor && value !== editor.innerHTML) {
       editor.innerHTML = value;
     }
-  }, [value]);
+  }, [value, editorRef]);
 
   const handleInput = () => {
     if (editorRef.current) {
@@ -86,6 +87,15 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
   };
 
   const handleBold = () => execCommand('bold');
+  const handleItalic = () => execCommand('italic');
+  const handleUnderline = () => execCommand('underline');
+  const handleStrikethrough = () => execCommand('strikeThrough');
+  const handleBulletedList = () => execCommand('insertUnorderedList');
+  const handleNumberedList = () => execCommand('insertOrderedList');
+  const handleBlockquote = () => execCommand('formatBlock', '<blockquote>');
+  const handleHorizontalRule = () => execCommand('insertHorizontalRule');
+  const handleUndo = () => execCommand('undo');
+  const handleRedo = () => execCommand('redo');
   const handleJustifyLeft = () => execCommand('justifyLeft');
   const handleJustifyCenter = () => execCommand('justifyCenter');
   const handleJustifyRight = () => execCommand('justifyRight');
@@ -99,7 +109,6 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
     setIsLinkDialogOpen(false);
     restoreSelection();
     if (linkUrl && selectionRef.current) {
-      // Use insertHTML to create a link with specific styles
       const linkHtml = `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer" style="color: blue; text-decoration: underline;">${selectionRef.current.toString()}</a>`;
       execCommand('insertHTML', linkHtml);
     }
@@ -156,7 +165,6 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
   
   const handleIframeConfirm = () => {
     if (!iframeCode.trim()) return;
-    // Basic validation to ensure it's an iframe tag
     if (!iframeCode.trim().startsWith('<iframe') || !iframeCode.trim().endsWith('>')) {
         alert('Invalid embed code. Please paste the full <iframe> tag.');
         return;
@@ -166,21 +174,12 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
     setIframeCode('');
   }
 
-  const handleFontFamilyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    execCommand('fontName', e.target.value);
-  };
-
-  const handleFontSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    execCommand('fontSize', e.target.value);
-  };
-  
   const handleFontColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     execCommand('foreColor', e.target.value);
   };
 
   return (
     <>
-      {/* Link Dialog */}
       <Dialog open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -203,8 +202,6 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* YouTube Dialog */}
       <Dialog open={isYouTubeDialogOpen} onOpenChange={setIsYouTubeDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -227,8 +224,6 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
-      {/* Image Dialog */}
       <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -262,8 +257,6 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Iframe Dialog */}
       <Dialog open={isIframeDialogOpen} onOpenChange={setIsIframeDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -289,9 +282,36 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
       </Dialog>
 
       <div className={cn("border rounded-md", className)}>
-        <div className="flex items-center gap-2 p-2 border-b bg-muted/50 flex-wrap">
+        <div className="flex items-center gap-1 p-2 border-b bg-muted/50 flex-wrap">
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleUndo} title="Undo">
+            <Undo className="h-4 w-4" />
+          </Button>
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleRedo} title="Redo">
+            <Redo className="h-4 w-4" />
+          </Button>
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleBold} title="Bold">
             <Bold className="h-4 w-4" />
+          </Button>
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleItalic} title="Italic">
+            <Italic className="h-4 w-4" />
+          </Button>
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleUnderline} title="Underline">
+            <Underline className="h-4 w-4" />
+          </Button>
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleStrikethrough} title="Strikethrough">
+            <Strikethrough className="h-4 w-4" />
+          </Button>
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleBulletedList} title="Bulleted List">
+            <List className="h-4 w-4" />
+          </Button>
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleNumberedList} title="Numbered List">
+            <ListOrdered className="h-4 w-4" />
+          </Button>
+           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleBlockquote} title="Blockquote">
+            <Quote className="h-4 w-4" />
+          </Button>
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleHorizontalRule} title="Horizontal Rule">
+            <Minus className="h-4 w-4" />
           </Button>
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleJustifyLeft} title="Align Left">
               <AlignLeft className="h-4 w-4" />
@@ -314,24 +334,6 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleOpenIframeDialog} title="Embed Iframe">
             <Code className="h-4 w-4" />
           </Button>
-           <select onChange={handleFontFamilyChange} className="p-1 border rounded-md bg-background text-sm">
-                <option value="Lora">Lora (default)</option>
-                <option value="Cinzel" style={{ fontFamily: 'Cinzel, serif' }}>Cinzel</option>
-                <option value="MedievalSharp" style={{ fontFamily: 'MedievalSharp, cursive' }}>MedievalSharp</option>
-                <option value="Uncial Antiqua" style={{ fontFamily: 'Uncial Antiqua, cursive' }}>Uncial Antiqua</option>
-                <option value="Arial">Arial</option>
-                <option value="Georgia">Georgia</option>
-                <option value="Verdana">Verdana</option>
-            </select>
-            <select onChange={handleFontSizeChange} className="p-1 border rounded-md bg-background text-sm">
-                <option value="3">Normal</option>
-                <option value="1">Extra Small</option>
-                <option value="2">Small</option>
-                <option value="4">Large</option>
-                <option value="5">Extra Large</option>
-                <option value="6">Heading 2</option>
-                <option value="7">Heading 1</option>
-            </select>
              <div className="flex items-center h-8 w-8 justify-center rounded-md border bg-background">
                 <Input type="color" onChange={handleFontColorChange} className="w-full h-full p-0 border-none cursor-pointer" title="Font Color" />
             </div>

@@ -26,7 +26,7 @@ export default function NewMissionPage() {
     const [content, setContent] = useState('');
     const [isAssigned, setIsAssigned] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const editorRef = useRef<HTMLDivElement>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -68,20 +68,39 @@ export default function NewMissionPage() {
     };
     
     const handleDownloadPdf = async () => {
-        if (!editorRef.current) {
+        if (!contentRef.current) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not find the content to download.' });
             return;
         }
+
+        const editorContent = contentRef.current;
     
         try {
-            const dataUrl = await toPng(editorRef.current, { quality: 0.95 });
+            const dataUrl = await toPng(editorContent, { 
+                quality: 0.95,
+                style: { margin: '0' } // Ensure no extra margins are added to the image
+            });
     
-            const pdf = new jsPDF();
-            const imgProps = pdf.getImageProperties(dataUrl);
+            const pdf = new jsPDF('p', 'px', 'a4');
             const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-    
-            pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            
+            const imgProps = pdf.getImageProperties(dataUrl);
+            const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+            let heightLeft = imgHeight;
+            let position = 0;
+
+            pdf.addImage(dataUrl, 'PNG', 0, position, pdfWidth, imgHeight);
+            heightLeft -= pdfHeight;
+
+            while (heightLeft > 0) {
+                position -= pdfHeight;
+                pdf.addPage();
+                pdf.addImage(dataUrl, 'PNG', 0, position, pdfWidth, imgHeight);
+                heightLeft -= pdfHeight;
+            }
+
             pdf.save(`${title || 'mission'}.pdf`);
     
         } catch (error) {
@@ -121,9 +140,7 @@ export default function NewMissionPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label>Mission Content</Label>
-                                <div ref={editorRef}>
-                                    <RichTextEditor value={content} onChange={setContent} />
-                                </div>
+                                <RichTextEditor value={content} onChange={setContent} editorRef={contentRef} />
                             </div>
                              <div className="flex items-center space-x-2 pt-4">
                                 <Switch id="is-assigned" checked={isAssigned} onCheckedChange={setIsAssigned} />
