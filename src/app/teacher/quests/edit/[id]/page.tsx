@@ -112,19 +112,6 @@ const ImageUploader = ({ label, imageUrl, onUploadSuccess, teacherUid, storagePa
                 )}
             </div>
             {file && <p className="text-sm text-muted-foreground">Selected: {file.name}</p>}
-            {imageUrl && (
-                <div className="mt-2 relative w-fit">
-                    <Image src={imageUrl} alt={`${label} preview`} width={200} height={100} className="rounded-md object-contain border bg-secondary" />
-                     <Button 
-                        variant="destructive" 
-                        size="icon" 
-                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                        onClick={handleRemoveImage}
-                    >
-                        <X className="h-4 w-4" />
-                    </Button>
-                </div>
-            )}
         </div>
     );
 };
@@ -160,10 +147,6 @@ export default function EditQuestPage() {
 
   // New Lesson Part State
   const [currentLessonPartIndex, setCurrentLessonPartIndex] = useState(0);
-  const storyContentRef = React.useRef<HTMLDivElement>(null);
-  const lessonContentRef = React.useRef<HTMLDivElement>(null);
-  const storyAdditionalContentRef = React.useRef<HTMLDivElement>(null);
-
 
   // State for question image uploads
   const [uploadingQuestionImage, setUploadingQuestionImage] = useState<string | number | null>(null);
@@ -290,24 +273,23 @@ export default function EditQuestPage() {
       setChapter(prev => prev ? ({ ...prev, [field]: value }) : null);
   }
   
-  const handleMainImageUploadSuccess = (url: string) => {
-      handleFieldChange('mainImageUrl', url);
-      const imgHtml = `<p><img src="${url}" alt="Story Image" style="width: 100%; height: auto; border-radius: 8px;" /></p>`;
-      handleFieldChange('storyContent', imgHtml + (chapter?.storyContent || ''));
-  };
+    const handleMainImageUploadSuccess = (url: string) => {
+        handleFieldChange('mainImageUrl', url);
+        const imgHtml = `<p style="text-align: center;"><img src="${url}" alt="Story Image" style="width: 100%; height: auto; border-radius: 8px; display: inline-block;" /></p>`;
+        handleFieldChange('storyContent', imgHtml + (chapter?.storyContent || ''));
+    };
 
-  const handleDecorativeImage1UploadSuccess = (url: string) => {
-    handleFieldChange('decorativeImageUrl1', url);
-    const imgHtml = `<p><img src="${url}" alt="Story Image" style="width: 100%; height: auto; border-radius: 8px;" /></p>`;
-    handleFieldChange('storyContent', (chapter?.storyContent || '') + imgHtml);
-};
+    const handleDecorativeImage1UploadSuccess = (url: string) => {
+        handleFieldChange('decorativeImageUrl1', url);
+        const imgHtml = `<p style="text-align: center;"><img src="${url}" alt="Decorative Image" style="width: 100%; height: auto; border-radius: 8px; display: inline-block;" /></p>`;
+        handleFieldChange('storyContent', (chapter?.storyContent || '') + imgHtml);
+    };
 
-  const handleDecorativeImage2UploadSuccess = (url: string) => {
-    handleFieldChange('decorativeImageUrl2', url);
-    const imgHtml = `<p><img src="${url}" alt="Decorative Image" style="width: 100%; height: auto; border-radius: 8px;" /></p>`;
-    handleFieldChange('storyAdditionalContent', (chapter?.storyAdditionalContent || '') + imgHtml);
-};
-
+    const handleDecorativeImage2UploadSuccess = (url: string) => {
+        handleFieldChange('decorativeImageUrl2', url);
+        const imgHtml = `<p style="text-align: center;"><img src="${url}" alt="Decorative Image" style="width: 100%; height: auto; border-radius: 8px; display: inline-block;" /></p>`;
+        handleFieldChange('storyAdditionalContent', (chapter?.storyAdditionalContent || '') + imgHtml);
+    };
   
     const handleQuizChange = (field: keyof Quiz, value: any) => {
         setChapter(prev => {
@@ -503,7 +485,6 @@ export default function EditQuestPage() {
     setIsSaving(true);
     
     const chapterToSave = { ...chapter };
-    delete chapterToSave.lessonContent; // Remove deprecated field
 
     // Clean up quiz data before saving
     if (chapterToSave.quiz && chapterToSave.quiz.questions) {
@@ -571,7 +552,7 @@ export default function EditQuestPage() {
 
     const prevChapter = currentChapterIndex > 0 ? chaptersInHub[currentChapterIndex - 1] : null;
     const nextChapter = currentChapterIndex < chaptersInHub.length - 1 ? chaptersInHub[currentChapterIndex + 1] : null;
-
+    
     const sortedHubs = useMemo(() => {
         const standard = hubs.filter(h => h.hubType !== 'sidequest').sort((a, b) => a.hubOrder - b.hubOrder);
         const sidequests = hubs.filter(h => h.hubType === 'sidequest').sort((a,b) => a.name.localeCompare(b.name));
@@ -776,7 +757,6 @@ export default function EditQuestPage() {
                                   <RichTextEditor
                                       value={currentLessonPart.content}
                                       onChange={(content) => handleLessonPartChange(currentLessonPartIndex, content)}
-                                      ref={lessonContentRef}
                                   />
                                   <div className="flex justify-between items-center mt-4">
                                       <Button onClick={() => setCurrentLessonPartIndex(p => p - 1)} disabled={currentLessonPartIndex === 0}>
@@ -973,5 +953,3 @@ export default function EditQuestPage() {
     </>
   );
 }
-
-    
