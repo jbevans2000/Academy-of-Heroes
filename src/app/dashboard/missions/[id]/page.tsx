@@ -212,6 +212,8 @@ export default function StudentMissionDetailPage() {
     const isEmbedded = mission.content.includes('<iframe');
     const isCompleted = submission.status === 'completed';
     const isSubmitted = submission.status === 'submitted' || submission.status === 'completed';
+    
+    const showMissionContent = !isCompleted || !isEmbedded;
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -236,7 +238,15 @@ export default function StudentMissionDetailPage() {
                         </Alert>
                     )}
 
-                    {(!isCompleted || !isEmbedded) && (
+                    {isCompleted && isEmbedded && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-3xl font-headline">{mission.title}</CardTitle>
+                            </CardHeader>
+                        </Card>
+                    )}
+
+                    {showMissionContent && (
                         <Card>
                             <CardHeader>
                                 <CardTitle className="text-3xl font-headline">{mission.title}</CardTitle>
@@ -250,16 +260,8 @@ export default function StudentMissionDetailPage() {
                             </CardContent>
                         </Card>
                     )}
-                    
-                    {isCompleted && isEmbedded && (
-                         <Card>
-                            <CardHeader>
-                                <CardTitle className="text-3xl font-headline">{mission.title}</CardTitle>
-                            </CardHeader>
-                         </Card>
-                    )}
 
-                    {submission.status === 'completed' ? (
+                    {isCompleted ? (
                         <Card>
                             <CardHeader>
                                 <CardTitle>Graded Report</CardTitle>
@@ -333,8 +335,8 @@ export default function StudentMissionDetailPage() {
                                     Save Draft
                                 </Button>
                                 <Button onClick={handleSubmitMission} disabled={isSubmitting || isSubmitted}>
-                                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : isSubmitted ? "Pending Review" : <Send className="mr-2 h-4 w-4" />}
-                                    {isSubmitted ? "Pending Review" : "Mark as Complete"}
+                                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                                    {isSubmitted ? "Submitted" : "Mark as Complete"}
                                 </Button>
                             </CardFooter>
                         </Card>

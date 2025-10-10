@@ -117,19 +117,28 @@ export default function StudentMissionsPage() {
                                 </div>
                             ) : (
                                 <div className="space-y-4">
-                                    {missions.map(mission => (
-                                        <Card key={mission.id} className="hover:bg-muted/50 transition-colors">
-                                             <CardHeader className="flex flex-row items-center justify-between p-4">
-                                                <div>
-                                                    <CardTitle>{mission.title}</CardTitle>
-                                                    <CardDescription>Status: <span className="font-bold">{mission.submissionStatus}</span></CardDescription>
-                                                </div>
-                                                <Button asChild>
-                                                    <Link href={`/dashboard/missions/${mission.id}`}>{mission.submissionStatus === 'completed' ? 'View Report' : 'View Mission'}</Link>
-                                                </Button>
-                                            </CardHeader>
-                                        </Card>
-                                    ))}
+                                    {missions.map(mission => {
+                                        let buttonText = 'View Mission';
+                                        if (mission.submissionStatus === 'completed') {
+                                            buttonText = 'View Report';
+                                        } else if (mission.submissionStatus === 'submitted') {
+                                            buttonText = 'Pending Review';
+                                        }
+
+                                        return (
+                                            <Card key={mission.id} className="hover:bg-muted/50 transition-colors">
+                                                 <CardHeader className="flex flex-row items-center justify-between p-4">
+                                                    <div>
+                                                        <CardTitle>{mission.title}</CardTitle>
+                                                        <CardDescription>Status: <span className="font-bold">{mission.submissionStatus || 'Not Started'}</span></CardDescription>
+                                                    </div>
+                                                    <Button asChild>
+                                                        <Link href={`/dashboard/missions/${mission.id}`}>{buttonText}</Link>
+                                                    </Button>
+                                                </CardHeader>
+                                            </Card>
+                                        );
+                                    })}
                                 </div>
                             )}
                         </CardContent>
