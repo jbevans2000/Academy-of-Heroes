@@ -114,6 +114,61 @@ const PunnettSquare = ({ traitName, squareIndex }: { traitName: string, squareIn
     );
 };
 
+const HatchlingTable = ({ title, tableIndex }: { title: string; tableIndex: number }) => {
+    const initialGrid = Array.from({ length: 4 }, () => Array(4).fill(''));
+    const [grid, setGrid] = useState<string[][]>(initialGrid);
+    const storageKey = `hatchlingTable-${tableIndex}`;
+
+    useEffect(() => {
+        try {
+            const savedGrid = localStorage.getItem(storageKey);
+            if (savedGrid) {
+                setGrid(JSON.parse(savedGrid));
+            }
+        } catch (error) {
+            console.error(`Could not load state for ${title}:`, error);
+        }
+    }, [storageKey, title]);
+
+    const handleCellChange = (rowIndex: number, colIndex: number, value: string) => {
+        const newGrid = grid.map((row, rIdx) => 
+            rIdx === rowIndex ? row.map((cell, cIdx) => (cIdx === colIndex ? value : cell)) : row
+        );
+        setGrid(newGrid);
+        try {
+            localStorage.setItem(storageKey, JSON.stringify(newGrid));
+        } catch (error) {
+            console.error(`Could not save state for ${title}:`, error);
+        }
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>{title}</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableBody>
+                        {grid.map((row, rowIndex) => (
+                            <TableRow key={rowIndex}>
+                                {row.map((cell, colIndex) => (
+                                    <TableCell key={colIndex}>
+                                        <Input 
+                                            value={cell} 
+                                            onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
+                                            className="w-full"
+                                        />
+                                    </TableCell>
+                                ))}
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+    );
+};
 
 export default function GeneticsLabPage() {
     const router = useRouter();
@@ -224,33 +279,10 @@ export default function GeneticsLabPage() {
                         </CardContent>
                     </Card>
                     
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Test Your Knowledge</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="q1">1. What letters are used to represent eye color?</Label>
-                                <Input id="q1" placeholder="Type your answer here..." />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="q2">2. What letters are used to represent neck length?</Label>
-                                <Input id="q2" placeholder="Type your answer here..." />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="q3">3. The letter "W" is used to represent what?</Label>
-                                <Input id="q3" placeholder="Type your answer here..." />
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="q4">4. The letter "b" is used to represent what?</Label>
-                                <Input id="q4" placeholder="Type your answer here..." />
-                            </div>
-                        </CardContent>
-                    </Card>
                      <Card>
-                        <CardContent className="p-4 prose max-w-none text-center">
-                            <p>An Upper Case, or Capital letter is used to represent a dominant trait. A Lower Case, or small letter, is used to represent a recessive trait. Dominant Traits Completely mask and/or suppress recessive traits. Refer to the Key, and answer the following questions:</p>
-                        </CardContent>
+                        <CardHeader>
+                            <CardTitle>An Upper Case, or Capital letter is used to represent a dominant trait. A Lower Case, or small letter, is used to represent a recessive trait. Dominant Traits Completely mask and/or suppress recessive traits. Refer to the Key, and answer the following questions:</CardTitle>
+                        </CardHeader>
                     </Card>
                     <Card>
                         <CardHeader>
@@ -270,7 +302,7 @@ export default function GeneticsLabPage() {
                             </div>
                         </CardContent>
                     </Card>
-                     <Card>
+                    <Card>
                         <CardHeader>
                             <CardTitle>Question 6</CardTitle>
                         </CardHeader>
@@ -317,6 +349,7 @@ export default function GeneticsLabPage() {
                                         value={text}
                                         onChange={(e) => handleTextChange(i, e.target.value)}
                                         className={`w-full h-48 rounded-[50%/50%] p-4 text-center text-lg font-semibold ${pastelColors[i]} focus:outline-none focus:ring-2 focus:ring-primary`}
+                                        style={{ height: '12rem' }}
                                     />
                                 ))}
                             </div>
@@ -339,6 +372,7 @@ export default function GeneticsLabPage() {
                                         value={text}
                                         onChange={(e) => handleAureliosTextChange(i, e.target.value)}
                                         className={`w-full h-48 rounded-[50%/50%] p-4 text-center text-lg font-semibold ${pastelColors[i]} focus:outline-none focus:ring-2 focus:ring-primary`}
+                                        style={{ height: '12rem' }}
                                     />
                                 ))}
                             </div>
@@ -372,6 +406,13 @@ export default function GeneticsLabPage() {
                             <p>Pick ONE QUADRANT from the Parental Punnett Squares. Put together the GENOTYPES and PHENOTYPES of the Hatchling!</p>
                         </CardContent>
                     </Card>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <HatchlingTable title="Hatchling 1" tableIndex={1} />
+                        <HatchlingTable title="Hatchling 2" tableIndex={2} />
+                        <HatchlingTable title="Hatchling 3" tableIndex={3} />
+                        <HatchlingTable title="Hatchling 4" tableIndex={4} />
+                    </div>
 
                 </div>
             </main>
