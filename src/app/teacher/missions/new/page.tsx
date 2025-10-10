@@ -26,7 +26,6 @@ export default function NewMissionPage() {
     const [content, setContent] = useState('');
     const [isAssigned, setIsAssigned] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const contentRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -78,7 +77,7 @@ export default function NewMissionPage() {
         if (iframeMatch && iframeMatch[1]) {
             const iframeUrl = iframeMatch[1];
             const printWindow = window.open(iframeUrl, '_blank');
-            if (printWindow) {
+             if (printWindow) {
                 printWindow.onload = () => {
                     printWindow.focus();
                     printWindow.print();
@@ -156,7 +155,7 @@ export default function NewMissionPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label>Mission Content</Label>
-                                <RichTextEditor value={content} onChange={setContent} ref={contentRef} />
+                                <RichTextEditor value={content} onChange={setContent} />
                             </div>
                              <div className="flex items-center space-x-2 pt-4">
                                 <Switch id="is-assigned" checked={isAssigned} onCheckedChange={setIsAssigned} />

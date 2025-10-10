@@ -36,7 +36,6 @@ export default function EditMissionPage() {
     const params = useParams();
     const missionId = params.id as string;
     const { toast } = useToast();
-    const contentRef = useRef<HTMLDivElement>(null);
 
     const [teacher, setTeacher] = useState<User | null>(null);
     const [mission, setMission] = useState<Partial<Mission> | null>(null);
@@ -128,7 +127,6 @@ export default function EditMissionPage() {
             return;
         }
         
-        // Check for an iframe
         const iframeMatch = contentHtml.match(/<iframe.*?src=["'](.*?)["']/);
         if (iframeMatch && iframeMatch[1]) {
             const iframeUrl = iframeMatch[1];
@@ -144,7 +142,6 @@ export default function EditMissionPage() {
             return;
         }
 
-        // Fallback to jsPDF for regular HTML content
         const pdf = new jsPDF('p', 'pt', 'a4');
         const margin = 40;
         const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -237,7 +234,6 @@ export default function EditMissionPage() {
                                 <RichTextEditor 
                                     value={mission.content || ''} 
                                     onChange={(value) => setMission(prev => ({...prev, content: value}))}
-                                    ref={contentRef}
                                 />
                             </div>
                             <div className="flex items-center space-x-2 pt-4">

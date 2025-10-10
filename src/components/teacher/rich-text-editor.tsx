@@ -25,11 +25,12 @@ interface RichTextEditorProps {
 }
 
 const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ value, onChange, className }, ref) => {
-  const editorRef = useRef<HTMLDivElement>(null);
+  const localEditorRef = useRef<HTMLDivElement>(null);
   const selectionRef = useRef<Range | null>(null);
+  
+  // This hook ensures the parent's ref and the local ref both point to the same DOM element.
+  useImperativeHandle(ref, () => localEditorRef.current as HTMLDivElement);
 
-  // Combine the local ref with the forwarded ref
-  useImperativeHandle(ref, () => editorRef.current as HTMLDivElement);
 
   // Dialog States
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
@@ -43,16 +44,15 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
   const [iframeCode, setIframeCode] = useState('');
 
   useEffect(() => {
-    const editor = editorRef.current;
-    // Only update if the editor's content is different from the prop value
+    const editor = localEditorRef.current;
     if (editor && value !== editor.innerHTML) {
       editor.innerHTML = value;
     }
   }, [value]);
 
   const handleInput = () => {
-    if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
+    if (localEditorRef.current) {
+      onChange(localEditorRef.current.innerHTML);
     }
   };
 
@@ -60,7 +60,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
     const sel = window.getSelection();
     if (sel && sel.rangeCount > 0) {
       const range = sel.getRangeAt(0);
-      if (editorRef.current && editorRef.current.contains(range.commonAncestorContainer)) {
+      if (localEditorRef.current && localEditorRef.current.contains(range.commonAncestorContainer)) {
         selectionRef.current = range.cloneRange();
       }
     }
@@ -71,20 +71,20 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
       const sel = window.getSelection();
       sel?.removeAllRanges();
       sel?.addRange(selectionRef.current);
-    } else if (editorRef.current) {
-      editorRef.current.focus();
+    } else if (localEditorRef.current) {
+      localEditorRef.current.focus();
     }
   };
   
   const execCommand = (command: string, value?: string) => {
     restoreSelection();
     document.execCommand(command, false, value);
-    if(editorRef.current) {
+    if(localEditorRef.current) {
       handleInput(); // Update state after command
     }
   };
 
-  const handleToolbarMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleToolbarMouseDown = (e: React.MouseEvent<HTMLButtonElement | HTMLSelectElement>) => {
     e.preventDefault(); // Prevent editor from losing focus
     saveSelection();
   };
@@ -111,9 +111,11 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
   const handleLinkConfirm = () => {
     setIsLinkDialogOpen(false);
     restoreSelection();
-    if (linkUrl && selectionRef.current) {
-      const linkHtml = `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer" style="color: blue; text-decoration: underline;">${selectionRef.current.toString()}</a>`;
-      execCommand('insertHTML', linkHtml);
+    if (linkUrl && selectionRef.current && selectionRef.current.toString()) {
+        const selectedText = selectionRef.current.toString();
+        const linkHtml = `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer">${selectedText}</a>`;
+        document.execCommand('insertHTML', false, linkHtml);
+        handleInput();
     }
     setLinkUrl('');
     selectionRef.current = null;
@@ -183,6 +185,14 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
   
   const handleFormatBlock = (tag: string) => {
     execCommand('formatBlock', `<${tag}>`);
+  };
+
+  const handleFontFamilyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    execCommand('fontName', e.target.value);
+  };
+
+  const handleFontSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    execCommand('fontSize', e.target.value);
   };
 
   return (
@@ -290,12 +300,23 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
 
       <div className={cn("border rounded-md", className)}>
         <div className="flex items-center gap-1 p-2 border-b bg-muted/50 flex-wrap">
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleUndo} title="Undo">
-            <Undo className="h-4 w-4" />
-          </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleRedo} title="Redo">
-            <Redo className="h-4 w-4" />
-          </Button>
+          <select defaultValue="3" onChange={handleFontSizeChange} onMouseDown={handleToolbarMouseDown} className="p-1 rounded-md border bg-background text-sm">
+            <option value="1">Smallest</option>
+            <option value="2">Small</option>
+            <option value="3">Normal</option>
+            <option value="4">Large</option>
+            <option value="5">Largest</option>
+            <option value="6">Huge</option>
+            <option value="7">Giant</option>
+          </select>
+          <select onChange={handleFontFamilyChange} onMouseDown={handleToolbarMouseDown} className="p-1 rounded-md border bg-background text-sm">
+            <option value="Lora, serif">Lora (Default)</option>
+            <option value="Arial, sans-serif">Arial</option>
+            <option value="Georgia, serif">Georgia</option>
+            <option value="Times New Roman, Times, serif">Times New Roman</option>
+            <option value="Verdana, sans-serif">Verdana</option>
+            <option value="Cinzel, serif">Cinzel</option>
+          </select>
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleBold} title="Bold">
             <Bold className="h-4 w-4" />
           </Button>
@@ -347,9 +368,15 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
              <div className="flex items-center h-8 w-8 justify-center rounded-md border bg-background">
                 <Input type="color" onChange={handleFontColorChange} className="w-full h-full p-0 border-none cursor-pointer" title="Font Color" />
             </div>
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleUndo} title="Undo">
+            <Undo className="h-4 w-4" />
+          </Button>
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleRedo} title="Redo">
+            <Redo className="h-4 w-4" />
+          </Button>
         </div>
         <div
-          ref={editorRef}
+          ref={localEditorRef}
           contentEditable
           onInput={handleInput}
           onBlur={saveSelection}
