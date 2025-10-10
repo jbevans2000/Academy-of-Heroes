@@ -209,9 +209,9 @@ export default function StudentMissionDetailPage() {
         );
     }
     
-    const isSubmitted = submission.status === 'submitted' || submission.status === 'completed';
     const isEmbedded = mission.content.includes('<iframe');
     const isCompleted = submission.status === 'completed';
+    const isSubmitted = submission.status === 'submitted' || submission.status === 'completed';
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -236,19 +236,20 @@ export default function StudentMissionDetailPage() {
                         </Alert>
                     )}
 
-                    {!isCompleted || (isCompleted && !isEmbedded)}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-3xl font-headline">{mission.title}</CardTitle>
-                        </CardHeader>
-                        <CardContent className="relative">
-                            {showEmbedInstructionsAlert && <div className="absolute inset-0 bg-white/70 dark:bg-black/70 z-10" />}
-                            <div
-                                className="prose dark:prose-invert max-w-none"
-                                dangerouslySetInnerHTML={{ __html: mission.content }}
-                            />
-                        </CardContent>
-                    </Card>
+                    {(!isCompleted || (isCompleted && !isEmbedded)) && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-3xl font-headline">{mission.title}</CardTitle>
+                            </CardHeader>
+                            <CardContent className="relative">
+                                {showEmbedInstructionsAlert && <div className="absolute inset-0 bg-white/70 dark:bg-black/70 z-10" />}
+                                <div
+                                    className="prose dark:prose-invert max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: mission.content }}
+                                />
+                            </CardContent>
+                        </Card>
+                    )}
 
                     {submission.status === 'completed' ? (
                         <Card>
@@ -331,7 +332,7 @@ export default function StudentMissionDetailPage() {
                                 </div>
                             </CardContent>
                             <CardFooter className="flex justify-end gap-2">
-                                <Button variant="secondary" onClick={handleSaveDraft} disabled={isSaving || isSubmitted}>
+                                 <Button variant="secondary" onClick={handleSaveDraft} disabled={isSaving || isSubmitted}>
                                     {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                                     Save Draft
                                 </Button>
@@ -347,4 +348,3 @@ export default function StudentMissionDetailPage() {
         </div>
     );
 }
-
