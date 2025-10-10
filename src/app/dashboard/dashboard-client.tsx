@@ -366,6 +366,17 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                           </div>
                       </div>
                   </Button>
+                   <Link href={`/dashboard/missions`} passHref>
+                        <Button variant="outline" className="h-auto py-4 px-6 border-2 border-red-600 bg-white hover:bg-gray-100 text-gray-900">
+                          <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
+                              <Star className="h-12 w-12 text-red-500" />
+                              <div>
+                                  <h3 className="text-xl font-bold">Special Missions</h3>
+                                  <p className="text-muted-foreground">View your assignments.</p>
+                              </div>
+                          </div>
+                      </Button>
+                   </Link>
               </div>
           </TooltipProvider>
         </div>

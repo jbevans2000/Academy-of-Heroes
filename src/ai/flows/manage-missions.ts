@@ -1,7 +1,7 @@
 
 'use server';
 
-import { doc, addDoc, updateDoc, deleteDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, addDoc, updateDoc, deleteDoc, collection, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Mission } from '@/lib/missions';
 
@@ -53,4 +53,60 @@ export async function deleteMission(teacherUid: string, missionId: string): Prom
   } catch (error: any) {
     return { success: false, error: error.message || 'Failed to delete mission.' };
   }
+}
+
+// New functions for Phase 2
+
+interface SaveDraftInput {
+    teacherUid: string;
+    studentUid: string;
+    missionId: string;
+    submissionContent: string;
+    fileUrl?: string;
+}
+
+export async function saveMissionDraft(input: SaveDraftInput): Promise<ActionResponse> {
+    const { teacherUid, studentUid, missionId, submissionContent, fileUrl } = input;
+    if (!teacherUid || !studentUid || !missionId) return { success: false, error: 'Invalid input.' };
+    
+    try {
+        const subRef = doc(db, 'teachers', teacherUid, 'missions', missionId, 'submissions', studentUid);
+        await updateDoc(subRef, {
+            submissionContent: submissionContent,
+            fileUrl: fileUrl || null,
+            status: 'draft',
+            lastSavedAt: serverTimestamp(),
+        });
+        return { success: true, message: 'Draft saved!' };
+    } catch (error: any) {
+        console.error("Error saving draft:", error);
+        return { success: false, error: 'Failed to save draft.' };
+    }
+}
+
+interface SubmitMissionInput {
+    teacherUid: string;
+    studentUid: string;
+    missionId: string;
+    submissionContent: string;
+    fileUrl?: string;
+}
+
+export async function submitMission(input: SubmitMissionInput): Promise<ActionResponse> {
+    const { teacherUid, studentUid, missionId, submissionContent, fileUrl } = input;
+    if (!teacherUid || !studentUid || !missionId) return { success: false, error: 'Invalid input.' };
+    
+    try {
+        const subRef = doc(db, 'teachers', teacherUid, 'missions', missionId, 'submissions', studentUid);
+        await updateDoc(subRef, {
+            submissionContent: submissionContent,
+            fileUrl: fileUrl || null,
+            status: 'submitted',
+            submittedAt: serverTimestamp(),
+        });
+        return { success: true, message: 'Mission submitted for review!' };
+    } catch (error: any) {
+        console.error("Error submitting mission:", error);
+        return { success: false, error: 'Failed to submit mission.' };
+    }
 }
