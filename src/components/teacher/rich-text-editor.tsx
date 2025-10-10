@@ -3,7 +3,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Bold, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Youtube } from 'lucide-react';
+import { Bold, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Youtube, Code } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 interface RichTextEditorProps {
   value: string;
@@ -34,6 +35,8 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
   const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [imageWidth, setImageWidth] = useState('');
+  const [isIframeDialogOpen, setIsIframeDialogOpen] = useState(false);
+  const [iframeCode, setIframeCode] = useState('');
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -146,6 +149,23 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
     setYouTubeUrl('');
   };
   
+  const handleOpenIframeDialog = () => {
+    saveSelection();
+    setIsIframeDialogOpen(true);
+  }
+  
+  const handleIframeConfirm = () => {
+    if (!iframeCode.trim()) return;
+    // Basic validation to ensure it's an iframe tag
+    if (!iframeCode.trim().startsWith('<iframe') || !iframeCode.trim().endsWith('>')) {
+        alert('Invalid embed code. Please paste the full <iframe> tag.');
+        return;
+    }
+    execCommand('insertHTML', `<div style="width: 100%; aspect-ratio: 16 / 9;">${iframeCode}</div>`);
+    setIsIframeDialogOpen(false);
+    setIframeCode('');
+  }
+
   const handleFontFamilyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     execCommand('fontName', e.target.value);
   };
@@ -243,6 +263,31 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
         </DialogContent>
       </Dialog>
 
+      {/* Iframe Dialog */}
+      <Dialog open={isIframeDialogOpen} onOpenChange={setIsIframeDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Embed Content</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-2">
+            <Label htmlFor="iframe-code">Embed Code</Label>
+            <Textarea 
+              id="iframe-code"
+              value={iframeCode}
+              onChange={(e) => setIframeCode(e.target.value)}
+              placeholder="Paste <iframe> code here..."
+              rows={6}
+            />
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button onClick={handleIframeConfirm}>Embed Content</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className={cn("border rounded-md", className)}>
         <div className="flex items-center gap-2 p-2 border-b bg-muted/50 flex-wrap">
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleBold} title="Bold">
@@ -265,6 +310,9 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
           </Button>
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleOpenYouTubeDialog} title="YouTube Video">
             <Youtube className="h-4 w-4" />
+          </Button>
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleOpenIframeDialog} title="Embed Iframe">
+            <Code className="h-4 w-4" />
           </Button>
            <select onChange={handleFontFamilyChange} className="p-1 border rounded-md bg-background text-sm">
                 <option value="Lora">Lora (default)</option>
