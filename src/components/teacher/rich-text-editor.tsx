@@ -3,7 +3,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Bold, Italic, Underline, Strikethrough, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Youtube, Code, List, ListOrdered, Quote, Minus, Undo, Redo } from 'lucide-react';
+import { Bold, Italic, Underline, Strikethrough, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Youtube, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Pilcrow } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -25,6 +25,7 @@ interface RichTextEditorProps {
 }
 
 const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ value, onChange, className }, ref) => {
+  // Use the forwarded ref directly. Do not create a new one with useRef.
   const editorRef = ref as React.RefObject<HTMLDivElement>;
   const selectionRef = useRef<Range | null>(null);
 
@@ -177,6 +178,10 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
   const handleFontColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     execCommand('foreColor', e.target.value);
   };
+  
+  const handleFormatBlock = (tag: string) => {
+    execCommand('formatBlock', `<${tag}>`);
+  };
 
   return (
     <>
@@ -300,6 +305,9 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
           </Button>
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleStrikethrough} title="Strikethrough">
             <Strikethrough className="h-4 w-4" />
+          </Button>
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={() => handleFormatBlock('p')} title="Paragraph">
+            <Pilcrow className="h-4 w-4" />
           </Button>
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleBulletedList} title="Bulleted List">
             <List className="h-4 w-4" />
