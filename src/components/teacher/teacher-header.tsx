@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { School, LogOut, LifeBuoy, Shield, User as UserIcon, MessageSquare, Rss, CheckCheck } from "lucide-react";
+import { School, LogOut, LifeBuoy, Shield, User as UserIcon, MessageSquare, Rss, CheckCheck, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -12,6 +12,15 @@ import { doc, getDoc, onSnapshot, collection, query, orderBy, limit, getDocs } f
 import { useToast } from "@/hooks/use-toast";
 import { Bug, Lightbulb } from "lucide-react";
 import { TeacherAdminMessageDialog } from './teacher-admin-message-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Gamepad2 } from 'lucide-react';
+
 
 interface TeacherHeaderProps {
     isAdminPreview?: boolean;
@@ -106,6 +115,24 @@ export function TeacherHeader({ isAdminPreview = false }: TeacherHeaderProps) {
           <School className="h-6 w-6 text-primary" />
           <span className="text-xl">The Guild Leader's Podium</span>
         </Link>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                 <Button variant="outline">
+                    <Gamepad2 className="mr-2 h-5 w-5" />
+                    Game Management
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+                 <DropdownMenuItem onClick={() => router.push('/teacher/quests')}>
+                    <BookOpen className="mr-2 h-4 w-4" />
+                    The Quest Archives
+                </DropdownMenuItem>
+                 <DropdownMenuItem onClick={() => router.push('/teacher/missions')}>
+                    <BookOpen className="mr-2 h-4 w-4" />
+                    Special Missions
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
         <div className="ml-auto flex items-center gap-2">
           {isFeedbackPanelVisible && (
               <>
