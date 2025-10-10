@@ -40,11 +40,10 @@ export default function GeneticsLabPage() {
                             <CardTitle className="text-3xl font-headline flex items-center justify-center gap-4"><Dna className="h-8 w-8 text-primary"/>Dragon Genetics</CardTitle>
                         </CardHeader>
                     </Card>
-
                     <Card>
                         <CardHeader>
                             <CardTitle>Dragon Traits Key</CardTitle>
-                             <CardDescription>
+                            <CardDescription>
                                 Upper Case Letters = Dominant <br/>
                                 Lower Case Letters = Recessive
                             </CardDescription>
@@ -78,7 +77,6 @@ export default function GeneticsLabPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Test Your Knowledge</CardTitle>
-                            <CardDescription>Use the key above to answer the questions.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
@@ -96,6 +94,17 @@ export default function GeneticsLabPage() {
                              <div className="space-y-2">
                                 <Label htmlFor="q4">4. The letter "b" is used to represent what?</Label>
                                 <Input id="q4" placeholder="Type your answer here..." />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="q5">5. List 6 Dominant Traits Shown in the Key.</Label>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Input id="q5-1" placeholder="Trait 1" />
+                                    <Input id="q5-2" placeholder="Trait 2" />
+                                    <Input id="q5-3" placeholder="Trait 3" />
+                                    <Input id="q5-4" placeholder="Trait 4" />
+                                    <Input id="q5-5" placeholder="Trait 5" />
+                                    <Input id="q5-6" placeholder="Trait 6" />
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
