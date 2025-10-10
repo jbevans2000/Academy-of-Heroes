@@ -16,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Loader2, BookOpen } from 'lucide-react';
 import { ClientOnlyTime } from '@/components/client-only-time';
+import { Label } from '@/components/ui/label';
 
 interface Submission {
     id: string; // student uid
