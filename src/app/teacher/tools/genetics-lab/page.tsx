@@ -23,6 +23,7 @@ const geneticsKey = [
   { trait: 'Toes', dominantAllele: 'T', dominant: 'Three Toes', recessiveAllele: 't', recessive: 'Four Toes' },
 ];
 
+
 export default function GeneticsLabPage() {
     const router = useRouter();
     
@@ -38,7 +39,7 @@ export default function GeneticsLabPage() {
                     <Card className="text-center">
                         <CardHeader>
                             <CardTitle className="text-3xl font-headline flex items-center justify-center gap-4"><Dna className="h-8 w-8 text-primary"/>Dragon Genetics</CardTitle>
-                            <CardDescription className="text-lg font-semibold">
+                            <CardDescription className="text-center text-lg">
                                 DRAGON TRAITS KEY <br/>
                                 <span className="font-normal text-sm">Upper Case Letters = Dominant</span><br/>
                                 <span className="font-normal text-sm">Lower Case Letters = Recessive</span>
@@ -54,11 +55,11 @@ export default function GeneticsLabPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="font-bold">Trait</TableHead>
+                                        <TableHead className="font-bold w-1/4">Trait</TableHead>
                                         <TableHead className="font-bold text-center">Dominant Allele</TableHead>
-                                        <TableHead className="font-bold">Dominant Phenotype</TableHead>
+                                        <TableHead className="font-bold">Phenotype (Visible Trait)</TableHead>
                                         <TableHead className="font-bold text-center">Recessive Allele</TableHead>
-                                        <TableHead className="font-bold">Recessive Phenotype</TableHead>
+                                        <TableHead className="font-bold">Phenotype (Visible Trait)</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -106,7 +107,7 @@ export default function GeneticsLabPage() {
                         </CardContent>
                     </Card>
 
-                     <Card>
+                    <Card>
                         <CardContent className="p-6 space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="q5">5. List 6 Dominant Traits Shown in the Key.</Label>
@@ -120,7 +121,23 @@ export default function GeneticsLabPage() {
                                 </div>
                             </div>
                         </CardContent>
-                     </Card>
+                    </Card>
+                    
+                    <Card>
+                        <CardContent className="p-6 space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="q6">6. List 6 Recessive Traits Shown in the Key.</Label>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Input id="q6-1" placeholder="Trait 1" />
+                                    <Input id="q6-2" placeholder="Trait 2" />
+                                    <Input id="q6-3" placeholder="Trait 3" />
+                                    <Input id="q6-4" placeholder="Trait 4" />
+                                    <Input id="q6-5" placeholder="Trait 5" />
+                                    <Input id="q6-6" placeholder="Trait 6" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
             </main>
         </div>
