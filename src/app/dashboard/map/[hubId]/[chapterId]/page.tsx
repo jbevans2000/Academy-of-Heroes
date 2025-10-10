@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
@@ -250,7 +250,7 @@ export default function ChapterPage() {
     const [student, setStudent] = useState<Student | null>(null);
     const [user, setUser] = useState<User | null>(null);
     const [teacherUid, setTeacherUid] = useState<string | null>(null);
-    const [totalChaptersInHub, setTotalChaptersInHub] = useState(0);
+    const [chaptersInHub, setChaptersInHub] = useState<Chapter[]>([]);
 
     const [isLoading, setIsLoading] = useState(true);
     const [isCompleting, setIsCompleting] = useState(false);
@@ -265,25 +265,8 @@ export default function ChapterPage() {
         const authUnsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
                 setUser(currentUser);
-                const studentMetaRef = doc(db, 'students', currentUser.uid);
-                const studentMetaSnap = await getDoc(studentMetaRef);
-
-                if (studentMetaSnap.exists()) {
-                    setTeacherUid(studentMetaSnap.data().teacherUid);
-                    // Fetch student data only if not in preview mode.
-                    if (!isPreviewMode) {
-                        const studentRef = doc(db, 'teachers', studentMetaSnap.data().teacherUid, 'students', currentUser.uid);
-                        const unsubStudent = onSnapshot(studentRef, (docSnap) => {
-                            if (docSnap.exists()) {
-                                setStudent(docSnap.data() as Student);
-                            } else {
-                                router.push('/');
-                            }
-                        });
-                        return () => unsubStudent();
-                    }
-                } else if (isPreviewMode) {
-                    // In preview mode, we need to find the teacher who owns this content.
+                // In preview mode, we need to find the teacher who owns this content.
+                if (isPreviewMode) {
                     const teachersSnapshot = await getDocs(collection(db, 'teachers'));
                     for (const teacherDoc of teachersSnapshot.docs) {
                         const chapterRef = doc(db, 'teachers', teacherDoc.id, 'chapters', chapterId as string);
@@ -294,7 +277,23 @@ export default function ChapterPage() {
                         }
                     }
                 } else {
-                    router.push('/');
+                    const studentMetaRef = doc(db, 'students', currentUser.uid);
+                    const studentMetaSnap = await getDoc(studentMetaRef);
+                    if (studentMetaSnap.exists()) {
+                        const foundTeacherUid = studentMetaSnap.data().teacherUid;
+                        setTeacherUid(foundTeacherUid);
+                        const studentRef = doc(db, 'teachers', foundTeacherUid, 'students', currentUser.uid);
+                        const unsubStudent = onSnapshot(studentRef, (docSnap) => {
+                            if (docSnap.exists()) {
+                                setStudent(docSnap.data() as Student);
+                            } else {
+                                router.push('/');
+                            }
+                        });
+                        return () => unsubStudent();
+                    } else {
+                        router.push('/');
+                    }
                 }
             } else if (!isPreviewMode) {
                 router.push('/');
@@ -306,6 +305,7 @@ export default function ChapterPage() {
     useEffect(() => {
         if (!chapterId || !hubId || !teacherUid) return;
 
+        let unsubChapters: (() => void) | undefined;
         const fetchChapterData = async () => {
             setIsLoading(true);
             try {
@@ -314,7 +314,6 @@ export default function ChapterPage() {
                 if (chapterSnap.exists()) {
                     const data = { id: chapterSnap.id, ...chapterSnap.data() } as Chapter;
                     
-                    // Migration logic for old lesson structure
                     if (data.lessonContent && (!data.lessonParts || data.lessonParts.length === 0)) {
                         data.lessonParts = [{ id: uuidv4(), content: data.lessonContent }];
                     } else if (!data.lessonParts) {
@@ -330,8 +329,11 @@ export default function ChapterPage() {
                     }
                     
                     const chaptersInHubQuery = query(collection(db, 'teachers', teacherUid, 'chapters'), where('hubId', '==', hubId as string));
-                    const chaptersSnapshot = await getDocs(chaptersInHubQuery);
-                    setTotalChaptersInHub(chaptersSnapshot.size);
+                    unsubChapters = onSnapshot(chaptersInHubQuery, (snapshot) => {
+                         const chaptersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
+                         chaptersData.sort((a, b) => a.chapterNumber - b.chapterNumber);
+                         setChaptersInHub(chaptersData);
+                    });
 
                 } else {
                     toast({ title: "Not Found", description: "This chapter could not be found.", variant: 'destructive' });
@@ -345,6 +347,11 @@ export default function ChapterPage() {
         };
 
         fetchChapterData();
+        
+        return () => {
+            if (unsubChapters) unsubChapters();
+        }
+
     }, [chapterId, hubId, router, toast, teacherUid, isPreviewMode]);
 
     const handleMarkComplete = async (quizScore?: number, quizAnswers?: any[]) => {
@@ -426,6 +433,13 @@ export default function ChapterPage() {
         }
         return `https://www.youtube.com/embed/${videoId}`;
     };
+
+    const currentChapterIndex = useMemo(() => {
+        return chaptersInHub.findIndex(c => c.id === chapterId);
+    }, [chaptersInHub, chapterId]);
+
+    const prevChapter = currentChapterIndex > 0 ? chaptersInHub[currentChapterIndex - 1] : null;
+    const nextChapter = currentChapterIndex < chaptersInHub.length - 1 ? chaptersInHub[currentChapterIndex + 1] : null;
 
     if (isLoading || (!student && !isPreviewMode)) {
         return (
@@ -616,7 +630,13 @@ export default function ChapterPage() {
                         </Tabs>
                     </CardContent>
                 </Card>
-                 <div className="flex justify-center flex-col items-center gap-4 py-4">
+                 <div className="flex justify-between items-center gap-4 py-4">
+                    {prevChapter ? (
+                        <Button onClick={() => router.push(`/dashboard/map/${hubId}/${prevChapter.id}${isPreviewMode ? '?preview=true' : ''}`)} variant="outline" size="lg">
+                            <ArrowLeft className="mr-2 h-4 w-4" /> Previous Chapter
+                        </Button>
+                    ) : <div></div>}
+
                      {!isPreviewMode && (!chapter.quiz || !chapter.quiz.questions || chapter.quiz.questions.length === 0) && (
                         <Button 
                             size="lg" 
@@ -640,7 +660,14 @@ export default function ChapterPage() {
                             Unmark as Complete
                         </Button>
                      )}
-                     <div className="flex justify-center gap-4">
+
+                     {nextChapter ? (
+                         <Button onClick={() => router.push(`/dashboard/map/${hubId}/${nextChapter.id}${isPreviewMode ? '?preview=true' : ''}`)} variant="outline" size="lg">
+                            Next Chapter <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                     ) : <div></div>}
+                 </div>
+                  <div className="flex justify-center gap-4">
                         <Button 
                             onClick={() => router.push(returnPath)} 
                             variant="outline"
@@ -658,9 +685,9 @@ export default function ChapterPage() {
                             Return to Dashboard
                         </Button>
                      </div>
-                 </div>
             </div>
         </div>
       </>
     );
 }
+
