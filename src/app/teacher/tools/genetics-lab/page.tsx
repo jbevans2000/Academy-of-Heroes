@@ -476,7 +476,7 @@ export default function GeneticsLabPage() {
                                 <p>You can see that Silvaria has spikes on her tail. According to the KEY, Spikes on the Tail is a DOMINANT trait, and is represented by capital letter <strong>S</strong>.<br/>
                                 So….Silvaria could be either homozygous DOMINANT (<strong>SS</strong>) OR Heterozygous (<strong>Ss</strong>). Since Spikes on the tail is DOMINANT, she could be carrying the recessive gene, but it would not be expressed.</p>
                                 
-                                <h4>Example 2: Claws on Wings</h4>
+                                <h4><strong>Example 2: Claws on Wings</strong></h4>
                                 <p>You can see that Silvaria does NOT have claws on her wings. This is a recessive trait, and It is represented in the KEY by small letter “<strong>c</strong>”<br/>
                                 So…. Since Claws on Wings is a DOMINANT trait, the only way Silvaria could NOT have claws, is if she did not have the gene for it at all. So for this trait, she MUST be homozygous recessive (<strong>cc</strong>).</p>
     
