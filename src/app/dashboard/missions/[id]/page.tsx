@@ -214,8 +214,8 @@ export default function StudentMissionDetailPage() {
             <AlertDialog open={showEmbedInstructionsDialog} onOpenChange={setShowEmbedInstructionsDialog}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>External Assignment Instructions</AlertDialogTitle>
-                        <AlertDialogDescription>
+                        <AlertDialogTitle className="text-2xl">External Assignment Instructions</AlertDialogTitle>
+                        <AlertDialogDescription className="text-lg text-black">
                             Please Complete this Mission on the Second Browser Tab that Just opened. When complete, please press Control + P, and SAVE the mission as a PDF file. Upload your PDF file for your Guild Leader's review using the upload box below!
                         </AlertDialogDescription>
                     </AlertDialogHeader>
@@ -249,12 +249,11 @@ export default function StudentMissionDetailPage() {
                         <CardContent className="space-y-4">
                             <div>
                                 <Label htmlFor="submission-text">Your Written Response</Label>
-                                <div className={isEditorDisabled ? 'opacity-50' : ''}>
-                                    <RichTextEditor
-                                        value={submission.submissionContent || ''}
-                                        onChange={(value) => setSubmission(prev => ({...prev, submissionContent: value}))}
-                                    />
-                                </div>
+                                <RichTextEditor
+                                    value={submission.submissionContent || ''}
+                                    onChange={(value) => setSubmission(prev => ({...prev, submissionContent: value}))}
+                                    disabled={isEditorDisabled}
+                                />
                             </div>
                              <div>
                                 <Label htmlFor="file-upload">Upload a File (Optional)</Label>
@@ -288,3 +287,4 @@ export default function StudentMissionDetailPage() {
         </div>
     );
 }
+
