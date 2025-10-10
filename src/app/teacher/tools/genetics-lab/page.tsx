@@ -120,7 +120,7 @@ const PunnettSquare = ({ traitName, squareIndex }: { traitName: string, squareIn
 };
 
 const HatchlingTable = ({ title, tableIndex }: { title: string; tableIndex: number }) => {
-    const initialGrid = Array.from({ length: 3 }, () => Array(4).fill(''));
+    const initialGrid = Array.from({ length: 4 }, () => Array(4).fill(''));
     const [grid, setGrid] = useState<string[][]>(initialGrid);
     const storageKey = `hatchlingTable-${tableIndex}`;
 
@@ -129,7 +129,7 @@ const HatchlingTable = ({ title, tableIndex }: { title: string; tableIndex: numb
             const savedGrid = localStorage.getItem(storageKey);
             if (savedGrid) {
                 const parsedGrid = JSON.parse(savedGrid);
-                if (Array.isArray(parsedGrid) && parsedGrid.length === 3) {
+                if (Array.isArray(parsedGrid) && parsedGrid.length === 4) {
                     setGrid(parsedGrid);
                 }
             }
@@ -150,8 +150,6 @@ const HatchlingTable = ({ title, tableIndex }: { title: string; tableIndex: numb
         }
     };
     
-    const rowHeaders = ["Genotype", "Phenotype", "Het/Hom"];
-
     return (
         <Card>
             <CardHeader>
@@ -167,29 +165,16 @@ const HatchlingTable = ({ title, tableIndex }: { title: string; tableIndex: numb
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        <TableRow>
-                            <TableCell className="p-1 font-bold border text-center bg-gray-200">Trait</TableCell>
-                            {grid[0].slice(1).map((cell, colIndex) => (
-                                <TableCell key={colIndex} className="p-1">
-                                    <Input
-                                        value={cell}
-                                        onChange={(e) => handleCellChange(0, colIndex + 1, e.target.value)}
-                                        className="w-full text-center text-xs h-10"
-                                    />
-                                </TableCell>
-                            ))}
-                        </TableRow>
-                        {grid.slice(1).map((row, rowIndex) => (
-                            <TableRow key={rowIndex + 1}>
-                                <TableCell className="p-1 font-bold border text-center bg-gray-200">{rowHeaders[rowIndex]}</TableCell>
-                                {row.slice(1).map((cell, colIndex) => (
-                                <TableCell key={colIndex} className="p-1">
-                                    <Input
-                                    value={cell}
-                                    onChange={(e) => handleCellChange(rowIndex + 1, colIndex + 1, e.target.value)}
-                                    className="w-full text-center text-xs h-10"
-                                    />
-                                </TableCell>
+                        {grid.map((row, rowIndex) => (
+                            <TableRow key={rowIndex}>
+                                {row.map((cell, colIndex) => (
+                                    <TableCell key={colIndex} className="p-1">
+                                        <Input
+                                            value={cell}
+                                            onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
+                                            className="w-full text-center text-xs h-10"
+                                        />
+                                    </TableCell>
                                 ))}
                             </TableRow>
                         ))}
@@ -482,7 +467,7 @@ export default function GeneticsLabPage() {
                         <CardHeader className="text-center">
                             <CardTitle className="text-3xl font-headline font-['Cinzel']">Silvaria's Chromosomes</CardTitle>
                         </CardHeader>
-                        <CardContent className="md:flex md:gap-6 md:items-start p-6">
+                         <CardContent className="md:flex md:gap-6 md:items-start p-6">
                             <div className="prose max-w-none md:w-1/2">
                                 <p>Below, four of Silvaria’s (Mother’s) Chromosomes are listed. There are a specific number of genes located on each chromosome. Determine if Silvaria is homozygous or heterozygous for each trait. Some MUST be homozygous to be expressed….others COULD be heterozygous.</p>
                                 
