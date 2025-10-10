@@ -10,6 +10,7 @@ import { ArrowLeft, Dna } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 const geneticsKey = [
   { trait: 'Neck Length', dominantAllele: 'N', dominant: 'Long Neck', recessiveAllele: 'n', recessive: 'Short Neck' },
@@ -175,6 +176,8 @@ export default function GeneticsLabPage() {
     
     const [ovalTexts, setOvalTexts] = useState<string[]>(Array(6).fill(''));
     const [aureliosOvalTexts, setAureliosOvalTexts] = useState<string[]>(Array(6).fill(''));
+    const [fullGenotype, setFullGenotype] = useState('');
+    const [fullPhenotype, setFullPhenotype] = useState('');
 
     // Load from localStorage on initial render for Silvaria
     useEffect(() => {
@@ -200,6 +203,16 @@ export default function GeneticsLabPage() {
         }
     }, []);
 
+    // Load from localStorage for final genotype/phenotype
+    useEffect(() => {
+        try {
+            setFullGenotype(localStorage.getItem('hatchlingFullGenotype') || '');
+            setFullPhenotype(localStorage.getItem('hatchlingFullPhenotype') || '');
+        } catch (error) {
+            console.error("Could not load final traits from localStorage:", error);
+        }
+    }, []);
+
     const handleTextChange = (index: number, value: string) => {
         const newTexts = [...ovalTexts];
         newTexts[index] = value;
@@ -221,6 +234,24 @@ export default function GeneticsLabPage() {
             console.error("Could not write to localStorage for Aurelios:", error);
         }
     };
+
+    const handleGenotypeChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setFullGenotype(e.target.value);
+        try {
+            localStorage.setItem('hatchlingFullGenotype', e.target.value);
+        } catch (error) {
+            console.error("Could not save genotype to localStorage:", error);
+        }
+    }
+
+    const handlePhenotypeChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setFullPhenotype(e.target.value);
+        try {
+            localStorage.setItem('hatchlingFullPhenotype', e.target.value);
+        } catch (error) {
+            console.error("Could not save phenotype to localStorage:", error);
+        }
+    }
     
     const pastelColors = [
         'bg-red-100',
@@ -414,6 +445,33 @@ export default function GeneticsLabPage() {
                         <HatchlingTable title="Chromosome 4" tableIndex={4} />
                     </div>
 
+                    <Card>
+                        <CardHeader className="text-center">
+                            <CardTitle className="text-3xl font-headline">Hatchling's Final Traits</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div>
+                                <Label htmlFor="full-genotype" className="text-lg font-semibold">Full Genotype</Label>
+                                <Textarea 
+                                    id="full-genotype" 
+                                    rows={5}
+                                    placeholder="List the full genotype of the hatchling here..."
+                                    value={fullGenotype}
+                                    onChange={handleGenotypeChange}
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="full-phenotype" className="text-lg font-semibold">Full Phenotype</Label>
+                                <Textarea 
+                                    id="full-phenotype" 
+                                    rows={5}
+                                    placeholder="List the resulting visible traits (phenotype) of the hatchling here..."
+                                    value={fullPhenotype}
+                                    onChange={handlePhenotypeChange}
+                                />
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
             </main>
         </div>
