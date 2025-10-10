@@ -167,7 +167,7 @@ export default function EditQuestPage() {
 
   // State for question image uploads
   const [uploadingQuestionImage, setUploadingQuestionImage] = useState<string | number | null>(null);
-  const [isGalleryOpen, setIsGalleryOpen] = React.useState(false);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
 
 
   useEffect(() => {
@@ -295,6 +295,12 @@ export default function EditQuestPage() {
       const imgHtml = `<p><img src="${url}" alt="Story Image" style="width: 100%; height: auto; border-radius: 8px;" /></p>`;
       handleFieldChange('storyContent', imgHtml + (chapter?.storyContent || ''));
   };
+
+  const handleDecorativeImage1UploadSuccess = (url: string) => {
+    handleFieldChange('decorativeImageUrl1', url);
+    const imgHtml = `<p><img src="${url}" alt="Story Image" style="width: 100%; height: auto; border-radius: 8px;" /></p>`;
+    handleFieldChange('storyContent', (chapter?.storyContent || '') + imgHtml);
+};
 
   
     const handleQuizChange = (field: keyof Quiz, value: any) => {
@@ -688,7 +694,7 @@ export default function EditQuestPage() {
                               <Label htmlFor="story-content">Story Content</Label>
                               <RichTextEditor value={chapter.storyContent || ''} onChange={value => handleFieldChange('storyContent', value)} />
                           </div>
-                          <ImageUploader label="Decorative Image 1" imageUrl={chapter.decorativeImageUrl1 || ''} onUploadSuccess={(url) => handleFieldChange('decorativeImageUrl1', url)} teacherUid={teacher.uid} storagePath="quest-images" />
+                          <ImageUploader label="Decorative Image 1" imageUrl={chapter.decorativeImageUrl1 || ''} onUploadSuccess={handleDecorativeImage1UploadSuccess} teacherUid={teacher.uid} storagePath="quest-images" />
                           <div className="space-y-2">
                               <Label htmlFor="story-additional-content">Additional Story Content</Label>
                                <RichTextEditor value={chapter.storyAdditionalContent || ''} onChange={value => handleFieldChange('storyAdditionalContent', value)} />
