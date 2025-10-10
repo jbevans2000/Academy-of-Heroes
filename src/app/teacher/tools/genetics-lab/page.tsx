@@ -120,7 +120,6 @@ const PunnettSquare = ({ traitName, squareIndex }: { traitName: string, squareIn
 };
 
 const HatchlingTable = ({ title, tableIndex }: { title: string; tableIndex: number }) => {
-    // Only 3 rows are fillable, the first is a header
     const initialGrid = Array.from({ length: 3 }, () => Array(4).fill(''));
     const [grid, setGrid] = useState<string[][]>(initialGrid);
     const storageKey = `hatchlingTable-${tableIndex}`;
@@ -130,7 +129,6 @@ const HatchlingTable = ({ title, tableIndex }: { title: string; tableIndex: numb
             const savedGrid = localStorage.getItem(storageKey);
             if (savedGrid) {
                 const parsedGrid = JSON.parse(savedGrid);
-                // Ensure the loaded grid has the correct dimensions
                 if (Array.isArray(parsedGrid) && parsedGrid.length === 3) {
                     setGrid(parsedGrid);
                 }
@@ -474,7 +472,7 @@ export default function GeneticsLabPage() {
                             <div className="prose max-w-none md:w-1/2">
                                 <p>Below, four of Silvaria’s (Mother’s) Chromosomes are listed. There are a specific number of genes located on each chromosome. Determine if Silvaria is homozygous or heterozygous for each trait. Some MUST be homozygous to be expressed….others COULD be heterozygous.</p>
                                 
-                                <h4>Example 1: Spikes on Tail</h4>
+                                <h4><strong>Example 1: Spikes on Tail</strong></h4>
                                 <p>You can see that Silvaria has spikes on her tail. According to the KEY, Spikes on the Tail is a DOMINANT trait, and is represented by capital letter <strong>S</strong>.<br/>
                                 So….Silvaria could be either homozygous DOMINANT (<strong>SS</strong>) OR Heterozygous (<strong>Ss</strong>). Since Spikes on the tail is DOMINANT, she could be carrying the recessive gene, but it would not be expressed.</p>
                                 
