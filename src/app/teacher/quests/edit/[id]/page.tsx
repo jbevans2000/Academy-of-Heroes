@@ -302,6 +302,12 @@ export default function EditQuestPage() {
     handleFieldChange('storyContent', (chapter?.storyContent || '') + imgHtml);
 };
 
+  const handleDecorativeImage2UploadSuccess = (url: string) => {
+    handleFieldChange('decorativeImageUrl2', url);
+    const imgHtml = `<p><img src="${url}" alt="Decorative Image" style="width: 100%; height: auto; border-radius: 8px;" /></p>`;
+    handleFieldChange('storyAdditionalContent', (chapter?.storyAdditionalContent || '') + imgHtml);
+};
+
   
     const handleQuizChange = (field: keyof Quiz, value: any) => {
         setChapter(prev => {
@@ -699,7 +705,7 @@ export default function EditQuestPage() {
                               <Label htmlFor="story-additional-content">Additional Story Content</Label>
                                <RichTextEditor value={chapter.storyAdditionalContent || ''} onChange={value => handleFieldChange('storyAdditionalContent', value)} />
                           </div>
-                          <ImageUploader label="Decorative Image 2" imageUrl={chapter.decorativeImageUrl2 || ''} onUploadSuccess={(url) => handleFieldChange('decorativeImageUrl2', url)} teacherUid={teacher.uid} storagePath="quest-images" />
+                          <ImageUploader label="Decorative Image 2" imageUrl={chapter.decorativeImageUrl2 || ''} onUploadSuccess={handleDecorativeImage2UploadSuccess} teacherUid={teacher.uid} storagePath="quest-images" />
                           <div className="space-y-2">
                               <Label htmlFor="video-url">YouTube Video URL</Label>
                               <Input id="video-url" placeholder="https://youtube.com/watch?v=..." value={chapter.videoUrl || ''} onChange={e => handleFieldChange('videoUrl', e.target.value)} disabled={isSaving} />
@@ -967,3 +973,5 @@ export default function EditQuestPage() {
     </>
   );
 }
+
+    
