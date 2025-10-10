@@ -22,9 +22,9 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Loader2, BookOpen, Filter } from 'lucide-react';
-import { ClientOnlyTime } from '@/components/client-only-time';
 import { ReviewSubmissionDialog } from '@/components/teacher/review-submission-dialog';
 import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
 interface Submission {
     id: string; // student uid
@@ -294,9 +294,7 @@ export default function MissionSubmissionsPage() {
                                                             </TableCell>
                                                         )}
                                                         <TableCell>
-                                                            {submission?.submittedAt ? (
-                                                                <ClientOnlyTime date={new Date(submission.submittedAt.seconds * 1000)} />
-                                                            ) : 'N/A'}
+                                                            {submission?.submittedAt ? format(new Date(submission.submittedAt.seconds * 1000), 'PP') : 'N/A'}
                                                         </TableCell>
                                                         <TableCell className="text-right">
                                                             <Button 
