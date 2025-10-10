@@ -322,7 +322,7 @@ export default function GeneticsLabPage() {
                     </Card>
                     <Card>
                         <CardHeader className="text-center">
-                            <CardTitle className="text-3xl font-headline">Silvaria's Chromosomes</CardTitle>
+                            <CardTitle className="text-3xl font-headline font-['Cinzel']">Silvaria's Chromosomes</CardTitle>
                         </CardHeader>
                         <CardContent className="prose max-w-none text-center">
                             <p>Below, four of Silvaria’s (Mother’s) Chromosomes are listed.  There are a specific number of genes located on each chromosome. Determine if Silvaria is homozygous or heterozygous for each trait. Some MUST be homozygous to be expressed….others COULD be heterozygous.</p>
@@ -408,10 +408,10 @@ export default function GeneticsLabPage() {
                     </Card>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <HatchlingTable title="Hatchling 1" tableIndex={1} />
-                        <HatchlingTable title="Hatchling 2" tableIndex={2} />
-                        <HatchlingTable title="Hatchling 3" tableIndex={3} />
-                        <HatchlingTable title="Hatchling 4" tableIndex={4} />
+                        <HatchlingTable title="Chromosomes 1" tableIndex={1} />
+                        <HatchlingTable title="Chromosomes 2" tableIndex={2} />
+                        <HatchlingTable title="Chromosomes 3" tableIndex={3} />
+                        <HatchlingTable title="Chromosomes 4" tableIndex={4} />
                     </div>
 
                 </div>
@@ -419,3 +419,5 @@ export default function GeneticsLabPage() {
         </div>
     );
 }
+
+    
