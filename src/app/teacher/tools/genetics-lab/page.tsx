@@ -1,35 +1,26 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Dna, Sparkles, Check } from 'lucide-react';
+import { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowLeft, Dna } from 'lucide-react';
 
-type Allele = 'S' | 's' | 'C' | 'c' | 'E' | 'e' | 'N' | 'n' | 'F' | 'f' | 'A' | 'a' | 'H' | 'h' | 'W' | 'w' | 'T' | 't' | 'M' | 'm' | 'B' | 'b' | 'K' | 'k';
-type Trait = 'Spikes on tail' | 'Clawed wings' | 'Eye color' | 'Neck length' | 'Fire breathing' | 'Armored belly' | 'Horns' | 'Toes' | 'Body color' | 'Back';
-
-interface TraitInfo {
-  dominant: string;
-  recessive: string;
-}
-
-const geneticsKey: Record<string, TraitInfo> = {
-  'N/n': { dominant: 'Long Neck', recessive: 'Short Neck' },
-  'E/e': { dominant: 'Red Eyes', recessive: 'White Eyes' },
-  'H/h': { dominant: 'Multiple Horns', recessive: 'Only 2 Horns' },
-  'C/c': { dominant: 'Clawed Wings', recessive: 'No Claws on Wings' },
-  'B/b': { dominant: 'Silver Body', recessive: 'Gold Body' },
-  'A/a': { dominant: 'Armored Belly', recessive: 'No armor on belly' },
-  'S/s': { dominant: 'Spikes on Tail', recessive: 'No Spikes on Tail' },
-  'K/k': { dominant: 'Freckled Back', recessive: 'No freckles on back' },
-  'F/f': { dominant: 'Fire Breathing', recessive: 'No Fire Breathing' },
-  'T/t': { dominant: 'Three Toes', recessive: 'Four Toes' },
-};
-
+const geneticsKey = [
+  { trait: 'Neck Length', dominantAllele: 'N', dominant: 'Long Neck', recessiveAllele: 'n', recessive: 'Short Neck' },
+  { trait: 'Eye Color', dominantAllele: 'E', dominant: 'Red Eyes', recessiveAllele: 'e', recessive: 'White Eyes' },
+  { trait: 'Horns', dominantAllele: 'H', dominant: 'Multiple Horns', recessiveAllele: 'h', recessive: 'Only 2 Horns' },
+  { trait: 'Wing Claws', dominantAllele: 'C', dominant: 'Clawed Wings', recessiveAllele: 'c', recessive: 'No Claws on Wings' },
+  { trait: 'Body Color', dominantAllele: 'B', dominant: 'Silver Body', recessiveAllele: 'b', recessive: 'Gold Body' },
+  { trait: 'Belly', dominantAllele: 'A', dominant: 'Armored Belly', recessiveAllele: 'a', recessive: 'No armor on belly' },
+  { trait: 'Tail', dominantAllele: 'S', dominant: 'Spikes on Tail', recessiveAllele: 's', recessive: 'No Spikes on Tail' },
+  { trait: 'Back', dominantAllele: 'K', dominant: 'Freckled Back', recessiveAllele: 'k', recessive: 'No freckles on back' },
+  { trait: 'Breath', dominantAllele: 'F', dominant: 'Fire Breathing', recessiveAllele: 'f', recessive: 'No Fire Breathing' },
+  { trait: 'Toes', dominantAllele: 'T', dominant: 'Three Toes', recessiveAllele: 't', recessive: 'Four Toes' },
+];
 
 export default function GeneticsLabPage() {
     const router = useRouter();
@@ -46,27 +37,39 @@ export default function GeneticsLabPage() {
                     <Card className="text-center">
                         <CardHeader>
                             <CardTitle className="text-3xl font-headline flex items-center justify-center gap-4"><Dna className="h-8 w-8 text-primary"/>Dragon Genetics</CardTitle>
-                            <CardDescription className="text-center font-bold">
+                        </CardHeader>
+                        <CardContent>
+                             <CardDescription className="text-center font-bold">
                                 DRAGON TRAITS KEY <br />
                                 Upper Case Letters = Dominant <br />
                                 Lower Case Letters = Recessive
                             </CardDescription>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Genetics Key</CardTitle>
                         </CardHeader>
                         <CardContent>
-                             <Table>
+                            <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Alleles</TableHead>
-                                        <TableHead>Dominant Trait</TableHead>
-                                        <TableHead>Recessive Trait</TableHead>
+                                        <TableHead className="font-bold">Trait</TableHead>
+                                        <TableHead className="font-bold text-center">Dominant Allele</TableHead>
+                                        <TableHead className="font-bold">Dominant Phenotype</TableHead>
+                                        <TableHead className="font-bold text-center">Recessive Allele</TableHead>
+                                        <TableHead className="font-bold">Recessive Phenotype</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {Object.entries(geneticsKey).map(([alleles, traits]) => (
-                                        <TableRow key={alleles}>
-                                            <TableCell className="font-mono font-semibold">{alleles}</TableCell>
-                                            <TableCell>{traits.dominant}</TableCell>
-                                            <TableCell>{traits.recessive}</TableCell>
+                                    {geneticsKey.map((item) => (
+                                        <TableRow key={item.trait}>
+                                            <TableCell className="font-semibold">{item.trait}</TableCell>
+                                            <TableCell className="font-mono font-bold text-center text-lg">{item.dominantAllele}</TableCell>
+                                            <TableCell>{item.dominant}</TableCell>
+                                            <TableCell className="font-mono font-bold text-center text-lg">{item.recessiveAllele}</TableCell>
+                                            <TableCell>{item.recessive}</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
