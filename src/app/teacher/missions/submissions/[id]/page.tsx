@@ -4,17 +4,24 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, onSnapshot, query, doc, getDoc, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student, Mission, Company } from '@/lib/data';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Loader2, BookOpen } from 'lucide-react';
+import { ArrowLeft, Loader2, BookOpen, Filter } from 'lucide-react';
 import { ClientOnlyTime } from '@/components/client-only-time';
 import { Label } from '@/components/ui/label';
 
@@ -36,7 +43,7 @@ export default function MissionSubmissionsPage() {
     const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [companies, setCompanies] = useState<Company[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [companyFilter, setCompanyFilter] = useState('all');
+    const [companyFilters, setCompanyFilters] = useState<string[]>(['all']);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -85,16 +92,39 @@ export default function MissionSubmissionsPage() {
 
     }, [teacher, missionId, router, toast]);
     
+    const handleCompanyFilterChange = (filterId: string) => {
+        if (filterId === 'all') {
+            setCompanyFilters(['all']);
+            return;
+        }
+
+        setCompanyFilters(prev => {
+            const newFilters = prev.filter(f => f !== 'all');
+            if (newFilters.includes(filterId)) {
+                const nextFilters = newFilters.filter(f => f !== filterId);
+                return nextFilters.length === 0 ? ['all'] : nextFilters;
+            } else {
+                return [...newFilters, filterId];
+            }
+        });
+    };
+
     const filteredStudents = useMemo(() => {
         let studentsToList = allStudents.filter(s => !s.isArchived && !s.isHidden);
-        if (companyFilter !== 'all') {
-            if (companyFilter === 'freelancers') {
-                return studentsToList.filter(s => !s.companyId);
-            }
-            return studentsToList.filter(s => s.companyId === companyFilter);
+        if (!companyFilters.includes('all')) {
+            studentsToList = studentsToList.filter(s => {
+                const isFreelancer = !s.companyId;
+                if (companyFilters.includes('freelancers') && isFreelancer) {
+                    return true;
+                }
+                if (s.companyId && companyFilters.includes(s.companyId)) {
+                    return true;
+                }
+                return false;
+            });
         }
         return studentsToList;
-    }, [allStudents, companyFilter]);
+    }, [allStudents, companyFilters]);
 
     if (isLoading || !mission) {
         return (
@@ -125,17 +155,38 @@ export default function MissionSubmissionsPage() {
                         </CardHeader>
                         <CardContent>
                              <div className="flex items-center gap-4 mb-4">
-                                <Label htmlFor="company-filter">Filter by Company:</Label>
-                                <Select value={companyFilter} onValueChange={setCompanyFilter}>
-                                    <SelectTrigger id="company-filter" className="w-[200px]">
-                                        <SelectValue placeholder="Filter..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Companies</SelectItem>
-                                        <SelectItem value="freelancers">Freelancers</SelectItem>
-                                        {companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline">
+                                            <Filter className="mr-2 h-4 w-4" />
+                                            Filter by Company
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                        <DropdownMenuCheckboxItem
+                                            checked={companyFilters.includes('all')}
+                                            onSelect={(e) => { e.preventDefault(); handleCompanyFilterChange('all'); }}
+                                        >
+                                            All Companies
+                                        </DropdownMenuCheckboxItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuCheckboxItem
+                                            checked={companyFilters.includes('freelancers')}
+                                            onSelect={(e) => { e.preventDefault(); handleCompanyFilterChange('freelancers'); }}
+                                        >
+                                            Freelancers
+                                        </DropdownMenuCheckboxItem>
+                                        {companies.map(company => (
+                                            <DropdownMenuCheckboxItem
+                                                key={company.id}
+                                                checked={companyFilters.includes(company.id)}
+                                                onSelect={(e) => { e.preventDefault(); handleCompanyFilterChange(company.id); }}
+                                            >
+                                                {company.name}
+                                            </DropdownMenuCheckboxItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
                             <Table>
                                 <TableHeader>
