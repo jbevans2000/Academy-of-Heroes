@@ -39,7 +39,7 @@ export default function GeneticsLabPage() {
                     <Card className="text-center">
                         <CardHeader>
                             <CardTitle className="text-3xl font-headline flex items-center justify-center gap-4"><Dna className="h-8 w-8 text-primary"/>Dragon Genetics</CardTitle>
-                            <CardDescription className="text-center text-lg">
+                            <CardDescription>
                                 DRAGON TRAITS KEY <br/>
                                 <span className="font-normal text-sm">Upper Case Letters = Dominant</span><br/>
                                 <span className="font-normal text-sm">Lower Case Letters = Recessive</span>
@@ -138,6 +138,24 @@ export default function GeneticsLabPage() {
                             </div>
                         </CardContent>
                     </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-3xl font-headline text-center">Silvaria's Chromosomes</CardTitle>
+                        </CardHeader>
+                        <CardContent className="prose max-w-none">
+                            <p>Below, four of Silvaria’s (Mother’s) Chromosomes are listed. There are a specific number of genes located on each chromosome. Determine if Silvaria is homozygous or heterozygous for each trait. Some MUST be homozygous to be expressed….others COULD be heterozygous.</p>
+                            
+                            <h4>Example 1: Spikes on Tail</h4>
+                            <p>You can see that Silvaria has spikes on her tail. According to the KEY, Spikes on the Tail is a DOMINANT trait, and is represented by capital letter <strong>S</strong>. So….Silvaria could be either homozygous DOMINANT (<strong>SS</strong>) OR Heterozygous (<strong>Ss</strong>). Since Spikes on the tail is DOMINANT, she could be carrying the recessive gene, but it would not be expressed.</p>
+                            
+                            <h4>Example 2: Claws on Wings</h4>
+                            <p>You can see that Silvaria does NOT have claws on her wings. This is a recessive trait, and It is represented in the KEY by small letter “<strong>c</strong>”. So…. Since Claws on Wings is a DOMINANT trait, the only way Silvaria could NOT have claws, is if she did not have the gene for it at all. So for this trait, she MUST be homozygous recessive (<strong>cc</strong>).</p>
+                            
+                            <p>Determine Silvaria’s alleles for each trait listed in the illustrations below. Remember, she could be heterozygous for dominant traits (that’s up to you)…..but if a trait is recessive, she MUST be heterozygous recessive.</p>
+                        </CardContent>
+                    </Card>
+
                 </div>
             </main>
         </div>
