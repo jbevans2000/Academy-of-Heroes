@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import RichTextEditor from '@/components/teacher/rich-text-editor';
-import { ArrowLeft, Loader2, Save, Download, Star, Coins } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Download, Star, Coins, Link } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import jsPDF from 'jspdf';
 
@@ -28,6 +28,7 @@ export default function NewMissionPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [defaultXp, setDefaultXp] = useState<number | ''>('');
     const [defaultGold, setDefaultGold] = useState<number | ''>('');
+    const [embedUrl, setEmbedUrl] = useState('');
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -39,6 +40,26 @@ export default function NewMissionPage() {
         });
         return () => unsubscribe();
     }, [router]);
+    
+    const handleConfirmEmbed = () => {
+        if (!embedUrl) {
+            toast({ variant: 'destructive', title: 'No URL Provided' });
+            return;
+        }
+
+        let finalEmbedUrl = embedUrl;
+        
+        // Transform Google Docs/Forms/Slides URL to embeddable format
+        if (embedUrl.includes('docs.google.com')) {
+            finalEmbedUrl = embedUrl.replace('/edit', '/preview').replace(/\/viewform.*$/, '/viewform?embedded=true');
+        }
+
+        const iframeHtml = `<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;"><iframe src="${finalEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe></div>`;
+
+        setContent(prev => prev + iframeHtml);
+        setEmbedUrl('');
+        toast({ title: 'Content Embedded!', description: 'The item has been added to the bottom of the mission content.' });
+    };
 
     const handleSave = async () => {
         if (!teacher) return;
@@ -170,6 +191,18 @@ export default function NewMissionPage() {
                                     </div>
                                 </div>
                                 <p className="text-xs text-muted-foreground">These will be auto-calculated in the grading view based on the percentage score, but you can always override them.</p>
+                            </div>
+                             <div className="space-y-2 p-4 border rounded-lg bg-secondary/50">
+                                <Label className="text-base font-semibold flex items-center gap-2"><Link className="h-4 w-4"/> Embed Google Form/Doc</Label>
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        placeholder="Paste Google sharing link here..."
+                                        value={embedUrl}
+                                        onChange={(e) => setEmbedUrl(e.target.value)}
+                                    />
+                                    <Button onClick={handleConfirmEmbed}>Confirm Embed</Button>
+                                </div>
+                                <p className="text-xs text-muted-foreground">This will add the embedded item to the bottom of the content editor below.</p>
                             </div>
                             <div className="space-y-2">
                                 <Label>Mission Content</Label>

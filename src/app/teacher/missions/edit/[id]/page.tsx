@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { db, auth } from '@/lib/firebase';
+import { db, auth, app } from '@/lib/firebase';
 import type { Mission } from '@/lib/missions';
 
 import { TeacherHeader } from '@/components/teacher/teacher-header';
@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import RichTextEditor from '@/components/teacher/rich-text-editor';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Save, Loader2, Trash2, Download, Star, Coins } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Trash2, Download, Star, Coins, Link } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { saveMission, deleteMission } from '@/ai/flows/manage-missions';
 import {
@@ -43,6 +43,7 @@ export default function EditMissionPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [embedUrl, setEmbedUrl] = useState('');
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -77,6 +78,29 @@ export default function EditMissionPage() {
         };
         fetchMission();
     }, [teacher, missionId, router, toast]);
+
+    const handleConfirmEmbed = () => {
+        if (!embedUrl) {
+            toast({ variant: 'destructive', title: 'No URL Provided' });
+            return;
+        }
+
+        let finalEmbedUrl = embedUrl;
+        
+        // Transform Google Docs/Forms/Slides URL to embeddable format
+        if (embedUrl.includes('docs.google.com')) {
+            finalEmbedUrl = embedUrl.replace('/edit', '/preview').replace(/\/viewform.*$/, '/viewform?embedded=true');
+        }
+
+        const iframeHtml = `<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;"><iframe src="${finalEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe></div>`;
+
+        setMission(prev => ({
+            ...prev,
+            content: (prev?.content || '') + iframeHtml,
+        }));
+        setEmbedUrl('');
+        toast({ title: 'Content Embedded!', description: 'The item has been added to the bottom of the mission content.' });
+    };
 
     const handleSave = async () => {
         if (!teacher || !mission?.id) return;
@@ -242,6 +266,18 @@ export default function EditMissionPage() {
                                     </div>
                                 </div>
                                 <p className="text-xs text-muted-foreground">These will be auto-calculated in the grading view based on the percentage score, but you can always override them.</p>
+                            </div>
+                             <div className="space-y-2 p-4 border rounded-lg bg-secondary/50">
+                                <Label className="text-base font-semibold flex items-center gap-2"><Link className="h-4 w-4"/> Embed Google Form/Doc</Label>
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        placeholder="Paste Google sharing link here..."
+                                        value={embedUrl}
+                                        onChange={(e) => setEmbedUrl(e.target.value)}
+                                    />
+                                    <Button onClick={handleConfirmEmbed}>Confirm Embed</Button>
+                                </div>
+                                <p className="text-xs text-muted-foreground">This will add the embedded item to the bottom of the content editor below.</p>
                             </div>
                             <div className="space-y-2">
                                 <Label>Mission Content</Label>
