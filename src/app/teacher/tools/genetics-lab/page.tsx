@@ -541,7 +541,7 @@ function GeneticsLabContent() {
             </Card>
             <Card>
                 <CardHeader>
-                    <CardTitle>Question 6</CardTitle>
+                    <CardTitle>Recessive Traits</CardTitle>
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
                     <div className="space-y-2">
@@ -755,6 +755,3 @@ export default function GeneticsLabPage() {
     )
 }
 
-    
-
-    
