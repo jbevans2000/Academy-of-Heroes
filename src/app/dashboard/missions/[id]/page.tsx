@@ -23,6 +23,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Alert, AlertTitle } from '@/components/ui/alert';
 import { File as FileIcon, Star, Coins, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { DashboardHeader } from '@/components/dashboard/header';
 
 interface SubmissionData {
     submissionContent: string;
@@ -230,7 +231,7 @@ export default function StudentMissionDetailPage() {
                     </Button>
                     
                     {showEmbedInstructionsAlert && (
-                        <Alert variant="default" className="bg-yellow-100/90 dark:bg-yellow-900/80 border-yellow-500">
+                        <Alert variant="default" className="bg-yellow-100/90 border-yellow-500 text-yellow-900 dark:bg-yellow-900/80 dark:text-yellow-100">
                             <AlertTitle className="text-2xl font-bold text-black">External Assignment Instructions</AlertTitle>
                             <p className="text-lg text-black">
                                 Please Complete this Mission on the Second Browser Tab that Just opened. When complete, please press Control + P, and SAVE the mission as a PDF file. Upload your PDF file for your Guild Leader's review using the upload box below!
