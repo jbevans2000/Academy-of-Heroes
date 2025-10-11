@@ -306,7 +306,7 @@ function GeneticsLabContent() {
                 `Chromosome #1\n\nEye Color - ee\nSpikes - ss\nHorns - Hh`,
                 `Chromosome #2\n\nTail Length\nArmored Belly\nClawed Wings`,
                 `Chromosome #3\n\nBody Color\nFire Breathing\nNeck Length`,
-                `Chromosome #4  \n\nWing Style\nNumber of Toes`,
+                `Chromosome #4\n\nWing Style\nNumber of Toes`,
                 `Intentionally\nLeft Blank`,
                 `Intentionally\nLeft Blank`
             ];
@@ -315,8 +315,16 @@ function GeneticsLabContent() {
             );
             setOvalTexts(loadedTexts);
 
-            const aureliosLoadedTexts = Array(6).fill('').map((_, i) => 
-                localStorage.getItem(`aureliosGeneticsLabOval${i + 1}`) || ''
+            const defaultAureliosOvals = [
+                `Chromosome #1\nEye Color - Ee\nSpikes - SS\nHorns - hh`,
+                '',
+                '',
+                '',
+                '',
+                ''
+            ];
+            const aureliosLoadedTexts = defaultAureliosOvals.map((defaultValue, i) => 
+                localStorage.getItem(`aureliosGeneticsLabOval${i + 1}`) ?? defaultValue
             );
             setAureliosOvalTexts(aureliosLoadedTexts);
             
@@ -585,7 +593,7 @@ function GeneticsLabContent() {
                         {ovalTexts.map((text, i) => (
                             <textarea
                                 key={`silvaria-${i}`}
-                                defaultValue={text}
+                                value={text}
                                 onChange={(e) => handleTextChange(i, e.target.value)}
                                 className={`w-full h-48 rounded-[50%/50%] p-4 text-center text-sm font-semibold ${pastelColors[i]} focus:outline-none focus:ring-2 focus:ring-primary`}
                                 style={{ height: '12rem', whiteSpace: 'pre-wrap' }}
