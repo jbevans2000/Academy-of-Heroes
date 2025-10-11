@@ -281,12 +281,12 @@ function GeneticsLabContent() {
     const isEmbed = searchParams.get('embed') === 'true';
 
     const defaultSilvariaOvals = [
-        `Chromosome #1\nEye Color - ee\nSpikes - ss\nHorns - Hh`,
-        `Tail Length\nArmored Belly\nClawed Wings\n\nChromosome #2`,
-        `Body Color\nFire Breathing\nNeck Length\n\nChromosome #3`,
-        `Chromosome #4  \n\nWing Style\nNumber of Toes`,
-        '', 
-        ''
+        `Chromosome #1\n\nEye Color - ee\nSpikes - ss\nHorns - Hh`,
+        ``,
+        ``,
+        ``,
+        ``, 
+        ``
     ];
     const defaultAureliosOvals = Array(6).fill('');
 
@@ -749,6 +749,3 @@ export default function GeneticsLabPage() {
         </Suspense>
     )
 }
-
-    
-    
