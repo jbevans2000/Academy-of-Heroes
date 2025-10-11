@@ -478,7 +478,9 @@ export default function ChapterPage() {
         }
     }
     
+    const combinedStoryContent = `${chapter.storyContent || ''}${chapter.storyAdditionalContent || ''}`;
     const storyVideoSrc = chapter.videoUrl ? getYouTubeEmbedUrl(chapter.videoUrl) : '';
+
 
     const lastCompletedChapterForHub = student?.questProgress?.[hubId as string] || 0;
     const isCompletedChapter = hub.hubType === 'sidequest'
@@ -561,51 +563,26 @@ export default function ChapterPage() {
                                 <TabsTrigger value="lesson">Lesson</TabsTrigger>
                             </TabsList>
                             <TabsContent value="story" className="mt-6 space-y-6 text-lg leading-relaxed">
-                                {chapter.mainImageUrl && <div className="flex justify-center">
-                                    <Image
-                                        src={chapter.mainImageUrl}
-                                        alt="Chapter main image"
-                                        width={800}
-                                        height={400}
-                                        className="rounded-lg shadow-lg border"
-                                        data-ai-hint="fantasy scene"
-                                        priority
-                                    />
-                                </div>}
-                                {chapter.storyContent && <><Separator /><div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: chapter.storyContent }} /></>}
-                                {chapter.decorativeImageUrl1 && <><Separator /><div className="flex justify-center">
-                                     <Image
-                                        src={chapter.decorativeImageUrl1}
-                                        alt="Decorative image"
-                                        width={800}
-                                        height={400}
-                                        className="rounded-lg shadow-lg border"
-                                        data-ai-hint="scroll letter"
-                                    />
-                                </div></>}
-                                {chapter.storyAdditionalContent && <><Separator /><div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: chapter.storyAdditionalContent }} /></>}
-                                 {chapter.decorativeImageUrl2 && <><Separator /><div className="flex justify-center">
-                                     <Image
-                                        src={chapter.decorativeImageUrl2}
-                                        alt="Decorative twig"
-                                        width={800}
-                                        height={100}
-                                        className="rounded-lg object-contain"
-                                        data-ai-hint="divider"
-                                    />
-                                </div></>}
-                                {storyVideoSrc && <><Separator /><div className="flex justify-center">
-                                    <iframe 
-                                        width="800" 
-                                        height="400" 
-                                        src={storyVideoSrc} 
-                                        title="YouTube video player" 
-                                        frameBorder="0" 
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                                        allowFullScreen
-                                        className="rounded-lg shadow-lg border">
-                                    </iframe>
-                                </div></>}
+                                {combinedStoryContent && (
+                                    <div className="prose prose-lg max-w-none [&_img]:rounded-lg [&_img]:shadow-lg [&_img]:border" dangerouslySetInnerHTML={{ __html: combinedStoryContent }} />
+                                )}
+                                {storyVideoSrc && (
+                                    <>
+                                        <Separator />
+                                        <div className="flex justify-center">
+                                            <iframe 
+                                                width="800" 
+                                                height="400" 
+                                                src={storyVideoSrc} 
+                                                title="YouTube video player" 
+                                                frameBorder="0" 
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                                allowFullScreen
+                                                className="rounded-lg shadow-lg border">
+                                            </iframe>
+                                        </div>
+                                    </>
+                                )}
                             </TabsContent>
                             <TabsContent value="lesson" className="mt-6 space-y-6 text-lg leading-relaxed">
                                  <div className="text-center">
@@ -690,4 +667,3 @@ export default function ChapterPage() {
       </>
     );
 }
-
