@@ -44,6 +44,7 @@ export default function EditMissionPage() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [embedUrl, setEmbedUrl] = useState('');
+    const [lastEmbeddedIframe, setLastEmbeddedIframe] = useState('');
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -92,18 +93,23 @@ export default function EditMissionPage() {
             finalEmbedUrl = embedUrl.replace('/viewform', '/viewform?embedded=true');
         } else if (embedUrl.includes('docs.google.com/presentation')) {
             finalEmbedUrl = embedUrl.replace('/edit', '/embed').replace('/pub', '/embed');
+        } else if (embedUrl.includes('drive.google.com/file')) { // Handle Google Drive file links
+            finalEmbedUrl = embedUrl.replace('/view', '/preview');
         } else if (embedUrl.includes('docs.google.com/document')) {
             finalEmbedUrl = embedUrl.replace('/edit', '/preview');
-        } else if (embedUrl.includes('drive.google.com/file')) {
-            finalEmbedUrl = embedUrl.replace('/view', '/preview');
         }
 
-        const iframeHtml = `<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;"><iframe src="${finalEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe></div>`;
+        const newIframeHtml = `<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;"><iframe src="${finalEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe></div>`;
 
-        setMission(prev => ({
-            ...prev,
-            content: (prev?.content || '') + iframeHtml,
-        }));
+        setMission(prev => {
+            if (!prev) return null;
+            // First, remove the previously embedded iframe if it exists
+            const contentWithoutOldIframe = lastEmbeddedIframe ? (prev.content || '').replace(lastEmbeddedIframe, '') : (prev.content || '');
+            // Then, add the new one
+            return { ...prev, content: contentWithoutOldIframe + newIframeHtml };
+        });
+
+        setLastEmbeddedIframe(newIframeHtml); // Store the new iframe to be removed next time
         setEmbedUrl('');
         toast({ title: 'Content Embedded!', description: 'The item has been added to the bottom of the mission content.' });
     };
