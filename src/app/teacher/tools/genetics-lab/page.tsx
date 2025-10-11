@@ -321,7 +321,7 @@ function GeneticsLabContent() {
                 `Chromosome #3\n\nBody Color\nFire Breathing\nNeck Length`,
                 `Chromosome #4\n\nWing Style\nNumber of Toes`,
                 `Intentionally\nLeft Blank`,
-                ''
+                `Intentionally\nLeft Blank`
             ];
             const aureliosLoadedTexts = defaultAureliosOvals.map((defaultValue, i) => 
                 localStorage.getItem(`aureliosGeneticsLabOval${i + 1}`) ?? defaultValue
