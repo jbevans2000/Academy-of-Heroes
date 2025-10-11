@@ -19,6 +19,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import jsPDF from 'jspdf';
 import { toPng } from 'html-to-image';
+import { Textarea } from '@/components/ui/textarea';
 
 const geneticsKey = [
   { trait: 'Neck Length', dominantAllele: 'N', dominant: 'Long Neck', recessiveAllele: 'n', recessive: 'Short Neck' },
@@ -680,6 +681,39 @@ function GeneticsLabContent() {
                     )}
                 </CardContent>
             </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-center text-3xl font-headline">Final Questions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="space-y-2">
+                        <Label htmlFor="q1">Based on your Punnett Square for the eye color, what are the chances that the hatchling's eyes will be red?</Label>
+                        <Textarea id="q1" placeholder="Your answer..." />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="q2">Based on your Punnett square for wing color, what are the chances that the hatchling will have black wings?</Label>
+                        <Textarea id="q2" placeholder="Your answer..." />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="q3">Based on your Punnett Square for Fire Breathing, what are the odds that the hatchling will be able to breath fire?</Label>
+                        <Textarea id="q3" placeholder="Your answer..." />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="q4">Based on what you put for the traits and alleles on chromosome 1, explain if the hatchling is homozygous dominant, homozygous recessive, or heterozygous.</Label>
+                        <Textarea id="q4" placeholder="Your answer..." />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="q5">If body color expressed co-dominance, what would the hatchling body color be?</Label>
+                        <Textarea id="q5" placeholder="Your answer..." />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="q6">If Eye color expressed incomplete dominance, explain what the hatchlings eye's might look like.</Label>
+                        <Textarea id="q6" placeholder="Your answer..." />
+                    </div>
+                </CardContent>
+            </Card>
+
             <div className="text-center mt-8">
                 <Button size="lg" onClick={handleDownloadPdf} disabled={isDownloading}>
                     {isDownloading ? <Loader2 className="mr-2 h-6 w-6 animate-spin"/> : <Download className="mr-2 h-6 w-6"/>}
@@ -706,5 +740,3 @@ export default function GeneticsLabPage() {
         </Suspense>
     )
 }
-
-    
