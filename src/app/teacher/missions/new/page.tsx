@@ -13,9 +13,19 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import RichTextEditor from '@/components/teacher/rich-text-editor';
-import { ArrowLeft, Loader2, Save, Download, Star, Coins, Link } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Download, Star, Coins, Link, Trash2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import jsPDF from 'jspdf';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 
 export default function NewMissionPage() {
@@ -30,6 +40,7 @@ export default function NewMissionPage() {
     const [defaultGold, setDefaultGold] = useState<number | ''>('');
     const [embedUrl, setEmbedUrl] = useState('');
     const [lastEmbeddedIframe, setLastEmbeddedIframe] = useState('');
+    const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
 
 
     useEffect(() => {
@@ -56,7 +67,7 @@ export default function NewMissionPage() {
             finalEmbedUrl = embedUrl.replace('/viewform', '/viewform?embedded=true');
         } else if (embedUrl.includes('docs.google.com/presentation')) {
             finalEmbedUrl = embedUrl.replace('/edit', '/embed').replace('/pub', '/embed');
-        } else if (embedUrl.includes('drive.google.com/file')) { // Handle Google Drive file links
+        } else if (embedUrl.includes('drive.google.com/file')) {
             finalEmbedUrl = embedUrl.replace('/view', '/preview');
         } else if (embedUrl.includes('docs.google.com/document')) {
             finalEmbedUrl = embedUrl.replace('/edit', '/preview');
@@ -161,79 +172,107 @@ export default function NewMissionPage() {
         });
     };
 
+    const handleClearContent = () => {
+        setContent('');
+        setLastEmbeddedIframe('');
+        setIsClearConfirmOpen(false);
+        toast({ title: 'Content Cleared' });
+    }
+
     return (
-        <div className="flex min-h-screen w-full flex-col bg-muted/40">
-            <TeacherHeader />
-            <main className="flex-1 p-4 md:p-6 lg:p-8">
-                <div className="max-w-4xl mx-auto space-y-6">
-                    <div className="flex justify-between items-center">
-                         <Button variant="outline" onClick={() => router.push('/teacher/missions')}>
-                            <ArrowLeft className="mr-2 h-4 w-4" /> Back to All Missions
-                        </Button>
-                        <div className="flex gap-2">
-                             <Button variant="secondary" onClick={handleDownloadPdf}>
-                                <Download className="mr-2 h-4 w-4" /> Download as PDF
+        <>
+            <AlertDialog open={isClearConfirmOpen} onOpenChange={setIsClearConfirmOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will clear all content from the mission editor. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleClearContent} className="bg-destructive hover:bg-destructive/90">
+                            Yes, Clear Content
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            <div className="flex min-h-screen w-full flex-col bg-muted/40">
+                <TeacherHeader />
+                <main className="flex-1 p-4 md:p-6 lg:p-8">
+                    <div className="max-w-4xl mx-auto space-y-6">
+                        <div className="flex justify-between items-center">
+                             <Button variant="outline" onClick={() => router.push('/teacher/missions')}>
+                                <ArrowLeft className="mr-2 h-4 w-4" /> Back to All Missions
                             </Button>
+                            <div className="flex gap-2">
+                                <Button variant="secondary" onClick={() => setIsClearConfirmOpen(true)}>
+                                    <Trash2 className="mr-2 h-4 w-4" /> Clear Content
+                                </Button>
+                                 <Button variant="secondary" onClick={handleDownloadPdf}>
+                                    <Download className="mr-2 h-4 w-4" /> Download as PDF
+                                </Button>
+                                <Button onClick={handleSave} disabled={isSaving}>
+                                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                    Save Mission
+                                </Button>
+                            </div>
+                        </div>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Mission Editor</CardTitle>
+                                <CardDescription>Create a new special mission for your students.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="title">Mission Title</Label>
+                                    <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., The Mystery of the Missing Artifact" />
+                                </div>
+                                 <div className="space-y-4 p-4 border rounded-lg bg-secondary/50">
+                                    <Label className="text-base font-semibold">Default Completion Rewards (Optional)</Label>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="default-xp" className="flex items-center gap-1"><Star className="h-4 w-4 text-yellow-400" /> Default XP</Label>
+                                            <Input id="default-xp" type="number" value={defaultXp} onChange={e => setDefaultXp(e.target.value === '' ? '' : Number(e.target.value))} placeholder="e.g., 100" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="default-gold" className="flex items-center gap-1"><Coins className="h-4 w-4 text-amber-500" /> Default Gold</Label>
+                                            <Input id="default-gold" type="number" value={defaultGold} onChange={e => setDefaultGold(e.target.value === '' ? '' : Number(e.target.value))} placeholder="e.g., 50" />
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">These will be auto-calculated in the grading view based on the percentage score, but you can always override them.</p>
+                                </div>
+                                 <div className="space-y-2 p-4 border rounded-lg bg-secondary/50">
+                                    <Label className="text-base font-semibold flex items-center gap-2"><Link className="h-4 w-4"/> Embed Google Form/Doc</Label>
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            placeholder="Paste Google sharing link here..."
+                                            value={embedUrl}
+                                            onChange={(e) => setEmbedUrl(e.target.value)}
+                                        />
+                                        <Button onClick={handleConfirmEmbed}>Confirm Embed</Button>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">This will add the embedded item to the bottom of the content editor below.</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Mission Content</Label>
+                                    <RichTextEditor value={content} onChange={setContent} />
+                                </div>
+                                 <div className="flex items-center space-x-2 pt-4">
+                                    <Switch id="is-assigned" checked={isAssigned} onCheckedChange={setIsAssigned} />
+                                    <Label htmlFor="is-assigned">{isAssigned ? "Assigned to Students" : "Saved as Draft"}</Label>
+                                </div>
+                            </CardContent>
+                        </Card>
+                        <div className="flex justify-end">
                             <Button onClick={handleSave} disabled={isSaving}>
                                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                                 Save Mission
                             </Button>
                         </div>
                     </div>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Mission Editor</CardTitle>
-                            <CardDescription>Create a new special mission for your students.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="title">Mission Title</Label>
-                                <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., The Mystery of the Missing Artifact" />
-                            </div>
-                             <div className="space-y-4 p-4 border rounded-lg bg-secondary/50">
-                                <Label className="text-base font-semibold">Default Completion Rewards (Optional)</Label>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="default-xp" className="flex items-center gap-1"><Star className="h-4 w-4 text-yellow-400" /> Default XP</Label>
-                                        <Input id="default-xp" type="number" value={defaultXp} onChange={e => setDefaultXp(e.target.value === '' ? '' : Number(e.target.value))} placeholder="e.g., 100" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="default-gold" className="flex items-center gap-1"><Coins className="h-4 w-4 text-amber-500" /> Default Gold</Label>
-                                        <Input id="default-gold" type="number" value={defaultGold} onChange={e => setDefaultGold(e.target.value === '' ? '' : Number(e.target.value))} placeholder="e.g., 50" />
-                                    </div>
-                                </div>
-                                <p className="text-xs text-muted-foreground">These will be auto-calculated in the grading view based on the percentage score, but you can always override them.</p>
-                            </div>
-                             <div className="space-y-2 p-4 border rounded-lg bg-secondary/50">
-                                <Label className="text-base font-semibold flex items-center gap-2"><Link className="h-4 w-4"/> Embed Google Form/Doc</Label>
-                                <div className="flex items-center gap-2">
-                                    <Input
-                                        placeholder="Paste Google sharing link here..."
-                                        value={embedUrl}
-                                        onChange={(e) => setEmbedUrl(e.target.value)}
-                                    />
-                                    <Button onClick={handleConfirmEmbed}>Confirm Embed</Button>
-                                </div>
-                                <p className="text-xs text-muted-foreground">This will add the embedded item to the bottom of the content editor below.</p>
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Mission Content</Label>
-                                <RichTextEditor value={content} onChange={setContent} />
-                            </div>
-                             <div className="flex items-center space-x-2 pt-4">
-                                <Switch id="is-assigned" checked={isAssigned} onCheckedChange={setIsAssigned} />
-                                <Label htmlFor="is-assigned">{isAssigned ? "Assigned to Students" : "Saved as Draft"}</Label>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <div className="flex justify-end">
-                        <Button onClick={handleSave} disabled={isSaving}>
-                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                            Save Mission
-                        </Button>
-                    </div>
-                </div>
-            </main>
-        </div>
+                </main>
+            </div>
+        </>
     );
 }

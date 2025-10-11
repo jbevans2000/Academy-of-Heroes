@@ -45,6 +45,7 @@ export default function EditMissionPage() {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [embedUrl, setEmbedUrl] = useState('');
     const [lastEmbeddedIframe, setLastEmbeddedIframe] = useState('');
+    const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -213,6 +214,12 @@ export default function EditMissionPage() {
         });
     };
 
+    const handleClearContent = () => {
+        setMission(prev => prev ? { ...prev, content: '' } : null);
+        setLastEmbeddedIframe('');
+        setIsClearConfirmOpen(false);
+        toast({ title: 'Content Cleared' });
+    }
 
     if (isLoading || !mission) {
          return (
@@ -229,111 +236,132 @@ export default function EditMissionPage() {
     }
 
     return (
-        <div className="flex min-h-screen w-full flex-col bg-muted/40">
-            <TeacherHeader />
-            <main className="flex-1 p-4 md:p-6 lg:p-8">
-                <div className="max-w-4xl mx-auto space-y-6">
-                     <div className="flex justify-between items-center">
-                        <Button variant="outline" onClick={() => router.push('/teacher/missions')}>
-                            <ArrowLeft className="mr-2 h-4 w-4" /> Back to All Missions
-                        </Button>
-                        <div className="flex gap-2">
-                             <Button variant="destructive" onClick={() => setIsDeleteDialogOpen(true)}>
-                                <Trash2 className="mr-2 h-4 w-4" /> Delete Mission
+        <>
+            <AlertDialog open={isClearConfirmOpen} onOpenChange={setIsClearConfirmOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will clear all content from the mission editor. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleClearContent} className="bg-destructive hover:bg-destructive/90">
+                            Yes, Clear Content
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            <div className="flex min-h-screen w-full flex-col bg-muted/40">
+                <TeacherHeader />
+                <main className="flex-1 p-4 md:p-6 lg:p-8">
+                    <div className="max-w-4xl mx-auto space-y-6">
+                        <div className="flex justify-between items-center">
+                            <Button variant="outline" onClick={() => router.push('/teacher/missions')}>
+                                <ArrowLeft className="mr-2 h-4 w-4" /> Back to All Missions
                             </Button>
-                             <Button variant="secondary" onClick={handleDownloadPdf}>
-                                <Download className="mr-2 h-4 w-4" /> Download as PDF
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button variant="secondary" onClick={() => setIsClearConfirmOpen(true)}>
+                                    <Trash2 className="mr-2 h-4 w-4" /> Clear Content
+                                </Button>
+                                <Button variant="destructive" onClick={() => setIsDeleteDialogOpen(true)}>
+                                    <Trash2 className="mr-2 h-4 w-4" /> Delete Mission
+                                </Button>
+                                <Button variant="secondary" onClick={handleDownloadPdf}>
+                                    <Download className="mr-2 h-4 w-4" /> Download as PDF
+                                </Button>
+                                <Button onClick={handleSave} disabled={isSaving}>
+                                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                    Save Changes
+                                </Button>
+                            </div>
+                        </div>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Edit Mission</CardTitle>
+                                <CardDescription>Update the details of your special mission.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="title">Mission Title</Label>
+                                    <Input 
+                                        id="title" 
+                                        value={mission.title || ''} 
+                                        onChange={(e) => setMission(prev => prev ? ({...prev, title: e.target.value}) : null)} 
+                                    />
+                                </div>
+                                <div className="space-y-4 p-4 border rounded-lg bg-secondary/50">
+                                    <Label className="text-base font-semibold">Default Completion Rewards (Optional)</Label>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="default-xp" className="flex items-center gap-1"><Star className="h-4 w-4 text-yellow-400" /> Default XP</Label>
+                                            <Input id="default-xp" type="number" value={mission.defaultXpReward ?? ''} onChange={e => setMission(prev => prev ? ({...prev, defaultXpReward: Number(e.target.value)}) : null)} placeholder="e.g., 100" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="default-gold" className="flex items-center gap-1"><Coins className="h-4 w-4 text-amber-500" /> Default Gold</Label>
+                                            <Input id="default-gold" type="number" value={mission.defaultGoldReward ?? ''} onChange={e => setMission(prev => prev ? ({...prev, defaultGoldReward: Number(e.target.value)}) : null)} placeholder="e.g., 50" />
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">These will be auto-calculated in the grading view based on the percentage score, but you can always override them.</p>
+                                </div>
+                                <div className="space-y-2 p-4 border rounded-lg bg-secondary/50">
+                                    <Label className="text-base font-semibold flex items-center gap-2"><Link className="h-4 w-4"/> Embed Google Form/Doc</Label>
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            placeholder="Paste Google sharing link here..."
+                                            value={embedUrl}
+                                            onChange={(e) => setEmbedUrl(e.target.value)}
+                                        />
+                                        <Button onClick={handleConfirmEmbed}>Confirm Embed</Button>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">This will add the embedded item to the bottom of the content editor below.</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Mission Content</Label>
+                                    <RichTextEditor 
+                                        value={mission.content || ''} 
+                                        onChange={(value) => setMission(prev => prev ? ({...prev, content: value}) : null)}
+                                    />
+                                </div>
+                                <div className="flex items-center space-x-2 pt-4">
+                                    <Switch 
+                                        id="is-assigned" 
+                                        checked={mission.isAssigned} 
+                                        onCheckedChange={(checked) => setMission(prev => prev ? ({...prev, isAssigned: checked}) : null)}
+                                    />
+                                    <Label htmlFor="is-assigned">{mission.isAssigned ? "Assigned to Students" : "Saved as Draft"}</Label>
+                                </div>
+                            </CardContent>
+                        </Card>
+                        <div className="flex justify-end">
                             <Button onClick={handleSave} disabled={isSaving}>
                                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                                 Save Changes
                             </Button>
                         </div>
                     </div>
+                </main>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Edit Mission</CardTitle>
-                            <CardDescription>Update the details of your special mission.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                             <div className="space-y-2">
-                                <Label htmlFor="title">Mission Title</Label>
-                                <Input 
-                                    id="title" 
-                                    value={mission.title || ''} 
-                                    onChange={(e) => setMission(prev => prev ? ({...prev, title: e.target.value}) : null)} 
-                                />
-                            </div>
-                            <div className="space-y-4 p-4 border rounded-lg bg-secondary/50">
-                                <Label className="text-base font-semibold">Default Completion Rewards (Optional)</Label>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="default-xp" className="flex items-center gap-1"><Star className="h-4 w-4 text-yellow-400" /> Default XP</Label>
-                                        <Input id="default-xp" type="number" value={mission.defaultXpReward ?? ''} onChange={e => setMission(prev => prev ? ({...prev, defaultXpReward: Number(e.target.value)}) : null)} placeholder="e.g., 100" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="default-gold" className="flex items-center gap-1"><Coins className="h-4 w-4 text-amber-500" /> Default Gold</Label>
-                                        <Input id="default-gold" type="number" value={mission.defaultGoldReward ?? ''} onChange={e => setMission(prev => prev ? ({...prev, defaultGoldReward: Number(e.target.value)}) : null)} placeholder="e.g., 50" />
-                                    </div>
-                                </div>
-                                <p className="text-xs text-muted-foreground">These will be auto-calculated in the grading view based on the percentage score, but you can always override them.</p>
-                            </div>
-                             <div className="space-y-2 p-4 border rounded-lg bg-secondary/50">
-                                <Label className="text-base font-semibold flex items-center gap-2"><Link className="h-4 w-4"/> Embed Google Form/Doc</Label>
-                                <div className="flex items-center gap-2">
-                                    <Input
-                                        placeholder="Paste Google sharing link here..."
-                                        value={embedUrl}
-                                        onChange={(e) => setEmbedUrl(e.target.value)}
-                                    />
-                                    <Button onClick={handleConfirmEmbed}>Confirm Embed</Button>
-                                </div>
-                                <p className="text-xs text-muted-foreground">This will add the embedded item to the bottom of the content editor below.</p>
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Mission Content</Label>
-                                <RichTextEditor 
-                                    value={mission.content || ''} 
-                                    onChange={(value) => setMission(prev => prev ? ({...prev, content: value}) : null)}
-                                />
-                            </div>
-                            <div className="flex items-center space-x-2 pt-4">
-                                <Switch 
-                                    id="is-assigned" 
-                                    checked={mission.isAssigned} 
-                                    onCheckedChange={(checked) => setMission(prev => prev ? ({...prev, isAssigned: checked}) : null)}
-                                />
-                                <Label htmlFor="is-assigned">{mission.isAssigned ? "Assigned to Students" : "Saved as Draft"}</Label>
-                            </div>
-                        </CardContent>
-                    </Card>
-                     <div className="flex justify-end">
-                        <Button onClick={handleSave} disabled={isSaving}>
-                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                            Save Changes
-                        </Button>
-                    </div>
-                </div>
-            </main>
-
-            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the mission "{mission.title}".
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                            {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Delete Mission
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-        </div>
+                <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the mission "{mission.title}".
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Delete Mission
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
+        </>
     );
 }
