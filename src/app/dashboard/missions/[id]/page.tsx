@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import { ArrowLeft, LayoutDashboard, CheckCircle, Loader2, RotateCcw, ArrowRight, Maximize } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, CheckCircle, Loader2, RotateCcw, ArrowRight, Maximize, Save, Send, File as FileIcon, Star, Coins } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db, auth, app } from '@/lib/firebase';
@@ -21,7 +21,6 @@ import { Label } from '@/components/ui/label';
 import { v4 as uuidv4 } from 'uuid';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Alert, AlertTitle } from '@/components/ui/alert';
-import { File as FileIcon, Star, Coins, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DashboardHeader } from '@/components/dashboard/header';
 
