@@ -605,7 +605,7 @@ function GeneticsLabContent() {
 
             <Card>
                 <CardHeader className="text-center">
-                    <CardTitle className="text-3xl font-headline font-['Cinzel']">Aurelio's Instructions</CardTitle>
+                    <CardTitle className="text-3xl font-headline font-['Cinzel']">Aurelio's Chromosomes</CardTitle>
                 </CardHeader>
                 <CardContent className="md:flex md:gap-6 md:items-center p-6">
                     <div className="md:w-1/2 flex items-center justify-center">
