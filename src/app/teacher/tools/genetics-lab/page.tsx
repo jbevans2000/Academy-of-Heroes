@@ -605,7 +605,7 @@ function GeneticsLabContent() {
 
             <Card>
                 <CardHeader className="text-center">
-                    <CardTitle className="text-3xl font-headline font-['Cinzel']">Aurelio's Chromosomes</CardTitle>
+                    <CardTitle className="text-3xl font-headline font-['Cinzel']">Aurelio's Instructions</CardTitle>
                 </CardHeader>
                 <CardContent className="md:flex md:gap-6 md:items-center p-6">
                     <div className="md:w-1/2 flex items-center justify-center">
@@ -624,9 +624,6 @@ function GeneticsLabContent() {
             </Card>
             
             <Card>
-                <CardHeader className="text-center">
-                    <CardTitle className="text-3xl font-headline">Aurelios' Chromosomes</CardTitle>
-                </CardHeader>
                  <CardContent className="p-6">
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                         {aureliosOvalTexts.map((text, i) => (
