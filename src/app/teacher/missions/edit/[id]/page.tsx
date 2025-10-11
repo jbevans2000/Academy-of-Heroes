@@ -99,7 +99,7 @@ export default function EditMissionPage() {
             finalEmbedUrl = embedUrl.replace('/edit', '/preview');
         }
 
-        const newIframeHtml = `<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;"><iframe src="${finalEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe></div>`;
+        const newIframeHtml = `<p><br></p><p><br></p><p><br></p><p><br></p><div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;"><iframe src="${finalEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe></div>`;
 
         setMission(prev => {
             if (!prev) return null;
