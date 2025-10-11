@@ -87,30 +87,44 @@ export default function EditMissionPage() {
             return;
         }
 
+        let finalEmbedHtml = '';
         let finalEmbedUrl = embedUrl;
 
-        // More specific URL transformations
-        if (embedUrl.includes('docs.google.com/forms')) {
+        // Check for YouTube
+        const youtubeMatch = embedUrl.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+        if (youtubeMatch && youtubeMatch[1]) {
+            finalEmbedUrl = `https://www.youtube.com/embed/${youtubeMatch[1]}`;
+            finalEmbedHtml = `<div style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%;"><iframe src="${finalEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe></div>`;
+        }
+        // Check for image extensions
+        else if (/\.(jpeg|jpg|gif|png|webp)$/i.test(embedUrl)) {
+            finalEmbedHtml = `<img src="${embedUrl}" style="width: 100%; height: auto; border-radius: 8px;" />`;
+        }
+        // Check for Google links
+        else if (embedUrl.includes('docs.google.com/forms')) {
             finalEmbedUrl = embedUrl.replace('/viewform', '/viewform?embedded=true');
         } else if (embedUrl.includes('docs.google.com/presentation')) {
             finalEmbedUrl = embedUrl.replace('/edit', '/embed').replace('/pub', '/embed');
-        } else if (embedUrl.includes('drive.google.com/file')) { // Handle Google Drive file links
+        } else if (embedUrl.includes('drive.google.com/file')) {
             finalEmbedUrl = embedUrl.replace('/view', '/preview');
         } else if (embedUrl.includes('docs.google.com/document')) {
             finalEmbedUrl = embedUrl.replace('/edit', '/preview');
         }
 
-        const newIframeHtml = `<p><br></p><p><br></p><p><br></p><p><br></p><div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;"><iframe src="${finalEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe></div><p><br></p><p><br></p><p><br></p><p><br></p>`;
+        // If it's not an image, default to an iframe for Google links or other websites
+        if (!finalEmbedHtml) {
+            finalEmbedHtml = `<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;"><iframe src="${finalEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe></div>`;
+        }
+        
+        const newEmbedBlock = `<p><br></p><p><br></p><p><br></p><p><br></p>${finalEmbedHtml}<p><br></p><p><br></p><p><br></p><p><br></p>`;
 
         setMission(prev => {
             if (!prev) return null;
-            // First, remove the previously embedded iframe if it exists
             const contentWithoutOldIframe = lastEmbeddedIframe ? (prev.content || '').replace(lastEmbeddedIframe, '') : (prev.content || '');
-            // Then, add the new one
-            return { ...prev, content: contentWithoutOldIframe + newIframeHtml };
+            return { ...prev, content: contentWithoutOldIframe + newEmbedBlock };
         });
 
-        setLastEmbeddedIframe(newIframeHtml); // Store the new iframe to be removed next time
+        setLastEmbeddedIframe(newEmbedBlock);
         setEmbedUrl('');
         toast({ title: 'Content Embedded!', description: 'The item has been added to the bottom of the mission content.' });
     };
@@ -307,10 +321,10 @@ export default function EditMissionPage() {
                                     <p className="text-xs text-muted-foreground">These will be auto-calculated in the grading view based on the percentage score, but you can always override them.</p>
                                 </div>
                                 <div className="space-y-2 p-4 border rounded-lg bg-secondary/50">
-                                    <Label className="text-base font-semibold flex items-center gap-2"><Link className="h-4 w-4"/> Embed Google Form/Doc</Label>
+                                    <Label className="text-base font-semibold flex items-center gap-2"><Link className="h-4 w-4"/> Universal Embed</Label>
                                     <div className="flex items-center gap-2">
                                         <Input
-                                            placeholder="Paste Google sharing link here..."
+                                            placeholder="Paste any URL (Google, YouTube, Image, etc.)..."
                                             value={embedUrl}
                                             onChange={(e) => setEmbedUrl(e.target.value)}
                                         />
