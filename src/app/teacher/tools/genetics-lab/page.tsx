@@ -282,7 +282,8 @@ function GeneticsLabContent() {
 
     const defaultSilvariaOvals = [
         'Chromosome #1\nEye Color - ee\nSpikes - ss\nHorns - Hh',
-        '', '', '', '', ''
+        'Tail Length\nArmored Belly\nClawed Wings\n\nChromosome #2',
+        '', '', '', ''
     ];
     const defaultAureliosOvals = Array(6).fill('');
 
@@ -746,3 +747,5 @@ export default function GeneticsLabPage() {
         </Suspense>
     )
 }
+
+    
