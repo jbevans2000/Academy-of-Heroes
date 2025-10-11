@@ -48,12 +48,16 @@ export default function NewMissionPage() {
         }
 
         let finalEmbedUrl = embedUrl;
-        
-        // Transform Google Docs/Forms/Slides URL to embeddable format
-        if (embedUrl.includes('docs.google.com')) {
-            finalEmbedUrl = embedUrl.replace('/edit', '/preview').replace(/\/viewform.*$/, '/viewform?embedded=true');
-        }
 
+        // More specific URL transformations
+        if (embedUrl.includes('docs.google.com/forms')) {
+            finalEmbedUrl = embedUrl.replace('/viewform', '/viewform?embedded=true');
+        } else if (embedUrl.includes('docs.google.com/presentation')) {
+            finalEmbedUrl = embedUrl.replace('/edit', '/embed').replace('/pub', '/embed');
+        } else if (embedUrl.includes('docs.google.com/document')) {
+            finalEmbedUrl = embedUrl.replace('/edit', '/preview');
+        }
+        
         const iframeHtml = `<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;"><iframe src="${finalEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe></div>`;
 
         setContent(prev => prev + iframeHtml);
