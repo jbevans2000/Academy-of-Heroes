@@ -317,7 +317,7 @@ function GeneticsLabContent() {
 
             const defaultAureliosOvals = [
                 `Chromosome #1\nEye Color - Ee\nSpikes - SS\nHorns - hh`,
-                '',
+                `Chromosome #2\n\nTail Length\nArmored Belly\nClawed Wings`,
                 '',
                 '',
                 '',
@@ -593,7 +593,7 @@ function GeneticsLabContent() {
                         {ovalTexts.map((text, i) => (
                             <textarea
                                 key={`silvaria-${i}`}
-                                value={text}
+                                defaultValue={text}
                                 onChange={(e) => handleTextChange(i, e.target.value)}
                                 className={`w-full h-48 rounded-[50%/50%] p-4 text-center text-sm font-semibold ${pastelColors[i]} focus:outline-none focus:ring-2 focus:ring-primary`}
                                 style={{ height: '12rem', whiteSpace: 'pre-wrap' }}
@@ -633,10 +633,10 @@ function GeneticsLabContent() {
                             <textarea
                                 key={`aurelios-${i}`}
                                 placeholder={`Trait ${i + 1}`}
-                                value={text}
+                                defaultValue={text}
                                 onChange={(e) => handleAureliosTextChange(i, e.target.value)}
-                                className={`w-full h-48 rounded-[50%/50%] p-4 text-center text-lg font-semibold ${pastelColors[i]} focus:outline-none focus:ring-2 focus:ring-primary`}
-                                style={{ height: '12rem' }}
+                                className={`w-full h-48 rounded-[50%/50%] p-4 text-center text-sm font-semibold ${pastelColors[i]} focus:outline-none focus:ring-2 focus:ring-primary`}
+                                style={{ height: '12rem', whiteSpace: 'pre-wrap' }}
                             />
                         ))}
                     </div>
