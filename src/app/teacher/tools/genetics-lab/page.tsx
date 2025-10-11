@@ -282,7 +282,7 @@ function GeneticsLabContent() {
 
     const defaultSilvariaOvals = [
         `Chromosome #1\n\nEye Color - ee\nSpikes - ss\nHorns - Hh`,
-        ``,
+        `Chromosome #2\n\nTail Length\nArmored Belly\nClawed Wings`,
         ``,
         ``,
         ``, 
