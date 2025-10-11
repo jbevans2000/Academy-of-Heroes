@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Dna, Sparkles, Loader2 } from 'lucide-react';
+import { ArrowLeft, Dna, Sparkles, Loader2, Download } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +14,11 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { generateHatchling, type HatchlingTraitInput } from '@/ai/flows/hatchling-generator';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
+import { onAuthStateChanged, type User } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
+import jsPDF from 'jspdf';
+import { toPng } from 'html-to-image';
 
 const geneticsKey = [
   { trait: 'Neck Length', dominantAllele: 'N', dominant: 'Long Neck', recessiveAllele: 'n', recessive: 'Short Neck' },
@@ -279,11 +284,23 @@ function GeneticsLabContent() {
     const [traitSelections, setTraitSelections] = useState<Record<string, TraitSelection> | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
+    const [teacherName, setTeacherName] = useState('Teacher');
+    const [isDownloading, setIsDownloading] = useState(false);
+    const contentRef = useRef<HTMLDivElement>(null);
     const imageStorageKey = 'hatchlingGeneratedImage';
 
-
-    // Load from localStorage on initial render
+    // Load user and saved data from localStorage on initial render
     useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const teacherRef = doc(db, 'teachers', user.uid);
+                const docSnap = await getDoc(teacherRef);
+                if (docSnap.exists()) {
+                    setTeacherName(docSnap.data().name || 'Teacher');
+                }
+            }
+        });
+
         try {
             const loadedTexts = Array(6).fill('').map((_, i) => 
                 localStorage.getItem(`geneticsLabOval${i + 1}`) || ''
@@ -299,11 +316,64 @@ function GeneticsLabContent() {
             if (savedImage) {
                 setGeneratedImageUrl(savedImage);
             }
-
         } catch (error) {
             console.error("Could not access localStorage:", error);
         }
+        
+        return () => unsubscribe();
     }, []);
+
+    const handleDownloadPdf = async () => {
+        if (!contentRef.current) return;
+        setIsDownloading(true);
+
+        try {
+            // Using a PNG is more reliable across browsers than SVG for html-to-image
+            const dataUrl = await toPng(contentRef.current, { 
+                quality: 0.95, 
+                backgroundColor: 'white' // Set a background for the image
+            });
+
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'px',
+                format: 'a4'
+            });
+
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const img = new window.Image();
+            img.src = dataUrl;
+
+            img.onload = () => {
+                const imgWidth = img.width;
+                const imgHeight = img.height;
+                const ratio = imgWidth / imgHeight;
+
+                let finalImgWidth = pdfWidth;
+                let finalImgHeight = pdfWidth / ratio;
+                
+                // If the height is still too large, scale based on height instead
+                if (finalImgHeight > pdfHeight) {
+                    finalImgHeight = pdfHeight;
+                    finalImgWidth = pdfHeight * ratio;
+                }
+                
+                pdf.addImage(dataUrl, 'PNG', 0, 0, finalImgWidth, finalImgHeight);
+                pdf.save(`${teacherName}_Sylvaria and Aurelio.pdf`);
+                setIsDownloading(false);
+            };
+
+        } catch (error) {
+            console.error('oops, something went wrong!', error);
+            toast({
+                variant: 'destructive',
+                title: 'PDF Generation Failed',
+                description: 'Could not generate the PDF. Please try again.',
+            });
+            setIsDownloading(false);
+        }
+    };
 
 
     const handleTextChange = (index: number, value: string) => {
@@ -384,7 +454,7 @@ function GeneticsLabContent() {
     ];
 
     const mainContent = (
-         <div className="max-w-6xl mx-auto space-y-6">
+        <div ref={contentRef} className="max-w-6xl mx-auto space-y-6 bg-white p-8">
             {!isEmbed && (
                  <Button variant="outline" onClick={() => router.back()} className="mb-4">
                     <ArrowLeft className="mr-2 h-4 w-4" />
@@ -610,7 +680,12 @@ function GeneticsLabContent() {
                     )}
                 </CardContent>
             </Card>
-
+            <div className="text-center mt-8">
+                <Button size="lg" onClick={handleDownloadPdf} disabled={isDownloading}>
+                    {isDownloading ? <Loader2 className="mr-2 h-6 w-6 animate-spin"/> : <Download className="mr-2 h-6 w-6"/>}
+                    Download as PDF
+                </Button>
+            </div>
         </div>
     );
 
@@ -631,3 +706,5 @@ export default function GeneticsLabPage() {
         </Suspense>
     )
 }
+
+    
