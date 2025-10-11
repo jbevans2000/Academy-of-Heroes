@@ -280,8 +280,14 @@ function GeneticsLabContent() {
     const searchParams = useSearchParams();
     const isEmbed = searchParams.get('embed') === 'true';
 
-    const [ovalTexts, setOvalTexts] = useState<string[]>(Array(6).fill(''));
-    const [aureliosOvalTexts, setAureliosOvalTexts] = useState<string[]>(Array(6).fill(''));
+    const defaultSilvariaOvals = [
+        'Chromosome #1\nEye Color - ee\nSpikes - ss\nHorns - Hh',
+        '', '', '', '', ''
+    ];
+    const defaultAureliosOvals = Array(6).fill('');
+
+    const [ovalTexts, setOvalTexts] = useState<string[]>(defaultSilvariaOvals);
+    const [aureliosOvalTexts, setAureliosOvalTexts] = useState<string[]>(defaultAureliosOvals);
     const [traitSelections, setTraitSelections] = useState<Record<string, TraitSelection> | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
@@ -303,12 +309,12 @@ function GeneticsLabContent() {
         });
 
         try {
-            const loadedTexts = Array(6).fill('').map((_, i) => 
-                localStorage.getItem(`geneticsLabOval${i + 1}`) || ''
+            const loadedTexts = defaultSilvariaOvals.map((defaultValue, i) =>
+                localStorage.getItem(`geneticsLabOval${i + 1}`) ?? defaultValue
             );
             setOvalTexts(loadedTexts);
 
-            const aureliosLoadedTexts = Array(6).fill('').map((_, i) => 
+            const aureliosLoadedTexts = defaultAureliosOvals.map((_, i) => 
                 localStorage.getItem(`aureliosGeneticsLabOval${i + 1}`) || ''
             );
             setAureliosOvalTexts(aureliosLoadedTexts);
@@ -581,8 +587,8 @@ function GeneticsLabContent() {
                                 placeholder={`Trait ${i + 1}`}
                                 value={text}
                                 onChange={(e) => handleTextChange(i, e.target.value)}
-                                className={`w-full h-48 rounded-[50%/50%] p-4 text-center text-lg font-semibold ${pastelColors[i]} focus:outline-none focus:ring-2 focus:ring-primary`}
-                                style={{ height: '12rem' }}
+                                className={`w-full h-48 rounded-[50%/50%] p-4 text-center text-sm font-semibold ${pastelColors[i]} focus:outline-none focus:ring-2 focus:ring-primary`}
+                                style={{ height: '12rem', whiteSpace: 'pre-wrap' }}
                             />
                         ))}
                     </div>
