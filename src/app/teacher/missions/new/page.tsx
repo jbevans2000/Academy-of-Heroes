@@ -49,13 +49,14 @@ export default function NewMissionPage() {
 
         let finalEmbedUrl = embedUrl;
 
-        // More specific URL transformations
         if (embedUrl.includes('docs.google.com/forms')) {
             finalEmbedUrl = embedUrl.replace('/viewform', '/viewform?embedded=true');
         } else if (embedUrl.includes('docs.google.com/presentation')) {
             finalEmbedUrl = embedUrl.replace('/edit', '/embed').replace('/pub', '/embed');
         } else if (embedUrl.includes('docs.google.com/document')) {
             finalEmbedUrl = embedUrl.replace('/edit', '/preview');
+        } else if (embedUrl.includes('drive.google.com/file')) {
+            finalEmbedUrl = embedUrl.replace('/view', '/preview');
         }
         
         const iframeHtml = `<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;"><iframe src="${finalEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe></div>`;
