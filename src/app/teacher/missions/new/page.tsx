@@ -40,10 +40,6 @@ export default function NewMissionPage() {
     const [defaultGold, setDefaultGold] = useState<number | ''>('');
     const [embedUrl, setEmbedUrl] = useState('');
     const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
-    
-    const editorRef = useRef<HTMLDivElement>(null);
-    const selectionRef = useRef<Range | null>(null);
-
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -55,26 +51,6 @@ export default function NewMissionPage() {
         });
         return () => unsubscribe();
     }, [router]);
-    
-    const saveSelection = () => {
-        const sel = window.getSelection();
-        if (sel && sel.rangeCount > 0) {
-            const range = sel.getRangeAt(0);
-            if (editorRef.current && editorRef.current.contains(range.commonAncestorContainer)) {
-                selectionRef.current = range.cloneRange();
-            }
-        }
-    };
-
-    const restoreSelection = () => {
-        if (selectionRef.current) {
-            const sel = window.getSelection();
-            sel?.removeAllRanges();
-            sel?.addRange(selectionRef.current);
-        } else if (editorRef.current) {
-            editorRef.current.focus();
-        }
-    };
     
     const handleConfirmEmbed = () => {
         if (!embedUrl) {
@@ -106,14 +82,10 @@ export default function NewMissionPage() {
             finalEmbedHtml = `<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;"><iframe src="${finalEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe></div>`;
         }
         
-        const embedBlock = `<p><br></p><p><br></p><p><br></p><p><br></p>${finalEmbedHtml}<p><br></p><p><br></p><p><br></p><p><br></p>`;
+        const space = '<p><br></p>'.repeat(4);
+        const embedBlock = `${space}${finalEmbedHtml}${space}`;
         
-        restoreSelection();
-        document.execCommand('insertHTML', false, embedBlock);
-
-        if (editorRef.current) {
-            setContent(editorRef.current.innerHTML);
-        }
+        setContent(prevContent => prevContent + embedBlock);
 
         setEmbedUrl('');
         toast({ title: 'Content Embedded!', description: 'The item has been added to the editor.' });
@@ -276,19 +248,19 @@ export default function NewMissionPage() {
                                 </div>
                                  <div className="space-y-2 p-4 border rounded-lg bg-secondary/50">
                                     <Label className="text-base font-semibold flex items-center gap-2"><LinkIcon className="h-4 w-4"/> Universal Embed</Label>
-                                    <div className="flex items-center gap-2" onBlur={saveSelection}>
+                                    <div className="flex items-center gap-2">
                                         <Input
                                             placeholder="Paste any URL (Google, YouTube, Image, etc.)..."
                                             value={embedUrl}
                                             onChange={(e) => setEmbedUrl(e.target.value)}
                                         />
-                                        <Button onClick={handleConfirmEmbed} onMouseDown={(e) => e.preventDefault()}>Confirm Embed</Button>
+                                        <Button onClick={handleConfirmEmbed}>Confirm Embed</Button>
                                     </div>
-                                    <p className="text-xs text-muted-foreground">This will add the embedded item to the editor at your cursor's position.</p>
+                                    <p className="text-xs text-muted-foreground">This will add the embedded item to the editor.</p>
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Mission Content</Label>
-                                    <RichTextEditor ref={editorRef} value={content} onChange={setContent} />
+                                    <RichTextEditor value={content} onChange={setContent} />
                                 </div>
                                  <div className="flex items-center space-x-2 pt-4">
                                     <Switch id="is-assigned" checked={isAssigned} onCheckedChange={setIsAssigned} />
