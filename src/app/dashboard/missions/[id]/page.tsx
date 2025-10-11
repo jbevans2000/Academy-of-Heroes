@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { ArrowLeft, LayoutDashboard, CheckCircle, Loader2, RotateCcw, ArrowRight, Maximize } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
