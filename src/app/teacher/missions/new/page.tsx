@@ -62,7 +62,7 @@ export default function NewMissionPage() {
             finalEmbedUrl = embedUrl.replace('/edit', '/preview');
         }
         
-        const newIframeHtml = `<p><br></p><p><br></p><p><br></p><p><br></p><div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;"><iframe src="${finalEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe></div>`;
+        const newIframeHtml = `<p><br></p><p><br></p><p><br></p><p><br></p><div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;"><iframe src="${finalEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe></div><p><br></p><p><br></p><p><br></p><p><br></p>`;
 
         // Replace previous embed if it exists, then append the new one
         const contentWithoutOldIframe = lastEmbeddedIframe ? content.replace(lastEmbeddedIframe, '') : content;
