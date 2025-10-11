@@ -284,7 +284,7 @@ function GeneticsLabContent() {
         `Chromosome #1\nEye Color - ee\nSpikes - ss\nHorns - Hh`,
         `Tail Length\nArmored Belly\nClawed Wings\n\nChromosome #2`,
         `Body Color\nFire Breathing\nNeck Length\n\nChromosome #3`,
-        `Wing Style\nNumber of Toes\n\nChromosome #4`, 
+        `Chromosome #4  \n\nWing Style\nNumber of Toes`,
         '', 
         ''
     ];
@@ -750,4 +750,5 @@ export default function GeneticsLabPage() {
     )
 }
 
+    
     
