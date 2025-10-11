@@ -280,18 +280,8 @@ function GeneticsLabContent() {
     const searchParams = useSearchParams();
     const isEmbed = searchParams.get('embed') === 'true';
 
-    const defaultSilvariaOvals = [
-        `Chromosome #1\n\nEye Color - ee\nSpikes - ss\nHorns - Hh`,
-        `Chromosome #2\n\nTail Length\nArmored Belly\nClawed Wings`,
-        ``,
-        ``,
-        ``, 
-        ``
-    ];
-    const defaultAureliosOvals = Array(6).fill('');
-
-    const [ovalTexts, setOvalTexts] = useState<string[]>(defaultSilvariaOvals);
-    const [aureliosOvalTexts, setAureliosOvalTexts] = useState<string[]>(defaultAureliosOvals);
+    const [ovalTexts, setOvalTexts] = useState<string[]>([]);
+    const [aureliosOvalTexts, setAureliosOvalTexts] = useState<string[]>([]);
     const [traitSelections, setTraitSelections] = useState<Record<string, TraitSelection> | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
@@ -300,7 +290,6 @@ function GeneticsLabContent() {
     const contentRef = useRef<HTMLDivElement>(null);
     const imageStorageKey = 'hatchlingGeneratedImage';
 
-    // Load user and saved data from localStorage on initial render
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -313,12 +302,20 @@ function GeneticsLabContent() {
         });
 
         try {
+            const defaultSilvariaOvals = [
+                `Chromosome #1\n\nEye Color - ee\nSpikes - ss\nHorns - Hh`,
+                `Chromosome #2\n\nTail Length\nArmored Belly\nClawed Wings`,
+                `Chromosome #3\n\nBody Color\nFire Breathing\nNeck Length`,
+                '',
+                '',
+                ''
+            ];
             const loadedTexts = defaultSilvariaOvals.map((defaultValue, i) =>
                 localStorage.getItem(`geneticsLabOval${i + 1}`) ?? defaultValue
             );
             setOvalTexts(loadedTexts);
 
-            const aureliosLoadedTexts = defaultAureliosOvals.map((_, i) => 
+            const aureliosLoadedTexts = Array(6).fill('').map((_, i) => 
                 localStorage.getItem(`aureliosGeneticsLabOval${i + 1}`) || ''
             );
             setAureliosOvalTexts(aureliosLoadedTexts);
