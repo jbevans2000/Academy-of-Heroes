@@ -23,6 +23,20 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Alert, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { DashboardHeader } from '@/components/dashboard/header';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Progress } from '@/components/ui/progress';
 
 interface SubmissionData {
     submissionContent: string;
@@ -233,11 +247,11 @@ export default function StudentMissionDetailPage() {
                         <Alert variant="default" className="bg-yellow-100/90 border-yellow-500 text-yellow-900 dark:bg-yellow-900/80 dark:text-yellow-100">
                             <AlertTitle className="text-2xl font-bold text-black">External Assignment Instructions</AlertTitle>
                             <p className="text-lg text-black">
-                                Please Complete this Mission on the Second Browser Tab that Just opened. When complete, please press Control + P, and SAVE the mission as a PDF file. Upload your PDF file for your Guild Leader's review using the upload box below!
+                                Please Complete this Mission on a second Browser tab to ensure full functionality. When complete, please press Control + P, and SAVE the mission as a PDF file. Upload your PDF file for your Guild Leader's review using the upload box below!
                                 <br/><br/>
-                                If you closed the tab by mistake, you can reopen it by{' '}
+                                You can open the second broswer tab by{' '}
                                 <a href={embedUrl!} target="_blank" rel="noopener noreferrer" className="font-bold underline text-blue-800">
-                                    clicking HERE.
+                                    clicking HERE!
                                 </a>
                             </p>
                         </Alert>
@@ -351,3 +365,5 @@ export default function StudentMissionDetailPage() {
         </div>
     );
 }
+
+    
