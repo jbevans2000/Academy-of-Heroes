@@ -307,7 +307,7 @@ function GeneticsLabContent() {
                 `Chromosome #2\n\nTail Length\nArmored Belly\nClawed Wings`,
                 `Chromosome #3\n\nBody Color\nFire Breathing\nNeck Length`,
                 `Chromosome #4  \n\nWing Style\nNumber of Toes`,
-                '',
+                'Intentionally\nLeft Blank',
                 ''
             ];
             const loadedTexts = defaultSilvariaOvals.map((defaultValue, i) =>
