@@ -284,7 +284,9 @@ function GeneticsLabContent() {
         `Chromosome #1\nEye Color - ee\nSpikes - ss\nHorns - Hh`,
         `Tail Length\nArmored Belly\nClawed Wings\n\nChromosome #2`,
         `Body Color\nFire Breathing\nNeck Length\n\nChromosome #3`,
-        '', '', ''
+        `Wing Style\nNumber of Toes\n\nChromosome #4`, 
+        '', 
+        ''
     ];
     const defaultAureliosOvals = Array(6).fill('');
 
@@ -583,30 +585,12 @@ function GeneticsLabContent() {
             <Card>
                 <CardContent className="p-6">
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                        <textarea
-                            defaultValue={defaultSilvariaOvals[0]}
-                            onChange={(e) => handleTextChange(0, e.target.value)}
-                            className={`w-full h-48 rounded-[50%/50%] p-4 text-center text-sm font-semibold ${pastelColors[0]} focus:outline-none focus:ring-2 focus:ring-primary`}
-                            style={{ height: '12rem', whiteSpace: 'pre-wrap' }}
-                        />
-                        <textarea
-                            defaultValue={defaultSilvariaOvals[1]}
-                            onChange={(e) => handleTextChange(1, e.target.value)}
-                            className={`w-full h-48 rounded-[50%/50%] p-4 text-center text-sm font-semibold ${pastelColors[1]} focus:outline-none focus:ring-2 focus:ring-primary`}
-                            style={{ height: '12rem', whiteSpace: 'pre-wrap' }}
-                        />
-                        <textarea
-                            defaultValue={defaultSilvariaOvals[2]}
-                            onChange={(e) => handleTextChange(2, e.target.value)}
-                            className={`w-full h-48 rounded-[50%/50%] p-4 text-center text-sm font-semibold ${pastelColors[2]} focus:outline-none focus:ring-2 focus:ring-primary`}
-                            style={{ height: '12rem', whiteSpace: 'pre-wrap' }}
-                        />
-                        {ovalTexts.slice(3).map((text, i) => (
+                        {ovalTexts.map((text, i) => (
                             <textarea
-                                key={`silvaria-${i + 3}`}
-                                value={text}
-                                onChange={(e) => handleTextChange(i + 3, e.target.value)}
-                                className={`w-full h-48 rounded-[50%/50%] p-4 text-center text-sm font-semibold ${pastelColors[i + 3]} focus:outline-none focus:ring-2 focus:ring-primary`}
+                                key={`silvaria-${i}`}
+                                defaultValue={text}
+                                onChange={(e) => handleTextChange(i, e.target.value)}
+                                className={`w-full h-48 rounded-[50%/50%] p-4 text-center text-sm font-semibold ${pastelColors[i]} focus:outline-none focus:ring-2 focus:ring-primary`}
                                 style={{ height: '12rem', whiteSpace: 'pre-wrap' }}
                             />
                         ))}
