@@ -47,9 +47,8 @@ import { Textarea } from '@/components/ui/textarea';
 const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
 // A reusable component for the image upload fields
-const ImageUploader = ({ label, imageUrl, onUploadSuccess, teacherUid, storagePath, onGalleryOpen }: {
+const ImageUploader = ({ label, onUploadSuccess, teacherUid, storagePath, onGalleryOpen }: {
   label: string;
-  imageUrl: string;
   onUploadSuccess: (url: string) => void;
   teacherUid: string;
   storagePath: string;
@@ -82,10 +81,6 @@ const ImageUploader = ({ label, imageUrl, onUploadSuccess, teacherUid, storagePa
             setFile(null);
         }
     };
-    
-    const handleRemoveImage = () => {
-        onUploadSuccess('');
-    }
 
     return (
         <div className="space-y-2 p-3 border rounded-md">
@@ -274,19 +269,16 @@ export default function EditQuestPage() {
   }
   
     const handleMainImageUploadSuccess = (url: string) => {
-        handleFieldChange('mainImageUrl', url);
         const imgHtml = `<p style="text-align: center;"><img src="${url}" alt="Story Image" style="width: 100%; height: auto; border-radius: 8px; display: inline-block;" /></p>`;
         handleFieldChange('storyContent', imgHtml + (chapter?.storyContent || ''));
     };
 
     const handleDecorativeImage1UploadSuccess = (url: string) => {
-        handleFieldChange('decorativeImageUrl1', url);
         const imgHtml = `<p style="text-align: center;"><img src="${url}" alt="Decorative Image" style="width: 100%; height: auto; border-radius: 8px; display: inline-block;" /></p>`;
         handleFieldChange('storyContent', (chapter?.storyContent || '') + imgHtml);
     };
 
     const handleDecorativeImage2UploadSuccess = (url: string) => {
-        handleFieldChange('decorativeImageUrl2', url);
         const imgHtml = `<p style="text-align: center;"><img src="${url}" alt="Decorative Image" style="width: 100%; height: auto; border-radius: 8px; display: inline-block;" /></p>`;
         handleFieldChange('storyAdditionalContent', (chapter?.storyAdditionalContent || '') + imgHtml);
     };
@@ -676,17 +668,17 @@ export default function EditQuestPage() {
                               <Switch id="chapter-active" checked={chapter.isActive ?? true} onCheckedChange={(checked) => handleFieldChange('isActive', checked)} />
                               <Label htmlFor="chapter-active">{chapter.isActive ?? true ? "Chapter is Active" : "Chapter is Deactivated"}</Label>
                              </div>
-                          <ImageUploader label="Main Story Image" imageUrl={chapter.mainImageUrl || ''} onUploadSuccess={handleMainImageUploadSuccess} teacherUid={teacher.uid} storagePath="quest-images" />
+                          <ImageUploader label="Main Story Image" onUploadSuccess={handleMainImageUploadSuccess} teacherUid={teacher.uid} storagePath="quest-images" imageUrl={chapter.mainImageUrl || ''} />
                           <div className="space-y-2">
                               <Label htmlFor="story-content">Story Content</Label>
                               <RichTextEditor value={chapter.storyContent || ''} onChange={value => handleFieldChange('storyContent', value)} />
                           </div>
-                          <ImageUploader label="Decorative Image 1" imageUrl={chapter.decorativeImageUrl1 || ''} onUploadSuccess={handleDecorativeImage1UploadSuccess} teacherUid={teacher.uid} storagePath="quest-images" />
+                          <ImageUploader label="Decorative Image 1" onUploadSuccess={handleDecorativeImage1UploadSuccess} teacherUid={teacher.uid} storagePath="quest-images" imageUrl={chapter.decorativeImageUrl1 || ''} />
                           <div className="space-y-2">
                               <Label htmlFor="story-additional-content">Additional Story Content</Label>
                                <RichTextEditor value={chapter.storyAdditionalContent || ''} onChange={value => handleFieldChange('storyAdditionalContent', value)} />
                           </div>
-                          <ImageUploader label="Decorative Image 2" imageUrl={chapter.decorativeImageUrl2 || ''} onUploadSuccess={handleDecorativeImage2UploadSuccess} teacherUid={teacher.uid} storagePath="quest-images" />
+                          <ImageUploader label="Decorative Image 2" onUploadSuccess={handleDecorativeImage2UploadSuccess} teacherUid={teacher.uid} storagePath="quest-images" imageUrl={chapter.decorativeImageUrl2 || ''} />
                           <div className="space-y-2">
                               <Label htmlFor="video-url">YouTube Video URL</Label>
                               <Input id="video-url" placeholder="https://youtube.com/watch?v=..." value={chapter.videoUrl || ''} onChange={e => handleFieldChange('videoUrl', e.target.value)} disabled={isSaving} />
