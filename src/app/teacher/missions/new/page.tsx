@@ -40,6 +40,7 @@ export default function NewMissionPage() {
     const [defaultGold, setDefaultGold] = useState<number | ''>('');
     const [embedUrl, setEmbedUrl] = useState('');
     const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
+    const [openInNewTab, setOpenInNewTab] = useState(false);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -106,6 +107,7 @@ export default function NewMissionPage() {
                 isAssigned,
                 defaultXpReward: Number(defaultXp) || 0,
                 defaultGoldReward: Number(defaultGold) || 0,
+                openInNewTab,
             });
 
             if (result.success && result.id) {
@@ -256,7 +258,11 @@ export default function NewMissionPage() {
                                         />
                                         <Button onClick={handleConfirmEmbed}>Confirm Embed</Button>
                                     </div>
-                                    <p className="text-xs text-muted-foreground">This will add the embedded item to the editor.</p>
+                                    <div className="flex items-center space-x-2 pt-2">
+                                        <Switch id="open-in-new-tab" checked={openInNewTab} onCheckedChange={setOpenInNewTab} />
+                                        <Label htmlFor="open-in-new-tab">Open Embedded Content in New Tab</Label>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">Recommended for interactive content like Google Forms, Docs, or external websites.</p>
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Mission Content</Label>

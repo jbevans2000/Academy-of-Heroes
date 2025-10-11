@@ -7,4 +7,5 @@ export interface Mission {
     createdAt: any; // Firestore ServerTimestamp
     defaultXpReward?: number;
     defaultGoldReward?: number;
+    openInNewTab?: boolean; // New field
 }

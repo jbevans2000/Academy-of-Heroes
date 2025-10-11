@@ -1,26 +1,27 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { onAuthStateChanged, type User } from 'firebase/auth';
+import { useState, useEffect, useMemo } from 'react';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
+import { ArrowLeft, LayoutDashboard, CheckCircle, Loader2, RotateCcw, ArrowRight, Maximize } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, auth, app } from '@/lib/firebase';
+import { onAuthStateChanged, type User } from 'firebase/auth';
 import type { Mission } from '@/lib/missions';
 import type { Student } from '@/lib/data';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { DashboardHeader } from '@/components/dashboard/header';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { saveMissionDraft, submitMission } from '@/ai/flows/manage-missions';
+import RichTextEditor from '@/components/teacher/rich-text-editor';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Loader2, Save, Send, Upload, File as FileIcon, Star, Coins } from 'lucide-react';
-import { saveMissionDraft, submitMission } from '@/ai/flows/manage-missions';
 import { v4 as uuidv4 } from 'uuid';
-import RichTextEditor from '@/components/teacher/rich-text-editor';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Alert, AlertTitle } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
+import { File as FileIcon, Star, Coins, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SubmissionData {
@@ -101,7 +102,7 @@ export default function StudentMissionDetailPage() {
                         submissionData = { status: 'draft' };
                     }
                     
-                    if (missionData.content.includes('<iframe') && submissionData.status !== 'completed') {
+                    if (missionData.openInNewTab && missionData.content.includes('<iframe') && submissionData.status !== 'completed') {
                         const iframeSrcMatch = missionData.content.match(/<iframe.*?src=["'](.*?)["']/);
                         if (iframeSrcMatch && iframeSrcMatch[1]) {
                             const url = iframeSrcMatch[1];
@@ -209,11 +210,15 @@ export default function StudentMissionDetailPage() {
         );
     }
     
-    const isEmbedded = mission.content.includes('<iframe');
     const isCompleted = submission.status === 'completed';
     const isSubmitted = submission.status === 'submitted' || submission.status === 'completed';
     
-    const showMissionContent = !isCompleted || !isEmbedded;
+    const showMissionContent = !isCompleted || !(mission.openInNewTab && mission.content.includes('<iframe'));
+    const submissionContentHtml = submission.submissionContent 
+        ? submission.submissionContent
+        : (mission.openInNewTab && mission.content.includes('<iframe'))
+        ? '<p class="text-muted-foreground">This was an embedded assignment. Please view the student\'s submitted file to see their work.</p>'
+        : '<p class="text-muted-foreground">No written response submitted.</p>';
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -238,7 +243,7 @@ export default function StudentMissionDetailPage() {
                         </Alert>
                     )}
 
-                    {isCompleted && isEmbedded && (
+                    {isCompleted && mission.openInNewTab && (
                         <Card>
                             <CardHeader>
                                 <CardTitle className="text-3xl font-headline">{mission.title}</CardTitle>
@@ -305,12 +310,12 @@ export default function StudentMissionDetailPage() {
                                 <CardTitle>Your Submission</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className={cn(isEmbedded && 'opacity-50 pointer-events-none')}>
+                                <div className={cn(mission.openInNewTab && mission.content.includes('<iframe') && 'opacity-50 pointer-events-none')}>
                                     <Label htmlFor="submission-text">Your Written Response</Label>
                                     <RichTextEditor
                                         value={submission.submissionContent || ''}
                                         onChange={(value) => setSubmission(prev => ({...prev, submissionContent: value}))}
-                                        disabled={isSubmitted || isSaving || isEmbedded}
+                                        disabled={isSubmitted || isSaving || (mission.openInNewTab && mission.content.includes('<iframe'))}
                                     />
                                 </div>
                                 <div>
