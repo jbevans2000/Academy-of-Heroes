@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import RichTextEditor from '@/components/teacher/rich-text-editor';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Save, Loader2, Trash2, Download, Star, Coins, Link } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Trash2, Download, Star, Coins, Link as LinkIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { saveMission, deleteMission } from '@/ai/flows/manage-missions';
 import {
@@ -44,8 +44,10 @@ export default function EditMissionPage() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [embedUrl, setEmbedUrl] = useState('');
-    const [lastEmbeddedIframe, setLastEmbeddedIframe] = useState('');
     const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
+
+    const editorRef = useRef<HTMLDivElement>(null);
+    const selectionRef = useRef<Range | null>(null);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -80,7 +82,27 @@ export default function EditMissionPage() {
         };
         fetchMission();
     }, [teacher, missionId, router, toast]);
+    
+    const saveSelection = () => {
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+            const range = sel.getRangeAt(0);
+            if (editorRef.current && editorRef.current.contains(range.commonAncestorContainer)) {
+                selectionRef.current = range.cloneRange();
+            }
+        }
+    };
 
+    const restoreSelection = () => {
+        if (selectionRef.current) {
+            const sel = window.getSelection();
+            sel?.removeAllRanges();
+            sel?.addRange(selectionRef.current);
+        } else if (editorRef.current) {
+            editorRef.current.focus();
+        }
+    };
+    
     const handleConfirmEmbed = () => {
         if (!embedUrl) {
             toast({ variant: 'destructive', title: 'No URL Provided' });
@@ -90,18 +112,14 @@ export default function EditMissionPage() {
         let finalEmbedHtml = '';
         let finalEmbedUrl = embedUrl;
 
-        // Check for YouTube
         const youtubeMatch = embedUrl.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+        
         if (youtubeMatch && youtubeMatch[1]) {
             finalEmbedUrl = `https://www.youtube.com/embed/${youtubeMatch[1]}`;
-            finalEmbedHtml = `<div style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%;"><iframe src="${finalEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe></div>`;
-        }
-        // Check for image extensions
-        else if (/\.(jpeg|jpg|gif|png|webp)$/i.test(embedUrl)) {
-            finalEmbedHtml = `<img src="${embedUrl}" style="width: 100%; height: auto; border-radius: 8px;" />`;
-        }
-        // Check for Google links
-        else if (embedUrl.includes('docs.google.com/forms')) {
+            finalEmbedHtml = `<div style="text-align: center; margin: 2rem 0;"><div style="aspect-ratio: 16 / 9; max-width: 700px; margin: auto;"><iframe style="width: 100%; height: 100%; border-radius: 8px;" src="${finalEmbedUrl}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div></div>`;
+        } else if (/\.(jpeg|jpg|gif|png|webp)$/i.test(embedUrl)) {
+            finalEmbedHtml = `<p style="text-align: center;"><img src="${embedUrl}" style="width: 100%; max-width: 600px; height: auto; border-radius: 8px; display: inline-block;" /></p>`;
+        } else if (embedUrl.includes('docs.google.com/forms')) {
             finalEmbedUrl = embedUrl.replace('/viewform', '/viewform?embedded=true');
         } else if (embedUrl.includes('docs.google.com/presentation')) {
             finalEmbedUrl = embedUrl.replace('/edit', '/embed').replace('/pub', '/embed');
@@ -110,23 +128,26 @@ export default function EditMissionPage() {
         } else if (embedUrl.includes('docs.google.com/document')) {
             finalEmbedUrl = embedUrl.replace('/edit', '/preview');
         }
-
-        // If it's not an image, default to an iframe for Google links or other websites
+        
         if (!finalEmbedHtml) {
             finalEmbedHtml = `<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;"><iframe src="${finalEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe></div>`;
         }
         
-        const newEmbedBlock = `<p><br></p><p><br></p><p><br></p><p><br></p>${finalEmbedHtml}<p><br></p><p><br></p><p><br></p><p><br></p>`;
+        const embedBlock = `<p><br></p><p><br></p><p><br></p><p><br></p>${finalEmbedHtml}<p><br></p><p><br></p><p><br></p><p><br></p>`;
+        
+        restoreSelection();
+        document.execCommand('insertHTML', false, embedBlock);
 
-        setMission(prev => {
-            if (!prev) return null;
-            const contentWithoutOldIframe = lastEmbeddedIframe ? (prev.content || '').replace(lastEmbeddedIframe, '') : (prev.content || '');
-            return { ...prev, content: contentWithoutOldIframe + newEmbedBlock };
-        });
+        if (editorRef.current) {
+            handleFieldChange('content', editorRef.current.innerHTML);
+        }
 
-        setLastEmbeddedIframe(newEmbedBlock);
         setEmbedUrl('');
-        toast({ title: 'Content Embedded!', description: 'The item has been added to the bottom of the mission content.' });
+        toast({ title: 'Content Embedded!', description: 'The item has been added to the editor.' });
+    };
+
+    const handleFieldChange = (field: keyof Mission, value: any) => {
+        setMission(prev => prev ? ({ ...prev, [field]: value }) : null);
     };
 
     const handleSave = async () => {
@@ -230,7 +251,6 @@ export default function EditMissionPage() {
 
     const handleClearContent = () => {
         setMission(prev => prev ? { ...prev, content: '' } : null);
-        setLastEmbeddedIframe('');
         setIsClearConfirmOpen(false);
         toast({ title: 'Content Cleared' });
     }
@@ -303,7 +323,7 @@ export default function EditMissionPage() {
                                     <Input 
                                         id="title" 
                                         value={mission.title || ''} 
-                                        onChange={(e) => setMission(prev => prev ? ({...prev, title: e.target.value}) : null)} 
+                                        onChange={(e) => handleFieldChange('title', e.target.value)} 
                                     />
                                 </div>
                                 <div className="space-y-4 p-4 border rounded-lg bg-secondary/50">
@@ -311,18 +331,18 @@ export default function EditMissionPage() {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label htmlFor="default-xp" className="flex items-center gap-1"><Star className="h-4 w-4 text-yellow-400" /> Default XP</Label>
-                                            <Input id="default-xp" type="number" value={mission.defaultXpReward ?? ''} onChange={e => setMission(prev => prev ? ({...prev, defaultXpReward: Number(e.target.value)}) : null)} placeholder="e.g., 100" />
+                                            <Input id="default-xp" type="number" value={mission.defaultXpReward ?? ''} onChange={e => handleFieldChange('defaultXpReward', Number(e.target.value))} placeholder="e.g., 100" />
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="default-gold" className="flex items-center gap-1"><Coins className="h-4 w-4 text-amber-500" /> Default Gold</Label>
-                                            <Input id="default-gold" type="number" value={mission.defaultGoldReward ?? ''} onChange={e => setMission(prev => prev ? ({...prev, defaultGoldReward: Number(e.target.value)}) : null)} placeholder="e.g., 50" />
+                                            <Input id="default-gold" type="number" value={mission.defaultGoldReward ?? ''} onChange={e => handleFieldChange('defaultGoldReward', Number(e.target.value))} placeholder="e.g., 50" />
                                         </div>
                                     </div>
                                     <p className="text-xs text-muted-foreground">These will be auto-calculated in the grading view based on the percentage score, but you can always override them.</p>
                                 </div>
                                 <div className="space-y-2 p-4 border rounded-lg bg-secondary/50">
-                                    <Label className="text-base font-semibold flex items-center gap-2"><Link className="h-4 w-4"/> Universal Embed</Label>
-                                    <div className="flex items-center gap-2">
+                                    <Label className="text-base font-semibold flex items-center gap-2"><LinkIcon className="h-4 w-4"/> Universal Embed</Label>
+                                    <div className="flex items-center gap-2" onMouseDown={(e) => e.preventDefault()} onBlur={saveSelection}>
                                         <Input
                                             placeholder="Paste any URL (Google, YouTube, Image, etc.)..."
                                             value={embedUrl}
@@ -330,20 +350,21 @@ export default function EditMissionPage() {
                                         />
                                         <Button onClick={handleConfirmEmbed}>Confirm Embed</Button>
                                     </div>
-                                    <p className="text-xs text-muted-foreground">This will add the embedded item to the bottom of the content editor below.</p>
+                                    <p className="text-xs text-muted-foreground">This will add the embedded item to the editor at your cursor's position.</p>
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Mission Content</Label>
                                     <RichTextEditor 
+                                        ref={editorRef}
                                         value={mission.content || ''} 
-                                        onChange={(value) => setMission(prev => prev ? ({...prev, content: value}) : null)}
+                                        onChange={(value) => handleFieldChange('content', value)}
                                     />
                                 </div>
                                 <div className="flex items-center space-x-2 pt-4">
                                     <Switch 
                                         id="is-assigned" 
                                         checked={mission.isAssigned} 
-                                        onCheckedChange={(checked) => setMission(prev => prev ? ({...prev, isAssigned: checked}) : null)}
+                                        onCheckedChange={(checked) => handleFieldChange('isAssigned', checked)}
                                     />
                                     <Label htmlFor="is-assigned">{mission.isAssigned ? "Assigned to Students" : "Saved as Draft"}</Label>
                                 </div>

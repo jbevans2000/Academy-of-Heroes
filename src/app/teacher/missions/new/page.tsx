@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import RichTextEditor from '@/components/teacher/rich-text-editor';
-import { ArrowLeft, Loader2, Save, Download, Star, Coins, Link, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Download, Star, Coins, Link as LinkIcon, Trash2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import jsPDF from 'jspdf';
 import {
@@ -39,8 +39,10 @@ export default function NewMissionPage() {
     const [defaultXp, setDefaultXp] = useState<number | ''>('');
     const [defaultGold, setDefaultGold] = useState<number | ''>('');
     const [embedUrl, setEmbedUrl] = useState('');
-    const [lastEmbeddedIframe, setLastEmbeddedIframe] = useState('');
     const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
+    
+    const editorRef = useRef<HTMLDivElement>(null);
+    const selectionRef = useRef<Range | null>(null);
 
 
     useEffect(() => {
@@ -54,6 +56,26 @@ export default function NewMissionPage() {
         return () => unsubscribe();
     }, [router]);
     
+    const saveSelection = () => {
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+            const range = sel.getRangeAt(0);
+            if (editorRef.current && editorRef.current.contains(range.commonAncestorContainer)) {
+                selectionRef.current = range.cloneRange();
+            }
+        }
+    };
+
+    const restoreSelection = () => {
+        if (selectionRef.current) {
+            const sel = window.getSelection();
+            sel?.removeAllRanges();
+            sel?.addRange(selectionRef.current);
+        } else if (editorRef.current) {
+            editorRef.current.focus();
+        }
+    };
+    
     const handleConfirmEmbed = () => {
         if (!embedUrl) {
             toast({ variant: 'destructive', title: 'No URL Provided' });
@@ -63,18 +85,14 @@ export default function NewMissionPage() {
         let finalEmbedHtml = '';
         let finalEmbedUrl = embedUrl;
 
-        // Check for YouTube
         const youtubeMatch = embedUrl.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+        
         if (youtubeMatch && youtubeMatch[1]) {
             finalEmbedUrl = `https://www.youtube.com/embed/${youtubeMatch[1]}`;
-            finalEmbedHtml = `<div style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%;"><iframe src="${finalEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe></div>`;
-        }
-        // Check for image extensions
-        else if (/\.(jpeg|jpg|gif|png|webp)$/i.test(embedUrl)) {
-            finalEmbedHtml = `<img src="${embedUrl}" style="width: 100%; height: auto; border-radius: 8px;" />`;
-        }
-        // Check for Google links
-        else if (embedUrl.includes('docs.google.com/forms')) {
+            finalEmbedHtml = `<div style="text-align: center; margin: 2rem 0;"><div style="aspect-ratio: 16 / 9; max-width: 700px; margin: auto;"><iframe style="width: 100%; height: 100%; border-radius: 8px;" src="${finalEmbedUrl}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div></div>`;
+        } else if (/\.(jpeg|jpg|gif|png|webp)$/i.test(embedUrl)) {
+            finalEmbedHtml = `<p style="text-align: center;"><img src="${embedUrl}" style="width: 100%; max-width: 600px; height: auto; border-radius: 8px; display: inline-block;" /></p>`;
+        } else if (embedUrl.includes('docs.google.com/forms')) {
             finalEmbedUrl = embedUrl.replace('/viewform', '/viewform?embedded=true');
         } else if (embedUrl.includes('docs.google.com/presentation')) {
             finalEmbedUrl = embedUrl.replace('/edit', '/embed').replace('/pub', '/embed');
@@ -83,21 +101,22 @@ export default function NewMissionPage() {
         } else if (embedUrl.includes('docs.google.com/document')) {
             finalEmbedUrl = embedUrl.replace('/edit', '/preview');
         }
-
-        // If it's not an image, default to an iframe for Google links or other websites
+        
         if (!finalEmbedHtml) {
             finalEmbedHtml = `<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;"><iframe src="${finalEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe></div>`;
         }
         
-        const newEmbedBlock = `<p><br></p><p><br></p><p><br></p><p><br></p>${finalEmbedHtml}<p><br></p><p><br></p><p><br></p><p><br></p>`;
+        const embedBlock = `<p><br></p><p><br></p><p><br></p><p><br></p>${finalEmbedHtml}<p><br></p><p><br></p><p><br></p><p><br></p>`;
+        
+        restoreSelection();
+        document.execCommand('insertHTML', false, embedBlock);
 
-        // Replace previous embed if it exists, then append the new one
-        const contentWithoutOldIframe = lastEmbeddedIframe ? content.replace(lastEmbeddedIframe, '') : content;
-        setContent(contentWithoutOldIframe + newEmbedBlock);
+        if (editorRef.current) {
+            setContent(editorRef.current.innerHTML);
+        }
 
-        setLastEmbeddedIframe(newEmbedBlock);
         setEmbedUrl('');
-        toast({ title: 'Content Embedded!', description: 'The item has been added to the bottom of the mission content.' });
+        toast({ title: 'Content Embedded!', description: 'The item has been added to the editor.' });
     };
 
     const handleSave = async () => {
@@ -136,7 +155,6 @@ export default function NewMissionPage() {
             return;
         }
         
-        // Check for an iframe
         const iframeMatch = content.match(/<iframe.*?src=["'](.*?)["']/);
         if (iframeMatch && iframeMatch[1]) {
             const iframeUrl = iframeMatch[1];
@@ -152,7 +170,6 @@ export default function NewMissionPage() {
             return;
         }
 
-        // Fallback to jsPDF for regular HTML content
         const pdf = new jsPDF('p', 'pt', 'a4');
         const margin = 40;
         const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -190,7 +207,6 @@ export default function NewMissionPage() {
 
     const handleClearContent = () => {
         setContent('');
-        setLastEmbeddedIframe('');
         setIsClearConfirmOpen(false);
         toast({ title: 'Content Cleared' });
     }
@@ -259,8 +275,8 @@ export default function NewMissionPage() {
                                     <p className="text-xs text-muted-foreground">These will be auto-calculated in the grading view based on the percentage score, but you can always override them.</p>
                                 </div>
                                  <div className="space-y-2 p-4 border rounded-lg bg-secondary/50">
-                                    <Label className="text-base font-semibold flex items-center gap-2"><Link className="h-4 w-4"/> Universal Embed</Label>
-                                    <div className="flex items-center gap-2">
+                                    <Label className="text-base font-semibold flex items-center gap-2"><LinkIcon className="h-4 w-4"/> Universal Embed</Label>
+                                    <div className="flex items-center gap-2" onMouseDown={(e) => e.preventDefault()} onBlur={saveSelection}>
                                         <Input
                                             placeholder="Paste any URL (Google, YouTube, Image, etc.)..."
                                             value={embedUrl}
@@ -268,11 +284,11 @@ export default function NewMissionPage() {
                                         />
                                         <Button onClick={handleConfirmEmbed}>Confirm Embed</Button>
                                     </div>
-                                    <p className="text-xs text-muted-foreground">This will add the embedded item to the bottom of the content editor below.</p>
+                                    <p className="text-xs text-muted-foreground">This will add the embedded item to the editor at your cursor's position.</p>
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Mission Content</Label>
-                                    <RichTextEditor value={content} onChange={setContent} />
+                                    <RichTextEditor ref={editorRef} value={content} onChange={setContent} />
                                 </div>
                                  <div className="flex items-center space-x-2 pt-4">
                                     <Switch id="is-assigned" checked={isAssigned} onCheckedChange={setIsAssigned} />
