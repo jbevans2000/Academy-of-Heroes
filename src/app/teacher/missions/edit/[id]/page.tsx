@@ -119,12 +119,12 @@ export default function EditMissionPage() {
             finalEmbedHtml = `<div style="text-align: center; margin: 2rem 0;"><div style="aspect-ratio: 16 / 9; max-width: 700px; margin: auto;"><iframe style="width: 100%; height: 100%; border-radius: 8px;" src="${finalEmbedUrl}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div></div>`;
         } else if (/\.(jpeg|jpg|gif|png|webp)$/i.test(embedUrl)) {
             finalEmbedHtml = `<p style="text-align: center;"><img src="${embedUrl}" style="width: 100%; max-width: 600px; height: auto; border-radius: 8px; display: inline-block;" /></p>`;
+        } else if (embedUrl.includes('drive.google.com/file')) {
+            finalEmbedUrl = embedUrl.replace('/view', '/preview');
         } else if (embedUrl.includes('docs.google.com/forms')) {
             finalEmbedUrl = embedUrl.replace('/viewform', '/viewform?embedded=true');
         } else if (embedUrl.includes('docs.google.com/presentation')) {
             finalEmbedUrl = embedUrl.replace('/edit', '/embed').replace('/pub', '/embed');
-        } else if (embedUrl.includes('drive.google.com/file')) {
-            finalEmbedUrl = embedUrl.replace('/view', '/preview');
         } else if (embedUrl.includes('docs.google.com/document')) {
             finalEmbedUrl = embedUrl.replace('/edit', '/preview');
         }
@@ -342,13 +342,13 @@ export default function EditMissionPage() {
                                 </div>
                                 <div className="space-y-2 p-4 border rounded-lg bg-secondary/50">
                                     <Label className="text-base font-semibold flex items-center gap-2"><LinkIcon className="h-4 w-4"/> Universal Embed</Label>
-                                    <div className="flex items-center gap-2" onMouseDown={(e) => e.preventDefault()} onBlur={saveSelection}>
+                                    <div className="flex items-center gap-2" onBlur={saveSelection}>
                                         <Input
                                             placeholder="Paste any URL (Google, YouTube, Image, etc.)..."
                                             value={embedUrl}
                                             onChange={(e) => setEmbedUrl(e.target.value)}
                                         />
-                                        <Button onClick={handleConfirmEmbed}>Confirm Embed</Button>
+                                        <Button onClick={handleConfirmEmbed} onMouseDown={(e) => e.preventDefault()}>Confirm Embed</Button>
                                     </div>
                                     <p className="text-xs text-muted-foreground">This will add the embedded item to the editor at your cursor's position.</p>
                                 </div>
