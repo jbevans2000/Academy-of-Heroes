@@ -3,7 +3,7 @@
 
 import React, { useRef, useEffect, useState, useImperativeHandle } from 'react';
 import { Button } from '@/components/ui/button';
-import { Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Youtube, Code, List, Quote, Minus, Undo, Redo, Pilcrow, Strikethrough } from 'lucide-react';
+import { Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Youtube, List, Minus, Pilcrow } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -40,8 +40,6 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
   const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [imageWidth, setImageWidth] = useState('');
-  const [isIframeDialogOpen, setIsIframeDialogOpen] = useState(false);
-  const [iframeCode, setIframeCode] = useState('');
 
   useEffect(() => {
     const editor = localEditorRef.current;
@@ -152,8 +150,6 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
   const handleUnderline = () => execCommand('underline');
   const handleBulletedList = () => execCommand('insertUnorderedList');
   const handleHorizontalRule = () => execCommand('insertHorizontalRule');
-  const handleUndo = () => execCommand('undo');
-  const handleRedo = () => execCommand('redo');
   const handleJustifyLeft = () => execCommand('justifyLeft');
   const handleJustifyCenter = () => execCommand('justifyCenter');
   const handleJustifyRight = () => execCommand('justifyRight');
@@ -370,12 +366,6 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
           </Button>
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleOpenYouTubeDialog} title="YouTube Video" disabled={disabled}>
             <Youtube className="h-4 w-4" />
-          </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleUndo} title="Undo" disabled={disabled}>
-            <Undo className="h-4 w-4" />
-          </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleRedo} title="Redo" disabled={disabled}>
-            <Redo className="h-4 w-4" />
           </Button>
         </div>
         <div
