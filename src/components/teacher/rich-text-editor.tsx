@@ -3,7 +3,7 @@
 
 import React, { useRef, useEffect, useState, useImperativeHandle } from 'react';
 import { Button } from '@/components/ui/button';
-import { Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Youtube, List, Minus } from 'lucide-react';
+import { Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Youtube, List, Minus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -12,11 +12,10 @@ import {
   DialogTitle,
   DialogFooter,
   DialogClose,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '../ui/textarea';
-
 
 interface RichTextEditorProps {
   value: string;
@@ -31,13 +30,17 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
   
   useImperativeHandle(ref, () => localEditorRef.current as HTMLDivElement);
 
-
   // Dialog States
   const [isYouTubeDialogOpen, setIsYouTubeDialogOpen] = useState(false);
   const [youTubeUrl, setYouTubeUrl] = useState('');
   const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [imageWidth, setImageWidth] = useState('');
+  
+  // State for editing an existing image
+  const [isEditImageDialogOpen, setIsEditImageDialogOpen] = useState(false);
+  const [editingImage, setEditingImage] = useState<{el: HTMLImageElement | null, src: string, width: string}>({ el: null, src: '', width: '' });
+
 
   useEffect(() => {
     const editor = localEditorRef.current;
@@ -45,6 +48,31 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
       editor.innerHTML = value;
     }
   }, [value]);
+  
+    // Add click listener for editing images
+    useEffect(() => {
+        const editor = localEditorRef.current;
+        if (!editor || disabled) return;
+
+        const handleEditorClick = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            if (target.tagName.toLowerCase() === 'img') {
+                e.preventDefault();
+                const imageElement = target as HTMLImageElement;
+                setEditingImage({
+                    el: imageElement,
+                    src: imageElement.src,
+                    width: imageElement.style.width || '100%',
+                });
+                setIsEditImageDialogOpen(true);
+            }
+        };
+
+        editor.addEventListener('click', handleEditorClick);
+        return () => {
+            editor.removeEventListener('click', handleEditorClick);
+        };
+    }, [disabled, value]); // Rerun if the editor becomes enabled/disabled or content changes
 
   const handleInput = () => {
     if (localEditorRef.current) {
@@ -82,7 +110,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
       handleInput(); // Update state after command
     }
   };
-
+  
   const applyStyle = (className: string) => {
     restoreSelection();
     const selection = window.getSelection();
@@ -137,8 +165,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
     localEditorRef.current?.focus();
   };
 
-
-  const handleToolbarMouseDown = (e: React.MouseEvent<HTMLButtonElement | HTMLInputElement>) => {
+  const handleToolbarMouseDown = (e: React.MouseEvent<HTMLButtonElement | HTMLInputElement | HTMLSelectElement>) => {
     e.preventDefault(); // Prevent editor from losing focus
     saveSelection();
   };
@@ -152,7 +179,6 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
   const handleJustifyCenter = () => execCommand('justifyCenter');
   const handleJustifyRight = () => execCommand('justifyRight');
   
-
   const handleOpenImageDialog = () => {
     saveSelection();
     setIsImageDialogOpen(true);
@@ -168,6 +194,25 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
     setImageUrl('');
     setImageWidth('');
   };
+  
+    const handleImageUpdate = () => {
+        if (!editingImage.el) return;
+        editingImage.el.style.width = /^\d+$/.test(editingImage.width) ? `${editingImage.width}px` : editingImage.width;
+        handleInput();
+        setIsEditImageDialogOpen(false);
+    };
+
+    const handleImageRemove = () => {
+        if (!editingImage.el) return;
+        const parentDiv = editingImage.el.parentElement;
+        if (parentDiv && parentDiv.parentElement === localEditorRef.current) {
+            localEditorRef.current?.removeChild(parentDiv);
+        } else {
+             editingImage.el.remove();
+        }
+        handleInput();
+        setIsEditImageDialogOpen(false);
+    };
   
   const getYouTubeEmbedUrl = (url: string) => {
     if (!url) return null;
@@ -215,6 +260,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
 
   return (
     <>
+      {/* Dialog for YouTube */}
       <Dialog open={isYouTubeDialogOpen} onOpenChange={setIsYouTubeDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -237,6 +283,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* Dialog for Inserting Image */}
       <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -270,10 +317,44 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
           </DialogFooter>
         </DialogContent>
       </Dialog>
+       {/* Dialog for Editing Image */}
+        <Dialog open={isEditImageDialogOpen} onOpenChange={setIsEditImageDialogOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Edit Image</DialogTitle>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="edit-image-url">Image URL</Label>
+                        <Input id="edit-image-url" value={editingImage.src} readOnly disabled />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="edit-image-width">Image Width</Label>
+                        <Input
+                            id="edit-image-width"
+                            value={editingImage.width}
+                            onChange={(e) => setEditingImage(prev => ({...prev, width: e.target.value}))}
+                            placeholder="e.g., 400px or 100%"
+                        />
+                    </div>
+                </div>
+                <DialogFooter className="justify-between">
+                    <Button variant="destructive" onClick={handleImageRemove}>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Remove Image
+                    </Button>
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={() => setIsEditImageDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleImageUpdate}>Update Image</Button>
+                    </div>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
 
       <div className={cn("border rounded-md", disabled && 'bg-muted opacity-50', className)}>
         <div className="flex items-center gap-1 p-2 border-b bg-muted/50 flex-wrap">
-          <select onChange={handleFontSizeChange} className="p-1 rounded-md border bg-background text-sm" disabled={disabled}>
+          <select onChange={handleFontSizeChange} onMouseDown={handleToolbarMouseDown} className="p-1 rounded-md border bg-background text-sm" disabled={disabled}>
             <option value="1">Smallest</option>
             <option value="2">Small</option>
             <option value="3" selected>Normal</option>
@@ -282,13 +363,12 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
             <option value="6">Huge</option>
             <option value="7">Giant</option>
           </select>
-          <select onChange={handleFontFamilyChange} className="p-1 rounded-md border bg-background text-sm" disabled={disabled}>
+          <select onChange={handleFontFamilyChange} onMouseDown={handleToolbarMouseDown} className="p-1 rounded-md border bg-background text-sm" disabled={disabled}>
             <option value="font-body">Lora (Default)</option>
             <option value="font-sans">Arial</option>
             <option value="font-serif">Cinzel</option>
             <option value="font-uncial">Uncial Antiqua</option>
             <option value="font-medieval">MedievalSharp</option>
-            <option value="font-pirata">Pirata One</option>
           </select>
           <div className="flex items-center h-8 w-8 justify-center rounded-md border bg-background">
               <Input type="color" onChange={handleFontColorChange} onMouseDown={handleToolbarMouseDown} className="w-full h-full p-0 border-none cursor-pointer" title="Font Color" disabled={disabled}/>
