@@ -3,6 +3,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Uncial+Antiqua&display=swap');
+
 @layer base {
   :root {
     --background: 258 60% 80%;

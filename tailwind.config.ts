@@ -15,7 +15,7 @@ export default {
         headline: ['var(--font-cinzel)', 'serif'],
         serif: ['var(--font-cinzel)', 'Lora', 'serif'],
         medieval: ['var(--font-medieval-sharp)', 'cursive'],
-        uncial: ['var(--font-uncial-antiqua)', 'cursive'],
+        uncial: ['"Uncial Antiqua"', 'cursive'],
       },
       colors: {
         background: 'hsl(var(--background))',
