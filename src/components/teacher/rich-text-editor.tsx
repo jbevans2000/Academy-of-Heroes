@@ -33,8 +33,6 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
 
 
   // Dialog States
-  const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
-  const [linkUrl, setLinkUrl] = useState('');
   const [isYouTubeDialogOpen, setIsYouTubeDialogOpen] = useState(false);
   const [youTubeUrl, setYouTubeUrl] = useState('');
   const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
@@ -154,23 +152,6 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
   const handleJustifyCenter = () => execCommand('justifyCenter');
   const handleJustifyRight = () => execCommand('justifyRight');
   
-  const handleOpenLinkDialog = () => {
-    saveSelection();
-    setIsLinkDialogOpen(true);
-  }
-
-  const handleLinkConfirm = () => {
-    setIsLinkDialogOpen(false);
-    restoreSelection();
-    if (linkUrl && selectionRef.current && selectionRef.current.toString()) {
-        const selectedText = selectionRef.current.toString();
-        const linkHtml = `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer">${selectedText}</a>`;
-        document.execCommand('insertHTML', false, linkHtml);
-        handleInput();
-    }
-    setLinkUrl('');
-    selectionRef.current = null;
-  };
 
   const handleOpenImageDialog = () => {
     saveSelection();
@@ -234,28 +215,6 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
 
   return (
     <>
-      <Dialog open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Insert Hyperlink</DialogTitle>
-          </DialogHeader>
-          <div className="py-4 space-y-2">
-            <Label htmlFor="link-url">URL</Label>
-            <Input 
-              id="link-url"
-              value={linkUrl}
-              onChange={(e) => setLinkUrl(e.target.value)}
-              placeholder="https://example.com"
-            />
-          </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
-            <Button onClick={handleLinkConfirm}>Insert Link</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       <Dialog open={isYouTubeDialogOpen} onOpenChange={setIsYouTubeDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -357,9 +316,6 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
           </Button>
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleJustifyRight} title="Align Right" disabled={disabled}>
               <AlignRight className="h-4 w-4" />
-          </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleOpenLinkDialog} title="Link" disabled={disabled}>
-            <LinkIcon className="h-4 w-4" />
           </Button>
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleOpenImageDialog} title="Image" disabled={disabled}>
             <ImageIcon className="h-4 w-4" />
