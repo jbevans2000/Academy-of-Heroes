@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState, useImperativeHandle } from 'react';
 import { Button } from '@/components/ui/button';
-import { Bold, Italic, Underline, Strikethrough, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Youtube, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Pilcrow } from 'lucide-react';
+import { Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Youtube, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Pilcrow } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -127,7 +127,6 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
   const handleBold = () => execCommand('bold');
   const handleItalic = () => execCommand('italic');
   const handleUnderline = () => execCommand('underline');
-  const handleStrikethrough = () => execCommand('strikeThrough');
   const handleBulletedList = () => execCommand('insertUnorderedList');
   const handleNumberedList = () => execCommand('insertOrderedList');
   const handleBlockquote = () => execCommand('formatBlock', '<blockquote>');
@@ -363,7 +362,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
 
       <div className={cn("border rounded-md", disabled && 'bg-muted opacity-50', className)}>
         <div className="flex items-center gap-1 p-2 border-b bg-muted/50 flex-wrap">
-          <select onChange={handleFontSizeChange} className="p-1 rounded-md border bg-background text-sm" disabled={disabled}>
+          <select onChange={handleFontSizeChange} onMouseDown={handleToolbarMouseDown} className="p-1 rounded-md border bg-background text-sm" disabled={disabled}>
             <option value="1">Smallest</option>
             <option value="2">Small</option>
             <option value="3" selected>Normal</option>
@@ -372,7 +371,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
             <option value="6">Huge</option>
             <option value="7">Giant</option>
           </select>
-          <select onChange={handleFontFamilyChange} className="p-1 rounded-md border bg-background text-sm" disabled={disabled}>
+          <select onChange={handleFontFamilyChange} onMouseDown={handleToolbarMouseDown} className="p-1 rounded-md border bg-background text-sm" disabled={disabled}>
             <option value="font-body">Lora (Default)</option>
             <option value="font-sans">Arial</option>
             <option value="font-serif">Georgia</option>
@@ -393,9 +392,6 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
           </Button>
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleUnderline} title="Underline" disabled={disabled}>
             <Underline className="h-4 w-4" />
-          </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleStrikethrough} title="Strikethrough" disabled={disabled}>
-            <Strikethrough className="h-4 w-4" />
           </Button>
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={() => handleFormatBlock('p')} title="Paragraph" disabled={disabled}>
             <Pilcrow className="h-4 w-4" />
