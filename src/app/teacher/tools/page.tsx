@@ -87,7 +87,7 @@ const geneticsTool = {
     icon: <Dna className="h-10 w-10 text-primary" />,
     path: '/teacher/tools/genetics-lab',
     disabled: false,
-    bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FDragon%20Lab.jpg?alt=media&token=e9e2f9d8-555e-49d7-83d8-3011a6813130'
+    bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Oct%2012%2C%202025%2C%2004_56_41%20AM.png?alt=media&token=61af9a61-e503-4bd8-a22b-ada8d5d085d2'
 };
 
 
