@@ -365,17 +365,11 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleUnderline} title="Underline" disabled={disabled}>
             <Underline className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleStrikethrough} title="Strikethrough" disabled={disabled}>
-            <Strikethrough className="h-4 w-4" />
-          </Button>
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleBulletedList} title="Bulleted List" disabled={disabled}>
             <List className="h-4 w-4" />
           </Button>
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleNumberedList} title="Numbered List" disabled={disabled}>
             <ListOrdered className="h-4 w-4" />
-          </Button>
-           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleBlockquote} title="Blockquote" disabled={disabled}>
-            <Quote className="h-4 w-4" />
           </Button>
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleHorizontalRule} title="Horizontal Rule" disabled={disabled}>
             <Minus className="h-4 w-4" />
