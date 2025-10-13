@@ -3,7 +3,7 @@
 
 import React, { useRef, useEffect, useState, useImperativeHandle } from 'react';
 import { Button } from '@/components/ui/button';
-import { Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Youtube, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Pilcrow, Strikethrough } from 'lucide-react';
+import { Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Youtube, Code, List, Quote, Minus, Undo, Redo, Pilcrow, Strikethrough } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -126,10 +126,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
   const handleBold = () => execCommand('bold');
   const handleItalic = () => execCommand('italic');
   const handleUnderline = () => execCommand('underline');
-  const handleStrikethrough = () => execCommand('strikethrough');
   const handleBulletedList = () => execCommand('insertUnorderedList');
-  const handleNumberedList = () => execCommand('insertOrderedList');
-  const handleBlockquote = () => execCommand('formatBlock', '<blockquote>');
   const handleHorizontalRule = () => execCommand('insertHorizontalRule');
   const handleUndo = () => execCommand('undo');
   const handleRedo = () => execCommand('redo');
@@ -367,9 +364,6 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
           </Button>
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleBulletedList} title="Bulleted List" disabled={disabled}>
             <List className="h-4 w-4" />
-          </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleNumberedList} title="Numbered List" disabled={disabled}>
-            <ListOrdered className="h-4 w-4" />
           </Button>
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleHorizontalRule} title="Horizontal Rule" disabled={disabled}>
             <Minus className="h-4 w-4" />
