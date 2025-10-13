@@ -284,22 +284,11 @@ function GeneticsLabContent() {
     const [traitSelections, setTraitSelections] = useState<Record<string, TraitSelection> | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
-    const [teacherName, setTeacherName] = useState('Teacher');
     const [isDownloading, setIsDownloading] = useState(false);
     const contentRef = useRef<HTMLDivElement>(null);
     const imageStorageKey = 'hatchlingGeneratedImage';
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                const teacherRef = doc(db, 'teachers', user.uid);
-                const docSnap = await getDoc(teacherRef);
-                if (docSnap.exists()) {
-                    setTeacherName(docSnap.data().name || 'Teacher');
-                }
-            }
-        });
-
         try {
             const defaultSilvariaOvals = [
                 `Chromosome #1\n\nEye Color - ee\nSpikes - ss\nHorns - Hh`,
@@ -319,8 +308,8 @@ function GeneticsLabContent() {
                 `Chromosome #2\n\nTail Length\nArmored Belly\nClawed Wings`,
                 `Chromosome #3\n\nBody Color\nFire Breathing\nNeck Length`,
                 `Chromosome #4\n\nWing Style\nNumber of Toes`,
-                `Intentionally Left Blank`,
-                `Intentionally Left Blank`
+                `Intentionally\nLeft Blank`,
+                `Intentionally\nLeft Blank`
             ];
             const aureliosLoadedTexts = defaultAureliosOvals.map((defaultValue, i) => 
                 localStorage.getItem(`aureliosGeneticsLabOval${i + 1}`) ?? defaultValue
@@ -334,37 +323,14 @@ function GeneticsLabContent() {
         } catch (error) {
             console.error("Could not access localStorage:", error);
         }
-        
-        return () => unsubscribe();
     }, []);
 
     const handleDownloadPdf = () => {
-        const contentHtml = contentRef.current;
-        if (!contentHtml) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not find the content to download.' });
-            return;
-        }
         setIsDownloading(true);
-
-        const pdf = new jsPDF('p', 'pt', 'a4');
-        const margin = 20;
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const contentWidth = pdfWidth - margin * 2;
-        
-        pdf.html(contentHtml, {
-            callback: function (doc) {
-                doc.save(`Dragon_Genetics_Lab.pdf`);
-                setIsDownloading(false);
-            },
-            x: margin,
-            y: margin,
-            width: contentWidth,
-            windowWidth: contentHtml.scrollWidth,
-            html2canvas: {
-                scale: 0.7, // Adjust scale if content is cut off
-                useCORS: true,
-            },
-        });
+        // We can just use the browser's print functionality which is more reliable
+        window.print();
+        // A small delay to allow the print dialog to appear before resetting state
+        setTimeout(() => setIsDownloading(false), 1000);
     };
 
     const handleTextChange = (index: number, value: string) => {
@@ -727,6 +693,5 @@ export default function GeneticsLabPage() {
     )
 }
 
-  
 
     
