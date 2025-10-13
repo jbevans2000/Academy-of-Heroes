@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useRef, useEffect, useState, useImperativeHandle } from 'react';
@@ -28,9 +27,7 @@ interface RichTextEditorProps {
 const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ value, onChange, className, disabled = false }, ref) => {
   const localEditorRef = useRef<HTMLDivElement>(null);
   const selectionRef = useRef<Range | null>(null);
-  const [selection, setSelection] = useState<Selection | null>(null);
   
-  // This hook ensures the parent's ref and the local ref both point to the same DOM element.
   useImperativeHandle(ref, () => localEditorRef.current as HTMLDivElement);
 
 
@@ -65,7 +62,6 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
       const range = sel.getRangeAt(0);
       if (localEditorRef.current && localEditorRef.current.contains(range.commonAncestorContainer)) {
         selectionRef.current = range.cloneRange();
-        setSelection(sel);
       }
     }
   };
@@ -89,6 +85,39 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
       handleInput(); // Update state after command
     }
   };
+
+  const applyStyle = (style: { command: string; value?: string }, className?: string) => {
+    restoreSelection();
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    if (!range) return;
+
+    // If there's no selected text, insert a styled span to start typing with the style.
+    if (range.collapsed) {
+        const span = document.createElement('span');
+        if (className) {
+            span.className = className;
+        }
+        span.innerHTML = '&#8203;'; // Zero-width space to hold the spot
+        range.insertNode(span);
+        // Move the cursor inside the new span
+        const newRange = document.createRange();
+        newRange.setStart(span.firstChild!, 1);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+    } else {
+        // For selected text, use the old execCommand for simplicity with basic styles.
+        // A more robust solution might use range manipulation for all cases.
+        document.execCommand(style.command, false, style.value);
+    }
+    
+    handleInput(); // Trigger state update
+    localEditorRef.current?.focus(); // Refocus editor
+  };
+
 
   const handleToolbarMouseDown = (e: React.MouseEvent<HTMLButtonElement | HTMLSelectElement>) => {
     e.preventDefault(); // Prevent editor from losing focus
@@ -180,7 +209,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
         alert('Invalid embed code. Please paste the full <iframe> tag.');
         return;
     }
-    execCommand('insertHTML', `<div style="width: 100%; aspect-ratio: 16 / 9;">${iframeCode}</div>`);
+    execCommand('insertHTML', false, `<div style="width: 100%; aspect-ratio: 16 / 9;">${iframeCode}</div>`);
     setIsIframeDialogOpen(false);
     setIframeCode('');
   }
@@ -192,9 +221,37 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
   const handleFormatBlock = (tag: string) => {
     execCommand('formatBlock', `<${tag}>`);
   };
-
+  
   const handleFontFamilyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    execCommand('fontName', e.target.value);
+    const className = e.target.value;
+    if (!className) return;
+
+    restoreSelection();
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+    
+    const range = selection.getRangeAt(0);
+
+    const span = document.createElement('span');
+    span.className = className;
+
+    if (range.collapsed) {
+        // If no text is selected, insert the span and place cursor inside
+        span.innerHTML = '&#8203;'; // Zero-width space
+        range.insertNode(span);
+        const newRange = document.createRange();
+        newRange.setStart(span.firstChild!, 1);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+    } else {
+        // If text is selected, wrap it
+        span.appendChild(range.extractContents());
+        range.insertNode(span);
+    }
+
+    handleInput();
+    localEditorRef.current?.focus();
   };
 
   const handleFontSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -306,27 +363,27 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
 
       <div className={cn("border rounded-md", disabled && 'bg-muted opacity-50', className)}>
         <div className="flex items-center gap-1 p-2 border-b bg-muted/50 flex-wrap">
-          <select defaultValue="3" onChange={handleFontSizeChange} className="p-1 rounded-md border bg-background text-sm" disabled={disabled}>
+          <select onChange={handleFontSizeChange} className="p-1 rounded-md border bg-background text-sm" disabled={disabled}>
             <option value="1">Smallest</option>
             <option value="2">Small</option>
-            <option value="3">Normal</option>
+            <option value="3" selected>Normal</option>
             <option value="4">Large</option>
             <option value="5">Largest</option>
             <option value="6">Huge</option>
             <option value="7">Giant</option>
           </select>
-          <select defaultValue="Lora, serif" onChange={handleFontFamilyChange} className="p-1 rounded-md border bg-background text-sm" disabled={disabled}>
-            <option value="Lora, serif">Lora (Default)</option>
-            <option value="Arial, sans-serif">Arial</option>
-            <option value="Georgia, serif">Georgia</option>
-            <option value="Times New Roman, Times, serif">Times New Roman</option>
-            <option value="Verdana, sans-serif">Verdana</option>
-            <option value="Cinzel, serif">Cinzel</option>
-            <option value="MedievalSharp, cursive">MedievalSharp</option>
-            <option value="Uncial Antiqua, cursive">Uncial Antiqua</option>
+          <select onChange={handleFontFamilyChange} className="p-1 rounded-md border bg-background text-sm" disabled={disabled}>
+            <option value="font-body">Lora (Default)</option>
+            <option value="font-sans">Arial</option>
+            <option value="font-serif">Georgia</option>
+            <option value="font-serif">Times New Roman</option>
+            <option value="font-sans">Verdana</option>
+            <option value="font-headline">Cinzel</option>
+            <option value="font-medieval">MedievalSharp</option>
+            <option value="font-uncial">Uncial Antiqua</option>
           </select>
           <div className="flex items-center h-8 w-8 justify-center rounded-md border bg-background">
-              <Input type="color" onChange={handleFontColorChange} className="w-full h-full p-0 border-none cursor-pointer" title="Font Color" disabled={disabled}/>
+              <Input type="color" onChange={handleFontColorChange} onMouseDown={handleToolbarMouseDown} className="w-full h-full p-0 border-none cursor-pointer" title="Font Color" disabled={disabled}/>
           </div>
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleBold} title="Bold" disabled={disabled}>
             <Bold className="h-4 w-4" />

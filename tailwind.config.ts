@@ -1,4 +1,3 @@
-
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -13,9 +12,10 @@ export default {
       fontFamily: {
         body: ['var(--font-lora)', 'serif'],
         headline: ['var(--font-cinzel)', 'serif'],
-        serif: ['var(--font-cinzel)', 'Lora', 'serif'],
+        sans: ['Arial', 'Verdana', 'sans-serif'],
+        serif: ['var(--font-lora)', 'Georgia', 'Times New Roman', 'serif'],
         medieval: ['var(--font-medieval-sharp)', 'cursive'],
-        uncial: ['"Uncial Antiqua"', 'cursive'],
+        uncial: ['var(--font-uncial-antiqua)', 'cursive'],
       },
       colors: {
         background: 'hsl(var(--background))',
