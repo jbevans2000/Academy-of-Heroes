@@ -316,7 +316,7 @@ function GeneticsLabContent() {
             setOvalTexts(loadedTexts);
 
             const defaultAureliosOvals = [
-                `Chromosome #1\nEye Color - Ee\nSpikes - SS\nHorns - hh`,
+                `Chromosome #1\n\nEye Color - Ee\nSpikes - SS\nHorns - hh`,
                 `Chromosome #2\n\nTail Length\nArmored Belly\nClawed Wings`,
                 `Chromosome #3\n\nBody Color\nFire Breathing\nNeck Length`,
                 `Chromosome #4\n\nWing Style\nNumber of Toes`,
@@ -340,7 +340,10 @@ function GeneticsLabContent() {
     }, []);
 
     const handleDownloadPdf = async () => {
-        if (!contentRef.current) return;
+        if (!contentRef.current) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not find the content to download.' });
+            return;
+        }
         setIsDownloading(true);
 
         try {
@@ -390,7 +393,6 @@ function GeneticsLabContent() {
             setIsDownloading(false);
         }
     };
-
 
     const handleTextChange = (index: number, value: string) => {
         const newTexts = [...ovalTexts];
@@ -752,4 +754,4 @@ export default function GeneticsLabPage() {
     )
 }
 
-    
+  
