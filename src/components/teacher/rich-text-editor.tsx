@@ -137,7 +137,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
     const width = imageWidth || '100%';
     const widthStyle = `width: ${/^\d+$/.test(width) ? `${width}px` : width}; max-width: 100%;`;
     const imgTag = `<div><img src="${imageUrl}" alt="user image" style="${widthStyle} height: auto; border-radius: 8px; display: block; margin-left: auto; margin-right: auto;" /></div>`;
-    execCommand('insertHTML', imgTag);
+    execCommand('insertHTML', false, imgTag);
     setIsImageDialogOpen(false);
     setImageUrl('');
     setImageWidth('');
@@ -164,7 +164,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
     }
 
     const videoTag = `<div style="text-align: center; margin: 2rem 0;"><div style="aspect-ratio: 16 / 9; max-width: 700px; margin: auto;"><iframe style="width: 100%; height: 100%; border-radius: 8px;" src="${embedUrl}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div></div>`;
-    execCommand('insertHTML', videoTag);
+    execCommand('insertHTML', false, videoTag);
     setIsYouTubeDialogOpen(false);
     setYouTubeUrl('');
   };
@@ -322,6 +322,8 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
             <option value="Times New Roman, Times, serif">Times New Roman</option>
             <option value="Verdana, sans-serif">Verdana</option>
             <option value="Cinzel, serif">Cinzel</option>
+            <option value="MedievalSharp, cursive">MedievalSharp</option>
+            <option value="Uncial Antiqua, cursive">Uncial Antiqua</option>
           </select>
           <div className="flex items-center h-8 w-8 justify-center rounded-md border bg-background">
               <Input type="color" onChange={handleFontColorChange} className="w-full h-full p-0 border-none cursor-pointer" title="Font Color" disabled={disabled}/>
