@@ -95,6 +95,30 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
     const range = selection.getRangeAt(0);
     if (!range) return;
 
+    // Find the closest ancestor with a font class and remove it
+    let currentNode: Node | null = range.startContainer;
+    while (currentNode && currentNode !== localEditorRef.current) {
+        if (currentNode.nodeType === Node.ELEMENT_NODE) {
+            const el = currentNode as HTMLElement;
+            const classList = Array.from(el.classList);
+            const fontClass = classList.find(c => c.startsWith('font-'));
+            if (fontClass) {
+                el.classList.remove(fontClass);
+                // If no other classes, unwrap the span
+                if (el.classList.length === 0 && el.tagName.toLowerCase() === 'span') {
+                    const parent = el.parentNode;
+                    while(el.firstChild) {
+                        parent?.insertBefore(el.firstChild, el);
+                    }
+                    parent?.removeChild(el);
+                }
+                break; // Stop at the first font class found
+            }
+        }
+        currentNode = currentNode.parentNode;
+    }
+
+
     if (range.collapsed) {
         const span = document.createElement('span');
         span.className = className;
@@ -193,22 +217,6 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
     setIsYouTubeDialogOpen(false);
     setYouTubeUrl('');
   };
-  
-  const handleOpenIframeDialog = () => {
-    saveSelection();
-    setIsIframeDialogOpen(true);
-  }
-  
-  const handleIframeConfirm = () => {
-    if (!iframeCode.trim()) return;
-    if (!iframeCode.trim().startsWith('<iframe') || !iframeCode.trim().endsWith('>')) {
-        alert('Invalid embed code. Please paste the full <iframe> tag.');
-        return;
-    }
-    execCommand('insertHTML', false, `<div style="width: 100%; aspect-ratio: 16 / 9;">${iframeCode}</div>`);
-    setIsIframeDialogOpen(false);
-    setIframeCode('');
-  }
 
   const handleFontColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     execCommand('foreColor', e.target.value);
@@ -307,29 +315,6 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <Dialog open={isIframeDialogOpen} onOpenChange={setIsIframeDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Embed Content</DialogTitle>
-          </DialogHeader>
-          <div className="py-4 space-y-2">
-            <Label htmlFor="iframe-code">Embed Code</Label>
-            <Textarea 
-              id="iframe-code"
-              value={iframeCode}
-              onChange={(e) => setIframeCode(e.target.value)}
-              placeholder="Paste <iframe> code here..."
-              rows={6}
-            />
-          </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
-            <Button onClick={handleIframeConfirm}>Embed Content</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <div className={cn("border rounded-md", disabled && 'bg-muted opacity-50', className)}>
         <div className="flex items-center gap-1 p-2 border-b bg-muted/50 flex-wrap">
@@ -385,9 +370,6 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
           </Button>
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleOpenYouTubeDialog} title="YouTube Video" disabled={disabled}>
             <Youtube className="h-4 w-4" />
-          </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleOpenIframeDialog} title="Embed Iframe" disabled={disabled}>
-            <Code className="h-4 w-4" />
           </Button>
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleUndo} title="Undo" disabled={disabled}>
             <Undo className="h-4 w-4" />
