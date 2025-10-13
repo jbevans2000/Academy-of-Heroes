@@ -3,7 +3,7 @@
 
 import React, { useRef, useEffect, useState, useImperativeHandle } from 'react';
 import { Button } from '@/components/ui/button';
-import { Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Youtube, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Pilcrow } from 'lucide-react';
+import { Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Youtube, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Pilcrow, Strikethrough } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -126,6 +126,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
   const handleBold = () => execCommand('bold');
   const handleItalic = () => execCommand('italic');
   const handleUnderline = () => execCommand('underline');
+  const handleStrikethrough = () => execCommand('strikethrough');
   const handleBulletedList = () => execCommand('insertUnorderedList');
   const handleNumberedList = () => execCommand('insertOrderedList');
   const handleBlockquote = () => execCommand('formatBlock', '<blockquote>');
@@ -364,8 +365,8 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleUnderline} title="Underline" disabled={disabled}>
             <Underline className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={() => handleFormatBlock('p')} title="Paragraph" disabled={disabled}>
-            <Pilcrow className="h-4 w-4" />
+          <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleStrikethrough} title="Strikethrough" disabled={disabled}>
+            <Strikethrough className="h-4 w-4" />
           </Button>
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleBulletedList} title="Bulleted List" disabled={disabled}>
             <List className="h-4 w-4" />
