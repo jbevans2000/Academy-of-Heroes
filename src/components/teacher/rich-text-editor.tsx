@@ -3,7 +3,7 @@
 
 import React, { useRef, useEffect, useState, useImperativeHandle } from 'react';
 import { Button } from '@/components/ui/button';
-import { Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Youtube, List, Minus, Pilcrow } from 'lucide-react';
+import { Bold, Italic, Underline, Link as LinkIcon, Image as ImageIcon, AlignLeft, AlignCenter, AlignRight, Youtube, List, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -138,7 +138,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
   };
 
 
-  const handleToolbarMouseDown = (e: React.MouseEvent<HTMLButtonElement | HTMLSelectElement>) => {
+  const handleToolbarMouseDown = (e: React.MouseEvent<HTMLButtonElement | HTMLInputElement>) => {
     e.preventDefault(); // Prevent editor from losing focus
     saveSelection();
   };
@@ -163,7 +163,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
     const width = imageWidth || '100%';
     const widthStyle = `width: ${/^\d+$/.test(width) ? `${width}px` : width}; max-width: 100%;`;
     const imgTag = `<div><img src="${imageUrl}" alt="user image" style="${widthStyle} height: auto; border-radius: 8px; display: block; margin-left: auto; margin-right: auto;" /></div>`;
-    execCommand('insertHTML', false, imgTag);
+    execCommand('insertHTML', imgTag);
     setIsImageDialogOpen(false);
     setImageUrl('');
     setImageWidth('');
@@ -190,7 +190,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
     }
 
     const videoTag = `<div style="text-align: center; margin: 2rem 0;"><div style="aspect-ratio: 16 / 9; max-width: 700px; margin: auto;"><iframe style="width: 100%; height: 100%; border-radius: 8px;" src="${embedUrl}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div></div>`;
-    execCommand('insertHTML', false, videoTag);
+    execCommand('insertHTML', videoTag);
     setIsYouTubeDialogOpen(false);
     setYouTubeUrl('');
   };
