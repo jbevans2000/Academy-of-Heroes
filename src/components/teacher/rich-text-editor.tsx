@@ -165,7 +165,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
     localEditorRef.current?.focus();
   };
 
-  const handleToolbarMouseDown = (e: React.MouseEvent<HTMLButtonElement | HTMLInputElement | HTMLSelectElement>) => {
+  const handleToolbarMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault(); // Prevent editor from losing focus
     saveSelection();
   };
@@ -197,7 +197,12 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
   
     const handleImageUpdate = () => {
         if (!editingImage.el) return;
-        editingImage.el.style.width = /^\d+$/.test(editingImage.width) ? `${editingImage.width}px` : editingImage.width;
+        let finalWidth = editingImage.width.trim();
+        // Ensure it's a percentage
+        if (/^\d+$/.test(finalWidth)) {
+            finalWidth += '%';
+        }
+        editingImage.el.style.width = finalWidth;
         handleInput();
         setIsEditImageDialogOpen(false);
     };
@@ -334,7 +339,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
                             id="edit-image-width"
                             value={editingImage.width}
                             onChange={(e) => setEditingImage(prev => ({...prev, width: e.target.value}))}
-                            placeholder="e.g., 400px or 100%"
+                            placeholder="e.g., 80%"
                         />
                     </div>
                 </div>
@@ -354,7 +359,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
 
       <div className={cn("border rounded-md", disabled && 'bg-muted opacity-50', className)}>
         <div className="flex items-center gap-1 p-2 border-b bg-muted/50 flex-wrap">
-          <select onChange={handleFontSizeChange} onMouseDown={handleToolbarMouseDown} className="p-1 rounded-md border bg-background text-sm" disabled={disabled}>
+          <select onChange={handleFontSizeChange} className="p-1 rounded-md border bg-background text-sm" disabled={disabled}>
             <option value="1">Smallest</option>
             <option value="2">Small</option>
             <option value="3" selected>Normal</option>
@@ -363,7 +368,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
             <option value="6">Huge</option>
             <option value="7">Giant</option>
           </select>
-          <select onChange={handleFontFamilyChange} onMouseDown={handleToolbarMouseDown} className="p-1 rounded-md border bg-background text-sm" disabled={disabled}>
+          <select onChange={handleFontFamilyChange} className="p-1 rounded-md border bg-background text-sm" disabled={disabled}>
             <option value="font-body">Lora (Default)</option>
             <option value="font-sans">Arial</option>
             <option value="font-serif">Cinzel</option>
@@ -371,7 +376,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
             <option value="font-medieval">MedievalSharp</option>
           </select>
           <div className="flex items-center h-8 w-8 justify-center rounded-md border bg-background">
-              <Input type="color" onChange={handleFontColorChange} onMouseDown={handleToolbarMouseDown} className="w-full h-full p-0 border-none cursor-pointer" title="Font Color" disabled={disabled}/>
+              <Input type="color" onChange={handleFontColorChange} onMouseDown={(e) => e.preventDefault()} className="w-full h-full p-0 border-none cursor-pointer" title="Font Color" disabled={disabled}/>
           </div>
           <Button size="sm" variant="outline" onMouseDown={handleToolbarMouseDown} onClick={handleBold} title="Bold" disabled={disabled}>
             <Bold className="h-4 w-4" />
