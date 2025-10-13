@@ -18,7 +18,6 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import jsPDF from 'jspdf';
-import { toPng } from 'html-to-image';
 import { Textarea } from '@/components/ui/textarea';
 
 const geneticsKey = [
@@ -339,59 +338,33 @@ function GeneticsLabContent() {
         return () => unsubscribe();
     }, []);
 
-    const handleDownloadPdf = async () => {
-        if (!contentRef.current) {
+    const handleDownloadPdf = () => {
+        const contentHtml = contentRef.current;
+        if (!contentHtml) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not find the content to download.' });
             return;
         }
         setIsDownloading(true);
 
-        try {
-            // Using a PNG is more reliable across browsers than SVG for html-to-image
-            const dataUrl = await toPng(contentRef.current, { 
-                quality: 0.95, 
-                backgroundColor: 'white' // Set a background for the image
-            });
-
-            const pdf = new jsPDF({
-                orientation: 'portrait',
-                unit: 'px',
-                format: 'a4'
-            });
-
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const img = new window.Image();
-            img.src = dataUrl;
-
-            img.onload = () => {
-                const imgWidth = img.width;
-                const imgHeight = img.height;
-                const ratio = imgWidth / imgHeight;
-
-                let finalImgWidth = pdfWidth;
-                let finalImgHeight = pdfWidth / ratio;
-                
-                // If the height is still too large, scale based on height instead
-                if (finalImgHeight > pdfHeight) {
-                    finalImgHeight = pdfHeight;
-                    finalImgWidth = pdfHeight * ratio;
-                }
-                
-                pdf.addImage(dataUrl, 'PNG', 0, 0, finalImgWidth, finalImgHeight);
-                pdf.save(`Dragon_Genetics_Lab.pdf`);
+        const pdf = new jsPDF('p', 'pt', 'a4');
+        const margin = 20;
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const contentWidth = pdfWidth - margin * 2;
+        
+        pdf.html(contentHtml, {
+            callback: function (doc) {
+                doc.save(`Dragon_Genetics_Lab.pdf`);
                 setIsDownloading(false);
-            };
-
-        } catch (error) {
-            console.error('oops, something went wrong!', error);
-            toast({
-                variant: 'destructive',
-                title: 'PDF Generation Failed',
-                description: 'Could not generate the PDF. Please try again.',
-            });
-            setIsDownloading(false);
-        }
+            },
+            x: margin,
+            y: margin,
+            width: contentWidth,
+            windowWidth: contentHtml.scrollWidth,
+            html2canvas: {
+                scale: 0.7, // Adjust scale if content is cut off
+                useCORS: true,
+            },
+        });
     };
 
     const handleTextChange = (index: number, value: string) => {
@@ -755,3 +728,5 @@ export default function GeneticsLabPage() {
 }
 
   
+
+    
