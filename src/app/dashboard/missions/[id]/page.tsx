@@ -1,7 +1,8 @@
 
+
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
@@ -68,6 +69,11 @@ export default function StudentMissionDetailPage() {
     const [embedUrl, setEmbedUrl] = useState<string | null>(null);
 
     const [fileToUpload, setFileToUpload] = useState<File | null>(null);
+
+    // New state for link confirmation
+    const [linkToOpen, setLinkToOpen] = useState<string | null>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
+
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -143,6 +149,27 @@ export default function StudentMissionDetailPage() {
         };
         fetchMissionAndSubmission();
     }, [student, missionId, router, toast]);
+    
+    // Effect to handle hyperlink clicks
+    useEffect(() => {
+        const contentDiv = contentRef.current;
+        if (!contentDiv) return;
+
+        const handleLinkClick = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            const link = target.closest('a');
+            if (link && link.href) {
+                e.preventDefault();
+                setLinkToOpen(link.href);
+            }
+        };
+
+        contentDiv.addEventListener('click', handleLinkClick);
+
+        return () => {
+            contentDiv.removeEventListener('click', handleLinkClick);
+        };
+    }, [mission?.content]); // Rerun when content changes
 
     const handleSaveDraft = async () => {
         if (!student?.teacherUid || !missionId) return;
@@ -228,14 +255,35 @@ export default function StudentMissionDetailPage() {
     const isSubmitted = submission.status === 'submitted' || submission.status === 'completed';
     
     const showMissionContent = !isCompleted || !(mission.openInNewTab && mission.content.includes('<iframe'));
-    const submissionContentHtml = submission.submissionContent 
-        ? submission.submissionContent
-        : (mission.openInNewTab && mission.content.includes('<iframe'))
-        ? '<p class="text-muted-foreground">This was an embedded assignment. Please view the student\'s submitted file to see their work.</p>'
-        : '<p class="text-muted-foreground">No written response submitted.</p>';
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
+            <AlertDialog open={!!linkToOpen} onOpenChange={() => setLinkToOpen(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Open External Link</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            You are about to navigate to an external website. How would you like to open it?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogAction onClick={() => {
+                            if (linkToOpen) window.open(linkToOpen, '_blank', 'noopener,noreferrer');
+                            setLinkToOpen(null);
+                        }}>
+                            Open in New Tab
+                        </AlertDialogAction>
+                        <AlertDialogAction onClick={() => {
+                            if (linkToOpen) window.location.href = linkToOpen;
+                            setLinkToOpen(null);
+                        }}>
+                            Open Here
+                        </AlertDialogAction>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
             <DashboardHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="max-w-4xl mx-auto space-y-6">
@@ -273,6 +321,7 @@ export default function StudentMissionDetailPage() {
                             <CardContent className="relative">
                                 {(showEmbedInstructionsAlert && !isCompleted) && <div className="absolute inset-0 bg-white/70 dark:bg-black/70 z-10" />}
                                 <div
+                                    ref={contentRef}
                                     className="prose dark:prose-invert max-w-none"
                                     dangerouslySetInnerHTML={{ __html: mission.content }}
                                 />
@@ -365,5 +414,3 @@ export default function StudentMissionDetailPage() {
         </div>
     );
 }
-
-    
