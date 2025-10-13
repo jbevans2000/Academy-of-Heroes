@@ -306,7 +306,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
 
       <div className={cn("border rounded-md", disabled && 'bg-muted opacity-50', className)}>
         <div className="flex items-center gap-1 p-2 border-b bg-muted/50 flex-wrap">
-          <select defaultValue="3" onChange={handleFontSizeChange} onMouseDown={handleToolbarMouseDown} className="p-1 rounded-md border bg-background text-sm" disabled={disabled}>
+          <select defaultValue="3" onChange={handleFontSizeChange} className="p-1 rounded-md border bg-background text-sm" disabled={disabled}>
             <option value="1">Smallest</option>
             <option value="2">Small</option>
             <option value="3">Normal</option>
