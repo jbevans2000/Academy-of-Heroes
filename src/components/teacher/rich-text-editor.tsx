@@ -315,7 +315,7 @@ const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(({ 
             <option value="6">Huge</option>
             <option value="7">Giant</option>
           </select>
-          <select defaultValue="Lora, serif" onChange={handleFontFamilyChange} onMouseDown={handleToolbarMouseDown} className="p-1 rounded-md border bg-background text-sm" disabled={disabled}>
+          <select defaultValue="Lora, serif" onChange={handleFontFamilyChange} className="p-1 rounded-md border bg-background text-sm" disabled={disabled}>
             <option value="Lora, serif">Lora (Default)</option>
             <option value="Arial, sans-serif">Arial</option>
             <option value="Georgia, serif">Georgia</option>
