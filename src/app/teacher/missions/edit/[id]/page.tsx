@@ -289,6 +289,7 @@ export default function EditMissionPage() {
                             <CardHeader>
                                 <CardTitle>Edit Mission</CardTitle>
                                 <CardDescription>Update the details of your special mission.</CardDescription>
+                                <p className="text-red-500 font-bold">It is recommended you create missions in Google Docs or Similar Editor, then Copy/Paste into the Mission Content Field to Ensure Full Functionality</p>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">

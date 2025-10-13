@@ -228,6 +228,7 @@ export default function NewMissionPage() {
                             <CardHeader>
                                 <CardTitle>Mission Editor</CardTitle>
                                 <CardDescription>Create a new special mission for your students.</CardDescription>
+                                <p className="text-red-500 font-bold">It is recommended you create missions in Google Docs or Similar Editor, then Copy/Paste into the Mission Content Field to Ensure Full Functionality</p>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
