@@ -47,7 +47,6 @@ export default function EditMissionPage() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
-    const [embedUrl, setEmbedUrl] = useState('');
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -87,35 +86,6 @@ export default function EditMissionPage() {
         setMission(prev => prev ? ({ ...prev, [field]: value }) : null);
     };
     
-    const handleEmbed = () => {
-        if (!embedUrl.trim()) {
-            toast({ variant: 'destructive', title: 'No URL Provided', description: 'Please paste a URL to embed.' });
-            return;
-        }
-
-        let finalEmbedUrl = embedUrl;
-
-        if (embedUrl.includes('drive.google.com')) {
-            finalEmbedUrl = embedUrl.replace('/view', '/preview');
-        } else if (embedUrl.includes('youtube.com/watch?v=')) {
-            finalEmbedUrl = embedUrl.replace('watch?v=', 'embed/');
-        } else if (embedUrl.includes('youtu.be/')) {
-            finalEmbedUrl = embedUrl.replace('youtu.be/', 'www.youtube.com/embed/');
-        }
-        
-        const embedCode = `<div style="margin: 2rem 0; position: relative; width: 100%; padding-bottom: 56.25%; height: 0;"><iframe src="${finalEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allowfullscreen="true"></iframe></div>`;
-        
-        if (editorRef.current) {
-            editorRef.current.execCommand('mceInsertContent', false, embedCode);
-        } else {
-            toast({ variant: 'destructive', title: 'Editor Not Ready', description: 'Please wait a moment for the editor to load.' });
-        }
-
-        setEmbedUrl('');
-        toast({ title: "Content Embedded", description: "The content has been added to the editor." });
-    };
-
-
     const handleSave = async () => {
         if (!teacher || !mission?.id) return;
         if (!mission.title || !mission.content) {
@@ -292,18 +262,6 @@ export default function EditMissionPage() {
                                         value={mission.title || ''} 
                                         onChange={(e) => handleFieldChange('title', e.target.value)} 
                                     />
-                                </div>
-                                <div className="space-y-4 p-4 border rounded-lg bg-secondary/50">
-                                    <Label className="text-base font-semibold">Universal Embed</Label>
-                                    <p className="text-sm text-muted-foreground">Paste a URL from Google Drive, YouTube, or other websites to embed content directly.</p>
-                                    <div className="flex gap-2">
-                                        <Input
-                                            placeholder="https://..."
-                                            value={embedUrl}
-                                            onChange={(e) => setEmbedUrl(e.target.value)}
-                                        />
-                                        <Button onClick={handleEmbed}>Embed Content</Button>
-                                    </div>
                                 </div>
                                 <div className="space-y-4 p-4 border rounded-lg bg-secondary/50">
                                     <Label className="text-base font-semibold">Default Completion Rewards (Optional)</Label>
