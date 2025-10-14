@@ -31,7 +31,7 @@ const RichTextEditor = React.forwardRef<any, RichTextEditorProps>(({ value, onCh
       disabled={disabled}
       init={{
         height: 1200,
-        promotion: true,
+        promotion: false,
         branding: false,
         statusbar: false,
         menubar: true,
