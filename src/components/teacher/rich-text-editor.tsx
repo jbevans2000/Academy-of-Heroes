@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, {
@@ -46,7 +45,7 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
       () => ({
         promotion: false,
         branding: false,
-        statusbar: false,
+        statusbar: false,       // removes word count & element path
         elementpath: false,
         onboarding: false,
         menubar: true,
@@ -60,13 +59,14 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
           'emoticons',
           'link',
           'lists',
-          'media',
+          'media',              // video/iframe embeds
           'searchreplace',
           'table',
           'visualblocks',
           'checklist',
           'paste',
           'image',
+          // 'autoresize',       // optional
         ],
 
         toolbar:
@@ -77,8 +77,14 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
         paste_as_text: false,
         paste_data_images: true,
 
+        // Load theme content CSS first, then Google Fonts
         content_css: prefersDark ? ['dark', fontsUrl] : ['default', fontsUrl],
 
+        // Style rules:
+        // - Keep images from stretching (natural size; scale down if too big)
+        // - Rounded corners for images/videos/embeds
+        // - Clip corners in wrappers
+        // - Add vertical spacing equal to ~two text lines above and below media
         content_style: `
           :root {
             --aoh-media-radius: 8px;
@@ -86,7 +92,7 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
           }
           body { font-family: Lora, serif; }
 
-          /* Standalone images: preserve intrinsic size, scale down if needed, rounded, spaced */
+          /* Standalone images */
           img {
             width: auto !important;
             height: auto !important;
@@ -96,7 +102,7 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
             margin: var(--aoh-media-block-space) 0;
           }
 
-          /* TinyMCE <figure class="image"> wrapper around images */
+          /* TinyMCE image figure wrapper */
           figure.image {
             display: inline-block;
             border-radius: var(--aoh-media-radius);
@@ -105,7 +111,7 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
           }
           figure.image img {
             border-radius: 0; /* clipping handled by figure */
-            margin: 0;        /* no inner spacing—outer figure handles it */
+            margin: 0;        /* outer figure handles spacing */
           }
 
           /* Videos */
@@ -118,12 +124,12 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
             margin: var(--aoh-media-block-space) 0;
           }
 
-          /* Common media/iframe wrappers (YouTube/Vimeo etc.) */
+          /* Media/iframe wrappers (YouTube/Vimeo etc.) */
           figure.media,
           .mce-preview-object,
           .mce-object-iframe {
             border-radius: var(--aoh-media-radius);
-            overflow: hidden; /* ensures iframe corners are clipped */
+            overflow: hidden; /* clip iframe corners */
             margin: var(--aoh-media-block-space) 0;
           }
           figure.media iframe,
@@ -131,7 +137,7 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
           .mce-object-iframe iframe,
           iframe {
             border: 0;
-            border-radius: 0;  /* clipping handled by parent wrapper */
+            border-radius: 0;  /* clipped by parent wrapper */
             display: block;
             max-width: 100%;
           }
@@ -153,8 +159,8 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
 
     return (
       <Editor
-        key={prefersDark ? 'dark' : 'light'}
-        tinymceScriptSrc='/tinymce/tinymce.min.js'
+        key={prefersDark ? 'dark' : 'light'} // force remount to apply theme/css on change
+        apiKey="3pit55fk53u6a49yntmptfverzhdmw7fspxeqlv3e1wkhlui"
         onInit={(_, editor) => (editorRef.current = editor)}
         value={value}
         onEditorChange={(content) => onChange(content)}
