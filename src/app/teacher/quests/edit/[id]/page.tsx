@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -43,6 +43,8 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
+import type { Editor as TinyMCEEditor } from 'tinymce';
+
 
 const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
@@ -120,6 +122,10 @@ export default function EditQuestPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [teacher, setTeacher] = useState<User | null>(null);
+
+  // Editor Refs
+  const storyContentEditorRef = useRef<TinyMCEEditor | null>(null);
+  const storyAdditionalContentEditorRef = useRef<TinyMCEEditor | null>(null);
 
   // State for AI generator
   const [isGeneratingStory, setIsGeneratingStory] = useState(false);
@@ -241,6 +247,19 @@ export default function EditQuestPage() {
     };
     fetchChaptersForHub();
   }, [selectedHubId, teacher]);
+
+    useEffect(() => {
+        if (storyContentEditorRef.current && chapter?.storyContent !== storyContentEditorRef.current.getContent()) {
+            storyContentEditorRef.current.setContent(chapter?.storyContent || '');
+        }
+    }, [chapter?.storyContent]);
+
+    useEffect(() => {
+        if (storyAdditionalContentEditorRef.current && chapter?.storyAdditionalContent !== storyAdditionalContentEditorRef.current.getContent()) {
+            storyAdditionalContentEditorRef.current.setContent(chapter?.storyAdditionalContent || '');
+        }
+    }, [chapter?.storyAdditionalContent]);
+
 
   const handleMapDrag = (e: React.MouseEvent<HTMLDivElement, MouseEvent>, type: 'hub' | 'chapter') => {
     const map = e.currentTarget;
@@ -668,17 +687,17 @@ export default function EditQuestPage() {
                               <Switch id="chapter-active" checked={chapter.isActive ?? true} onCheckedChange={(checked) => handleFieldChange('isActive', checked)} />
                               <Label htmlFor="chapter-active">{chapter.isActive ?? true ? "Chapter is Active" : "Chapter is Deactivated"}</Label>
                              </div>
-                          <ImageUploader label="Main Story Image" onUploadSuccess={handleMainImageUploadSuccess} teacherUid={teacher.uid} storagePath="quest-images" imageUrl={chapter.mainImageUrl || ''} />
+                          <ImageUploader label="Main Story Image" onUploadSuccess={handleMainImageUploadSuccess} teacherUid={teacher.uid} storagePath="quest-images" />
                           <div className="space-y-2">
                               <Label htmlFor="story-content">Story Content</Label>
-                              <RichTextEditor value={chapter.storyContent || ''} onChange={value => handleFieldChange('storyContent', value)} />
+                              <RichTextEditor ref={storyContentEditorRef} value={chapter.storyContent || ''} onChange={value => handleFieldChange('storyContent', value)} />
                           </div>
-                          <ImageUploader label="Decorative Image 1" onUploadSuccess={handleDecorativeImage1UploadSuccess} teacherUid={teacher.uid} storagePath="quest-images" imageUrl={chapter.decorativeImageUrl1 || ''} />
+                          <ImageUploader label="Decorative Image 1" onUploadSuccess={handleDecorativeImage1UploadSuccess} teacherUid={teacher.uid} storagePath="quest-images" />
                           <div className="space-y-2">
                               <Label htmlFor="story-additional-content">Additional Story Content</Label>
-                               <RichTextEditor value={chapter.storyAdditionalContent || ''} onChange={value => handleFieldChange('storyAdditionalContent', value)} />
+                               <RichTextEditor ref={storyAdditionalContentEditorRef} value={chapter.storyAdditionalContent || ''} onChange={value => handleFieldChange('storyAdditionalContent', value)} />
                           </div>
-                          <ImageUploader label="Decorative Image 2" onUploadSuccess={handleDecorativeImage2UploadSuccess} teacherUid={teacher.uid} storagePath="quest-images" imageUrl={chapter.decorativeImageUrl2 || ''} />
+                          <ImageUploader label="Decorative Image 2" onUploadSuccess={handleDecorativeImage2UploadSuccess} teacherUid={teacher.uid} storagePath="quest-images" />
                           <div className="space-y-2">
                               <Label htmlFor="video-url">YouTube Video URL</Label>
                               <Input id="video-url" placeholder="https://youtube.com/watch?v=..." value={chapter.videoUrl || ''} onChange={e => handleFieldChange('videoUrl', e.target.value)} disabled={isSaving} />
@@ -945,3 +964,4 @@ export default function EditQuestPage() {
     </>
   );
 }
+

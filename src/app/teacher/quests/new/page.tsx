@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, Suspense, useMemo } from 'react';
+import { useState, useEffect, Suspense, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -41,13 +41,14 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Textarea } from '@/components/ui/textarea';
+import type { Editor as TinyMCEEditor } from 'tinymce';
+
 
 const gradeLevels = ['Kindergarten', '1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
 // A reusable component for the image upload fields
-const ImageUploader = ({ label, imageUrl, onUploadSuccess, teacherUid, storagePath, onGalleryOpen }: {
+const ImageUploader = ({ label, onUploadSuccess, teacherUid, storagePath, onGalleryOpen }: {
   label: string;
-  imageUrl: string;
   onUploadSuccess: (url: string) => void;
   teacherUid: string;
   storagePath: string;
@@ -106,11 +107,6 @@ const ImageUploader = ({ label, imageUrl, onUploadSuccess, teacherUid, storagePa
                 )}
             </div>
             {file && <p className="text-sm text-muted-foreground">Selected: {file.name}</p>}
-            {imageUrl && (
-                <div className="mt-2">
-                    <Image src={imageUrl} alt={`${label} preview`} width={200} height={100} className="rounded-md object-contain border bg-secondary" />
-                </div>
-            )}
         </div>
     );
 };
@@ -126,6 +122,10 @@ function NewQuestForm() {
   const [teacher, setTeacher] = useState<User | null>(null);
   const [teacherWorldMapUrl, setTeacherWorldMapUrl] = useState(defaultWorldMap);
   const [isHubOnlyMode, setIsHubOnlyMode] = useState(false);
+
+  // Editor Refs
+  const storyContentEditorRef = useRef<TinyMCEEditor | null>(null);
+  const storyAdditionalContentEditorRef = useRef<TinyMCEEditor | null>(null);
 
   // State for AI generator
   const [isGeneratingStory, setIsGeneratingStory] = useState(false);
@@ -247,6 +247,18 @@ function NewQuestForm() {
     };
     fetchChaptersForHub();
   }, [selectedHubId, teacher]);
+
+  useEffect(() => {
+    if (storyContentEditorRef.current && storyContent !== storyContentEditorRef.current.getContent()) {
+      storyContentEditorRef.current.setContent(storyContent);
+    }
+  }, [storyContent]);
+
+  useEffect(() => {
+    if (storyAdditionalContentEditorRef.current && storyAdditionalContent !== storyAdditionalContentEditorRef.current.getContent()) {
+      storyAdditionalContentEditorRef.current.setContent(storyAdditionalContent);
+    }
+  }, [storyAdditionalContent]);
   
   const handleMapDrag = (e: React.MouseEvent<HTMLDivElement, MouseEvent>, type: 'hub' | 'chapter') => {
     const map = e.currentTarget;
@@ -559,7 +571,25 @@ function NewQuestForm() {
     }
   }
   
-    const handleHubCompanyCheckboxChange = (companyId: string, checked: boolean) => {
+  const handleMainImageUploadSuccess = (url: string) => {
+    setMainImageUrl(url);
+    const imgHtml = `<p style="text-align: center;"><img src="${url}" alt="Story Image" style="width: 100%; height: auto; border-radius: 8px; display: inline-block;" /></p>`;
+    setStoryContent(imgHtml + storyContent);
+  };
+  
+    const handleDecorativeImage1UploadSuccess = (url: string) => {
+        setDecorativeImageUrl1(url);
+        const imgHtml = `<p style="text-align: center;"><img src="${url}" alt="Decorative Image" style="width: 100%; height: auto; border-radius: 8px; display: inline-block;" /></p>`;
+        setStoryContent(storyContent + imgHtml);
+    };
+
+    const handleDecorativeImage2UploadSuccess = (url: string) => {
+        setDecorativeImageUrl2(url);
+        const imgHtml = `<p style="text-align: center;"><img src="${url}" alt="Decorative Image" style="width: 100%; height: auto; border-radius: 8px; display: inline-block;" /></p>`;
+        setStoryAdditionalContent(storyAdditionalContent + imgHtml);
+    };
+
+  const handleHubCompanyCheckboxChange = (companyId: string, checked: boolean) => {
         setHubAssignedCompanyIds(prev => 
             checked ? [...prev, companyId] : prev.filter(id => id !== companyId)
         );
@@ -811,17 +841,17 @@ function NewQuestForm() {
                             <Switch id="chapter-active" checked={isChapterActive} onCheckedChange={setIsChapterActive} />
                             <Label htmlFor="chapter-active">{isChapterActive ? "Chapter is Active" : "Chapter is Deactivated"}</Label>
                            </div>
-                          <ImageUploader label="Main Story Image" imageUrl={mainImageUrl} onUploadSuccess={setMainImageUrl} teacherUid={teacher.uid} storagePath="quest-images" />
+                          <ImageUploader label="Main Story Image" onUploadSuccess={handleMainImageUploadSuccess} teacherUid={teacher.uid} storagePath="quest-images" />
                           <div className="space-y-2">
                               <Label htmlFor="story-content">Story Content</Label>
-                              <RichTextEditor value={storyContent} onChange={setStoryContent} />
+                              <RichTextEditor ref={storyContentEditorRef} value={storyContent} onChange={setStoryContent} />
                           </div>
-                          <ImageUploader label="Decorative Image 1" imageUrl={decorativeImageUrl1} onUploadSuccess={setDecorativeImageUrl1} teacherUid={teacher.uid} storagePath="quest-images" />
+                          <ImageUploader label="Decorative Image 1" onUploadSuccess={handleDecorativeImage1UploadSuccess} teacherUid={teacher.uid} storagePath="quest-images" />
                           <div className="space-y-2">
                               <Label htmlFor="story-additional-content">Additional Story Content</Label>
-                               <RichTextEditor value={storyAdditionalContent} onChange={setStoryAdditionalContent} />
+                               <RichTextEditor ref={storyAdditionalContentEditorRef} value={storyAdditionalContent} onChange={setStoryAdditionalContent} />
                           </div>
-                          <ImageUploader label="Decorative Image 2" imageUrl={decorativeImageUrl2} onUploadSuccess={setDecorativeImageUrl2} teacherUid={teacher.uid} storagePath="quest-images" />
+                          <ImageUploader label="Decorative Image 2" onUploadSuccess={handleDecorativeImage2UploadSuccess} teacherUid={teacher.uid} storagePath="quest-images" />
                           <div className="space-y-2">
                               <Label htmlFor="video-url">YouTube Video URL</Label>
                               <Input id="video-url" placeholder="https://youtube.com/watch?v=..." value={videoUrl} onChange={e => setVideoUrl(e.target.value)} disabled={isSaving} />
