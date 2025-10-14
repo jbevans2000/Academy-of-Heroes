@@ -18,24 +18,15 @@ interface RichTextEditorProps {
   disabled?: boolean;
 }
 
-const MIN_H = 600;
-const DEFAULT_H = 5000;   // default wrapper + content height
+const MIN_H = 400; // A more reasonable minimum height
 const MAX_H = 5000;
 
 const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
   ({ value, onChange, disabled = false, className, ...props }, ref) => {
     const editorRef = useRef<TinyMCEEditor | null>(null);
-    const wrapperRef = useRef<HTMLDivElement | null>(null);
 
     const [isMounted, setIsMounted] = useState(false);
     const [prefersDark, setPrefersDark] = useState(false);
-
-    // Keep wrapper height in state
-    const [containerHeight, setContainerHeight] = useState<number>(DEFAULT_H);
-
-    // Observers
-    const contentRORef = useRef<ResizeObserver | null>(null);
-    const headerMORef = useRef<MutationObserver | null>(null);
 
     useEffect(() => {
       setIsMounted(true);
@@ -89,7 +80,7 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
           'checklist',
           'paste',
           'image',
-          'autoresize'
+          'autoresize',
         ],
 
         toolbar:
@@ -100,10 +91,15 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
         paste_as_text: false,
         paste_data_images: true,
 
+        // Enable live image resizing in-place
+        object_resizing: 'img',
+        image_dimensions: true,
+
+        // Autoresize configuration
         autoresize_bottom_margin: 32,
         autoresize_overflow_padding: 16,
-        autoresize_min_height: MIN_H,
-        autoresize_max_height: MAX_H,
+        min_height: MIN_H,
+        max_height: MAX_H,
 
         content_css: prefersDark ? ['dark', fontsUrl] : ['default', fontsUrl],
 
@@ -115,11 +111,12 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
           html { height: 100%; }
           body { font-family: Lora, serif; min-height: 100%; }
 
+          /* Allow TinyMCE's inline dimensions to take effect while dragging */
           img {
-            width: auto !important;
-            height: auto !important;
+            /* no fixed width here; TinyMCE sets inline width during resize */
+            height: auto;
             max-width: 100%;
-            display: inline;
+            display: inline-block;
             border-radius: var(--aoh-media-radius);
             margin: var(--aoh-media-block-space) 0;
           }
@@ -175,16 +172,18 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
 
     return (
       <div
-        ref={wrapperRef}
         className={className}
         style={{
           position: 'relative',
-          overflow: 'auto',
+          boxSizing: 'border-box',
+          overflow: 'hidden', // Changed from 'auto' to 'hidden'
           minHeight: MIN_H,
           maxHeight: MAX_H,
           border: '1px solid rgba(0,0,0,0.08)',
           borderRadius: 8,
           background: 'transparent',
+          display: 'flex', // Use flexbox for the container
+          flexDirection: 'column', // Stack children vertically
         }}
         {...props}
       >
