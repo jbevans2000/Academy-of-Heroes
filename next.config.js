@@ -60,16 +60,6 @@ const nextConfig = {
           },
         ],
       },
-      {
-        // This new block allows the genetics lab to be embedded in an iframe.
-        source: '/teacher/tools/genetics-lab',
-        headers: [
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN',
-          },
-        ],
-      },
     ];
   },
 };
