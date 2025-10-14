@@ -27,11 +27,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Textarea } from '@/components/ui/textarea';
+import type { Editor as TinyMCEEditor } from 'tinymce';
 
 
 export default function NewMissionPage() {
     const router = useRouter();
     const { toast } = useToast();
+    const editorRef = useRef<TinyMCEEditor | null>(null);
     const [teacher, setTeacher] = useState<User | null>(null);
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
@@ -76,8 +78,13 @@ export default function NewMissionPage() {
         
         const embedCode = `<div style="margin: 2rem 0; position: relative; width: 100%; padding-bottom: 56.25%; height: 0;"><iframe src="${finalEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allowfullscreen="true"></iframe></div>`;
         
-        const newContent = content + embedCode;
-        setContent(newContent);
+        if (editorRef.current) {
+            editorRef.current.execCommand('mceInsertContent', false, embedCode);
+        } else {
+             // Fallback for when the editor isn't ready, though unlikely
+            setContent(prev => prev + embedCode);
+        }
+
         setEmbedUrl('');
         toast({ title: "Content Embedded", description: "The content has been added to the editor." });
     };
@@ -253,7 +260,7 @@ export default function NewMissionPage() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Mission Content</Label>
-                                    <RichTextEditor value={content} onChange={setContent} />
+                                    <RichTextEditor ref={editorRef} value={content} onChange={setContent} />
                                 </div>
                                 <div className="flex items-center space-x-2 pt-2">
                                     <Switch id="open-in-new-tab" checked={openInNewTab} onCheckedChange={setOpenInNewTab} />

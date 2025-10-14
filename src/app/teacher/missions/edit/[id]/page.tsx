@@ -31,12 +31,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import jsPDF from 'jspdf';
 import { Textarea } from '@/components/ui/textarea';
+import type { Editor as TinyMCEEditor } from 'tinymce';
 
 export default function EditMissionPage() {
     const router = useRouter();
     const params = useParams();
     const missionId = params.id as string;
     const { toast } = useToast();
+    const editorRef = useRef<TinyMCEEditor | null>(null);
 
     const [teacher, setTeacher] = useState<User | null>(null);
     const [mission, setMission] = useState<Partial<Mission> | null>(null);
@@ -93,13 +95,9 @@ export default function EditMissionPage() {
 
         let finalEmbedUrl = embedUrl;
 
-        // Basic check for Google Drive links
         if (embedUrl.includes('drive.google.com')) {
-            // Attempt to convert share links to embeddable links
             finalEmbedUrl = embedUrl.replace('/view', '/preview');
-        }
-        // Basic check for YouTube links
-        else if (embedUrl.includes('youtube.com/watch?v=')) {
+        } else if (embedUrl.includes('youtube.com/watch?v=')) {
             finalEmbedUrl = embedUrl.replace('watch?v=', 'embed/');
         } else if (embedUrl.includes('youtu.be/')) {
             finalEmbedUrl = embedUrl.replace('youtu.be/', 'www.youtube.com/embed/');
@@ -107,9 +105,14 @@ export default function EditMissionPage() {
         
         const embedCode = `<div style="margin: 2rem 0; position: relative; width: 100%; padding-bottom: 56.25%; height: 0;"><iframe src="${finalEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allowfullscreen="true"></iframe></div>`;
         
-        const currentContent = mission?.content || '';
-        const newContent = currentContent + embedCode;
-        handleFieldChange('content', newContent);
+        if (editorRef.current) {
+            editorRef.current.execCommand('mceInsertContent', false, embedCode);
+        } else {
+            // Fallback for when the editor isn't ready, though unlikely
+            const newContent = (mission?.content || '') + embedCode;
+            handleFieldChange('content', newContent);
+        }
+
         setEmbedUrl('');
         toast({ title: "Content Embedded", description: "The content has been added to the editor." });
     };
@@ -320,8 +323,8 @@ export default function EditMissionPage() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Mission Content</Label>
-                                    <p className="text-sm text-muted-foreground">To embed content from YouTube, Google Drive, or other sites, use the "Insert/Edit Media" button (<span className="font-mono">▶</span>) in the toolbar below.</p>
                                     <RichTextEditor 
+                                        ref={editorRef}
                                         value={mission.content || ''} 
                                         onChange={(value) => handleFieldChange('content', value)}
                                     />
