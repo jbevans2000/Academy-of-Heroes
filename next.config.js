@@ -55,8 +55,18 @@ const nextConfig = {
             value: 'GET, OPTIONS, PATCH, DELETE, POST, PUT',
           },
            {
-            key: 'Access-Control-Allow-Headers',
+            key: 'Access-control-Allow-Headers',
             value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version',
+          },
+        ],
+      },
+      {
+        // This new block allows the genetics lab to be embedded in an iframe.
+        source: '/teacher/tools/genetics-lab',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN',
           },
         ],
       },
