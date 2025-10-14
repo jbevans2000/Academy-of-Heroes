@@ -46,7 +46,7 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
       () => ({
         promotion: false,
         branding: false,
-        statusbar: false,       // removes word count & element path
+        statusbar: false,
         elementpath: false,
         onboarding: false,
         menubar: true,
@@ -60,14 +60,13 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
           'emoticons',
           'link',
           'lists',
-          'media',              // video/iframe embeds
+          'media',
           'searchreplace',
           'table',
           'visualblocks',
           'checklist',
           'paste',
           'image',
-          // 'autoresize',       // optional
         ],
 
         toolbar:
@@ -78,14 +77,8 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
         paste_as_text: false,
         paste_data_images: true,
 
-        // Load theme content CSS first, then Google Fonts
         content_css: prefersDark ? ['dark', fontsUrl] : ['default', fontsUrl],
 
-        // Style rules:
-        // - Keep images from stretching (natural size; scale down if too big)
-        // - Rounded corners for images/videos/embeds
-        // - Clip corners in wrappers
-        // - Add vertical spacing equal to ~two text lines above and below media
         content_style: `
           :root {
             --aoh-media-radius: 8px;
@@ -160,7 +153,7 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
 
     return (
       <Editor
-        key={prefersDark ? 'dark' : 'light'} // force remount to apply theme/css on change
+        key={prefersDark ? 'dark' : 'light'}
         tinymceScriptSrc='/tinymce/tinymce.min.js'
         onInit={(_, editor) => (editorRef.current = editor)}
         value={value}
