@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import RichTextEditor from '@/components/teacher/rich-text-editor';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Save, Loader2, Trash2, Download, Star, Coins, Link as LinkIcon } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Trash2, Download, Star, Coins } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { saveMission, deleteMission } from '@/ai/flows/manage-missions';
 import {
@@ -43,7 +43,6 @@ export default function EditMissionPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const [embedUrl, setEmbedUrl] = useState('');
     const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
 
     useEffect(() => {
@@ -79,45 +78,6 @@ export default function EditMissionPage() {
         };
         fetchMission();
     }, [teacher, missionId, router, toast]);
-
-    const handleConfirmEmbed = () => {
-        if (!embedUrl) {
-            toast({ variant: 'destructive', title: 'No URL Provided' });
-            return;
-        }
-
-        let finalEmbedHtml = '';
-        let finalEmbedUrl = embedUrl;
-
-        const youtubeMatch = embedUrl.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-        
-        if (youtubeMatch && youtubeMatch[1]) {
-            finalEmbedUrl = `https://www.youtube.com/embed/${youtubeMatch[1]}`;
-            finalEmbedHtml = `<div style="text-align: center; margin: 2rem 0;"><div style="aspect-ratio: 16 / 9; max-width: 700px; margin: auto;"><iframe style="width: 100%; height: 100%; border-radius: 8px;" src="${finalEmbedUrl}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div></div>`;
-        } else if (/\.(jpeg|jpg|gif|png|webp)$/i.test(embedUrl)) {
-            finalEmbedHtml = `<p style="text-align: center;"><img src="${embedUrl}" style="width: 100%; max-width: 600px; height: auto; border-radius: 8px; display: inline-block;" /></p>`;
-        } else if (embedUrl.includes('drive.google.com/file')) {
-            finalEmbedUrl = embedUrl.replace('/view', '/preview');
-        } else if (embedUrl.includes('docs.google.com/forms')) {
-            finalEmbedUrl = embedUrl.replace('/viewform', '/viewform?embedded=true');
-        } else if (embedUrl.includes('docs.google.com/presentation')) {
-            finalEmbedUrl = embedUrl.replace('/edit', '/embed').replace('/pub', '/embed');
-        } else if (embedUrl.includes('docs.google.com/document')) {
-            finalEmbedUrl = embedUrl.replace('/edit', '/preview');
-        }
-        
-        if (!finalEmbedHtml) {
-            finalEmbedHtml = `<div style="position: relative; width: 100%; height: 0; padding-bottom: 75%;"><iframe src="${finalEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe></div>`;
-        }
-        
-        const space = '<p><br></p>'.repeat(4);
-        const embedBlock = `${space}${finalEmbedHtml}${space}`;
-        
-        handleFieldChange('content', (mission?.content || '') + embedBlock);
-
-        setEmbedUrl('');
-        toast({ title: 'Content Embedded!', description: 'The item has been added to the editor.' });
-    };
 
     const handleFieldChange = (field: keyof Mission, value: any) => {
         setMission(prev => prev ? ({ ...prev, [field]: value }) : null);
@@ -314,33 +274,23 @@ export default function EditMissionPage() {
                                     </div>
                                     <p className="text-xs text-muted-foreground">These will be auto-calculated in the grading view based on the percentage score, but you can always override them.</p>
                                 </div>
-                                <div className="space-y-2 p-4 border rounded-lg bg-secondary/50">
-                                    <Label className="text-base font-semibold flex items-center gap-2"><LinkIcon className="h-4 w-4"/> Universal Embed</Label>
-                                    <div className="flex items-center gap-2">
-                                        <Input
-                                            placeholder="Paste any URL (Google, YouTube, Image, etc.)..."
-                                            value={embedUrl}
-                                            onChange={(e) => setEmbedUrl(e.target.value)}
-                                        />
-                                        <Button onClick={handleConfirmEmbed}>Confirm Embed</Button>
-                                    </div>
-                                     <div className="flex items-center space-x-2 pt-2">
-                                        <Switch 
-                                            id="open-in-new-tab" 
-                                            checked={mission.openInNewTab} 
-                                            onCheckedChange={(checked) => handleFieldChange('openInNewTab', checked)}
-                                        />
-                                        <Label htmlFor="open-in-new-tab">Open Embedded Content in New Tab</Label>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">Recommended for interactive content like Google Forms, Docs, or external websites.</p>
-                                </div>
                                 <div className="space-y-2">
                                     <Label>Mission Content</Label>
+                                    <p className="text-sm text-muted-foreground">To embed content from YouTube, Google Drive, or other sites, use the "Insert/Edit Media" button (<span className="font-mono">▶</span>) in the toolbar below.</p>
                                     <RichTextEditor 
                                         value={mission.content || ''} 
                                         onChange={(value) => handleFieldChange('content', value)}
                                     />
                                 </div>
+                                <div className="flex items-center space-x-2 pt-2">
+                                    <Switch 
+                                        id="open-in-new-tab" 
+                                        checked={mission.openInNewTab} 
+                                        onCheckedChange={(checked) => handleFieldChange('openInNewTab', checked)}
+                                    />
+                                    <Label htmlFor="open-in-new-tab">Open Embedded Content in New Tab</Label>
+                                </div>
+                                <p className="text-xs text-muted-foreground -mt-2">Recommended for interactive content like Google Forms, Docs, or external websites.</p>
                                 <div className="flex items-center space-x-2 pt-4">
                                     <Switch 
                                         id="is-assigned" 
