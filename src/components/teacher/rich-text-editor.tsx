@@ -18,26 +18,23 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
     const [isMounted, setIsMounted] = useState(false);
 
     // Dark mode tracking with live updates
-    const prefersDark = useMemo(() => {
-      if (typeof window === 'undefined') return false;
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const [prefersDark, setPrefersDark] = useState(false);
+
+    useEffect(() => {
+      // Set initial value
+      const mq = window.matchMedia('(prefers-color-scheme: dark)');
+      setPrefersDark(mq.matches);
+      
+      // Add listener for changes
+      const handler = (e: MediaQueryListEvent) => setPrefersDark(e.matches);
+      mq.addEventListener('change', handler);
+      
+      return () => mq.removeEventListener('change', handler);
     }, []);
+
 
     useEffect(() => {
       setIsMounted(true);
-    }, []);
-
-    useEffect(() => {
-      if (typeof window === 'undefined') return;
-      const mq = window.matchMedia('(prefers-color-scheme: dark)');
-      const handler = () => {
-        // Force a remount to apply new skin/content css
-        setIsMounted(false);
-        // Next tick so unmount/mount happens
-        setTimeout(() => setIsMounted(true), 0);
-      };
-      mq.addEventListener('change', handler);
-      return () => mq.removeEventListener('change', handler);
     }, []);
 
     useImperativeHandle(ref, () => editorRef.current, []);
@@ -50,7 +47,6 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
       menubar: true,
       height: 1200,
 
-      // Using a safe list of core plugins
       plugins: [
         'anchor', 'autolink', 'charmap', 'codesample',
         'emoticons', 'link', 'lists', 'media', 'searchreplace',
