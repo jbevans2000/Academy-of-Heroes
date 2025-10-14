@@ -109,8 +109,7 @@ export default function EditMissionPage() {
             editorRef.current.execCommand('mceInsertContent', false, embedCode);
         } else {
             // Fallback for when the editor isn't ready, though unlikely
-            const newContent = (mission?.content || '') + embedCode;
-            handleFieldChange('content', newContent);
+            handleFieldChange('content', (mission?.content || '') + embedCode);
         }
 
         setEmbedUrl('');
