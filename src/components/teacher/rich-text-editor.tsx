@@ -55,12 +55,14 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
         'anchor', 'autolink', 'charmap', 'codesample',
         'emoticons', 'link', 'lists', 'media', 'searchreplace',
         'table', 'visualblocks', 'wordcount',
-        'checklist', 'markdown',
+        'checklist', 'markdown', 'paste'
       ],
       toolbar:
         'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | ' +
         'link media table | align lineheight | checklist numlist bullist indent outdent | ' +
         'emoticons charmap | removeformat',
+      
+      paste_as_text: true,
 
       font_family_formats:
         "Uncial Antiqua=uncial antiqua,cursive; MedievalSharp=medievalsharp,cursive; Cinzel=cinzel,serif; " +
