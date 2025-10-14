@@ -26,6 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Textarea } from '@/components/ui/textarea';
 
 
 export default function NewMissionPage() {
@@ -40,6 +41,7 @@ export default function NewMissionPage() {
     const [defaultGold, setDefaultGold] = useState<number | ''>('');
     const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
     const [openInNewTab, setOpenInNewTab] = useState(false);
+    const [embedCode, setEmbedCode] = useState('');
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -52,6 +54,17 @@ export default function NewMissionPage() {
         return () => unsubscribe();
     }, [router]);
     
+    const handleEmbed = () => {
+        if (embedCode.trim()) {
+            const newContent = content + `<div style="margin: 2rem 0; width: 100%;">${embedCode}</div>`;
+            setContent(newContent);
+            setEmbedCode('');
+            toast({ title: "Content Embedded", description: "The embed code has been added to the editor." });
+        } else {
+            toast({ variant: 'destructive', title: 'No Code Provided', description: 'Please paste an embed code to continue.' });
+        }
+    };
+
     const handleSave = async () => {
         if (!teacher) return;
         if (!title.trim() || !content.trim()) {
@@ -195,6 +208,17 @@ export default function NewMissionPage() {
                                     <Label htmlFor="title">Mission Title</Label>
                                     <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., The Mystery of the Missing Artifact" />
                                 </div>
+                                <div className="space-y-4 p-4 border rounded-lg bg-secondary/50">
+                                    <Label className="text-base font-semibold">Universal Embed</Label>
+                                    <p className="text-sm text-muted-foreground">Paste an `iframe` code from sources like Google Drive, YouTube, or other websites to embed content directly.</p>
+                                    <Textarea 
+                                        placeholder='<iframe src="..."></iframe>'
+                                        value={embedCode}
+                                        onChange={(e) => setEmbedCode(e.target.value)}
+                                        rows={3}
+                                    />
+                                    <Button onClick={handleEmbed}>Embed Content</Button>
+                                </div>
                                  <div className="space-y-4 p-4 border rounded-lg bg-secondary/50">
                                     <Label className="text-base font-semibold">Default Completion Rewards (Optional)</Label>
                                     <div className="grid grid-cols-2 gap-4">
@@ -211,7 +235,6 @@ export default function NewMissionPage() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Mission Content</Label>
-                                    <p className="text-sm text-muted-foreground">To embed content from YouTube, Google Drive, or other sites, use the "Insert/Edit Media" button (<span className="font-mono">▶</span>) in the toolbar below.</p>
                                     <RichTextEditor value={content} onChange={setContent} />
                                 </div>
                                 <div className="flex items-center space-x-2 pt-2">

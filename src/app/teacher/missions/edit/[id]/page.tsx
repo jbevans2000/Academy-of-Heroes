@@ -30,6 +30,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import jsPDF from 'jspdf';
+import { Textarea } from '@/components/ui/textarea';
 
 export default function EditMissionPage() {
     const router = useRouter();
@@ -44,6 +45,7 @@ export default function EditMissionPage() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
+    const [embedCode, setEmbedCode] = useState('');
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -82,6 +84,19 @@ export default function EditMissionPage() {
     const handleFieldChange = (field: keyof Mission, value: any) => {
         setMission(prev => prev ? ({ ...prev, [field]: value }) : null);
     };
+    
+    const handleEmbed = () => {
+        if (embedCode.trim()) {
+            const currentContent = mission?.content || '';
+            const newContent = currentContent + `<div style="margin: 2rem 0; width: 100%;">${embedCode}</div>`;
+            handleFieldChange('content', newContent);
+            setEmbedCode('');
+            toast({ title: "Content Embedded", description: "The embed code has been added to the editor." });
+        } else {
+            toast({ variant: 'destructive', title: 'No Code Provided', description: 'Please paste an embed code to continue.' });
+        }
+    };
+
 
     const handleSave = async () => {
         if (!teacher || !mission?.id) return;
@@ -259,6 +274,17 @@ export default function EditMissionPage() {
                                         value={mission.title || ''} 
                                         onChange={(e) => handleFieldChange('title', e.target.value)} 
                                     />
+                                </div>
+                                <div className="space-y-4 p-4 border rounded-lg bg-secondary/50">
+                                    <Label className="text-base font-semibold">Universal Embed</Label>
+                                    <p className="text-sm text-muted-foreground">Paste an `iframe` code from sources like Google Drive, YouTube, or other websites to embed content directly.</p>
+                                    <Textarea 
+                                        placeholder='<iframe src="..."></iframe>'
+                                        value={embedCode}
+                                        onChange={(e) => setEmbedCode(e.target.value)}
+                                        rows={3}
+                                    />
+                                    <Button onClick={handleEmbed}>Embed Content</Button>
                                 </div>
                                 <div className="space-y-4 p-4 border rounded-lg bg-secondary/50">
                                     <Label className="text-base font-semibold">Default Completion Rewards (Optional)</Label>
