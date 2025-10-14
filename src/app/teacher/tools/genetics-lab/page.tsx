@@ -426,7 +426,7 @@ function GeneticsLabContent() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-center">Instructional Video</CardTitle>
+                    <CardTitle className="text-center">Sylvaria and Aurelio</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="aspect-video">
@@ -710,5 +710,7 @@ export default function GeneticsLabPage() {
         </Suspense>
     )
 }
+
+    
 
     
