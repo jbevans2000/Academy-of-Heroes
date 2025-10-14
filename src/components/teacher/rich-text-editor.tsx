@@ -46,8 +46,8 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
       () => ({
         promotion: false,
         branding: false,
-        statusbar: false,       // hide status bar (removes word-count/element path UI)
-        elementpath: false,      // belt-and-suspenders: no element path even if statusbar toggled
+        statusbar: false,       // removes word count & element path
+        elementpath: false,
         onboarding: false,
         menubar: true,
         height: 1200,
@@ -64,11 +64,10 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
           'searchreplace',
           'table',
           'visualblocks',
-          // 'wordcount',         // removed to ensure no word-count UI
           'checklist',
           'paste',
           'image',
-          // 'autoresize',        // optional: use if you want auto-growing editor
+          // 'autoresize',       // optional
         ],
 
         toolbar:
@@ -162,7 +161,7 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
     return (
       <Editor
         key={prefersDark ? 'dark' : 'light'} // force remount to apply theme/css on change
-        apiKey={process.env.NEXT_PUBLIC_TINYMCE_API_KEY}
+        tinymceScriptSrc='/tinymce/tinymce.min.js'
         onInit={(_, editor) => (editorRef.current = editor)}
         value={value}
         onEditorChange={(content) => onChange(content)}
