@@ -30,12 +30,11 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
     const [isMounted, setIsMounted] = useState(false);
     const [prefersDark, setPrefersDark] = useState(false);
 
-    // Keep wrapper height in state and sync it with autosize
+    // Keep wrapper height in state
     const [containerHeight, setContainerHeight] = useState<number>(DEFAULT_H);
 
     // Observers
     const contentRORef = useRef<ResizeObserver | null>(null);
-    const wrapperRORef = useRef<ResizeObserver | null>(null);
     const headerMORef = useRef<MutationObserver | null>(null);
 
     useEffect(() => {
@@ -70,12 +69,11 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
       () => ({
         promotion: false,
         branding: false,
-        statusbar: false,   // hide word count & element path
+        statusbar: false,
         elementpath: false,
         onboarding: false,
         menubar: true,
 
-        // Use autoresize plugin for simplicity
         plugins: [
           'anchor',
           'autolink',
@@ -104,14 +102,11 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
 
         autoresize_bottom_margin: 32,
         autoresize_overflow_padding: 16,
-        autoresize_min_height: 300,
-        autoresize_max_height: 5000,
+        autoresize_min_height: MIN_H,
+        autoresize_max_height: MAX_H,
 
-
-        // Theme content CSS then Google Fonts (loaded inside iframe)
         content_css: prefersDark ? ['dark', fontsUrl] : ['default', fontsUrl],
 
-        // Keep images from stretching; rounded corners; 2-line spacing; embed styling
         content_style: `
           :root {
             --aoh-media-radius: 8px;
@@ -164,7 +159,6 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
           }
         `,
 
-        // Expose the families in the dropdown
         font_family_formats:
           "Lora=Lora,serif; Cinzel=Cinzel,serif; " +
           "Uncial Antiqua='Uncial Antiqua',cursive; MedievalSharp=MedievalSharp,cursive; " +
@@ -195,7 +189,7 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
         {...props}
       >
         <Editor
-          key={prefersDark ? 'dark' : 'light'} // remount to apply theme/css on change
+          key={prefersDark ? 'dark' : 'light'}
           apiKey="3pit55fk53u6a49yntmptfverzhdmw7fspxeqlv3e1wkhlui"
           onInit={(_, editor) => {
             editorRef.current = editor;
