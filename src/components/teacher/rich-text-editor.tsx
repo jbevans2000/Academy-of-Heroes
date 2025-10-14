@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, {
@@ -18,7 +19,7 @@ interface RichTextEditorProps {
   disabled?: boolean;
 }
 
-const MIN_H = 400; // A more reasonable minimum height
+const MIN_H = 400;
 const MAX_H = 5000;
 
 const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
@@ -47,7 +48,6 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
 
     useImperativeHandle(ref, () => editorRef.current, []);
 
-    // Load all fonts inside the editor iframe
     const fontsUrl =
       'https://fonts.googleapis.com/css2?' +
       'family=Lora:wght@400;700' +
@@ -91,11 +91,11 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
         paste_as_text: false,
         paste_data_images: true,
 
-        // Enable live image resizing in-place
-        object_resizing: 'img',
+        object_resizing: true,
+        media_live_embeds: true, // This enables live previews for iframes
+
         image_dimensions: true,
 
-        // Autoresize configuration
         autoresize_bottom_margin: 32,
         autoresize_overflow_padding: 16,
         min_height: MIN_H,
@@ -106,23 +106,21 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
         content_style: `
           :root {
             --aoh-media-radius: 8px;
-            --aoh-media-block-space: 2em; /* ≈ two lines of text */
+            --aoh-media-block-space: 2em;
           }
           html { height: 100%; }
           body { font-family: Lora, serif; min-height: 100%; }
 
-          /* Allow TinyMCE's inline dimensions to take effect while dragging */
           img {
-            /* no fixed width here; TinyMCE sets inline width during resize */
             height: auto;
             max-width: 100%;
-            display: inline-block;
+            display: block;
             border-radius: var(--aoh-media-radius);
             margin: var(--aoh-media-block-space) 0;
           }
 
           figure.image {
-            display: inline-block;
+            display: block;
             border-radius: var(--aoh-media-radius);
             overflow: hidden;
             margin: var(--aoh-media-block-space) 0;
@@ -176,14 +174,14 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
         style={{
           position: 'relative',
           boxSizing: 'border-box',
-          overflow: 'hidden', // Changed from 'auto' to 'hidden'
+          overflow: 'hidden',
           minHeight: MIN_H,
           maxHeight: MAX_H,
           border: '1px solid rgba(0,0,0,0.08)',
           borderRadius: 8,
           background: 'transparent',
-          display: 'flex', // Use flexbox for the container
-          flexDirection: 'column', // Stack children vertically
+          display: 'flex',
+          flexDirection: 'column',
         }}
         {...props}
       >
