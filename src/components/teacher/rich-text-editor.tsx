@@ -43,7 +43,7 @@ const RichTextEditor = React.forwardRef<any, RichTextEditorProps>(({ value, onCh
         tinycomments_mode: 'embedded',
         tinycomments_author: 'Author name',
         font_formats: "Uncial Antiqua=uncial antiqua,cursive; MedievalSharp=medievalsharp,cursive; Cinzel=cinzel,serif; Andale Mono=andale mono,times; Arial=arial,helvetica,sans-serif; Arial Black=arial black,avant garde; Book Antiqua=book antiqua,palatino; Comic Sans MS=comic sans ms,sans-serif; Courier New=courier new,courier; Georgia=georgia,palatino; Helvetica=helvetica; Impact=impact,chicago; Symbol=symbol; Tahoma=tahoma,arial,helvetica,sans-serif; Terminal=terminal,monaco; Times New Roman=times new roman,times; Trebuchet MS=trebuchet ms,geneva; Verdana=verdana,geneva; Webdings=webdings; Wingdings=wingdings,zapf dingbats",
-        content_css: '/globals.css', // This assumes your globals.css is served from the public root
+        content_css: '/globals.css', // This tells TinyMCE to use your app's global styles.
         mergetags_list: [
           { value: 'First.Name', title: 'First Name' },
           { value: 'Email', title: 'Email' },
