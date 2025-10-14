@@ -81,8 +81,7 @@ export default function NewMissionPage() {
         if (editorRef.current) {
             editorRef.current.execCommand('mceInsertContent', false, embedCode);
         } else {
-             // Fallback for when the editor isn't ready, though unlikely
-            setContent(prev => prev + embedCode);
+            toast({ variant: 'destructive', title: 'Editor Not Ready', description: 'Please wait a moment for the editor to load.' });
         }
 
         setEmbedUrl('');
