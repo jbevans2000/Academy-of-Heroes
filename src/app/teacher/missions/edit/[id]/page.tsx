@@ -45,7 +45,7 @@ export default function EditMissionPage() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
-    const [embedCode, setEmbedCode] = useState('');
+    const [embedUrl, setEmbedUrl] = useState('');
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -86,15 +86,32 @@ export default function EditMissionPage() {
     };
     
     const handleEmbed = () => {
-        if (embedCode.trim()) {
-            const currentContent = mission?.content || '';
-            const newContent = currentContent + `<div style="margin: 2rem 0; width: 100%;">${embedCode}</div>`;
-            handleFieldChange('content', newContent);
-            setEmbedCode('');
-            toast({ title: "Content Embedded", description: "The embed code has been added to the editor." });
-        } else {
-            toast({ variant: 'destructive', title: 'No Code Provided', description: 'Please paste an embed code to continue.' });
+        if (!embedUrl.trim()) {
+            toast({ variant: 'destructive', title: 'No URL Provided', description: 'Please paste a URL to embed.' });
+            return;
         }
+
+        let finalEmbedUrl = embedUrl;
+
+        // Basic check for Google Drive links
+        if (embedUrl.includes('drive.google.com')) {
+            // Attempt to convert share links to embeddable links
+            finalEmbedUrl = embedUrl.replace('/view', '/preview');
+        }
+        // Basic check for YouTube links
+        else if (embedUrl.includes('youtube.com/watch?v=')) {
+            finalEmbedUrl = embedUrl.replace('watch?v=', 'embed/');
+        } else if (embedUrl.includes('youtu.be/')) {
+            finalEmbedUrl = embedUrl.replace('youtu.be/', 'www.youtube.com/embed/');
+        }
+        
+        const embedCode = `<div style="margin: 2rem 0; position: relative; width: 100%; padding-bottom: 56.25%; height: 0;"><iframe src="${finalEmbedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allowfullscreen="true"></iframe></div>`;
+        
+        const currentContent = mission?.content || '';
+        const newContent = currentContent + embedCode;
+        handleFieldChange('content', newContent);
+        setEmbedUrl('');
+        toast({ title: "Content Embedded", description: "The content has been added to the editor." });
     };
 
 
@@ -277,14 +294,15 @@ export default function EditMissionPage() {
                                 </div>
                                 <div className="space-y-4 p-4 border rounded-lg bg-secondary/50">
                                     <Label className="text-base font-semibold">Universal Embed</Label>
-                                    <p className="text-sm text-muted-foreground">Paste an `iframe` code from sources like Google Drive, YouTube, or other websites to embed content directly.</p>
-                                    <Textarea 
-                                        placeholder='<iframe src="..."></iframe>'
-                                        value={embedCode}
-                                        onChange={(e) => setEmbedCode(e.target.value)}
-                                        rows={3}
-                                    />
-                                    <Button onClick={handleEmbed}>Embed Content</Button>
+                                    <p className="text-sm text-muted-foreground">Paste a URL from Google Drive, YouTube, or other websites to embed content directly.</p>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            placeholder="https://..."
+                                            value={embedUrl}
+                                            onChange={(e) => setEmbedUrl(e.target.value)}
+                                        />
+                                        <Button onClick={handleEmbed}>Embed Content</Button>
+                                    </div>
                                 </div>
                                 <div className="space-y-4 p-4 border rounded-lg bg-secondary/50">
                                     <Label className="text-base font-semibold">Default Completion Rewards (Optional)</Label>
