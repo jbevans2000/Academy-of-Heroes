@@ -30,7 +30,7 @@ const RichTextEditor = React.forwardRef<any, RichTextEditorProps>(({ value, onCh
       onEditorChange={onChange}
       disabled={disabled}
       init={{
-        height: 900,
+        height: 1200,
         promotion: false,
         branding: false,
         statusbar: false,
@@ -44,7 +44,7 @@ const RichTextEditor = React.forwardRef<any, RichTextEditorProps>(({ value, onCh
         tinycomments_mode: 'embedded',
         tinycomments_author: 'Author name',
         font_family_formats: "Uncial Antiqua=uncial antiqua,cursive; MedievalSharp=medievalsharp,cursive; Cinzel=cinzel,serif; Andale Mono=andale mono,times; Arial=arial,helvetica,sans-serif; Arial Black=arial black,avant garde; Book Antiqua=book antiqua,palatino; Comic Sans MS=comic sans ms,sans-serif; Courier New=courier new,courier; Georgia=georgia,palatino; Helvetica=helvetica; Impact=impact,chicago; Symbol=symbol; Tahoma=tahoma,arial,helvetica,sans-serif; Terminal=terminal,monaco; Times New Roman=times new roman,times; Trebuchet MS=trebuchet ms,geneva; Verdana=verdana,geneva; Webdings=webdings; Wingdings=wingdings,zapf dingbats",
-        content_style: "@import url('https://fonts.googleapis.com/css2?family=Uncial+Antiqua&family=MedievalSharp&family=Cinzel&display=swap');",
+        content_css: '/globals.css',
         mergetags_list: [
           { value: 'First.Name', title: 'First Name' },
           { value: 'Email', title: 'Email' },
@@ -52,7 +52,7 @@ const RichTextEditor = React.forwardRef<any, RichTextEditorProps>(({ value, onCh
         ai_request: (request: any, respondWith: any) => respondWith.string(() => Promise.reject("See docs to implement AI Assistant")),
         uploadcare_public_key: 'df2452a7d207a8276dcf',
         skin: (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'oxide-dark' : 'oxide',
-        content_css: (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'default',
+        content_css_dark: (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : undefined,
         referrer_policy: 'origin',
       }}
     />
