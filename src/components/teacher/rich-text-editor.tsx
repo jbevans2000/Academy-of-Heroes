@@ -30,10 +30,11 @@ const RichTextEditor = React.forwardRef<any, RichTextEditorProps>(({ value, onCh
       onEditorChange={onChange}
       disabled={disabled}
       init={{
-        height: 1200,
+        height: 900,
         promotion: false,
         branding: false,
         statusbar: false,
+        onboarding: false,
         menubar: true,
         plugins: [
           'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'link', 'lists', 'media', 'searchreplace', 'table', 'visualblocks', 'wordcount',
