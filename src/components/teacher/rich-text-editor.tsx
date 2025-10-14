@@ -1,7 +1,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Editor } from '@tinymce/tinymce-react';
 
 interface RichTextEditorProps {
@@ -12,6 +12,16 @@ interface RichTextEditorProps {
 }
 
 const RichTextEditor = React.forwardRef<any, RichTextEditorProps>(({ value, onChange, disabled = false }, ref) => {
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    if (!isMounted) {
+        return null; // Or a placeholder/skeleton
+    }
+
   return (
     <Editor
       apiKey='3pit55fk53u6a49yntmptfverzhdmw7fspxeqlv3e1wkhlui'
@@ -20,7 +30,10 @@ const RichTextEditor = React.forwardRef<any, RichTextEditorProps>(({ value, onCh
       onEditorChange={onChange}
       disabled={disabled}
       init={{
-        height: 300,
+        height: 1200,
+        promotion: true,
+        branding: false,
+        statusbar: false,
         menubar: true,
         plugins: [
           'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'link', 'lists', 'media', 'searchreplace', 'table', 'visualblocks', 'wordcount',
@@ -29,6 +42,8 @@ const RichTextEditor = React.forwardRef<any, RichTextEditorProps>(({ value, onCh
         toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link media table mergetags | addcomment showcomments | spellcheckdialog a11ycheck typography uploadcare | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
         tinycomments_mode: 'embedded',
         tinycomments_author: 'Author name',
+        font_formats: "Andale Mono=andale mono,times; Arial=arial,helvetica,sans-serif; Arial Black=arial black,avant garde; Book Antiqua=book antiqua,palatino; Comic Sans MS=comic sans ms,sans-serif; Courier New=courier new,courier; Georgia=georgia,palatino; Helvetica=helvetica; Impact=impact,chicago; Symbol=symbol; Tahoma=tahoma,arial,helvetica,sans-serif; Terminal=terminal,monaco; Times New Roman=times new roman,times; Trebuchet MS=trebuchet ms,geneva; Verdana=verdana,geneva; Webdings=webdings; Wingdings=wingdings,zapf dingbats; Uncial Antiqua=uncial antiqua,cursive; MedievalSharp=medievalsharp,cursive; Cinzel=cinzel,serif",
+        content_css: '/globals.css', // This assumes your globals.css is served from the public root
         mergetags_list: [
           { value: 'First.Name', title: 'First Name' },
           { value: 'Email', title: 'Email' },
@@ -37,6 +52,7 @@ const RichTextEditor = React.forwardRef<any, RichTextEditorProps>(({ value, onCh
         uploadcare_public_key: 'df2452a7d207a8276dcf',
         skin: (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'oxide-dark' : 'oxide',
         content_css: (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'default',
+        referrer_policy: 'origin',
       }}
     />
   );
