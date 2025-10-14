@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, {
@@ -49,8 +50,8 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
         elementpath: false,
         onboarding: false,
         menubar: true,
-        height: 1200,
 
+        // AUTOSIZE (no fixed height)
         plugins: [
           'anchor',
           'autolink',
@@ -66,7 +67,7 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
           'checklist',
           'paste',
           'image',
-          // 'autoresize',       // optional
+          'autoresize',         // <-- enable auto sizer
         ],
 
         toolbar:
@@ -76,6 +77,12 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
 
         paste_as_text: false,
         paste_data_images: true,
+
+        // Autosize tuning
+        autoresize_bottom_margin: 32,
+        autoresize_overflow_padding: 16,
+        autoresize_min_height: 300,
+        autoresize_max_height: 1200,
 
         // Load theme content CSS first, then Google Fonts
         content_css: prefersDark ? ['dark', fontsUrl] : ['default', fontsUrl],
