@@ -91,7 +91,7 @@ const ImageUploader = ({ label, imageUrl, onUploadSuccess, teacherUid, storagePa
                 </Label>
                 <Input id={`upload-${label}`} type="file" accept="image/*" onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)} className="hidden" disabled={isUploading}/>
                 {onGalleryOpen && (
-                    <Button variant="outline" onClick={onGalleryOpen}>
+                     <Button variant="outline" onClick={onGalleryOpen}>
                         <Library className="mr-2 h-4 w-4" /> Choose From Library
                     </Button>
                 )}
@@ -592,6 +592,7 @@ function NewQuestForm() {
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                   opacity: 0.5,
+                  backgroundAttachment: 'fixed',
               }}
             />
         )}
