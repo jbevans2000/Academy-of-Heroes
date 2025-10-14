@@ -425,6 +425,24 @@ function GeneticsLabContent() {
             </Card>
 
             <Card>
+                <CardHeader>
+                    <CardTitle className="text-center">Instructional Video</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="aspect-video">
+                        <iframe
+                            className="w-full h-full rounded-lg shadow-lg"
+                            src="https://www.youtube.com/embed/Bp9Eaa7Squ8"
+                            title="YouTube video player"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowFullScreen
+                        ></iframe>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card>
                 <CardHeader className="text-center">
                     <CardTitle>DRAGON TRAITS KEY</CardTitle>
                     <CardDescription>
@@ -692,6 +710,5 @@ export default function GeneticsLabPage() {
         </Suspense>
     )
 }
-
 
     
