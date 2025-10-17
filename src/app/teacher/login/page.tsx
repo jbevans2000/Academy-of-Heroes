@@ -36,23 +36,28 @@ export default function TeacherLoginPage() {
     const checkStatus = async () => {
         const settings = await getGlobalSettings();
         if (settings.isMaintenanceModeOn) {
-             const user = auth.currentUser;
-            // Admins can always log in
-            if (user) {
-                const adminRef = doc(db, 'admins', user.uid);
-                const adminSnap = await getDoc(adminRef);
-                if (adminSnap.exists()) {
-                     setIsCheckingStatus(false);
-                     return;
+            const unsub = onAuthStateChanged(auth, async (user) => {
+                // Admins can always log in
+                if (user) {
+                    const adminRef = doc(db, 'admins', user.uid);
+                    const adminSnap = await getDoc(adminRef);
+                    if (adminSnap.exists()) {
+                         setIsCheckingStatus(false);
+                         return;
+                    }
                 }
-            }
-             // Whitelisted users can also log in
-            if (!user || !(settings.maintenanceWhitelist || []).includes(user.uid)) {
-                router.push('/maintenance');
-                return;
-            }
+                
+                // Whitelisted users can also log in
+                if (!user || !(settings.maintenanceWhitelist || []).includes(user.uid)) {
+                    router.push('/maintenance');
+                    return;
+                }
+                setIsCheckingStatus(false);
+            });
+            return () => unsub();
+        } else {
+            setIsCheckingStatus(false);
         }
-        setIsCheckingStatus(false);
     };
     checkStatus();
   }, [router]);
@@ -237,7 +242,7 @@ export default function TeacherLoginPage() {
                 Login
             </Button>
              <div className="mt-4 text-center text-sm">
-                Don&apos;t have an account?{' '}
+                Don't have an account?{' '}
                 <Link href="/teacher/register" className="underline">
                     Register here
                 </Link>

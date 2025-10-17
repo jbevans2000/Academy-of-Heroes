@@ -16,8 +16,9 @@ import { useState, useEffect } from 'react';
 import { getGlobalSettings } from '@/ai/flows/manage-settings';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function LoginPage() {
   const [showStudentLogin, setShowStudentLogin] = useState(false);
@@ -28,13 +29,20 @@ export default function LoginPage() {
     const checkStatus = async () => {
         const settings = await getGlobalSettings();
         if (settings.isMaintenanceModeOn) {
-            const user = auth.currentUser;
-            if (!user || !(settings.maintenanceWhitelist || []).includes(user.uid)) {
-                router.push('/maintenance');
-                return;
-            }
+            const unsub = onAuthStateChanged(auth, async (user) => {
+                const adminRef = user ? doc(db, 'admins', user.uid) : null;
+                const adminSnap = adminRef ? await getDoc(adminRef) : null;
+                
+                if (!user || (!adminSnap?.exists() && !(settings.maintenanceWhitelist || []).includes(user.uid))) {
+                    router.push('/maintenance');
+                    return;
+                }
+                 setIsLoading(false);
+            });
+            return () => unsub();
+        } else {
+             setIsLoading(false);
         }
-        setIsLoading(false);
     };
     checkStatus();
   }, [router]);

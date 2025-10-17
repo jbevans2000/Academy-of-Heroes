@@ -14,10 +14,10 @@ export default function MaintenancePage() {
             }}
         >
             <div className="text-center pb-12">
-                <Link href="http://www.academy-heroes.com" passHref>
+                <Link href="/login" passHref>
                     <Button size="lg" variant="secondary" className="text-lg py-6 px-8">
                         <ArrowLeft className="mr-2 h-5 w-5" />
-                        Return to Home Page
+                        Return to Login
                     </Button>
                 </Link>
             </div>
