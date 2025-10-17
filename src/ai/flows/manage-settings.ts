@@ -13,6 +13,8 @@ interface Settings {
     isFeedbackPanelVisible?: boolean;
     broadcastMessage?: string;
     broadcastMessageId?: string;
+    isMaintenanceModeOn?: boolean;
+    maintenanceWhitelist?: string[];
 }
 
 const settingsRef = doc(db, 'settings', 'global');
@@ -33,14 +35,16 @@ export async function getGlobalSettings(): Promise<Settings> {
                 isFeedbackPanelVisible: data.isFeedbackPanelVisible ?? false,
                 broadcastMessage: data.broadcastMessage || '',
                 broadcastMessageId: data.broadcastMessageId || '',
+                isMaintenanceModeOn: data.isMaintenanceModeOn ?? false,
+                maintenanceWhitelist: data.maintenanceWhitelist || [],
             };
         }
         // Default to registration being open if the document doesn't exist
-        return { isStudentRegistrationOpen: true, isTeacherRegistrationOpen: true, isFeedbackPanelVisible: false, broadcastMessage: '', broadcastMessageId: '' };
+        return { isStudentRegistrationOpen: true, isTeacherRegistrationOpen: true, isFeedbackPanelVisible: false, broadcastMessage: '', broadcastMessageId: '', isMaintenanceModeOn: false, maintenanceWhitelist: [] };
     } catch (error) {
         console.error("Error fetching global settings:", error);
         // Fail-safe default
-        return { isStudentRegistrationOpen: true, isTeacherRegistrationOpen: true, isFeedbackPanelVisible: false, broadcastMessage: '', broadcastMessageId: '' };
+        return { isStudentRegistrationOpen: true, isTeacherRegistrationOpen: true, isFeedbackPanelVisible: false, broadcastMessage: '', broadcastMessageId: '', isMaintenanceModeOn: false, maintenanceWhitelist: [] };
     }
 }
 

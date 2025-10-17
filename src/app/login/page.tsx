@@ -12,10 +12,40 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { getGlobalSettings } from '@/ai/flows/manage-settings';
+import { useRouter } from 'next/navigation';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const [showStudentLogin, setShowStudentLogin] = useState(false);
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const checkStatus = async () => {
+        const settings = await getGlobalSettings();
+        if (settings.isMaintenanceModeOn) {
+            const user = auth.currentUser;
+            if (!user || !(settings.maintenanceWhitelist || []).includes(user.uid)) {
+                router.push('/maintenance');
+                return;
+            }
+        }
+        setIsLoading(false);
+    };
+    checkStatus();
+  }, [router]);
+
+  if (isLoading) {
+    return (
+        <div className="flex items-center justify-center min-h-screen">
+            <Loader2 className="h-16 w-16 animate-spin text-primary" />
+        </div>
+    );
+  }
 
   return (
     <div

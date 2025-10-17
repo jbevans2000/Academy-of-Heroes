@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,12 +15,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { School, Loader2, KeyRound, Mail, ArrowLeft, ShieldAlert } from 'lucide-react';
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { doc, getDoc } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { getGlobalSettings } from '@/ai/flows/manage-settings';
 
 export default function TeacherLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -29,6 +30,32 @@ export default function TeacherLoginPage() {
   const [password, setPassword] = useState('');
   const router = useRouter();
   const { toast } = useToast();
+  const [isCheckingStatus, setIsCheckingStatus] = useState(true);
+
+  useEffect(() => {
+    const checkStatus = async () => {
+        const settings = await getGlobalSettings();
+        if (settings.isMaintenanceModeOn) {
+             const user = auth.currentUser;
+            // Admins can always log in
+            if (user) {
+                const adminRef = doc(db, 'admins', user.uid);
+                const adminSnap = await getDoc(adminRef);
+                if (adminSnap.exists()) {
+                     setIsCheckingStatus(false);
+                     return;
+                }
+            }
+             // Whitelisted users can also log in
+            if (!user || !(settings.maintenanceWhitelist || []).includes(user.uid)) {
+                router.push('/maintenance');
+                return;
+            }
+        }
+        setIsCheckingStatus(false);
+    };
+    checkStatus();
+  }, [router]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -141,6 +168,13 @@ export default function TeacherLoginPage() {
     }
   }
 
+  if (isCheckingStatus) {
+    return (
+        <div className="flex items-center justify-center min-h-screen">
+            <Loader2 className="h-16 w-16 animate-spin text-primary" />
+        </div>
+    );
+  }
 
   return (
     <div 

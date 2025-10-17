@@ -24,7 +24,7 @@ import { getAdminNotepadContent, updateAdminNotepadContent } from '@/ai/flows/ma
 import { getKnownBugsContent, updateKnownBugsContent } from '@/ai/flows/manage-known-bugs';
 import { getUpcomingFeaturesContent, updateUpcomingFeaturesContent } from '@/ai/flows/manage-upcoming-features';
 import { markAllAdminMessagesAsRead } from '@/ai/flows/manage-admin-messages';
-import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle, HelpCircle, Edit, Reply, FileText, Save, CreditCard, View } from 'lucide-react';
+import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle, HelpCircle, Edit, Reply, FileText, Save, CreditCard, View, Power } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -64,6 +64,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { HelpArticleEditor } from '@/components/admin/help-article-editor';
 import { AdminMessageCenter } from '@/components/admin/admin-message-center';
 import PayPalTestButton from '@/components/admin/paypal-test-button';
+import { Switch } from '@/components/ui/switch';
 
 type SortDirection = 'asc' | 'desc';
 type TeacherSortKey = 'className' | 'name' | 'email' | 'schoolName' | 'studentCount' | 'createdAt' | 'contactEmail';
@@ -131,6 +132,11 @@ export default function AdminDashboardPage() {
     const [feedbackToDelete, setFeedbackToDelete] = useState<string | null>(null);
     const [isDeletingFeedback, setIsDeletingFeedback] = useState(false);
     
+    // Maintenance Mode State
+    const [isMaintenanceModeOn, setIsMaintenanceModeOn] = useState(false);
+    const [maintenanceWhitelist, setMaintenanceWhitelist] = useState('');
+
+
     // Notepad State
     const [notepadContent, setNotepadContent] = useState('');
     const [isNotepadLoading, setIsNotepadLoading] = useState(true);
@@ -460,6 +466,8 @@ export default function AdminDashboardPage() {
             setIsStudentRegistrationOpen(settings.isStudentRegistrationOpen);
             setIsTeacherRegistrationOpen(settings.isTeacherRegistrationOpen);
             setIsFeedbackPanelVisible(settings.isFeedbackPanelVisible || false);
+            setIsMaintenanceModeOn(settings.isMaintenanceModeOn || false);
+            setMaintenanceWhitelist((settings.maintenanceWhitelist || []).join(', '));
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not load global settings.' });
         } finally {
@@ -529,6 +537,42 @@ export default function AdminDashboardPage() {
             setIsSettingsLoading(false);
         }
     }
+    
+    const handleMaintenanceModeToggle = async () => {
+        setIsSettingsLoading(true);
+        const newStatus = !isMaintenanceModeOn;
+        try {
+            const result = await updateGlobalSettings({ isMaintenanceModeOn: newStatus });
+            if (result.success) {
+                setIsMaintenanceModeOn(newStatus);
+                toast({ title: 'Maintenance Mode Updated', description: `The site is now ${newStatus ? 'OFFLINE' : 'ONLINE'}.` });
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
+        } finally {
+            setIsSettingsLoading(false);
+        }
+    };
+
+    const handleSaveWhitelist = async () => {
+        setIsSettingsLoading(true);
+        const whitelistArray = maintenanceWhitelist.split(',').map(uid => uid.trim()).filter(Boolean);
+        try {
+            const result = await updateGlobalSettings({ maintenanceWhitelist: whitelistArray });
+            if (result.success) {
+                toast({ title: 'Whitelist Saved', description: 'The maintenance mode whitelist has been updated.' });
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
+        } finally {
+            setIsSettingsLoading(false);
+        }
+    };
+
 
     const handleSendBroadcast = async () => {
         if (!broadcastMessage.trim()) {
@@ -786,6 +830,44 @@ export default function AdminDashboardPage() {
             <main className="flex-1 p-4 md:p-6 lg:p-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                  
                  <div className="lg:col-span-2 space-y-6">
+                    {/* Maintenance Mode Card */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><Power className="h-6 w-6 text-destructive" /> Maintenance Mode</CardTitle>
+                            <CardDescription>Take the entire application offline for maintenance. Only whitelisted users will be able to log in.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex items-center justify-between rounded-lg border p-4">
+                                <div>
+                                    <h4 className="font-semibold">Maintenance Mode</h4>
+                                    <p className={cn("text-sm font-bold", isMaintenanceModeOn ? 'text-red-600' : 'text-green-600')}>
+                                        {isMaintenanceModeOn ? 'ACTIVE' : 'INACTIVE'}
+                                    </p>
+                                </div>
+                                <Switch
+                                    checked={isMaintenanceModeOn}
+                                    onCheckedChange={handleMaintenanceModeToggle}
+                                    disabled={isSettingsLoading}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="whitelist">Whitelist UIDs</Label>
+                                <Textarea
+                                    id="whitelist"
+                                    placeholder="Enter user UIDs, separated by commas"
+                                    value={maintenanceWhitelist}
+                                    onChange={(e) => setMaintenanceWhitelist(e.target.value)}
+                                    rows={3}
+                                    disabled={isSettingsLoading}
+                                />
+                            </div>
+                            <Button onClick={handleSaveWhitelist} disabled={isSettingsLoading}>
+                                {isSettingsLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
+                                Save Whitelist
+                            </Button>
+                        </CardContent>
+                    </Card>
+
                     {/* Admin Notepad */}
                      <Card>
                         <CardHeader className="flex flex-row items-center justify-between">
