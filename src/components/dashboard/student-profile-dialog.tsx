@@ -94,8 +94,8 @@ export function StudentProfileDialog({
                 <StatItem icon={classIconMap[student.class]} label="Class" value={student.class} />
                 <StatItem icon={<Trophy className="h-6 w-6 text-orange-400" />} label="Level" value={student.level} />
                 <StatItem icon={<Star className="h-6 w-6 text-yellow-400" />} label="Experience" value={student.xp} />
-                <StatItem icon={<Heart className="h-6 w-6 text-red-500" />} label="HP" value={`${student.hp} / ${student.maxHp}`} />
-                <StatItem icon={<Zap className="h-6 w-6 text-blue-400" />} label="MP" value={`${student.mp} / ${student.maxMp}`} />
+                <StatItem icon={<Heart className="h-6 w-6 text-red-500" />} label="HP" value={`${'${student.hp}'} / ${'${student.maxHp}'}`} />
+                <StatItem icon={<Zap className="h-6 w-6 text-blue-400" />} label="MP" value={`${'${student.mp}'} / ${'${student.maxMp}'}`} />
                 <StatItem icon={<Coins className="h-6 w-6 text-amber-500" />} label="Gold" value={student.gold} />
             </div>
         </div>

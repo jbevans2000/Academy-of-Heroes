@@ -35,7 +35,6 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { avatarData } from '@/lib/avatars';
-import { CharacterViewerFallback } from '@/components/dashboard/character-viewer-3d';
 
 const CharacterCanvas = lazy(() => import('@/components/dashboard/character-canvas'));
 
@@ -269,7 +268,7 @@ export default function ForgePage() {
         } else {
             setSelectedStaticAvatarUrl(null); 
             if ('slot' in item) { // ArmorPiece
-                const slotKey = `${item.slot}Id` as keyof typeof equipment;
+                const slotKey = `${'${item.slot}'}Id` as keyof typeof equipment;
                 setEquipment(prev => ({
                     ...prev,
                     [slotKey]: prev[slotKey] === item.id ? null : item.id
@@ -518,14 +517,14 @@ export default function ForgePage() {
                             const isCurrentlySelected = selectedStaticAvatarUrl === url;
                             return (
                                 <div 
-                                    key={`${lvl}-${index}`} 
+                                    key={`${'${lvl}'}-${'${index}'}`} 
                                     className={cn(
                                         "relative border-4 rounded-lg cursor-pointer transition-all duration-300 hover:scale-105 aspect-[3/4]",
                                         isCurrentlySelected ? 'border-primary ring-4 ring-primary/50' : 'border-transparent hover:border-primary/50'
                                     )}
                                     onClick={() => handleStaticAvatarClick(url)}
                                 >
-                                    <Image src={url} alt={`Avatar level ${lvl} - ${index + 1}`} fill className="w-full h-full rounded-md object-cover" />
+                                    <Image src={url} alt={`Avatar level ${'${lvl}'} - ${'${index + 1}'}`} fill className="w-full h-full rounded-md object-cover" />
                                      {isCurrentlySelected && (
                                         <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-1">
                                             <UserCheck className="h-4 w-4" />
@@ -649,7 +648,7 @@ export default function ForgePage() {
                                                                 key={index} 
                                                                 className={cn("h-16 w-16 rounded-md border-2 cursor-pointer", equipment.hairstyleColor === color.imageUrl ? "border-primary ring-2 ring-primary" : "border-transparent")}
                                                                 onClick={() => setEquipment(prev => ({...prev, hairstyleColor: color.imageUrl}))} >
-                                                                <Image src={color.thumbnailUrl || color.imageUrl} alt={`Color ${index+1}`} width={64} height={64} className="w-full h-full object-contain rounded-sm bg-secondary" />
+                                                                <Image src={color.thumbnailUrl || color.imageUrl} alt={`Color ${'${index+1}'}`} width={64} height={64} className="w-full h-full object-contain rounded-sm bg-secondary" />
                                                             </div>
                                                         ))}
                                                     </div>
@@ -666,7 +665,7 @@ export default function ForgePage() {
                                                                         <p className="text-muted-foreground text-sm col-span-3 text-center py-2">No items owned.</p>
                                                                     ) : (
                                                                         armorBySlot[slot].map(item => {
-                                                                            const slotKey = `${item.slot}Id` as keyof typeof equipment;
+                                                                            const slotKey = `${'${item.slot}'}Id` as keyof typeof equipment;
                                                                             const isEquipped = equipment[slotKey] === item.id;
                                                                             return (
                                                                                 <Card 
@@ -719,7 +718,7 @@ export default function ForgePage() {
                                 className="relative w-full aspect-square bg-gray-700 rounded-lg p-2"
                                 onMouseMove={handleMouseMove}
                             >
-                                <Suspense fallback={<CharacterViewerFallback />}>
+                                <Suspense fallback={<div className="w-full h-full bg-gray-200 animate-pulse" />}>
                                      <CharacterCanvas 
                                         student={student}
                                         allBodies={allBodies}

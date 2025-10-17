@@ -1,2 +1,0 @@
-// This file is no longer needed and can be deleted.
-// The new approach fetches teacher emails directly from Firestore.
