@@ -118,9 +118,13 @@ export function DashboardHeader({ characterName = 'Account' }: DashboardHeaderPr
 
     window.addEventListener('beforeunload', setOffline);
 
+    // This part is modified. The return function from useEffect is called on component unmount.
+    // By NOT returning the event listener removal here, it persists across page navigations
+    // as long as the component that uses this header stays mounted within the layout.
+    // The `beforeunload` listener correctly handles tab/browser closing.
     return () => {
         unsubscribeStudent();
-        setOffline();
+        // DO NOT call setOffline here, as it would trigger on every page navigation.
         window.removeEventListener('beforeunload', setOffline);
     };
   }, [user, teacherUid]);
