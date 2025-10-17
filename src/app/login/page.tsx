@@ -12,49 +12,11 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
-import { getGlobalSettings } from '@/ai/flows/manage-settings';
-import { useRouter } from 'next/navigation';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase';
-import { Loader2 } from 'lucide-react';
-import { doc, getDoc } from 'firebase/firestore';
+import { useState } from 'react';
 
 export default function LoginPage() {
   const [showStudentLogin, setShowStudentLogin] = useState(false);
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const checkStatus = async () => {
-        const settings = await getGlobalSettings();
-        if (settings.isMaintenanceModeOn) {
-            const unsub = onAuthStateChanged(auth, async (user) => {
-                const adminRef = user ? doc(db, 'admins', user.uid) : null;
-                const adminSnap = adminRef ? await getDoc(adminRef) : null;
-                
-                if (!user || (!adminSnap?.exists() && !(settings.maintenanceWhitelist || []).includes(user.uid))) {
-                    router.push('/maintenance');
-                    return;
-                }
-                 setIsLoading(false);
-            });
-            return () => unsub();
-        } else {
-             setIsLoading(false);
-        }
-    };
-    checkStatus();
-  }, [router]);
-
-  if (isLoading) {
-    return (
-        <div className="flex items-center justify-center min-h-screen">
-            <Loader2 className="h-16 w-16 animate-spin text-primary" />
-        </div>
-    );
-  }
-
+  
   return (
     <div
       className="flex items-center justify-center min-h-screen bg-background p-4 sm:p-6 lg:p-8"

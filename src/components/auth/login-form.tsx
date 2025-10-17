@@ -11,8 +11,9 @@ import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Loader2, KeyRound } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
-import { doc, getDoc, getDocs, collection, query, writeBatch, serverTimestamp, setDoc, where } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import Link from 'next/link';
+import { getGlobalSettings } from '@/ai/flows/manage-settings';
 
 export function LoginForm() {
   const [loginId, setLoginId] = useState('');
@@ -90,6 +91,14 @@ export function LoginForm() {
       const userCredential = await signInWithEmailAndPassword(auth, email, pass);
       const user = userCredential.user;
 
+      // POST-LOGIN MAINTENANCE CHECK
+      const settings = await getGlobalSettings();
+      if (settings.isMaintenanceModeOn && !(settings.maintenanceWhitelist || []).includes(user.uid)) {
+          await signOut(auth); // Sign out the non-whitelisted user
+          router.push('/maintenance');
+          return; // Stop the login process
+      }
+
       const studentMetaRef = doc(db, 'students', user.uid);
       let studentMetaSnap = await getDoc(studentMetaRef);
       
@@ -100,7 +109,6 @@ export function LoginForm() {
         teacherUid = studentMetaSnap.data().teacherUid;
         isApproved = studentMetaSnap.data().approved;
       } else {
-        // This is the key change: throw a specific, user-friendly error.
         throw new Error("Your account info could not be found. Please speak with your Guild Leader!");
       }
 
@@ -109,11 +117,13 @@ export function LoginForm() {
           const studentData = studentSnap.data();
 
           if (studentData.isArchived) {
+              await signOut(auth);
               router.push('/account-archived');
               return;
           }
 
           if (!isApproved) {
+            await signOut(auth);
             router.push('/awaiting-approval');
             return;
           }
@@ -125,10 +135,8 @@ export function LoginForm() {
 
           router.push(`/dashboard${justApproved ? `?approved=true&className=${encodeURIComponent(className)}` : ''}`);
       } else {
-         // This case handles when a student is approved but their document isn't created yet,
-         // OR if the student is unapproved.
-         // Also catches cases where a student record was deleted from the teacher's subcollection but the global one remains.
          await setDoc(doc(db, 'students', user.uid), { teacherUid: teacherUid, approved: false });
+         await signOut(auth);
          throw new Error("Your account info could not be found. Please speak with your Guild Leader!");
       }
   }

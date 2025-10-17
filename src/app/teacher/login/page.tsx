@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,7 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { School, Loader2, KeyRound, Mail, ArrowLeft, ShieldAlert } from 'lucide-react';
-import { signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -30,37 +30,6 @@ export default function TeacherLoginPage() {
   const [password, setPassword] = useState('');
   const router = useRouter();
   const { toast } = useToast();
-  const [isCheckingStatus, setIsCheckingStatus] = useState(true);
-
-  useEffect(() => {
-    const checkStatus = async () => {
-        const settings = await getGlobalSettings();
-        if (settings.isMaintenanceModeOn) {
-            const unsub = onAuthStateChanged(auth, async (user) => {
-                // Admins can always log in
-                if (user) {
-                    const adminRef = doc(db, 'admins', user.uid);
-                    const adminSnap = await getDoc(adminRef);
-                    if (adminSnap.exists()) {
-                         setIsCheckingStatus(false);
-                         return;
-                    }
-                }
-                
-                // Whitelisted users can also log in
-                if (!user || !(settings.maintenanceWhitelist || []).includes(user.uid)) {
-                    router.push('/maintenance');
-                    return;
-                }
-                setIsCheckingStatus(false);
-            });
-            return () => unsub();
-        } else {
-            setIsCheckingStatus(false);
-        }
-    };
-    checkStatus();
-  }, [router]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -75,6 +44,17 @@ export default function TeacherLoginPage() {
     try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
+        
+        // POST-LOGIN MAINTENANCE CHECK
+        const settings = await getGlobalSettings();
+        const adminRef = doc(db, 'admins', user.uid);
+        const adminSnap = await getDoc(adminRef);
+
+        if (settings.isMaintenanceModeOn && !adminSnap.exists() && !(settings.maintenanceWhitelist || []).includes(user.uid)) {
+            await signOut(auth); // Sign out the non-whitelisted user
+            router.push('/maintenance');
+            return;
+        }
 
         // Fetch teacher document to check for legacy status
         const teacherDocRef = doc(db, 'teachers', user.uid);
@@ -82,9 +62,8 @@ export default function TeacherLoginPage() {
 
         const isLegacyAccount = teacherDocSnap.exists() && teacherDocSnap.data().isLegacyAccount === true;
 
-        // **** CRITICAL SECURITY CHECK ****
-        // Bypass verification only if it's a legacy account.
         if (!user.emailVerified && !isLegacyAccount) {
+            await signOut(auth); // Sign out unverified user
             toast({
                 variant: 'destructive',
                 title: 'Email Not Verified',
@@ -92,12 +71,8 @@ export default function TeacherLoginPage() {
                 duration: 8000,
             });
             router.push('/teacher/verify-email');
-            return; // Stop the login process
+            return;
         }
-
-        // Check if the user is a master admin
-        const adminRef = doc(db, 'admins', user.uid);
-        const adminSnap = await getDoc(adminRef);
 
         if (adminSnap.exists()) {
             toast({
@@ -171,14 +146,6 @@ export default function TeacherLoginPage() {
     } finally {
         setIsResetting(false);
     }
-  }
-
-  if (isCheckingStatus) {
-    return (
-        <div className="flex items-center justify-center min-h-screen">
-            <Loader2 className="h-16 w-16 animate-spin text-primary" />
-        </div>
-    );
   }
 
   return (
