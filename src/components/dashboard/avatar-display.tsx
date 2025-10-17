@@ -8,13 +8,21 @@ import type { Student } from '@/lib/data';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useEffect, useState, useMemo } from 'react';
-import type { Hairstyle, ArmorPiece, BaseBody } from '@/lib/forge';
-import { CharacterViewerFallback } from './character-viewer-3d';
+import type { Hairstyle, ArmorPiece, BaseBody, ArmorSlot } from '@/lib/forge';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const CharacterCanvas = lazy(() => import('@/components/dashboard/character-canvas'));
 
 interface AvatarDisplayProps {
   student: Student;
+}
+
+function CharacterViewerFallback() {
+    return (
+        <div className="w-full h-full flex items-center justify-center bg-gray-200">
+            <Skeleton className="w-full h-full" />
+        </div>
+    );
 }
 
 export function AvatarDisplay({ student }: AvatarDisplayProps) {
@@ -30,7 +38,7 @@ export function AvatarDisplay({ student }: AvatarDisplayProps) {
   }[student.class] || 'border-transparent';
   
   useEffect(() => {
-    let unsubs: (() => void)[] = [];
+    let unsubs: (()=>void)[] = [];
     const fetchAssets = async () => {
         const hairQuery = collection(db, 'hairstyles');
         unsubs.push(onSnapshot(hairQuery, (snapshot) => {

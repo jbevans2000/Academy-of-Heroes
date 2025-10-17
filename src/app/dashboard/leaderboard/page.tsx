@@ -14,7 +14,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, Trophy, Star, Coins, Crown, Loader2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { CharacterViewerFallback } from '@/components/dashboard/character-viewer-3d';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
@@ -49,7 +48,7 @@ const ChampionCard = ({ student, rank, assets, type }: { student: Student | null
                 <Crown className="text-amber-500" /> {type} {rank} Champion
             </CardTitle>
             <div className="w-full h-80 relative mt-2 rounded-md overflow-hidden bg-black/10">
-                 <Suspense fallback={<CharacterViewerFallback />}>
+                 <Suspense fallback={<div className="w-full h-full bg-gray-200 animate-pulse" />}>
                     <CharacterCanvas 
                         student={student}
                         allBodies={assets.allBodies}
