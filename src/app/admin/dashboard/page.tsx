@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, doc, getDoc, query, orderBy, updateDoc, addDoc, serverTimestamp, deleteDoc, onSnapshot, where } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, query, orderBy, updateDoc, addDoc, serverTimestamp, deleteDoc, onSnapshot, where, Timestamp } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth, app } from '@/lib/firebase';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -135,6 +135,7 @@ export default function AdminDashboardPage() {
     // Maintenance Mode State
     const [isMaintenanceModeOn, setIsMaintenanceModeOn] = useState(false);
     const [maintenanceWhitelist, setMaintenanceWhitelist] = useState('');
+    const [maintenanceEndsAt, setMaintenanceEndsAt] = useState<string>('');
 
 
     // Notepad State
@@ -468,6 +469,16 @@ export default function AdminDashboardPage() {
             setIsFeedbackPanelVisible(settings.isFeedbackPanelVisible || false);
             setIsMaintenanceModeOn(settings.isMaintenanceModeOn || false);
             setMaintenanceWhitelist((settings.maintenanceWhitelist || []).join(', '));
+            if (settings.maintenanceEndsAt) {
+                // Convert Firestore Timestamp to a datetime-local string
+                const date = (settings.maintenanceEndsAt as Timestamp).toDate();
+                // Adjust for timezone offset to display correctly in the local time of the browser
+                const timezoneOffset = date.getTimezoneOffset() * 60000;
+                const localDate = new Date(date.getTime() - timezoneOffset);
+                setMaintenanceEndsAt(localDate.toISOString().slice(0,16));
+            } else {
+                setMaintenanceEndsAt('');
+            }
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not load global settings.' });
         } finally {
@@ -542,7 +553,14 @@ export default function AdminDashboardPage() {
         setIsSettingsLoading(true);
         const newStatus = !isMaintenanceModeOn;
         try {
-            const result = await updateGlobalSettings({ isMaintenanceModeOn: newStatus });
+            // If turning maintenance mode off, also clear the end time.
+            const updates: { isMaintenanceModeOn: boolean; maintenanceEndsAt?: any } = { isMaintenanceModeOn: newStatus };
+            if (!newStatus) {
+                updates.maintenanceEndsAt = null;
+                setMaintenanceEndsAt('');
+            }
+            const result = await updateGlobalSettings(updates);
+
             if (result.success) {
                 setIsMaintenanceModeOn(newStatus);
                 toast({ title: 'Maintenance Mode Updated', description: `The site is now ${newStatus ? 'OFFLINE' : 'ONLINE'}.` });
@@ -556,13 +574,18 @@ export default function AdminDashboardPage() {
         }
     };
 
-    const handleSaveWhitelist = async () => {
+    const handleSaveMaintenanceSettings = async () => {
         setIsSettingsLoading(true);
         const whitelistArray = maintenanceWhitelist.split(',').map(uid => uid.trim()).filter(Boolean);
+        const endsAtTimestamp = maintenanceEndsAt ? Timestamp.fromDate(new Date(maintenanceEndsAt)) : null;
+
         try {
-            const result = await updateGlobalSettings({ maintenanceWhitelist: whitelistArray });
+            const result = await updateGlobalSettings({ 
+                maintenanceWhitelist: whitelistArray,
+                maintenanceEndsAt: endsAtTimestamp,
+            });
             if (result.success) {
-                toast({ title: 'Whitelist Saved', description: 'The maintenance mode whitelist has been updated.' });
+                toast({ title: 'Maintenance Settings Saved', description: 'Whitelist and end time have been updated.' });
             } else {
                 throw new Error(result.error);
             }
@@ -850,20 +873,32 @@ export default function AdminDashboardPage() {
                                     disabled={isSettingsLoading}
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="whitelist">Whitelist UIDs</Label>
-                                <Textarea
-                                    id="whitelist"
-                                    placeholder="Enter user UIDs, separated by commas"
-                                    value={maintenanceWhitelist}
-                                    onChange={(e) => setMaintenanceWhitelist(e.target.value)}
-                                    rows={3}
-                                    disabled={isSettingsLoading}
-                                />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="whitelist">Whitelist UIDs (comma-separated)</Label>
+                                    <Textarea
+                                        id="whitelist"
+                                        placeholder="Enter user UIDs..."
+                                        value={maintenanceWhitelist}
+                                        onChange={(e) => setMaintenanceWhitelist(e.target.value)}
+                                        rows={3}
+                                        disabled={isSettingsLoading}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="maintenance-ends">Site Back Up At (Optional)</Label>
+                                    <Input
+                                        id="maintenance-ends"
+                                        type="datetime-local"
+                                        value={maintenanceEndsAt}
+                                        onChange={(e) => setMaintenanceEndsAt(e.target.value)}
+                                        disabled={isSettingsLoading}
+                                    />
+                                </div>
                             </div>
-                            <Button onClick={handleSaveWhitelist} disabled={isSettingsLoading}>
+                            <Button onClick={handleSaveMaintenanceSettings} disabled={isSettingsLoading}>
                                 {isSettingsLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
-                                Save Whitelist
+                                Save Maintenance Settings
                             </Button>
                         </CardContent>
                     </Card>

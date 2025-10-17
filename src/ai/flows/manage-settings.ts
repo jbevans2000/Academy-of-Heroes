@@ -15,6 +15,7 @@ interface Settings {
     broadcastMessageId?: string;
     isMaintenanceModeOn?: boolean;
     maintenanceWhitelist?: string[];
+    maintenanceEndsAt?: any; // Firestore Timestamp
 }
 
 const settingsRef = doc(db, 'settings', 'global');
@@ -37,14 +38,15 @@ export async function getGlobalSettings(): Promise<Settings> {
                 broadcastMessageId: data.broadcastMessageId || '',
                 isMaintenanceModeOn: data.isMaintenanceModeOn ?? false,
                 maintenanceWhitelist: data.maintenanceWhitelist || [],
+                maintenanceEndsAt: data.maintenanceEndsAt || null,
             };
         }
         // Default to registration being open if the document doesn't exist
-        return { isStudentRegistrationOpen: true, isTeacherRegistrationOpen: true, isFeedbackPanelVisible: false, broadcastMessage: '', broadcastMessageId: '', isMaintenanceModeOn: false, maintenanceWhitelist: [] };
+        return { isStudentRegistrationOpen: true, isTeacherRegistrationOpen: true, isFeedbackPanelVisible: false, broadcastMessage: '', broadcastMessageId: '', isMaintenanceModeOn: false, maintenanceWhitelist: [], maintenanceEndsAt: null };
     } catch (error) {
         console.error("Error fetching global settings:", error);
         // Fail-safe default
-        return { isStudentRegistrationOpen: true, isTeacherRegistrationOpen: true, isFeedbackPanelVisible: false, broadcastMessage: '', broadcastMessageId: '', isMaintenanceModeOn: false, maintenanceWhitelist: [] };
+        return { isStudentRegistrationOpen: true, isTeacherRegistrationOpen: true, isFeedbackPanelVisible: false, broadcastMessage: '', broadcastMessageId: '', isMaintenanceModeOn: false, maintenanceWhitelist: [], maintenanceEndsAt: null };
     }
 }
 
