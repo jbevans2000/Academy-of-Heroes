@@ -233,7 +233,6 @@ export default function AdminDashboardPage() {
 
                 if (adminSnap.exists()) {
                     setUser(currentUser);
-                    handleRefreshData();
                 } else {
                     router.push('/teacher/dashboard');
                 }
@@ -245,18 +244,13 @@ export default function AdminDashboardPage() {
         return () => unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [router]);
-
-    // Firestore listener for teachers data
+    
+    // Data fetching useEffect, dependent on `user` state
     useEffect(() => {
-        if (!user) return;
-        
-        const unsub = fetchTeacherData();
-        
-        return () => {
-            if (typeof unsub === 'function') {
-                unsub();
-            }
-        };
+        if (user) {
+            handleRefreshData();
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     const fetchStudents = async () => {
