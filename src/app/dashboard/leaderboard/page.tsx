@@ -61,6 +61,7 @@ const ChampionCard = ({ student, rank, assets, type }: { student: Student | null
                         localHairstyleTransforms={student.equippedHairstyleTransforms}
                         localArmorTransforms={student.armorTransforms}
                         localArmorTransforms2={student.armorTransforms2}
+                        localPetTransforms={student.petTransforms}
                     />
                 </Suspense>
             </div>
@@ -277,6 +278,7 @@ export default function LeaderboardPage() {
                                                             selectedStaticAvatarUrl={student.useCustomAvatar ? null : student.avatarUrl}
                                                             localHairstyleTransforms={student.equippedHairstyleTransforms}
                                                             localArmorTransforms={student.armorTransforms} localArmorTransforms2={student.armorTransforms2}
+                                                            localPetTransforms={student.petTransforms}
                                                         />
                                                     </Suspense>
                                                 </div>
