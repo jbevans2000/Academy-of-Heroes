@@ -22,9 +22,6 @@ concurrency: 80
 # The environment variables to set.
 # These can be referenced using process.env['NAME_OF_YOUR_VARIABLE']
 # in your code.
-env:
-  - variable: GEMINI_API_KEY
-    secret: GEMINI_API_KEY
 # Specifies a schedule for a job to run.
 # The schedule is in cron format.
 # schedule:
