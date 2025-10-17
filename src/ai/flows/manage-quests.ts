@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs, writeBatch, deleteDoc, serverTimestamp, query as firestoreQuery, where, arrayUnion, increment, arrayRemove, limit } from 'firebase/firestore';
@@ -45,10 +46,9 @@ interface ApproveChapterCompletionInput {
 
 interface SetStudentQuestProgressInput {
     teacherUid: string;
-
     studentUids: string[];
     hubId: string;
-    chapterNumber: number;
+    chapterNumber: number; // This is the chapter the student should START, not complete.
 }
 
 interface UncompleteChapterInput {
@@ -386,10 +386,14 @@ export async function setStudentQuestProgress(input: SetStudentQuestProgressInpu
             
             const targetHub = allHubs.find(h => h.id === hubId);
             if (!targetHub) continue;
+            
+            // Corrected Logic: Set progress to the chapter *before* the target chapter.
+            // This makes the target chapter the next available one.
+            newQuestProgress[hubId] = Math.max(0, chapterNumber - 1);
 
-            newQuestProgress[hubId] = chapterNumber;
 
             for (const hub of allHubs) {
+                if (hub.hubType === 'sidequest') continue; // Skip side quest hubs
                 if (hub.hubOrder < targetHub.hubOrder) {
                     const chaptersInThisHub = allChapters.filter(c => c.hubId === hub.id);
                     newQuestProgress[hub.id] = chaptersInThisHub.length;
@@ -398,7 +402,7 @@ export async function setStudentQuestProgress(input: SetStudentQuestProgressInpu
                 }
             }
             
-            const newRewardedChapters = new Set<string>();
+            const newCompletedChapters = new Set<string>();
             for (const hub of allHubs) {
                 const chaptersCompletedInHub = newQuestProgress[hub.id] || 0;
                 
@@ -407,7 +411,7 @@ export async function setStudentQuestProgress(input: SetStudentQuestProgressInpu
                     for (let i = 1; i <= chaptersCompletedInHub; i++) {
                         const chapterToMark = chaptersInThisHub.find(c => c.chapterNumber === i);
                         if (chapterToMark) {
-                            newRewardedChapters.add(chapterToMark.id);
+                            newCompletedChapters.add(chapterToMark.id);
                         }
                     }
                 }
@@ -427,13 +431,13 @@ export async function setStudentQuestProgress(input: SetStudentQuestProgressInpu
             batch.update(studentRef, { 
                 questProgress: newQuestProgress,
                 hubsCompleted: highestCompletedOrder,
-                completedChapters: Array.from(newRewardedChapters)
+                completedChapters: Array.from(newCompletedChapters)
             });
         }
         
         await batch.commit();
         const targetHubName = allHubs.find(h => h.id === hubId)?.name || 'Unknown Hub';
-        await logGameEvent(teacherUid, 'GAMEMASTER', `Set quest progress for ${studentUids.length} student(s) to Hub: ${targetHubName}, Chapter: ${chapterNumber}.`);
+        await logGameEvent(teacherUid, 'GAMEMASTER', `Set quest progress for ${studentUids.length} student(s) to start Hub: ${targetHubName}, Chapter: ${chapterNumber}.`);
 
         return { success: true };
 
