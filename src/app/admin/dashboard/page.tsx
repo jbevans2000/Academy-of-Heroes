@@ -198,58 +198,7 @@ export default function AdminDashboardPage() {
     const router = useRouter();
     const { toast } = useToast();
 
-    const handleRefreshData = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            await Promise.all([
-                fetchTeacherData(),
-                fetchStudents(),
-                fetchSettings(),
-                fetchFeedback(),
-                fetchBroadcasts(),
-                fetchNotepad(),
-                fetchKnownBugs(),
-                fetchUpcomingFeatures(),
-            ]);
-            toast({ title: "Data Refreshed", description: "All dashboard data has been updated." });
-        } catch (error) {
-            console.error("Dashboard refresh error: ", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not refresh all dashboard data.' });
-        } finally {
-            setIsLoading(false);
-        }
-    }, []); // Empty dependency array as this function is self-contained
-
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-            if (currentUser) {
-                try {
-                    const adminRef = doc(db, 'admins', currentUser.uid);
-                    const adminSnap = await getDoc(adminRef);
-
-                    if (adminSnap.exists()) {
-                        setUser(currentUser);
-                        // Data fetching is now triggered here, only for admins
-                        await handleRefreshData(); 
-                    } else {
-                        // Not an admin, redirect
-                        router.push('/teacher/dashboard');
-                    }
-                } catch (error) {
-                    console.error("Error verifying admin status:", error);
-                    router.push('/teacher/login');
-                }
-            } else {
-                // Not logged in
-                router.push('/teacher/login');
-            }
-        });
-
-        return () => unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [router]);
-
-    const fetchTeacherData = async () => {
+    const fetchTeacherData = useCallback(async () => {
         const teachersQuery = query(collection(db, 'teachers'), orderBy('name'));
         const snapshot = await getDocs(teachersQuery);
         const teachersData: Teacher[] = [];
@@ -270,9 +219,9 @@ export default function AdminDashboardPage() {
             });
         }
         setTeachers(teachersData);
-    }
+    }, []);
 
-    const fetchStudents = async () => {
+    const fetchStudents = useCallback(async () => {
         try {
             const teachersSnapshot = await getDocs(collection(db, 'teachers'));
             const studentsData: Student[] = [];
@@ -304,7 +253,139 @@ export default function AdminDashboardPage() {
              console.error("Error fetching students:", error);
              toast({ variant: 'destructive', title: 'Error', description: 'Could not load student data.' });
         }
-    }
+    }, [toast]);
+
+    const fetchFeedback = useCallback(async () => {
+        try {
+            const feedbackQuery = query(collection(db, 'feedback'), orderBy('createdAt', 'desc'));
+            const feedbackSnapshot = await getDocs(feedbackQuery);
+            const feedbackData = feedbackSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Feedback));
+            setFeedback(feedbackData);
+        } catch (error) {
+             console.error("Error fetching feedback:", error);
+             toast({ variant: 'destructive', title: 'Error', description: 'Could not load feedback submissions.' });
+        }
+    }, [toast]);
+    
+    const fetchBroadcasts = useCallback(async () => {
+        try {
+            const broadcastsQuery = query(collection(db, 'settings', 'global', 'broadcasts'), orderBy('sentAt', 'desc'));
+            const broadcastsSnapshot = await getDocs(broadcastsQuery);
+            const broadcastsData = broadcastsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Broadcast));
+            setBroadcasts(broadcastsData);
+        } catch (error) {
+            console.error("Error fetching broadcasts:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not load broadcast history.' });
+        }
+    }, [toast]);
+    
+    const fetchNotepad = useCallback(async () => {
+        setIsNotepadLoading(true);
+        try {
+            const content = await getAdminNotepadContent();
+            setNotepadContent(content);
+            initialNotepadContent.current = content;
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not load notepad content.' });
+        } finally {
+            setIsNotepadLoading(false);
+        }
+    }, [toast]);
+    
+    const fetchKnownBugs = useCallback(async () => {
+        setIsKnownBugsLoading(true);
+        try {
+            const content = await getKnownBugsContent();
+            setKnownBugsContent(content);
+            initialKnownBugsContent.current = content;
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not load known bugs content.' });
+        } finally {
+            setIsKnownBugsLoading(false);
+        }
+    }, [toast]);
+
+    const fetchUpcomingFeatures = useCallback(async () => {
+        setIsUpcomingFeaturesLoading(true);
+        try {
+            const content = await getUpcomingFeaturesContent();
+            setUpcomingFeaturesContent(content);
+            initialUpcomingFeaturesContent.current = content;
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not load upcoming features content.' });
+        } finally {
+            setIsUpcomingFeaturesLoading(false);
+        }
+    }, [toast]);
+
+    const fetchSettings = useCallback(async () => {
+        setIsSettingsLoading(true);
+        try {
+            const settings = await getGlobalSettings();
+            setIsStudentRegistrationOpen(settings.isStudentRegistrationOpen);
+            setIsTeacherRegistrationOpen(settings.isTeacherRegistrationOpen);
+            setIsFeedbackPanelVisible(settings.isFeedbackPanelVisible || false);
+            setIsMaintenanceModeOn(settings.isMaintenanceModeOn || false);
+            setMaintenanceWhitelist((settings.maintenanceWhitelist || []).join(', '));
+            setMaintenanceMessage(settings.maintenanceMessage || 'The Academy of Heroes is under maintenance and will be back soon!');
+        } catch (error) {
+            console.error("Error fetching global settings:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not load global settings.' });
+        } finally {
+            setIsSettingsLoading(false);
+        }
+    }, [toast]);
+    
+    const handleRefreshData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            await Promise.all([
+                fetchTeacherData(),
+                fetchStudents(),
+                fetchSettings(),
+                fetchFeedback(),
+                fetchBroadcasts(),
+                fetchNotepad(),
+                fetchKnownBugs(),
+                fetchUpcomingFeatures(),
+            ]);
+            toast({ title: "Data Refreshed", description: "All dashboard data has been updated." });
+        } catch (error) {
+            console.error("Dashboard refresh error: ", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not refresh all dashboard data.' });
+        } finally {
+            setIsLoading(false);
+        }
+    }, [fetchTeacherData, fetchStudents, fetchSettings, fetchFeedback, fetchBroadcasts, fetchNotepad, fetchKnownBugs, fetchUpcomingFeatures, toast]);
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            if (currentUser) {
+                try {
+                    const adminRef = doc(db, 'admins', currentUser.uid);
+                    const adminSnap = await getDoc(adminRef);
+
+                    if (adminSnap.exists()) {
+                        setUser(currentUser);
+                        // Data fetching is now triggered here, only for admins
+                        handleRefreshData();
+                    } else {
+                        // Not an admin, redirect
+                        router.push('/teacher/dashboard');
+                    }
+                } catch (error) {
+                    console.error("Error verifying admin status:", error);
+                    router.push('/teacher/login');
+                }
+            } else {
+                // Not logged in
+                router.push('/teacher/login');
+            }
+        });
+
+        return () => unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [router]);
 
     const sortedTeachers = useMemo(() => {
         let sortableItems = [...teachers];
@@ -341,71 +422,7 @@ export default function AdminDashboardPage() {
         }
         setConfig({ key, direction } as any);
     };
-
     
-    const fetchFeedback = async () => {
-        try {
-            const feedbackQuery = query(collection(db, 'feedback'), orderBy('createdAt', 'desc'));
-            const feedbackSnapshot = await getDocs(feedbackQuery);
-            const feedbackData = feedbackSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Feedback));
-            setFeedback(feedbackData);
-        } catch (error) {
-             console.error("Error fetching feedback:", error);
-             toast({ variant: 'destructive', title: 'Error', description: 'Could not load feedback submissions.' });
-        }
-    }
-    
-    const fetchBroadcasts = async () => {
-        try {
-            const broadcastsQuery = query(collection(db, 'settings', 'global', 'broadcasts'), orderBy('sentAt', 'desc'));
-            const broadcastsSnapshot = await getDocs(broadcastsQuery);
-            const broadcastsData = broadcastsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Broadcast));
-            setBroadcasts(broadcastsData);
-        } catch (error) {
-            console.error("Error fetching broadcasts:", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not load broadcast history.' });
-        }
-    }
-    
-    const fetchNotepad = async () => {
-        setIsNotepadLoading(true);
-        try {
-            const content = await getAdminNotepadContent();
-            setNotepadContent(content);
-            initialNotepadContent.current = content;
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not load notepad content.' });
-        } finally {
-            setIsNotepadLoading(false);
-        }
-    }
-    
-    const fetchKnownBugs = async () => {
-        setIsKnownBugsLoading(true);
-        try {
-            const content = await getKnownBugsContent();
-            setKnownBugsContent(content);
-            initialKnownBugsContent.current = content;
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not load known bugs content.' });
-        } finally {
-            setIsKnownBugsLoading(false);
-        }
-    }
-
-    const fetchUpcomingFeatures = async () => {
-        setIsUpcomingFeaturesLoading(true);
-        try {
-            const content = await getUpcomingFeaturesContent();
-            setUpcomingFeaturesContent(content);
-            initialUpcomingFeaturesContent.current = content;
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not load upcoming features content.' });
-        } finally {
-            setIsUpcomingFeaturesLoading(false);
-        }
-    }
-
     const handleSaveNotepad = async () => {
         setIsSavingNotepad(true);
         try {
@@ -454,25 +471,6 @@ export default function AdminDashboardPage() {
             toast({ variant: 'destructive', title: 'Save Failed', description: error.message });
         } finally {
             setIsSavingUpcomingFeatures(false);
-        }
-    };
-
-    const fetchSettings = async () => {
-        setIsSettingsLoading(true);
-        try {
-            const settings = await getGlobalSettings();
-            setIsStudentRegistrationOpen(settings.isStudentRegistrationOpen);
-            setIsTeacherRegistrationOpen(settings.isTeacherRegistrationOpen);
-            setIsFeedbackPanelVisible(settings.isFeedbackPanelVisible || false);
-            setIsMaintenanceModeOn(settings.isMaintenanceModeOn || false);
-            setMaintenanceWhitelist((settings.maintenanceWhitelist || []).join(', '));
-            setMaintenanceMessage(settings.maintenanceMessage || '');
-
-        } catch (error) {
-            console.error("Error fetching global settings:", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not load global settings.' });
-        } finally {
-            setIsSettingsLoading(false);
         }
     };
     
@@ -539,12 +537,11 @@ export default function AdminDashboardPage() {
         }
     }
     
-    const handleMaintenanceModeToggle = async () => {
+    const handleMaintenanceModeToggle = useCallback(async () => {
         setIsSettingsLoading(true);
         const newStatus = !isMaintenanceModeOn;
         try {
             const result = await updateGlobalSettings({ isMaintenanceModeOn: newStatus });
-
             if (result.success) {
                 setIsMaintenanceModeOn(newStatus);
                 toast({ title: 'Maintenance Mode Updated', description: `The site is now ${newStatus ? 'OFFLINE' : 'ONLINE'}.` });
@@ -556,7 +553,7 @@ export default function AdminDashboardPage() {
         } finally {
             setIsSettingsLoading(false);
         }
-    };
+    }, [isMaintenanceModeOn, toast]);
 
     const handleSaveMaintenanceSettings = async () => {
         setIsSettingsLoading(true);
