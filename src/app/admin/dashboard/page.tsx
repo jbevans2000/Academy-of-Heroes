@@ -135,7 +135,7 @@ export default function AdminDashboardPage() {
     // Maintenance Mode State
     const [isMaintenanceModeOn, setIsMaintenanceModeOn] = useState(false);
     const [maintenanceWhitelist, setMaintenanceWhitelist] = useState('');
-    const [maintenanceEndsAt, setMaintenanceEndsAt] = useState<string>('');
+    const [maintenanceMessage, setMaintenanceMessage] = useState('');
 
 
     // Notepad State
@@ -198,45 +198,49 @@ export default function AdminDashboardPage() {
     const router = useRouter();
     const { toast } = useToast();
 
-    const fetchTeacherData = async () => {
-        const teachersQuery = query(collection(db, 'teachers'), orderBy('name'));
-        const unsubscribe = onSnapshot(teachersQuery, async (snapshot) => {
-            const teachersData: Teacher[] = [];
-            for (const teacherDoc of snapshot.docs) {
-                const teacherInfo = teacherDoc.data();
-                const studentsSnapshot = await getDocs(collection(db, 'teachers', teacherDoc.id, 'students'));
-                teachersData.push({
-                    id: teacherDoc.id,
-                    name: teacherInfo.name || '[No Name]',
-                    email: teacherInfo.email || '[No Auth Email]',
-                    contactEmail: teacherInfo.contactEmail || teacherInfo.email || '-',
-                    address: teacherInfo.address || '-',
-                    className: teacherInfo.className || '[No Class Name]',
-                    schoolName: teacherInfo.schoolName || '[No School]',
-                    studentCount: studentsSnapshot.size,
-                    createdAt: teacherInfo.createdAt?.toDate() || null,
-                    hasUnreadAdminMessages: teacherInfo.hasUnreadAdminMessages || false,
-                });
-            }
-            setTeachers(teachersData);
-            if(isLoading) setIsLoading(false);
-        });
-        return unsubscribe;
-    }
-
+    const handleRefreshData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            await Promise.all([
+                fetchTeacherData(),
+                fetchStudents(),
+                fetchSettings(),
+                fetchFeedback(),
+                fetchBroadcasts(),
+                fetchNotepad(),
+                fetchKnownBugs(),
+                fetchUpcomingFeatures(),
+            ]);
+            toast({ title: "Data Refreshed", description: "All dashboard data has been updated." });
+        } catch (error) {
+            console.error("Dashboard refresh error: ", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not refresh all dashboard data.' });
+        } finally {
+            setIsLoading(false);
+        }
+    }, []); // Empty dependency array as this function is self-contained
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
-                const adminRef = doc(db, 'admins', currentUser.uid);
-                const adminSnap = await getDoc(adminRef);
+                try {
+                    const adminRef = doc(db, 'admins', currentUser.uid);
+                    const adminSnap = await getDoc(adminRef);
 
-                if (adminSnap.exists()) {
-                    setUser(currentUser);
-                } else {
-                    router.push('/teacher/dashboard');
+                    if (adminSnap.exists()) {
+                        setUser(currentUser);
+                        // Data fetching is now triggered here, only for admins
+                        await handleRefreshData(); 
+                    } else {
+                        // Not an admin, redirect
+                        router.push('/teacher/dashboard');
+                    }
+                } catch (error) {
+                    console.error("Error verifying admin status:", error);
+                    router.push('/teacher/login');
                 }
             } else {
+                // Not logged in
                 router.push('/teacher/login');
             }
         });
@@ -244,14 +248,29 @@ export default function AdminDashboardPage() {
         return () => unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [router]);
-    
-    // Data fetching useEffect, dependent on `user` state
-    useEffect(() => {
-        if (user) {
-            handleRefreshData();
+
+    const fetchTeacherData = async () => {
+        const teachersQuery = query(collection(db, 'teachers'), orderBy('name'));
+        const snapshot = await getDocs(teachersQuery);
+        const teachersData: Teacher[] = [];
+        for (const teacherDoc of snapshot.docs) {
+            const teacherInfo = teacherDoc.data();
+            const studentsSnapshot = await getDocs(collection(db, 'teachers', teacherDoc.id, 'students'));
+            teachersData.push({
+                id: teacherDoc.id,
+                name: teacherInfo.name || '[No Name]',
+                email: teacherInfo.email || '[No Auth Email]',
+                contactEmail: teacherInfo.contactEmail || teacherInfo.email || '-',
+                address: teacherInfo.address || '-',
+                className: teacherInfo.className || '[No Class Name]',
+                schoolName: teacherInfo.schoolName || '[No School]',
+                studentCount: studentsSnapshot.size,
+                createdAt: teacherInfo.createdAt?.toDate() || null,
+                hasUnreadAdminMessages: teacherInfo.hasUnreadAdminMessages || false,
+            });
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user]);
+        setTeachers(teachersData);
+    }
 
     const fetchStudents = async () => {
         try {
@@ -286,22 +305,6 @@ export default function AdminDashboardPage() {
              toast({ variant: 'destructive', title: 'Error', description: 'Could not load student data.' });
         }
     }
-    
-    const handleRefreshData = async () => {
-        setIsLoading(true);
-        await Promise.all([
-            fetchTeacherData(),
-            fetchStudents(),
-            fetchSettings(),
-            fetchFeedback(),
-            fetchBroadcasts(),
-            fetchNotepad(),
-            fetchKnownBugs(),
-            fetchUpcomingFeatures(),
-        ]);
-        setIsLoading(false);
-        toast({ title: "Data Refreshed", description: "All dashboard data has been updated." });
-    };
 
     const sortedTeachers = useMemo(() => {
         let sortableItems = [...teachers];
@@ -463,17 +466,10 @@ export default function AdminDashboardPage() {
             setIsFeedbackPanelVisible(settings.isFeedbackPanelVisible || false);
             setIsMaintenanceModeOn(settings.isMaintenanceModeOn || false);
             setMaintenanceWhitelist((settings.maintenanceWhitelist || []).join(', '));
-            if (settings.maintenanceEndsAt) {
-                // Convert Firestore Timestamp to a datetime-local string
-                const date = (settings.maintenanceEndsAt as Timestamp).toDate();
-                // Adjust for timezone offset to display correctly in the local time of the browser
-                const timezoneOffset = date.getTimezoneOffset() * 60000;
-                const localDate = new Date(date.getTime() - timezoneOffset);
-                setMaintenanceEndsAt(localDate.toISOString().slice(0,16));
-            } else {
-                setMaintenanceEndsAt('');
-            }
+            setMaintenanceMessage(settings.maintenanceMessage || '');
+
         } catch (error) {
+            console.error("Error fetching global settings:", error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not load global settings.' });
         } finally {
             setIsSettingsLoading(false);
@@ -547,13 +543,7 @@ export default function AdminDashboardPage() {
         setIsSettingsLoading(true);
         const newStatus = !isMaintenanceModeOn;
         try {
-            // If turning maintenance mode off, also clear the end time.
-            const updates: { isMaintenanceModeOn: boolean; maintenanceEndsAt?: any } = { isMaintenanceModeOn: newStatus };
-            if (!newStatus) {
-                updates.maintenanceEndsAt = null;
-                setMaintenanceEndsAt('');
-            }
-            const result = await updateGlobalSettings(updates);
+            const result = await updateGlobalSettings({ isMaintenanceModeOn: newStatus });
 
             if (result.success) {
                 setIsMaintenanceModeOn(newStatus);
@@ -571,15 +561,14 @@ export default function AdminDashboardPage() {
     const handleSaveMaintenanceSettings = async () => {
         setIsSettingsLoading(true);
         const whitelistArray = maintenanceWhitelist.split(',').map(uid => uid.trim()).filter(Boolean);
-        const endsAtTimestamp = maintenanceEndsAt ? Timestamp.fromDate(new Date(maintenanceEndsAt)) : null;
 
         try {
             const result = await updateGlobalSettings({ 
                 maintenanceWhitelist: whitelistArray,
-                maintenanceEndsAt: endsAtTimestamp,
+                maintenanceMessage: maintenanceMessage,
             });
             if (result.success) {
-                toast({ title: 'Maintenance Settings Saved', description: 'Whitelist and end time have been updated.' });
+                toast({ title: 'Maintenance Settings Saved', description: 'Whitelist and message have been updated.' });
             } else {
                 throw new Error(result.error);
             }
@@ -867,28 +856,27 @@ export default function AdminDashboardPage() {
                                     disabled={isSettingsLoading}
                                 />
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="whitelist">Whitelist UIDs (comma-separated)</Label>
-                                    <Textarea
-                                        id="whitelist"
-                                        placeholder="Enter user UIDs..."
-                                        value={maintenanceWhitelist}
-                                        onChange={(e) => setMaintenanceWhitelist(e.target.value)}
-                                        rows={3}
-                                        disabled={isSettingsLoading}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="maintenance-ends">Site Back Up At (Optional)</Label>
-                                    <Input
-                                        id="maintenance-ends"
-                                        type="datetime-local"
-                                        value={maintenanceEndsAt}
-                                        onChange={(e) => setMaintenanceEndsAt(e.target.value)}
-                                        disabled={isSettingsLoading}
-                                    />
-                                </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="maintenance-message">Maintenance Page Message</Label>
+                                <Textarea
+                                    id="maintenance-message"
+                                    placeholder="Enter the message to display on the maintenance page..."
+                                    value={maintenanceMessage}
+                                    onChange={(e) => setMaintenanceMessage(e.target.value)}
+                                    rows={3}
+                                    disabled={isSettingsLoading}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="whitelist">Whitelist UIDs (comma-separated)</Label>
+                                <Textarea
+                                    id="whitelist"
+                                    placeholder="Enter user UIDs..."
+                                    value={maintenanceWhitelist}
+                                    onChange={(e) => setMaintenanceWhitelist(e.target.value)}
+                                    rows={3}
+                                    disabled={isSettingsLoading}
+                                />
                             </div>
                             <Button onClick={handleSaveMaintenanceSettings} disabled={isSettingsLoading}>
                                 {isSettingsLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}

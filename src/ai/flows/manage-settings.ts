@@ -15,7 +15,7 @@ interface Settings {
     broadcastMessageId?: string;
     isMaintenanceModeOn?: boolean;
     maintenanceWhitelist?: string[];
-    maintenanceEndsAt?: any; // Firestore Timestamp
+    maintenanceMessage?: string; 
 }
 
 const settingsRef = doc(db, 'settings', 'global');
@@ -38,15 +38,15 @@ export async function getGlobalSettings(): Promise<Settings> {
                 broadcastMessageId: data.broadcastMessageId || '',
                 isMaintenanceModeOn: data.isMaintenanceModeOn ?? false,
                 maintenanceWhitelist: data.maintenanceWhitelist || [],
-                maintenanceEndsAt: data.maintenanceEndsAt || null,
+                maintenanceMessage: data.maintenanceMessage || 'The Academy of Heroes is under maintenance and will be back soon!',
             };
         }
         // Default to registration being open if the document doesn't exist
-        return { isStudentRegistrationOpen: true, isTeacherRegistrationOpen: true, isFeedbackPanelVisible: false, broadcastMessage: '', broadcastMessageId: '', isMaintenanceModeOn: false, maintenanceWhitelist: [], maintenanceEndsAt: null };
+        return { isStudentRegistrationOpen: true, isTeacherRegistrationOpen: true, isFeedbackPanelVisible: false, broadcastMessage: '', broadcastMessageId: '', isMaintenanceModeOn: false, maintenanceWhitelist: [], maintenanceMessage: 'The Academy of Heroes is under maintenance and will be back soon!' };
     } catch (error) {
         console.error("Error fetching global settings:", error);
         // Fail-safe default
-        return { isStudentRegistrationOpen: true, isTeacherRegistrationOpen: true, isFeedbackPanelVisible: false, broadcastMessage: '', broadcastMessageId: '', isMaintenanceModeOn: false, maintenanceWhitelist: [], maintenanceEndsAt: null };
+        return { isStudentRegistrationOpen: true, isTeacherRegistrationOpen: true, isFeedbackPanelVisible: false, broadcastMessage: '', broadcastMessageId: '', isMaintenanceModeOn: false, maintenanceWhitelist: [], maintenanceMessage: 'The Academy of Heroes is under maintenance and will be back soon!' };
     }
 }
 
