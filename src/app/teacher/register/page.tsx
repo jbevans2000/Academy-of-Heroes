@@ -133,19 +133,8 @@ export default function TeacherRegisterPage() {
         const teacherRef = doc(db, "teachers", user.uid);
         await setDoc(teacherRef, teacherData);
 
-        // After successfully creating the teacher, populate default boons and quests
+        // After successfully creating the teacher, populate default boons
         await populateDefaultBoons(user.uid);
-        
-        // Create the first "Independent Chapters" Hub for the new teacher
-        const questHubsRef = collection(db, 'teachers', user.uid, 'questHubs');
-        const newHubRef = doc(questHubsRef); // Create a reference with a new ID
-        await setDoc(newHubRef, {
-            name: "Independent Chapters",
-            hubOrder: 1,
-            worldMapUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Map%20Images%2FGeneric%20Map.jpg?alt=media&token=8d234199-3178-432e-9087-3e117498305c",
-            coordinates: { x: 50, y: 50 },
-            createdAt: serverTimestamp(),
-        });
         
         // Send verification email
         await sendEmailVerification(user);
@@ -309,3 +298,5 @@ export default function TeacherRegisterPage() {
     </div>
   );
 }
+
+    
