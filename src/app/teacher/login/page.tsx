@@ -15,7 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { School, Loader2, KeyRound, Mail, ArrowLeft, ShieldAlert } from 'lucide-react';
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -52,8 +52,7 @@ export default function TeacherLoginPage() {
 
         if (settings.isMaintenanceModeOn && !adminSnap.exists() && !(settings.maintenanceWhitelist || []).includes(user.uid)) {
             await signOut(auth); // Sign out the non-whitelisted user
-            router.push('/maintenance');
-            return;
+            throw new Error('MAINTENANCE_MODE');
         }
 
         // Fetch teacher document to check for legacy status
@@ -91,30 +90,34 @@ export default function TeacherLoginPage() {
         }
 
     } catch (error: any) {
-        console.error("Authentication Error Code:", error.code);
-        let description = 'An unexpected error occurred. Please try again.';
-        if (error.code) {
-            switch (error.code) {
-                case 'auth/invalid-email':
-                    description = 'The email address you entered is not valid. Please check the format.';
-                    break;
-                case 'auth/user-not-found':
-                case 'auth/wrong-password':
-                case 'auth/invalid-credential':
-                    description = 'Invalid email or password. Please check your credentials and try again.';
-                    break;
-                case 'auth/network-request-failed':
-                    description = 'Network error. Please check your internet connection.';
-                    break;
-                default:
-                    description = `An error occurred: ${error.message}`;
+        if (error.message === 'MAINTENANCE_MODE') {
+            router.push('/maintenance');
+        } else {
+            console.error("Authentication Error Code:", error.code);
+            let description = 'An unexpected error occurred. Please try again.';
+            if (error.code) {
+                switch (error.code) {
+                    case 'auth/invalid-email':
+                        description = 'The email address you entered is not valid. Please check the format.';
+                        break;
+                    case 'auth/user-not-found':
+                    case 'auth/wrong-password':
+                    case 'auth/invalid-credential':
+                        description = 'Invalid email or password. Please check your credentials and try again.';
+                        break;
+                    case 'auth/network-request-failed':
+                        description = 'Network error. Please check your internet connection.';
+                        break;
+                    default:
+                        description = `An error occurred: ${error.message}`;
+                }
             }
+            toast({
+                variant: 'destructive',
+                title: 'Authentication Failed',
+                description: description,
+            });
         }
-        toast({
-            variant: 'destructive',
-            title: 'Authentication Failed',
-            description: description,
-        });
     } finally {
         setIsLoading(false);
     }

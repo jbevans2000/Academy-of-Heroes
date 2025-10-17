@@ -51,37 +51,41 @@ export function LoginForm() {
                 throw aliasError;
             }
         } else {
-            // If the error was something else (e.g., a specific data not found error), throw it.
+            // If the error was something else (e.g., our custom maintenance error), throw it.
             throw emailError;
         }
       }
     } catch (error: any) {
-      console.error(error);
-      let description = 'An unexpected error occurred. Please try again.';
+      // This is the final catch block.
+      if (error.message === 'MAINTENANCE_MODE') {
+        router.push('/maintenance');
+      } else {
+        console.error(error);
+        let description = 'An unexpected error occurred. Please try again.';
 
-      // Check for our custom error message first
-      if (error.message === "Your account info could not be found. Please speak with your Guild Leader!") {
-        description = error.message;
-      } else if (error.code) { // Then check for Firebase auth error codes
-        switch (error.code) {
-          case 'auth/invalid-credential':
-          case 'auth/user-not-found':
-          case 'auth/wrong-password':
-          case 'auth/invalid-email':
-            description = 'Invalid email/username or password.';
-            break;
-          case 'auth/network-request-failed':
-            description = 'Network error. Please check your connection.';
-            break;
-          default:
-            description = `An error occurred: ${error.message}`;
+        if (error.message === "Your account info could not be found. Please speak with your Guild Leader!") {
+          description = error.message;
+        } else if (error.code) {
+          switch (error.code) {
+            case 'auth/invalid-credential':
+            case 'auth/user-not-found':
+            case 'auth/wrong-password':
+            case 'auth/invalid-email':
+              description = 'Invalid email/username or password.';
+              break;
+            case 'auth/network-request-failed':
+              description = 'Network error. Please check your connection.';
+              break;
+            default:
+              description = `An error occurred: ${error.message}`;
+          }
         }
+        toast({
+          variant: 'destructive',
+          title: 'Authentication Failed',
+          description: description,
+        });
       }
-      toast({
-        variant: 'destructive',
-        title: 'Authentication Failed',
-        description: description,
-      });
     } finally {
       setIsLoading(false);
     }
@@ -95,8 +99,7 @@ export function LoginForm() {
       const settings = await getGlobalSettings();
       if (settings.isMaintenanceModeOn && !(settings.maintenanceWhitelist || []).includes(user.uid)) {
           await signOut(auth); // Sign out the non-whitelisted user
-          router.push('/maintenance');
-          return; // Stop the login process
+          throw new Error('MAINTENANCE_MODE'); // Throw specific error to be caught by the outer handler
       }
 
       const studentMetaRef = doc(db, 'students', user.uid);
