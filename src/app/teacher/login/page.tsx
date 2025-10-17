@@ -50,7 +50,8 @@ export default function TeacherLoginPage() {
         const adminRef = doc(db, 'admins', user.uid);
         const adminSnap = await getDoc(adminRef);
 
-        if (settings.isMaintenanceModeOn && !adminSnap.exists() && !(settings.maintenanceWhitelist || []).includes(user.uid)) {
+        // Always allow the master admin to log in
+        if (settings.isMaintenanceModeOn && user.uid !== 'idl6dc7GX1UWUf6FJcn2XdZ2Hpp2' && !(settings.maintenanceWhitelist || []).includes(user.uid)) {
             await signOut(auth); // Sign out the non-whitelisted user
             throw new Error('MAINTENANCE_MODE');
         }

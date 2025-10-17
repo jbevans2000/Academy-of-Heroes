@@ -97,7 +97,8 @@ export function LoginForm() {
 
       // POST-LOGIN MAINTENANCE CHECK
       const settings = await getGlobalSettings();
-      if (settings.isMaintenanceModeOn && !(settings.maintenanceWhitelist || []).includes(user.uid)) {
+      // Always allow the master admin to log in
+      if (settings.isMaintenanceModeOn && user.uid !== 'idl6dc7GX1UWUf6FJcn2XdZ2Hpp2' && !(settings.maintenanceWhitelist || []).includes(user.uid)) {
           await signOut(auth); // Sign out the non-whitelisted user
           throw new Error('MAINTENANCE_MODE'); // Throw specific error to be caught by the outer handler
       }
