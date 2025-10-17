@@ -5,10 +5,11 @@
   },
   "hosting": {
     "source": ".",
-    "frameworksBackend": {
-      "region": "us-central1",
-      "serviceAccount": "firebase-frameworks-mziuf"
-    }
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
   },
   "storage": {
     "rules": "storage.rules"
