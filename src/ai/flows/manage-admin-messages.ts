@@ -1,7 +1,7 @@
 
 'use server';
 
-import { collection, addDoc, writeBatch, serverTimestamp, doc, updateDoc, getDocs, query, where, setDoc } from 'firebase/firestore';
+import { collection, addDoc, writeBatch, serverTimestamp, doc, updateDoc, getDocs, query, where, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 interface ActionResponse {
@@ -31,17 +31,25 @@ export async function sendMessageToTeacherFromAdmin(input: SendMessageToTeacherI
       isRead: false,
     };
 
+    // Fetch teacher data to get name and class name
+    const teacherRef = doc(db, 'teachers', teacherUid);
+    const teacherSnap = await getDoc(teacherRef);
+    const teacherData = teacherSnap.exists() ? teacherSnap.data() : null;
+
     // Write to the admin's conversation thread for this teacher
     const adminMessageRef = doc(collection(db, 'admins', adminUid, 'teacherMessages', teacherUid, 'conversation'));
     batch.set(adminMessageRef, messageData);
     
-    // Also update the teacher's document to show a notification
-    const teacherRef = doc(db, 'teachers', teacherUid);
+    // Also update the teacher's document to show a notification flag for the admin's UI
     batch.update(teacherRef, { hasUnreadAdminMessages: true });
     
     // Set a document with metadata for the teacher in the admin's collection for easy querying
     const adminTeacherConvoRef = doc(db, 'admins', adminUid, 'teacherMessages', teacherUid);
-    batch.set(adminTeacherConvoRef, { lastMessageAt: serverTimestamp() }, { merge: true });
+    batch.set(adminTeacherConvoRef, { 
+        lastMessageAt: serverTimestamp(),
+        teacherName: teacherData?.name || 'Unknown Teacher',
+        className: teacherData?.className || 'Unknown Class',
+    }, { merge: true });
 
     await batch.commit();
     return { success: true };

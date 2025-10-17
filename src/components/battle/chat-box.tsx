@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -53,6 +52,12 @@ export function BattleChatBox({ teacherUid, battleId, userName, isTeacher, isCha
 
     return () => unsubscribe();
   }, [teacherUid, battleId]);
+
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+        scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
