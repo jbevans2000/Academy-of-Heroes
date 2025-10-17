@@ -4,7 +4,7 @@
 import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Timer, Volume2, Users, Dices, Wrench, Swords, ScrollText, DatabaseZap, Sparkles, ImageIcon, Archive, Edit, Diamond, Box } from 'lucide-react';
+import { ArrowLeft, Timer, Volume2, Users, Dices, Wrench, Swords, ScrollText, DatabaseZap, Sparkles, ImageIcon, Archive, Edit, Diamond, Box, ShieldCheck, Dna } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
@@ -34,6 +34,14 @@ const tools = [
         path: '/teacher/tools/random-student',
         disabled: false,
         bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-01eb6e6f-c49f-49a6-8296-3b97d092a4c2.jpg?alt=media&token=6fe54bce-fef4-4ad1-92a2-fdef04425008',
+    },
+    {
+        title: 'Find The Champion',
+        description: 'Select a champion to answer on behalf of their company or the entire guild.',
+        icon: <ShieldCheck className="h-10 w-10 text-primary" />,
+        path: '/teacher/tools/find-the-champion',
+        disabled: false,
+        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChooseChampion.jpg?alt=media&token=9d8a8624-c352-415e-84d8-827cebc711a5',
     },
     {
         title: 'A Task from the Throne',
@@ -77,13 +85,6 @@ const adminTools = [
         icon: <Diamond className="h-10 w-10 text-primary" />,
         path: '/admin/tools/global-forge',
         bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-a2624b42-7576-444f-8012-6188e7f1d441.jpg?alt=media&token=96357608-7264-4458-963d-b4b6006e8b7c'
-    },
-     {
-        title: 'Global 3D Forge',
-        description: 'Upload and manage all .glb 3D models for assets.',
-        icon: <Box className="h-10 w-10 text-primary" />,
-        path: '/admin/tools/global-3d-forge',
-        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-4f51e3c8-a9f8-4177-84f9-b88f3430541e.jpg?alt=media&token=3b3104e1-e129-4598-a3f2-8951214e217d'
     },
     {
         title: '2D Sizer',
