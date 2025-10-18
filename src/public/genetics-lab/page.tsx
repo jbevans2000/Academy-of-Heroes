@@ -21,17 +21,17 @@ import jsPDF from 'jspdf';
 import { Textarea } from '@/components/ui/textarea';
 
 const geneticsKey = [
-  { trait: 'Neck Length', dominantAllele: 'N', dominant: 'Long Neck', recessiveAllele: 'n', recessive: 'Short Neck' },
-  { trait: 'Eye Color', dominantAllele: 'E', dominant: 'Red Eyes', recessiveAllele: 'e', recessive: 'White Eyes' },
-  { trait: 'Horns', dominantAllele: 'H', dominant: 'Multiple Horns', recessiveAllele: 'h', recessive: 'Only 2 Horns' },
-  { trait: 'Wing Claws', dominantAllele: 'C', dominant: 'Clawed Wings', recessiveAllele: 'c', recessive: 'No Claws on Wings' },
-  { trait: 'Body Color', dominantAllele: 'B', dominant: 'Silver Body', recessiveAllele: 'b', recessive: 'Gold Body' },
-  { trait: 'Belly', dominantAllele: 'A', dominant: 'Armored Belly', recessiveAllele: 'a', recessive: 'No armor on belly' },
-  { trait: 'Tail', dominantAllele: 'S', dominant: 'Spikes on Tail', recessiveAllele: 's', recessive: 'No Spikes on Tail' },
-  { trait: 'Back', dominantAllele: 'K', dominant: 'Freckled Back', recessiveAllele: 'k', recessive: 'No freckles on back' },
-  { trait: 'Breath', dominantAllele: 'F', dominant: 'Fire Breathing', recessiveAllele: 'f', recessive: 'Ice Breathing' },
-  { trait: 'Toes', dominantAllele: 'T', dominant: 'Three Toes', recessiveAllele: 't', recessive: 'Four Toes' },
-  { trait: 'Wing Color', dominantAllele: 'W', dominant: 'Black Wings', recessiveAllele: 'w', recessive: 'Colored Wings' },
+  { trait: 'Neck Style', dominantAllele: 'N', dominant: 'Long Neck', recessiveAllele: 'n', recessive: 'Short Neck' },
+  { trait: 'Scale Color', dominantAllele: 'E', dominant: 'Red Scales', recessiveAllele: 'e', recessive: 'White Scales' },
+  { trait: 'Horn Style', dominantAllele: 'H', dominant: 'Multiple Horns', recessiveAllele: 'h', recessive: 'Two Horns' },
+  { trait: 'Wing Style', dominantAllele: 'C', dominant: 'Clawed Wings', recessiveAllele: 'c', recessive: 'No Wing Claws' },
+  { trait: 'Body Style', dominantAllele: 'B', dominant: 'Silver Body', recessiveAllele: 'b', recessive: 'Gold Body' },
+  { trait: 'Belly Style', dominantAllele: 'A', dominant: 'Armored Belly', recessiveAllele: 'a', recessive: 'Smooth Belly' },
+  { trait: 'Tail Style', dominantAllele: 'S', dominant: 'Spiked Tail', recessiveAllele: 's', recessive: 'Smooth Tail' },
+  { trait: 'Back Style', dominantAllele: 'K', dominant: 'Freckled Back', recessiveAllele: 'k', recessive: 'Smooth Back' },
+  { trait: 'Breath Style', dominantAllele: 'F', dominant: 'Fire Breath', recessiveAllele: 'f', recessive: 'Ice Breath' },
+  { trait: 'Toe Style', dominantAllele: 'T', dominant: 'Three Toes', recessiveAllele: 't', recessive: 'Four Toes' },
+  { trait: 'Wing Color', dominantAllele: 'W', dominant: 'Black Wings', recessiveAllele: 'w', recessive: 'Red Wings' },
 ];
 
 const PunnettSquare = ({ traitName, squareIndex }: { traitName: string, squareIndex: number }) => {
@@ -42,7 +42,7 @@ const PunnettSquare = ({ traitName, squareIndex }: { traitName: string, squareIn
         grid3: '', grid4: ''
     });
 
-    const storageKey = `punnettSquare-${squareIndex}`;
+    const storageKey = `publicPunnettSquare-${squareIndex}`;
 
     // Load state from localStorage on initial render
     useEffect(() => {
@@ -126,7 +126,7 @@ const PunnettSquare = ({ traitName, squareIndex }: { traitName: string, squareIn
 const HatchlingTable = ({ title, tableIndex, placeholders }: { title: string; tableIndex: number; placeholders?: string[][] }) => {
     const initialGrid = Array.from({ length: 4 }, () => Array(4).fill(''));
     const [grid, setGrid] = useState<string[][]>(initialGrid);
-    const storageKey = `hatchlingTable-${tableIndex}`;
+    const storageKey = `publicHatchlingTable-${tableIndex}`;
 
     useEffect(() => {
         try {
@@ -197,7 +197,7 @@ interface TraitSelection {
 
 const HatchlingTraitSelector = ({ onDataChange }: { onDataChange: (data: Record<string, TraitSelection>) => void }) => {
     const [traitData, setTraitData] = useState<Record<string, TraitSelection>>({});
-    const storageKey = 'hatchlingTraitSelections';
+    const storageKey = 'publicHatchlingTraitSelections';
 
     useEffect(() => {
         try {
@@ -286,7 +286,7 @@ function GeneticsLabContent() {
     const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
     const [isDownloading, setIsDownloading] = useState(false);
     const contentRef = useRef<HTMLDivElement>(null);
-    const imageStorageKey = 'hatchlingGeneratedImage';
+    const imageStorageKey = 'publicHatchlingGeneratedImage';
 
     useEffect(() => {
         try {
@@ -299,7 +299,7 @@ function GeneticsLabContent() {
                 `Intentionally\nLeft Blank`
             ];
             const loadedTexts = defaultSilvariaOvals.map((defaultValue, i) =>
-                localStorage.getItem(`geneticsLabOval${i + 1}`) ?? defaultValue
+                localStorage.getItem(`publicGeneticsLabOval${i + 1}`) ?? defaultValue
             );
             setOvalTexts(loadedTexts);
 
@@ -312,7 +312,7 @@ function GeneticsLabContent() {
                 `Intentionally\nLeft Blank`
             ];
             const aureliosLoadedTexts = defaultAureliosOvals.map((defaultValue, i) => 
-                localStorage.getItem(`aureliosGeneticsLabOval${i + 1}`) ?? defaultValue
+                localStorage.getItem(`publicAureliosGeneticsLabOval${i + 1}`) ?? defaultValue
             );
             setAureliosOvalTexts(aureliosLoadedTexts);
             
@@ -338,7 +338,7 @@ function GeneticsLabContent() {
         newTexts[index] = value;
         setOvalTexts(newTexts);
         try {
-            localStorage.setItem(`geneticsLabOval${index + 1}`, value);
+            localStorage.setItem(`publicGeneticsLabOval${index + 1}`, value);
         } catch (error) {
             console.error("Could not write to localStorage for Silvaria:", error);
         }
@@ -349,7 +349,7 @@ function GeneticsLabContent() {
         newTexts[index] = value;
         setAureliosOvalTexts(newTexts);
         try {
-            localStorage.setItem(`aureliosGeneticsLabOval${index + 1}`, value);
+            localStorage.setItem(`publicAureliosGeneticsLabOval${index + 1}`, value);
         } catch (error) {
             console.error("Could not write to localStorage for Aurelios:", error);
         }
@@ -367,7 +367,27 @@ function GeneticsLabContent() {
         for (const key of geneticsKey) {
             const selection = traitSelections[key.trait];
             if (selection && selection.phenotype) {
-                input[key.trait as keyof HatchlingTraitInput] = selection.phenotype === 'dominant' ? key.dominant : key.recessive;
+                 // The AI prompt expects specific keys. We need to map our new trait names to the old ones.
+                const traitMapping: { [key: string]: keyof HatchlingTraitInput } = {
+                    'Neck Style': 'Neck Length',
+                    'Scale Color': 'Eye Color', // This seems like a mismatch, but we'll follow the original function signature
+                    'Horn Style': 'Horns',
+                    'Wing Style': 'Wing Claws',
+                    'Body Style': 'Body Color',
+                    'Belly Style': 'Belly',
+                    'Tail Style': 'Tail',
+                    'Back Style': 'Back',
+                    'Breath Style': 'Breath',
+                    'Toe Style': 'Toes',
+                    'Wing Color': 'Wing Color',
+                };
+                const mappedKey = traitMapping[key.trait];
+                if (mappedKey) {
+                    input[mappedKey] = selection.phenotype === 'dominant' ? key.dominant : key.recessive;
+                } else {
+                     allTraitsDefined = false;
+                     break;
+                }
             } else {
                 allTraitsDefined = false;
                 break;
