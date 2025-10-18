@@ -304,7 +304,7 @@ function GeneticsLabContent() {
             setOvalTexts(loadedTexts);
 
             const defaultAureliosOvals = [
-                `Chromosome #1\n\nEye Color - Ee\nSpikes - SS\nHorns - hh`,
+                `Chromosome #1\n\nEye Color - Ee\nSpikes - ss\nHorns - Hh`,
                 `Chromosome #2\n\nTail Length\nArmored Belly\nClawed Wings`,
                 `Chromosome #3\n\nBody Color\nFire Breathing\nNeck Length`,
                 `Chromosome #4\n\nWing Style\nNumber of Toes`,
@@ -710,3 +710,5 @@ export default function GeneticsLabPage() {
         </Suspense>
     )
 }
+
+    
