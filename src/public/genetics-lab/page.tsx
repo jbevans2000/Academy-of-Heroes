@@ -29,7 +29,7 @@ const geneticsKey = [
   { trait: 'Belly', dominantAllele: 'A', dominant: 'Armored Belly', recessiveAllele: 'a', recessive: 'No armor on belly' },
   { trait: 'Tail', dominantAllele: 'S', dominant: 'Spikes on Tail', recessiveAllele: 's', recessive: 'No Spikes on Tail' },
   { trait: 'Back', dominantAllele: 'K', dominant: 'Freckled Back', recessiveAllele: 'k', recessive: 'No freckles on back' },
-  { trait: 'Breath', dominantAllele: 'F', dominant: 'Fire Breathing', recessiveAllele: 'f', recessive: 'No Fire Breathing' },
+  { trait: 'Breath', dominantAllele: 'F', dominant: 'Fire Breathing', recessiveAllele: 'f', recessive: 'Ice Breathing' },
   { trait: 'Toes', dominantAllele: 'T', dominant: 'Three Toes', recessiveAllele: 't', recessive: 'Four Toes' },
   { trait: 'Wing Color', dominantAllele: 'W', dominant: 'Black Wings', recessiveAllele: 'w', recessive: 'Colored Wings' },
 ];
@@ -292,9 +292,9 @@ function GeneticsLabContent() {
         try {
             const defaultSilvariaOvals = [
                 `Chromosome #1\n\nNeck Length - Nn\nEye Color - ee\nHorns - Hh`,
-                `Chromosome #2\n\nTail Length\nArmored Belly\nClawed Wings`,
-                `Chromosome #3\n\nBody Color\nFire Breathing\nNeck Length`,
-                `Chromosome #4\n\nWing Style\nNumber of Toes`,
+                `Chromosome #2\n\nWing Claws -\nBody Color -\nBelly Armor -`,
+                `Chromosome #3\n\nTail Spikes -\nBack Freckles -\nBreath Style -`,
+                `Chromosome #4\n\nToe Number -\nWing Color -`,
                 `Intentionally\nLeft Blank`,
                 `Intentionally\nLeft Blank`
             ];
@@ -304,10 +304,10 @@ function GeneticsLabContent() {
             setOvalTexts(loadedTexts);
 
             const defaultAureliosOvals = [
-                `Chromosome #1\n\nEye Color - Ee\nSpikes - ss\nHorns - Hh`,
-                `Chromosome #2\n\nTail Length\nArmored Belly\nClawed Wings`,
-                `Chromosome #3\n\nBody Color\nFire Breathing\nNeck Length`,
-                `Chromosome #4\n\nWing Style\nNumber of Toes`,
+                `Chromosome #1\n\nNeck Length - nn\nEye Color - Ee\nHorn Number - HH`,
+                `Chromosome #2\n\nWing Claws -\nBody Color -\nBelly Armor -`,
+                `Chromosome #3\n\nTail Spikes -\nBack Freckles -\nBreath Style -`,
+                `Chromosome #4\n\nToe Number -\nWing Color -`,
                 `Intentionally\nLeft Blank`,
                 `Intentionally\nLeft Blank`
             ];
@@ -405,8 +405,8 @@ function GeneticsLabContent() {
 
     const placeholdersForTable1 = [
         ["Neck Length", "Nn", "Long Neck", "Het"],
-        ["Tail Spikes", "ss", "No Spikes", "Hom"],
-        ["Wing Claws", "cc", "No Claws", "Hom"],
+        ["Eye Color", "ee", "White Eyes", "Hom"],
+        ["Horns", "Hh", "Multiple Horns", "Het"],
         ["", "", "", ""],
     ];
 
@@ -710,5 +710,3 @@ export default function GeneticsLabPage() {
         </Suspense>
     )
 }
-
-    
