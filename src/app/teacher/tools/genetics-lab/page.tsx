@@ -23,14 +23,14 @@ import { Textarea } from '@/components/ui/textarea';
 const geneticsKey = [
   { trait: 'Neck Length', dominantAllele: 'N', dominant: 'Long Neck', recessiveAllele: 'n', recessive: 'Short Neck' },
   { trait: 'Eye Color', dominantAllele: 'E', dominant: 'Red Eyes', recessiveAllele: 'e', recessive: 'White Eyes' },
-  { trait: 'Horns', dominantAllele: 'H', dominant: 'Multiple Horns', recessiveAllele: 'h', recessive: 'Only 2 Horns' },
+  { trait: 'Horn Number', dominantAllele: 'H', dominant: 'Multiple Horns', recessiveAllele: 'h', recessive: 'Only 2 Horns' },
   { trait: 'Wing Claws', dominantAllele: 'C', dominant: 'Clawed Wings', recessiveAllele: 'c', recessive: 'No Claws on Wings' },
   { trait: 'Body Color', dominantAllele: 'B', dominant: 'Silver Body', recessiveAllele: 'b', recessive: 'Gold Body' },
-  { trait: 'Belly', dominantAllele: 'A', dominant: 'Armored Belly', recessiveAllele: 'a', recessive: 'No armor on belly' },
-  { trait: 'Tail', dominantAllele: 'S', dominant: 'Spikes on Tail', recessiveAllele: 's', recessive: 'No Spikes on Tail' },
-  { trait: 'Back', dominantAllele: 'K', dominant: 'Freckled Back', recessiveAllele: 'k', recessive: 'No freckles on back' },
-  { trait: 'Breath', dominantAllele: 'F', dominant: 'Fire Breathing', recessiveAllele: 'f', recessive: 'Ice Breathing' },
-  { trait: 'Toes', dominantAllele: 'T', dominant: 'Three Toes', recessiveAllele: 't', recessive: 'Four Toes' },
+  { trait: 'Belly Armor', dominantAllele: 'A', dominant: 'Armored Belly', recessiveAllele: 'a', recessive: 'No armor on belly' },
+  { trait: 'Tail Spikes', dominantAllele: 'S', dominant: 'Spikes on Tail', recessiveAllele: 's', recessive: 'No Spikes on Tail' },
+  { trait: 'Back Freckles', dominantAllele: 'K', dominant: 'Freckled Back', recessiveAllele: 'k', recessive: 'No freckles on back' },
+  { trait: 'Breath Style', dominantAllele: 'F', dominant: 'Fire Breathing', recessiveAllele: 'f', recessive: 'Ice Breathing' },
+  { trait: 'Toe Number', dominantAllele: 'T', dominant: 'Three Toes', recessiveAllele: 't', recessive: 'Four Toes' },
   { trait: 'Wing Color', dominantAllele: 'W', dominant: 'Black Wings', recessiveAllele: 'w', recessive: 'Colored Wings' },
 ];
 
@@ -406,7 +406,7 @@ function GeneticsLabContent() {
     const placeholdersForTable1 = [
         ["Neck Length", "Nn", "Long Neck", "Het"],
         ["Eye Color", "ee", "White Eyes", "Hom"],
-        ["Horns", "Hh", "Multiple Horns", "Het"],
+        ["Horn Number", "Hh", "Multiple Horns", "Het"],
         ["", "", "", ""],
     ];
 
