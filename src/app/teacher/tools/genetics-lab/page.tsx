@@ -23,14 +23,14 @@ import { Textarea } from '@/components/ui/textarea';
 const geneticsKey = [
   { trait: 'Neck Length', dominantAllele: 'N', dominant: 'Long Neck', recessiveAllele: 'n', recessive: 'Short Neck' },
   { trait: 'Eye Color', dominantAllele: 'E', dominant: 'Red Eyes', recessiveAllele: 'e', recessive: 'White Eyes' },
-  { trait: 'Horn Number', dominantAllele: 'H', dominant: 'Multiple Horns', recessiveAllele: 'h', recessive: 'Only 2 Horns' },
+  { trait: 'Horns', dominantAllele: 'H', dominant: 'Multiple Horns', recessiveAllele: 'h', recessive: 'Only 2 Horns' },
   { trait: 'Wing Claws', dominantAllele: 'C', dominant: 'Clawed Wings', recessiveAllele: 'c', recessive: 'No Claws on Wings' },
   { trait: 'Body Color', dominantAllele: 'B', dominant: 'Silver Body', recessiveAllele: 'b', recessive: 'Gold Body' },
-  { trait: 'Belly Armor', dominantAllele: 'A', dominant: 'Armored Belly', recessiveAllele: 'a', recessive: 'No armor on belly' },
-  { trait: 'Tail Spikes', dominantAllele: 'S', dominant: 'Spikes on Tail', recessiveAllele: 's', recessive: 'No Spikes on Tail' },
-  { trait: 'Back Freckles', dominantAllele: 'K', dominant: 'Freckled Back', recessiveAllele: 'k', recessive: 'No freckles on back' },
-  { trait: 'Breath Style', dominantAllele: 'F', dominant: 'Fire Breathing', recessiveAllele: 'f', recessive: 'Ice Breathing' },
-  { trait: 'Toe Number', dominantAllele: 'T', dominant: 'Three Toes', recessiveAllele: 't', recessive: 'Four Toes' },
+  { trait: 'Belly', dominantAllele: 'A', dominant: 'Armored Belly', recessiveAllele: 'a', recessive: 'No armor on belly' },
+  { trait: 'Tail', dominantAllele: 'S', dominant: 'Spikes on Tail', recessiveAllele: 's', recessive: 'No Spikes on Tail' },
+  { trait: 'Back', dominantAllele: 'K', dominant: 'Freckled Back', recessiveAllele: 'k', recessive: 'No freckles on back' },
+  { trait: 'Breath', dominantAllele: 'F', dominant: 'Fire Breathing', recessiveAllele: 'f', recessive: 'Ice Breathing' },
+  { trait: 'Toes', dominantAllele: 'T', dominant: 'Three Toes', recessiveAllele: 't', recessive: 'Four Toes' },
   { trait: 'Wing Color', dominantAllele: 'W', dominant: 'Black Wings', recessiveAllele: 'w', recessive: 'Colored Wings' },
 ];
 
@@ -52,7 +52,7 @@ const PunnettSquare = ({ traitName, squareIndex }: { traitName: string, squareIn
                 setAlleles(JSON.parse(savedState));
             }
         } catch (error) {
-            console.error(`Could not load state for Punnett Square ${squareIndex}:`, error);
+            console.error(`Could not load state for Punnett Square ${'${squareIndex}'}:`, error);
         }
     }, [storageKey, squareIndex]);
 
@@ -76,7 +76,7 @@ const PunnettSquare = ({ traitName, squareIndex }: { traitName: string, squareIn
             try {
                 localStorage.setItem(storageKey, JSON.stringify(newAlleles));
             } catch (error) {
-                 console.error(`Could not save state for Punnett Square ${squareIndex}:`, error);
+                 console.error(`Could not save state for Punnett Square ${'${squareIndex}'}:`, error);
             }
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -90,8 +90,8 @@ const PunnettSquare = ({ traitName, squareIndex }: { traitName: string, squareIn
         if (field.startsWith('top') || field.startsWith('left')) {
             try {
                 localStorage.setItem(storageKey, JSON.stringify(newAlleles));
-            } catch (error) {
-                console.error(`Could not save state for Punnett Square ${squareIndex}:`, error);
+            } catch (error)_ {
+                console.error(`Could not save state for Punnett Square ${'${squareIndex}'}:`, error);
             }
         }
     };
@@ -138,7 +138,7 @@ const HatchlingTable = ({ title, tableIndex, placeholders }: { title: string; ta
                 }
             }
         } catch (error) {
-            console.error(`Could not load state for ${title}:`, error);
+            console.error(`Could not load state for ${'${title}'}:`, error);
         }
     }, [storageKey, title]);
 
@@ -150,7 +150,7 @@ const HatchlingTable = ({ title, tableIndex, placeholders }: { title: string; ta
         try {
             localStorage.setItem(storageKey, JSON.stringify(newGrid));
         } catch (error) {
-            console.error(`Could not save state for ${title}:`, error);
+            console.error(`Could not save state for ${'${title}'}:`, error);
         }
     };
     
@@ -240,9 +240,9 @@ const HatchlingTraitSelector = ({ onDataChange }: { onDataChange: (data: Record<
                         <CardTitle className="text-lg mb-2">{traitInfo.trait}</CardTitle>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
                             <div className="md:col-span-1">
-                                <Label htmlFor={`genotype-${traitInfo.trait}`}>Genotype</Label>
+                                <Label htmlFor={`genotype-${'${traitInfo.trait}'}`}>Genotype</Label>
                                 <Input
-                                    id={`genotype-${traitInfo.trait}`}
+                                    id={`genotype-${'${traitInfo.trait}'}`}
                                     placeholder="e.g., Nn"
                                     value={traitData[traitInfo.trait]?.genotype || ''}
                                     onChange={(e) => handleTraitChange(traitInfo.trait, 'genotype', e.target.value)}
@@ -256,12 +256,12 @@ const HatchlingTraitSelector = ({ onDataChange }: { onDataChange: (data: Record<
                                     className="mt-2 flex flex-col sm:flex-row gap-4"
                                 >
                                     <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="dominant" id={`pheno-dom-${traitInfo.trait}`} />
-                                        <Label htmlFor={`pheno-dom-${traitInfo.trait}`}>{traitInfo.dominant} ({traitInfo.dominantAllele})</Label>
+                                        <RadioGroupItem value="dominant" id={`pheno-dom-${'${traitInfo.trait}'}`} />
+                                        <Label htmlFor={`pheno-dom-${'${traitInfo.trait}'}`}>{traitInfo.dominant} ({traitInfo.dominantAllele})</Label>
                                     </div>
                                     <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="recessive" id={`pheno-rec-${traitInfo.trait}`} />
-                                        <Label htmlFor={`pheno-rec-${traitInfo.trait}`}>{traitInfo.recessive} ({traitInfo.recessiveAllele})</Label>
+                                        <RadioGroupItem value="recessive" id={`pheno-rec-${'${traitInfo.trait}'}`} />
+                                        <Label htmlFor={`pheno-rec-${'${traitInfo.trait}'}`}>{traitInfo.recessive} ({traitInfo.recessiveAllele})</Label>
                                     </div>
                                 </RadioGroup>
                             </div>
@@ -299,7 +299,7 @@ function GeneticsLabContent() {
                 `Intentionally\nLeft Blank`
             ];
             const loadedTexts = defaultSilvariaOvals.map((defaultValue, i) =>
-                localStorage.getItem(`geneticsLabOval${i + 1}`) ?? defaultValue
+                localStorage.getItem(`geneticsLabOval${'${i + 1}'}`) ?? defaultValue
             );
             setOvalTexts(loadedTexts);
 
@@ -312,7 +312,7 @@ function GeneticsLabContent() {
                 `Intentionally\nLeft Blank`
             ];
             const aureliosLoadedTexts = defaultAureliosOvals.map((defaultValue, i) => 
-                localStorage.getItem(`aureliosGeneticsLabOval${i + 1}`) ?? defaultValue
+                localStorage.getItem(`aureliosGeneticsLabOval${'${i + 1}'}`) ?? defaultValue
             );
             setAureliosOvalTexts(aureliosLoadedTexts);
             
@@ -338,7 +338,7 @@ function GeneticsLabContent() {
         newTexts[index] = value;
         setOvalTexts(newTexts);
         try {
-            localStorage.setItem(`geneticsLabOval${index + 1}`, value);
+            localStorage.setItem(`geneticsLabOval${'${index + 1}'}`, value);
         } catch (error) {
             console.error("Could not write to localStorage for Silvaria:", error);
         }
@@ -349,7 +349,7 @@ function GeneticsLabContent() {
         newTexts[index] = value;
         setAureliosOvalTexts(newTexts);
         try {
-            localStorage.setItem(`aureliosGeneticsLabOval${index + 1}`, value);
+            localStorage.setItem(`aureliosGeneticsLabOval${'${index + 1}'}`, value);
         } catch (error) {
             console.error("Could not write to localStorage for Aurelios:", error);
         }
@@ -406,7 +406,7 @@ function GeneticsLabContent() {
     const placeholdersForTable1 = [
         ["Neck Length", "Nn", "Long Neck", "Het"],
         ["Eye Color", "ee", "White Eyes", "Hom"],
-        ["Horn Number", "Hh", "Multiple Horns", "Het"],
+        ["Horns", "Hh", "Multiple Horns", "Het"],
         ["", "", "", ""],
     ];
 
@@ -551,10 +551,10 @@ function GeneticsLabContent() {
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                         {ovalTexts.map((text, i) => (
                             <textarea
-                                key={`silvaria-${i}`}
+                                key={`silvaria-${'${i}'}`}
                                 defaultValue={text}
                                 onChange={(e) => handleTextChange(i, e.target.value)}
-                                className={`w-full h-48 rounded-[50%/50%] p-4 text-center text-sm font-semibold ${pastelColors[i]} focus:outline-none focus:ring-2 focus:ring-primary`}
+                                className={`w-full h-48 rounded-[50%/50%] p-4 text-center text-sm font-semibold ${'${pastelColors[i]}'} focus:outline-none focus:ring-2 focus:ring-primary`}
                                 style={{ height: '12rem', whiteSpace: 'pre-wrap' }}
                             />
                         ))}
@@ -587,11 +587,11 @@ function GeneticsLabContent() {
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                         {aureliosOvalTexts.map((text, i) => (
                             <textarea
-                                key={`aurelios-${i}`}
-                                placeholder={`Trait ${i + 1}`}
+                                key={`aurelios-${'${i}'}`}
+                                placeholder={`Trait ${'${i + 1}'}`}
                                 defaultValue={text}
                                 onChange={(e) => handleAureliosTextChange(i, e.target.value)}
-                                className={`w-full h-48 rounded-[50%/50%] p-4 text-center text-sm font-semibold ${pastelColors[i]} focus:outline-none focus:ring-2 focus:ring-primary`}
+                                className={`w-full h-48 rounded-[50%/50%] p-4 text-center text-sm font-semibold ${'${pastelColors[i]}'} focus:outline-none focus:ring-2 focus:ring-primary`}
                                 style={{ height: '12rem', whiteSpace: 'pre-wrap' }}
                             />
                         ))}
@@ -610,7 +610,7 @@ function GeneticsLabContent() {
                 </CardHeader>
                 <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {geneticsKey.map((trait, index) => (
-                        <PunnettSquare key={trait.trait} traitName={`Trait ${index + 1}: ${trait.trait}`} squareIndex={index} />
+                        <PunnettSquare key={trait.trait} traitName={`Trait ${'${index + 1}'}: ${'${trait.trait}'}`} squareIndex={index} />
                     ))}
                 </CardContent>
             </Card>
