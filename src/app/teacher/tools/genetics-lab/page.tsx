@@ -56,12 +56,24 @@ const PunnettSquare = ({ traitName, squareIndex }: { traitName: string, squareIn
         }
     }, [storageKey, squareIndex]);
 
+    const sortAlleles = (a1: string, a2: string) => {
+        const allele1 = a1 || '';
+        const allele2 = a2 || '';
+        if (allele1.toUpperCase() === allele1 && allele1.toLowerCase() !== allele1) {
+            return allele1 + allele2;
+        }
+        if (allele2.toUpperCase() === allele2 && allele2.toLowerCase() !== allele2) {
+            return allele2 + allele1;
+        }
+        return allele1 + allele2;
+    };
+
     // Auto-fill grid when parental alleles change
     useEffect(() => {
-        const newGrid1 = (alleles.top1 || '') + (alleles.left1 || '');
-        const newGrid2 = (alleles.top2 || '') + (alleles.left1 || '');
-        const newGrid3 = (alleles.top1 || '') + (alleles.left2 || '');
-        const newGrid4 = (alleles.top2 || '') + (alleles.left2 || '');
+        const newGrid1 = sortAlleles(alleles.top1, alleles.left1);
+        const newGrid2 = sortAlleles(alleles.top2, alleles.left1);
+        const newGrid3 = sortAlleles(alleles.top1, alleles.left2);
+        const newGrid4 = sortAlleles(alleles.top2, alleles.left2);
 
         // Only update if something changed to prevent infinite loops
         if (newGrid1 !== alleles.grid1 || newGrid2 !== alleles.grid2 || newGrid3 !== alleles.grid3 || newGrid4 !== alleles.grid4) {
@@ -279,6 +291,7 @@ function GeneticsLabContent() {
     const searchParams = useSearchParams();
     const isEmbed = searchParams.get('embed') === 'true';
 
+    const [teacher, setTeacher] = useState<User | null>(null);
     const [ovalTexts, setOvalTexts] = useState<string[]>([]);
     const [aureliosOvalTexts, setAureliosOvalTexts] = useState<string[]>([]);
     const [traitSelections, setTraitSelections] = useState<Record<string, TraitSelection> | null>(null);
@@ -287,6 +300,17 @@ function GeneticsLabContent() {
     const [isDownloading, setIsDownloading] = useState(false);
     const contentRef = useRef<HTMLDivElement>(null);
     const imageStorageKey = 'hatchlingGeneratedImage';
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, user => {
+            if (user) {
+                setTeacher(user);
+            } else {
+                router.push('/teacher/login');
+            }
+        });
+        return () => unsubscribe();
+    }, [router]);
 
     useEffect(() => {
         try {
@@ -369,7 +393,6 @@ function GeneticsLabContent() {
             const selection = traitSelections[traitName];
             
             if (selection && selection.phenotype) {
-                // Directly use the dominant or recessive text from geneticsKey
                 input[traitName as keyof HatchlingTraitInput] = selection.phenotype === 'dominant' ? key.dominant : key.recessive;
             } else {
                 allTraitsDefined = false;
@@ -416,9 +439,9 @@ function GeneticsLabContent() {
     const mainContent = (
         <div ref={contentRef} className="max-w-6xl mx-auto space-y-6 bg-white p-8">
             {!isEmbed && (
-                 <Button variant="outline" onClick={() => router.push('/teacher/tools')} className="mb-4">
+                 <Button variant="outline" onClick={() => router.back()} className="mb-4">
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to All Tools
+                    Back
                 </Button>
             )}
             <Card className="text-center">

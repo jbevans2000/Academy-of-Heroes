@@ -3,8 +3,8 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ArrowLeft, Dna, Sparkles, Loader2, Download } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -52,12 +52,24 @@ const PunnettSquare = ({ traitName, squareIndex }: { traitName: string, squareIn
         }
     }, [storageKey, squareIndex]);
 
+    const sortAlleles = (a1: string, a2: string) => {
+        const allele1 = a1 || '';
+        const allele2 = a2 || '';
+        if (allele1.toUpperCase() === allele1 && allele1.toLowerCase() !== allele1) {
+            return allele1 + allele2;
+        }
+        if (allele2.toUpperCase() === allele2 && allele2.toLowerCase() !== allele2) {
+            return allele2 + allele1;
+        }
+        return allele1 + allele2;
+    };
+
     // Auto-fill grid when parental alleles change
     useEffect(() => {
-        const newGrid1 = (alleles.top1 || '') + (alleles.left1 || '');
-        const newGrid2 = (alleles.top2 || '') + (alleles.left1 || '');
-        const newGrid3 = (alleles.top1 || '') + (alleles.left2 || '');
-        const newGrid4 = (alleles.top2 || '') + (alleles.left2 || '');
+        const newGrid1 = sortAlleles(alleles.top1, alleles.left1);
+        const newGrid2 = sortAlleles(alleles.top2, alleles.left1);
+        const newGrid3 = sortAlleles(alleles.top1, alleles.left2);
+        const newGrid4 = sortAlleles(alleles.top2, alleles.left2);
 
         // Only update if something changed to prevent infinite loops
         if (newGrid1 !== alleles.grid1 || newGrid2 !== alleles.grid2 || newGrid3 !== alleles.grid3 || newGrid4 !== alleles.grid4) {
@@ -323,7 +335,9 @@ function GeneticsLabContent() {
 
     const handleDownloadPdf = () => {
         setIsDownloading(true);
+        // We can just use the browser's print functionality which is more reliable
         window.print();
+        // A small delay to allow the print dialog to appear before resetting state
         setTimeout(() => setIsDownloading(false), 1000);
     };
 
@@ -691,7 +705,7 @@ function GeneticsLabContent() {
 
     return (
         <div className={isEmbed ? "" : "bg-muted/40 min-h-screen"}>
-            {!isEmbed && <div className="hidden"><div /></div> /* This seems like a placeholder for a header */}
+            {!isEmbed && <div className="p-4 bg-background"><Button variant="outline" onClick={() => router.back()}><ArrowLeft className="mr-2 h-4 w-4" /> Back</Button></div>}
             <main className={isEmbed ? "" : "p-4 md:p-6 lg:p-8"}>
                 {mainContent}
             </main>
