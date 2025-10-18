@@ -416,9 +416,9 @@ function GeneticsLabContent() {
     const mainContent = (
         <div ref={contentRef} className="max-w-6xl mx-auto space-y-6 bg-white p-8">
             {!isEmbed && (
-                 <Button variant="outline" onClick={() => router.back()} className="mb-4">
+                 <Button variant="outline" onClick={() => router.push('/teacher/tools')} className="mb-4">
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back
+                    Back to All Tools
                 </Button>
             )}
             <Card className="text-center">
@@ -713,5 +713,3 @@ export default function GeneticsLabPage() {
         </Suspense>
     )
 }
-
-    

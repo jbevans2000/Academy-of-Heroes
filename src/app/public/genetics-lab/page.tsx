@@ -3,8 +3,8 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ArrowLeft, Dna, Sparkles, Loader2, Download } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -350,7 +350,7 @@ function GeneticsLabContent() {
             console.error("Could not write to localStorage for Aurelios:", error);
         }
     };
-
+    
     const handleGenerateHatchling = async () => {
         if (!traitSelections) {
             toast({ variant: 'destructive', title: 'Missing Traits', description: "Please select the phenotypes for your hatchling first." });
@@ -694,13 +694,6 @@ function GeneticsLabContent() {
 
     return (
         <div className={isEmbed ? "" : "bg-muted/40 min-h-screen"}>
-            {!isEmbed && (
-                <header className="p-4 border-b">
-                    <Button variant="outline" onClick={() => router.back()}>
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Back
-                    </Button>
-                </header>
-            )}
             <main className={isEmbed ? "" : "p-4 md:p-6 lg:p-8"}>
                 {mainContent}
             </main>
@@ -715,5 +708,3 @@ export default function GeneticsLabPage() {
         </Suspense>
     )
 }
-
-    
