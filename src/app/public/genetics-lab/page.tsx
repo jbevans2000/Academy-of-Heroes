@@ -3,8 +3,8 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { ArrowLeft, Dna, Sparkles, Loader2, Download } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -323,9 +323,7 @@ function GeneticsLabContent() {
 
     const handleDownloadPdf = () => {
         setIsDownloading(true);
-        // We can just use the browser's print functionality which is more reliable
         window.print();
-        // A small delay to allow the print dialog to appear before resetting state
         setTimeout(() => setIsDownloading(false), 1000);
     };
 
@@ -365,7 +363,6 @@ function GeneticsLabContent() {
             const selection = traitSelections[traitName];
             
             if (selection && selection.phenotype) {
-                // Directly use the dominant or recessive text from geneticsKey
                 input[traitName as keyof HatchlingTraitInput] = selection.phenotype === 'dominant' ? key.dominant : key.recessive;
             } else {
                 allTraitsDefined = false;
@@ -694,6 +691,7 @@ function GeneticsLabContent() {
 
     return (
         <div className={isEmbed ? "" : "bg-muted/40 min-h-screen"}>
+            {!isEmbed && <div className="hidden"><div /></div> /* This seems like a placeholder for a header */}
             <main className={isEmbed ? "" : "p-4 md:p-6 lg:p-8"}>
                 {mainContent}
             </main>
