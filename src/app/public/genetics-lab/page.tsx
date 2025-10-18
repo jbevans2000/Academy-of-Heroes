@@ -3,7 +3,6 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Dna, Sparkles, Loader2, Download } from 'lucide-react';
@@ -14,9 +13,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { generateHatchling, type HatchlingTraitInput } from '@/ai/flows/hatchling-generator';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
-import { onAuthStateChanged, type User } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
 import jsPDF from 'jspdf';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -157,7 +153,7 @@ const HatchlingTable = ({ title, tableIndex, placeholders }: { title: string; ta
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Chromosome {tableIndex}</CardTitle>
+                <CardTitle>{title}</CardTitle>
             </CardHeader>
             <CardContent>
                 <Table>
@@ -365,9 +361,12 @@ function GeneticsLabContent() {
         let allTraitsDefined = true;
 
         for (const key of geneticsKey) {
-            const selection = traitSelections[key.trait];
+            const traitName = key.trait;
+            const selection = traitSelections[traitName];
+            
             if (selection && selection.phenotype) {
-                input[key.trait as keyof HatchlingTraitInput] = selection.phenotype === 'dominant' ? key.dominant : key.recessive;
+                // Directly use the dominant or recessive text from geneticsKey
+                input[traitName as keyof HatchlingTraitInput] = selection.phenotype === 'dominant' ? key.dominant : key.recessive;
             } else {
                 allTraitsDefined = false;
                 break;
@@ -405,8 +404,8 @@ function GeneticsLabContent() {
 
     const placeholdersForTable1 = [
         ["Neck Length", "Nn", "Long Neck", "Het"],
-        ["Eye Color", "ee", "White Eyes", "Hom"],
-        ["Horn Number", "Hh", "Multiple Horns", "Het"],
+        ["Tail Spikes", "ss", "No Spikes", "Hom"],
+        ["Wing Claws", "cc", "No Claws", "Hom"],
         ["", "", "", ""],
     ];
 
@@ -625,10 +624,10 @@ function GeneticsLabContent() {
             </Card>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <HatchlingTable title="Chromosome" tableIndex={1} placeholders={placeholdersForTable1} />
-                <HatchlingTable title="Chromosome" tableIndex={2} />
-                <HatchlingTable title="Chromosome" tableIndex={3} />
-                <HatchlingTable title="Chromosome" tableIndex={4} />
+                <HatchlingTable title="Chromosome 1" tableIndex={1} placeholders={placeholdersForTable1} />
+                <HatchlingTable title="Chromosome 2" tableIndex={2} />
+                <HatchlingTable title="Chromosome 3" tableIndex={3} />
+                <HatchlingTable title="Chromosome 4" tableIndex={4} />
             </div>
 
             <HatchlingTraitSelector onDataChange={setTraitSelections} />
@@ -695,7 +694,13 @@ function GeneticsLabContent() {
 
     return (
         <div className={isEmbed ? "" : "bg-muted/40 min-h-screen"}>
-            {!isEmbed && <TeacherHeader />}
+            {!isEmbed && (
+                <header className="p-4 border-b">
+                    <Button variant="outline" onClick={() => router.back()}>
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                    </Button>
+                </header>
+            )}
             <main className={isEmbed ? "" : "p-4 md:p-6 lg:p-8"}>
                 {mainContent}
             </main>
@@ -710,3 +715,5 @@ export default function GeneticsLabPage() {
         </Suspense>
     )
 }
+
+    

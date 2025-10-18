@@ -21,17 +21,17 @@ import jsPDF from 'jspdf';
 import { Textarea } from '@/components/ui/textarea';
 
 const geneticsKey = [
-  { trait: 'Neck Length', dominantAllele: 'N', dominant: 'Long Neck', recessiveAllele: 'n', recessive: 'Short Neck' },
-  { trait: 'Eye Color', dominantAllele: 'E', dominant: 'Red Eyes', recessiveAllele: 'e', recessive: 'White Eyes' },
-  { trait: 'Horns', dominantAllele: 'H', dominant: 'Multiple Horns', recessiveAllele: 'h', recessive: 'Only 2 Horns' },
-  { trait: 'Wing Claws', dominantAllele: 'C', dominant: 'Clawed Wings', recessiveAllele: 'c', recessive: 'No Claws on Wings' },
-  { trait: 'Body Color', dominantAllele: 'B', dominant: 'Silver Body', recessiveAllele: 'b', recessive: 'Gold Body' },
-  { trait: 'Belly', dominantAllele: 'A', dominant: 'Armored Belly', recessiveAllele: 'a', recessive: 'No armor on belly' },
-  { trait: 'Tail', dominantAllele: 'S', dominant: 'Spikes on Tail', recessiveAllele: 's', recessive: 'No Spikes on Tail' },
-  { trait: 'Back', dominantAllele: 'K', dominant: 'Freckled Back', recessiveAllele: 'k', recessive: 'No freckles on back' },
-  { trait: 'Breath', dominantAllele: 'F', dominant: 'Fire Breathing', recessiveAllele: 'f', recessive: 'Ice Breathing' },
-  { trait: 'Toes', dominantAllele: 'T', dominant: 'Three Toes', recessiveAllele: 't', recessive: 'Four Toes' },
-  { trait: 'Wing Color', dominantAllele: 'W', dominant: 'Black Wings', recessiveAllele: 'w', recessive: 'Colored Wings' },
+    { trait: 'Neck Length', dominantAllele: 'N', dominant: 'Long Neck', recessiveAllele: 'n', recessive: 'Short Neck' },
+    { trait: 'Eye Color', dominantAllele: 'E', dominant: 'Red Eyes', recessiveAllele: 'e', recessive: 'White Eyes' },
+    { trait: 'Horn Number', dominantAllele: 'H', dominant: 'Multiple Horns', recessiveAllele: 'h', recessive: 'Only 2 Horns' },
+    { trait: 'Wing Claws', dominantAllele: 'C', dominant: 'Clawed Wings', recessiveAllele: 'c', recessive: 'No Claws on Wings' },
+    { trait: 'Body Color', dominantAllele: 'B', dominant: 'Silver Body', recessiveAllele: 'b', recessive: 'Gold Body' },
+    { trait: 'Belly Armor', dominantAllele: 'A', dominant: 'Armored Belly', recessiveAllele: 'a', recessive: 'No armor on belly' },
+    { trait: 'Tail Spikes', dominantAllele: 'S', dominant: 'Spikes on Tail', recessiveAllele: 's', recessive: 'No Spikes on Tail' },
+    { trait: 'Back Freckles', dominantAllele: 'K', dominant: 'Freckled Back', recessiveAllele: 'k', recessive: 'No freckles on back' },
+    { trait: 'Breath Style', dominantAllele: 'F', dominant: 'Fire Breathing', recessiveAllele: 'f', recessive: 'Ice Breathing' },
+    { trait: 'Toe Number', dominantAllele: 'T', dominant: 'Three Toes', recessiveAllele: 't', recessive: 'Four Toes' },
+    { trait: 'Wing Color', dominantAllele: 'W', dominant: 'Black Wings', recessiveAllele: 'w', recessive: 'Colored Wings' },
 ];
 
 const PunnettSquare = ({ traitName, squareIndex }: { traitName: string, squareIndex: number }) => {
@@ -291,7 +291,7 @@ function GeneticsLabContent() {
     useEffect(() => {
         try {
             const defaultSilvariaOvals = [
-                `Chromosome #1\n\nNeck Length - Nn\nEye Color - ee\nHorns - Hh`,
+                `Chromosome #1\n\nNeck Length - Nn\nEye Color - ee\nHorn Number - Hh`,
                 `Chromosome #2\n\nWing Claws -\nBody Color -\nBelly Armor -`,
                 `Chromosome #3\n\nTail Spikes -\nBack Freckles -\nBreath Style -`,
                 `Chromosome #4\n\nToe Number -\nWing Color -`,
@@ -354,7 +354,7 @@ function GeneticsLabContent() {
             console.error("Could not write to localStorage for Aurelios:", error);
         }
     };
-
+    
     const handleGenerateHatchling = async () => {
         if (!traitSelections) {
             toast({ variant: 'destructive', title: 'Missing Traits', description: "Please select the phenotypes for your hatchling first." });
@@ -365,9 +365,12 @@ function GeneticsLabContent() {
         let allTraitsDefined = true;
 
         for (const key of geneticsKey) {
-            const selection = traitSelections[key.trait];
+            const traitName = key.trait;
+            const selection = traitSelections[traitName];
+            
             if (selection && selection.phenotype) {
-                input[key.trait as keyof HatchlingTraitInput] = selection.phenotype === 'dominant' ? key.dominant : key.recessive;
+                // Directly use the dominant or recessive text from geneticsKey
+                input[traitName as keyof HatchlingTraitInput] = selection.phenotype === 'dominant' ? key.dominant : key.recessive;
             } else {
                 allTraitsDefined = false;
                 break;
@@ -710,3 +713,5 @@ export default function GeneticsLabPage() {
         </Suspense>
     )
 }
+
+    
