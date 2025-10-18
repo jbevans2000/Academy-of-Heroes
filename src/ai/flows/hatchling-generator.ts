@@ -7,18 +7,18 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
-// Define the input schema for the hatchling generator
+// Define the input schema for the hatchling generator, matching the final geneticsKey
 const TraitInputSchema = z.object({
   'Neck Length': z.string(),
   'Eye Color': z.string(),
-  'Horns': z.string(),
+  'Horn Number': z.string(),
   'Wing Claws': z.string(),
   'Body Color': z.string(),
-  'Belly': z.string(),
-  'Tail': z.string(),
-  'Back': z.string(),
-  'Breath': z.string(),
-  'Toes': z.string(),
+  'Belly Armor': z.string(),
+  'Tail Spikes': z.string(),
+  'Back Freckles': z.string(),
+  'Breath Style': z.string(),
+  'Toe Number': z.string(),
   'Wing Color': z.string(),
 });
 
@@ -33,24 +33,29 @@ const generateHatchlingFlow = ai.defineFlow(
   },
   async (input) => {
     // Modify the belly description based on input
-    const bellyDescription = input['Belly'] === 'Armored Belly'
+    const bellyDescription = input['Belly Armor'] === 'Armored Belly'
         ? 'thick ridges'
         : 'smooth scales';
+    
+    // Explicitly show breath weapon effect
+    const breathEffect = input['Breath Style'] === 'Fire Breathing' 
+        ? 'a small puff of fire is coming from its mouth.' 
+        : 'a wisp of frost is coming from its mouth.';
 
     // Dynamically construct the prompt string from the input traits
     const promptText = `Generate a high-quality, fantasy art style image of a newly hatched baby dragon with the following specific physical traits. The dragon should look cute but majestic, like it has great potential.
 
     - Neck: ${input['Neck Length']}
     - Eyes: ${input['Eye Color']}
-    - Horns: ${input['Horns']}
+    - Horns: ${input['Horn Number']}
     - Wing Claws: ${input['Wing Claws']}
     - Main Body Color: ${input['Body Color']}
     - Belly Type: ${bellyDescription}
-    - Tail Style: ${input['Tail']}
-    - Back Pattern: ${input['Back']}
-    - Breath Ability: ${input['Breath']}
-    - Toes: ${input['Toes']} on both front and rear feet
+    - Tail Style: ${input['Tail Spikes']}
+    - Back Pattern: ${input['Back Freckles']}
+    - Toes: ${input['Toe Number']} on both front and rear feet
     - Wing Membrane Color: ${input['Wing Color']}
+    - Breath Effect: ${breathEffect}
 
     The hatchling should be in a simple, magical environment, like a nest with glowing runes or a mystical cave. Focus on the dragon itself.`;
     
