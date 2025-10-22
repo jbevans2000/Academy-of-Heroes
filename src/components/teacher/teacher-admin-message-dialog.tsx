@@ -1,21 +1,22 @@
 
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, query, orderBy, onSnapshot, doc, getDoc, getDocs, where, limit } from 'firebase/firestore';
-import { db, auth } from '@/lib/firebase';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, auth, app } from '@/lib/firebase';
 import type { Message, Teacher } from '@/lib/data';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Send } from 'lucide-react';
+import { Loader2, Send, Paperclip, X } from 'lucide-react';
 import { sendMessageToAdmin } from '@/ai/flows/manage-admin-messages';
 import { cn } from '@/lib/utils';
 import { ClientOnlyTime } from '../client-only-time';
-
+import Image from 'next/image';
 
 interface TeacherAdminMessageDialogProps {
     isOpen: boolean;
@@ -29,9 +30,14 @@ export function TeacherAdminMessageDialog({ isOpen, onOpenChange }: TeacherAdmin
     const [messages, setMessages] = useState<Message[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
-    const [adminUid, setAdminUid] = useState<string | null>(null); // State to hold the admin UID
+    const [adminUid, setAdminUid] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     
+    // New state for image attachments
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
     useEffect(() => {
         if (isOpen) {
             const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -44,7 +50,6 @@ export function TeacherAdminMessageDialog({ isOpen, onOpenChange }: TeacherAdmin
                         }
                     });
 
-                    // Fetch the first admin UID to message
                     const adminsQuery = query(collection(db, 'admins'), limit(1));
                     const adminSnapshot = await getDocs(adminsQuery);
                     if (!adminSnapshot.empty) {
@@ -78,18 +83,34 @@ export function TeacherAdminMessageDialog({ isOpen, onOpenChange }: TeacherAdmin
     useEffect(scrollToBottom, [messages]);
     
     const handleSendMessage = async (e?: React.FormEvent) => {
-        e?.preventDefault();
-        if (!newMessage.trim() || !teacher || !user || !adminUid) return;
+        if (e) e.preventDefault();
+        if (!newMessage.trim() && !imageFile) return;
+        if (!teacher || !user || !adminUid) return;
+
         setIsSending(true);
+        let imageUrl: string | undefined = undefined;
+
         try {
+            if (imageFile) {
+                setIsUploading(true);
+                const storage = getStorage(app);
+                const filePath = `admin_messages/${user.uid}/${Date.now()}_${imageFile.name}`;
+                const storageRef = ref(storage, filePath);
+                await uploadBytes(storageRef, imageFile);
+                imageUrl = await getDownloadURL(storageRef);
+                setIsUploading(false);
+            }
+
             const result = await sendMessageToAdmin({
                 teacherUid: user.uid,
                 teacherName: teacher.name,
                 message: newMessage,
+                imageUrl,
                 adminUid: adminUid,
             });
             if (result.success) {
                 setNewMessage('');
+                setImageFile(null);
             } else {
                 throw new Error(result.error);
             }
@@ -97,6 +118,7 @@ export function TeacherAdminMessageDialog({ isOpen, onOpenChange }: TeacherAdmin
             toast({ variant: 'destructive', title: 'Error', description: error.message });
         } finally {
             setIsSending(false);
+            setIsUploading(false);
         }
     };
 
@@ -116,6 +138,11 @@ export function TeacherAdminMessageDialog({ isOpen, onOpenChange }: TeacherAdmin
                                         "p-3 rounded-lg max-w-[80%]",
                                         msg.sender === 'teacher' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
                                     )}>
+                                        {msg.imageUrl && (
+                                            <a href={msg.imageUrl} target="_blank" rel="noopener noreferrer">
+                                                <Image src={msg.imageUrl} alt="Attached image" width={200} height={200} className="rounded-md mb-2 object-cover" />
+                                            </a>
+                                        )}
                                         <p className="whitespace-pre-wrap">{msg.text}</p>
                                     </div>
                                     <p className="text-xs text-muted-foreground mt-1">
@@ -127,7 +154,20 @@ export function TeacherAdminMessageDialog({ isOpen, onOpenChange }: TeacherAdmin
                         </div>
                     </ScrollArea>
                 </div>
-                <form onSubmit={handleSendMessage} className="flex gap-2 pt-4 border-t">
+                {imageFile && (
+                    <div className="relative w-24 h-24 border p-1 rounded-md">
+                        <Image src={URL.createObjectURL(imageFile)} alt="Preview" layout="fill" className="object-cover rounded-sm" />
+                        <Button
+                            variant="destructive"
+                            size="icon"
+                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                            onClick={() => setImageFile(null)}
+                        >
+                            <X className="h-4 w-4" />
+                        </Button>
+                    </div>
+                )}
+                <form onSubmit={handleSendMessage} className="flex gap-2 pt-4 border-t items-start">
                     <Textarea 
                         value={newMessage} 
                         onChange={(e) => setNewMessage(e.target.value)} 
@@ -135,7 +175,17 @@ export function TeacherAdminMessageDialog({ isOpen, onOpenChange }: TeacherAdmin
                         rows={2}
                         disabled={isSending || !adminUid}
                     />
-                    <Button type="submit" disabled={isSending || !newMessage.trim() || !adminUid}>
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        accept="image/*"
+                        onChange={(e) => setImageFile(e.target.files ? e.target.files[0] : null)}
+                    />
+                    <Button type="button" variant="outline" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isSending}>
+                        <Paperclip className="h-4 w-4" />
+                    </Button>
+                    <Button type="submit" disabled={isSending || (!newMessage.trim() && !imageFile) || !adminUid}>
                         {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     </Button>
                 </form>

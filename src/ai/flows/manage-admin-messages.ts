@@ -14,11 +14,12 @@ interface SendMessageToTeacherInput {
   adminUid: string;
   teacherUid: string;
   message: string;
+  imageUrl?: string;
 }
 
 export async function sendMessageToTeacherFromAdmin(input: SendMessageToTeacherInput): Promise<ActionResponse> {
-  const { adminUid, teacherUid, message } = input;
-  if (!adminUid || !teacherUid || !message.trim()) {
+  const { adminUid, teacherUid, message, imageUrl } = input;
+  if (!adminUid || !teacherUid || (!message.trim() && !imageUrl)) {
     return { success: false, error: 'Invalid input.' };
   }
 
@@ -26,6 +27,7 @@ export async function sendMessageToTeacherFromAdmin(input: SendMessageToTeacherI
     const batch = writeBatch(db);
     const messageData = {
       text: message,
+      imageUrl: imageUrl || null,
       sender: 'admin' as const,
       timestamp: serverTimestamp(),
       isRead: false,
@@ -64,12 +66,13 @@ interface SendMessageToAdminInput {
     teacherUid: string;
     teacherName: string;
     message: string;
+    imageUrl?: string;
     adminUid: string; // The specific admin to message, for future-proofing
 }
 
 export async function sendMessageToAdmin(input: SendMessageToAdminInput): Promise<ActionResponse> {
-    const { teacherUid, teacherName, message, adminUid } = input;
-    if (!teacherUid || !message.trim() || !adminUid) {
+    const { teacherUid, teacherName, message, imageUrl, adminUid } = input;
+    if (!teacherUid || (!message.trim() && !imageUrl) || !adminUid) {
         return { success: false, error: 'Invalid input.' };
     }
 
@@ -78,6 +81,7 @@ export async function sendMessageToAdmin(input: SendMessageToAdminInput): Promis
         
         const messageData = {
             text: message,
+            imageUrl: imageUrl || null,
             sender: 'teacher' as const,
             senderName: teacherName,
             timestamp: serverTimestamp(),

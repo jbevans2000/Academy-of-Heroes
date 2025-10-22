@@ -3,7 +3,8 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import type { User } from 'firebase/auth';
-import { db } from '@/lib/firebase';
+import { db, app } from '@/lib/firebase';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { collection, query, orderBy, onSnapshot, doc, getDocs, where } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,10 +27,11 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, MessageSquare, Send, Trash2 } from 'lucide-react';
+import { Loader2, MessageSquare, Send, Trash2, Paperclip, X } from 'lucide-react';
 import { sendMessageToTeacherFromAdmin, markAdminMessagesAsRead, clearAdminMessageHistory } from '@/ai/flows/manage-admin-messages';
 import { cn } from '@/lib/utils';
 import { ClientOnlyTime } from '../client-only-time';
+import Image from 'next/image';
 
 // Define more specific types based on the new structure
 interface TeacherConversation {
@@ -45,6 +47,7 @@ interface AdminMessage {
   sender: 'teacher' | 'admin';
   timestamp: any;
   isRead: boolean;
+  imageUrl?: string;
   senderName?: string;
 }
 
@@ -73,19 +76,21 @@ export function AdminMessageCenter({
     const [conversations, setConversations] = useState<TeacherConversation[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // New state for clearing history
     const [isClearing, setIsClearing] = useState(false);
     const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
+    
+    // New state for image attachments
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (!admin) return;
 
-        // Fetch teachers to get their names and class names
         const teachersRef = collection(db, 'teachers');
         const unsubTeachers = onSnapshot(teachersRef, (snapshot) => {
             const allTeachers = snapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name, className: doc.data().className, hasUnreadAdminMessages: doc.data().hasUnreadAdminMessages }));
             
-            // Now, fetch the conversations from the admin's subcollection
             const convosRef = collection(db, 'admins', admin.uid, 'teacherMessages');
             const unsubConvos = onSnapshot(query(convosRef, orderBy('lastMessageAt', 'desc')), (convoSnapshot) => {
                 const convoData = convoSnapshot.docs.map(doc => {
@@ -97,7 +102,6 @@ export function AdminMessageCenter({
                         hasUnreadAdminMessages: teacherInfo?.hasUnreadAdminMessages
                     };
                 });
-                 // Add teachers who haven't had a conversation yet
                 const teachersWithConvos = new Set(convoData.map(c => c.id));
                 const teachersWithoutConvos = allTeachers.filter(t => !teachersWithConvos.has(t.id));
 
@@ -139,17 +143,31 @@ export function AdminMessageCenter({
     
     const handleSendMessage = async (e?: React.FormEvent) => {
         e?.preventDefault();
-        if (!admin || !selectedTeacher || !messageText.trim()) return;
+        if (!admin || !selectedTeacher || (!messageText.trim() && !imageFile)) return;
 
         setIsSending(true);
+        let imageUrl: string | undefined = undefined;
+
         try {
+            if (imageFile) {
+                setIsUploading(true);
+                const storage = getStorage(app);
+                const filePath = `admin_messages/${admin.uid}/${Date.now()}_${imageFile.name}`;
+                const storageRef = ref(storage, filePath);
+                await uploadBytes(storageRef, imageFile);
+                imageUrl = await getDownloadURL(storageRef);
+                setIsUploading(false);
+            }
+
             const result = await sendMessageToTeacherFromAdmin({
                 adminUid: admin.uid,
                 teacherUid: selectedTeacher.id,
                 message: messageText,
+                imageUrl,
             });
             if (result.success) {
                 setMessageText('');
+                setImageFile(null);
             } else {
                 throw new Error(result.error);
             }
@@ -157,6 +175,7 @@ export function AdminMessageCenter({
             toast({ variant: 'destructive', title: 'Error', description: error.message });
         } finally {
             setIsSending(false);
+            setIsUploading(false);
         }
     };
     
@@ -180,7 +199,6 @@ export function AdminMessageCenter({
             setIsClearConfirmOpen(false);
         }
     }
-
 
     const sortedConversations = useMemo(() => {
         return [...conversations].sort((a, b) => {
@@ -246,6 +264,11 @@ export function AdminMessageCenter({
                                                         "p-3 rounded-lg max-w-[80%]",
                                                         msg.sender === 'admin' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
                                                     )}>
+                                                        {msg.imageUrl && (
+                                                            <a href={msg.imageUrl} target="_blank" rel="noopener noreferrer">
+                                                                <Image src={msg.imageUrl} alt="Attached image" width={200} height={200} className="rounded-md mb-2 object-cover" />
+                                                            </a>
+                                                        )}
                                                         <p className="whitespace-pre-wrap">{msg.text}</p>
                                                     </div>
                                                     <p className="text-xs text-muted-foreground mt-1">
@@ -257,15 +280,38 @@ export function AdminMessageCenter({
                                         </div>
                                     </ScrollArea>
                                 </div>
-                                <form onSubmit={handleSendMessage} className="flex gap-2 pt-4 border-t">
+                                {imageFile && (
+                                    <div className="relative w-24 h-24 border p-1 rounded-md mb-2">
+                                        <Image src={URL.createObjectURL(imageFile)} alt="Preview" layout="fill" className="object-cover rounded-sm" />
+                                        <Button
+                                            variant="destructive"
+                                            size="icon"
+                                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                                            onClick={() => setImageFile(null)}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                )}
+                                <form onSubmit={handleSendMessage} className="flex gap-2 pt-4 border-t items-start">
                                     <Textarea 
                                         value={messageText} 
                                         onChange={(e) => setMessageText(e.target.value)} 
                                         placeholder={`Message ${selectedTeacher.name}...`}
                                         rows={2}
-                                        disabled={isSending}
+                                        disabled={isSending || isUploading}
                                     />
-                                    <Button type="submit" disabled={isSending || !messageText.trim()}>
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        className="hidden"
+                                        accept="image/*"
+                                        onChange={(e) => setImageFile(e.target.files ? e.target.files[0] : null)}
+                                    />
+                                    <Button type="button" variant="outline" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isSending || isUploading}>
+                                        {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
+                                    </Button>
+                                    <Button type="submit" disabled={isSending || isUploading || (!messageText.trim() && !imageFile)}>
                                         {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                                     </Button>
                                 </form>

@@ -16,6 +16,7 @@ export interface Message {
   sender: 'teacher' | 'student' | 'admin';
   timestamp: any; // Firestore ServerTimestamp
   isRead: boolean;
+  imageUrl?: string; // New field for image attachments
   senderName?: string; // For student->teacher or teacher->admin messages
 }
 
