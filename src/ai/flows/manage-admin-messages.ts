@@ -124,7 +124,7 @@ export async function markAdminMessagesAsRead(input: MarkMessagesAsReadInput): P
         
         // Mark messages within the admin's subcollection as read
         const messagesRef = collection(db, 'admins', adminUid, 'teacherMessages', teacherId, 'conversation');
-        const q = query(messagesRef, where('isRead', '==', false), where('sender', '==', 'teacher'));
+        const q = query(messagesRef, where('isRead', '==', false));
         
         const unreadSnapshot = await getDocs(q);
         if (!unreadSnapshot.empty) {
@@ -162,7 +162,7 @@ export async function markAllAdminMessagesAsRead(input: MarkAllAdminMessagesInpu
 
             // Mark all underlying messages from the teacher as read in the admin's collection
             const messagesRef = collection(db, 'admins', input.adminUid, 'teacherMessages', teacherDoc.id, 'conversation');
-            const messagesQuery = query(messagesRef, where('isRead', '==', false), where('sender', '==', 'teacher'));
+            const messagesQuery = query(messagesRef, where('isRead', '==', false));
             const messagesSnapshot = await getDocs(messagesQuery);
             messagesSnapshot.forEach(msgDoc => {
                 batch.update(msgDoc.ref, { isRead: true });
