@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
@@ -39,10 +39,18 @@ import { v4 as uuidv4 } from 'uuid';
 
 const LessonGallery = ({ parts, onLastPartReached }: { parts: LessonPart[], onLastPartReached: (isLast: boolean) => void }) => {
     const [currentPartIndex, setCurrentPartIndex] = useState(0);
+    const contentRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         onLastPartReached(currentPartIndex === parts.length - 1);
     }, [currentPartIndex, parts.length, onLastPartReached]);
+
+    // Scroll to top when the part changes
+    useEffect(() => {
+        if (contentRef.current) {
+            contentRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [currentPartIndex]);
 
 
     if (!parts || parts.length === 0) {
@@ -51,17 +59,29 @@ const LessonGallery = ({ parts, onLastPartReached }: { parts: LessonPart[], onLa
 
     const currentPart = parts[currentPartIndex];
 
+    const handleNext = () => {
+        if (currentPartIndex < parts.length - 1) {
+            setCurrentPartIndex(p => p + 1);
+        }
+    };
+
+    const handlePrev = () => {
+        if (currentPartIndex > 0) {
+            setCurrentPartIndex(p => p - 1);
+        }
+    };
+
     return (
-        <div className="space-y-4">
+        <div className="space-y-4" ref={contentRef}>
             <div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: currentPart.content }} />
             <div className="flex justify-between items-center mt-4">
-                <Button onClick={() => setCurrentPartIndex(p => p - 1)} disabled={currentPartIndex === 0}>
+                <Button onClick={handlePrev} disabled={currentPartIndex === 0}>
                     <ArrowLeft className="mr-2 h-4 w-4" /> Previous Part
                 </Button>
                 <span className="text-sm font-semibold text-muted-foreground">
                     Part {currentPartIndex + 1} of {parts.length}
                 </span>
-                <Button onClick={() => setCurrentPartIndex(p => p + 1)} disabled={currentPartIndex === parts.length - 1}>
+                <Button onClick={handleNext} disabled={currentPartIndex === parts.length - 1}>
                     Next Part <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
             </div>
