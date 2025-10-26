@@ -261,14 +261,15 @@ export default function EditQuestPage() {
     }, [chapter?.storyAdditionalContent]);
 
 
-  const handleMapDrag = (e: React.MouseEvent<HTMLDivElement, MouseEvent>, type: 'hub' | 'chapter') => {
-    const map = e.currentTarget;
+  const handleMapDrag = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    const map = e.currentTarget.parentElement;
+    if (!map) return;
     const rect = map.getBoundingClientRect();
 
     const updatePosition = (moveEvent: MouseEvent) => {
         const x = ((moveEvent.clientX - rect.left) / rect.width) * 100;
         const y = ((moveEvent.clientY - rect.top) / rect.height) * 100;
-        handleFieldChange('coordinates', { x, y });
+        setChapterCoordinates({ x, y });
     };
 
     const stopDragging = () => {
@@ -495,34 +496,26 @@ export default function EditQuestPage() {
     if (!validateInputs() || !chapter || !teacher) return;
     setIsSaving(true);
     
-    const chapterToSave = { ...chapter };
+    const chapterToSave: any = { ...chapter, hubId: selectedHubId, coordinates: chapterCoordinates };
 
     // Clean up quiz data before saving
     if (chapterToSave.quiz && chapterToSave.quiz.questions) {
-        chapterToSave.quiz.questions = chapterToSave.quiz.questions.map(q => {
-            // Ensure correctAnswer is an array
+        chapterToSave.quiz.questions = chapterToSave.quiz.questions.map((q: any) => {
             const correctAnswer = Array.isArray(q.correctAnswer) ? q.correctAnswer : [q.correctAnswerIndex];
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { correctAnswerIndex, ...rest } = q; // Remove old index
+            const { correctAnswerIndex, ...rest } = q;
             return { ...rest, correctAnswer };
         });
-    } else {
-        delete chapterToSave.quiz;
     }
 
     try {
         const chapterRef = doc(db, 'teachers', teacher.uid, 'chapters', chapterId);
-        await setDoc(chapterRef, {
-            ...chapterToSave,
-            hubId: selectedHubId,
-            coordinates: chapterCoordinates,
-            isActive: chapter.isActive ?? true, // Default to active if not set
-        }, { merge: true });
+        await setDoc(chapterRef, chapterToSave, { merge: true });
         
         toast({
             title: 'Quest Updated!',
             description: 'The chapter has been saved successfully.',
         });
+        router.push('/teacher/quests');
 
     } catch (error) {
         console.error("Error saving quest:", error);
@@ -739,7 +732,7 @@ export default function EditQuestPage() {
                                               left: `${chapterCoordinates.x}%`,
                                               top: `${chapterCoordinates.y}%`,
                                           }}
-                                          onMouseDown={(e) => handleMapDrag(e, 'chapter')}
+                                          onMouseDown={(e) => handleMapDrag(e)}
                                       >
                                           <div className="w-5 h-5 bg-yellow-400 rounded-full ring-2 ring-white shadow-xl animate-pulse-glow"></div>
                                       </div>
