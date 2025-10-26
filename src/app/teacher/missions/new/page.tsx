@@ -4,7 +4,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { auth, app } from '@/lib/firebase';
 import { saveMission } from '@/ai/flows/manage-missions';
 import { useToast } from '@/hooks/use-toast';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
@@ -13,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import RichTextEditor from '@/components/teacher/rich-text-editor';
-import { ArrowLeft, Loader2, Save, Download, Star, Coins, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Download, Star, Coins, Trash2, Upload } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import jsPDF from 'jspdf';
 import {
@@ -28,7 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Textarea } from '@/components/ui/textarea';
 import type { Editor as TinyMCEEditor } from 'tinymce';
-
+import { v4 as uuidv4 } from 'uuid';
 
 export default function NewMissionPage() {
     const router = useRouter();
@@ -43,6 +44,11 @@ export default function NewMissionPage() {
     const [defaultGold, setDefaultGold] = useState<number | ''>('');
     const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
     const [openInNewTab, setOpenInNewTab] = useState(false);
+    
+    // New state for image upload
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -54,6 +60,29 @@ export default function NewMissionPage() {
         });
         return () => unsubscribe();
     }, [router]);
+    
+    const handleImageUpload = async () => {
+        if (!imageFile || !teacher) return;
+        setIsUploading(true);
+        try {
+            const storage = getStorage(app);
+            const filePath = `mission-images/${teacher.uid}/${uuidv4()}`;
+            const storageRef = ref(storage, filePath);
+            await uploadBytes(storageRef, imageFile);
+            const downloadUrl = await getDownloadURL(storageRef);
+            
+            const imgHtml = `<p style="text-align: center;"><img src="${downloadUrl}" alt="Mission Image" style="width: 100%; height: auto; border-radius: 8px; display: inline-block;" /></p>`;
+            
+            setContent(prev => imgHtml + prev);
+            toast({ title: 'Image Uploaded', description: 'The image has been added to the top of your mission content.' });
+            setImageFile(null);
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload the image.' });
+        } finally {
+            setIsUploading(false);
+        }
+    };
     
     const handleSave = async () => {
         if (!teacher) return;
@@ -211,6 +240,15 @@ export default function NewMissionPage() {
                                         </div>
                                     </div>
                                     <p className="text-xs text-muted-foreground">These will be auto-calculated in the grading view based on the percentage score, but you can always override them.</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Mission Image (Optional)</Label>
+                                    <div className="flex items-center gap-2">
+                                        <Input type="file" id="mission-image" className="max-w-xs" onChange={(e) => setImageFile(e.target.files?.[0] || null)} disabled={isUploading} />
+                                        <Button onClick={handleImageUpload} disabled={!imageFile || isUploading}>
+                                            {isUploading ? <Loader2 className="h-4 w-4 animate-spin"/> : <Upload className="h-4 w-4"/>}
+                                        </Button>
+                                    </div>
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Mission Content</Label>

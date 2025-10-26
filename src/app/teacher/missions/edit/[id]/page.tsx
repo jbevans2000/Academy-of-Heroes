@@ -6,6 +6,8 @@ import { useRouter, useParams } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db, auth, app } from '@/lib/firebase';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { v4 as uuidv4 } from 'uuid';
 import type { Mission } from '@/lib/missions';
 
 import { TeacherHeader } from '@/components/teacher/teacher-header';
@@ -16,7 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import RichTextEditor from '@/components/teacher/rich-text-editor';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Save, Loader2, Trash2, Download, Star, Coins } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Trash2, Download, Star, Coins, Upload } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { saveMission, deleteMission } from '@/ai/flows/manage-missions';
 import {
@@ -47,6 +49,10 @@ export default function EditMissionPage() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
+    
+    // New state for image upload
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -86,6 +92,29 @@ export default function EditMissionPage() {
         setMission(prev => prev ? ({ ...prev, [field]: value }) : null);
     };
     
+    const handleImageUpload = async () => {
+        if (!imageFile || !teacher) return;
+        setIsUploading(true);
+        try {
+            const storage = getStorage(app);
+            const filePath = `mission-images/${teacher.uid}/${uuidv4()}`;
+            const storageRef = ref(storage, filePath);
+            await uploadBytes(storageRef, imageFile);
+            const downloadUrl = await getDownloadURL(storageRef);
+            
+            const imgHtml = `<p style="text-align: center;"><img src="${downloadUrl}" alt="Mission Image" style="width: 100%; height: auto; border-radius: 8px; display: inline-block;" /></p>`;
+            
+            handleFieldChange('content', imgHtml + (mission?.content || ''));
+            toast({ title: 'Image Uploaded', description: 'The image has been added to the top of your mission content.' });
+            setImageFile(null);
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not upload the image.' });
+        } finally {
+            setIsUploading(false);
+        }
+    };
+    
     const handleSave = async () => {
         if (!teacher || !mission?.id) return;
         if (!mission.title || !mission.content) {
@@ -98,7 +127,8 @@ export default function EditMissionPage() {
             const result = await saveMission(teacher.uid, mission as Mission);
             if (result.success) {
                 toast({ title: 'Mission Updated!', description: 'Your changes have been saved.' });
-                router.push('/teacher/missions');
+                // No longer redirecting
+                // router.push('/teacher/missions');
             } else {
                 throw new Error(result.error);
             }
@@ -235,9 +265,25 @@ export default function EditMissionPage() {
                                 <Button variant="secondary" onClick={() => setIsClearConfirmOpen(true)}>
                                     <Trash2 className="mr-2 h-4 w-4" /> Clear Content
                                 </Button>
-                                <Button variant="destructive" onClick={() => setIsDeleteDialogOpen(true)}>
-                                    <Trash2 className="mr-2 h-4 w-4" /> Delete Mission
-                                </Button>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="destructive" disabled={isDeleting}>
+                                            <Trash2 className="mr-2 h-4 w-4" /> Delete Mission
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>This will permanently delete this mission and any student submissions.</AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                                                Delete
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
                                 <Button variant="secondary" onClick={handleDownloadPdf}>
                                     <Download className="mr-2 h-4 w-4" /> Download as PDF
                                 </Button>
@@ -276,6 +322,15 @@ export default function EditMissionPage() {
                                         </div>
                                     </div>
                                     <p className="text-xs text-muted-foreground">These will be auto-calculated in the grading view based on the percentage score, but you can always override them.</p>
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label>Mission Image (Optional)</Label>
+                                    <div className="flex items-center gap-2">
+                                        <Input type="file" id="mission-image" className="max-w-xs" onChange={(e) => setImageFile(e.target.files?.[0] || null)} disabled={isUploading} />
+                                        <Button onClick={handleImageUpload} disabled={!imageFile || isUploading}>
+                                            {isUploading ? <Loader2 className="h-4 w-4 animate-spin"/> : <Upload className="h-4 w-4"/>}
+                                        </Button>
+                                    </div>
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Mission Content</Label>
