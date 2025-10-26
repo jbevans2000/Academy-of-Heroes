@@ -12,8 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Send, Paperclip, X } from 'lucide-react';
-import { sendMessageToAdmin } from '@/ai/flows/manage-admin-messages';
+import { Loader2, Send, Paperclip, X, CheckCheck } from 'lucide-react';
+import { sendMessageToAdmin, markAdminMessagesAsRead } from '@/ai/flows/manage-admin-messages';
 import { cn } from '@/lib/utils';
 import { ClientOnlyTime } from '../client-only-time';
 import Image from 'next/image';
@@ -82,6 +82,16 @@ export function TeacherAdminMessageDialog({ isOpen, onOpenChange }: TeacherAdmin
 
     useEffect(scrollToBottom, [messages]);
     
+    const handleMarkAsRead = async () => {
+        if (!adminUid || !teacher) return;
+        try {
+            await markAdminMessagesAsRead({ adminUid, teacherId: teacher.id });
+            toast({ title: "Messages Marked as Read", description: "The notification has been cleared." });
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not mark messages as read.' });
+        }
+    };
+    
     const handleSendMessage = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         if (!newMessage.trim() && !imageFile) return;
@@ -126,7 +136,13 @@ export function TeacherAdminMessageDialog({ isOpen, onOpenChange }: TeacherAdmin
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-lg h-[80vh] flex flex-col">
                 <DialogHeader>
-                    <DialogTitle>Contact Admin</DialogTitle>
+                    <div className="flex justify-between items-center">
+                        <DialogTitle>Contact Admin</DialogTitle>
+                         <Button onClick={handleMarkAsRead} variant="secondary" size="sm">
+                            <CheckCheck className="mr-2 h-4 w-4" />
+                            Mark as Read
+                        </Button>
+                    </div>
                     <DialogDescription>Your private correspondence with the site administrators.</DialogDescription>
                 </DialogHeader>
                 <div className="flex-grow overflow-hidden">
