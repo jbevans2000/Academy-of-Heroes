@@ -30,6 +30,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import jsPDF from 'jspdf';
 import { Textarea } from '@/components/ui/textarea';
@@ -278,7 +279,8 @@ export default function EditMissionPage() {
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                                            <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                                                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                                 Delete
                                             </AlertDialogAction>
                                         </AlertDialogFooter>
