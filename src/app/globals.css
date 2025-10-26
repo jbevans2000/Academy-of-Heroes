@@ -71,6 +71,15 @@
   .formatted-content img {
       @apply rounded-lg shadow-lg border my-6;
   }
+   .formatted-content [style*="text-align: center"] {
+      text-align: center;
+  }
+  .formatted-content [style*="text-align: right"] {
+      text-align: right;
+  }
+  .formatted-content [style*="text-align: left"] {
+      text-align: left;
+  }
 }
 
 @layer utilities {
