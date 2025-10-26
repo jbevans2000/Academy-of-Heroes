@@ -705,10 +705,7 @@ export default function EditQuestPage() {
                           {hubMapUrl && (
                               <div className="pt-4 space-y-2">
                                   <Label>Position Chapter on Hub Map</Label>
-                                  <div 
-                                      className="relative aspect-[2048/1152] rounded-lg overflow-hidden bg-muted/50 border cursor-grab"
-                                      onMouseDown={(e) => handleMapDrag(e, 'chapter')}
-                                  >
+                                  <div className="relative aspect-[2048/1152] rounded-lg overflow-hidden bg-muted/50 border">
                                       <Image
                                           src={hubMapUrl}
                                           alt="Hub Map for Placement"
@@ -737,11 +734,12 @@ export default function EditQuestPage() {
                                           )
                                       })}
                                       <div
-                                          className="absolute -translate-x-1/2 -translate-y-1/2 cursor-grabbing"
+                                          className="absolute -translate-x-1/2 -translate-y-1/2 cursor-grab"
                                           style={{
                                               left: `${chapterCoordinates.x}%`,
                                               top: `${chapterCoordinates.y}%`,
                                           }}
+                                          onMouseDown={(e) => handleMapDrag(e, 'chapter')}
                                       >
                                           <div className="w-5 h-5 bg-yellow-400 rounded-full ring-2 ring-white shadow-xl animate-pulse-glow"></div>
                                       </div>
@@ -964,4 +962,3 @@ export default function EditQuestPage() {
     </>
   );
 }
-
