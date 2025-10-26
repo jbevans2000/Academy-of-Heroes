@@ -145,6 +145,46 @@ export async function markMessagesAsRead(input: MarkMessagesAsReadInput): Promis
     }
 }
 
+export async function markAllTeacherMessagesAsRead(teacherUid: string): Promise<ActionResponse> {
+    if (!teacherUid) return { success: false, error: 'Teacher UID is required.' };
+
+    try {
+        const batch = writeBatch(db);
+
+        // 1. Clear the global flag on the teacher document
+        const teacherRef = doc(db, 'teachers', teacherUid);
+        batch.update(teacherRef, { hasUnreadTeacherMessages: false });
+
+        // 2. Find all students with unread messages and clear their flags
+        const studentsWithUnreadQuery = query(
+            collection(db, 'teachers', teacherUid, 'students'),
+            where('hasUnreadMessages', '==', true)
+        );
+        const studentsSnapshot = await getDocs(studentsWithUnreadQuery);
+
+        if (!studentsSnapshot.empty) {
+            for (const studentDoc of studentsSnapshot.docs) {
+                // Clear the student-specific flag
+                batch.update(studentDoc.ref, { hasUnreadMessages: false });
+
+                // Mark all underlying messages from the student as read
+                const messagesRef = collection(studentDoc.ref, 'messages');
+                const messagesQuery = query(messagesRef, where('isRead', '==', false), where('sender', '==', 'student'));
+                const messagesSnapshot = await getDocs(messagesQuery);
+                messagesSnapshot.forEach(msgDoc => {
+                    batch.update(msgDoc.ref, { isRead: true });
+                });
+            }
+        }
+        
+        await batch.commit();
+        return { success: true, message: 'All student messages marked as read.' };
+    } catch (error: any) {
+        console.error("Error marking all teacher messages as read:", error);
+        return { success: false, error: error.message || 'Failed to mark all messages as read.' };
+    }
+}
+
 interface ClearMessageHistoryInput {
   teacherUid: string;
   studentUid: string;

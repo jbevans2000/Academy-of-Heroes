@@ -21,13 +21,12 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, MessageSquare, Send, Trash2 } from 'lucide-react';
-import { sendMessageToStudents, markMessagesAsRead, clearMessageHistory } from '@/ai/flows/manage-messages';
+import { Loader2, MessageSquare, Send, Trash2, CheckCheck } from 'lucide-react';
+import { sendMessageToStudents, markMessagesAsRead, clearMessageHistory, markAllTeacherMessagesAsRead } from '@/ai/flows/manage-messages';
 import { onSnapshot, collection, query, orderBy, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { cn } from '@/lib/utils';
@@ -59,15 +58,19 @@ export function TeacherMessageCenter({
     
     const [currentThreadMessages, setCurrentThreadMessages] = useState<Message[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const [isMarkingAllRead, setIsMarkingAllRead] = useState(false);
 
     const sortedStudents = useMemo(() => {
-        const unread = students.filter(s => s.hasUnreadMessages);
-        const read = students.filter(s => !s.hasUnreadMessages);
-        
-        const sortByName = (a: Student, b: Student) => a.studentName.localeCompare(b.studentName);
-
-        return [...unread.sort(sortByName), ...read.sort(sortByName)];
+        return [...students].sort((a, b) => {
+            const aHasUnread = a.hasUnreadMessages ?? false;
+            const bHasUnread = b.hasUnreadMessages ?? false;
+            if (aHasUnread && !bHasUnread) return -1;
+            if (!aHasUnread && bHasUnread) return 1;
+            return a.studentName.localeCompare(b.studentName);
+        });
     }, [students]);
+    
+    const hasUnread = useMemo(() => students.some(s => s.hasUnreadMessages), [students]);
 
     useEffect(() => {
         if (!isOpen) {
@@ -142,6 +145,23 @@ export function TeacherMessageCenter({
         }
     }
 
+    const handleMarkAllRead = async () => {
+        if (!teacher) return;
+        setIsMarkingAllRead(true);
+        try {
+            const result = await markAllTeacherMessagesAsRead(teacher.uid);
+            if(result.success) {
+                toast({ title: 'All messages marked as read.'});
+            } else {
+                throw new Error(result.error);
+            }
+        } catch(error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not mark all messages as read.' });
+        } finally {
+            setIsMarkingAllRead(false);
+        }
+    }
+
     return (
         <>
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -151,6 +171,14 @@ export function TeacherMessageCenter({
                         <DialogTitle>Message Center</DialogTitle>
                          <DialogDescription>Select a student to view your conversation.</DialogDescription>
                     </DialogHeader>
+                    {hasUnread && (
+                        <div className="py-2">
+                             <Button onClick={handleMarkAllRead} disabled={isMarkingAllRead} size="sm" variant="secondary" className="w-full">
+                                {isMarkingAllRead ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCheck className="mr-2 h-4 w-4" />}
+                                Mark All as Read
+                            </Button>
+                        </div>
+                    )}
                     <ScrollArea className="flex-grow mt-4">
                         <div className="space-y-2">
                             {sortedStudents.map(student => (
