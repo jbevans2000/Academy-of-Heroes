@@ -260,26 +260,30 @@ export default function EditQuestPage() {
         }
     }, [chapter?.storyAdditionalContent]);
 
+    const handleMapDrag = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+        const map = e.currentTarget.offsetParent; // Get the positioned parent
+        if (!map) return;
+        const rect = map.getBoundingClientRect();
+    
+        const updatePosition = (moveEvent: MouseEvent) => {
+            let x = ((moveEvent.clientX - rect.left) / rect.width) * 100;
+            let y = ((moveEvent.clientY - rect.top) / rect.height) * 100;
+            
+            // Clamp the values between 0 and 100
+            x = Math.max(0, Math.min(100, x));
+            y = Math.max(0, Math.min(100, y));
 
-  const handleMapDrag = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-    const map = e.currentTarget.parentElement;
-    if (!map) return;
-    const rect = map.getBoundingClientRect();
-
-    const updatePosition = (moveEvent: MouseEvent) => {
-        const x = ((moveEvent.clientX - rect.left) / rect.width) * 100;
-        const y = ((moveEvent.clientY - rect.top) / rect.height) * 100;
-        setChapterCoordinates({ x, y });
+            setChapterCoordinates({ x, y });
+        };
+    
+        const stopDragging = () => {
+            document.removeEventListener('mousemove', updatePosition);
+            document.removeEventListener('mouseup', stopDragging);
+        };
+    
+        document.addEventListener('mousemove', updatePosition);
+        document.addEventListener('mouseup', stopDragging);
     };
-
-    const stopDragging = () => {
-        document.removeEventListener('mousemove', updatePosition);
-        document.removeEventListener('mouseup', stopDragging);
-    };
-
-    document.addEventListener('mousemove', updatePosition);
-    document.addEventListener('mouseup', stopDragging);
-  };
   
   const selectedHub = hubs.find(h => h.id === selectedHubId);
   const hubMapUrl = selectedHub?.worldMapUrl;
@@ -501,7 +505,7 @@ export default function EditQuestPage() {
     // Clean up quiz data before saving
     if (chapterToSave.quiz && chapterToSave.quiz.questions) {
         chapterToSave.quiz.questions = chapterToSave.quiz.questions.map((q: any) => {
-            const correctAnswer = Array.isArray(q.correctAnswer) ? q.correctAnswer : [q.correctAnswerIndex];
+            const correctAnswer = Array.isArray(q.correctAnswer) ? q.correctAnswer : [];
             const { correctAnswerIndex, ...rest } = q;
             return { ...rest, correctAnswer };
         });
@@ -515,7 +519,6 @@ export default function EditQuestPage() {
             title: 'Quest Updated!',
             description: 'The chapter has been saved successfully.',
         });
-        router.push('/teacher/quests');
 
     } catch (error) {
         console.error("Error saving quest:", error);
@@ -698,7 +701,9 @@ export default function EditQuestPage() {
                           {hubMapUrl && (
                               <div className="pt-4 space-y-2">
                                   <Label>Position Chapter on Hub Map</Label>
-                                  <div className="relative aspect-[2048/1152] rounded-lg overflow-hidden bg-muted/50 border">
+                                  <div 
+                                      className="relative aspect-[2048/1152] rounded-lg overflow-hidden bg-muted/50 border"
+                                  >
                                       <Image
                                           src={hubMapUrl}
                                           alt="Hub Map for Placement"
@@ -732,7 +737,7 @@ export default function EditQuestPage() {
                                               left: `${chapterCoordinates.x}%`,
                                               top: `${chapterCoordinates.y}%`,
                                           }}
-                                          onMouseDown={(e) => handleMapDrag(e)}
+                                          onMouseDown={(e) => handleMapDrag(e, 'chapter')}
                                       >
                                           <div className="w-5 h-5 bg-yellow-400 rounded-full ring-2 ring-white shadow-xl animate-pulse-glow"></div>
                                       </div>
@@ -921,7 +926,6 @@ export default function EditQuestPage() {
                       </Tabs>
                   </div>
                 
-
                 <div className="flex justify-between items-center pt-4 border-t">
                   {prevChapter ? (
                   <Button variant="outline" size="lg" onClick={() => router.push(`/teacher/quests/edit/${prevChapter.id}`)}>
