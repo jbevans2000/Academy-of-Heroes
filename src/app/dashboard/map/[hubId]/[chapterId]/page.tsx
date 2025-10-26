@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -60,8 +58,8 @@ const LessonGallery = ({ parts, onLastPartReached }: { parts: LessonPart[], onLa
     const currentPart = parts[currentPartIndex];
 
     return (
-        <div className="space-y-4" ref={contentRef}>
-            <div className="prose prose-lg max-w-none dark:prose-invert prose-headings:font-headline prose-p:font-body" dangerouslySetInnerHTML={{ __html: currentPart.content }} />
+        <div ref={contentRef}>
+            <div className="formatted-content" dangerouslySetInnerHTML={{ __html: currentPart.content }} />
             <div className="flex justify-between items-center mt-4">
                 <Button onClick={() => setCurrentPartIndex(p => p - 1)} disabled={currentPartIndex === 0}>
                     <ArrowLeft className="mr-2 h-4 w-4" /> Previous Part
@@ -572,7 +570,7 @@ export default function ChapterPage() {
                             </TabsList>
                             <TabsContent value="story" className="mt-6 space-y-6">
                                 {combinedStoryContent && (
-                                    <div className="prose prose-lg dark:prose-invert max-w-none prose-headings:font-headline prose-p:font-body [&_img]:rounded-lg [&_img]:shadow-lg [&_img]:border" dangerouslySetInnerHTML={{ __html: combinedStoryContent }} />
+                                    <div className="formatted-content" dangerouslySetInnerHTML={{ __html: combinedStoryContent }} />
                                 )}
                                 {storyVideoSrc && (
                                     <>

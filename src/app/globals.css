@@ -59,6 +59,18 @@
   body {
     @apply bg-background text-foreground font-body;
   }
+  .formatted-content {
+    @apply text-lg max-w-none;
+  }
+  .formatted-content h1, .formatted-content h2, .formatted-content h3, .formatted-content h4, .formatted-content h5, .formatted-content h6 {
+      @apply font-headline;
+  }
+  .formatted-content p {
+      @apply font-body;
+  }
+  .formatted-content img {
+      @apply rounded-lg shadow-lg border my-6;
+  }
 }
 
 @layer utilities {
