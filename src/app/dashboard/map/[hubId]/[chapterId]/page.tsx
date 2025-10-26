@@ -59,29 +59,17 @@ const LessonGallery = ({ parts, onLastPartReached }: { parts: LessonPart[], onLa
 
     const currentPart = parts[currentPartIndex];
 
-    const handleNext = () => {
-        if (currentPartIndex < parts.length - 1) {
-            setCurrentPartIndex(p => p + 1);
-        }
-    };
-
-    const handlePrev = () => {
-        if (currentPartIndex > 0) {
-            setCurrentPartIndex(p => p - 1);
-        }
-    };
-
     return (
         <div className="space-y-4" ref={contentRef}>
-            <div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: currentPart.content }} />
+            <div className="prose prose-lg max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: currentPart.content }} />
             <div className="flex justify-between items-center mt-4">
-                <Button onClick={handlePrev} disabled={currentPartIndex === 0}>
+                <Button onClick={() => setCurrentPartIndex(p => p - 1)} disabled={currentPartIndex === 0}>
                     <ArrowLeft className="mr-2 h-4 w-4" /> Previous Part
                 </Button>
                 <span className="text-sm font-semibold text-muted-foreground">
                     Part {currentPartIndex + 1} of {parts.length}
                 </span>
-                <Button onClick={handleNext} disabled={currentPartIndex === parts.length - 1}>
+                <Button onClick={() => setCurrentPartIndex(p => p + 1)} disabled={currentPartIndex === parts.length - 1}>
                     Next Part <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
             </div>
@@ -584,7 +572,7 @@ export default function ChapterPage() {
                             </TabsList>
                             <TabsContent value="story" className="mt-6 space-y-6 text-lg leading-relaxed">
                                 {combinedStoryContent && (
-                                    <div className="prose prose-lg max-w-none [&_img]:rounded-lg [&_img]:shadow-lg [&_img]:border" dangerouslySetInnerHTML={{ __html: combinedStoryContent }} />
+                                    <div className="prose prose-lg dark:prose-invert max-w-none [&_img]:rounded-lg [&_img]:shadow-lg [&_img]:border" dangerouslySetInnerHTML={{ __html: combinedStoryContent }} />
                                 )}
                                 {storyVideoSrc && (
                                     <>
@@ -604,7 +592,7 @@ export default function ChapterPage() {
                                     </>
                                 )}
                             </TabsContent>
-                            <TabsContent value="lesson" className="mt-6 space-y-6 text-lg leading-relaxed">
+                            <TabsContent value="lesson" className="mt-6 space-y-6">
                                  <div className="text-center">
                                     <h3 className="text-3xl font-bold text-primary">Lesson</h3>
                                  </div>
