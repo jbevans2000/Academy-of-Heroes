@@ -113,9 +113,9 @@ export default function MutationsLabPage() {
                                                 <TableCell>1</TableCell>
                                                 <TableCell>C replaced with A at position 184</TableCell>
                                                 <TableCell>CTG → ATG</TableCell>
+                                                <TableCell>...</TableCell>
                                                 <TableCell><Input /></TableCell>
-                                                <TableCell><Input /></TableCell>
-                                                <TableCell><Input /></TableCell>
+                                                <TableCell>...</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell>2</TableCell>
@@ -123,15 +123,15 @@ export default function MutationsLabPage() {
                                                 <TableCell>TCG  → TTG</TableCell>
                                                 <TableCell><div className="flex items-center gap-2">S →<Input className="w-12" maxLength={1} /></div></TableCell>
                                                 <TableCell><Input /></TableCell>
-                                                <TableCell><Input /></TableCell>
+                                                <TableCell>...</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell>3</TableCell>
                                                 <TableCell>T replaced with A at position 498</TableCell>
                                                 <TableCell>CCT → CCA</TableCell>
+                                                <TableCell><div className="flex items-center gap-2">P →<Input className="w-12" maxLength={1} /></div></TableCell>
                                                 <TableCell><Input /></TableCell>
-                                                <TableCell><Input /></TableCell>
-                                                <TableCell><Input /></TableCell>
+                                                <TableCell>...</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell>4</TableCell>
