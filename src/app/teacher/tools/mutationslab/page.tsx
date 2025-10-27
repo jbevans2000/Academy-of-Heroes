@@ -89,7 +89,7 @@ export default function MutationsLabPage() {
                                 <p className="indent-8">In the case of Galactosemia, scholars of the Academy have discovered that certain changes within the GALT gene cause the disorder, while others do not. Eight such mutations have been recorded in the Royal Archives and are presented in Table 1 below. This table lists the codon change caused by each mutation and indicates whether it is known to bring about the affliction.</p>
                                 <p className="indent-8">Your charge from the Empress is to complete the missing sections of Table 1 by deciphering how each mutation alters the GALT protein’s structure and behavior.</p>
 
-                                <h3 className="font-bold">Royal Research Procedure</h3>
+                                <h3 className="text-2xl font-bold text-center">Royal Research Procedure</h3>
                                 <ol className="list-decimal list-inside space-y-2 indent-8">
                                     <li>Consult Table 2 – The Codon Chart of Luminaria (provided by your instructor) to determine the amino acid change created by each mutation in Table 1.</li>
                                     <li>Use Table 3 – The Properties of Amino Acids (also provided) to identify the effect that each amino-acid change has on the protein’s shape and stability.</li>
