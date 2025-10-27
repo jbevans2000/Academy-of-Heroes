@@ -9,6 +9,7 @@ import { ArrowLeft, Dna, ArrowDown } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import Image from 'next/image';
 
 
 export default function MutationsLabPage() {
@@ -111,6 +112,10 @@ export default function MutationsLabPage() {
                                     <li>Record your findings within Table 1, then proceed to answer the Part I Follow-Up Questions in your Royal Ledger.</li>
                                 </ol>
 
+                                <div className="my-6">
+                                  <Image src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/2025-09-07T03%3A35%3A07_84193%2FGenetic-Code-01-1-1024x906.png?alt=media&token=cc08dbec-2d8f-4440-8940-4a99a095c8cc" alt="Genetic Code" width={1024} height={906} className="w-full h-auto" />
+                                </div>
+
                                 <div className="my-6 overflow-x-auto">
                                     <table className="w-full caption-bottom text-sm">
                                         <caption className="mt-4 text-sm text-muted-foreground">Table 1. The Recorded Mutations of the GALT Gene</caption>
@@ -138,39 +143,39 @@ export default function MutationsLabPage() {
                                                 <td className="p-4 align-middle">C replaced with T at position 404</td>
                                                 <td className="p-4 align-middle">CCT → CCA</td>
                                                 <td className="p-4 align-middle">P → A</td>
-                                                <td className="p-4 align-middle"><Input /></td>
                                                 <td className="p-4 align-middle">Yes</td>
+                                                <td className="p-4 align-middle">No</td>
                                             </tr>
                                             <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
                                                 <td className="p-4 align-middle">3</td>
                                                 <td className="p-4 align-middle">T replaced with A at position 498</td>
                                                 <td className="p-4 align-middle">CAG → AAG</td>
-                                                <td className="p-4 align-middle"><div className="flex items-center gap-2">Q →<Input className="w-12" maxLength={1} /></div></td>
-                                                <td className="p-4 align-middle"><Input /></td>
+                                                <td className="p-4 align-middle">Q → K</td>
+                                                <td className="p-4 align-middle">Yes</td>
                                                 <td className="p-4 align-middle">No</td>
                                             </tr>
                                             <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
                                                 <td className="p-4 align-middle">4</td>
                                                 <td className="p-4 align-middle">A replaced with G at position 563</td>
                                                 <td className="p-4 align-middle">CAG → CGG</td>
-                                                <td className="p-4 align-middle"><div className="flex items-center gap-2">K →<Input className="w-12" maxLength={1} /></div></td>
-                                                <td className="p-4 align-middle"><Input /></td>
+                                                <td className="p-4 align-middle">K → R</td>
+                                                <td className="p-4 align-middle">No</td>
                                                 <td className="p-4 align-middle">Yes</td>
                                             </tr>
                                             <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
                                                 <td className="p-4 align-middle">5</td>
                                                 <td className="p-4 align-middle">C replaced with G at position 700</td>
                                                 <td className="p-4 align-middle">CTA → GTA</td>
-                                                <td className="p-4 align-middle"><div className="flex items-center gap-2">T →<Input className="w-12" maxLength={1} /></div></td>
-                                                <td className="p-4 align-middle"><Input /></td>
+                                                <td className="p-4 align-middle">T → V</td>
                                                 <td className="p-4 align-middle">No</td>
+                                                <td className="p-4 align-middle">Yes</td>
                                             </tr>
                                             <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
                                                 <td className="p-4 align-middle">6</td>
                                                 <td className="p-4 align-middle">G replaced with T at position 855</td>
                                                 <td className="p-4 align-middle">AAG → AAT</td>
-                                                <td className="p-4 align-middle"><Input /></td>
-                                                <td className="p-4 align-middle"><Input /></td>
+                                                <td className="p-4 align-middle">K → N</td>
+                                                <td className="p-4 align-middle">No</td>
                                                 <td className="p-4 align-middle">Yes</td>
                                             </tr>
                                             <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
@@ -178,12 +183,13 @@ export default function MutationsLabPage() {
                                                 <td className="p-4 align-middle">G replaced with A at position 876</td>
                                                 <td className="p-4 align-middle">ACG → ACA</td>
                                                 <td className="p-4 align-middle">T → T</td>
-                                                <td className="p-4 align-middle"><Input /></td>
+                                                <td className="p-4 align-middle">No</td>
                                                 <td className="p-4 align-middle">No</td>
                                             </tr>
                                         </tbody>
                                     </table>
                                 </div>
+
                                 <h3 className="text-2xl font-bold text-center">Part 1 - Questions</h3>
                                 <ol className="list-decimal list-inside space-y-4">
                                     <li>
@@ -200,6 +206,7 @@ export default function MutationsLabPage() {
                                     </li>
                                 </ol>
                                 <hr className="my-6" />
+
                                 <h3 className="text-2xl font-bold text-center">Investigation – Part II</h3>
                                 <h4 className="text-xl font-semibold text-center">Which citizens of Luminaria are afflicted with Galactosemia?</h4>
 
@@ -211,43 +218,45 @@ export default function MutationsLabPage() {
                                     <li>The level of galactose itself.</li>
                                 </ul>
                                 <p className="indent-8">Low GALT activity combined with high galactose concentration suggests that the child may carry the disorder. When such results arise, healers consult the genetic scrolls — performing a deeper test of the baby’s DNA sequences to search for mutations in the GALT gene. If confirmed, the family is counseled to begin a strict low-galactose diet, preventing the sugar from accumulating and causing harm.</p>
-                                
+
                                 <h3 className="text-xl font-semibold text-center">Your Commissioned Task</h3>
                                 <p className="indent-8">You are now acting as a Royal Physician within the Empress’s service, reviewing the screening results for three newborn citizens of Luminaria. The Empress herself demands your careful analysis to ensure that every infant receives proper care and guidance.</p>
                                 <ol className="list-decimal list-inside space-y-2 indent-8">
                                   <li>Examine the recorded results presented in Table 4 of your research ledger.</li>
                                   <li>Using your knowledge of genetics and biochemical function, answer the Part II Follow-Up Questions that follow.</li>
                                 </ol>
-
-                                <table className="w-full my-6">
-                                    <caption className="text-sm text-muted-foreground mb-2">Table 4. Test results of three newborn patients</caption>
-                                    <thead className="[&_tr]:border-b">
-                                        <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground"></th>
-                                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Normal Range</th>
-                                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Patient 1</th>
-                                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Patient 2</th>
-                                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Patient 3</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="[&_tr:last-child]:border-0">
-                                        <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                                            <td className="p-4 align-middle">GALT protein activity (U/Hb)</td>
-                                            <td className="p-4 align-middle">15.9 - 26.4</td>
-                                            <td className="p-4 align-middle">20.2</td>
-                                            <td className="p-4 align-middle">0.18</td>
-                                            <td className="p-4 align-middle">18.4</td>
-                                        </tr>
-                                        <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                                            <td className="p-4 align-middle">Galactose level (mg/dl)</td>
-                                            <td className="p-4 align-middle">0 - 4.3</td>
-                                            <td className="p-4 align-middle">2.1</td>
-                                            <td className="p-4 align-middle">235</td>
-                                            <td className="p-4 align-middle">3.2</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-
+                                
+                                <div className="my-6 overflow-x-auto">
+                                  <table className="w-full caption-bottom text-sm">
+                                      <caption className="mt-4 text-sm text-muted-foreground">Table 4. Test results of three newborn patients</caption>
+                                      <thead className="[&_tr]:border-b">
+                                          <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                                              <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground"></th>
+                                              <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Normal Range</th>
+                                              <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Patient 1</th>
+                                              <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Patient 2</th>
+                                              <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Patient 3</th>
+                                          </tr>
+                                      </thead>
+                                      <tbody className="[&_tr:last-child]:border-0">
+                                          <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                                              <td className="p-4 align-middle">GALT protein activity (U/Hb)</td>
+                                              <td className="p-4 align-middle">15.9 - 26.4</td>
+                                              <td className="p-4 align-middle">20.2</td>
+                                              <td className="p-4 align-middle">0.18</td>
+                                              <td className="p-4 align-middle">18.4</td>
+                                          </tr>
+                                          <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                                              <td className="p-4 align-middle">Galactose level (mg/dl)</td>
+                                              <td className="p-4 align-middle">0 - 4.3</td>
+                                              <td className="p-4 align-middle">2.1</td>
+                                              <td className="p-4 align-middle">235</td>
+                                              <td className="p-4 align-middle">3.2</td>
+                                          </tr>
+                                      </tbody>
+                                  </table>
+                                </div>
+                                
                                 <h3 className="text-2xl font-bold text-center">Part 2 - Questions</h3>
                                 <ol className="list-decimal list-inside space-y-4">
                                     <li>
@@ -259,7 +268,7 @@ export default function MutationsLabPage() {
                                         <Textarea placeholder="Your answer here..." className="mt-2" />
                                     </li>
                                     <li>
-                                        What are the health benefits of putting the affected patient(s) on a low-galactose diet?
+                                       What are the health benefits of putting the affected patient(s) on a low-galactose diet?
                                         <Textarea placeholder="Your answer here..." className="mt-2" />
                                     </li>
                                 </ol>
