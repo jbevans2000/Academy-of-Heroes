@@ -134,7 +134,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>1</TableCell>
                                                 <TableCell>C replaced with A at position 184</TableCell>
                                                 <TableCell>CTG → ATG</TableCell>
-                                                <TableCell className="flex items-center gap-1">L → <Input className="w-12 h-8 text-center" maxLength={1} /></TableCell>
+                                                <TableCell>L → M</TableCell>
                                                 <TableCell><Input /></TableCell>
                                                 <TableCell>No</TableCell>
                                             </TableRow>
@@ -225,7 +225,7 @@ export default function MutationsLabPage() {
                                     <li>Examine the recorded results presented in Table 4 of your research ledger.</li>
                                     <li>Using your knowledge of genetics and biochemical function, answer the Part II Follow-Up Questions that follow.</li>
                                 </ol>
-                                
+
                                 <div className="my-6 overflow-x-auto">
                                     <table className="w-full caption-bottom text-sm border">
                                         <caption className="mt-4 text-sm text-muted-foreground">Table 4. Test results of three newborn patients</caption>
