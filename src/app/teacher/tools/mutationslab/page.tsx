@@ -46,7 +46,7 @@ export default function MutationsLabPage() {
                                   <p className="text-base font-normal">Communicate why early detection of mutations can help improve and enhance life throughout the realm.</p>
                                 </div>
                                 <hr className="my-6" />
-
+                                
                                 <h3 className="text-xl font-semibold">Setting the Stage</h3>
                                 <p className="indent-8">Galactosemia is a genetic disorder that prevents the body from properly breaking down a common sugar called galactose, one of the basic energy sources found in many foods across the world. When this process fails, galactose accumulates in the bloodstream, causing severe illness and, if untreated, even death.</p>
                                 <p className="indent-8">Healers of the Royal Academy have discovered that those afflicted with galactosemia can lessen the disorder’s effects by following a low-galactose diet, thereby reducing the buildup of the sugar in their bodies.</p>
@@ -54,12 +54,12 @@ export default function MutationsLabPage() {
                                 <p>&nbsp;</p>
                                 <h3 style={{ textAlign: 'center', fontSize: '1.5rem' }} className="font-bold">Royal Research Task:</h3>
                                 <p className="indent-8">Complete the chart below to describe the cause-and-effect relationship between the GALT gene, the GALT protein, and the cells of an individual with galactosemia. Record your observations in the Empress’s Scientific Ledger.</p>
-                                
+
                                 <div className="space-y-4 not-prose mt-6">
                                     <div className="text-left">
                                       <p className="font-semibold">What happens with the gene</p>
                                     </div>
-                                    <Textarea placeholder="Mutation in the GALT gene" />
+                                    <p className="p-2 border rounded-md bg-muted">Mutation in the GALT gene</p>
 
                                     <div className="flex flex-col items-center py-2">
                                         <p className="font-semibold text-sm text-muted-foreground">cause</p>
@@ -128,7 +128,7 @@ export default function MutationsLabPage() {
                                                 <TableHead className="font-bold w-[25%]">Description of Mutation</TableHead>
                                                 <TableHead className="font-bold w-[20%]">Codon Change</TableHead>
                                                 <TableHead className="font-bold w-[15%]">Amino Acid Change</TableHead>
-                                                <TableHead className="font-bold w-[15%]">Effect of Amino Acid Change</TableHead>
+                                                <TableHead className="font-bold w-[20%]">Effect of Amino Acid Change</TableHead>
                                                 <TableHead className="font-bold w-[10%]">Causes Galactosemia?</TableHead>
                                             </TableRow>
                                         </TableHeader>
