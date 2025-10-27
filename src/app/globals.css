@@ -80,6 +80,9 @@
   .formatted-content [style*="text-align: left"] {
       text-align: left;
   }
+  .prose p.indent-8 {
+    text-indent: 2rem;
+  }
 }
 
 @layer utilities {

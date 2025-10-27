@@ -27,8 +27,6 @@ export default function MutationsLabPage() {
                             <CardDescription className="text-lg font-headline">The Empress’s Scientific Inquiry: Mutations Across Luminaria</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                            <h2 className="text-xl font-semibold text-center">Why do some mutations lead to genetic disorders?</h2>
-
                             <div className="prose max-w-none">
                                 <h3 className="text-2xl font-bold text-center">The Challenge</h3>
                                 <hr className="my-2" />
@@ -53,7 +51,6 @@ export default function MutationsLabPage() {
 
                                 <hr className="my-6" />
                                 <h3 className="text-2xl font-bold text-center">Royal Research Task:</h3>
-                                <p className="indent-8 text-center">Complete the chart below to describe the cause-and-effect relationship between the GALT gene, the GALT protein, and the cells of an individual with galactosemia. Record your observations in the Empress’s Scientific Ledger.</p>
                                 
                                 <div className="space-y-4 not-prose mt-6">
                                     <div className="text-left">
@@ -94,6 +91,24 @@ export default function MutationsLabPage() {
                                     </div>
                                     <Textarea placeholder="Your observations for the fourth box..." />
                                 </div>
+                                <hr className="my-6" />
+                                
+                                <h3 className="text-2xl font-bold text-center">Investigation – Part I</h3>
+                                <h4 className="text-xl font-semibold text-center">Why do some mutations cause Galactosemia, and others do not?</h4>
+
+                                <p className="indent-8">The Empress’s Royal Academy has charged you with uncovering why certain alterations in the GALT gene lead to the illness known as Galactosemia, while others leave the bearer unharmed.</p>
+                                <p className="indent-8">Within every living cell of Luminaria lies the code of life, a sequence of mystical runes known to scholars as nucleotides. When read by the cell’s machinery, these runes form codons — groups of three symbols that instruct the cell which amino acids to join together in the crafting of a protein.</p>
+                                <p className="indent-8">Each codon serves as a command. For instance, the rune CTG directs the cell to add the amino acid leucine to the growing chain. The full set of such instructions is called the Genetic Code, a universal lexicon shared by all creatures of the realm.</p>
+                                <p className="indent-8">When a mutation alters a codon, the message may change — and the cell may place the wrong amino acid in the sequence. Since each amino acid possesses unique chemical properties, even a single misplaced one can reshape the entire protein, twisting its form and disrupting its function. Thus, a single change in the life-script can determine whether a protein performs its duty… or fails, bringing illness.</p>
+                                <p className="indent-8">In the case of Galactosemia, scholars of the Academy have discovered that certain changes within the GALT gene cause the disorder, while others do not. Eight such mutations have been recorded in the Royal Archives and are presented in Table 1 below. This table lists the codon change caused by each mutation and indicates whether it is known to bring about the affliction.</p>
+                                <p className="indent-8">Your charge from the Empress is to complete the missing sections of Table 1 by deciphering how each mutation alters the GALT protein’s structure and behavior.</p>
+
+                                <h3 className="font-bold">Royal Research Procedure</h3>
+                                <ol className="list-decimal list-inside space-y-2 indent-8">
+                                    <li>Consult Table 2 – The Codon Chart of Luminaria (provided by your instructor) to determine the amino acid change created by each mutation in Table 1.</li>
+                                    <li>Use Table 3 – The Properties of Amino Acids (also provided) to identify the effect that each amino-acid change has on the protein’s shape and stability.</li>
+                                    <li>Record your findings within Table 1, then proceed to answer the Part I Follow-Up Questions in your Royal Ledger.</li>
+                                </ol>
                             </div>
 
                         </CardContent>
