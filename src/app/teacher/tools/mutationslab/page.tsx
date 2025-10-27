@@ -63,7 +63,7 @@ export default function MutationsLabPage() {
                                     <div className="text-left">
                                       <p className="font-semibold">What happens with the gene</p>
                                     </div>
-                                    <p className="p-2 border rounded-md font-bold text-center text-lg">Mutation in the GALT gene</p>
+                                    <div className="p-2 border rounded-md font-bold text-center text-lg">Mutation in the GALT gene</div>
 
                                     <div className="flex flex-col items-center py-2">
                                         <p className="font-semibold text-sm text-muted-foreground">cause</p>
