@@ -90,6 +90,15 @@ const mutationsLabTool = {
     bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Oct%2012%2C%202025%2C%2004_56_41%20AM.png?alt=media&token=61af9a61-e503-4bd8-a22b-ada8d5d085d2'
 };
 
+const dragonGeneticsTool = {
+    title: 'Dragon Genetics Lab',
+    description: 'An interactive genetics activity about dominant and recessive traits.',
+    icon: <Dna className="h-10 w-10 text-primary" />,
+    path: '/teacher/tools/genetics-lab',
+    disabled: false,
+    bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Oct%2012%2C%202025%2C%2004_56_41%20AM.png?alt=media&token=61af9a61-e503-4bd8-a22b-ada8d5d085d2'
+};
+
 export default function ClassroomToolsPage() {
     const router = useRouter();
     const [user, setUser] = useState<User | null>(null);
@@ -101,7 +110,7 @@ export default function ClassroomToolsPage() {
         return () => unsubscribe();
     }, []);
 
-    const ToolCard = ({ tool }: { tool: (typeof tools[0] & { editPath?: string }) | typeof mutationsLabTool & { disabled?: boolean } }) => (
+    const ToolCard = ({ tool }: { tool: (typeof tools[0] & { editPath?: string }) | typeof mutationsLabTool & { disabled?: boolean } | typeof dragonGeneticsTool & {disabled?: boolean} }) => (
         <Card className="relative flex flex-col justify-between h-64 p-6 rounded-lg overflow-hidden border shadow-sm bg-card transition-transform hover:scale-105 group">
             <div className="absolute inset-0">
                 <Image
@@ -170,7 +179,10 @@ export default function ClassroomToolsPage() {
                            <ToolCard key={index} tool={tool} />
                         ))}
                          {user?.email === 'jevans@nca.connectionsacademy.org' && (
-                            <ToolCard tool={mutationsLabTool} />
+                            <>
+                                <ToolCard tool={mutationsLabTool} />
+                                <ToolCard tool={dragonGeneticsTool} />
+                            </>
                         )}
                     </div>
                 </div>
