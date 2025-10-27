@@ -305,7 +305,7 @@ export default function NewBossBattlePage() {
     <>
     <MusicGallery isOpen={isMusicGalleryOpen} onOpenChange={setIsMusicGalleryOpen} onMusicSelect={setMusicUrl} />
     <BossImageGallery isOpen={isBossImageGalleryOpen} onOpenChange={setIsBossImageGalleryOpen} onImageSelect={setBossImageUrl} />
-    <div className="flex min-h-screen w-full flex-col bg-cover bg-center" style={{ backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-5c865a8c-e16c-4e32-b822-164b15894c5b.jpg?alt=media&token=11c25a8d-193a-44cf-bdfd-a752d57ccade')` }}>
+    <div className="flex min-h-screen w-full flex-col bg-cover bg-center" style={{ backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-5c865a8c-e16c-4e32-b822-164b15894c5b.jpg?alt=media&token=11c25a8d-193a-44cf-bdfd-a752d57ccade')`, backgroundAttachment: 'fixed' }}>
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="max-w-4xl mx-auto space-y-6">
@@ -507,7 +507,7 @@ export default function NewBossBattlePage() {
                             />
                              {uploadingQuestionImage === q.id && <Loader2 className="h-5 w-5 animate-spin" />}
                         </div>
-                        {q.imageUrl && <img src={q.imageUrl} alt="Question preview" width={100} height={100} className="rounded-md border mt-2" />}
+                        {q.imageUrl && <NextImage src={q.imageUrl} alt="Question preview" width={100} height={100} className="rounded-md border mt-2" />}
                       </div>
                       <div>
                         <Label htmlFor={`q-damage-${q.id}`} className="text-base">Damage for Incorrect Answer</Label>
