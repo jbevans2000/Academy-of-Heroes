@@ -152,7 +152,7 @@ export default function MutationsLabPage() {
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell>5</TableCell>
-                                                <TableCell>...</TableCell>
+                                                <TableCell>C replaced with G at position 700</TableCell>
                                                 <TableCell>...</TableCell>
                                                 <TableCell>...</TableCell>
                                                 <TableCell><Input /></TableCell>
