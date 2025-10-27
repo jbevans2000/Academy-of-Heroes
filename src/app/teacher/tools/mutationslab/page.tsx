@@ -37,11 +37,13 @@ export default function MutationsLabPage() {
                                 <p className="indent-8">Throughout the realm, scholars have found that certain genetic disorders — illnesses caused by small errors in the code of life — can be detected early enough to protect and even save lives.</p>
                                 <p className="indent-8">In this investigation, you will examine one such condition known in the royal medical records as Galactosemia. Guided by real genetic data preserved in the archives, you will uncover why some mutations within the GALT gene cause this disorder, while others do not. You will also step into the role of a Royal Physician, tasked with screening newborn citizens of Luminaria for signs of this condition.</p>
                                 
-                                <h4 className="text-2xl font-bold text-center">By the end of this inquiry, you will be able to…</h4>
+                                <hr className="my-6" />
+                                <h3 className="text-2xl font-bold text-center">By the end of this inquiry, you will be able to…</h3>
                                 <ul className="list-disc list-inside indent-8">
                                     <li>Explain why some mutations cause genetic disorders while others do not.</li>
                                     <li>Communicate why early detection of mutations can help improve and enhance life throughout the realm.</li>
                                 </ul>
+                                <hr className="my-6" />
 
                                 <h3 className="indent-8">Setting the Stage</h3>
                                 <p className="indent-8">Galactosemia is a genetic disorder that prevents the body from properly breaking down a common sugar called galactose, one of the basic energy sources found in many foods across the world. When this process fails, galactose accumulates in the bloodstream, causing severe illness and, if untreated, even death.</p>
