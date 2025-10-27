@@ -271,6 +271,7 @@ export default function TeacherBattleSummaryPage() {
               backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FArchives.jpg?alt=media&token=1bbfbdcd-fb4a-4139-9a8d-44603c19a86c')`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
+              backgroundAttachment: 'fixed',
               opacity: 0.25,
           }}
         />
@@ -304,7 +305,7 @@ export default function TeacherBattleSummaryPage() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleCleanupBattle} disabled={isCleaning}>
+                        <AlertDialogAction onClick={handleCleanupBattle} disabled={isCleaning} className="bg-destructive hover:bg-destructive/90">
                             {isCleaning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Confirm & Clear
                         </AlertDialogAction>
@@ -342,7 +343,7 @@ export default function TeacherBattleSummaryPage() {
                     </div>
                 </CardContent>
             </Card>
-
+            
             <Card>
                 <CardHeader>
                     <CardTitle>Participant Rewards & Status</CardTitle>
