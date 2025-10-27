@@ -33,7 +33,7 @@ export default function MutationsLabPage() {
                             <div className="prose max-w-none">
                                 <h3 className="text-2xl font-bold text-center">The Challenge</h3>
                                 <p className="indent-8">You have been summoned by decree of Her Radiant Majesty, the Empress of Luminaria, to assist the Royal Academy of Biological Sciences in a matter of grave importance. Strange ailments have begun to appear among the citizens of the realm — not curses of Mortarian’s dark magic, but afflictions written within the very code of life itself.</p>
-                                <p className="indent-8">Imagine learning that your own life-code, the DNA — the sequences of your lineage — contain a subtle mutation that could one day bring illness. Yet imagine also that, by uncovering such mutations early, the Royal Healers could intervene and prevent the malady from taking hold.</p>
+                                <p className="indent-8">Imagine learning that your own life-codem the DNA — the sequences of your lineage — contain a subtle mutation that could one day bring illness. Yet imagine also that, by uncovering such mutations early, the Royal Healers could intervene and prevent the malady from taking hold.</p>
                                 <p className="indent-8">Throughout the realm, scholars have found that certain genetic disorders — illnesses caused by small errors in the code of life — can be detected early enough to protect and even save lives.</p>
                                 <p className="indent-8">In this investigation, you will examine one such condition known in the royal medical records as Galactosemia. Guided by real genetic data preserved in the archives, you will uncover why some mutations within the GALT gene cause this disorder, while others do not. You will also step into the role of a Royal Physician, tasked with screening newborn citizens of Luminaria for signs of this condition.</p>
                                 
@@ -45,6 +45,14 @@ export default function MutationsLabPage() {
                                 </div>
                                 <hr className="my-6" />
 
+                                <h3 className="text-xl font-semibold">Setting the Stage</h3>
+                                <p className="indent-8">Galactosemia is a genetic disorder that prevents the body from properly breaking down a common sugar called galactose, one of the basic energy sources found in many foods across the world. When this process fails, galactose accumulates in the bloodstream, causing severe illness and, if untreated, even death.</p>
+                                <p className="indent-8">Healers of the Royal Academy have discovered that those afflicted with galactosemia can lessen the disorder’s effects by following a low-galactose diet, thereby reducing the buildup of the sugar in their bodies.</p>
+                                <p className="indent-8">Through study of the GALT gene, scholars have determined that this segment of life-code produces the GALT protein, an enzyme responsible for breaking down galactose. When mutations alter the GALT gene, the protein’s structure changes, preventing it from performing its vital task. As a result, the body can no longer process galactose correctly.</p>
+
+                                <h4 className="font-semibold">Royal Research Task:</h4>
+                                <p className="indent-8">Complete the chart below to describe the cause-and-effect relationship between the GALT gene, the GALT protein, and the cells of an individual with galactosemia. Record your observations in the Empress’s Scientific Ledger.</p>
+                                
                                 <div className="space-y-4 not-prose mt-6">
                                     <div className="text-left">
                                       <p className="font-semibold">What happens with the gene</p>
@@ -194,6 +202,7 @@ export default function MutationsLabPage() {
                                 <hr className="my-6" />
                                 <h3 className="text-2xl font-bold text-center">Investigation – Part II</h3>
                                 <h4 className="text-xl font-semibold text-center">Which citizens of Luminaria are afflicted with Galactosemia?</h4>
+
                                 <p className="indent-8">Throughout the Kingdom of Luminaria, the Royal Healers’ Guild performs a duty known as a Newborn Genetic Screening — a life-saving procedure conducted upon every child born under the Empress’s light. Within the first days of life, a few drops of blood are drawn from the infant’s heel and analyzed within the laboratories of the Royal Academy of Biological Sciences.</p>
                                 <p className="indent-8">The purpose of this test is to search for hidden flaws within the DNA Code — mutations that may one day bring sickness if left undiscovered. The healers look for results that deviate from the realm’s normal ranges, and when such irregularities appear, further tests and treatments are quickly arranged.</p>
                                 <p className="indent-8">To detect Galactosemia, the healers measure two vital signs within the blood:</p>
@@ -203,7 +212,7 @@ export default function MutationsLabPage() {
                                 </ul>
                                 <p className="indent-8">Low GALT activity combined with high galactose concentration suggests that the child may carry the disorder. When such results arise, healers consult the genetic scrolls — performing a deeper test of the baby’s DNA sequences to search for mutations in the GALT gene. If confirmed, the family is counseled to begin a strict low-galactose diet, preventing the sugar from accumulating and causing harm.</p>
                                 
-                                <h3 className="text-2xl font-bold text-center">Your Commissioned Task</h3>
+                                <h3 className="text-xl font-semibold text-center">Your Commissioned Task</h3>
                                 <p className="indent-8">You are now acting as a Royal Physician within the Empress’s service, reviewing the screening results for three newborn citizens of Luminaria. The Empress herself demands your careful analysis to ensure that every infant receives proper care and guidance.</p>
                                 <ol className="list-decimal list-inside space-y-2 indent-8">
                                   <li>Examine the recorded results presented in Table 4 of your research ledger.</li>
