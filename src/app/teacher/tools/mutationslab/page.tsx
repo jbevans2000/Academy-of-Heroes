@@ -125,7 +125,7 @@ export default function MutationsLabPage() {
                                                 <TableHead className="font-bold w-[25%]">Description of Mutation</TableHead>
                                                 <TableHead className="font-bold w-[10%]">Codon Change</TableHead>
                                                 <TableHead className="font-bold w-[15%]">Amino Acid Change</TableHead>
-                                                <TableHead className="font-bold w-[35%]">Effect of Amino Acid Change</TableHead>
+                                                <TableHead className="font-bold w-[20%]">Effect of Amino Acid Change</TableHead>
                                                 <TableHead className="font-bold w-[10%]">Causes Galactosemia?</TableHead>
                                             </TableRow>
                                         </TableHeader>
@@ -144,7 +144,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>CCT → CCA</TableCell>
                                                 <TableCell className="flex items-center gap-1">S → <Input className="w-12 h-8 text-center" maxLength={1} /></TableCell>
                                                 <TableCell><Input /></TableCell>
-                                                <TableCell>No</TableCell>
+                                                <TableCell>Yes</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell>3</TableCell>
@@ -168,7 +168,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>CTA → GTA</TableCell>
                                                 <TableCell className="flex items-center gap-1">L → <Input className="w-12 h-8 text-center" maxLength={1} /></TableCell>
                                                 <TableCell><Input /></TableCell>
-                                                <TableCell>Yes</TableCell>
+                                                <TableCell>No</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell>6</TableCell>
@@ -219,7 +219,7 @@ export default function MutationsLabPage() {
                                 </ul>
                                 <p className="indent-8">Low GALT activity combined with high galactose concentration suggests that the child may carry the disorder. When such results arise, healers consult the genetic scrolls — performing a deeper test of the baby’s DNA sequences to search for mutations in the GALT gene. If confirmed, the family is counseled to begin a strict low-galactose diet, preventing the sugar from accumulating and causing harm.</p>
 
-                                <h3 className="font-bold">Your Commissioned Task</h3>
+                                <h3 style={{ textAlign: 'center', fontSize: '1.5rem' }} className="font-bold">Your Commissioned Task</h3>
                                 <p className="indent-8">You are now acting as a Royal Physician within the Empress’s service, reviewing the screening results for three newborn citizens of Luminaria. The Empress herself demands your careful analysis to ensure that every infant receives proper care and guidance.</p>
                                 <ol className="list-decimal list-inside space-y-2 indent-8">
                                     <li>Examine the recorded results presented in Table 4 of your research ledger.</li>
