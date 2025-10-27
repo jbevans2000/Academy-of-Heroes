@@ -32,24 +32,24 @@ export default function MutationsLabPage() {
 
                             <div className="prose max-w-none">
                                 <h3 className="text-2xl font-bold text-center">The Challenge</h3>
-                                <p>You have been summoned by decree of Her Radiant Majesty, the Empress of Luminaria, to assist the Royal Academy of Biological Sciences in a matter of grave importance. Strange ailments have begun to appear among the citizens of the realm — not curses of Mortarian’s dark magic, but afflictions written within the very code of life itself.</p>
-                                <p>Imagine learning that your own life-codem the DNA — the sequences of your lineage — contain a subtle mutation that could one day bring illness. Yet imagine also that, by uncovering such mutations early, the Royal Healers could intervene and prevent the malady from taking hold.</p>
-                                <p>Throughout the realm, scholars have found that certain genetic disorders — illnesses caused by small errors in the code of life — can be detected early enough to protect and even save lives.</p>
-                                <p>In this investigation, you will examine one such condition known in the royal medical records as Galactosemia. Guided by real genetic data preserved in the archives, you will uncover why some mutations within the GALT gene cause this disorder, while others do not. You will also step into the role of a Royal Physician, tasked with screening newborn citizens of Luminaria for signs of this condition.</p>
+                                <p className="indent-8">You have been summoned by decree of Her Radiant Majesty, the Empress of Luminaria, to assist the Royal Academy of Biological Sciences in a matter of grave importance. Strange ailments have begun to appear among the citizens of the realm — not curses of Mortarian’s dark magic, but afflictions written within the very code of life itself.</p>
+                                <p className="indent-8">Imagine learning that your own life-codem the DNA — the sequences of your lineage — contain a subtle mutation that could one day bring illness. Yet imagine also that, by uncovering such mutations early, the Royal Healers could intervene and prevent the malady from taking hold.</p>
+                                <p className="indent-8">Throughout the realm, scholars have found that certain genetic disorders — illnesses caused by small errors in the code of life — can be detected early enough to protect and even save lives.</p>
+                                <p className="indent-8">In this investigation, you will examine one such condition known in the royal medical records as Galactosemia. Guided by real genetic data preserved in the archives, you will uncover why some mutations within the GALT gene cause this disorder, while others do not. You will also step into the role of a Royal Physician, tasked with screening newborn citizens of Luminaria for signs of this condition.</p>
                                 
-                                <h4>By the end of this inquiry, you will be able to…</h4>
-                                <ul>
+                                <h4 className="indent-8">By the end of this inquiry, you will be able to…</h4>
+                                <ul className="list-disc list-inside indent-8">
                                     <li>Explain why some mutations cause genetic disorders while others do not.</li>
                                     <li>Communicate why early detection of mutations can help improve and enhance life throughout the realm.</li>
                                 </ul>
 
-                                <h3>Setting the Stage</h3>
-                                <p>Galactosemia is a genetic disorder that prevents the body from properly breaking down a common sugar called galactose, one of the basic energy sources found in many foods across the world. When this process fails, galactose accumulates in the bloodstream, causing severe illness and, if untreated, even death.</p>
-                                <p>Healers of the Royal Academy have discovered that those afflicted with galactosemia can lessen the disorder’s effects by following a low-galactose diet, thereby reducing the buildup of the sugar in their bodies.</p>
-                                <p>Through study of the GALT gene, scholars have determined that this segment of life-code produces the GALT protein, an enzyme responsible for breaking down galactose. When mutations alter the GALT gene, the protein’s structure changes, preventing it from performing its vital task. As a result, the body can no longer process galactose correctly.</p>
+                                <h3 className="indent-8">Setting the Stage</h3>
+                                <p className="indent-8">Galactosemia is a genetic disorder that prevents the body from properly breaking down a common sugar called galactose, one of the basic energy sources found in many foods across the world. When this process fails, galactose accumulates in the bloodstream, causing severe illness and, if untreated, even death.</p>
+                                <p className="indent-8">Healers of the Royal Academy have discovered that those afflicted with galactosemia can lessen the disorder’s effects by following a low-galactose diet, thereby reducing the buildup of the sugar in their bodies.</p>
+                                <p className="indent-8">Through study of the GALT gene, scholars have determined that this segment of life-code produces the GALT protein, an enzyme responsible for breaking down galactose. When mutations alter the GALT gene, the protein’s structure changes, preventing it from performing its vital task. As a result, the body can no longer process galactose correctly.</p>
 
-                                <p className="font-bold">Royal Research Task:</p>
-                                <p>Complete the chart below to describe the cause-and-effect relationship between the GALT gene, the GALT protein, and the cells of an individual with galactosemia. Record your observations in the Empress’s Scientific Ledger.</p>
+                                <p className="font-bold indent-8">Royal Research Task:</p>
+                                <p className="indent-8">Complete the chart below to describe the cause-and-effect relationship between the GALT gene, the GALT protein, and the cells of an individual with galactosemia. Record your observations in the Empress’s Scientific Ledger.</p>
                             </div>
 
                         </CardContent>
