@@ -153,7 +153,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>6</TableCell>
                                                 <TableCell>G replaced with T at position 855</TableCell>
                                                 <TableCell>AAG → AAT</TableCell>
-                                                <TableCell><Input /></TableCell>
+                                                <TableCell><div className="flex items-center gap-2">K →<Input className="w-12" maxLength={1} /></div></TableCell>
                                                 <TableCell><Input /></TableCell>
                                                 <TableCell><Input /></TableCell>
                                             </TableRow>
