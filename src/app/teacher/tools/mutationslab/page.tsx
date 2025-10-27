@@ -118,7 +118,7 @@ export default function MutationsLabPage() {
                                         </TableHeader>
                                         <TableBody>
                                             <TableRow>
-                                                <TableCell>...</TableCell>
+                                                <TableCell>1</TableCell>
                                                 <TableCell>...</TableCell>
                                                 <TableCell>...</TableCell>
                                                 <TableCell>...</TableCell>
@@ -126,7 +126,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>...</TableCell>
                                             </TableRow>
                                             <TableRow>
-                                                <TableCell>...</TableCell>
+                                                <TableCell>2</TableCell>
                                                 <TableCell>...</TableCell>
                                                 <TableCell>...</TableCell>
                                                 <TableCell>...</TableCell>
@@ -134,15 +134,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>...</TableCell>
                                             </TableRow>
                                             <TableRow>
-                                                <TableCell>...</TableCell>
-                                                <TableCell>...</TableCell>
-                                                <TableCell>...</TableCell>
-                                                <TableCell>...</TableCell>
-                                                <TableCell><Input /></TableCell>
-                                                <TableCell>...</TableCell>
-                                            </TableRow>
-                                            <TableRow>
-                                                <TableCell>...</TableCell>
+                                                <TableCell>3</TableCell>
                                                 <TableCell>...</TableCell>
                                                 <TableCell>...</TableCell>
                                                 <TableCell>...</TableCell>
@@ -150,15 +142,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>...</TableCell>
                                             </TableRow>
                                             <TableRow>
-                                                <TableCell>...</TableCell>
-                                                <TableCell>...</TableCell>
-                                                <TableCell>...</TableCell>
-                                                <TableCell>...</TableCell>
-                                                <TableCell><Input /></TableCell>
-                                                <TableCell>...</TableCell>
-                                            </TableRow>
-                                            <TableRow>
-                                                <TableCell>...</TableCell>
+                                                <TableCell>4</TableCell>
                                                 <TableCell>...</TableCell>
                                                 <TableCell>...</TableCell>
                                                 <TableCell>...</TableCell>
@@ -166,7 +150,23 @@ export default function MutationsLabPage() {
                                                 <TableCell>...</TableCell>
                                             </TableRow>
                                             <TableRow>
+                                                <TableCell>5</TableCell>
                                                 <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell><Input /></TableCell>
+                                                <TableCell>...</TableCell>
+                                            </TableRow>
+                                            <TableRow>
+                                                <TableCell>6</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell><Input /></TableCell>
+                                                <TableCell>...</TableCell>
+                                            </TableRow>
+                                            <TableRow>
+                                                <TableCell>7</TableCell>
                                                 <TableCell>...</TableCell>
                                                 <TableCell>...</TableCell>
                                                 <TableCell>...</TableCell>
