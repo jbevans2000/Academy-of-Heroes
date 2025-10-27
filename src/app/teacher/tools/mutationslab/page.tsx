@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -113,7 +112,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>1</TableCell>
                                                 <TableCell>C replaced with A at position 184</TableCell>
                                                 <TableCell>CTG → ATG</TableCell>
-                                                <TableCell>...</TableCell>
+                                                <TableCell><div className="flex items-center gap-2">L →<Input className="w-12" maxLength={1} /></div></TableCell>
                                                 <TableCell><Input /></TableCell>
                                                 <TableCell>...</TableCell>
                                             </TableRow>
@@ -161,7 +160,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>7</TableCell>
                                                 <TableCell>G replaced with A at position 876</TableCell>
                                                 <TableCell>ACG → ACA</TableCell>
-                                                <TableCell><Input /></TableCell>
+                                                <TableCell><div className="flex items-center gap-2">T →<Input className="w-12" maxLength={1} /></div></TableCell>
                                                 <TableCell><Input /></TableCell>
                                                 <TableCell><Input /></TableCell>
                                             </TableRow>
