@@ -280,8 +280,9 @@ export default function MutationsLabPage() {
                                 </ol>
                                 <hr className="my-6" />
                                 <h3 className="text-2xl font-bold text-center">Tutorial Videos from the Academy of Biological Sciences</h3>
-                                <div className="flex justify-center">
+                                <div className="flex justify-center flex-col items-center space-y-4">
                                 <iframe width="560" height="315" src="https://www.youtube.com/embed/_9wnC5pta78?si=0RWZW-X2601mCYkK" title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen></iframe>
+                                <iframe width="560" height="315" src="https://www.youtube.com/embed/tfZfLDRu39c?si=GJGO7ql--ZzvT_ds" title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen></iframe>
                                 </div>
                             </div>
                         </CardContent>
