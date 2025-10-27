@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -100,10 +101,10 @@ export default function MutationsLabPage() {
                                 <h4 className="text-xl font-semibold text-center">Why do some mutations cause Galactosemia, and others do not?</h4>
                                 <p>&nbsp;</p>
                                 <p className="indent-8">The Empress’s Royal Academy has charged you with uncovering why certain alterations in the GALT gene lead to the illness known as Galactosemia, while others leave the bearer unharmed.</p>
-                                <p className="indent-8">Within every living cell lies the code of life, a sequence of chemical bases known to scholars as nucleotides. When read by the cell’s machinery, these runes form codons — groups of three symbols that instruct the cell which amino acids to join together in the crafting of a protein.</p>
-                                <p className="indent-8">Each codon serves as a command. For instance, the rune CTG directs the cell to add the amino acid leucine to the growing chain. The full set of such instructions is called the Genetic Code, a universal lexicon shared by all creatures of the realm.</p>
+                                <p className="indent-8">Within every living cell lies the code of life, a sequence of chemical bases known to scholars as nucleotides. When read by the cell’s machinery, these nucleotides form codons — groups of three symbols that instruct the cell which amino acids to join together in the crafting of a protein.</p>
+                                <p className="indent-8">Each codon serves as a command. For instance, the codon CTG directs the cell to add the amino acid leucine to the growing chain. The full set of such instructions is called the Genetic Code, a universal lexicon shared by all creatures of the realm.</p>
                                 <p className="indent-8">When a mutation alters a codon, the message may change — and the cell may place the wrong amino acid in the sequence. Since each amino acid possesses unique chemical properties, even a single misplaced one can reshape the entire protein, twisting its form and disrupting its function. Thus, a single change in the life-script can determine whether a protein performs its duty… or fails, bringing illness.</p>
-                                <p className="indent-8">In the case of Galactosemia, scholars of the Academy have discovered that certain changes within the GALT gene cause the disorder, while others do not. Eight such mutations have been recorded in the Royal Archives and are presented in Table 1 below. This table lists the codon change caused by each mutation and indicates whether it is known to bring about the affliction.</p>
+                                <p className="indent-8">In the case of Galactosemia, scholars of the Academy have discovered that certain changes within the GALT gene cause the disorder, while others do not. Seven such mutations have been recorded in the Royal Archives and are presented in Table 1 below. This table lists the codon change caused by each mutation and indicates whether it is known to bring about the affliction.</p>
                                 <p className="indent-8">Your charge from the Empress is to complete the missing sections of Table 1 by deciphering how each mutation alters the GALT protein’s structure and behavior.</p>
                                 <p>&nbsp;</p>
                                 <h3 style={{ textAlign: 'center', fontSize: '1.5rem' }} className="font-bold">Royal Research Procedure</h3>
@@ -117,17 +118,17 @@ export default function MutationsLabPage() {
                                 <div className="my-6">
                                   <Image src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/2025-09-07T03%3A35%3A07_84193%2FGenetic-Code-01-1-1024x906.png?alt=media&token=cc08dbec-2d8f-4440-8940-4a99a095c8cc" alt="Genetic Code" width={1024} height={906} className="w-full h-auto" />
                                 </div>
+                                <p className="text-sm text-center text-muted-foreground">Table 1. The Recorded Mutations of the GALT Gene</p>
 
                                 <div className="my-6 overflow-x-auto">
                                     <Table>
-                                        <TableCaption>Table 1. The Recorded Mutations of the GALT Gene</TableCaption>
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead className="font-bold w-[5%]"></TableHead>
-                                                <TableHead className="font-bold w-[25%]">Description of Mutation</TableHead>
+                                                <TableHead className="font-bold w-[20%]">Description of Mutation</TableHead>
                                                 <TableHead className="font-bold w-[20%]">Codon Change</TableHead>
                                                 <TableHead className="font-bold w-[15%]">Amino Acid Change</TableHead>
-                                                <TableHead className="font-bold w-[10%]">Effect of Amino Acid Change</TableHead>
+                                                <TableHead className="font-bold w-[20%]">Effect of Amino Acid Change</TableHead>
                                                 <TableHead className="font-bold w-[10%]">Causes Galactosemia?</TableHead>
                                             </TableRow>
                                         </TableHeader>
@@ -143,7 +144,7 @@ export default function MutationsLabPage() {
                                             <TableRow>
                                                 <TableCell>2</TableCell>
                                                 <TableCell>C replaced with T at position 404</TableCell>
-                                                <TableCell>CCT → CCA</TableCell>
+                                                <TableCell>TCG → TTG</TableCell>
                                                 <TableCell className="flex items-center gap-1">S → <Input className="w-12 h-8 text-center" maxLength={1} /></TableCell>
                                                 <TableCell><Textarea /></TableCell>
                                                 <TableCell>Yes</TableCell>
@@ -151,7 +152,7 @@ export default function MutationsLabPage() {
                                             <TableRow>
                                                 <TableCell>3</TableCell>
                                                 <TableCell>T replaced with A at position 498</TableCell>
-                                                <TableCell>CAG → AAG</TableCell>
+                                                <TableCell>CCT → CCA</TableCell>
                                                 <TableCell className="flex items-center gap-1">P → <Input className="w-12 h-8 text-center" maxLength={1} /></TableCell>
                                                 <TableCell><Textarea /></TableCell>
                                                 <TableCell>No</TableCell>
@@ -210,8 +211,9 @@ export default function MutationsLabPage() {
                                 <hr className="my-6" />
 
                                 <h3 className="text-2xl font-bold text-center">Investigation – Part II</h3>
+                                <p>&nbsp;</p>
                                 <h4 className="text-xl font-semibold text-center">Which citizens of Luminaria are afflicted with Galactosemia?</h4>
-
+                                <p>&nbsp;</p>
                                 <p className="indent-8">Throughout the Kingdom of Luminaria, the Royal Healers’ Guild performs a duty known as a Newborn Genetic Screening — a life-saving procedure conducted upon every child born under the Empress’s light. Within the first days of life, a few drops of blood are drawn from the infant’s heel and analyzed within the laboratories of the Royal Academy of Biological Sciences.</p>
                                 <p className="indent-8">The purpose of this test is to search for hidden flaws within the DNA Code — mutations that may one day bring sickness if left undiscovered. The healers look for results that deviate from the realm’s normal ranges, and when such irregularities appear, further tests and treatments are quickly arranged.</p>
                                 <p className="indent-8">To detect Galactosemia, the healers measure two vital signs within the blood:</p>
@@ -220,16 +222,17 @@ export default function MutationsLabPage() {
                                     <li>The level of galactose itself.</li>
                                 </ul>
                                 <p className="indent-8">Low GALT activity combined with high galactose concentration suggests that the child may carry the disorder. When such results arise, healers consult the genetic scrolls — performing a deeper test of the baby’s DNA sequences to search for mutations in the GALT gene. If confirmed, the family is counseled to begin a strict low-galactose diet, preventing the sugar from accumulating and causing harm.</p>
-
+                                <p>&nbsp;</p>
                                 <h3 style={{ textAlign: 'center', fontSize: '1.5rem' }} className="font-bold">Your Commissioned Task</h3>
+                                <p>&nbsp;</p>
                                 <p className="indent-8">You are now acting as a Royal Physician within the Empress’s service, reviewing the screening results for three newborn citizens of Luminaria. The Empress herself demands your careful analysis to ensure that every infant receives proper care and guidance.</p>
                                 <ol className="list-decimal list-inside space-y-2 indent-8">
-                                    <li>Examine the recorded results presented in Table 4 of your research ledger.</li>
+                                    <li>Examine the recorded results presented in Table 2 of your research ledger below.</li>
                                     <li>Using your knowledge of genetics and biochemical function, answer the Part II Follow-Up Questions that follow.</li>
                                 </ol>
                                 
                                 <table className="w-full caption-bottom text-sm border my-6">
-                                    <caption className="mt-4 text-sm text-muted-foreground">Table 4. Test results of three newborn patients</caption>
+                                    <caption className="mt-4 text-sm text-muted-foreground">Table 2. Test results of three newborn patients</caption>
                                     <thead className="[&_tr]:border-b">
                                         <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
                                             <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground"></th>
@@ -258,6 +261,7 @@ export default function MutationsLabPage() {
                                 </table>
                                 
                                 <h3 className="text-2xl font-bold text-center">Part 2 - Questions</h3>
+                                <p>&nbsp;</p>
                                 <ol className="list-decimal list-inside space-y-4">
                                     <li>
                                         Based on the test results, which patient(s) most likely have galactosemia? For the patient(s) who likely have galactosemia, which gene should be analyzed during genetic testing?
