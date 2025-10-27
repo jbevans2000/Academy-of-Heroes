@@ -62,6 +62,9 @@ export default function MutationsLabPage() {
                                       <p className="font-semibold">What happens with the gene</p>
                                     </div>
                                     <Textarea placeholder="Your observations for the first box..." />
+                                     <div className="text-left">
+                                      <p className="font-semibold">What happens with the protein</p>
+                                    </div>
                                     <Textarea placeholder="Your observations for the second box..." />
                                     <Textarea placeholder="Your observations for the third box..." />
                                     <Textarea placeholder="Your observations for the fourth box..." />
