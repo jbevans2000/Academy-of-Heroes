@@ -63,7 +63,7 @@ export default function MutationsLabPage() {
                                     <div className="text-left">
                                       <p className="font-semibold">What happens with the gene</p>
                                     </div>
-                                    <p className="p-2 border rounded-md bg-muted font-bold text-center text-lg">Mutation in the GALT gene</p>
+                                    <p className="p-2 border rounded-md font-bold text-center text-lg">Mutation in the GALT gene</p>
 
                                     <div className="flex flex-col items-center py-2">
                                         <p className="font-semibold text-sm text-muted-foreground">cause</p>
@@ -139,7 +139,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>1</TableCell>
                                                 <TableCell>C replaced with A at position 184</TableCell>
                                                 <TableCell>CTG → ATG</TableCell>
-                                                <TableCell>L →  M</TableCell>
+                                                <TableCell>L → M</TableCell>
                                                 <TableCell><Textarea /></TableCell>
                                                 <TableCell>No</TableCell>
                                             </TableRow>
@@ -280,7 +280,16 @@ export default function MutationsLabPage() {
                                 </ol>
                             </div>
                         </CardContent>
-                        <CardFooter>
+                        <CardFooter className="flex-col items-center gap-4">
+                            <div className="text-center p-4 border-t border-dashed w-full">
+                                <h4 className="font-bold">How to Save as PDF:</h4>
+                                <ol className="list-decimal list-inside text-sm text-muted-foreground mt-2">
+                                    <li>Click the "Save as PDF" button below.</li>
+                                    <li>In the print window that opens, find the "Destination" or "Printer" setting.</li>
+                                    <li>Change the destination to "Save as PDF".</li>
+                                    <li>Include your name in the file name before saving.</li>
+                                </ol>
+                            </div>
                             <Button onClick={() => window.print()}>Save as PDF</Button>
                         </CardFooter>
                     </Card>
@@ -289,5 +298,3 @@ export default function MutationsLabPage() {
         </div>
     );
 }
-
-    
