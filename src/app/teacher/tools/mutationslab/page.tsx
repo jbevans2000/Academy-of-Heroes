@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -37,7 +36,7 @@ export default function MutationsLabPage() {
                                 <p className="indent-8">Throughout the realm, scholars have found that certain genetic disorders — illnesses caused by small errors in the code of life — can be detected early enough to protect and even save lives.</p>
                                 <p className="indent-8">In this investigation, you will examine one such condition known in the royal medical records as Galactosemia. Guided by real genetic data preserved in the archives, you will uncover why some mutations within the GALT gene cause this disorder, while others do not. You will also step into the role of a Royal Physician, tasked with screening newborn citizens of Luminaria for signs of this condition.</p>
                                 
-                                <h4 className="indent-8">By the end of this inquiry, you will be able to…</h4>
+                                <h4 className="text-2xl font-bold text-center">By the end of this inquiry, you will be able to…</h4>
                                 <ul className="list-disc list-inside indent-8">
                                     <li>Explain why some mutations cause genetic disorders while others do not.</li>
                                     <li>Communicate why early detection of mutations can help improve and enhance life throughout the realm.</li>
