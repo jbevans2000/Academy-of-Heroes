@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -30,6 +31,7 @@ export default function MutationsLabPage() {
                             <h2 className="text-xl font-semibold text-center">Why do some mutations lead to genetic disorders?</h2>
 
                             <div className="prose max-w-none">
+                                <hr className="my-6" />
                                 <h3 className="text-2xl font-bold text-center">The Challenge</h3>
                                 <hr className="my-6" />
                                 <p className="indent-8">You have been summoned by decree of Her Radiant Majesty, the Empress of Luminaria, to assist the Royal Academy of Biological Sciences in a matter of grave importance. Strange ailments have begun to appear among the citizens of the realm — not curses of Mortarian’s dark magic, but afflictions written within the very code of life itself.</p>
@@ -39,6 +41,7 @@ export default function MutationsLabPage() {
                                 
                                 <hr className="my-6" />
                                 <h3 className="text-2xl font-bold text-center">By the end of this inquiry, you will be able to…</h3>
+                                <hr className="my-6" />
                                 <ul className="list-disc list-inside indent-8">
                                     <li>Explain why some mutations cause genetic disorders while others do not.</li>
                                     <li>Communicate why early detection of mutations can help improve and enhance life throughout the realm.</li>
@@ -52,6 +55,13 @@ export default function MutationsLabPage() {
 
                                 <h3 className="text-2xl font-bold text-center">Royal Research Task:</h3>
                                 <p className="indent-8">Complete the chart below to describe the cause-and-effect relationship between the GALT gene, the GALT protein, and the cells of an individual with galactosemia. Record your observations in the Empress’s Scientific Ledger.</p>
+                                
+                                <div className="space-y-4 not-prose">
+                                    <Textarea placeholder="Your observations for the first box..." />
+                                    <Textarea placeholder="Your observations for the second box..." />
+                                    <Textarea placeholder="Your observations for the third box..." />
+                                    <Textarea placeholder="Your observations for the fourth box..." />
+                                </div>
                             </div>
 
                         </CardContent>
