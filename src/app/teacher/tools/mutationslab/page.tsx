@@ -180,7 +180,7 @@ export default function MutationsLabPage() {
                                         <Textarea placeholder="Your answer here..." className="mt-2" />
                                     </li>
                                     <li>
-                                        Explain in your own words why only certain mutations in the  GALT  gene cause  galactosemia. Be sure to include information about how different mutations affect  the function of the GALT protein.
+                                        Explain in your own words why only certain mutations in the  GALT  gene cause  galactosemia. Be sure to include information about how different mutations affect the function of the GALT protein.
                                         <Textarea placeholder="Your answer here..." className="mt-2" />
                                     </li>
                                 </ol>
@@ -194,11 +194,11 @@ export default function MutationsLabPage() {
                                 <p className="indent-8">The purpose of this test is to search for hidden flaws within the DNA Code — mutations that may one day bring sickness if left undiscovered. The healers look for results that deviate from the realm’s normal ranges, and when such irregularities appear, further tests and treatments are quickly arranged.</p>
                                 <p className="indent-8">To detect Galactosemia, the healers measure two vital signs within the blood:</p>
                                 <ol className="list-decimal list-inside indent-8">
-                                  <li>The activity of the GALT protein, which governs the breakdown of galactose, and</li>
-                                  <li>The level of galactose itself.</li>
+                                    <li>The activity of the GALT protein, which governs the breakdown of galactose, and</li>
+                                    <li>The level of galactose itself.</li>
                                 </ol>
                                 <p className="indent-8">Low GALT activity combined with high galactose concentration suggests that the child may carry the disorder. When such results arise, healers consult the genetic scrolls — performing a deeper test of the baby’s DNA sequences to search for mutations in the GALT gene. If confirmed, the family is counseled to begin a strict low-galactose diet, preventing the sugar from accumulating and causing harm.</p>
-
+                                
                                 <h3 className="font-bold">Your Commissioned Task</h3>
                                 <p className="indent-8">You are now acting as a Royal Physician within the Empress’s service, reviewing the screening results for three newborn citizens of Luminaria. The Empress herself demands your careful analysis to ensure that every infant receives proper care and guidance.</p>
                                 <ol className="list-decimal list-inside space-y-2 indent-8">
@@ -206,6 +206,25 @@ export default function MutationsLabPage() {
                                     <li>Using your knowledge of genetics and biochemical function, answer the Part II Follow-Up Questions that follow.</li>
                                 </ol>
 
+                                <div className="my-6 overflow-x-auto">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead></TableHead>
+                                                <TableHead>Normal Range</TableHead>
+                                                <TableHead>Patient 1</TableHead>
+                                                <TableHead>Patient 2</TableHead>
+                                                <TableHead>Patient 3</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            <TableRow>
+                                            </TableRow>
+                                            <TableRow>
+                                            </TableRow>
+                                        </TableBody>
+                                    </Table>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
