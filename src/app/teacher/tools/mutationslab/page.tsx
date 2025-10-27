@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Dna, ArrowDown } from 'lucide-react';
+import { ArrowLeft, Sparkles, ArrowDown } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -26,13 +26,14 @@ export default function MutationsLabPage() {
                     </Button>
                     <Card className="shadow-lg">
                         <CardHeader className="text-center">
-                            <Dna className="h-12 w-12 mx-auto text-primary" />
+                            <Sparkles className="h-12 w-12 mx-auto text-primary" />
                             <CardTitle className="text-2xl font-bold mt-2">Royal Commission Activity Guide</CardTitle>
                             <CardDescription className="text-lg font-headline">The Empress’s Scientific Inquiry: Mutations Across Luminaria</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <div className="prose max-w-none">
                                 <h3 className="text-2xl font-bold text-center">The Challenge</h3>
+                                <p>&nbsp;</p>
                                 <p className="indent-8">You have been summoned by decree of Her Radiant Majesty, the Empress of Luminaria, to assist the Royal Academy of Biological Sciences in a matter of grave importance. Strange ailments have begun to appear among the citizens of the realm — not curses of Mortarian’s dark magic, but afflictions written within the very code of life itself.</p>
                                 <p className="indent-8">Imagine learning that your own life-codem the DNA — the sequences of your lineage — contain a subtle mutation that could one day bring illness. Yet imagine also that, by uncovering such mutations early, the Royal Healers could intervene and prevent the malady from taking hold.</p>
                                 <p className="indent-8">Throughout the realm, scholars have found that certain genetic disorders — illnesses caused by small errors in the code of life — can be detected early enough to protect and even save lives.</p>
@@ -45,20 +46,20 @@ export default function MutationsLabPage() {
                                   <p className="text-base font-normal">Communicate why early detection of mutations can help improve and enhance life throughout the realm.</p>
                                 </div>
                                 <hr className="my-6" />
-                                
+
                                 <h3 className="text-xl font-semibold">Setting the Stage</h3>
                                 <p className="indent-8">Galactosemia is a genetic disorder that prevents the body from properly breaking down a common sugar called galactose, one of the basic energy sources found in many foods across the world. When this process fails, galactose accumulates in the bloodstream, causing severe illness and, if untreated, even death.</p>
                                 <p className="indent-8">Healers of the Royal Academy have discovered that those afflicted with galactosemia can lessen the disorder’s effects by following a low-galactose diet, thereby reducing the buildup of the sugar in their bodies.</p>
                                 <p className="indent-8">Through study of the GALT gene, scholars have determined that this segment of life-code produces the GALT protein, an enzyme responsible for breaking down galactose. When mutations alter the GALT gene, the protein’s structure changes, preventing it from performing its vital task. As a result, the body can no longer process galactose correctly.</p>
-
-                                <h4 className="font-semibold">Royal Research Task:</h4>
+                                <p>&nbsp;</p>
+                                <h3 style={{ textAlign: 'center', fontSize: '1.5rem' }} className="font-bold">Royal Research Task:</h3>
                                 <p className="indent-8">Complete the chart below to describe the cause-and-effect relationship between the GALT gene, the GALT protein, and the cells of an individual with galactosemia. Record your observations in the Empress’s Scientific Ledger.</p>
                                 
                                 <div className="space-y-4 not-prose mt-6">
                                     <div className="text-left">
                                       <p className="font-semibold">What happens with the gene</p>
                                     </div>
-                                    <Textarea placeholder="Your observations for the first box..." />
+                                    <Textarea placeholder="Mutation in the GALT gene" />
 
                                     <div className="flex flex-col items-center py-2">
                                         <p className="font-semibold text-sm text-muted-foreground">cause</p>
@@ -69,7 +70,7 @@ export default function MutationsLabPage() {
                                     <div className="text-left">
                                       <p className="font-semibold">What happens with the protein</p>
                                     </div>
-                                    <Textarea placeholder="Your observations for the second box..." />
+                                    <Textarea placeholder="Your answer for the second box..." />
 
                                      <div className="flex flex-col items-center py-2">
                                         <p className="font-semibold text-sm text-muted-foreground">cause</p>
@@ -80,7 +81,7 @@ export default function MutationsLabPage() {
                                     <div className="text-left">
                                       <p className="font-semibold">What happens in the cells</p>
                                     </div>
-                                    <Textarea placeholder="Your observations for the third box..." />
+                                    <Textarea placeholder="Your answer for the third box..." />
 
                                      <div className="flex flex-col items-center py-2">
                                         <p className="font-semibold text-sm text-muted-foreground">cause</p>
@@ -91,26 +92,28 @@ export default function MutationsLabPage() {
                                     <div className="text-left">
                                       <p className="font-semibold">What happens to the person</p>
                                     </div>
-                                    <Textarea placeholder="Your observations for the fourth box..." />
+                                    <Textarea placeholder="Your answer for the fourth box..." />
                                 </div>
                                 <hr className="my-6" />
                                 
                                 <h3 className="text-2xl font-bold text-center">Investigation – Part I</h3>
+                                <p>&nbsp;</p>
                                 <h4 className="text-xl font-semibold text-center">Why do some mutations cause Galactosemia, and others do not?</h4>
-
+                                <p>&nbsp;</p>
                                 <p className="indent-8">The Empress’s Royal Academy has charged you with uncovering why certain alterations in the GALT gene lead to the illness known as Galactosemia, while others leave the bearer unharmed.</p>
                                 <p className="indent-8">Within every living cell of Luminaria lies the code of life, a sequence of mystical runes known to scholars as nucleotides. When read by the cell’s machinery, these runes form codons — groups of three symbols that instruct the cell which amino acids to join together in the crafting of a protein.</p>
                                 <p className="indent-8">Each codon serves as a command. For instance, the rune CTG directs the cell to add the amino acid leucine to the growing chain. The full set of such instructions is called the Genetic Code, a universal lexicon shared by all creatures of the realm.</p>
                                 <p className="indent-8">When a mutation alters a codon, the message may change — and the cell may place the wrong amino acid in the sequence. Since each amino acid possesses unique chemical properties, even a single misplaced one can reshape the entire protein, twisting its form and disrupting its function. Thus, a single change in the life-script can determine whether a protein performs its duty… or fails, bringing illness.</p>
                                 <p className="indent-8">In the case of Galactosemia, scholars of the Academy have discovered that certain changes within the GALT gene cause the disorder, while others do not. Eight such mutations have been recorded in the Royal Archives and are presented in Table 1 below. This table lists the codon change caused by each mutation and indicates whether it is known to bring about the affliction.</p>
                                 <p className="indent-8">Your charge from the Empress is to complete the missing sections of Table 1 by deciphering how each mutation alters the GALT protein’s structure and behavior.</p>
-
+                                <p>&nbsp;</p>
                                 <h3 style={{ textAlign: 'center', fontSize: '1.5rem' }} className="font-bold">Royal Research Procedure</h3>
                                 <ol className="list-decimal list-inside space-y-2 indent-8">
-                                    <li>Consult Table 2 – The Codon Chart of Luminaria (provided by your instructor) to determine the amino acid change created by each mutation in Table 1.</li>
-                                    <li>Use Table 3 – The Properties of Amino Acids (also provided) to identify the effect that each amino-acid change has on the protein’s shape and stability.</li>
-                                    <li>Record your findings within Table 1, then proceed to answer the Part I Follow-Up Questions in your Royal Ledger.</li>
-                                </ol>
+                                <p>&nbsp;</p>    
+                                    <li>Consult the Codon Chart shown below to determine the amino acid change created by each mutation in Table 1. (Table 1 is located below the codon chart)</li>
+                                    <li>Record your findings within Table 1, then proceed to answer the Part I Follow-Up Questions in the spaces below the table.</li>
+                                    </ol>
+                                    
                                 
                                 <div className="my-6">
                                   <Image src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/2025-09-07T03%3A35%3A07_84193%2FGenetic-Code-01-1-1024x906.png?alt=media&token=cc08dbec-2d8f-4440-8940-4a99a095c8cc" alt="Genetic Code" width={1024} height={906} className="w-full h-auto" />
@@ -123,9 +126,9 @@ export default function MutationsLabPage() {
                                             <TableRow>
                                                 <TableHead className="font-bold w-[5%]"></TableHead>
                                                 <TableHead className="font-bold w-[25%]">Description of Mutation</TableHead>
-                                                <TableHead className="font-bold w-[10%]">Codon Change</TableHead>
+                                                <TableHead className="font-bold w-[20%]">Codon Change</TableHead>
                                                 <TableHead className="font-bold w-[15%]">Amino Acid Change</TableHead>
-                                                <TableHead className="font-bold w-[20%]">Effect of Amino Acid Change</TableHead>
+                                                <TableHead className="font-bold w-[15%]">Effect of Amino Acid Change</TableHead>
                                                 <TableHead className="font-bold w-[10%]">Causes Galactosemia?</TableHead>
                                             </TableRow>
                                         </TableHeader>
@@ -135,7 +138,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>C replaced with A at position 184</TableCell>
                                                 <TableCell>CTG → ATG</TableCell>
                                                 <TableCell>L → M</TableCell>
-                                                <TableCell><Input /></TableCell>
+                                                <TableCell><Textarea /></TableCell>
                                                 <TableCell>No</TableCell>
                                             </TableRow>
                                             <TableRow>
@@ -143,7 +146,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>C replaced with T at position 404</TableCell>
                                                 <TableCell>CCT → CCA</TableCell>
                                                 <TableCell className="flex items-center gap-1">S → <Input className="w-12 h-8 text-center" maxLength={1} /></TableCell>
-                                                <TableCell><Input /></TableCell>
+                                                <TableCell><Textarea /></TableCell>
                                                 <TableCell>Yes</TableCell>
                                             </TableRow>
                                             <TableRow>
@@ -151,7 +154,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>T replaced with A at position 498</TableCell>
                                                 <TableCell>CAG → AAG</TableCell>
                                                 <TableCell className="flex items-center gap-1">P → <Input className="w-12 h-8 text-center" maxLength={1} /></TableCell>
-                                                <TableCell><Input /></TableCell>
+                                                <TableCell><Textarea /></TableCell>
                                                 <TableCell>No</TableCell>
                                             </TableRow>
                                             <TableRow>
@@ -159,7 +162,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>A replaced with G at position 563</TableCell>
                                                 <TableCell>CAG → CGG</TableCell>
                                                 <TableCell className="flex items-center gap-1">Q → <Input className="w-12 h-8 text-center" maxLength={1} /></TableCell>
-                                                <TableCell><Input /></TableCell>
+                                                <TableCell><Textarea /></TableCell>
                                                 <TableCell>Yes</TableCell>
                                             </TableRow>
                                             <TableRow>
@@ -167,7 +170,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>C replaced with G at position 700</TableCell>
                                                 <TableCell>CTA → GTA</TableCell>
                                                 <TableCell className="flex items-center gap-1">L → <Input className="w-12 h-8 text-center" maxLength={1} /></TableCell>
-                                                <TableCell><Input /></TableCell>
+                                                <TableCell><Textarea /></TableCell>
                                                 <TableCell>No</TableCell>
                                             </TableRow>
                                             <TableRow>
@@ -175,7 +178,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>G replaced with T at position 855</TableCell>
                                                 <TableCell>AAG → AAT</TableCell>
                                                 <TableCell className="flex items-center gap-1">K → <Input className="w-12 h-8 text-center" maxLength={1} /></TableCell>
-                                                <TableCell><Input /></TableCell>
+                                                <TableCell><Textarea /></TableCell>
                                                 <TableCell>Yes</TableCell>
                                             </TableRow>
                                             <TableRow>
@@ -183,7 +186,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>G replaced with A at position 876</TableCell>
                                                 <TableCell>ACG → ACA</TableCell>
                                                 <TableCell className="flex items-center gap-1">T → <Input className="w-12 h-8 text-center" maxLength={1} /></TableCell>
-                                                <TableCell><Input /></TableCell>
+                                                <TableCell><Textarea /></TableCell>
                                                 <TableCell>No</TableCell>
                                             </TableRow>
                                         </TableBody>
