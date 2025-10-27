@@ -2,28 +2,27 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Sparkles, ArrowDown } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import Image from 'next/image';
-
 
 export default function MutationsLabPage() {
     const router = useRouter();
 
     return (
         <div className="flex flex-col min-h-screen bg-muted/40">
-            <TeacherHeader />
+            <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
+                <Button variant="outline" onClick={() => router.back()}>
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back
+                </Button>
+            </header>
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="max-w-4xl mx-auto space-y-6">
-                    <Button variant="outline" onClick={() => router.back()}>
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back
-                    </Button>
                     <Card className="shadow-lg">
                         <CardHeader className="text-center">
                             
@@ -194,6 +193,7 @@ export default function MutationsLabPage() {
                                 </div>
 
                                 <h3 className="text-2xl font-bold text-center">Part 1 - Questions</h3>
+                                <p>&nbsp;</p>
                                 <ol className="list-decimal list-inside space-y-4">
                                     <li>
                                         What do the mutations that cause galactosemia have in common?
