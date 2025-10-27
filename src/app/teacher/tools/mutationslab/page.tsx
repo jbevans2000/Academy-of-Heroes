@@ -33,7 +33,7 @@ export default function MutationsLabPage() {
                             <div className="prose max-w-none">
                                 <hr className="my-6" />
                                 <h3 className="text-2xl font-bold text-center">The Challenge</h3>
-                                <hr className="my-6" />
+                                <hr className="my-2" />
                                 <p className="indent-8">You have been summoned by decree of Her Radiant Majesty, the Empress of Luminaria, to assist the Royal Academy of Biological Sciences in a matter of grave importance. Strange ailments have begun to appear among the citizens of the realm — not curses of Mortarian’s dark magic, but afflictions written within the very code of life itself.</p>
                                 <p className="indent-8">Imagine learning that your own life-codem the DNA — the sequences of your lineage — contain a subtle mutation that could one day bring illness. Yet imagine also that, by uncovering such mutations early, the Royal Healers could intervene and prevent the malady from taking hold.</p>
                                 <p className="indent-8">Throughout the realm, scholars have found that certain genetic disorders — illnesses caused by small errors in the code of life — can be detected early enough to protect and even save lives.</p>
@@ -53,10 +53,14 @@ export default function MutationsLabPage() {
                                 <p className="indent-8">Healers of the Royal Academy have discovered that those afflicted with galactosemia can lessen the disorder’s effects by following a low-galactose diet, thereby reducing the buildup of the sugar in their bodies.</p>
                                 <p className="indent-8">Through study of the GALT gene, scholars have determined that this segment of life-code produces the GALT protein, an enzyme responsible for breaking down galactose. When mutations alter the GALT gene, the protein’s structure changes, preventing it from performing its vital task. As a result, the body can no longer process galactose correctly.</p>
 
+                                <hr className="my-6" />
                                 <h3 className="text-2xl font-bold text-center">Royal Research Task:</h3>
-                                <p className="indent-8">Complete the chart below to describe the cause-and-effect relationship between the GALT gene, the GALT protein, and the cells of an individual with galactosemia. Record your observations in the Empress’s Scientific Ledger.</p>
+                                <p className="indent-8 text-center">Complete the chart below to describe the cause-and-effect relationship between the GALT gene, the GALT protein, and the cells of an individual with galactosemia. Record your observations in the Empress’s Scientific Ledger.</p>
                                 
                                 <div className="space-y-4 not-prose mt-6">
+                                    <div className="text-left">
+                                      <p className="font-semibold">What happens with the gene</p>
+                                    </div>
                                     <Textarea placeholder="Your observations for the first box..." />
                                     <Textarea placeholder="Your observations for the second box..." />
                                     <Textarea placeholder="Your observations for the third box..." />
