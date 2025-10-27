@@ -102,10 +102,10 @@ export default function MutationsLabPage() {
                                             <TableRow>
                                                 <TableHead className="font-bold w-[5%]"></TableHead>
                                                 <TableHead className="font-bold w-[25%]">Description of Mutation</TableHead>
-                                                <TableHead className="font-bold w-[20%]">Codon Change</TableHead>
+                                                <TableHead className="font-bold w-[30%]">Codon Change</TableHead>
                                                 <TableHead className="font-bold w-[20%]">Amino Acid Change</TableHead>
                                                 <TableHead className="font-bold w-[20%]">Effect of Amino Acid Change</TableHead>
-                                                <TableHead className="font-bold w-[10%]">Causes Galactosemia?</TableHead>
+                                                <TableHead className="font-bold w-[5%]">Causes Galactosemia?</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -114,13 +114,13 @@ export default function MutationsLabPage() {
                                                 <TableCell>C replaced with A at position 184</TableCell>
                                                 <TableCell>CTG → ATG</TableCell>
                                                 <TableCell>L → M</TableCell>
-                                                <TableCell><Input /></TableCell>
+                                                <TableCell>Leucine replaced with Methionine.</TableCell>
                                                 <TableCell>...</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell>2</TableCell>
                                                 <TableCell>C replaced with T at position 404</TableCell>
-                                                <TableCell>TCG  → TTG</TableCell>
+                                                <TableCell>CCT → CCA</TableCell>
                                                 <TableCell><div className="flex items-center gap-2">S →<Input className="w-12" maxLength={1} /></div></TableCell>
                                                 <TableCell><Input /></TableCell>
                                                 <TableCell>...</TableCell>
