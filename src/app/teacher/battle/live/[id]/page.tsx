@@ -1554,6 +1554,7 @@ export default function TeacherLiveBattlePage() {
                 backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-0228de24-54d4-47df-9ff6-6184afb3ad3d.jpg?alt=media&token=a005d161-a938-4096-8b7f-fec4388c36a8')`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
+                backgroundAttachment: 'fixed',
             }}
         />
          <div className="absolute inset-0 -z-10 bg-black/60" />
