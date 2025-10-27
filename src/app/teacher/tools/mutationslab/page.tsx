@@ -127,11 +127,11 @@ export default function MutationsLabPage() {
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead className="font-bold w-[5%]"></TableHead>
-                                                <TableHead className="font-bold w-[25%]">Description of Mutation</TableHead>
+                                                <TableHead className="font-bold w-[20%]">Description of Mutation</TableHead>
                                                 <TableHead className="font-bold w-[15%]">Codon Change</TableHead>
-                                                <TableHead className="font-bold w-[15%]">Amino Acid Change</TableHead>
-                                                <TableHead className="font-bold w-[10%]">Effect of Amino Acid Change</TableHead>
-                                                <TableHead className="font-bold w-[10%]">Causes Galactosemia?</TableHead>
+                                                <TableHead className="font-bold w-[10%]">Amino Acid Change</TableHead>
+                                                <TableHead className="font-bold w-[20%]">Effect of Amino Acid Change</TableHead>
+                                                <TableHead className="font-bold w-[5%]">Causes Galactosemia?</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
