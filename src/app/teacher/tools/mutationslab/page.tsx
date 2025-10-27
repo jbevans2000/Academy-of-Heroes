@@ -56,7 +56,7 @@ export default function MutationsLabPage() {
                                 <h3 className="text-2xl font-bold text-center">Royal Research Task:</h3>
                                 <p className="indent-8">Complete the chart below to describe the cause-and-effect relationship between the GALT gene, the GALT protein, and the cells of an individual with galactosemia. Record your observations in the Empress’s Scientific Ledger.</p>
                                 
-                                <div className="space-y-4 not-prose">
+                                <div className="space-y-4 not-prose mt-6">
                                     <Textarea placeholder="Your observations for the first box..." />
                                     <Textarea placeholder="Your observations for the second box..." />
                                     <Textarea placeholder="Your observations for the third box..." />
