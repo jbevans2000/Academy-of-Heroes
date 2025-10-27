@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -59,7 +58,7 @@ export default function MutationsLabPage() {
                                     <div className="text-left">
                                       <p className="font-semibold">What happens with the gene</p>
                                     </div>
-                                    <p className="p-2 border rounded-md bg-muted">Mutation in the GALT gene</p>
+                                    <p className="p-2 border rounded-md bg-muted font-bold text-center text-lg">Mutation in the GALT gene</p>
 
                                     <div className="flex flex-col items-center py-2">
                                         <p className="font-semibold text-sm text-muted-foreground">cause</p>
@@ -101,7 +100,7 @@ export default function MutationsLabPage() {
                                 <h4 className="text-xl font-semibold text-center">Why do some mutations cause Galactosemia, and others do not?</h4>
                                 <p>&nbsp;</p>
                                 <p className="indent-8">The Empress’s Royal Academy has charged you with uncovering why certain alterations in the GALT gene lead to the illness known as Galactosemia, while others leave the bearer unharmed.</p>
-                                <p className="indent-8">Within every living cell of Luminaria lies the code of life, a sequence of mystical runes known to scholars as nucleotides. When read by the cell’s machinery, these runes form codons — groups of three symbols that instruct the cell which amino acids to join together in the crafting of a protein.</p>
+                                <p className="indent-8">Within every living cell lies the code of life, a sequence of chemical bases known to scholars as nucleotides. When read by the cell’s machinery, these runes form codons — groups of three symbols that instruct the cell which amino acids to join together in the crafting of a protein.</p>
                                 <p className="indent-8">Each codon serves as a command. For instance, the rune CTG directs the cell to add the amino acid leucine to the growing chain. The full set of such instructions is called the Genetic Code, a universal lexicon shared by all creatures of the realm.</p>
                                 <p className="indent-8">When a mutation alters a codon, the message may change — and the cell may place the wrong amino acid in the sequence. Since each amino acid possesses unique chemical properties, even a single misplaced one can reshape the entire protein, twisting its form and disrupting its function. Thus, a single change in the life-script can determine whether a protein performs its duty… or fails, bringing illness.</p>
                                 <p className="indent-8">In the case of Galactosemia, scholars of the Academy have discovered that certain changes within the GALT gene cause the disorder, while others do not. Eight such mutations have been recorded in the Royal Archives and are presented in Table 1 below. This table lists the codon change caused by each mutation and indicates whether it is known to bring about the affliction.</p>
@@ -128,7 +127,7 @@ export default function MutationsLabPage() {
                                                 <TableHead className="font-bold w-[25%]">Description of Mutation</TableHead>
                                                 <TableHead className="font-bold w-[20%]">Codon Change</TableHead>
                                                 <TableHead className="font-bold w-[15%]">Amino Acid Change</TableHead>
-                                                <TableHead className="font-bold w-[20%]">Effect of Amino Acid Change</TableHead>
+                                                <TableHead className="font-bold w-[10%]">Effect of Amino Acid Change</TableHead>
                                                 <TableHead className="font-bold w-[10%]">Causes Galactosemia?</TableHead>
                                             </TableRow>
                                         </TableHeader>
@@ -248,7 +247,7 @@ export default function MutationsLabPage() {
                                             <td className="p-4 align-middle">0.18</td>
                                             <td className="p-4 align-middle">18.4</td>
                                         </tr>
-                                        <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                                        <tr className="border-b transition-colors hover:bg-muted/so data-[state=selected]:bg-muted">
                                             <td className="p-4 align-middle">Galactose level (mg/dl)</td>
                                             <td className="p-4 align-middle">0 - 4.3</td>
                                             <td className="p-4 align-middle">2.1</td>
