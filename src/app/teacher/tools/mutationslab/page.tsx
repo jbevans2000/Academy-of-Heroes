@@ -144,7 +144,7 @@ export default function MutationsLabPage() {
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell>4</TableCell>
-                                                <TableCell>...</TableCell>
+                                                <TableCell>A replaced with G at position 563</TableCell>
                                                 <TableCell>...</TableCell>
                                                 <TableCell>...</TableCell>
                                                 <TableCell><Input /></TableCell>
