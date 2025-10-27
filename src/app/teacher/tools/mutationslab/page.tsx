@@ -100,10 +100,10 @@ export default function MutationsLabPage() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead className="font-bold w-[5%]"></TableHead>
-                                                <TableHead className="font-bold w-[25%]">Description of Mutation</TableHead>
-                                                <TableHead className="font-bold w-[15%]">Codon Change</TableHead>
-                                                <TableHead className="font-bold w-[10%]">Amino Acid Change</TableHead>
+                                                <TableHead className="font-bold"></TableHead>
+                                                <TableHead className="font-bold">Description of Mutation</TableHead>
+                                                <TableHead className="font-bold">Codon Change</TableHead>
+                                                <TableHead className="font-bold">Amino Acid Change</TableHead>
                                                 <TableHead className="font-bold w-[30%]">Effect of Amino Acid Change</TableHead>
                                                 <TableHead className="font-bold w-[15%]">Causes Galactosemia?</TableHead>
                                             </TableRow>
@@ -113,7 +113,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>1</TableCell>
                                                 <TableCell>C replaced with A at position 184</TableCell>
                                                 <TableCell>CTG → ATG</TableCell>
-                                                <TableCell>L → M</TableCell>
+                                                <TableCell>L →  M</TableCell>
                                                 <TableCell>Leucine replaced with Methionine.</TableCell>
                                                 <TableCell>No</TableCell>
                                             </TableRow>
@@ -121,7 +121,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>2</TableCell>
                                                 <TableCell>C replaced with T at position 404</TableCell>
                                                 <TableCell>CCT → CCA</TableCell>
-                                                <TableCell><div className="flex items-center gap-2">S →<Input className="w-12" maxLength={1} /></div></TableCell>
+                                                <TableCell><div className="flex items-center gap-2">P →<Input className="w-12" maxLength={1} /></div></TableCell>
                                                 <TableCell><Input /></TableCell>
                                                 <TableCell>Yes</TableCell>
                                             </TableRow>
@@ -129,7 +129,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>3</TableCell>
                                                 <TableCell>T replaced with A at position 498</TableCell>
                                                 <TableCell>CCT → CCA</TableCell>
-                                                <TableCell><div className="flex items-center gap-2">P →<Input className="w-12" maxLength={1} /></div></TableCell>
+                                                <TableCell><div className="flex items-center gap-2">Q →<Input className="w-12" maxLength={1} /></div></TableCell>
                                                 <TableCell><Input /></TableCell>
                                                 <TableCell>No</TableCell>
                                             </TableRow>
@@ -137,7 +137,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>4</TableCell>
                                                 <TableCell>A replaced with G at position 563</TableCell>
                                                 <TableCell>CAG → CGG</TableCell>
-                                                <TableCell><div className="flex items-center gap-2">Q →<Input className="w-12" maxLength={1} /></div></TableCell>
+                                                <TableCell><div className="flex items-center gap-2">L →<Input className="w-12" maxLength={1} /></div></TableCell>
                                                 <TableCell><Input /></TableCell>
                                                 <TableCell>Yes</TableCell>
                                             </TableRow>
@@ -145,7 +145,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>5</TableCell>
                                                 <TableCell>C replaced with G at position 700</TableCell>
                                                 <TableCell>CTA → GTA</TableCell>
-                                                <TableCell><div className="flex items-center gap-2">L →<Input className="w-12" maxLength={1} /></div></TableCell>
+                                                <TableCell><div className="flex items-center gap-2">K →<Input className="w-12" maxLength={1} /></div></TableCell>
                                                 <TableCell><Input /></TableCell>
                                                 <TableCell>No</TableCell>
                                             </TableRow>
@@ -153,7 +153,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>6</TableCell>
                                                 <TableCell>G replaced with T at position 855</TableCell>
                                                 <TableCell>AAG → AAT</TableCell>
-                                                <TableCell><div className="flex items-center gap-2">K →<Input className="w-12" maxLength={1} /></div></TableCell>
+                                                <TableCell><div className="flex items-center gap-2">T →<Input className="w-12" maxLength={1} /></div></TableCell>
                                                 <TableCell><Input /></TableCell>
                                                 <TableCell>Yes</TableCell>
                                             </TableRow>
@@ -161,14 +161,13 @@ export default function MutationsLabPage() {
                                                 <TableCell>7</TableCell>
                                                 <TableCell>G replaced with A at position 876</TableCell>
                                                 <TableCell>ACG → ACA</TableCell>
-                                                <TableCell><div className="flex items-center gap-2">T →<Input className="w-12" maxLength={1} /></div></TableCell>
+                                                <TableCell>T → T</TableCell>
                                                 <TableCell><Input /></TableCell>
                                                 <TableCell>No</TableCell>
                                             </TableRow>
                                         </TableBody>
                                     </Table>
                                 </div>
-                                
                                 <h3 className="text-2xl font-bold text-center">Part 1 - Questions</h3>
                                 <ol className="list-decimal list-inside space-y-4">
                                     <li>
@@ -180,7 +179,7 @@ export default function MutationsLabPage() {
                                         <Textarea placeholder="Your answer here..." className="mt-2" />
                                     </li>
                                     <li>
-                                        Explain in your own words why only certain mutations in the  GALT  gene cause  galactosemia. Be sure to include information about how different mutations affect the function of the GALT protein.
+                                        Explain in your own words why only certain mutations in the GALT gene cause galactosemia. Be sure to include information about how different mutations affect the function of the GALT protein.
                                         <Textarea placeholder="Your answer here..." className="mt-2" />
                                     </li>
                                 </ol>
@@ -194,8 +193,8 @@ export default function MutationsLabPage() {
                                 <p className="indent-8">The purpose of this test is to search for hidden flaws within the DNA Code — mutations that may one day bring sickness if left undiscovered. The healers look for results that deviate from the realm’s normal ranges, and when such irregularities appear, further tests and treatments are quickly arranged.</p>
                                 <p className="indent-8">To detect Galactosemia, the healers measure two vital signs within the blood:</p>
                                 <ol className="list-decimal list-inside indent-8">
-                                    <li>The activity of the GALT protein, which governs the breakdown of galactose, and</li>
-                                    <li>The level of galactose itself.</li>
+                                  <li>The activity of the GALT protein, which governs the breakdown of galactose, and</li>
+                                  <li>The level of galactose itself.</li>
                                 </ol>
                                 <p className="indent-8">Low GALT activity combined with high galactose concentration suggests that the child may carry the disorder. When such results arise, healers consult the genetic scrolls — performing a deeper test of the baby’s DNA sequences to search for mutations in the GALT gene. If confirmed, the family is counseled to begin a strict low-galactose diet, preventing the sugar from accumulating and causing harm.</p>
                                 
@@ -219,8 +218,11 @@ export default function MutationsLabPage() {
                                         </TableHeader>
                                         <TableBody>
                                             <TableRow>
-                                            </TableRow>
-                                            <TableRow>
+                                                <TableCell>GALT protein activity (U/Hb)</TableCell>
+                                                <TableCell>15.9 - 26.4</TableCell>
+                                                <TableCell>20.2</TableCell>
+                                                <TableCell>0.18</TableCell>
+                                                <TableCell>18.4</TableCell>
                                             </TableRow>
                                         </TableBody>
                                     </Table>
