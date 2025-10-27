@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -47,7 +48,7 @@ export default function MutationsLabPage() {
                                 <p className="indent-8">Healers of the Royal Academy have discovered that those afflicted with galactosemia can lessen the disorder’s effects by following a low-galactose diet, thereby reducing the buildup of the sugar in their bodies.</p>
                                 <p className="indent-8">Through study of the GALT gene, scholars have determined that this segment of life-code produces the GALT protein, an enzyme responsible for breaking down galactose. When mutations alter the GALT gene, the protein’s structure changes, preventing it from performing its vital task. As a result, the body can no longer process galactose correctly.</p>
 
-                                <p className="font-bold indent-8">Royal Research Task:</p>
+                                <h3 className="text-2xl font-bold text-center">Royal Research Task:</h3>
                                 <p className="indent-8">Complete the chart below to describe the cause-and-effect relationship between the GALT gene, the GALT protein, and the cells of an individual with galactosemia. Record your observations in the Empress’s Scientific Ledger.</p>
                             </div>
 
