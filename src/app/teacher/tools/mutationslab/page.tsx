@@ -128,7 +128,7 @@ export default function MutationsLabPage() {
                                             <TableRow>
                                                 <TableCell>3</TableCell>
                                                 <TableCell>T replaced with A at position 498</TableCell>
-                                                <TableCell>...</TableCell>
+                                                <TableCell>CCT → CCA</TableCell>
                                                 <TableCell>...</TableCell>
                                                 <TableCell><Input /></TableCell>
                                                 <TableCell>...</TableCell>
