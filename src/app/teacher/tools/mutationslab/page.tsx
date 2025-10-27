@@ -48,41 +48,6 @@ export default function MutationsLabPage() {
                                 <p>Healers of the Royal Academy have discovered that those afflicted with galactosemia can lessen the disorder’s effects by following a low-galactose diet, thereby reducing the buildup of the sugar in their bodies.</p>
                                 <p>Through study of the GALT gene, scholars have determined that this segment of life-code produces the GALT protein, an enzyme responsible for breaking down galactose. When mutations alter the GALT gene, the protein’s structure changes, preventing it from performing its vital task. As a result, the body can no longer process galactose correctly.</p>
                             </div>
-
-                            <Card className="bg-secondary">
-                                <CardHeader>
-                                    <CardTitle>Royal Research Task:</CardTitle>
-                                    <CardDescription>Complete the chart below to describe the cause-and-effect relationship between the GALT gene, the GALT protein, and the cells of an individual with galactosemia. Record your observations in the Empress’s Scientific Ledger.</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead className="w-1/3">Component</TableHead>
-                                                <TableHead>Normal Function (Cause)</TableHead>
-                                                <TableHead>Effect in Galactosemia (Effect)</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            <TableRow>
-                                                <TableCell className="font-semibold">GALT Gene</TableCell>
-                                                <TableCell><Textarea placeholder="Describe the normal role of the GALT gene..." /></TableCell>
-                                                <TableCell><Textarea placeholder="Describe what happens to the GALT gene..." /></TableCell>
-                                            </TableRow>
-                                            <TableRow>
-                                                <TableCell className="font-semibold">GALT Protein</TableCell>
-                                                <TableCell><Textarea placeholder="Describe the protein's normal function..." /></TableCell>
-                                                <TableCell><Textarea placeholder="Describe how the protein is affected..." /></TableCell>
-                                            </TableRow>
-                                            <TableRow>
-                                                <TableCell className="font-semibold">Cells</TableCell>
-                                                <TableCell><Textarea placeholder="Describe how cells normally process galactose..." /></TableCell>
-                                                <TableCell><Textarea placeholder="Describe the effect on the cells..." /></TableCell>
-                                            </TableRow>
-                                        </TableBody>
-                                    </Table>
-                                </CardContent>
-                            </Card>
                         </CardContent>
                     </Card>
                 </div>
