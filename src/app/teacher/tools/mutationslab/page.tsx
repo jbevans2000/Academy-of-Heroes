@@ -96,16 +96,16 @@ export default function MutationsLabPage() {
                                     <li>Record your findings within Table 1, then proceed to answer the Part I Follow-Up Questions in your Royal Ledger.</li>
                                 </ol>
 
-                                <div className="my-6">
+                                <div className="my-6 overflow-x-auto">
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead className="font-bold"></TableHead>
-                                                <TableHead className="font-bold">Description of Mutation</TableHead>
-                                                <TableHead className="font-bold">Codon Change</TableHead>
-                                                <TableHead className="font-bold">Amino Acid Change</TableHead>
-                                                <TableHead className="font-bold">Effect of Amino Acid Change</TableHead>
-                                                <TableHead className="font-bold">Causes Galactosemia?</TableHead>
+                                                <TableHead className="font-bold w-[5%]"></TableHead>
+                                                <TableHead className="font-bold w-[25%]">Description of Mutation</TableHead>
+                                                <TableHead className="font-bold w-[20%]">Codon Change</TableHead>
+                                                <TableHead className="font-bold w-[20%]">Amino Acid Change</TableHead>
+                                                <TableHead className="font-bold w-[20%]">Effect of Amino Acid Change</TableHead>
+                                                <TableHead className="font-bold w-[10%]">Causes Galactosemia?</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
