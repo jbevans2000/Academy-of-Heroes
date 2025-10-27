@@ -128,8 +128,8 @@ export default function MutationsLabPage() {
                                             <TableRow>
                                                 <TableCell>3</TableCell>
                                                 <TableCell>T replaced with A at position 498</TableCell>
-                                                <TableCell>CCT → CCA</TableCell>
                                                 <TableCell><div className="flex items-center gap-2">Q →<Input className="w-12" maxLength={1} /></div></TableCell>
+                                                <TableCell>...</TableCell>
                                                 <TableCell><Input /></TableCell>
                                                 <TableCell>No</TableCell>
                                             </TableRow>
@@ -223,6 +223,13 @@ export default function MutationsLabPage() {
                                                 <TableCell>20.2</TableCell>
                                                 <TableCell>0.18</TableCell>
                                                 <TableCell>18.4</TableCell>
+                                            </TableRow>
+                                            <TableRow>
+                                                <TableCell>Galactose level (mg/dl)</TableCell>
+                                                <TableCell>0 - 4.3</TableCell>
+                                                <TableCell>2.1</TableCell>
+                                                <TableCell>235</TableCell>
+                                                <TableCell>3.2</TableCell>
                                             </TableRow>
                                         </TableBody>
                                     </Table>
