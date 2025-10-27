@@ -119,10 +119,10 @@ export default function MutationsLabPage() {
                                         <TableBody>
                                             <TableRow>
                                                 <TableCell>1</TableCell>
+                                                <TableCell>C replaced with A at position 184</TableCell>
                                                 <TableCell>...</TableCell>
                                                 <TableCell>...</TableCell>
-                                                <TableCell>...</TableCell>
-                                                <TableCell>...</TableCell>
+                                                <TableCell><Input /></TableCell>
                                                 <TableCell>...</TableCell>
                                             </TableRow>
                                             <TableRow>
