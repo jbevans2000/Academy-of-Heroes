@@ -252,7 +252,7 @@ export default function MutationsLabPage() {
                                             <td className="p-4 align-middle">0.18</td>
                                             <td className="p-4 align-middle">18.4</td>
                                         </tr>
-                                        <tr className="border-b transition-colors hover:bg-muted/so data-[state=selected]:bg-muted">
+                                        <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
                                             <td className="p-4 align-middle">Galactose level (mg/dl)</td>
                                             <td className="p-4 align-middle">0 - 4.3</td>
                                             <td className="p-4 align-middle">2.1</td>
@@ -278,6 +278,11 @@ export default function MutationsLabPage() {
                                         <Textarea placeholder="Your answer here..." className="mt-2" />
                                     </li>
                                 </ol>
+                                <hr className="my-6" />
+                                <h3 className="text-2xl font-bold text-center">Tutorial Videos from the Academy of Biological Sciences</h3>
+                                <div className="flex justify-center">
+                                <iframe width="560" height="315" src="https://www.youtube.com/embed/_9wnC5pta78?si=0RWZW-X2601mCYkK" title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen></iframe>
+                                </div>
                             </div>
                         </CardContent>
                         <CardFooter className="flex-col items-center gap-4">
