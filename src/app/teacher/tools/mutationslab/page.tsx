@@ -26,9 +26,7 @@ export default function MutationsLabPage() {
                     </Button>
                     <Card className="shadow-lg">
                         <CardHeader className="text-center">
-                            <div className="flex justify-center mb-4">
-                                <Image src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2FMagical%20Symbol%20(1).png?alt=media&token=e1152a51-912f-4e01-931d-587de5b4a742" alt="Magical Symbol" width={64} height={64} />
-                            </div>
+                            
                             <CardTitle className="text-2xl font-bold mt-2">Royal Commission Activity Guide</CardTitle>
                             <CardDescription className="text-lg font-headline">The Empress’s Scientific Inquiry: Mutations Across Luminaria</CardDescription>
                         </CardHeader>
