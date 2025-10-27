@@ -61,8 +61,10 @@ export default function MutationsLabPage() {
                                     </div>
                                     <Textarea placeholder="Your observations for the first box..." />
 
-                                    <div className="flex justify-center py-2">
-                                        <ArrowDown className="h-8 w-8 text-primary" />
+                                    <div className="flex flex-col items-center py-2">
+                                        <p className="font-semibold text-sm text-muted-foreground">cause</p>
+                                        <ArrowDown className="h-8 w-8 text-primary my-1" />
+                                        <p className="font-semibold text-sm text-muted-foreground">effect</p>
                                     </div>
 
                                     <div className="text-left">
@@ -70,8 +72,10 @@ export default function MutationsLabPage() {
                                     </div>
                                     <Textarea placeholder="Your observations for the second box..." />
 
-                                     <div className="flex justify-center py-2">
-                                        <ArrowDown className="h-8 w-8 text-primary" />
+                                     <div className="flex flex-col items-center py-2">
+                                        <p className="font-semibold text-sm text-muted-foreground">cause</p>
+                                        <ArrowDown className="h-8 w-8 text-primary my-1" />
+                                        <p className="font-semibold text-sm text-muted-foreground">effect</p>
                                     </div>
 
                                     <div className="text-left">
@@ -79,8 +83,10 @@ export default function MutationsLabPage() {
                                     </div>
                                     <Textarea placeholder="Your observations for the third box..." />
 
-                                     <div className="flex justify-center py-2">
-                                        <ArrowDown className="h-8 w-8 text-primary" />
+                                     <div className="flex flex-col items-center py-2">
+                                        <p className="font-semibold text-sm text-muted-foreground">cause</p>
+                                        <ArrowDown className="h-8 w-8 text-primary my-1" />
+                                        <p className="font-semibold text-sm text-muted-foreground">effect</p>
                                     </div>
 
                                     <div className="text-left">
