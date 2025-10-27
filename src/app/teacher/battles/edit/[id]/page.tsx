@@ -357,7 +357,7 @@ export default function EditBossBattlePage() {
     <div className="relative flex min-h-screen w-full flex-col">
        <div 
             className="fixed inset-0 -z-10 bg-cover bg-center" 
-            style={{ backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-5c865a8c-e16c-4e32-b822-164b15894c5b.jpg?alt=media&token=11c25a8d-193a-44cf-bdfd-a752d57ccade')` }}
+            style={{ backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-5c865a8c-e16c-4e32-b822-164b15894c5b.jpg?alt=media&token=11c25a8d-193a-44cf-bdfd-a752d57ccade')`, backgroundAttachment: 'fixed' }}
         />
       <TeacherHeader />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
