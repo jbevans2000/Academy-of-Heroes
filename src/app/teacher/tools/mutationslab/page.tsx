@@ -111,7 +111,7 @@ export default function MutationsLabPage() {
                                         <TableBody>
                                             <TableRow>
                                                 <TableCell>1</TableCell>
-                                                <TableCell>C replaced with A at position 184</TableCell>
+                                                <TableCell>C replaced with A  at position 184</TableCell>
                                                 <TableCell>CTG → ATG</TableCell>
                                                 <TableCell>...</TableCell>
                                                 <TableCell><Input /></TableCell>
@@ -119,8 +119,8 @@ export default function MutationsLabPage() {
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell>2</TableCell>
-                                                <TableCell>C replaced with T at position 404</TableCell>
-                                                <TableCell>TCG → TTG</TableCell>
+                                                <TableCell>C replaced with T  at position 404</TableCell>
+                                                <TableCell>TCG  → TTG</TableCell>
                                                 <TableCell>...</TableCell>
                                                 <TableCell><Input /></TableCell>
                                                 <TableCell>...</TableCell>
