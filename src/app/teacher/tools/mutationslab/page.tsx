@@ -111,59 +111,59 @@ export default function MutationsLabPage() {
                                         <TableBody>
                                             <TableRow>
                                                 <TableCell>1</TableCell>
-                                                <TableCell>C replaced with A  at position 184</TableCell>
+                                                <TableCell>C replaced with A at position 184</TableCell>
                                                 <TableCell>CTG → ATG</TableCell>
-                                                <TableCell>...</TableCell>
                                                 <TableCell><Input /></TableCell>
-                                                <TableCell>...</TableCell>
+                                                <TableCell><Input /></TableCell>
+                                                <TableCell><Input /></TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell>2</TableCell>
-                                                <TableCell>C replaced with T  at position 404</TableCell>
+                                                <TableCell>C replaced with T at position 404</TableCell>
                                                 <TableCell>TCG  → TTG</TableCell>
-                                                <TableCell>...</TableCell>
+                                                <TableCell><div className="flex items-center gap-2">S →<Input className="w-12" maxLength={1} /></div></TableCell>
                                                 <TableCell><Input /></TableCell>
-                                                <TableCell>...</TableCell>
+                                                <TableCell><Input /></TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell>3</TableCell>
                                                 <TableCell>T replaced with A at position 498</TableCell>
                                                 <TableCell>CCT → CCA</TableCell>
-                                                <TableCell>...</TableCell>
                                                 <TableCell><Input /></TableCell>
-                                                <TableCell>...</TableCell>
+                                                <TableCell><Input /></TableCell>
+                                                <TableCell><Input /></TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell>4</TableCell>
                                                 <TableCell>A replaced with G at position 563</TableCell>
                                                 <TableCell>CAG → CGG</TableCell>
-                                                <TableCell>...</TableCell>
                                                 <TableCell><Input /></TableCell>
-                                                <TableCell>...</TableCell>
+                                                <TableCell><Input /></TableCell>
+                                                <TableCell><Input /></TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell>5</TableCell>
                                                 <TableCell>C replaced with G at position 700</TableCell>
                                                 <TableCell>CTA → GTA</TableCell>
-                                                <TableCell>...</TableCell>
                                                 <TableCell><Input /></TableCell>
-                                                <TableCell>...</TableCell>
+                                                <TableCell><Input /></TableCell>
+                                                <TableCell><Input /></TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell>6</TableCell>
                                                 <TableCell>G replaced with T at position 855</TableCell>
                                                 <TableCell>AAG → AAT</TableCell>
-                                                <TableCell>...</TableCell>
                                                 <TableCell><Input /></TableCell>
-                                                <TableCell>...</TableCell>
+                                                <TableCell><Input /></TableCell>
+                                                <TableCell><Input /></TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell>7</TableCell>
                                                 <TableCell>G replaced with A at position 876</TableCell>
                                                 <TableCell>ACG → ACA</TableCell>
-                                                <TableCell>...</TableCell>
                                                 <TableCell><Input /></TableCell>
-                                                <TableCell>...</TableCell>
+                                                <TableCell><Input /></TableCell>
+                                                <TableCell><Input /></TableCell>
                                             </TableRow>
                                         </TableBody>
                                     </Table>
