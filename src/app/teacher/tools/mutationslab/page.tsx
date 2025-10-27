@@ -124,8 +124,8 @@ export default function MutationsLabPage() {
                                                 <TableHead className="font-bold w-[5%]"></TableHead>
                                                 <TableHead className="font-bold w-[25%]">Description of Mutation</TableHead>
                                                 <TableHead className="font-bold w-[10%]">Codon Change</TableHead>
-                                                <TableHead className="font-bold w-[10%]">Amino Acid Change</TableHead>
-                                                <TableHead className="font-bold w-[40%]">Effect of Amino Acid Change</TableHead>
+                                                <TableHead className="font-bold w-[15%]">Amino Acid Change</TableHead>
+                                                <TableHead className="font-bold w-[35%]">Effect of Amino Acid Change</TableHead>
                                                 <TableHead className="font-bold w-[10%]">Causes Galactosemia?</TableHead>
                                             </TableRow>
                                         </TableHeader>
@@ -134,7 +134,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>1</TableCell>
                                                 <TableCell>C replaced with A at position 184</TableCell>
                                                 <TableCell>CTG → ATG</TableCell>
-                                                <TableCell>L → M</TableCell>
+                                                <TableCell>L →  M</TableCell>
                                                 <TableCell><Input /></TableCell>
                                                 <TableCell>No</TableCell>
                                             </TableRow>
@@ -142,7 +142,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>2</TableCell>
                                                 <TableCell>C replaced with T at position 404</TableCell>
                                                 <TableCell>CCT → CCA</TableCell>
-                                                <TableCell className="flex items-center gap-1">P → <Input className="w-12 h-8 text-center" maxLength={1} /></TableCell>
+                                                <TableCell className="flex items-center gap-1">S → <Input className="w-12 h-8 text-center" maxLength={1} /></TableCell>
                                                 <TableCell><Input /></TableCell>
                                                 <TableCell>No</TableCell>
                                             </TableRow>
@@ -150,7 +150,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>3</TableCell>
                                                 <TableCell>T replaced with A at position 498</TableCell>
                                                 <TableCell>CAG → AAG</TableCell>
-                                                <TableCell className="flex items-center gap-1">Q → <Input className="w-12 h-8 text-center" maxLength={1} /></TableCell>
+                                                <TableCell className="flex items-center gap-1">P → <Input className="w-12 h-8 text-center" maxLength={1} /></TableCell>
                                                 <TableCell><Input /></TableCell>
                                                 <TableCell>No</TableCell>
                                             </TableRow>
@@ -158,7 +158,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>4</TableCell>
                                                 <TableCell>A replaced with G at position 563</TableCell>
                                                 <TableCell>CAG → CGG</TableCell>
-                                                <TableCell className="flex items-center gap-1">K → <Input className="w-12 h-8 text-center" maxLength={1} /></TableCell>
+                                                <TableCell className="flex items-center gap-1">Q → <Input className="w-12 h-8 text-center" maxLength={1} /></TableCell>
                                                 <TableCell><Input /></TableCell>
                                                 <TableCell>Yes</TableCell>
                                             </TableRow>
@@ -166,7 +166,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>5</TableCell>
                                                 <TableCell>C replaced with G at position 700</TableCell>
                                                 <TableCell>CTA → GTA</TableCell>
-                                                <TableCell className="flex items-center gap-1">T → <Input className="w-12 h-8 text-center" maxLength={1} /></TableCell>
+                                                <TableCell className="flex items-center gap-1">L → <Input className="w-12 h-8 text-center" maxLength={1} /></TableCell>
                                                 <TableCell><Input /></TableCell>
                                                 <TableCell>Yes</TableCell>
                                             </TableRow>
@@ -226,36 +226,34 @@ export default function MutationsLabPage() {
                                     <li>Using your knowledge of genetics and biochemical function, answer the Part II Follow-Up Questions that follow.</li>
                                 </ol>
 
-                                <div className="my-6 overflow-x-auto">
-                                    <table className="w-full caption-bottom text-sm border">
-                                        <caption className="mt-4 text-sm text-muted-foreground">Table 4. Test results of three newborn patients</caption>
-                                        <thead className="[&_tr]:border-b">
-                                            <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground"></th>
-                                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Normal Range</th>
-                                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Patient 1</th>
-                                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Patient 2</th>
-                                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Patient 3</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="[&_tr:last-child]:border-0">
-                                            <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                                                <td className="p-4 align-middle">GALT protein activity (U/Hb)</td>
-                                                <td className="p-4 align-middle">15.9 - 26.4</td>
-                                                <td className="p-4 align-middle">20.2</td>
-                                                <td className="p-4 align-middle">0.18</td>
-                                                <td className="p-4 align-middle">18.4</td>
-                                            </tr>
-                                            <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                                                <td className="p-4 align-middle">Galactose level (mg/dl)</td>
-                                                <td className="p-4 align-middle">0 - 4.3</td>
-                                                <td className="p-4 align-middle">2.1</td>
-                                                <td className="p-4 align-middle">235</td>
-                                                <td className="p-4 align-middle">3.2</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
+                                <table className="w-full caption-bottom text-sm border my-6">
+                                    <caption className="mt-4 text-sm text-muted-foreground">Table 4. Test results of three newborn patients</caption>
+                                    <thead className="[&_tr]:border-b">
+                                        <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground"></th>
+                                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Normal Range</th>
+                                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Patient 1</th>
+                                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Patient 2</th>
+                                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Patient 3</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="[&_tr:last-child]:border-0">
+                                        <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                                            <td className="p-4 align-middle">GALT protein activity (U/Hb)</td>
+                                            <td className="p-4 align-middle">15.9 - 26.4</td>
+                                            <td className="p-4 align-middle">20.2</td>
+                                            <td className="p-4 align-middle">0.18</td>
+                                            <td className="p-4 align-middle">18.4</td>
+                                        </tr>
+                                        <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                                            <td className="p-4 align-middle">Galactose level (mg/dl)</td>
+                                            <td className="p-4 align-middle">0 - 4.3</td>
+                                            <td className="p-4 align-middle">2.1</td>
+                                            <td className="p-4 align-middle">235</td>
+                                            <td className="p-4 align-middle">3.2</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                                 
                                 <h3 className="text-2xl font-bold text-center">Part 2 - Questions</h3>
                                 <ol className="list-decimal list-inside space-y-4">
