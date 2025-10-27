@@ -7,6 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Dna, ArrowDown } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+
 
 export default function MutationsLabPage() {
     const router = useRouter();
@@ -37,19 +40,13 @@ export default function MutationsLabPage() {
                                 
                                 <hr className="my-6" />
                                 <h3 className="text-2xl font-bold text-center">By the end of this inquiry, you will be able to…</h3>
-                                <hr className="my-6" />
+                                <hr className="my-2" />
                                 <ul className="list-disc list-inside indent-8">
                                     <li>Explain why some mutations cause genetic disorders while others do not.</li>
                                     <li>Communicate why early detection of mutations can help improve and enhance life throughout the realm.</li>
                                 </ul>
                                 <hr className="my-6" />
 
-                                <h3>Setting the Stage</h3>
-                                <p className="indent-8">Galactosemia is a genetic disorder that prevents the body from properly breaking down a common sugar called galactose, one of the basic energy sources found in many foods across the world. When this process fails, galactose accumulates in the bloodstream, causing severe illness and, if untreated, even death.</p>
-                                <p className="indent-8">Healers of the Royal Academy have discovered that those afflicted with galactosemia can lessen the disorder’s effects by following a low-galactose diet, thereby reducing the buildup of the sugar in their bodies.</p>
-                                <p className="indent-8">Through study of the GALT gene, scholars have determined that this segment of life-code produces the GALT protein, an enzyme responsible for breaking down galactose. When mutations alter the GALT gene, the protein’s structure changes, preventing it from performing its vital task. As a result, the body can no longer process galactose correctly.</p>
-
-                                <hr className="my-6" />
                                 <h3 className="text-2xl font-bold text-center">Royal Research Task:</h3>
                                 
                                 <div className="space-y-4 not-prose mt-6">
@@ -109,8 +106,88 @@ export default function MutationsLabPage() {
                                     <li>Use Table 3 – The Properties of Amino Acids (also provided) to identify the effect that each amino-acid change has on the protein’s shape and stability.</li>
                                     <li>Record your findings within Table 1, then proceed to answer the Part I Follow-Up Questions in your Royal Ledger.</li>
                                 </ol>
-                            </div>
 
+                                <div className="my-6">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>...</TableHead>
+                                                <TableHead>...</TableHead>
+                                                <TableHead>...</TableHead>
+                                                <TableHead>...</TableHead>
+                                                <TableHead>...</TableHead>
+                                                <TableHead>...</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            <TableRow>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                            </TableRow>
+                                            <TableRow>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                            </TableRow>
+                                            <TableRow>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell><Input /></TableCell>
+                                                <TableCell>...</TableCell>
+                                            </TableRow>
+                                            <TableRow>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell><Input /></TableCell>
+                                                <TableCell>...</TableCell>
+                                            </TableRow>
+                                            <TableRow>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell><Input /></TableCell>
+                                                <TableCell>...</TableCell>
+                                            </TableRow>
+                                            <TableRow>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell><Input /></TableCell>
+                                                <TableCell>...</TableCell>
+                                            </TableRow>
+                                            <TableRow>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell><Input /></TableCell>
+                                                <TableCell>...</TableCell>
+                                            </TableRow>
+                                            <TableRow>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell>...</TableCell>
+                                                <TableCell><Input /></TableCell>
+                                                <TableCell>...</TableCell>
+                                            </TableRow>
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
