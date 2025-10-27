@@ -39,12 +39,9 @@ export default function MutationsLabPage() {
                                 <p className="indent-8">In this investigation, you will examine one such condition known in the royal medical records as Galactosemia. Guided by real genetic data preserved in the archives, you will uncover why some mutations within the GALT gene cause this disorder, while others do not. You will also step into the role of a Royal Physician, tasked with screening newborn citizens of Luminaria for signs of this condition.</p>
                                 
                                 <hr className="my-6" />
-                                <h3 className="text-2xl font-bold text-center">By the end of this inquiry, you will be able to…</h3>
-                                <hr className="my-2" />
-                                <ul className="list-disc list-inside indent-8">
-                                    <li>Explain why some mutations cause genetic disorders while others do not.</li>
-                                    <li>Communicate why early detection of mutations can help improve and enhance life throughout the realm.</li>
-                                </ul>
+                                <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '1.25rem' }}>
+                                  <p>By the end of this inquiry, you will be able to…</p>
+                                </div>
                                 <hr className="my-6" />
 
                                 <h3 className="text-2xl font-bold text-center">Royal Research Task:</h3>
@@ -111,23 +108,15 @@ export default function MutationsLabPage() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>...</TableHead>
-                                                <TableHead>...</TableHead>
-                                                <TableHead>...</TableHead>
-                                                <TableHead>...</TableHead>
-                                                <TableHead>...</TableHead>
-                                                <TableHead>...</TableHead>
+                                                <TableHead className="font-bold"></TableHead>
+                                                <TableHead className="font-bold">Description of Mutation</TableHead>
+                                                <TableHead className="font-bold">Codon Change</TableHead>
+                                                <TableHead className="font-bold">Amino Acid Change</TableHead>
+                                                <TableHead className="font-bold">Effect of Amino Acid Change</TableHead>
+                                                <TableHead className="font-bold">Causes Galactosemia?</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            <TableRow>
-                                                <TableCell>...</TableCell>
-                                                <TableCell>...</TableCell>
-                                                <TableCell>...</TableCell>
-                                                <TableCell>...</TableCell>
-                                                <TableCell>...</TableCell>
-                                                <TableCell>...</TableCell>
-                                            </TableRow>
                                             <TableRow>
                                                 <TableCell>...</TableCell>
                                                 <TableCell>...</TableCell>
