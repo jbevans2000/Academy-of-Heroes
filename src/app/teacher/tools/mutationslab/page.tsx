@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Dna } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
 export default function MutationsLabPage() {
     const router = useRouter();
@@ -31,6 +32,7 @@ export default function MutationsLabPage() {
                             <h2 className="text-xl font-semibold text-center">Why do some mutations lead to genetic disorders?</h2>
 
                             <div className="prose max-w-none">
+                                <hr className="my-2" />
                                 <h3 className="text-2xl font-bold text-center">The Challenge</h3>
                                 <hr className="my-2" />
                                 <p className="indent-8">You have been summoned by decree of Her Radiant Majesty, the Empress of Luminaria, to assist the Royal Academy of Biological Sciences in a matter of grave importance. Strange ailments have begun to appear among the citizens of the realm — not curses of Mortarian’s dark magic, but afflictions written within the very code of life itself.</p>
@@ -69,6 +71,9 @@ export default function MutationsLabPage() {
                                       <p className="font-semibold">What happens in the cells</p>
                                     </div>
                                     <Textarea placeholder="Your observations for the third box..." />
+                                    <div className="text-left">
+                                      <p className="font-semibold">What happens to the person</p>
+                                    </div>
                                     <Textarea placeholder="Your observations for the fourth box..." />
                                 </div>
                             </div>
