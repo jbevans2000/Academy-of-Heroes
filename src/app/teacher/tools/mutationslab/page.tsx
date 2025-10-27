@@ -160,7 +160,7 @@ export default function MutationsLabPage() {
                                             <TableRow>
                                                 <TableCell>7</TableCell>
                                                 <TableCell>G replaced with A at position 876</TableCell>
-                                                <TableCell>...</TableCell>
+                                                <TableCell>ACG → ACA</TableCell>
                                                 <TableCell>...</TableCell>
                                                 <TableCell><Input /></TableCell>
                                                 <TableCell>...</TableCell>
