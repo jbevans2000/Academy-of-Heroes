@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -7,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Dna, ArrowDown } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 
 
@@ -98,14 +97,15 @@ export default function MutationsLabPage() {
 
                                 <div className="my-6 overflow-x-auto">
                                     <Table>
+                                        <TableCaption>Table 1. The Recorded Mutations of the GALT Gene</TableCaption>
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead className="font-bold"></TableHead>
                                                 <TableHead className="font-bold">Description of Mutation</TableHead>
-                                                <TableHead className="font-bold">Codon Change</TableHead>
-                                                <TableHead className="font-bold">Amino Acid Change</TableHead>
+                                                <TableHead className="font-bold w-[15%]">Codon Change</TableHead>
+                                                <TableHead className="font-bold w-[10%]">Amino Acid Change</TableHead>
                                                 <TableHead className="font-bold w-[30%]">Effect of Amino Acid Change</TableHead>
-                                                <TableHead className="font-bold w-[15%]">Causes Galactosemia?</TableHead>
+                                                <TableHead className="font-bold w-[10%]">Causes Galactosemia?</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -113,7 +113,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>1</TableCell>
                                                 <TableCell>C replaced with A at position 184</TableCell>
                                                 <TableCell>CTG → ATG</TableCell>
-                                                <TableCell>L →  M</TableCell>
+                                                <TableCell>L → M</TableCell>
                                                 <TableCell>Leucine replaced with Methionine.</TableCell>
                                                 <TableCell>No</TableCell>
                                             </TableRow>
@@ -168,6 +168,7 @@ export default function MutationsLabPage() {
                                         </TableBody>
                                     </Table>
                                 </div>
+
                                 <h3 className="text-2xl font-bold text-center">Part 1 - Questions</h3>
                                 <ol className="list-decimal list-inside space-y-4">
                                     <li>
@@ -187,52 +188,51 @@ export default function MutationsLabPage() {
                                 <hr className="my-6" />
 
                                 <h3 className="text-2xl font-bold text-center">Investigation – Part II</h3>
-                                <h4 className="text-xl font-semibold text-center">Which citizens of Luminaria are afflicted with Galactosemia?</h4>
+                                <h4 className="text-xl font-semibold text-center">Why do some mutations cause Galactosemia, and others do not?</h4>
 
-                                <p className="indent-8">Throughout the Kingdom of Luminaria, the Royal Healers’ Guild performs a duty known as a Newborn Genetic Screening — a life-saving procedure conducted upon every child born under the Empress’s light. Within the first days of life, a few drops of blood are drawn from the infant’s heel and analyzed within the laboratories of the Royal Academy of Biological Sciences.</p>
-                                <p className="indent-8">The purpose of this test is to search for hidden flaws within the DNA Code — mutations that may one day bring sickness if left undiscovered. The healers look for results that deviate from the realm’s normal ranges, and when such irregularities appear, further tests and treatments are quickly arranged.</p>
-                                <p className="indent-8">To detect Galactosemia, the healers measure two vital signs within the blood:</p>
-                                <ol className="list-decimal list-inside indent-8">
-                                  <li>The activity of the GALT protein, which governs the breakdown of galactose, and</li>
-                                  <li>The level of galactose itself.</li>
-                                </ol>
-                                <p className="indent-8">Low GALT activity combined with high galactose concentration suggests that the child may carry the disorder. When such results arise, healers consult the genetic scrolls — performing a deeper test of the baby’s DNA sequences to search for mutations in the GALT gene. If confirmed, the family is counseled to begin a strict low-galactose diet, preventing the sugar from accumulating and causing harm.</p>
-                                
-                                <h3 className="font-bold">Your Commissioned Task</h3>
-                                <p className="indent-8">You are now acting as a Royal Physician within the Empress’s service, reviewing the screening results for three newborn citizens of Luminaria. The Empress herself demands your careful analysis to ensure that every infant receives proper care and guidance.</p>
+                                <p className="indent-8">The Empress’s Royal Academy has charged you with uncovering why certain alterations in the GALT gene lead to the illness known as Galactosemia, while others leave the bearer unharmed.</p>
+                                <p className="indent-8">Within every living cell of Luminaria lies the code of life, a sequence of mystical runes known to scholars as nucleotides. When read by the cell’s machinery, these runes form codons — groups of three symbols that instruct the cell which amino acids to join together in the crafting of a protein.</p>
+                                <p className="indent-8">Each codon serves as a command. For instance, the rune CTG directs the cell to add the amino acid leucine to the growing chain. The full set of such instructions is called the Genetic Code, a universal lexicon shared by all creatures of the realm.</p>
+                                <p className="indent-8">When a mutation alters a codon, the message may change — and the cell may place the wrong amino acid in the sequence. Since each amino acid possesses unique chemical properties, even a single misplaced one can reshape the entire protein, twisting its form and disrupting its function. Thus, a single change in the life-script can determine whether a protein performs its duty… or fails, bringing illness.</p>
+                                <p className="indent-8">In the case of Galactosemia, scholars of the Academy have discovered that certain changes within the GALT gene cause the disorder, while others do not. Eight such mutations have been recorded in the Royal Archives and are presented in Table 1 below. This table lists the codon change caused by each mutation and indicates whether it is known to bring about the affliction.</p>
+                                <p className="indent-8">Your charge from the Empress is to complete the missing sections of Table 1 by deciphering how each mutation alters the GALT protein’s structure and behavior.</p>
+
+                                <h3 className="font-bold">Royal Research Procedure</h3>
                                 <ol className="list-decimal list-inside space-y-2 indent-8">
-                                    <li>Examine the recorded results presented in Table 4 of your research ledger.</li>
-                                    <li>Using your knowledge of genetics and biochemical function, answer the Part II Follow-Up Questions that follow.</li>
+                                    <li>Consult Table 2 – The Codon Chart of Luminaria (provided by your instructor) to determine the amino acid change created by each mutation in Table 1.</li>
+                                    <li>Use Table 3 – The Properties of Amino Acids (also provided) to identify the effect that each amino-acid change has on the protein’s shape and stability.</li>
+                                    <li>Record your findings within Table 1, then proceed to answer the Part I Follow-Up Questions in your Royal Ledger.</li>
                                 </ol>
 
                                 <div className="my-6 overflow-x-auto">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead></TableHead>
-                                                <TableHead>Normal Range</TableHead>
-                                                <TableHead>Patient 1</TableHead>
-                                                <TableHead>Patient 2</TableHead>
-                                                <TableHead>Patient 3</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            <TableRow>
-                                                <TableCell>GALT protein activity (U/Hb)</TableCell>
-                                                <TableCell>15.9 - 26.4</TableCell>
-                                                <TableCell>20.2</TableCell>
-                                                <TableCell>0.18</TableCell>
-                                                <TableCell>18.4</TableCell>
-                                            </TableRow>
-                                            <TableRow>
-                                                <TableCell>Galactose level (mg/dl)</TableCell>
-                                                <TableCell>0 - 4.3</TableCell>
-                                                <TableCell>2.1</TableCell>
-                                                <TableCell>235</TableCell>
-                                                <TableCell>3.2</TableCell>
-                                            </TableRow>
-                                        </TableBody>
-                                    </Table>
+                                    <table className="w-full caption-bottom text-sm">
+                                        <caption className="mt-4 text-sm text-muted-foreground">Table 4. Test results of three newborn patients</caption>
+                                        <thead className="[&_tr]:border-b">
+                                            <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground"></th>
+                                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Normal Range</th>
+                                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Patient 1</th>
+                                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Patient 2</th>
+                                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Patient 3</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="[&_tr:last-child]:border-0">
+                                            <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                                                <td className="p-4 align-middle">GALT protein activity (U/Hb)</td>
+                                                <td className="p-4 align-middle">15.9 - 26.4</td>
+                                                <td className="p-4 align-middle">20.2</td>
+                                                <td className="p-4 align-middle">0.18</td>
+                                                <td className="p-4 align-middle">18.4</td>
+                                            </tr>
+                                            <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                                                <td className="p-4 align-middle">Galactose level (mg/dl)</td>
+                                                <td className="p-4 align-middle">0 - 4.3</td>
+                                                <td className="p-4 align-middle">2.1</td>
+                                                <td className="p-4 align-middle">235</td>
+                                                <td className="p-4 align-middle">3.2</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </CardContent>
