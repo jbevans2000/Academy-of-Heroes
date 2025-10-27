@@ -26,7 +26,9 @@ export default function MutationsLabPage() {
                     </Button>
                     <Card className="shadow-lg">
                         <CardHeader className="text-center">
-                            <Sparkles className="h-12 w-12 mx-auto text-primary" />
+                            <div className="flex justify-center mb-4">
+                                <Image src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2FMagical%20Symbol%20(1).png?alt=media&token=e1152a51-912f-4e01-931d-587de5b4a742" alt="Magical Symbol" width={64} height={64} />
+                            </div>
                             <CardTitle className="text-2xl font-bold mt-2">Royal Commission Activity Guide</CardTitle>
                             <CardDescription className="text-lg font-headline">The Empress’s Scientific Inquiry: Mutations Across Luminaria</CardDescription>
                         </CardHeader>
@@ -52,7 +54,8 @@ export default function MutationsLabPage() {
                                 <p className="indent-8">Healers of the Royal Academy have discovered that those afflicted with galactosemia can lessen the disorder’s effects by following a low-galactose diet, thereby reducing the buildup of the sugar in their bodies.</p>
                                 <p className="indent-8">Through study of the GALT gene, scholars have determined that this segment of life-code produces the GALT protein, an enzyme responsible for breaking down galactose. When mutations alter the GALT gene, the protein’s structure changes, preventing it from performing its vital task. As a result, the body can no longer process galactose correctly.</p>
                                 <p>&nbsp;</p>
-                                <h3 style={{ textAlign: 'center', fontSize: '1.5rem' }} className="font-bold">Royal Research Task:</h3>
+                                <h3 style={{ textAlign: 'center', fontSize: '1.5rem', fontWeight: 'bold' }}>Your Commissioned Task</h3>
+                                <p>&nbsp;</p>
                                 <p className="indent-8">Complete the chart below to describe the cause-and-effect relationship between the GALT gene, the GALT protein, and the cells of an individual with galactosemia. Record your observations in the Empress’s Scientific Ledger.</p>
 
                                 <div className="space-y-4 not-prose mt-6">
@@ -105,30 +108,28 @@ export default function MutationsLabPage() {
                                 <p className="indent-8">Each codon serves as a command. For instance, the codon CTG directs the cell to add the amino acid leucine to the growing chain. The full set of such instructions is called the Genetic Code, a universal lexicon shared by all creatures of the realm.</p>
                                 <p className="indent-8">When a mutation alters a codon, the message may change — and the cell may place the wrong amino acid in the sequence. Since each amino acid possesses unique chemical properties, even a single misplaced one can reshape the entire protein, twisting its form and disrupting its function. Thus, a single change in the life-script can determine whether a protein performs its duty… or fails, bringing illness.</p>
                                 <p className="indent-8">In the case of Galactosemia, scholars of the Academy have discovered that certain changes within the GALT gene cause the disorder, while others do not. Seven such mutations have been recorded in the Royal Archives and are presented in Table 1 below. This table lists the codon change caused by each mutation and indicates whether it is known to bring about the affliction.</p>
-                                <p className="indent-8">Your charge from the Empress is to complete the missing sections of Table 1 by deciphering how each mutation alters the GALT protein’s structure and behavior.</p>
                                 <p>&nbsp;</p>
                                 <h3 style={{ textAlign: 'center', fontSize: '1.5rem' }} className="font-bold">Royal Research Procedure</h3>
+                                <p>&nbsp;</p>
                                 <ol className="list-decimal list-inside space-y-2 indent-8">
-                                <p>&nbsp;</p>    
                                     <li>Consult the Codon Chart shown below to determine the amino acid change created by each mutation in Table 1. (Table 1 is located below the codon chart)</li>
                                     <li>Record your findings within Table 1, then proceed to answer the Part I Follow-Up Questions in the spaces below the table.</li>
-                                    </ol>
-                                    
+                                </ol>
                                 
                                 <div className="my-6">
                                   <Image src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/2025-09-07T03%3A35%3A07_84193%2FGenetic-Code-01-1-1024x906.png?alt=media&token=cc08dbec-2d8f-4440-8940-4a99a095c8cc" alt="Genetic Code" width={1024} height={906} className="w-full h-auto" />
+                                  <p className="text-sm text-center text-muted-foreground">Table 1. The Recorded Mutations of the GALT Gene</p>
                                 </div>
-                                <p className="text-sm text-center text-muted-foreground">Table 1. The Recorded Mutations of the GALT Gene</p>
 
                                 <div className="my-6 overflow-x-auto">
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead className="font-bold w-[5%]"></TableHead>
-                                                <TableHead className="font-bold w-[20%]">Description of Mutation</TableHead>
-                                                <TableHead className="font-bold w-[20%]">Codon Change</TableHead>
+                                                <TableHead className="font-bold w-[25%]">Description of Mutation</TableHead>
+                                                <TableHead className="font-bold w-[15%]">Codon Change</TableHead>
                                                 <TableHead className="font-bold w-[15%]">Amino Acid Change</TableHead>
-                                                <TableHead className="font-bold w-[20%]">Effect of Amino Acid Change</TableHead>
+                                                <TableHead className="font-bold w-[15%]">Effect of Amino Acid Change</TableHead>
                                                 <TableHead className="font-bold w-[10%]">Causes Galactosemia?</TableHead>
                                             </TableRow>
                                         </TableHeader>
@@ -137,7 +138,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>1</TableCell>
                                                 <TableCell>C replaced with A at position 184</TableCell>
                                                 <TableCell>CTG → ATG</TableCell>
-                                                <TableCell>L → M</TableCell>
+                                                <TableCell>L →  M</TableCell>
                                                 <TableCell><Textarea /></TableCell>
                                                 <TableCell>No</TableCell>
                                             </TableRow>
@@ -278,6 +279,9 @@ export default function MutationsLabPage() {
                                 </ol>
                             </div>
                         </CardContent>
+                        <CardFooter>
+                            <Button onClick={() => window.print()}>Save as PDF</Button>
+                        </CardFooter>
                     </Card>
                 </div>
             </main>
