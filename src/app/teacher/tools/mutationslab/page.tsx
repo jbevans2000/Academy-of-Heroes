@@ -102,10 +102,10 @@ export default function MutationsLabPage() {
                                             <TableRow>
                                                 <TableHead className="font-bold w-[5%]"></TableHead>
                                                 <TableHead className="font-bold w-[25%]">Description of Mutation</TableHead>
-                                                <TableHead className="font-bold w-[30%]">Codon Change</TableHead>
-                                                <TableHead className="font-bold w-[20%]">Amino Acid Change</TableHead>
-                                                <TableHead className="font-bold w-[20%]">Effect of Amino Acid Change</TableHead>
-                                                <TableHead className="font-bold w-[5%]">Causes Galactosemia?</TableHead>
+                                                <TableHead className="font-bold w-[15%]">Codon Change</TableHead>
+                                                <TableHead className="font-bold w-[10%]">Amino Acid Change</TableHead>
+                                                <TableHead className="font-bold w-[30%]">Effect of Amino Acid Change</TableHead>
+                                                <TableHead className="font-bold w-[15%]">Causes Galactosemia?</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -113,7 +113,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>1</TableCell>
                                                 <TableCell>C replaced with A at position 184</TableCell>
                                                 <TableCell>CTG → ATG</TableCell>
-                                                <TableCell>L →  M</TableCell>
+                                                <TableCell>L → M</TableCell>
                                                 <TableCell>Leucine replaced with Methionine.</TableCell>
                                                 <TableCell>No</TableCell>
                                             </TableRow>
@@ -168,6 +168,22 @@ export default function MutationsLabPage() {
                                         </TableBody>
                                     </Table>
                                 </div>
+
+                                <h3 className="text-2xl font-bold text-center">Part 1 - Questions</h3>
+                                <ol className="list-decimal list-inside space-y-4">
+                                    <li>
+                                        What do the mutations that cause galactosemia have in common?
+                                        <Textarea placeholder="Your answer here..." className="mt-2" />
+                                    </li>
+                                    <li>
+                                        There are two different types of mutations in the table that do not result in galactosemia. Describe these types. How are they similar, and how are they  different?
+                                        <Textarea placeholder="Your answer here..." className="mt-2" />
+                                    </li>
+                                    <li>
+                                        Explain in your own words why only certain mutations in the  GALT  gene cause  galactosemia. Be sure to include informa on about how different muta ons affect  the func on of the GALT protein.
+                                        <Textarea placeholder="Your answer here..." className="mt-2" />
+                                    </li>
+                                </ol>
                             </div>
                         </CardContent>
                     </Card>
