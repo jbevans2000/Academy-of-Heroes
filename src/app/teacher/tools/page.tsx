@@ -81,15 +81,14 @@ const tools = [
     }
 ];
 
-const geneticsTool = {
-    title: 'Dragon Genetics Lab',
-    description: 'An interactive genetics activity about dominant and recessive traits.',
+const mutationsLabTool = {
+    title: 'Mutations Lab',
+    description: 'An interactive genetics activity about mutations.',
     icon: <Dna className="h-10 w-10 text-primary" />,
-    path: '/teacher/tools/genetics-lab',
+    path: '/public/mutationslab',
     disabled: false,
     bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Oct%2012%2C%202025%2C%2004_56_41%20AM.png?alt=media&token=61af9a61-e503-4bd8-a22b-ada8d5d085d2'
 };
-
 
 export default function ClassroomToolsPage() {
     const router = useRouter();
@@ -102,7 +101,7 @@ export default function ClassroomToolsPage() {
         return () => unsubscribe();
     }, []);
 
-    const ToolCard = ({ tool }: { tool: (typeof tools[0] & { editPath?: string }) | typeof geneticsTool & { disabled?: boolean } }) => (
+    const ToolCard = ({ tool }: { tool: (typeof tools[0] & { editPath?: string }) | typeof mutationsLabTool & { disabled?: boolean } }) => (
         <Card className="relative flex flex-col justify-between h-64 p-6 rounded-lg overflow-hidden border shadow-sm bg-card transition-transform hover:scale-105 group">
             <div className="absolute inset-0">
                 <Image
@@ -154,7 +153,7 @@ export default function ClassroomToolsPage() {
                 <div className="max-w-5xl mx-auto space-y-6">
                     <Button variant="outline" onClick={() => router.push('/teacher/dashboard')} className="bg-background/80 hover:bg-background/90">
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Podium
+                        Back to Dais
                     </Button>
 
                     <div className="p-6 rounded-lg bg-background/80 backdrop-blur-sm">
@@ -171,7 +170,7 @@ export default function ClassroomToolsPage() {
                            <ToolCard key={index} tool={tool} />
                         ))}
                          {user?.email === 'jevans@nca.connectionsacademy.org' && (
-                            <ToolCard tool={geneticsTool} />
+                            <ToolCard tool={mutationsLabTool} />
                         )}
                     </div>
                 </div>
