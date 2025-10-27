@@ -113,9 +113,9 @@ export default function MutationsLabPage() {
                                                 <TableCell>1</TableCell>
                                                 <TableCell>C replaced with A at position 184</TableCell>
                                                 <TableCell>CTG → ATG</TableCell>
-                                                <TableCell>L → M</TableCell>
+                                                <TableCell>L →  M</TableCell>
                                                 <TableCell>Leucine replaced with Methionine.</TableCell>
-                                                <TableCell>...</TableCell>
+                                                <TableCell>No</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell>2</TableCell>
@@ -123,7 +123,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>CCT → CCA</TableCell>
                                                 <TableCell><div className="flex items-center gap-2">S →<Input className="w-12" maxLength={1} /></div></TableCell>
                                                 <TableCell><Input /></TableCell>
-                                                <TableCell>...</TableCell>
+                                                <TableCell>Yes</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell>3</TableCell>
@@ -131,7 +131,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>CCT → CCA</TableCell>
                                                 <TableCell><div className="flex items-center gap-2">P →<Input className="w-12" maxLength={1} /></div></TableCell>
                                                 <TableCell><Input /></TableCell>
-                                                <TableCell>...</TableCell>
+                                                <TableCell>No</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell>4</TableCell>
@@ -139,7 +139,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>CAG → CGG</TableCell>
                                                 <TableCell><div className="flex items-center gap-2">Q →<Input className="w-12" maxLength={1} /></div></TableCell>
                                                 <TableCell><Input /></TableCell>
-                                                <TableCell><Input /></TableCell>
+                                                <TableCell>Yes</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell>5</TableCell>
@@ -147,7 +147,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>CTA → GTA</TableCell>
                                                 <TableCell><div className="flex items-center gap-2">L →<Input className="w-12" maxLength={1} /></div></TableCell>
                                                 <TableCell><Input /></TableCell>
-                                                <TableCell><Input /></TableCell>
+                                                <TableCell>No</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell>6</TableCell>
@@ -155,7 +155,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>AAG → AAT</TableCell>
                                                 <TableCell><div className="flex items-center gap-2">K →<Input className="w-12" maxLength={1} /></div></TableCell>
                                                 <TableCell><Input /></TableCell>
-                                                <TableCell><Input /></TableCell>
+                                                <TableCell>Yes</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell>7</TableCell>
@@ -163,7 +163,7 @@ export default function MutationsLabPage() {
                                                 <TableCell>ACG → ACA</TableCell>
                                                 <TableCell><div className="flex items-center gap-2">T →<Input className="w-12" maxLength={1} /></div></TableCell>
                                                 <TableCell><Input /></TableCell>
-                                                <TableCell><Input /></TableCell>
+                                                <TableCell>No</TableCell>
                                             </TableRow>
                                         </TableBody>
                                     </Table>
