@@ -39,7 +39,7 @@ export default function MutationsLabPage() {
                                 <hr className="my-6" />
 
                                 <h3 className="text-2xl font-bold text-center">The Challenge</h3>
-                                <hr className="my-2" />
+                                <br/>
                                 <p className="indent-8">You have been summoned by decree of Her Radiant Majesty, the Empress of Luminaria, to assist the Royal Academy of Biological Sciences in a matter of grave importance. Strange ailments have begun to appear among the citizens of the realm — not curses of Mortarian’s dark magic, but afflictions written within the very code of life itself.</p>
                                 <p className="indent-8">Imagine learning that your own life-codem the DNA — the sequences of your lineage — contain a subtle mutation that could one day bring illness. Yet imagine also that, by uncovering such mutations early, the Royal Healers could intervene and prevent the malady from taking hold.</p>
                                 <p className="indent-8">Throughout the realm, scholars have found that certain genetic disorders — illnesses caused by small errors in the code of life — can be detected early enough to protect and even save lives.</p>
@@ -136,7 +136,7 @@ export default function MutationsLabPage() {
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell>3</TableCell>
-                                                <TableCell>...</TableCell>
+                                                <TableCell>T replaced with A at position 498</TableCell>
                                                 <TableCell>...</TableCell>
                                                 <TableCell>...</TableCell>
                                                 <TableCell><Input /></TableCell>
