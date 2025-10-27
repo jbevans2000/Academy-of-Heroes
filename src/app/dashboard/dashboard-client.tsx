@@ -289,30 +289,24 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                     <BookOpen className="mr-4 h-8 w-8" />
                     {isTrainingDone ? 'Training Complete for Today' : 'Daily Training'}
                 </Button>
-                <Link href="/dashboard/missions" passHref className="w-full">
-                    <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90">
-                        <Star className="mr-4 h-8 w-8" />
-                        Special Missions
-                    </Button>
-                </Link>
-                <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleReadyForBattle}>
-                    <Sparkles className="mr-4 h-8 w-8" />
-                    Ready for Battle
-                </Button>
                 <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setIsChallengeDialogOpen(true)}>
                     <Swords className="mr-4 h-8 w-8" />
                     Training Grounds
                 </Button>
+                <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleReadyForBattle}>
+                    <Sparkles className="mr-4 h-8 w-8" />
+                    Ready for Battle
+                </Button>
+                <Link href="/dashboard/songs-and-stories" passHref className="w-full">
+                    <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90">
+                        <BookHeart className="mr-4 h-8 w-8" />
+                        Songs and Stories
+                    </Button>
+                </Link>
                  <Link href="/dashboard/forge" passHref className="w-full">
                     <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90">
                         <Hammer className="mr-4 h-8 w-8" />
                         The Forge
-                    </Button>
-                </Link>
-                <Link href="/dashboard/songs-and-stories" passHref className="w-full col-span-2">
-                    <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90">
-                        <BookHeart className="mr-4 h-8 w-8" />
-                        Songs and Stories
                     </Button>
                 </Link>
                 <Button size="lg" className="col-span-2 w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleCheckCompany} disabled={isLoadingCompany}>
@@ -372,6 +366,17 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                           </div>
                       </div>
                   </Button>
+                  <Link href={`/dashboard/missions${isTeacherPreview ? teacherPreviewQuery : ''}`} passHref>
+                       <Button variant="outline" className="h-auto py-4 px-6 border-2 border-red-600 bg-white hover:bg-gray-100 text-gray-900">
+                          <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
+                              <Star className="h-12 w-12 text-red-500" />
+                              <div>
+                                  <h3 className="text-xl font-bold">Special Missions</h3>
+                                  <p className="text-muted-foreground">View your assignments.</p>
+                              </div>
+                          </div>
+                      </Button>
+                  </Link>
               </div>
           </TooltipProvider>
         </div>
