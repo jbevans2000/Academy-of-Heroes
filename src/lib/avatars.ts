@@ -146,7 +146,16 @@ export const avatarData: ClassAvatarData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2013%20-%20Stormwatcher%20(1).jpg?alt=media&token=f0d2311a-ac1d-4a74-94f6-871bf3ca18f4',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2013%20-%20Stormwatcher%20(2).jpg?alt=media&token=5bfdf7a2-b9a6-4b58-a75f-c0d22e6d6148'
     ],
-    14: generatePlaceholders(8, 'celestial guardian'),
+    14: [
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2014%20-%20Frostwarden%20(5).png?alt=media&token=9f0b2860-af2c-47e4-8de5-273de9abcb1a',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2014%20-%20Frostwarden%20(1).png?alt=media&token=ed3134c0-bbcd-466d-8cee-a9d89154521e',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2014%20-%20Frostwarden%20(8).png?alt=media&token=a7c199ea-37a1-4945-9bc2-a96c06b802dc',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2014%20-%20Frostwarden%20(2).png?alt=media&token=ad09e713-a87d-43cd-a7b2-d75bc1e8996e',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2014%20-%20Frostwarden%20(6).png?alt=media&token=1f416032-bf42-449f-972e-2f51c74c0b24',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2014%20-%20Frostwarden%20(7).png?alt=media&token=cbbd38ea-7394-4d49-bd6d-bbe6aba8bedd',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2014%20-%20Frostwarden%20(4).png?alt=media&token=b3fa8096-11a1-452f-9300-8201fb7dff08',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2014%20-%20Frostwarden%20(3).png?alt=media&token=69b91b17-6377-4187-8bbe-dfe12852dc01'
+    ],
     15: generatePlaceholders(8, 'legendary guardian'),
     16: generatePlaceholders(8, 'mythic guardian'),
     17: generatePlaceholders(8, 'astral guardian'),
