@@ -156,7 +156,16 @@ export const avatarData: ClassAvatarData = {
         'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2014%20-%20Frostwarden%20(4).png?alt=media&token=b3fa8096-11a1-452f-9300-8201fb7dff08',
         'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2014%20-%20Frostwarden%20(3).png?alt=media&token=69b91b17-6377-4187-8bbe-dfe12852dc01'
     ],
-    15: generatePlaceholders(8, 'legendary guardian'),
+    15: [
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2015%20-%20Aegis%20of%20Dawn%20(5).png?alt=media&token=db805869-c78e-40a2-ae5b-88953e863b49',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2015%20-%20Aegis%20of%20Dawn%20(3).png?alt=media&token=235a2e91-9328-49a6-92cc-bcd63c25ac7f',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2015%20-%20Aegis%20of%20Dawn%20(4).png?alt=media&token=860b9e1a-0cc6-42e4-a32d-a38441f87aee',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2015%20-%20Aegis%20of%20Dawn%20(2).png?alt=media&token=e2ebf704-d653-418a-9162-429adc7a5604',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2015%20-%20Aegis%20of%20Dawn%20(1).png?alt=media&token=31788476-a39a-473d-9882-61c8a4c9772a',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2015%20-%20Aegis%20of%20Dawn%20(8).png?alt=media&token=f7272ffc-9830-4cc7-8e6d-7bbdde4e5ab5',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2015%20-%20Aegis%20of%20Dawn%20(7).png?alt=media&token=5440edc1-9ce1-493a-8c64-b3003e0a4102',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2015%20-%20Aegis%20of%20Dawn%20(6).png?alt=media&token=2e90a2a6-3ccb-43dc-ba2f-d8fe079686e6'
+    ],
     16: generatePlaceholders(8, 'mythic guardian'),
     17: generatePlaceholders(8, 'astral guardian'),
     18: generatePlaceholders(8, 'sun guardian'),
