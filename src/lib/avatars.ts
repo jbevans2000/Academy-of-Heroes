@@ -136,7 +136,16 @@ export const avatarData: ClassAvatarData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2012%20-%20Sentinel%20of%20the%20Emberwatch%20(7).png?alt=media&token=92e3e6e2-6f7f-40f0-89f5-8707415b2cd5',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2Fenvato-labs-image-edit%20(4).png?alt=media&token=fba6300d-3ce2-4eff-bc3f-5d365b0dce04'
     ],
-    13: generatePlaceholders(8, 'ancient guardian'),
+    13: [
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2013%20-%20Stormwatcher%20(5).png?alt=media&token=cb34b26a-d2a6-4555-936b-f3721c38d62c',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2013%20-%20Stormwatcher%20(1).png?alt=media&token=acab65c2-6f22-4bce-9c1c-ee93dc47d649',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2013%20-%20Stormwatcher%20(6).png?alt=media&token=28fdd23c-0dcc-4d3e-a6b1-3d0deb003c75',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2013%20-%20Stormwatcher%20(2).png?alt=media&token=0ebbef70-f785-403c-9dc8-955fa052de3c',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2013%20-%20Stormwatcher%20(3).png?alt=media&token=1d087c05-6b21-4e49-b840-5b854914c915',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2013%20-%20Stormwatcher%20(4).png?alt=media&token=44c96cfa-fa52-49d3-a7a0-8c55b3ca4bda',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2013%20-%20Stormwatcher%20(1).jpg?alt=media&token=f0d2311a-ac1d-4a74-94f6-871bf3ca18f4',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2013%20-%20Stormwatcher%20(2).jpg?alt=media&token=5bfdf7a2-b9a6-4b58-a75f-c0d22e6d6148'
+    ],
     14: generatePlaceholders(8, 'celestial guardian'),
     15: generatePlaceholders(8, 'legendary guardian'),
     16: generatePlaceholders(8, 'mythic guardian'),
