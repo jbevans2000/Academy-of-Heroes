@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowLeft, Dna, Sparkles, Loader2, Download } from 'lucide-react';
+import { Dna, Sparkles, Loader2, Download } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -422,12 +422,6 @@ function GeneticsLabContent() {
 
     const mainContent = (
         <div ref={contentRef} className="max-w-6xl mx-auto space-y-6 bg-white p-8">
-            {!isEmbed && (
-                 <Button variant="outline" onClick={() => router.back()} className="mb-4">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back
-                </Button>
-            )}
             <Card className="text-center">
                 <CardHeader>
                     <CardTitle className="text-3xl font-headline flex items-center justify-center gap-4"><Dna className="h-8 w-8 text-primary"/>Dragon Genetics</CardTitle>
@@ -705,7 +699,6 @@ function GeneticsLabContent() {
 
     return (
         <div className={isEmbed ? "" : "bg-muted/40 min-h-screen"}>
-            {!isEmbed && <div className="p-4 bg-background"><Button variant="outline" onClick={() => router.back()}><ArrowLeft className="mr-2 h-4 w-4" /> Back</Button></div>}
             <main className={isEmbed ? "" : "p-4 md:p-6 lg:p-8"}>
                 {mainContent}
             </main>
