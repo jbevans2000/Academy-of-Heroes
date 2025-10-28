@@ -126,7 +126,16 @@ export const avatarData: ClassAvatarData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%2011%20-%20Crystal%20Knight%20(5)-Photoroom.png?alt=media&token=3dfefcaa-1fb5-473f-b84c-b19e05655cec',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Transparent%2FGuardian%20Level%2011%20-%20Crystal%20Knight%20(7)-Photoroom.png?alt=media&token=2908e771-c3f3-4260-a288-d6b4e35f16cc'
     ],
-    12: generatePlaceholders(8, 'shadow guardian'),
+    12: [
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2012%20-%20Sentinel%20of%20the%20Emberwatch%20(1).png?alt=media&token=87a03630-4ebe-4d9b-9270-d51974603db9',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2012%20-%20Sentinel%20of%20the%20Emberwatch%20(2).png?alt=media&token=ad6ceb03-8943-4b2b-b4ea-f2d93d532c3c',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2012%20-%20Sentinel%20of%20the%20Emberwatch%20(3).png?alt=media&token=1bdbe72e-702b-42fa-803c-c99aca85d83b',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2012%20-%20Sentinel%20of%20the%20Emberwatch%20(4).png?alt=media&token=1871d539-8924-4577-992f-d32bab5a787c',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2012%20-%20Sentinel%20of%20the%20Emberwatch%20(5).png?alt=media&token=cd226024-cc4e-4506-a64e-032c251484b2',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2012%20-%20Sentinel%20of%20the%20Emberwatch%20(6).png?alt=media&token=2ca8b60a-045e-4d55-bd01-f8d3c924866d',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2012%20-%20Sentinel%20of%20the%20Emberwatch%20(7).png?alt=media&token=92e3e6e2-6f7f-40f0-89f5-8707415b2cd5',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2Fenvato-labs-image-edit%20(4).png?alt=media&token=fba6300d-3ce2-4eff-bc3f-5d365b0dce04'
+    ],
     13: generatePlaceholders(8, 'ancient guardian'),
     14: generatePlaceholders(8, 'celestial guardian'),
     15: generatePlaceholders(8, 'legendary guardian'),
@@ -245,7 +254,7 @@ export const avatarData: ClassAvatarData = {
         'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%2011%20-%20Irridescent%20Cleric%20%20(3)-Photoroom.png?alt=media&token=a0424a81-d372-4cd6-a79f-6dec28e4bf67',
         'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%2011%20-%20Irridescent%20Cleric%20%20(2)-Photoroom.png?alt=media&token=1c12b47f-2854-4a0b-8f0d-29ee737ef4f8',
         'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%2011%20-%20Irridescent%20Cleric%20%20(7)-Photoroom.png?alt=media&token=60c8edf6-9c4f-44b9-951e-93c56c999eec',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%2011%20-%20Irridescent%20Cleric%20%20(4)-Photoroom.png?alt=media&token=ccc01e39-7ccc-4be9-92a4-3bccc33770d0'
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%2011%20-%20Irridescent%20Cleric%20%20(4)-Photoroom.png?alt=media&token=ccc01e39-7ccc-4be9-92a4-3bccc33770d0'
     ],
     12: generatePlaceholders(8, 'shadow healer'),
     13: generatePlaceholders(8, 'ancient healer'),

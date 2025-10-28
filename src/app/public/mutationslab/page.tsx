@@ -29,13 +29,23 @@ export default function MutationsLabPage() {
                             <CardTitle className="text-2xl font-bold mt-2">Royal Commission Activity Guide</CardTitle>
                             <CardDescription className="text-lg font-headline">The Empress’s Scientific Inquiry: Mutations Across Luminaria</CardDescription>
                         </CardHeader>
+                        <CardContent>
+    <div className="relative w-full aspect-[2/1] mb-6">
+        <Image
+            src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/2025-09-07T03%3A35%3A07_84193%2FChatGPT%20Image%20Oct%2027%2C%202025%2C%2007_28_13%20PM.png?alt=media&token=c70d92a3-35a5-45be-9868-5292a4356fba"
+            alt="A collage of mutated fantasy creatures"
+            layout="fill"
+            className="object-cover rounded-md"
+        />
+    </div>
+</CardContent>
                         <CardContent className="space-y-6">
                             <div className="prose max-w-none">
                                 
                                 <h3 className="text-2xl font-bold text-center">The Challenge</h3>
                                 <p>&nbsp;</p>
-                                <p className="indent-8">You have been summoned by decree of Her Radiant Majesty, the Empress of Luminaria, to assist the Royal Academy of Biological Sciences in a matter of grave importance. Strange ailments have begun to appear among the citizens of the realm — not curses of Mortarian’s dark magic, but afflictions written within the very code of life itself.</p>
-                                <p className="indent-8">Imagine learning that your own life-codem the DNA — the sequences of your lineage — contain a subtle mutation that could one day bring illness. Yet imagine also that, by uncovering such mutations early, the Royal Healers could intervene and prevent the malady from taking hold.</p>
+                                <p className="indent-8">You have been summoned by decree of Her Radiant Majesty, the Empress of Luminaria, to assist the Royal Academy of Biological Sciences in a matter of grave importance. Ailments have begun to appear among the citizens of the realm — not curses of Mortarian’s dark magic, but afflictions written within the very code of life itself.</p>
+                                <p className="indent-8">Imagine learning that someone's life-code - the DNA — the sequence of lineage — contains a subtle mutation that could one day bring illness. Yet imagine also that, by uncovering such mutations early, the Royal Healers could intervene and prevent the malady from taking hold.</p>
                                 <p className="indent-8">Throughout the realm, scholars have found that certain genetic disorders — illnesses caused by small errors in the code of life — can be detected early enough to protect and even save lives.</p>
                                 <p className="indent-8">In this investigation, you will examine one such condition known in the royal medical records as Galactosemia. Guided by real genetic data preserved in the archives, you will uncover why some mutations within the GALT gene cause this disorder, while others do not. You will also step into the role of a Royal Physician, tasked with screening newborn citizens of Luminaria for signs of this condition.</p>
                                 
