@@ -414,7 +414,16 @@ export const avatarData: ClassAvatarData = {
         'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2012%20-%20Tempest%20Arcanist%20(5).png?alt=media&token=d54ae4f7-e149-4bae-9938-55d9ccc90fcd',
         'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2012%20-%20Tempest%20Arcanist%20(4).png?alt=media&token=9f43b944-6bb7-42ab-a661-eae7b728707a'
     ],
-    13: generatePlaceholders(8, 'ancient mage'),
+    13: [
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(1).jpg?alt=media&token=8f3d0590-e55d-4a2d-890c-dd8800d89be2',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(2).jpg?alt=media&token=8d5afdda-9236-46a8-9b9d-36eb7103e7dc',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(1).png?alt=media&token=3d8e7669-1b80-4786-830b-9e26cdb169c2',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(6).png?alt=media&token=6cc511df-ce7d-4334-8010-6d8f3bf4643f',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(2).png?alt=media&token=d2835256-0fa2-4f8d-a4de-398c008e39f6',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(5).png?alt=media&token=91942677-4114-402f-ac2c-4a417f6c088e',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(3).png?alt=media&token=3677da8f-1e32-4f36-b271-b922a18869c4',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(4).png?alt=media&token=ff460c4b-7832-4a5e-990f-5f5868cdb2b3'
+    ],
     14: generatePlaceholders(8, 'celestial mage'),
     15: generatePlaceholders(8, 'legendary mage'),
     16: generatePlaceholders(8, 'mythic mage'),
