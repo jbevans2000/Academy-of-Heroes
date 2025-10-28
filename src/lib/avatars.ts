@@ -404,7 +404,16 @@ export const avatarData: ClassAvatarData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%2011%20-%20Aetherist%20(7).png?alt=media&token=dd65a127-5f78-4e2b-a4c7-be53cd205c6a',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%2011%20-%20Aetherist%20(1).png?alt=media&token=2a51c3a4-acfa-4901-8ba2-7794ac746983'
     ],
-    12: generatePlaceholders(8, 'shadow mage'),
+    12: [
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2012%20-%20Tempest%20Arcanist%20(1).jpg?alt=media&token=7dc60d64-c394-469b-96fc-569db803e89b',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2012%20-%20Tempest%20Arcanist%20(1).png?alt=media&token=61139b37-dd50-4371-9c56-fafe4ffe7e30',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2012%20-%20Tempest%20Arcanist%20(7).png?alt=media&token=b4503420-c190-4056-8b35-85276fe99812',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2012%20-%20Tempest%20Arcanist%20(6).png?alt=media&token=5c1e56e0-7b4e-4941-8a7a-c8cfa6499510',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2012%20-%20Tempest%20Arcanist%20(3).png?alt=media&token=29ada36a-b77c-4456-9339-fb51b0568f6d',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2012%20-%20Tempest%20Arcanist%20(2).png?alt=media&token=d6c82ade-55d2-4122-819f-15dd027a1aa6',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2012%20-%20Tempest%20Arcanist%20(5).png?alt=media&token=d54ae4f7-e149-4bae-9938-55d9ccc90fcd',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2012%20-%20Tempest%20Arcanist%20(4).png?alt=media&token=9f43b944-6bb7-42ab-a661-eae7b728707a'
+    ],
     13: generatePlaceholders(8, 'ancient mage'),
     14: generatePlaceholders(8, 'celestial mage'),
     15: generatePlaceholders(8, 'legendary mage'),
