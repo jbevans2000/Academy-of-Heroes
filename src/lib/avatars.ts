@@ -424,7 +424,16 @@ export const avatarData: ClassAvatarData = {
         'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(3).png?alt=media&token=3677da8f-1e32-4f36-b271-b922a18869c4',
         'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(4).png?alt=media&token=ff460c4b-7832-4a5e-990f-5f5868cdb2b3'
     ],
-    14: generatePlaceholders(8, 'celestial mage'),
+    14: [
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2014%20-%20Ecliptic%20Invoker%20(1).jpg?alt=media&token=c7d99fd3-851b-45ed-a4e2-93c10c6d263e',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2014%20-%20Ecliptic%20Invoker%20(1).png?alt=media&token=3956cadd-d958-464a-ab51-c2b8f3de675a',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2014%20-%20Ecliptic%20Invoker%20(2).png?alt=media&token=caf84830-d959-4b52-938b-63d5f883017b',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2014%20-%20Ecliptic%20Invoker%20(5).png?alt=media&token=735c46ce-59f1-4679-a8e6-94bff1c3801e',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2014%20-%20Ecliptic%20Invoker%20(6).png?alt=media&token=9dc53088-2194-41a2-96da-f0d6eb36ddfe',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2014%20-%20Ecliptic%20Invoker%20(7).png?alt=media&token=e5002bf2-4b50-4c11-90d6-1da3ddc47b22',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2014%20-%20Ecliptic%20Invoker%20(3).png?alt=media&token=b13f34a8-54c1-43f1-8861-5491bab54d2c',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2014%20-%20Ecliptic%20Invoker%20(4).png?alt=media&token=03d0d938-4d22-4ab6-ac9e-e4a396ed9ed9'
+    ],
     15: generatePlaceholders(8, 'legendary mage'),
     16: generatePlaceholders(8, 'mythic mage'),
     17: generatePlaceholders(8, 'astral mage'),
