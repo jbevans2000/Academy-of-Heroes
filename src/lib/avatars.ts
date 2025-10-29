@@ -147,14 +147,14 @@ export const avatarData: ClassAvatarData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2013%20-%20Stormwatcher%20(2).jpg?alt=media&token=5bfdf7a2-b9a6-4b58-a75f-c0d22e6d6148'
     ],
     14: [
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2014%20-%20Frostwarden%20(5).png?alt=media&token=9f0b2860-af2c-47e4-8de5-273de9abcb1a',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2014%20-%20Frostwarden%20(1).png?alt=media&token=ed3134c0-bbcd-466d-8cee-a9d89154521e',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2014%20-%20Frostwarden%20(8).png?alt=media&token=a7c199ea-37a1-4945-9bc2-a96c06b802dc',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2014%20-%20Frostwarden%20(2).png?alt=media&token=ad09e713-a87d-43cd-a7b2-d75bc1e8996e',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2014%20-%20Frostwarden%20(6).png?alt=media&token=1f416032-bf42-449f-972e-2f51c74c0b24',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2014%20-%20Frostwarden%20(7).png?alt=media&token=cbbd38ea-7394-4d49-bd6d-bbe6aba8bedd',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2014%20-%20Frostwarden%20(4).png?alt=media&token=b3fa8096-11a1-452f-9300-8201fb7dff08',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2014%20-%20Frostwarden%20(3).png?alt=media&token=69b91b17-6377-4187-8bbe-dfe12852dc01'
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2014%20-%20Frostwarden%20(5).png?alt=media&token=9f0b2860-af2c-47e4-8de5-273de9abcb1a',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2014%20-%20Frostwarden%20(1).png?alt=media&token=ed3134c0-bbcd-466d-8cee-a9d89154521e',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2014%20-%20Frostwarden%20(8).png?alt=media&token=a7c199ea-37a1-4945-9bc2-a96c06b802dc',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2014%20-%20Frostwarden%20(2).png?alt=media&token=ad09e713-a87d-43cd-a7b2-d75bc1e8996e',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2014%20-%20Frostwarden%20(6).png?alt=media&token=1f416032-bf42-449f-972e-2f51c74c0b24',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2014%20-%20Frostwarden%20(7).png?alt=media&token=cbbd38ea-7394-4d49-bd6d-bbe6aba8bedd',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2014%20-%20Frostwarden%20(4).png?alt=media&token=b3fa8096-11a1-452f-9300-8201fb7dff08',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2014%20-%20Frostwarden%20(3).png?alt=media&token=69b91b17-6377-4187-8bbe-dfe12852dc01'
     ],
     15: [
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Avatar%20Images%2FGuardian%20Level%2015%20-%20Aegis%20of%20Dawn%20(5).png?alt=media&token=db805869-c78e-40a2-ae5b-88953e863b49',
@@ -405,24 +405,24 @@ export const avatarData: ClassAvatarData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FTransparent%2FMage%20Level%2011%20-%20Aetherist%20(1).png?alt=media&token=2a51c3a4-acfa-4901-8ba2-7794ac746983'
     ],
     12: [
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2012%20-%20Tempest%20Arcanist%20(1).jpg?alt=media&token=7dc60d64-c394-469b-96fc-569db803e89b',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2012%20-%20Tempest%20Arcanist%20(1).png?alt=media&token=61139b37-dd50-4371-9c56-fafe4ffe7e30',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2012%20-%20Tempest%20Arcanist%20(7).png?alt=media&token=b4503420-c190-4056-8b35-85276fe99812',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2012%20-%20Tempest%20Arcanist%20(6).png?alt=media&token=5c1e56e0-7b4e-4941-8a7a-c8cfa6499510',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2012%20-%20Tempest%20Arcanist%20(3).png?alt=media&token=29ada36a-b77c-4456-9339-fb51b0568f6d',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2012%20-%20Tempest%20Arcanist%20(2).png?alt=media&token=d6c82ade-55d2-4122-819f-15dd027a1aa6',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2012%20-%20Tempest%20Arcanist%20(5).png?alt=media&token=d54ae4f7-e149-4bae-9938-55d9ccc90fcd',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2012%20-%20Tempest%20Arcanist%20(4).png?alt=media&token=9f43b944-6bb7-42ab-a661-eae7b728707a'
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2012%20-%20Tempest%20Arcanist%20(1).jpg?alt=media&token=7dc60d64-c394-469b-96fc-569db803e89b',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2012%20-%20Tempest%20Arcanist%20(1).png?alt=media&token=61139b37-dd50-4371-9c56-fafe4ffe7e30',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2012%20-%20Tempest%20Arcanist%20(7).png?alt=media&token=b4503420-c190-4056-8b35-85276fe99812',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2012%20-%20Tempest%20Arcanist%20(6).png?alt=media&token=5c1e56e0-7b4e-4941-8a7a-c8cfa6499510',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2012%20-%20Tempest%20Arcanist%20(3).png?alt=media&token=29ada36a-b77c-4456-9339-fb51b0568f6d',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2012%20-%20Tempest%20Arcanist%20(2).png?alt=media&token=d6c82ade-55d2-4122-819f-15dd027a1aa6',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2012%20-%20Tempest%20Arcanist%20(5).png?alt=media&token=d54ae4f7-e149-4bae-9938-55d9ccc90fcd',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2012%20-%20Tempest%20Arcanist%20(4).png?alt=media&token=9f43b944-6bb7-42ab-a661-eae7b728707a'
     ],
     13: [
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(1).jpg?alt=media&token=8f3d0590-e55d-4a2d-890c-dd8800d89be2',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(2).jpg?alt=media&token=8d5afdda-9236-46a8-9b9d-36eb7103e7dc',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(1).png?alt=media&token=3d8e7669-1b80-4786-830b-9e26cdb169c2',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(6).png?alt=media&token=6cc511df-ce7d-4334-8010-6d8f3bf4643f',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(2).png?alt=media&token=d2835256-0fa2-4f8d-a4de-398c008e39f6',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(5).png?alt=media&token=91942677-4114-402f-ac2c-4a417f6c088e',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(3).png?alt=media&token=3677da8f-1e32-4f36-b271-b922a18869c4',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(4).png?alt=media&token=ff460c4b-7832-4a5e-990f-5f5868cdb2b3'
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(1).jpg?alt=media&token=8f3d0590-e55d-4a2d-890c-dd8800d89be2',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(2).jpg?alt=media&token=8d5afdda-9236-46a8-9b9d-36eb7103e7dc',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(1).png?alt=media&token=3d8e7669-1b80-4786-830b-9e26cdb169c2',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(6).png?alt=media&token=6cc511df-ce7d-4334-8010-6d8f3bf4643f',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(2).png?alt=media&token=d2835256-0fa2-4f8d-a4de-398c008e39f6',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(5).png?alt=media&token=91942677-4114-402f-ac2c-4a417f6c088e',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(3).png?alt=media&token=3677da8f-1e32-4f36-b271-b922a18869c4',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(4).png?alt=media&token=ff460c4b-7832-4a5e-990f-5f5868cdb2b3'
     ],
     14: [
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2014%20-%20Ecliptic%20Invoker%20(1).jpg?alt=media&token=c7d99fd3-851b-45ed-a4e2-93c10c6d263e',
@@ -434,7 +434,16 @@ export const avatarData: ClassAvatarData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2014%20-%20Ecliptic%20Invoker%20(3).png?alt=media&token=b13f34a8-54c1-43f1-8861-5491bab54d2c',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2014%20-%20Ecliptic%20Invoker%20(4).png?alt=media&token=03d0d938-4d22-4ab6-ac9e-e4a396ed9ed9'
     ],
-    15: generatePlaceholders(8, 'legendary mage'),
+    15: [
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2015-%20Void%20Savant%20(1).png?alt=media&token=88c646ad-817b-4f8d-9ede-b4418ba45cec',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2015-%20Void%20Savant%20(2).png?alt=media&token=adf4db32-79ed-465d-9ed6-152f9c10b467',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2015-%20Void%20Savant%20(3).png?alt=media&token=d475ba54-e931-434c-9cec-be0dcd5ea0f4',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2015-%20Void%20Savant%20(4).png?alt=media&token=abfb151c-d3e4-4c19-be46-036e6dc2b40f',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2015-%20Void%20Savant%20(5).png?alt=media&token=e6f9943b-3fc4-4ce7-b996-463f8468ea52',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2015-%20Void%20Savant%20(8).png?alt=media&token=312dfeb9-a745-4ae3-9cb6-493e3ed43d00',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2015-%20Void%20Savant%20(7).png?alt=media&token=b04d443d-113a-4008-9215-be5e3c6f2d2e',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2015-%20Void%20Savant%20(6).png?alt=media&token=ae40a926-4144-4fc8-83f9-0e82eba406f6',
+    ],
     16: generatePlaceholders(8, 'mythic mage'),
     17: generatePlaceholders(8, 'astral mage'),
     18: generatePlaceholders(8, 'sun mage'),
@@ -444,3 +453,4 @@ export const avatarData: ClassAvatarData = {
 };
 
     
+
