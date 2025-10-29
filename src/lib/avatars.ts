@@ -303,7 +303,16 @@ export const avatarData: ClassAvatarData = {
         'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2013%20-%20Druid%20of%20Renewal%20(3).png?alt=media&token=c6b38e35-e58b-4b90-83cb-c723e392421f',
         'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2013%20-%20Druid%20of%20Renewal%20(5).png?alt=media&token=4bb923f2-c7ee-436a-bfe3-47b0f0b17c36'
     ],
-    14: generatePlaceholders(8, 'celestial healer'),
+    14: [
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2014%20-SpiritBloom%20Sage%20(6).png?alt=media&token=b5c33f3c-30a2-46e7-9d36-0a69db89ff8d',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2014%20-SpiritBloom%20Sage%20(3).png?alt=media&token=1beee7c7-aea5-48f4-8472-83e5097d16f8',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2014%20-SpiritBloom%20Sage%20(7).png?alt=media&token=b5045b1e-4603-43a0-8a36-8033346ebb1f',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2014%20-SpiritBloom%20Sage%20(5).png?alt=media&token=1b486792-c118-4331-bb55-727b47ef869f',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2014%20-SpiritBloom%20Sage%20(1).png?alt=media&token=d3217979-29ad-4aeb-9d12-5d8286c65019',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2014%20-SpiritBloom%20Sage%20(8).png?alt=media&token=e8aceae1-6c3f-4d98-8f0f-dd2285f1096d',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2014%20-SpiritBloom%20Sage%20(2).png?alt=media&token=29805026-0121-4d19-85e8-349acb945922',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2014%20-SpiritBloom%20Sage%20(4).png?alt=media&token=16ba85f7-0ee8-4380-926f-524c8ed4273a',
+    ],
     15: generatePlaceholders(8, 'legendary healer'),
     16: generatePlaceholders(8, 'mythic healer'),
     17: generatePlaceholders(8, 'astral healer'),
@@ -442,16 +451,7 @@ export const avatarData: ClassAvatarData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(3).png?alt=media&token=3677da8f-1e32-4f36-b271-b922a18869c4',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2013%20-%20Aetherbound%20Adept%20(4).png?alt=media&token=ff460c4b-7832-4a5e-990f-5f5868cdb2b3'
     ],
-    14: [
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2014%20-%20Ecliptic%20Invoker%20(1).jpg?alt=media&token=c7d99fd3-851b-45ed-a4e2-93c10c6d263e',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2014%20-%20Ecliptic%20Invoker%20(1).png?alt=media&token=3956cadd-d958-464a-ab51-c2b8f3de675a',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2014%20-%20Ecliptic%20Invoker%20(2).png?alt=media&token=caf84830-d959-4b52-938b-63d5f883017b',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2014%20-%20Ecliptic%20Invoker%20(5).png?alt=media&token=735c46ce-59f1-4679-a8e6-94bff1c3801e',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2014%20-%20Ecliptic%20Invoker%20(6).png?alt=media&token=9dc53088-2194-41a2-96da-f0d6eb36ddfe',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2014%20-%20Ecliptic%20Invoker%20(7).png?alt=media&token=e5002bf2-4b50-4c11-90d6-1da3ddc47b22',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2014%20-%20Ecliptic%20Invoker%20(3).png?alt=media&token=b13f34a8-54c1-43f1-8861-5491bab54d2c',
-      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2014%20-%20Ecliptic%20Invoker%20(4).png?alt=media&token=03d0d938-4d22-4ab6-ac9e-e4a396ed9ed9'
-    ],
+    14: generatePlaceholders(8, 'ecliptic mage'),
     15: [
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2015-%20Void%20Savant%20(1).png?alt=media&token=88c646ad-817b-4f8d-9ede-b4418ba45cec',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2015-%20Void%20Savant%20(2).png?alt=media&token=adf4db32-79ed-465d-9ed6-152f9c10b467',
@@ -473,5 +473,7 @@ export const avatarData: ClassAvatarData = {
     
 
 
+
+    
 
     
