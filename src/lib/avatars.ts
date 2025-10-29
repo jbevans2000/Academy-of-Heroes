@@ -283,7 +283,16 @@ export const avatarData: ClassAvatarData = {
         'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%2011%20-%20Irridescent%20Cleric%20%20(7)-Photoroom.png?alt=media&token=60c8edf6-9c4f-44b9-951e-93c56c999eec',
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FTransparent%2FHealer%20Level%2011%20-%20Irridescent%20Cleric%20%20(4)-Photoroom.png?alt=media&token=ccc01e39-7ccc-4be9-92a4-3bccc33770d0'
     ],
-    12: generatePlaceholders(8, 'shadow healer'),
+    12: [
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2012%20-%20BloomWarden%20(4).png?alt=media&token=99e66710-dcee-4316-90ef-f7c7879f088c',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2012%20-%20BloomWarden%20(3).png?alt=media&token=10b2a2a0-a079-4ca7-ad1c-0efe10b906ff',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2012%20-%20BloomWarden%20(2).png?alt=media&token=e06c2243-0ca3-4604-89bf-092275411111',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2012%20-%20BloomWarden%20(5).png?alt=media&token=818eb945-6668-490d-a407-5fdf2b09cfeb',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2012%20-%20BloomWarden%20(1).png?alt=media&token=e439e5ce-1977-4d67-8ef6-d0977a181f74',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2012%20-%20BloomWarden%20(6).png?alt=media&token=a6ce21dd-ace7-4225-b982-2a1d60159775',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2012%20-%20BloomWarden%20(8).png?alt=media&token=040ffab6-e96e-4bf4-ac20-02bbc050c733',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2012%20-%20BloomWarden%20(7).png?alt=media&token=231482fb-f4b5-40d4-8024-b7d8bd58a0ff'
+    ],
     13: generatePlaceholders(8, 'ancient healer'),
     14: generatePlaceholders(8, 'celestial healer'),
     15: generatePlaceholders(8, 'legendary healer'),
@@ -435,14 +444,14 @@ export const avatarData: ClassAvatarData = {
       'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2014%20-%20Ecliptic%20Invoker%20(4).png?alt=media&token=03d0d938-4d22-4ab6-ac9e-e4a396ed9ed9'
     ],
     15: [
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2015-%20Void%20Savant%20(1).png?alt=media&token=88c646ad-817b-4f8d-9ede-b4418ba45cec',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2015-%20Void%20Savant%20(2).png?alt=media&token=adf4db32-79ed-465d-9ed6-152f9c10b467',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2015-%20Void%20Savant%20(3).png?alt=media&token=d475ba54-e931-434c-9cec-be0dcd5ea0f4',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2015-%20Void%20Savant%20(4).png?alt=media&token=abfb151c-d3e4-4c19-be46-036e6dc2b40f',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2015-%20Void%20Savant%20(5).png?alt=media&token=e6f9943b-3fc4-4ce7-b996-463f8468ea52',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2015-%20Void%20Savant%20(8).png?alt=media&token=312dfeb9-a745-4ae3-9cb6-493e3ed43d00',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2015-%20Void%20Savant%20(7).png?alt=media&token=b04d443d-113a-4008-9215-be5e3c6f2d2e',
-        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2015-%20Void%20Savant%20(6).png?alt=media&token=ae40a926-4144-4fc8-83f9-0e82eba406f6',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2015-%20Void%20Savant%20(1).png?alt=media&token=88c646ad-817b-4f8d-9ede-b4418ba45cec',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2015-%20Void%20Savant%20(2).png?alt=media&token=adf4db32-79ed-465d-9ed6-152f9c10b467',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2015-%20Void%20Savant%20(3).png?alt=media&token=d475ba54-e931-434c-9cec-be0dcd5ea0f4',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2015-%20Void%20Savant%20(4).png?alt=media&token=abfb151c-d3e4-4c19-be46-036e6dc2b40f',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2015-%20Void%20Savant%20(5).png?alt=media&token=e6f9943b-3fc4-4ce7-b996-463f8468ea52',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2015-%20Void%20Savant%20(8).png?alt=media&token=312dfeb9-a745-4ae3-9cb6-493e3ed43d00',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2015-%20Void%20Savant%20(7).png?alt=media&token=b04d443d-113a-4008-9215-be5e3c6f2d2e',
+      'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Mage%20Avatar%20Images%2FMage%20Level%2015-%20Void%20Savant%20(6).png?alt=media&token=ae40a926-4144-4fc8-83f9-0e82eba406f6'
     ],
     16: generatePlaceholders(8, 'mythic mage'),
     17: generatePlaceholders(8, 'astral mage'),
