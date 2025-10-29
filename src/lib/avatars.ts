@@ -293,7 +293,16 @@ export const avatarData: ClassAvatarData = {
         'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2012%20-%20BloomWarden%20(8).png?alt=media&token=040ffab6-e96e-4bf4-ac20-02bbc050c733',
         'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2012%20-%20BloomWarden%20(7).png?alt=media&token=231482fb-f4b5-40d4-8024-b7d8bd58a0ff'
     ],
-    13: generatePlaceholders(8, 'ancient healer'),
+    13: [
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2013%20-%20Druid%20of%20Renewal%20(7).png?alt=media&token=63db27dd-5a82-47dc-8eef-c9fa1d1ec57b',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2013%20-%20Druid%20of%20Renewal%20(4).png?alt=media&token=1f8deea9-0ea5-4fcb-b941-ea37c39e0aae',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2013%20-%20Druid%20of%20Renewal%20(8).png?alt=media&token=a11a4a46-9d81-4430-a9d9-98ae27457562',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2013%20-%20Druid%20of%20Renewal%20(1).png?alt=media&token=611a0118-4c46-4e5e-99f6-1c71dae30fc7',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2013%20-%20Druid%20of%20Renewal%20(2).png?alt=media&token=246a0236-d7dd-4de1-a373-701bfd91f7d9',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2013%20-%20Druid%20of%20Renewal%20(6).png?alt=media&token=62ddd063-3e7c-4bc3-a368-19767b78ab5a',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2013%20-%20Druid%20of%20Renewal%20(3).png?alt=media&token=c6b38e35-e58b-4b90-83cb-c723e392421f',
+        'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Healer%20Avatar%20Images%2FHealer%20Level%2013%20-%20Druid%20of%20Renewal%20(5).png?alt=media&token=4bb923f2-c7ee-436a-bfe3-47b0f0b17c36'
+    ],
     14: generatePlaceholders(8, 'celestial healer'),
     15: generatePlaceholders(8, 'legendary healer'),
     16: generatePlaceholders(8, 'mythic healer'),
@@ -463,3 +472,6 @@ export const avatarData: ClassAvatarData = {
 
     
 
+
+
+    
