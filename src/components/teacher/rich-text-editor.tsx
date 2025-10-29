@@ -77,7 +77,6 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
           'searchreplace',
           'table',
           'visualblocks',
-          'checklist',
           'paste',
           'image',
           'autoresize',
@@ -85,7 +84,7 @@ const RichTextEditor = forwardRef<TinyMCEEditor | null, RichTextEditorProps>(
 
         toolbar:
           'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | ' +
-          'link image media table | align lineheight | checklist numlist bullist indent outdent | ' +
+          'link image media table | align lineheight | numlist bullist indent outdent | ' +
           'emoticons charmap | removeformat',
 
         paste_as_text: false,
