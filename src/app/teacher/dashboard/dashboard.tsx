@@ -827,6 +827,10 @@ export default function Dashboard() {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start">
+                            <DropdownMenuItem onClick={() => router.push('/teacher/guild-hall')}>
+                                <Users className="mr-2 h-4 w-4" />
+                                <span>The Guild Hall (Chat)</span>
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => router.push('/teacher/quests')}>
                                 <BookOpen className="mr-2 h-4 w-4" />
                                 <span>The Quest Archives</span>

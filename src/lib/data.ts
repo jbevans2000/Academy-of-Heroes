@@ -1,4 +1,5 @@
 
+
 import type { AvatarLogEntry } from './avatar-log';
 
 export type ClassType = 'Guardian' | 'Healer' | 'Mage' | '';
@@ -27,6 +28,7 @@ export type Teacher = {
     className: string;
     hasUnreadAdminMessages?: boolean;
     lastSeenBroadcastTimestamp?: any;
+    isChatEnabled?: boolean;
 }
 
 export type Student = {

@@ -216,3 +216,36 @@ export async function clearMessageHistory(input: ClearMessageHistoryInput): Prom
     return { success: false, error: 'An unexpected error occurred while clearing the history.' };
   }
 }
+
+// New function for Guild Hall chat
+interface SendGuildHallMessageInput {
+    teacherUid: string;
+    senderUid: string;
+    senderName: string;
+    text: string;
+    isTeacher: boolean;
+    companyId?: string;
+}
+
+export async function sendGuildHallMessage(input: SendGuildHallMessageInput): Promise<ActionResponse> {
+    const { teacherUid, senderUid, senderName, text, isTeacher, companyId } = input;
+    if (!teacherUid || !senderUid || !text.trim()) {
+        return { success: false, error: 'Invalid input.' };
+    }
+    
+    try {
+        const messagesRef = collection(db, 'teachers', teacherUid, 'guildHallMessages');
+        await addDoc(messagesRef, {
+            senderUid,
+            senderName,
+            text,
+            isTeacher,
+            companyId: companyId || null,
+            timestamp: serverTimestamp(),
+        });
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error sending Guild Hall message:', error);
+        return { success: false, error: 'Failed to send message.' };
+    }
+}
