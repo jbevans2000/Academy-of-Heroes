@@ -7,23 +7,25 @@ import { logAvatarEvent, type LogEventSource } from '@/lib/avatar-log';
 import { handleLevelChange, MAX_LEVEL, XP_FOR_MAX_LEVEL } from '@/lib/game-mechanics';
 import type { Student } from '@/lib/data';
 
-interface AwardRewardsInput {
+interface UpdateStatsInput {
     teacherUid: string;
     studentUids: string[];
-    xp: number;
-    gold: number;
+    xp?: number;
+    gold?: number;
+    hp?: number;
+    mp?: number;
     reason: string;
 }
 
-interface AwardRewardsResponse {
+interface UpdateStatsResponse {
     success: boolean;
     error?: string;
     studentCount?: number;
     maxLevelCount?: number;
 }
 
-export async function awardRewards(input: AwardRewardsInput): Promise<AwardRewardsResponse> {
-    const { teacherUid, studentUids, xp, gold, reason } = input;
+export async function updateStudentStats(input: UpdateStatsInput): Promise<UpdateStatsResponse> {
+    const { teacherUid, studentUids, xp, gold, hp, mp, reason } = input;
     if (!teacherUid || studentUids.length === 0) {
         return { success: false, error: 'Invalid input provided.' };
     }
@@ -45,7 +47,7 @@ export async function awardRewards(input: AwardRewardsInput): Promise<AwardRewar
                 let updates: Partial<Student> = {};
 
                 // Handle XP and Leveling
-                if (xp !== 0) {
+                if (xp) {
                     const currentLevel = studentData.level || 1;
                     if (currentLevel >= MAX_LEVEL && xp > 0) {
                         studentsAtMaxLevel++;
@@ -60,20 +62,35 @@ export async function awardRewards(input: AwardRewardsInput): Promise<AwardRewar
                 }
 
                 // Handle Gold
-                if (gold !== 0) {
+                if (gold) {
                     const currentGold = studentData.gold || 0;
                     updates.gold = Math.max(0, currentGold + gold);
                 }
+                
+                // Handle HP
+                if (hp) {
+                    const currentHp = studentData.hp || 0;
+                    updates.hp = Math.max(0, Math.min(studentData.maxHp, currentHp + hp));
+                }
+
+                // Handle MP
+                if (mp) {
+                    const currentMp = studentData.mp || 0;
+                    updates.mp = Math.max(0, Math.min(studentData.maxMp, currentMp + mp));
+                }
+
 
                 if (Object.keys(updates).length > 0) {
                     batch.update(studentRef, updates);
                 }
                 
-                // Always log the event, even if only one stat changed or if at max level
+                // Always log the event
                 await logAvatarEvent(teacherUid, uid, {
                     source: 'Teacher Award',
-                    xp: (studentData.level || 1) >= MAX_LEVEL && xp > 0 ? 0 : xp, // Don't log XP gain if at max level
-                    gold: gold,
+                    xp: (xp && studentData.level < MAX_LEVEL) ? xp : undefined,
+                    gold: gold || undefined,
+                    hp: hp || undefined,
+                    mp: mp || undefined,
                     reason: reason,
                 });
             }
@@ -88,8 +105,8 @@ export async function awardRewards(input: AwardRewardsInput): Promise<AwardRewar
         };
 
     } catch (error: any) {
-        console.error("Error in awardRewards flow:", error);
-        return { success: false, error: error.message || "Failed to bestow rewards." };
+        console.error("Error in updateStudentStats flow:", error);
+        return { success: false, error: error.message || "Failed to update stats." };
     }
 }
 

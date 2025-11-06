@@ -18,6 +18,8 @@ export interface AvatarLogEntry {
   source: LogEventSource;
   xp?: number;
   gold?: number;
+  hp?: number; // New
+  mp?: number; // New
   reason?: string; // Optional message, especially for teacher awards
 }
 
