@@ -60,8 +60,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { getGlobalSettings } from '@/ai/flows/manage-settings';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { awardRewards } from '@/ai/flows/manage-student-stats';
+import { updateStudentStats } from '@/ai/flows/manage-student-stats';
 import { TeacherNotesDialog } from '@/components/teacher/teacher-notes-dialog';
+import { HpMpDialog } from '@/components/teacher/hp-mp-dialog';
 
 
 interface TeacherData {
@@ -98,11 +99,11 @@ export default function Dashboard() {
   const [xpAmount, setXpAmount] = useState<number | string>('');
   const [goldAmount, setGoldAmount] = useState<number | string>('');
   const [isAwarding, setIsAwarding] = useState(false);
-  const [isArchiving, setIsArchiving] = useState(false);
   const [isRewardsDialogOpen, setIsRewardsDialogOpen] = useState(false);
   const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false);
-  const [isArchiveConfirmOpen, setIsArchiveConfirmOpen] = useState(false);
   const [isQuestProgressOpen, setIsQuestProgressOpen] = useState(false);
+  const [isHpMpDialogOpen, setIsHpMpDialogOpen] = useState(false);
+  const [hpMpDialogMode, setHpMpDialogMode] = useState<'restore' | 'remove'>('restore');
   const [teacher, setTeacher] = useState<User | null>(null);
   const [teacherData, setTeacherData] = useState<TeacherData | null>(null);
   const [onlineUids, setOnlineUids] = useState<string[]>([]);
@@ -436,7 +437,7 @@ export default function Dashboard() {
       setIsAwarding(true);
       
       try {
-          const result = await awardRewards({
+          const result = await updateStudentStats({
               teacherUid: teacher!.uid,
               studentUids: selectedStudents,
               xp: xpValue,
@@ -473,34 +474,6 @@ export default function Dashboard() {
       }
   };
 
-
-  const handleArchiveStudents = async () => {
-    if (!teacher || selectedStudents.length === 0) return;
-    setIsArchiving(true);
-    try {
-      const uidsToArchive = selectedStudents.filter(uid => {
-          const student = students.find(s => s.uid === uid);
-          return student && !student.isArchived;
-      });
-
-      if (uidsToArchive.length === 0) {
-          toast({ description: "All selected students are already archived." });
-          return;
-      }
-      // Note: A backend function `archiveStudents` would be needed here, which is not defined in the provided files.
-      // This is a placeholder for the logic that would exist.
-      console.log("Archiving students:", uidsToArchive);
-      toast({ title: 'Students Archived', description: `${uidsToArchive.length} student(s) have been moved to the archives.` });
-
-      setSelectedStudents([]);
-    } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Archive Failed', description: error.message });
-    } finally {
-      setIsArchiving(false);
-      setIsArchiveConfirmOpen(false);
-    }
-  }
-  
   const copyClassCode = () => {
     if (teacherData?.classCode) {
         navigator.clipboard.writeText(teacherData.classCode);
@@ -886,57 +859,6 @@ export default function Dashboard() {
                                 <Wrench className="mr-2 h-4 w-4" />
                                 <span>The Guild Leader's Toolkit</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem 
-                                disabled={selectedStudents.length === 0}
-                                onSelect={(e) => {
-                                    e.preventDefault();
-                                    setIsQuestProgressOpen(true);
-                                }}
-                            >
-                                <BookOpen className="mr-2 h-4 w-4" />
-                                <span>Set Chapter Location for Selected</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-green-600 focus:bg-green-100 focus:text-green-800">
-                                        <Heart className="mr-2 h-4 w-4" />
-                                        <span>Restore All HP</span>
-                                    </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                        This will restore every student in your guild to their maximum HP.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleRestoreAll('hp')}>Confirm</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-blue-600 focus:bg-blue-100 focus:text-blue-800">
-                                        <ZapIcon className="mr-2 h-4 w-4" />
-                                        <span>Restore All MP</span>
-                                    </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                        This will restore every student in your guild to their maximum Magic Points.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleRestoreAll('mp')}>Confirm</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
                         </DropdownMenuContent>
                     </DropdownMenu>
                     
@@ -1030,13 +952,13 @@ export default function Dashboard() {
                             >
                                 All Companies
                             </DropdownMenuCheckboxItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuCheckboxItem
                                 checked={companyFilters.includes('freelancers')}
                                 onSelect={(e) => { e.preventDefault(); handleCompanyFilterChange('freelancers'); }}
                             >
                                 Freelancers
                             </DropdownMenuCheckboxItem>
-                            <DropdownMenuSeparator />
                             {companies.map(company => (
                                 <DropdownMenuCheckboxItem
                                     key={company.id}
@@ -1125,28 +1047,38 @@ export default function Dashboard() {
                     </DialogContent>
                     </Dialog>
 
-                    <AlertDialog open={isArchiveConfirmOpen} onOpenChange={setIsArchiveConfirmOpen}>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive" disabled={selectedStudents.length === 0}>
-                                <Archive className="mr-2 h-4 w-4" /> Archive Selected
+                    <HpMpDialog
+                        isOpen={isHpMpDialogOpen}
+                        onOpenChange={setIsHpMpDialogOpen}
+                        mode={hpMpDialogMode}
+                        selectedStudents={selectedStudents}
+                        teacherUid={teacher.uid}
+                        onSuccess={() => setSelectedStudents([])}
+                    />
+
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button disabled={selectedStudents.length === 0} className="bg-red-600 hover:bg-red-700 text-white border-black border">
+                                <HeartPulse className="mr-2 h-4 w-4" /> HP/MP Management
                             </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Archive Selected Students?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This will hide {selectedStudents.length} student(s) from the main dashboard. Their login will be disabled. This action can be undone from the "Archived Heroes" page in the Classroom tools menu. Are you sure?
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleArchiveStudents} disabled={isArchiving} className="bg-destructive hover:bg-destructive/90">
-                                    {isArchiving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                    Yes, Archive
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuItem onSelect={() => { setHpMpDialogMode('restore'); setIsHpMpDialogOpen(true); }}>
+                                Restore HP/MP to Selected
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => { setHpMpDialogMode('remove'); setIsHpMpDialogOpen(true); }}>
+                                Remove HP/MP from Selected
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                             <DropdownMenuItem onSelect={() => handleRestoreAll('hp')}>
+                                Restore All HP to Max
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleRestoreAll('mp')}>
+                                Restore All MP to Max
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
                     <TeacherMessageCenter 
                         teacher={teacher} 
                         students={students}
@@ -1321,3 +1253,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
+    
