@@ -8,7 +8,7 @@ import { AvatarDisplay } from "@/components/dashboard/avatar-display";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, Map, Swords, Sparkles, BookHeart, Gem, Package, Hammer, Briefcase, Loader2, Trophy, ScrollText, BookOpen, Star as StarIcon } from "lucide-react";
+import { User, Map, Swords, Sparkles, BookHeart, Gem, Package, Hammer, Briefcase, Loader2, Trophy, ScrollText, BookOpen, Star as StarIcon, Users } from "lucide-react";
 import { doc, updateDoc, collection, query, where, getDocs, onSnapshot, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -315,7 +315,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                         The Forge
                     </Button>
                 </Link>
-                <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleCheckCompany} disabled={isLoadingCompany}>
+                <Button size="lg" className="col-span-2 w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleCheckCompany} disabled={isLoadingCompany}>
                     {isLoadingCompany ? <Loader2 className="mr-4 h-8 w-8 animate-spin"/> : <Briefcase className="mr-4 h-8 w-8" />}
                     Check Company
                 </Button>
