@@ -22,6 +22,16 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
+const companyColors = [
+    'hsl(0, 72%, 51%)',   // Red
+    'hsl(217, 91%, 60%)', // Blue
+    'hsl(142, 71%, 45%)', // Green
+    'hsl(48, 96%, 53%)',  // Yellow
+    'hsl(262, 84%, 59%)', // Purple
+    'hsl(32, 95%, 55%)',  // Orange
+    'hsl(327, 82%, 55%)', // Pink
+    'hsl(180, 82%, 35%)', // Teal
+];
 
 const CompanyCard = ({ company, students, onEdit, onDelete, onDrop, onRemoveStudent }: {
     company: Company;
@@ -42,13 +52,13 @@ const CompanyCard = ({ company, students, onEdit, onDelete, onDrop, onRemoveStud
     };
 
     return (
-        <Card onDrop={handleDrop} onDragOver={handleDragOver}>
+        <Card onDrop={handleDrop} onDragOver={handleDragOver} style={{ borderColor: company.color, borderWidth: company.color ? '2px' : '1px' }}>
             <AccordionItem value={company.id} className="border-b-0">
                 <CardHeader className="flex flex-row items-center justify-between p-4">
                      <AccordionTrigger className="w-full justify-start p-0 hover:no-underline">
                         <div className="flex items-center gap-2">
                             {company.logoUrl && <Image src={company.logoUrl} alt={company.name} width={40} height={40} className="rounded-full object-cover" />}
-                            <CardTitle>{company.name} ({students.length})</CardTitle>
+                            <CardTitle style={{ color: company.color }}>{company.name} ({students.length})</CardTitle>
                         </div>
                     </AccordionTrigger>
                     <div className="flex gap-1 shrink-0 ml-4">
@@ -146,6 +156,7 @@ export default function CompaniesPage() {
     const [companyName, setCompanyName] = useState('');
     const [companyLogo, setCompanyLogo] = useState<File | null>(null);
     const [companyBackground, setCompanyBackground] = useState<File | null>(null);
+    const [companyColor, setCompanyColor] = useState<string>('');
     const [isSaving, setIsSaving] = useState(false);
     
     const [companyToDelete, setCompanyToDelete] = useState<string | null>(null);
@@ -186,12 +197,14 @@ export default function CompaniesPage() {
         setCompanyName('');
         setCompanyLogo(null);
         setCompanyBackground(null);
+        setCompanyColor('');
         setIsCompanyDialogOpen(true);
     };
 
     const openEditCompanyDialog = (company: Company) => {
         setEditingCompany(company);
         setCompanyName(company.name);
+        setCompanyColor(company.color || '');
         setCompanyLogo(null);
         setCompanyBackground(null);
         setIsCompanyDialogOpen(true);
@@ -253,7 +266,7 @@ export default function CompaniesPage() {
                 backgroundUrl = await uploadFile(companyBackground, `company-backgrounds/${teacher.uid}/${Date.now()}_${companyBackground.name}`);
             }
 
-            await saveCompanyData(logoUrl, backgroundUrl);
+            await saveCompanyData(logoUrl, backgroundUrl, companyColor);
             
         } catch (error) {
              console.error("Error saving company: ", error);
@@ -278,10 +291,10 @@ export default function CompaniesPage() {
         });
     }
     
-    const saveCompanyData = async (logoUrl: string, backgroundUrl: string) => {
+    const saveCompanyData = async (logoUrl: string, backgroundUrl: string, color: string) => {
         if (!teacher) return;
         try {
-            const companyData = { name: companyName, logoUrl, backgroundUrl };
+            const companyData = { name: companyName, logoUrl, backgroundUrl, color };
             if (editingCompany) {
                 const companyRef = doc(db, 'teachers', teacher.uid, 'companies', editingCompany.id);
                 await updateDoc(companyRef, companyData);
@@ -300,6 +313,7 @@ export default function CompaniesPage() {
             setCompanyLogo(null);
             setCompanyBackground(null);
             setCompanyName('');
+            setCompanyColor('');
         }
     }
 
@@ -495,6 +509,20 @@ export default function CompaniesPage() {
                             <div className="space-y-2">
                                 <Label htmlFor="company-name">Company Name</Label>
                                 <Input id="company-name" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="e.g., The Crimson Blades" />
+                            </div>
+                             <div className="space-y-2">
+                                <Label>Company Color</Label>
+                                <div className="flex flex-wrap gap-2">
+                                    {companyColors.map(color => (
+                                        <button
+                                            key={color}
+                                            type="button"
+                                            className={cn("w-8 h-8 rounded-full border-2 transition-transform hover:scale-110", companyColor === color ? 'ring-2 ring-offset-2 ring-black' : 'border-gray-200')}
+                                            style={{ backgroundColor: color }}
+                                            onClick={() => setCompanyColor(color)}
+                                        />
+                                    ))}
+                                </div>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="company-logo">Company Logo</Label>

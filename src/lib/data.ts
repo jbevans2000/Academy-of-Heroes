@@ -8,6 +8,7 @@ export type Company = {
     name: string;
     logoUrl?: string;
     backgroundUrl?: string;
+    color?: string; // e.g., 'hsl(0, 72%, 51%)'
 }
 
 export interface Message {
