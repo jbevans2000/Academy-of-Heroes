@@ -8,7 +8,7 @@ import { AvatarDisplay } from "@/components/dashboard/avatar-display";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, Map, Swords, Sparkles, BookHeart, Gem, Package, Hammer, Briefcase, Loader2, Trophy, ScrollText, BookOpen, Star as StarIcon, Users } from "lucide-react";
+import { User, Map, Swords, Sparkles, BookHeart, Gem, Package, Hammer, Briefcase, Loader2, Trophy, ScrollText, BookOpen, Users } from "lucide-react";
 import { doc, updateDoc, collection, query, where, getDocs, onSnapshot, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -291,7 +291,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                 </Button>
                 <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setIsChallengeDialogOpen(true)}>
                     <Swords className="mr-4 h-8 w-8" />
-                    Training Grounds
+                    Dueling Arena
                 </Button>
                 <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleReadyForBattle}>
                     <Sparkles className="mr-4 h-8 w-8" />
@@ -363,10 +363,10 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                       </Button>
                   </Link>
 
-                   <Link href={`/dashboard/missions`} passHref>
+                  <Link href={`/dashboard/missions`} passHref>
                       <Button variant="outline" className="h-auto py-4 px-6 border-2 border-red-600 bg-white hover:bg-gray-100 text-gray-900">
                           <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
-                              <StarIcon className="h-12 w-12 text-red-500" />
+                              <BookOpen className="h-12 w-12 text-red-500" />
                               <div>
                                   <h3 className="text-xl font-bold">Special Missions</h3>
                                   <p className="text-muted-foreground">View your assignments.</p>
