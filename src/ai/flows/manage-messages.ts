@@ -249,3 +249,34 @@ export async function sendGuildHallMessage(input: SendGuildHallMessageInput): Pr
         return { success: false, error: 'Failed to send message.' };
     }
 }
+
+interface ClearGuildHallChatInput {
+    teacherUid: string;
+}
+
+export async function clearGuildHallChat(input: ClearGuildHallChatInput): Promise<ActionResponse> {
+    const { teacherUid } = input;
+    if (!teacherUid) {
+        return { success: false, error: 'Invalid input.' };
+    }
+
+    try {
+        const messagesRef = collection(db, 'teachers', teacherUid, 'guildHallMessages');
+        const messagesSnapshot = await getDocs(messagesRef);
+
+        if (messagesSnapshot.empty) {
+            return { success: true, message: "Chat is already empty." };
+        }
+
+        const batch = writeBatch(db);
+        messagesSnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+
+        await batch.commit();
+        return { success: true, message: "The Guild Hall chat history has been cleared." };
+    } catch (error: any) {
+        console.error("Error clearing guild hall chat:", error);
+        return { success: false, error: error.message || 'Failed to clear chat history.' };
+    }
+}

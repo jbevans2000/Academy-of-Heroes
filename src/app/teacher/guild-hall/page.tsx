@@ -14,12 +14,24 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Send, ArrowLeft } from 'lucide-react';
-import { sendGuildHallMessage } from '@/ai/flows/manage-messages';
+import { Loader2, Send, ArrowLeft, ShieldAlert, Trash2 } from 'lucide-react';
+import { sendGuildHallMessage, clearGuildHallChat } from '@/ai/flows/manage-messages';
 import { cn } from '@/lib/utils';
 import { ClientOnlyTime } from '@/components/client-only-time';
 import type { Company, Student } from '@/lib/data';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 
 interface GuildHallMessage {
     id: string;
@@ -42,6 +54,7 @@ export default function GuildHallPage() {
     const [isLoading, setIsLoading] = useState(true);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [companies, setCompanies] = useState<Company[]>([]);
+    const [isClearing, setIsClearing] = useState(false);
     
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -125,6 +138,23 @@ export default function GuildHallPage() {
         toast({ title: `Chat is now ${enabled ? 'ENABLED' : 'DISABLED'}` });
     };
     
+     const handleClearChat = async () => {
+        if (!teacher) return;
+        setIsClearing(true);
+        try {
+            const result = await clearGuildHallChat({ teacherUid: teacher.uid });
+            if (result.success) {
+                toast({ title: "Chat Cleared", description: result.message });
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message });
+        } finally {
+            setIsClearing(false);
+        }
+    }
+    
     const getCompanyColor = (companyId?: string): string => {
         if (!companyId) return 'bg-gray-200';
         const company = companies.find(c => c.id === companyId);
@@ -133,6 +163,7 @@ export default function GuildHallPage() {
 
     const getCompanyStyle = (companyId?: string): React.CSSProperties => {
         if (!companyId) return {};
+        if (companyId === 'teacher') return { backgroundColor: 'hsl(var(--primary))' };
         const company = companies.find(c => c.id === companyId);
         return company?.color ? { backgroundColor: company.color } : {};
     };
@@ -146,13 +177,37 @@ export default function GuildHallPage() {
                         <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
                             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Podium
                         </Button>
-                        <div className="flex items-center space-x-2">
-                            <Switch
-                                id="chat-enabled"
-                                checked={teacherData?.isChatEnabled ?? true}
-                                onCheckedChange={handleToggleChat}
-                            />
-                            <Label htmlFor="chat-enabled">Chat Enabled for Students</Label>
+                         <div className="flex items-center space-x-4">
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive" disabled={isClearing}>
+                                        {isClearing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                        Clear Chat
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This will permanently delete the entire Guild Hall chat history. This action cannot be undone.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleClearChat} className="bg-destructive hover:bg-destructive/90">
+                                            Yes, Clear History
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                            <div className="flex items-center space-x-2">
+                                <Switch
+                                    id="chat-enabled"
+                                    checked={teacherData?.isChatEnabled ?? true}
+                                    onCheckedChange={handleToggleChat}
+                                />
+                                <Label htmlFor="chat-enabled">Chat Enabled for Students</Label>
+                            </div>
                         </div>
                     </div>
                     <Card className="h-[75vh] flex flex-col">
