@@ -1715,13 +1715,15 @@ export default function TeacherLiveBattlePage() {
              <div className="lg:col-span-1 flex flex-col gap-6 max-h-[90vh]">
                 <BattleDisplay students={activeParticipants} />
                 {liveState.battleId && <BattleLog teacherUid={teacherUid} />}
-                <BattleChatBox
-                    isTeacher={true}
-                    userName={teacherData?.name || 'Guild Leader'}
-                    teacherUid={teacherUid || ''}
-                    battleId={'active-battle'}
-                    isChatDisabled={liveState.isChatDisabled ?? false}
-                />
+                <div className="flex-grow min-h-0">
+                    <BattleChatBox
+                        isTeacher={true}
+                        userName={teacherData?.name || 'Guild Leader'}
+                        teacherUid={teacherUid || ''}
+                        battleId={'active-battle'}
+                        isChatDisabled={liveState.isChatDisabled ?? false}
+                    />
+                </div>
             </div>
         </div>
       </main>

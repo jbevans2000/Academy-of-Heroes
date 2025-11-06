@@ -774,13 +774,15 @@ export default function LiveBattlePage() {
                 <div className="lg:col-span-1 flex flex-col gap-6 max-h-[90vh]">
                     <BattleDisplay students={activeParticipants} />
                     {battleState.battleId && <BattleLog teacherUid={teacherUid} />}
-                    <BattleChatBox 
-                        isTeacher={false}
-                        userName={student.characterName}
-                        teacherUid={teacherUid}
-                        battleId={'active-battle'}
-                        isChatDisabled={battleState.isChatDisabled}
-                    />
+                    <div className="flex-grow min-h-0">
+                        <BattleChatBox 
+                            isTeacher={false}
+                            userName={student.characterName}
+                            teacherUid={teacherUid}
+                            battleId={'active-battle'}
+                            isChatDisabled={battleState.isChatDisabled}
+                        />
+                    </div>
                 </div>
             </div>
           </>
