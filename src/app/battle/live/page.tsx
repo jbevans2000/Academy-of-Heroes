@@ -771,10 +771,10 @@ export default function LiveBattlePage() {
                         </CardContent>
                     </Card>
                 </div>
-                <div className="lg:col-span-1 flex flex-col gap-6 max-h-[90vh]">
+                <div className="lg:col-span-1 flex flex-col gap-6 h-[90vh]">
                     <BattleDisplay students={activeParticipants} />
                     {battleState.battleId && <BattleLog teacherUid={teacherUid} />}
-                    <div className="flex-grow min-h-0">
+                    <div className="h-96">
                         <BattleChatBox 
                             isTeacher={false}
                             userName={student.characterName}
@@ -894,3 +894,5 @@ export default function LiveBattlePage() {
     </>
   );
 }
+
+    
