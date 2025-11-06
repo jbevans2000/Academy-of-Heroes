@@ -24,6 +24,7 @@ const defaultBoons = [
     effect: { type: 'REAL_WORLD_PERK', value: "Tell a joke in class." },
     requiresApproval: true,
     studentMessage: "Inform your Guild Leader you have used this Reward!",
+    allowStudentInstructions: false,
   },
   {
     name: "Scribe's Permission",
@@ -34,6 +35,7 @@ const defaultBoons = [
     effect: { type: 'REAL_WORLD_PERK', value: "Use a special pen for the day." },
     requiresApproval: false,
     studentMessage: "Inform your Guild Leader you have used this Reward!",
+    allowStudentInstructions: false,
   },
   {
     name: "Wanderer's Pass",
@@ -44,6 +46,7 @@ const defaultBoons = [
     effect: { type: 'REAL_WORLD_PERK', value: "Choose seat for the day." },
     requiresApproval: true,
     studentMessage: "Inform your Guild Leader you have used this Reward!",
+    allowStudentInstructions: false,
   },
   {
     name: "Emissary's Duty",
@@ -54,6 +57,7 @@ const defaultBoons = [
     effect: { type: 'REAL_WORLD_PERK', value: "Deliver a message to another classroom." },
     requiresApproval: true,
     studentMessage: "Inform your Guild Leader you have used this Reward!",
+    allowStudentInstructions: false,
   },
   {
     name: "Oracle's Insight",
@@ -64,6 +68,7 @@ const defaultBoons = [
     effect: { type: 'REAL_WORLD_PERK', value: "1-minute private teacher consultation." },
     requiresApproval: true,
     studentMessage: "Inform your Guild Leader you have used this Reward!",
+    allowStudentInstructions: true,
   },
   {
     name: "Bard's Tune",
@@ -74,6 +79,7 @@ const defaultBoons = [
     effect: { type: 'REAL_WORLD_PERK', value: "Listen to music during independent work." },
     requiresApproval: false,
     studentMessage: "Inform your Guild Leader you have used this Reward!",
+    allowStudentInstructions: false,
   },
   {
     name: "Hero's Respite",
@@ -84,6 +90,7 @@ const defaultBoons = [
     effect: { type: 'REAL_WORLD_PERK', value: "Leave 5 minutes early for recess." },
     requiresApproval: true,
     studentMessage: "Inform your Guild Leader you have used this Reward!",
+    allowStudentInstructions: false,
   },
   {
     name: "Time-Turner's Grace",
@@ -93,7 +100,8 @@ const defaultBoons = [
     imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FTime%20Turner's%20Grace.jpg?alt=media&token=57032694-2c8a-42ec-b26e-7c0a2c414d50",
     effect: { type: 'REAL_WORLD_PERK', value: "24-hour assignment extension." },
     requiresApproval: false,
-    studentMessage: "Inform your Guild Leader you have used this Reward!",
+    studentMessage: "Inform your Guild Leader which assignment you'd like to apply this to.",
+    allowStudentInstructions: true,
   },
    {
     name: "Keeper of the Scroll",
@@ -103,7 +111,8 @@ const defaultBoons = [
     imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FKeeper%20of%20the%20Scroll.jpg?alt=media&token=8a3bcfce-a86c-40a3-8cba-1b7a4754f3dd",
     effect: { type: 'REAL_WORLD_PERK', value: "Erase one incorrect answer on a past assignment." },
     requiresApproval: false,
-    studentMessage: "Inform your Guild Leader you have used this Reward!",
+    studentMessage: "Inform your Guild Leader which assignment and question you'd like to apply this to.",
+    allowStudentInstructions: true,
   },
   {
     name: "Scholar's Pardon",
@@ -113,7 +122,8 @@ const defaultBoons = [
     imageUrl: "https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/boon-icons%2FScholar's%20Pardon.jpg?alt=media&token=900a3c30-0a94-4585-bff6-13621f9a1a33",
     effect: { type: 'REAL_WORLD_PERK', value: "Single small homework pass." },
     requiresApproval: false,
-    studentMessage: "Inform your Guild Leader you have used this Reward!",
+    studentMessage: "Inform your Guild Leader which assignment you'd like to pardon.",
+    allowStudentInstructions: true,
   },
 ];
 
@@ -151,6 +161,7 @@ export async function createBoon(teacherUid: string, boonData: CreateBoonInput):
       ...boonData,
       levelRequirement: boonData.levelRequirement || 1,
       isVisibleToStudents: true, // Visible by default now
+      allowStudentInstructions: boonData.allowStudentInstructions || false,
       createdAt: serverTimestamp(),
     });
     await logGameEvent(teacherUid, 'GAMEMASTER', `Created a new boon: ${boonData.name}.`);

@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
@@ -12,6 +13,7 @@ import { db } from './firebase';
  * @param boonName The name of the boon.
  * @param transactionType 'purchase' or 'use'.
  * @param cost Optional cost for purchase transactions.
+ * @param studentInstructions Optional instructions from the student when using a boon.
  */
 export async function logBoonTransaction(
     teacherUid: string, 
@@ -19,7 +21,8 @@ export async function logBoonTransaction(
     characterName: string, 
     boonName: string, 
     transactionType: 'purchase' | 'use',
-    cost?: number
+    cost?: number,
+    studentInstructions?: string
 ): Promise<void> {
     if (!teacherUid) {
         console.error("Failed to log boon transaction: teacherUid is missing.");
@@ -36,6 +39,10 @@ export async function logBoonTransaction(
 
         if (transactionType === 'purchase' && cost !== undefined) {
             transactionData.cost = cost;
+        }
+
+        if (transactionType === 'use' && studentInstructions) {
+            transactionData.studentInstructions = studentInstructions;
         }
 
         await addDoc(collection(db, 'teachers', teacherUid, 'boonTransactions'), transactionData);

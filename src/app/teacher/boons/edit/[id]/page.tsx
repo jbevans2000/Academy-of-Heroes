@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -199,6 +200,11 @@ export default function EditBoonPage() {
                             <div className="flex items-center space-x-2 p-4 border rounded-md">
                                 <Switch id="requires-approval" checked={boon.requiresApproval} onCheckedChange={(checked) => handleBoonChange('requiresApproval', checked)} />
                                 <Label htmlFor="requires-approval">Require Approval?</Label>
+                            </div>
+
+                             <div className="flex items-center space-x-2 p-4 border rounded-md">
+                                <Switch id="allow-student-instructions" checked={boon.allowStudentInstructions} onCheckedChange={(checked) => handleBoonChange('allowStudentInstructions', checked)} />
+                                <Label htmlFor="allow-student-instructions">Allow Student Instructions?</Label>
                             </div>
                             
                             <div className="space-y-2">

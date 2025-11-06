@@ -88,10 +88,11 @@ interface UseBoonInput {
     teacherUid: string;
     studentUid: string;
     boonId: string;
+    instructions?: string; // New field for student instructions
 }
 
 export async function useBoon(input: UseBoonInput): Promise<ActionResponse> {
-    const { teacherUid, studentUid, boonId } = input;
+    const { teacherUid, studentUid, boonId, instructions } = input;
     if (!teacherUid || !studentUid || !boonId) return { success: false, error: 'Invalid input.' };
     
     const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
@@ -129,7 +130,7 @@ export async function useBoon(input: UseBoonInput): Promise<ActionResponse> {
             transaction.update(studentRef, updateData);
             
             await logGameEvent(teacherUid, 'GAMEMASTER', `${student.characterName} used the reward: ${boon.name}.`);
-            await logBoonTransaction(teacherUid, studentUid, student.characterName, boon.name, 'use');
+            await logBoonTransaction(teacherUid, studentUid, student.characterName, boon.name, 'use', undefined, instructions);
 
             return { success: true, message: `You have used ${boon.name}.` };
         });

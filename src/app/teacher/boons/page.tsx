@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -380,6 +381,9 @@ export default function BoonsPage() {
                                     <p><span className="font-bold">{tx.characterName}</span> {tx.transactionType === 'purchase' ? 'purchased' : 'used'} <span className="font-semibold text-primary">{tx.boonName}</span>
                                     {tx.transactionType === 'purchase' && ` for ${tx.cost} gold`}.
                                     </p>
+                                    {tx.studentInstructions && (
+                                        <p className="italic bg-yellow-100 dark:bg-yellow-900/50 p-2 rounded-md mt-1">Instructions: "{tx.studentInstructions}"</p>
+                                    )}
                                     <p className="text-xs text-muted-foreground"><ClientOnlyTime date={new Date(tx.timestamp.seconds * 1000)} /></p>
                                 </div>
                             ))}

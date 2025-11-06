@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -37,6 +38,7 @@ export default function NewBoonPage() {
     const [imageUrl, setImageUrl] = useState('');
     const [requiresApproval, setRequiresApproval] = useState(false);
     const [studentMessage, setStudentMessage] = useState('');
+    const [allowStudentInstructions, setAllowStudentInstructions] = useState(false);
 
     // Upload State
     const [imageFile, setImageFile] = useState<File | null>(null);
@@ -96,6 +98,7 @@ export default function NewBoonPage() {
                 },
                 requiresApproval,
                 studentMessage,
+                allowStudentInstructions,
             });
 
             if (result.success) {
@@ -168,6 +171,10 @@ export default function NewBoonPage() {
                             <div className="flex items-center space-x-2 p-4 border rounded-md">
                                 <Switch id="requires-approval" checked={requiresApproval} onCheckedChange={setRequiresApproval} />
                                 <Label htmlFor="requires-approval">Require Approval?</Label>
+                            </div>
+                             <div className="flex items-center space-x-2 p-4 border rounded-md">
+                                <Switch id="allow-student-instructions" checked={allowStudentInstructions} onCheckedChange={setAllowStudentInstructions} />
+                                <Label htmlFor="allow-student-instructions">Allow Student Instructions?</Label>
                             </div>
                             
                             <div className="space-y-2">

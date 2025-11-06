@@ -14,9 +14,10 @@ export type Boon = {
   effect: BoonEffect;
   createdAt: any; // Firestore ServerTimestamp
   isVisibleToStudents: boolean;
-  requiresApproval?: boolean; // New: Does this boon purchase need teacher approval?
-  studentMessage?: string; // New: A message shown to the student on use.
-  levelRequirement?: number; // New: Minimum level to purchase.
+  requiresApproval?: boolean; // Does this boon purchase need teacher approval?
+  studentMessage?: string; // A message shown to the student on use.
+  levelRequirement?: number; // Minimum level to purchase.
+  allowStudentInstructions?: boolean; // New: Does this boon require student input on use?
 };
 
 export interface PendingBoonRequest {
@@ -38,4 +39,5 @@ export interface BoonTransaction {
     transactionType: 'purchase' | 'use';
     cost?: number; // Only for purchases
     timestamp: any; // Firestore ServerTimestamp
+    studentInstructions?: string; // New: Instructions from the student on use.
 }
