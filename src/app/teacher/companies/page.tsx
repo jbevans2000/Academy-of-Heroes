@@ -401,7 +401,17 @@ export default function CompaniesPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-            <div className="flex h-screen w-full flex-col bg-muted/40">
+            <div className="relative flex h-screen w-full flex-col">
+                <div 
+                    className="absolute inset-0 -z-10"
+                    style={{
+                        backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fimage-gen.png?alt=media&token=c06792e9-044e-4a3a-a5d3-86aa314d6085')`,
+                        backgroundAttachment: 'fixed',
+                        backgroundPosition: 'center',
+                        backgroundSize: 'cover',
+                        opacity: 0.3,
+                    }}
+                />
                 <TeacherHeader />
                 <main className="flex-1 p-4 md:p-6 lg:p-8 min-h-0 overflow-y-auto" onDragOver={handleMainDragOver}>
                     <div className="flex items-center justify-between mb-6">
