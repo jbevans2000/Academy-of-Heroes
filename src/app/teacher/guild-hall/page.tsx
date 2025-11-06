@@ -18,7 +18,8 @@ import { Loader2, Send, ArrowLeft } from 'lucide-react';
 import { sendGuildHallMessage } from '@/ai/flows/manage-messages';
 import { cn } from '@/lib/utils';
 import { ClientOnlyTime } from '@/components/client-only-time';
-import type { Company } from '@/lib/data';
+import type { Company, Student } from '@/lib/data';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface GuildHallMessage {
     id: string;
@@ -41,7 +42,7 @@ export default function GuildHallPage() {
     const [isLoading, setIsLoading] = useState(true);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [companies, setCompanies] = useState<Company[]>([]);
-
+    
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
             if (user) {
@@ -107,6 +108,13 @@ export default function GuildHallPage() {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not send message.' });
         } finally {
             setIsSending(false);
+        }
+    };
+    
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSendMessage();
         }
     };
 
@@ -182,6 +190,7 @@ export default function GuildHallPage() {
                                 <Textarea 
                                     value={newMessage}
                                     onChange={(e) => setNewMessage(e.target.value)}
+                                    onKeyDown={handleKeyDown}
                                     placeholder="Send a message to the guild..."
                                     rows={1}
                                     disabled={isSending}
