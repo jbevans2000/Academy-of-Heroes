@@ -30,15 +30,17 @@ import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { User as UserIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Textarea } from '@/components/ui/textarea';
 
 
-const InventoryBoonCard = ({ boon, quantity, onUse, disabled }: { boon: Boon; quantity: number; onUse: (boonId: string) => void; disabled: boolean }) => {
+const InventoryBoonCard = ({ boon, quantity, onUse, disabled }: { boon: Boon; quantity: number; onUse: (boonId: string, instructions?: string) => void; disabled: boolean }) => {
     const [isUsing, setIsUsing] = useState(false);
     const [isConfirmingUse, setIsConfirmingUse] = useState(false);
+    const [instructions, setInstructions] = useState('');
 
     const handleUse = async () => {
         setIsUsing(true);
-        await onUse(boon.id);
+        await onUse(boon.id, instructions);
         // The component will re-render, no need to set isUsing(false) here if it's successful
     };
 
@@ -51,21 +53,30 @@ const InventoryBoonCard = ({ boon, quantity, onUse, disabled }: { boon: Boon; qu
         <AlertDialog open={isConfirmingUse} onOpenChange={setIsConfirmingUse}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle className="text-black">Use "{boon.name}"?</AlertDialogTitle>
-                    <AlertDialogDescription className="text-black">
+                    <AlertDialogTitle>Use "{boon.name}"?</AlertDialogTitle>
+                    <AlertDialogDescription>
                         You currently have ({quantity}) in your inventory.
-                        <br/><br/>
-                        {boon.studentMessage || "Check with your Guild Leader to redeem this reward!"}
+                        {(boon.studentMessage || boon.allowStudentInstructions) && (
+                            <div className="mt-4 p-3 bg-secondary rounded-md text-secondary-foreground">
+                                {boon.studentMessage && <p className="mb-2">{boon.studentMessage}</p>}
+                                {boon.allowStudentInstructions && (
+                                     <Textarea
+                                        placeholder="Add instructions for your Guild Leader..."
+                                        value={instructions}
+                                        onChange={(e) => setInstructions(e.target.value)}
+                                        className="bg-background"
+                                    />
+                                )}
+                            </div>
+                        )}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogAction onClick={() => {
-                        setIsConfirmingUse(false);
-                        handleUse();
-                    }}>
+                     <AlertDialogCancel onClick={() => setInstructions('')}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleUse} disabled={isUsing}>
+                        {isUsing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                         Use Reward
                     </AlertDialogAction>
-                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
@@ -225,13 +236,14 @@ function InventoryPageComponent() {
         
     }, [student]);
 
-    const handleUseBoon = async (boonId: string) => {
+    const handleUseBoon = async (boonId: string, instructions?: string) => {
         if (!user || !student?.teacherUid) return;
         setIsUsingAny(true);
         const result = await useBoon({
             teacherUid: student.teacherUid,
             studentUid: student.uid,
             boonId: boonId,
+            instructions: instructions,
         });
 
         if (result.success) {
@@ -322,3 +334,5 @@ export default function InventoryPage() {
         </Suspense>
     )
 }
+
+    
