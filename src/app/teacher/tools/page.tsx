@@ -81,36 +81,27 @@ const tools = [
     }
 ];
 
-const mutationsLabTool = {
-    title: 'Mutations Lab',
-    description: 'An interactive genetics activity about mutations.',
-    icon: <Dna className="h-10 w-10 text-primary" />,
-    path: '/public/mutationslab',
-    disabled: false,
-    bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Oct%2012%2C%202025%2C%2004_56_41%20AM.png?alt=media&token=61af9a61-e503-4bd8-a22b-ada8d5d085d2'
-};
-
-const dragonGeneticsTool = {
-    title: 'Dragon Genetics Lab',
-    description: 'An interactive genetics activity about dominant and recessive traits.',
-    icon: <Dna className="h-10 w-10 text-primary" />,
-    path: '/public/genetics-lab',
-    disabled: false,
-    bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Oct%2012%2C%202025%2C%2004_56_41%20AM.png?alt=media&token=61af9a61-e503-4bd8-a22b-ada8d5d085d2'
-};
+const adminTools = [
+     {
+        title: 'Global 2D Forge',
+        description: 'Create and manage all 2D cosmetic items like armor and hairstyles.',
+        icon: <Diamond className="h-10 w-10 text-primary" />,
+        path: '/admin/tools/global-forge',
+        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-a2624b42-7576-444f-8012-6188e7f1d441.jpg?alt=media&token=96357608-7264-4458-963d-b4b6006e8b7c'
+    },
+    {
+        title: '2D Sizer',
+        description: 'Position and scale 2D assets like armor and hairstyles.',
+        icon: <Wrench className="h-10 w-10 text-primary" />,
+        path: '/admin/tools/2d-sizer',
+        bgImage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Classroom%20Tools%20Images%2Fenvato-labs-ai-e358b5a0-a029-450f-90e6-799c424d1668.jpg?alt=media&token=9ac606d2-31f4-41d6-8480-e889a7414704'
+    },
+];
 
 export default function ClassroomToolsPage() {
     const router = useRouter();
-    const [user, setUser] = useState<User | null>(null);
 
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-            setUser(currentUser);
-        });
-        return () => unsubscribe();
-    }, []);
-
-    const ToolCard = ({ tool }: { tool: (typeof tools[0] & { editPath?: string }) | typeof mutationsLabTool & { disabled?: boolean } | typeof dragonGeneticsTool & {disabled?: boolean} }) => (
+    const ToolCard = ({ tool }: { tool: (typeof tools[0] & { editPath?: string }) | typeof adminTools[0] & { disabled?: boolean } }) => (
         <Card className="relative flex flex-col justify-between h-64 p-6 rounded-lg overflow-hidden border shadow-sm bg-card transition-transform hover:scale-105 group">
             <div className="absolute inset-0">
                 <Image
@@ -178,12 +169,22 @@ export default function ClassroomToolsPage() {
                         {tools.map((tool, index) => (
                            <ToolCard key={index} tool={tool} />
                         ))}
-                         {user?.email === 'jevans@nca.connectionsacademy.org' && (
-                            <>
-                                <ToolCard tool={mutationsLabTool} />
-                                <ToolCard tool={dragonGeneticsTool} />
-                            </>
-                        )}
+                    </div>
+                    
+                    <div className="pt-8">
+                         <div className="p-6 rounded-lg bg-red-900/80 backdrop-blur-sm text-white">
+                            <div className="flex items-center gap-4">
+                                <div>
+                                    <h2 className="text-2xl font-bold">Master Admin Forges</h2>
+                                    <p>Tools for creating and managing global game assets.</p>
+                                </div>
+                            </div>
+                        </div>
+                         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-4">
+                             {adminTools.map((tool, index) => (
+                               <ToolCard key={index} tool={tool} />
+                            ))}
+                        </div>
                     </div>
                 </div>
             </main>

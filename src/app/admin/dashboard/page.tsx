@@ -736,39 +736,6 @@ export default function AdminDashboardPage() {
         }
     }
 
-    const handleTestPermissions = async () => {
-        if (!testFile || !user) {
-            toast({ variant: 'destructive', title: 'No File', description: 'Please select a .glb file to test.'});
-            return;
-        }
-        setIsTesting(true);
-        setFetchStatus(null);
-        try {
-            const storage = getStorage(app);
-            const storagePath = `permission-test-models/${user.uid}/${uuidv4()}_${testFile.name}`;
-            const storageRef = ref(storage, storagePath);
-            const metadata = { contentType: 'model/gltf-binary' };
-            await uploadBytes(storageRef, testFile, metadata);
-            const downloadUrl = await getDownloadURL(storageRef);
-            
-            const response = await fetch(`/api/fetch-glb?url=${encodeURIComponent(downloadUrl)}`);
-            setFetchStatus({ ok: response.ok, status: response.status });
-
-            if(response.ok) {
-                 toast({ title: 'Fetch Succeeded!', description: `Successfully fetched the file with status: ${response.status}` });
-            } else {
-                 toast({ variant: 'destructive', title: 'Fetch Failed', description: `Received status: ${response.status}. The file may not be publicly accessible or the API route failed.`});
-            }
-        } catch (error: any) {
-            console.error("Permission Test Error:", error);
-            const errorMessage = error.message || 'An unknown error occurred during upload or fetch.';
-            toast({ variant: 'destructive', title: 'Permission Test Error', description: `Could not complete the test. ${errorMessage}` });
-            setFetchStatus({ ok: false, status: 0 });
-        } finally {
-            setIsTesting(false);
-        }
-    };
-    
     const handleOpenMessageCenter = (teacherId?: string) => {
         const teacher = teacherId ? sortedTeachers.find(t => t.id === teacherId) : null;
         setInitialTeacherToView(teacher || null);
@@ -1069,38 +1036,6 @@ export default function AdminDashboardPage() {
                     {/* Direct Prompt Interface */}
                     <DirectPromptInterface />
 
-                    {/* Phase Zero Card */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><TestTube2 className="h-6 w-6 text-primary" /> [Phase Zero] Permissions Verifier</CardTitle>
-                            <CardDescription>A temporary tool to verify that a .glb file can be uploaded with public permissions and then fetched correctly.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                           <div className="space-y-2">
-                                <Label htmlFor="glb-file-input" className="font-medium">1. Select a .glb file to upload</Label>
-                                <Input 
-                                    id="glb-file-input"
-                                    type="file"
-                                    accept=".glb"
-                                    onChange={(e) => setTestFile(e.target.files ? e.target.files[0] : null)}
-                                />
-                           </div>
-                            <Button onClick={handleTestPermissions} disabled={isTesting || !testFile}>
-                                {isTesting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                Upload & Test Fetch
-                            </Button>
-                            {fetchStatus && (
-                                 <div className={cn(
-                                     "p-4 rounded-md font-bold text-lg flex items-center gap-2",
-                                     fetchStatus.ok ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                                 )}>
-                                    {fetchStatus.ok ? <CheckCircle /> : <XCircle />}
-                                    Fetch {fetchStatus.ok ? 'Succeeded' : 'Failed'}! Status: {fetchStatus.status}
-                                 </div>
-                            )}
-                        </CardContent>
-                    </Card>
-
                     <Collapsible>
                         <Card>
                             <CollapsibleTrigger asChild>
@@ -1298,11 +1233,6 @@ export default function AdminDashboardPage() {
                              <Button className="w-full justify-start" asChild>
                                 <Link href="/admin/tools/global-forge">
                                     <Diamond className="mr-2 h-4 w-4" /> Global 2D Forge
-                                </Link>
-                            </Button>
-                            <Button className="w-full justify-start" asChild>
-                                <Link href="/admin/tools/global-3d-forge">
-                                    <Box className="mr-2 h-4 w-4" /> Global 3D Forge
                                 </Link>
                             </Button>
                             <Button className="w-full justify-start" asChild>
