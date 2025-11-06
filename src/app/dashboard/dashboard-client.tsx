@@ -309,7 +309,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                         Songs and Stories
                     </Button>
                 </Link>
-                 <Link href="/dashboard/forge" passHref className="w-full">
+                 <Link href="/dashboard/forge" passHref className="col-span-2">
                     <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90">
                         <Hammer className="mr-4 h-8 w-8" />
                         The Forge
@@ -362,8 +362,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                           </div>
                       </Button>
                   </Link>
-
-                  <Link href={`/dashboard/missions`} passHref>
+                  <Link href={`/dashboard/missions${isTeacherPreview ? teacherPreviewQuery : ''}`} passHref>
                       <Button variant="outline" className="h-auto py-4 px-6 border-2 border-red-600 bg-white hover:bg-gray-100 text-gray-900">
                           <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
                               <BookOpen className="h-12 w-12 text-red-500" />
@@ -374,7 +373,6 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                           </div>
                       </Button>
                   </Link>
-                  
                   <Button variant="outline" className="h-auto py-4 px-6 border-2 border-sky-600 bg-white hover:bg-gray-100 text-gray-900" onClick={() => setIsAvatarLogOpen(true)}>
                       <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
                           <ScrollText className="h-12 w-12 text-sky-500" />
