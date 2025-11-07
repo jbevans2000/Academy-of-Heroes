@@ -21,6 +21,7 @@ interface TeacherProfile {
     name: string;
     schoolName: string;
     className: string;
+    characterName?: string;
     contactEmail?: string;
     address?: string;
 }
@@ -30,8 +31,8 @@ export default function TeacherProfilePage() {
     const { toast } = useToast();
 
     const [teacher, setTeacher] = useState<User | null>(null);
-    const [profile, setProfile] = useState<TeacherProfile>({ name: '', schoolName: '', className: '', contactEmail: '', address: '' });
-    const [initialProfile, setInitialProfile] = useState<TeacherProfile>({ name: '', schoolName: '', className: '', contactEmail: '', address: '' });
+    const [profile, setProfile] = useState<TeacherProfile>({ name: '', schoolName: '', className: '', characterName: '', contactEmail: '', address: '' });
+    const [initialProfile, setInitialProfile] = useState<TeacherProfile>({ name: '', schoolName: '', className: '', characterName: '', contactEmail: '', address: '' });
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isBeta, setIsBeta] = useState(false);
@@ -73,6 +74,7 @@ export default function TeacherProfilePage() {
                 name: profile.name,
                 schoolName: profile.schoolName,
                 className: profile.className,
+                characterName: profile.characterName || '',
                 contactEmail: profile.contactEmail || '',
                 address: profile.address || '',
             });
@@ -129,6 +131,10 @@ export default function TeacherProfilePage() {
                             <div className="space-y-2">
                                 <Label htmlFor="name">Full Name</Label>
                                 <Input id="name" name="name" value={profile.name} onChange={handleInputChange} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="characterName">Character Name (Optional)</Label>
+                                <Input id="characterName" name="characterName" value={profile.characterName || ''} onChange={handleInputChange} placeholder="e.g., The Grandmaster" />
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="contactEmail">Contact Email</Label>

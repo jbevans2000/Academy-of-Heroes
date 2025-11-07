@@ -24,6 +24,7 @@ interface UpdateProfileInput {
   name: string;
   schoolName: string;
   className: string;
+  characterName?: string; // New field
   contactEmail: string;
   address: string;
 }
@@ -35,6 +36,7 @@ export async function updateTeacherProfile(input: UpdateProfileInput): Promise<A
       name: input.name,
       schoolName: input.schoolName,
       className: input.className,
+      characterName: input.characterName || '', // Save character name
       contactEmail: input.contactEmail,
       address: input.address,
     });

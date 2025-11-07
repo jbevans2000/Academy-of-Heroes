@@ -18,7 +18,7 @@ import { Loader2, Send, ArrowLeft, ShieldAlert, Trash2, Download } from 'lucide-
 import { sendGuildHallMessage, clearGuildHallChat } from '@/ai/flows/manage-messages';
 import { cn } from '@/lib/utils';
 import { ClientOnlyTime } from '@/components/client-only-time';
-import type { Company, Student } from '@/lib/data';
+import type { Company, Student, Teacher } from '@/lib/data';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   AlertDialog,
@@ -48,7 +48,7 @@ export default function GuildHallPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [teacher, setTeacher] = useState<User | null>(null);
-    const [teacherData, setTeacherData] = useState<{ name: string, isChatEnabled?: boolean, isCompanyChatActive?: boolean } | null>(null);
+    const [teacherData, setTeacherData] = useState<{ name: string, characterName?: string, isChatEnabled?: boolean, isCompanyChatActive?: boolean } | null>(null);
     const [messages, setMessages] = useState<GuildHallMessage[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
@@ -74,7 +74,7 @@ export default function GuildHallPage() {
         const teacherRef = doc(db, 'teachers', teacher.uid);
         const unsubTeacher = onSnapshot(teacherRef, (docSnap) => {
             if (docSnap.exists()) {
-                setTeacherData(docSnap.data() as { name: string, isChatEnabled?: boolean, isCompanyChatActive?: boolean });
+                setTeacherData(docSnap.data() as { name: string, characterName?: string, isChatEnabled?: boolean, isCompanyChatActive?: boolean });
             }
         });
         
@@ -112,7 +112,7 @@ export default function GuildHallPage() {
             await sendGuildHallMessage({
                 teacherUid: teacher.uid,
                 senderUid: teacher.uid,
-                senderName: teacherData.name,
+                senderName: teacherData.characterName || teacherData.name,
                 text: newMessage,
                 isTeacher: true,
                 companyId: 'teacher',
@@ -213,7 +213,7 @@ export default function GuildHallPage() {
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     backgroundAttachment: 'fixed',
-                    opacity: 0.6,
+                    opacity: 0.4,
                 }}
             />
             <TeacherHeader />
@@ -249,21 +249,19 @@ export default function GuildHallPage() {
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
-                            <div className="flex items-center space-x-2">
-                                <Switch
-                                    id="company-chat-enabled"
-                                    checked={isCompanyChatActive}
-                                    onCheckedChange={(checked) => handleToggleSetting('isCompanyChatActive', checked)}
-                                />
-                                <Label htmlFor="company-chat-enabled">Company Chat Only</Label>
-                            </div>
+                            <Button 
+                                variant={isCompanyChatActive ? 'default' : 'outline'}
+                                onClick={() => handleToggleSetting('isCompanyChatActive', !isCompanyChatActive)}
+                            >
+                                {isCompanyChatActive ? 'Deactivate Company Chat' : 'Activate Company Chat'}
+                            </Button>
                             <div className="flex items-center space-x-2">
                                 <Switch
                                     id="chat-enabled"
                                     checked={isChatEnabled}
                                     onCheckedChange={(checked) => handleToggleSetting('isChatEnabled', checked)}
                                 />
-                                <Label htmlFor="chat-enabled">Chat Enabled for Students</Label>
+                                <Label htmlFor="chat-enabled">Chat Enabled</Label>
                             </div>
                         </div>
                     </div>
@@ -277,6 +275,14 @@ export default function GuildHallPage() {
                                 <div className="space-y-4">
                                     {isLoading ? (
                                         <Loader2 className="mx-auto h-8 w-8 animate-spin" />
+                                    ) : !isChatEnabled ? (
+                                        <div className="flex-grow flex items-center justify-center">
+                                            <Alert variant="destructive" className="max-w-md mx-auto">
+                                                <ShieldAlert className="h-4 w-4" />
+                                                <AlertTitle>Chat Disabled</AlertTitle>
+                                                <AlertDescription>You have currently disabled the Guild Hall chat for students.</AlertDescription>
+                                            </Alert>
+                                        </div>
                                     ) : messages.length === 0 ? (
                                         <p className="text-center text-muted-foreground">The hall is quiet... be the first to speak!</p>
                                     ) : (
