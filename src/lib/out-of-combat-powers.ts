@@ -45,7 +45,7 @@ export const outOfCombatPowers: ClassOutOfCombatPowers = {
       name: 'Psionic Aura',
       description: 'You call upon the leylines to recharge the arcane potential of TWO Allies. Targets must be at or below 75% of their max MP.',
       level: 2,
-      mpCost: 4,
+      mpCost: 10,
       target: 'ally',
       targetSelf: false,
       targetCount: 2,
@@ -82,7 +82,7 @@ export const outOfCombatPowers: ClassOutOfCombatPowers = {
       targetCount: 1,
       targetSelf: false,
       isMultiStep: true,
-      imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Button%20Images%2Fenvato-labs-ai-89196b01-5079-4560-844c-2234c899c750.jpg?alt=media&token=e9f42d2a-4632-474c-8349-9d5696d53952',
+      imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Button%20Images%2Fenvato-labs-image-edit%20(39).png?alt=media&token=e56349f8-2967-4d07-a74a-35153ee89046',
     }
   ],
 };
