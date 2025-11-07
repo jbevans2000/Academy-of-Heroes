@@ -49,7 +49,7 @@ export const outOfCombatPowers: ClassOutOfCombatPowers = {
       target: 'ally',
       targetSelf: false,
       targetCount: 2,
-      imageUrl: 'https://placehold.co/200x200.png' // Placeholder
+      imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/2025-09-07T05%3A32%3A24_27616%2Fpsionic%20aura.jpg?alt=media&token=d122945d-944b-4007-adc4-1330763dae70',
     },
     {
       name: 'Psychic Flare',
