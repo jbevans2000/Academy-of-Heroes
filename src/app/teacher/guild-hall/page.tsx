@@ -169,7 +169,17 @@ export default function GuildHallPage() {
     };
 
     return (
-        <div className="flex min-h-screen w-full flex-col bg-muted/40">
+        <div className="relative flex min-h-screen w-full flex-col">
+            <div 
+                className="absolute inset-0 -z-10"
+                style={{
+                    backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FGuild%20Hall.jpg?alt=media&token=b58a4615-2b4e-49b8-82ea-69aa003344cb')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundAttachment: 'fixed',
+                    opacity: 0.6,
+                }}
+            />
             <TeacherHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="max-w-4xl mx-auto space-y-4">
@@ -210,7 +220,7 @@ export default function GuildHallPage() {
                             </div>
                         </div>
                     </div>
-                    <Card className="h-[75vh] flex flex-col">
+                    <Card className="h-[75vh] flex flex-col bg-card/80 backdrop-blur-sm">
                         <CardHeader>
                             <CardTitle>The Guild Hall</CardTitle>
                             <CardDescription>A place for all guild members to communicate.</CardDescription>
