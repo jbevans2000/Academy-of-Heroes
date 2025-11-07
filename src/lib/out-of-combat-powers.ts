@@ -46,11 +46,9 @@ export const outOfCombatPowers: ClassOutOfCombatPowers = {
       description: 'You call upon the leylines to recharge the arcane potential of TWO Allies. Targets must be at or below 75% of their max MP.',
       level: 2,
       mpCost: 4,
-      type: 'support',
       target: 'ally',
       targetSelf: false,
       targetCount: 2,
-      outOfCombat: true,
       imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/2025-09-07T05%3A32%3A24_27616%2Fpsionic%20aura.jpg?alt=media&token=d122945d-944b-4007-adc4-1330763dae70',
     },
     {
@@ -58,11 +56,9 @@ export const outOfCombatPowers: ClassOutOfCombatPowers = {
       description: "You channel a beam of restorative arcane energies into an ally, restoring them to full magic points. Target must be below 50% MP. This power costs 50% of your current Magic Points, with a minimum cost of 20 MP.",
       level: 9,
       mpCost: 20, // Min cost, actual is dynamic
-      type: 'support',
       target: 'ally',
-      targetSelf: true, // Can target self
+      targetSelf: false,
       targetCount: 1,
-      outOfCombat: true,
       imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/2025-09-07T05%3A32%3A24_27616%2Fpsychic%20flare.jpg?alt=media&token=1b1d3051-2030-452c-94d8-06109e632e95'
     },
   ],

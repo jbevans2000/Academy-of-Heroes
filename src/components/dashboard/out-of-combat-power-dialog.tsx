@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -94,6 +93,10 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
       if (powerToCast) {
           let targets = companyMembers;
           const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+          
+           if (!powerToCast.targetSelf) {
+            targets = targets.filter(s => s.uid !== student.uid);
+          }
 
           // Apply power-specific eligibility filters
           if (powerToCast.name === 'Focused Restoration') {
@@ -117,13 +120,9 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
             );
           }
           
-          if (!powerToCast.targetSelf) {
-            targets = targets.filter(s => s.uid !== student.uid);
-          }
-
           setEligibleTargets(targets);
       }
-  }, [powerToCast, companyMembers, student.uid, student.level]);
+  }, [powerToCast, companyMembers, student]);
 
   const handleTargetSelect = (uid: string) => {
       const targetCount = powerToCast?.targetCount || 1;
@@ -214,7 +213,7 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
            handleConfirmClick([], numToEmpower);
       } else if (powerToCast?.name === 'Provision') {
            const maxGold = Math.floor(student.gold * 0.25);
-           const goldToSend = Number(inputValue);
+           const goldToSend = Number(inputValue) || 0;
            const cost = goldToSend + Math.ceil(goldToSend * 0.05);
 
            if (inputValue === '' || goldToSend <= 0) {
