@@ -59,7 +59,7 @@ export const outOfCombatPowers: ClassOutOfCombatPowers = {
       target: 'ally',
       targetSelf: true, // Can target self
       targetCount: 1,
-      imageUrl: 'https://placehold.co/200x200.png' // Placeholder
+      imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/2025-09-07T05%3A32%3A24_27616%2Fpsychic%20flare.jpg?alt=media&token=1b1d3051-2030-452c-94d8-06109e632e95' // Placeholder
     },
   ],
   Guardian: [
