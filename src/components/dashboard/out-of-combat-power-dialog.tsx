@@ -19,7 +19,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@/components/ui/alert-dialog"
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
@@ -27,17 +27,28 @@ import { db } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import { classPowers, type Power } from '@/lib/powers';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Dices } from 'lucide-react';
 import { useOutOfCombatPower } from '@/ai/flows/use-out-of-combat-power';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '../ui/checkbox';
 import { Label } from '../ui/label';
+import { Input } from '../ui/input';
 
 interface OutOfCombatPowerDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   student: Student;
 }
+
+// Fisher-Yates shuffle algorithm
+const shuffleArray = <T,>(array: T[]): T[] => {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+};
 
 export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student }: OutOfCombatPowerDialogProps) {
   const { toast } = useToast();
@@ -48,6 +59,10 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student }: OutOfC
   const [selectedTargets, setSelectedTargets] = useState<string[]>([]);
   const [isConfirming, setIsConfirming] = useState(false);
   const [isCasting, setIsCasting] = useState(false);
+
+  // New state for multi-step powers
+  const [currentStep, setCurrentStep] = useState(1);
+  const [inputValue, setInputValue] = useState<number | ''>('');
 
   useEffect(() => {
     if (!isOpen) {
@@ -110,10 +125,27 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student }: OutOfC
       });
   };
 
-  const handleConfirmClick = async () => {
+
+  const handleLetFateDecide = () => {
+    setIsCasting(true);
+    const targetCount = selectedPower?.targetCount || 1;
+    const maxSelectable = Math.min(targetCount, eligibleTargets.length);
+
+    if (maxSelectable === 0) {
+        toast({ variant: 'destructive', title: 'Not Enough Targets', description: 'There are not enough eligible targets to randomly select.' });
+        setIsCasting(false);
+        return;
+    }
+    const shuffled = shuffleArray(eligibleTargets);
+    const randomUids = shuffled.slice(0, maxSelectable).map(s => s.uid);
+    handleConfirmClick(randomUids);
+  };
+
+  const handleConfirmClick = async (targets?: string[]) => {
+    const finalTargets = targets || selectedTargets;
     if (!selectedPower || !student.teacherUid) return;
 
-    if(selectedPower.target && selectedTargets.length === 0) {
+    if(selectedPower.target && finalTargets.length === 0) {
         toast({ variant: 'destructive', title: 'No Targets', description: 'Please select at least one target for this power.' });
         return;
     }
@@ -124,7 +156,8 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student }: OutOfC
             teacherUid: student.teacherUid,
             casterUid: student.uid,
             powerName: selectedPower.name,
-            targets: selectedTargets,
+            targets: finalTargets,
+            inputValue: Number(inputValue) || undefined,
         });
         
         if (result.success) {
@@ -141,6 +174,107 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student }: OutOfC
     }
   };
 
+
+    const renderStep1 = () => {
+        if (power.name === 'Absorb') {
+            const mpNeeded = caster.maxMp - caster.mp;
+            const maxHpToConvert = Math.min(caster.hp - 1, mpNeeded * 2);
+            
+            return (
+                <>
+                    <DialogHeader>
+                        <DialogTitle>Convert HP to MP</DialogTitle>
+                        <DialogDescription>How many hit points do you want to convert into magic points? The cost is 2 HP for every 1 MP gained.</DialogDescription>
+                    </DialogHeader>
+                     <div className="py-4">
+                        <Label htmlFor="absorb-amount">HP to Convert (Max: {maxHpToConvert})</Label>
+                        <Input id="absorb-amount" type="number" value={inputValue} onChange={e => setInputValue(Number(e.target.value))} max={maxHpToConvert} />
+                        <p className="text-sm text-muted-foreground mt-1">You need {mpNeeded} MP to be full. You can convert up to {maxHpToConvert} HP.</p>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                        <Button onClick={handleNextStep}>Convert</Button>
+                    </DialogFooter>
+                </>
+            )
+        }
+         if (power.name === 'Arcane Redirect') {
+            const costPerMage = power.mpCost || 15;
+            const maxCanAfford = Math.floor(caster.mp / costPerMage);
+            const cost = (Number(inputValue) || 0) * costPerMage;
+
+            return (
+                <>
+                    <DialogHeader>
+                        <DialogTitle>Arcane Redirect</DialogTitle>
+                        <DialogDescription>
+                            Pledge your magic to empower allied Mages. For each successful Wildfire they cast, you will pay {costPerMage} MP and their spell's damage will be doubled.
+                        </DialogDescription>
+                    </DialogHeader>
+                     <div className="py-4 space-y-2">
+                        <Label htmlFor="mage-count">How many Mages will you empower?</Label>
+                        <Input id="mage-count" type="number" value={inputValue} onChange={e => setInputValue(e.target.value === '' ? '' : Number(e.target.value))} />
+                        <p className="text-sm">Potential Cost: <span className={cost > caster.mp ? 'text-destructive' : 'text-primary'}>{cost} MP</span> (You have {caster.mp} MP. You can empower up to {maxCanAfford} Mages)</p>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                        <Button onClick={handleNextStep} disabled={cost > caster.mp || inputValue === '' || Number(inputValue) <= 0}>Confirm Pledge</Button>
+                    </DialogFooter>
+                </>
+            )
+        }
+        return null;
+    }
+
+  const renderStep2 = () => {
+      const targetCount = selectedPower?.targetCount || 1;
+      const canSelectMax = eligibleTargets.length >= targetCount;
+      const isSelectionComplete = selectedPower?.target
+          ? (canSelectMax 
+                  ? selectedTargets.length === targetCount 
+                  : selectedTargets.length > 0 && selectedTargets.length <= eligibleTargets.length)
+          : true;
+
+      return (
+          <>
+            <DialogHeader>
+                <DialogTitle>Select Target(s) for {selectedPower?.name}</DialogTitle>
+                 <DialogDescription>
+                    Select up to {targetCount} target(s).
+                </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="h-60 rounded-md border p-4">
+                {eligibleTargets.length > 0 ? eligibleTargets.map(member => (
+                    <div key={member.uid} className="flex items-center space-x-2 p-2 hover:bg-secondary rounded-md">
+                        <Checkbox 
+                            id={`target-${member.uid}`} 
+                            checked={selectedTargets.includes(member.uid)}
+                            onCheckedChange={() => handleTargetSelect(member.uid)}
+                        />
+                        <Label htmlFor={`target-${member.uid}`} className="w-full cursor-pointer">
+                            <div className="flex justify-between items-center">
+                                <span>{member.characterName}</span>
+                                <span className="text-xs text-muted-foreground">{member.hp}/{member.maxHp} HP</span>
+                            </div>
+                        </Label>
+                    </div>
+                )) : <p className="text-center text-muted-foreground">No eligible targets found.</p>}
+            </ScrollArea>
+             <DialogFooter className="sm:justify-between">
+                {selectedPower?.target && (
+                     <Button variant="outline" onClick={handleLetFateDecide} disabled={isCasting}>
+                        {isCasting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Dices className="mr-2 h-4 w-4" />}
+                        Let Fate Decide
+                    </Button>
+                )}
+                <Button type="button" onClick={() => setIsConfirming(true)} disabled={!isSelectionComplete || isCasting}>
+                    {isCasting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                    Confirm Selection ({selectedTargets.length}/{canSelectMax ? targetCount : eligibleTargets.length})
+                </Button>
+            </DialogFooter>
+        </>
+      )
+  }
 
   return (
     <>
@@ -171,35 +305,7 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student }: OutOfC
     {selectedPower && (
       <Dialog open={isOpen && !!selectedPower} onOpenChange={(open) => { if(!open) setSelectedPower(null); }}>
           <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Select Targets for {selectedPower.name}</DialogTitle>
-                 <DialogDescription>
-                    Select up to {selectedPower.targetCount || 1} target(s).
-                </DialogDescription>
-            </DialogHeader>
-            <ScrollArea className="h-60 rounded-md border p-4">
-                {eligibleTargets.length > 0 ? eligibleTargets.map(member => (
-                    <div key={member.uid} className="flex items-center space-x-2 p-2 hover:bg-secondary rounded-md">
-                        <Checkbox 
-                            id={`target-${member.uid}`} 
-                            checked={selectedTargets.includes(member.uid)}
-                            onCheckedChange={() => handleTargetSelect(member.uid)}
-                        />
-                        <Label htmlFor={`target-${member.uid}`} className="w-full cursor-pointer">
-                            <div className="flex justify-between items-center">
-                                <span>{member.characterName}</span>
-                                <span className="text-xs text-muted-foreground">{member.hp}/{member.maxHp} HP</span>
-                            </div>
-                        </Label>
-                    </div>
-                )) : <p className="text-center text-muted-foreground">No eligible targets found.</p>}
-            </ScrollArea>
-             <DialogFooter>
-                <Button variant="outline" onClick={() => setSelectedPower(null)}>Back</Button>
-                <Button onClick={() => setIsConfirming(true)} disabled={selectedTargets.length === 0}>
-                    Confirm Targets ({selectedTargets.length}/{selectedPower.targetCount || 1})
-                </Button>
-            </DialogFooter>
+            {selectedPower.isMultiStep && currentStep === 1 ? renderStep1() : renderStep2()}
           </DialogContent>
       </Dialog>
     )}
@@ -214,7 +320,7 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student }: OutOfC
             </AlertDialogHeader>
              <AlertDialogFooter>
                 <AlertDialogCancel disabled={isCasting}>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleConfirmClick} disabled={isCasting}>
+                <AlertDialogAction onClick={() => handleConfirmClick()} disabled={isCasting}>
                     {isCasting ? <Loader2 className="h-4 w-4 animate-spin"/> : "Confirm & Cast"}
                 </AlertDialogAction>
             </AlertDialogFooter>

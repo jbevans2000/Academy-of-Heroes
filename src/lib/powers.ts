@@ -139,7 +139,7 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Inspiring Strike',
-      description: "You let out a mighty war cry, inspiring your allies with courage, tripling the power of their attacks! (Max 2 uses per Guardian per battle)",
+      description: "Your inspiring shout fills your allies with courage, tripling the power of their attacks! (Max 2 uses per Guardian per battle)",
       level: 17,
       mpCost: 35,
       type: 'damage',

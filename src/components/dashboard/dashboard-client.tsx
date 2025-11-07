@@ -8,7 +8,7 @@ import { AvatarDisplay } from "@/components/dashboard/avatar-display";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, Map, Swords, Sparkles, BookHeart, Gem, Package, Hammer, Briefcase, Loader2, Trophy, ScrollText, BookOpen } from "lucide-react";
+import { User, Map, Swords, Sparkles, BookHeart, Gem, Package, Hammer, Briefcase, Loader2, Trophy, ScrollText, BookOpen, Flame } from "lucide-react";
 import { doc, updateDoc, collection, query, where, getDocs, onSnapshot, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -34,6 +34,7 @@ import { getDuelSettings } from '@/ai/flows/manage-duels';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { AvatarLogDialog } from '@/components/dashboard/avatar-log-dialog';
 import { xpForLevel as defaultXpTable } from '@/lib/game-mechanics';
+import { OutOfCombatPowerDialog } from '@/components/dashboard/out-of-combat-power-dialog';
 
 interface DashboardClientProps {
   student: Student;
@@ -59,6 +60,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
   const [isAvatarLogOpen, setIsAvatarLogOpen] = useState(false);
   const [isDailyTrainingEnabled, setIsDailyTrainingEnabled] = useState(true);
   const [levelingTable, setLevelingTable] = useState(defaultXpTable);
+  const [isPowerDialogOpen, setIsPowerDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchTeacherSettings = async () => {
@@ -263,6 +265,12 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
         student={student}
       />
 
+      <OutOfCombatPowerDialog 
+        isOpen={isPowerDialogOpen}
+        onOpenChange={setIsPowerDialogOpen}
+        student={student}
+      />
+
       <div className="p-4 md:p-6 lg:p-8">
         <div className="mx-auto max-w-4xl space-y-6">
           {isTeacherPreview && (
@@ -356,7 +364,6 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                           </div>
                       </Button>
                   </Link>
-                  
                   <Button variant="outline" className="h-auto py-4 px-6 border-2 border-sky-600 bg-white hover:bg-gray-100 text-gray-900" onClick={() => setIsAvatarLogOpen(true)}>
                       <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
                           <ScrollText className="h-12 w-12 text-sky-500" />
@@ -368,6 +375,17 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                   </Button>
               </div>
           </TooltipProvider>
+
+          {/* Out of Combat Powers Section */}
+          {(student.class === 'Healer' || student.class === 'Guardian') && !isTeacherPreview && (
+            <div className="pt-6">
+                 <Button size="lg" className="w-full py-8 text-lg justify-center bg-green-600 text-white hover:bg-green-700" onClick={() => setIsPowerDialogOpen(true)}>
+                    <Flame className="mr-4 h-8 w-8" />
+                    Cast Powers
+                </Button>
+            </div>
+          )}
+          
         </div>
       </div>
     </>

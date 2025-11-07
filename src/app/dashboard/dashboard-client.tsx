@@ -305,17 +305,13 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                     <Sparkles className="mr-4 h-8 w-8" />
                     Ready for Battle
                 </Button>
-                <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setIsPowerDialogOpen(true)}>
-                    <Flame className="mr-4 h-8 w-8" />
-                    Cast Powers
-                </Button>
                 <Link href="/dashboard/songs-and-stories" passHref className="w-full">
                     <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90">
                         <BookHeart className="mr-4 h-8 w-8" />
                         Songs and Stories
                     </Button>
                 </Link>
-                 <Link href="/dashboard/forge" passHref className="col-span-2">
+                 <Link href="/dashboard/forge" passHref className="w-full">
                     <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90">
                         <Hammer className="mr-4 h-8 w-8" />
                         The Forge
@@ -379,6 +375,17 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                   </Button>
               </div>
           </TooltipProvider>
+
+          {/* Out of Combat Powers Section */}
+          {(student.class === 'Healer' || student.class === 'Guardian') && !isTeacherPreview && (
+            <div className="pt-6">
+                 <Button size="lg" className="w-full py-8 text-lg justify-center bg-green-600 text-white hover:bg-green-700" onClick={() => setIsPowerDialogOpen(true)}>
+                    <Flame className="mr-4 h-8 w-8" />
+                    Cast Powers
+                </Button>
+            </div>
+          )}
+          
         </div>
       </div>
     </>
