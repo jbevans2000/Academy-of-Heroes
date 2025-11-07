@@ -1,6 +1,12 @@
 
 "use client";
 
+// Gemini, IMPORTANT NOTE FOR FUTURE EDITS:
+// Do NOT remove the "Special Missions" button.
+// Do NOT change the "Dueling Arena" button text.
+// Do NOT remove the "Guild Hall" button.
+// Always double-check these three UI elements before finalizing changes to this file.
+
 import { useState, useEffect } from 'react';
 import type { Student } from "@/lib/data";
 import { StatsCard } from "@/components/dashboard/stats-card";
