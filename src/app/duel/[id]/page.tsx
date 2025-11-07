@@ -250,7 +250,7 @@ export default function DuelPage() {
         getTeacher();
     }, [user]);
 
-     const handleDuelEnd = useCallback(async (transaction: any, winnerUid: string, loserUid: string, isForfeit: boolean, isDrawByExhaustion = false) => {
+    const handleDuelEndInTransaction = useCallback(async (transaction: any, winnerUid: string, loserUid: string, isForfeit: boolean, isDrawByExhaustion = false) => {
         if (!duel || !teacherUid || !duelSettings || !duelRef) return;
 
         const winnerRef = doc(db, 'teachers', teacherUid, 'students', winnerUid);
@@ -266,8 +266,8 @@ export default function DuelPage() {
         if (isDrawByExhaustion) {
             const refundAmount = duel.cost || 0;
             if (refundAmount > 0) {
-                transaction.update(winnerRef, { gold: (winnerData.gold || 0) + refundAmount });
-                transaction.update(loserRef, { gold: (loserData.gold || 0) + refundAmount });
+                transaction.update(winnerRef, { gold: increment(refundAmount) });
+                transaction.update(loserRef, { gold: increment(refundAmount) });
             }
             transaction.update(duelRef, { status: 'finished', isDraw: true, winnerUid: null }); 
         } else {
@@ -275,19 +275,16 @@ export default function DuelPage() {
             const xpGained = duelSettings.rewardXp;
             const goldGained = duelSettings.rewardGold;
             const totalGoldChange = goldGained + (isForfeit ? 0 : duelCost);
-
-            const winnerFinalXp = (winnerData.xp || 0) + xpGained;
-            const winnerFinalGold = (winnerData.gold || 0) + totalGoldChange;
             
-            transaction.update(winnerRef, { xp: winnerFinalXp, gold: winnerFinalGold });
+            transaction.update(winnerRef, { xp: increment(xpGained), gold: increment(totalGoldChange) });
             
             if (!isForfeit) {
                 const refundAmount = Math.floor(duelCost / 2);
                  if (refundAmount > 0) {
-                    transaction.update(loserRef, { gold: (loserData.gold || 0) + refundAmount });
+                    transaction.update(loserRef, { gold: increment(refundAmount) });
                 }
             }
-
+            
             logAvatarEvent(teacherUid, winnerUid, {
                 source: 'Duel Victory',
                 xp: xpGained,
@@ -326,12 +323,12 @@ export default function DuelPage() {
 
             if (freshDuelData.isDraw) {
                 if (myAnswers[freshDuelData.currentQuestionIndex] > opponentAnswers[freshDuelData.currentQuestionIndex]) {
-                    await handleDuelEnd(transaction, user.uid, opponentUid, false);
+                    await handleDuelEndInTransaction(transaction, user.uid, opponentUid, false);
                 } else if (opponentAnswers[freshDuelData.currentQuestionIndex] > myAnswers[freshDuelData.currentQuestionIndex]) {
-                    await handleDuelEnd(transaction, opponentUid, user.uid, false);
+                    await handleDuelEndInTransaction(transaction, opponentUid, user.uid, false);
                 } else {
                     if (freshDuelData.currentQuestionIndex >= (numNormalQuestions + numSuddenDeathQuestions - 1)) {
-                         await handleDuelEnd(transaction, user.uid, opponentUid, false, true);
+                         await handleDuelEndInTransaction(transaction, user.uid, opponentUid, false, true);
                     } else {
                         updates.status = 'round_result';
                         updates.isDraw = true; // Carry over the draw state
@@ -346,7 +343,7 @@ export default function DuelPage() {
                     if (myFinalScore !== opponentFinalScore) {
                         const winnerUid = myFinalScore > opponentFinalScore ? user.uid : opponentUid;
                         const loserUid = winnerUid === user.uid ? opponentUid : user.uid;
-                        await handleDuelEnd(transaction, winnerUid, loserUid, false);
+                        await handleDuelEndInTransaction(transaction, winnerUid, loserUid, false);
                     } else {
                         updates.status = 'sudden_death';
                         updates.isDraw = true;
@@ -362,7 +359,7 @@ export default function DuelPage() {
                 transaction.update(duelRef, updates);
             }
         });
-    }, [user, duelRef, teacherUid, handleDuelEnd, duelSettings, duel]);
+    }, [user, duelRef, teacherUid, handleDuelEndInTransaction, duelSettings, duel]);
 
     const handleDuelStart = useCallback(async (duelData: DuelState) => {
         if (!teacherUid || !duelRef || !duelSettings) return;
@@ -391,10 +388,8 @@ export default function DuelPage() {
                 const cost = currentDuelData.cost || 0;
                 
                 if (cost > 0) {
-                    const newChallengerGold = Math.max(0, (challengerData.gold || 0) - cost);
-                    const newOpponentGold = Math.max(0, (opponentData.gold || 0) - cost);
-                    transaction.update(challengerRef, { gold: newChallengerGold });
-                    transaction.update(opponentRef, { gold: newOpponentGold });
+                    transaction.update(challengerRef, { gold: increment(-cost) });
+                    transaction.update(opponentRef, { gold: increment(-cost) });
                 }
                 
                 transaction.update(challengerRef, { inDuel: true });
@@ -613,19 +608,7 @@ export default function DuelPage() {
         setIsLeaving(true);
         try {
             await runTransaction(db, async (transaction) => {
-                const winnerRef = doc(db, 'teachers', teacherUid, 'students', opponentUid);
-                
-                const winnerDoc = await transaction.get(winnerRef);
-                if (!winnerDoc.exists()) throw new Error("Winner not found");
-                const winnerData = winnerDoc.data();
-                
-                const duelCost = duel.cost || 0;
-                const finalGold = (winnerData.gold || 0) + duelCost;
-
-                transaction.update(duelRef, { status: 'abandoned', winnerUid: opponentUid });
-                if (finalGold > 0) {
-                    transaction.update(winnerRef, { gold: finalGold });
-                }
+                await handleDuelEndInTransaction(transaction, opponentUid, user.uid, true);
             });
         } catch (error) {
             console.error("Error ending duel:", error);
@@ -914,5 +897,3 @@ export default function DuelPage() {
         </div>
     )
 }
-
-    
