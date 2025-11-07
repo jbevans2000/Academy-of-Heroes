@@ -220,7 +220,7 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
                 const targetNames: string[] = [];
                 
                 // --- Perform all writes AFTER all reads ---
-                const updatesToWrite: { ref: any, data: any }[] = [];
+                const updatesToWrite: { ref: any, data: any, logEvent: () => Promise<void> }[] = [];
 
                 for (const targetSnap of targetSnaps) {
                     if (!targetSnap.exists()) continue;
@@ -242,7 +242,17 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
                     const levelUpdates = handleLevelChange(target, newXp, levelingTable);
                     const finalUpdates = { ...levelUpdates, lastReceivedVeteransInsight: serverTimestamp() };
                     
-                    updatesToWrite.push({ ref: targetSnap.ref, data: finalUpdates });
+                    updatesToWrite.push({ 
+                        ref: targetSnap.ref, 
+                        data: finalUpdates,
+                        logEvent: async () => {
+                            await logAvatarEvent(teacherUid, target.uid, {
+                                source: 'Spell',
+                                xp: xpToAward,
+                                reason: `Received Veteran's Insight from ${caster.characterName}.`
+                            });
+                        }
+                    });
                     
                     awardedCount++;
                     targetNames.push(target.characterName);
@@ -263,6 +273,11 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
                 });
                 
                 await logAvatarEvent(teacherUid, casterUid, { source: 'Spell', reason: `Cast ${powerName} on ${targetNames.join(', ')}.` });
+
+                // Run log events after transaction is set up
+                for (const update of updatesToWrite) {
+                    await update.logEvent();
+                }
 
                 return { success: true, message: `You bestowed Veteran's Insight upon ${awardedCount} companion(s), granting each ${xpToAward} XP!` };
             }
