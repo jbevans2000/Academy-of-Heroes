@@ -276,111 +276,110 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
       />
 
       <div className="p-4 md:p-6 lg:p-8">
-        <div className="mx-auto max-w-4xl space-y-6">
-          {isTeacherPreview && (
-            <Alert variant="default" className="bg-yellow-100 dark:bg-yellow-900/50 border-yellow-500">
-                <User className="h-4 w-4" />
-                <AlertTitle>Teacher Preview Mode</AlertTitle>
-                <AlertDescription>
-                    You are viewing this dashboard as {student.characterName}. Any actions you take, such as purchasing items from The Vault, will be performed on their behalf.
-                </AlertDescription>
-            </Alert>
-          )}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-            <AvatarDisplay
-              student={student}
-            />
-            <div className="grid grid-cols-2 gap-4">
-                <Link href="/dashboard/map" passHref className="col-span-2">
-                    <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90">
-                        <Map className="mr-4 h-8 w-8" />
-                        Embark on Your Quest
-                    </Button>
-                </Link>
-                <Button size="lg" className="col-span-2 w-full py-8 text-lg justify-center bg-yellow-500 text-black hover:bg-yellow-600" disabled={isTrainingDone} onClick={handleDailyTrainingClick}>
-                    <BookOpen className="mr-4 h-8 w-8" />
-                    {isTrainingDone ? 'Training Complete for Today' : 'Daily Training'}
-                </Button>
-                <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setIsChallengeDialogOpen(true)}>
-                    <Swords className="mr-4 h-8 w-8" />
-                    Training Grounds
-                </Button>
-                <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleReadyForBattle}>
-                    <Sparkles className="mr-4 h-8 w-8" />
-                    Ready for Battle
-                </Button>
-                <Link href="/dashboard/songs-and-stories" passHref className="w-full">
-                    <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90">
-                        <BookHeart className="mr-4 h-8 w-8" />
-                        Songs and Stories
-                    </Button>
-                </Link>
-                 <Link href="/dashboard/forge" passHref className="w-full">
-                    <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90">
-                        <Hammer className="mr-4 h-8 w-8" />
-                        The Forge
-                    </Button>
-                </Link>
-                <Button size="lg" className="col-span-2 w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleCheckCompany} disabled={isLoadingCompany}>
-                    {isLoadingCompany ? <Loader2 className="mr-4 h-8 w-8 animate-spin"/> : <Briefcase className="mr-4 h-8 w-8" />}
-                    Check Company
-                </Button>
-            </div>
-          </div>
-          <StatsCard 
-              student={student}
-              levelingTable={levelingTable}
-          />
-          <TooltipProvider>
-              <div className="flex justify-center flex-wrap pt-6 gap-4">
-                  <Link href={`/armory${isTeacherPreview ? teacherPreviewQuery : ''}`} passHref>
-                      <Button variant="outline" className="h-auto py-4 px-6 border-2 border-amber-600 bg-white hover:bg-gray-100 text-gray-900">
-                          <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
-                              <Gem className="h-12 w-12 text-amber-500" />
-                              <div>
-                                  <h3 className="text-xl font-bold">The Vault</h3>
-                                  <p className="text-muted-foreground">Spend your gold!</p>
-                              </div>
-                          </div>
+        <TooltipProvider>
+          <div className="mx-auto max-w-4xl space-y-6">
+            {isTeacherPreview && (
+              <Alert variant="default" className="bg-yellow-100 dark:bg-yellow-900/50 border-yellow-500">
+                  <User className="h-4 w-4" />
+                  <AlertTitle>Teacher Preview Mode</AlertTitle>
+                  <AlertDescription>
+                      You are viewing this dashboard as {student.characterName}. Any actions you take, such as purchasing items from The Vault, will be performed on their behalf.
+                  </AlertDescription>
+              </Alert>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+              <AvatarDisplay
+                student={student}
+              />
+              <div className="grid grid-cols-2 gap-4">
+                  <Link href="/dashboard/map" passHref className="col-span-2">
+                      <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90">
+                          <Map className="mr-4 h-8 w-8" />
+                          Embark on Your Quest
                       </Button>
                   </Link>
-                  
-                  <Link href={`/dashboard/leaderboard${isTeacherPreview ? teacherPreviewQuery : ''}`} passHref>
-                      <Button variant="outline" className="h-auto py-4 px-6 border-2 border-yellow-400 bg-white hover:bg-gray-100 text-gray-900">
-                           <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
-                              <Trophy className="h-12 w-12 text-yellow-400" />
-                              <div>
-                                  <h3 className="text-xl font-bold">Leaderboards</h3>
-                                  <p className="text-muted-foreground">View top heroes!</p>
-                              </div>
-                          </div>
+                  <Button size="lg" className="col-span-2 w-full py-8 text-lg justify-center bg-yellow-500 text-black hover:bg-yellow-600" disabled={isTrainingDone} onClick={handleDailyTrainingClick}>
+                      <BookOpen className="mr-4 h-8 w-8" />
+                      {isTrainingDone ? 'Training Complete for Today' : 'Daily Training'}
+                  </Button>
+                  <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setIsChallengeDialogOpen(true)}>
+                      <Swords className="mr-4 h-8 w-8" />
+                      Training Grounds
+                  </Button>
+                  <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleReadyForBattle}>
+                      <Sparkles className="mr-4 h-8 w-8" />
+                      Ready for Battle
+                  </Button>
+                  <Link href="/dashboard/songs-and-stories" passHref className="w-full">
+                      <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90">
+                          <BookHeart className="mr-4 h-8 w-8" />
+                          Songs and Stories
                       </Button>
                   </Link>
-
-                  <Link href={`/dashboard/inventory${isTeacherPreview ? teacherPreviewQuery : ''}`} passHref>
-                      <Button variant="outline" className="h-auto py-4 px-6 border-2 border-purple-600 bg-white hover:bg-gray-100 text-gray-900">
-                          <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
-                              <Package className="h-12 w-12 text-purple-500" />
-                              <div>
-                                  <h3 className="text-xl font-bold">My Inventory</h3>
-                                  <p className="text-muted-foreground">View your items!</p>
-                              </div>
-                          </div>
+                  <Link href="/dashboard/forge" passHref className="w-full">
+                      <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90">
+                          <Hammer className="mr-4 h-8 w-8" />
+                          The Forge
                       </Button>
                   </Link>
-                  <Button variant="outline" className="h-auto py-4 px-6 border-2 border-sky-600 bg-white hover:bg-gray-100 text-gray-900" onClick={() => setIsAvatarLogOpen(true)}>
-                      <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
-                          <ScrollText className="h-12 w-12 text-sky-500" />
-                          <div>
-                              <h3 className="text-xl font-bold">Avatar Log</h3>
-                              <p className="text-muted-foreground">See your history.</p>
-                          </div>
-                      </div>
+                  <Button size="lg" className="col-span-2 w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleCheckCompany} disabled={isLoadingCompany}>
+                      {isLoadingCompany ? <Loader2 className="mr-4 h-8 w-8 animate-spin"/> : <Briefcase className="mr-4 h-8 w-8" />}
+                      Check Company
                   </Button>
               </div>
-          </TooltipProvider>
+            </div>
+            <StatsCard 
+                student={student}
+                levelingTable={levelingTable}
+            />
+            <div className="flex justify-center flex-wrap pt-6 gap-4">
+                <Link href={`/armory${isTeacherPreview ? teacherPreviewQuery : ''}`} passHref>
+                    <Button variant="outline" className="h-auto py-4 px-6 border-2 border-amber-600 bg-white hover:bg-gray-100 text-gray-900">
+                        <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
+                            <Gem className="h-12 w-12 text-amber-500" />
+                            <div>
+                                <h3 className="text-xl font-bold">The Vault</h3>
+                                <p className="text-muted-foreground">Spend your gold!</p>
+                            </div>
+                        </div>
+                    </Button>
+                </Link>
+                
+                <Link href={`/dashboard/leaderboard${isTeacherPreview ? teacherPreviewQuery : ''}`} passHref>
+                    <Button variant="outline" className="h-auto py-4 px-6 border-2 border-yellow-400 bg-white hover:bg-gray-100 text-gray-900">
+                         <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
+                            <Trophy className="h-12 w-12 text-yellow-400" />
+                            <div>
+                                <h3 className="text-xl font-bold">Leaderboards</h3>
+                                <p className="text-muted-foreground">View top heroes!</p>
+                            </div>
+                        </div>
+                    </Button>
+                </Link>
 
-          {/* Out of Combat Powers Section */}
+                <Link href={`/dashboard/inventory${isTeacherPreview ? teacherPreviewQuery : ''}`} passHref>
+                    <Button variant="outline" className="h-auto py-4 px-6 border-2 border-purple-600 bg-white hover:bg-gray-100 text-gray-900">
+                        <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
+                            <Package className="h-12 w-12 text-purple-500" />
+                            <div>
+                                <h3 className="text-xl font-bold">My Inventory</h3>
+                                <p className="text-muted-foreground">View your items!</p>
+                            </div>
+                        </div>
+                    </Button>
+                </Link>
+                <Button variant="outline" className="h-auto py-4 px-6 border-2 border-sky-600 bg-white hover:bg-gray-100 text-gray-900" onClick={() => setIsAvatarLogOpen(true)}>
+                    <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
+                        <ScrollText className="h-12 w-12 text-sky-500" />
+                        <div>
+                            <h3 className="text-xl font-bold">Avatar Log</h3>
+                            <p className="text-muted-foreground">See your history.</p>
+                        </div>
+                    </div>
+                </Button>
+            </div>
+
+            {/* Out of Combat Powers Section */}
             {student.class === 'Healer' && !isTeacherPreview && (
                 <div className="pt-8 text-center">
                     <h3 className="text-xl font-bold font-headline mb-4">Out of Combat Powers</h3>
@@ -432,14 +431,14 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
             )}
             {student.class === 'Guardian' && !isTeacherPreview && (
                 <div className="pt-6">
-                    <Button size="lg" className="w-full py-8 text-lg justify-center bg-green-600 text-white hover:bg-green-700" onClick={() => setIsPowerDialogOpen(true)}>
+                     <Button size="lg" className="w-full py-8 text-lg justify-center bg-green-600 text-white hover:bg-green-700" onClick={() => setIsPowerDialogOpen(true)}>
                         <Flame className="mr-4 h-8 w-8" />
                         Cast Powers
                     </Button>
                 </div>
             )}
-          
-        </div>
+          </div>
+        </TooltipProvider>
       </div>
     </>
   );
