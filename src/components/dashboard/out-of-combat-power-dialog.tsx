@@ -92,6 +92,7 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
   useEffect(() => {
       if (powerToCast) {
           let targets = companyMembers;
+          // Apply power-specific eligibility filters
           if (powerToCast.name === 'Focused Restoration') {
               targets = targets.filter(s => s.hp < s.maxHp * 0.5);
           } else if (powerToCast.name === 'Lesser Heal') {
@@ -99,8 +100,13 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
           } else if (powerToCast.name === 'Psionic Aura') {
             targets = targets.filter(s => s.uid !== student.uid && s.mp <= s.maxMp * 0.75);
           } else if (powerToCast.name === 'Psychic Flare') {
-            targets = targets.filter(s => s.uid !== student.uid && s.mp < s.maxMp * 0.5);
+            targets = targets.filter(s => s.mp < s.maxMp * 0.5); // Corrected logic
           }
+          
+          if (!powerToCast.targetSelf) {
+            targets = targets.filter(s => s.uid !== student.uid);
+          }
+
           setEligibleTargets(targets);
       }
   }, [powerToCast, companyMembers, student.uid]);
@@ -277,7 +283,7 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
                 <AlertDialogHeader>
                     <AlertDialogTitle>Cast {powerToCast?.name}?</AlertDialogTitle>
                      <AlertDialogDescription>
-                        This will cost {powerToCast?.name === 'Psychic Flare' ? '50% of your current MP' : `${powerToCast?.mpCost} MP`}. This action cannot be undone.
+                        This will cost {powerToCast?.mpCost} MP. This action cannot be undone.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                  <AlertDialogFooter>
