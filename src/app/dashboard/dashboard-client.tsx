@@ -313,7 +313,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                 </Button>
                 <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setIsChallengeDialogOpen(true)}>
                     <Swords className="mr-4 h-8 w-8" />
-                    Training Grounds
+                    Dueling Arena
                 </Button>
                 <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleReadyForBattle}>
                     <Sparkles className="mr-4 h-8 w-8" />
@@ -444,19 +444,27 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                  <div className="pt-8 text-center">
                     <h3 className="text-xl font-bold font-headline mb-4">Out of Combat Powers</h3>
                     <div className="flex justify-center gap-8">
-                        <Button
-                            className="rounded-full w-32 h-32 border-4 border-white shadow-lg relative disabled:opacity-50"
-                            onClick={() => handleOpenPowerDialog("Veteran's Insight")}
-                            disabled={student.level < 3}
-                        >
-                            <Image
-                                src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Button%20Images%2Fimage-gen.png?alt=media&token=79f0f06f-61e6-4326-b2b9-bcb4b789e38e"
-                                alt="Veteran's Insight"
-                                layout="fill"
-                                className="object-cover rounded-full"
-                            />
-                            {student.level < 3 && <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-full"><p className="text-white font-bold text-sm">Lvl 3</p></div>}
-                        </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    className="rounded-full w-32 h-32 border-4 border-white shadow-lg relative disabled:opacity-50"
+                                    onClick={() => handleOpenPowerDialog("Veteran's Insight")}
+                                    disabled={student.level < 3}
+                                >
+                                    <Image
+                                        src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Button%20Images%2Fimage-gen.png?alt=media&token=79f0f06f-61e6-4326-b2b9-bcb4b789e38e"
+                                        alt="Veteran's Insight"
+                                        layout="fill"
+                                        className="object-cover rounded-full"
+                                    />
+                                    {student.level < 3 && <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-full"><p className="text-white font-bold text-sm">Lvl 3</p></div>}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p className="font-bold">Veteran's Insight</p>
+                                <p>Cost: 20% Max MP</p>
+                            </TooltipContent>
+                        </Tooltip>
                          <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button
