@@ -1,11 +1,12 @@
 
 'use server';
 
-import { doc, runTransaction, increment, arrayUnion } from 'firebase/firestore';
+import { doc, runTransaction, increment, arrayUnion, getDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import { outOfCombatPowers } from '@/lib/out-of-combat-powers';
 import { logAvatarEvent } from '@/lib/avatar-log';
+import { handleLevelChange } from '@/lib/game-mechanics';
 
 interface ActionResponse {
   success: boolean;
@@ -43,20 +44,25 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
             const caster = casterSnap.data() as Student;
             
             if (caster.level < power.level) throw new Error("You have not learned this power yet.");
+
+            // Get the teacher document to fetch leveling table for XP rewards
+            const teacherRef = doc(db, 'teachers', teacherUid);
+            const teacherSnap = await transaction.get(teacherRef);
+            const levelingTable = teacherSnap.exists() ? teacherSnap.data().levelingTable : null;
             
-            const dynamicCost = power.name === 'Psychic Flare' ? Math.max(20, Math.floor(caster.mp * 0.5)) : power.mpCost;
+            let dynamicCost = power.mpCost;
+            if (power.name === 'Psychic Flare') {
+                dynamicCost = Math.max(20, Math.floor(caster.mp * 0.5));
+            } else if (power.name === 'Veteran\'s Insight') {
+                dynamicCost = Math.ceil(caster.maxMp * 0.20);
+            }
 
             if (caster.mp < dynamicCost) throw new Error("Not enough MP to cast this spell.");
-
-            // --- Server-side validation and effect logic ---
 
             if (power.name === 'Lesser Heal' || power.name === 'Focused Restoration') {
                 if (!targets || targets.length === 0) throw new Error("No targets selected.");
                 if (targets.length > (power.targetCount || 1)) throw new Error("Too many targets selected.");
 
-                const targetRefs = targets.map(uid => doc(db, 'teachers', teacherUid, 'students', uid));
-                const targetSnaps = await Promise.all(targetRefs.map(ref => transaction.get(ref)));
-                
                 transaction.update(casterRef, { mp: increment(-power.mpCost) });
                 
                 let totalHealed = 0;
@@ -67,6 +73,8 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
 
                 const healPerTarget = Math.ceil(healAmount / targets.length);
                 
+                const targetSnaps = await Promise.all(targets.map(uid => transaction.get(doc(db, 'teachers', teacherUid, 'students', uid))));
+
                 targetSnaps.forEach((targetSnap, index) => {
                     if (!targetSnap.exists()) return; 
                     const target = targetSnap.data() as Student;
@@ -75,7 +83,7 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
 
                     const newHp = Math.min(target.maxHp, target.hp + healPerTarget);
                     totalHealed += (newHp - target.hp);
-                    transaction.update(targetRefs[index], { hp: newHp });
+                    transaction.update(targetSnap.ref, { hp: newHp });
                 });
                 
                 await logAvatarEvent(teacherUid, casterUid, { source: 'Spell', reason: `Cast ${powerName}` });
@@ -85,22 +93,21 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
             if (power.name === 'Psionic Aura') {
                  if (!targets || targets.length === 0) throw new Error("No targets selected.");
                  
-                 const targetRefs = targets.map(uid => doc(db, 'teachers', teacherUid, 'students', uid));
-                 const targetSnaps = await Promise.all(targetRefs.map(ref => transaction.get(ref)));
-
                  transaction.update(casterRef, { mp: increment(-power.mpCost) });
 
                  const totalRestore = rollDie(6) + caster.level;
                  const restorePerTarget = Math.ceil(totalRestore / targets.length);
                  let targetNames: string[] = [];
 
-                 targetSnaps.forEach((targetSnap, index) => {
+                 const targetSnaps = await Promise.all(targets.map(uid => transaction.get(doc(db, 'teachers', teacherUid, 'students', uid))));
+
+                 targetSnaps.forEach((targetSnap) => {
                      if (!targetSnap.exists()) return;
                      const target = targetSnap.data() as Student;
                      targetNames.push(target.characterName);
                      if (target.mp >= target.maxMp) return;
                      const newMp = Math.min(target.maxMp, target.mp + restorePerTarget);
-                     transaction.update(targetRefs[index], { mp: newMp });
+                     transaction.update(targetSnap.ref, { mp: newMp });
                  });
 
                  await logAvatarEvent(teacherUid, casterUid, { source: 'Spell', reason: `Cast ${powerName}` });
@@ -129,22 +136,64 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
                  await logAvatarEvent(teacherUid, casterUid, { source: 'Spell', reason: `Cast ${powerName} on ${targetData.characterName}` });
                  return { success: true, message: `You cast Psychic Flare, restoring ${targetData.characterName} to full MP!` };
             }
+            
+            if (power.name === 'Veteran\'s Insight') {
+                if (!targets || targets.length === 0) throw new Error("No targets selected for Veteran's Insight.");
 
-            if (power.name === 'Absorb') {
-                const hpToConvert = inputValue || 0;
-                if (hpToConvert <= 0 || hpToConvert >= caster.hp) {
-                    throw new Error("Invalid HP amount to convert.");
+                // 1. Check Caster's Cooldown
+                if (caster.lastUsedVeteransInsight) {
+                    const lastUsed = caster.lastUsedVeteransInsight.toDate();
+                    const now = new Date();
+                    if (now.getTime() - lastUsed.getTime() < 24 * 60 * 60 * 1000) {
+                        throw new Error("You can only use Veteran's Insight once every 24 hours.");
+                    }
                 }
 
-                const mpGained = Math.floor(hpToConvert / 2);
-                transaction.update(casterRef, {
-                    hp: increment(-hpToConvert),
-                    mp: increment(mpGained)
+                // 2. Fetch all targets and validate them
+                const targetSnaps = await Promise.all(targets.map(uid => transaction.get(doc(db, 'teachers', teacherUid, 'students', uid))));
+                const xpToAward = (caster.level || 1) * 10;
+                let awardedCount = 0;
+                const targetNames: string[] = [];
+
+                for (const targetSnap of targetSnaps) {
+                    if (!targetSnap.exists()) continue;
+                    const target = targetSnap.data() as Student;
+
+                    // Validation checks
+                    if (target.companyId !== caster.companyId) continue;
+                    if (target.level >= caster.level) continue;
+                    if (target.lastReceivedVeteransInsight) {
+                         const lastReceived = target.lastReceivedVeteransInsight.toDate();
+                         const now = new Date();
+                         if (now.getTime() - lastReceived.getTime() < 24 * 60 * 60 * 1000) {
+                            continue;
+                         }
+                    }
+
+                    // If valid, apply effects
+                    const newXp = (target.xp || 0) + xpToAward;
+                    const levelUpdates = handleLevelChange(target, newXp, levelingTable);
+                    const finalUpdates = { ...levelUpdates, lastReceivedVeteransInsight: serverTimestamp() };
+                    
+                    transaction.update(targetSnap.ref, finalUpdates);
+                    
+                    awardedCount++;
+                    targetNames.push(target.characterName);
+                }
+
+                if (awardedCount === 0) {
+                    throw new Error("No eligible targets found for the buff. MP was not consumed.");
+                }
+
+                // 3. Apply cost and cooldown to caster
+                transaction.update(casterRef, { 
+                    mp: increment(-dynamicCost),
+                    lastUsedVeteransInsight: serverTimestamp(),
                 });
                 
-                await logAvatarEvent(teacherUid, casterUid, { source: 'Spell', reason: `Cast ${powerName}` });
-                
-                return { success: true, message: `You converted ${hpToConvert} HP into ${mpGained} MP!` };
+                await logAvatarEvent(teacherUid, casterUid, { source: 'Spell', reason: `Cast ${powerName} on ${targetNames.join(', ')}.` });
+
+                return { success: true, message: `You bestowed Veteran's Insight upon ${awardedCount} companion(s), granting each ${xpToAward} XP!` };
             }
 
             throw new Error("This power's effect cannot be resolved outside of battle.");
