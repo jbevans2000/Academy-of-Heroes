@@ -277,7 +277,7 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
                 <AlertDialogHeader>
                     <AlertDialogTitle>Cast {powerToCast?.name}?</AlertDialogTitle>
                      <AlertDialogDescription>
-                        This will cost {powerToCast?.mpCost} MP. This action cannot be undone.
+                        This will cost {powerToCast?.name === 'Psychic Flare' ? '50% of your current MP' : `${powerToCast?.mpCost} MP`}. This action cannot be undone.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                  <AlertDialogFooter>
