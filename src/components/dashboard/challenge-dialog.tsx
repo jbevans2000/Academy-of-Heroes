@@ -113,6 +113,7 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
         return s.uid !== student.uid &&
                (s.inDuel === undefined || s.inDuel === false) &&
                !s.isArchived &&
+               !s.isHidden &&
                onlineUids.includes(s.uid);
     });
   }, [allStudents, onlineUids, student.uid, duelSettings]);
@@ -120,6 +121,7 @@ export function ChallengeDialog({ isOpen, onOpenChange, student }: ChallengeDial
   const handleChallengeClick = (opponent: Student) => {
       if (!duelSettings) return;
 
+      // CRITICAL FIX: Check challenger's daily limit before allowing a challenge
       if (duelSettings.isDailyLimitEnabled) {
           const challengerDuelsToday = student.dailyDuelCount || 0;
           if (challengerDuelsToday >= (duelSettings.dailyDuelLimit || 999)) {
