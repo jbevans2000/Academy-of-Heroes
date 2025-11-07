@@ -217,8 +217,8 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
   }
 
   const handleOpenPowerDialog = (powerName: string) => {
-      const powersForClass = outOfCombatPowers[student.class] || [];
-      const power = powersForClass.find(p => p.name === powerName);
+      const allPowers = Object.values(outOfCombatPowers).flat();
+      const power = allPowers.find(p => p.name === powerName);
       if (power) {
         setPowerToCast(power);
         setIsPowerDialogOpen(true);
@@ -444,27 +444,19 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                  <div className="pt-8 text-center">
                     <h3 className="text-xl font-bold font-headline mb-4">Out of Combat Powers</h3>
                     <div className="flex justify-center gap-8">
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    className="rounded-full w-32 h-32 border-4 border-white shadow-lg relative disabled:opacity-50"
-                                    onClick={() => handleOpenPowerDialog('Absorb')}
-                                    disabled={student.level < 5}
-                                >
-                                    <Image
-                                        src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/2025-09-07T05%3A32%3A24_27616%2Fabsorb.jpg?alt=media&token=425d506a-a534-4d23-9f87-3d964f51e360"
-                                        alt="Absorb"
-                                        layout="fill"
-                                        className="object-cover rounded-full"
-                                    />
-                                    {student.level < 5 && <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-full"><p className="text-white font-bold text-sm">Lvl 5</p></div>}
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p className="font-bold">Absorb</p>
-                                <p>Cost: 0 MP</p>
-                            </TooltipContent>
-                        </Tooltip>
+                        <Button
+                            className="rounded-full w-32 h-32 border-4 border-white shadow-lg relative disabled:opacity-50"
+                            onClick={() => handleOpenPowerDialog('Veteran\'s Insight')}
+                            disabled={student.level < 10}
+                        >
+                            <Image
+                                src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Button%20Images%2Fimage-gen.png?alt=media&token=79f0f06f-61e6-4326-b2b9-bcb4b789e38e"
+                                alt="Veteran's Insight"
+                                layout="fill"
+                                className="object-cover rounded-full"
+                            />
+                            {student.level < 10 && <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-full"><p className="text-white font-bold text-sm">Lvl 10</p></div>}
+                        </Button>
                          <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button
