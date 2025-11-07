@@ -33,6 +33,7 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
         return await runTransaction(db, async (transaction) => {
             const casterRef = doc(db, 'teachers', teacherUid, 'students', casterUid);
             const casterSnap = await transaction.get(casterRef);
+
             if (!casterSnap.exists()) throw new Error("Caster not found.");
             const caster = casterSnap.data() as Student;
 
@@ -52,28 +53,33 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
                 if (!targetUids || targetUids.length === 0) throw new Error("No targets selected.");
                 if (targetUids.length > (power.targetCount || 1)) throw new Error("Too many targets selected.");
 
+                // --- READ PHASE ---
+                const targetSnaps = await Promise.all(
+                    targetUids.map(uid => transaction.get(doc(db, 'teachers', teacherUid, 'students', uid)))
+                );
+
+                // --- WRITE PHASE ---
                 let totalHealed = 0;
                 const healAmount = powerName === 'Lesser Heal'
                     ? rollDie(6) + caster.level
                     : rollDie(8) + rollDie(8) + rollDie(8) + caster.level;
 
                 const healPerTarget = Math.ceil(healAmount / targetUids.length);
-
-                for (const targetUid of targetUids) {
-                    const targetRef = doc(db, 'teachers', teacherUid, 'students', targetUid);
-                    const targetSnap = await transaction.get(targetRef);
-                    if (!targetSnap.exists()) continue; // Skip if target not found
-
+                
+                targetSnaps.forEach(targetSnap => {
+                    if (!targetSnap.exists()) return; // Skip if a target somehow doesn't exist
                     const target = targetSnap.data() as Student;
-                    if (target.hp >= target.maxHp) continue; // Skip if already full health
-                    
+                    if (target.hp >= target.maxHp) return; // Skip if already full health
+
                     const newHp = Math.min(target.maxHp, target.hp + healPerTarget);
                     totalHealed += (newHp - target.hp);
-                    transaction.update(targetRef, { hp: newHp });
-                }
+                    transaction.update(targetSnap.ref, { hp: newHp });
+                });
                 
                 transaction.update(casterRef, { mp: increment(-power.mpCost) });
+                
                 await logAvatarEvent(teacherUid, casterUid, { source: 'Spell', reason: `Cast ${powerName}` });
+                
                 return { success: true, message: `You cast ${powerName}, restoring a total of ${totalHealed} HP.` };
             }
 
@@ -89,7 +95,9 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
                     hp: increment(-hpToConvert),
                     mp: increment(mpGained)
                 });
+                
                 await logAvatarEvent(teacherUid, casterUid, { source: 'Spell', reason: `Cast ${powerName}` });
+                
                 return { success: true, message: `You converted ${hpToConvert} HP into ${mpGained} MP!` };
             }
 
