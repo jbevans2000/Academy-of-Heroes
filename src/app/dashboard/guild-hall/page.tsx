@@ -120,6 +120,13 @@ export default function GuildHallPage() {
         }
     };
     
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSendMessage();
+        }
+    };
+    
     const getCompanyColor = (companyId?: string): React.CSSProperties => {
         if (!companyId) return {};
         const company = companies.find(c => c.id === companyId);
@@ -177,6 +184,7 @@ export default function GuildHallPage() {
                                 <Textarea 
                                     value={newMessage}
                                     onChange={(e) => setNewMessage(e.target.value)}
+                                    onKeyDown={handleKeyDown}
                                     placeholder="Send a message to the guild..."
                                     rows={1}
                                     disabled={isSending || !isChatEnabled}
