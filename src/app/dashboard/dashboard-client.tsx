@@ -313,7 +313,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                 </Button>
                 <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setIsChallengeDialogOpen(true)}>
                     <Swords className="mr-4 h-8 w-8" />
-                    Dueling Arena
+                    Training Grounds
                 </Button>
                 <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleReadyForBattle}>
                     <Sparkles className="mr-4 h-8 w-8" />
@@ -331,13 +331,13 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                         The Forge
                     </Button>
                 </Link>
-                <Link href="/dashboard/guild-hall" passHref className="col-span-2">
+                <Link href="/dashboard/missions" passHref className="w-full">
                     <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90">
-                        <Users className="mr-4 h-8 w-8" />
-                        The Guild Hall
+                        <Star className="mr-4 h-8 w-8" />
+                        Special Missions
                     </Button>
                 </Link>
-                <Button size="lg" className="col-span-2 w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleCheckCompany} disabled={isLoadingCompany}>
+                <Button size="lg" className="w-full py-8 text-lg justify-center bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleCheckCompany} disabled={isLoadingCompany}>
                     {isLoadingCompany ? <Loader2 className="mr-4 h-8 w-8 animate-spin"/> : <Briefcase className="mr-4 h-8 w-8" />}
                     Check Company
                 </Button>
@@ -383,16 +383,16 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                       </div>
                   </Button>
               </Link>
-              <Link href="/dashboard/missions" passHref>
-                <Button variant="outline" className="h-auto py-4 px-6 border-2 border-green-600 bg-white hover:bg-gray-100 text-gray-900">
-                    <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
-                        <Star className="h-12 w-12 text-green-500" />
-                        <div>
-                            <h3 className="text-xl font-bold">Special Missions</h3>
-                            <p className="text-muted-foreground">View your missions!</p>
+              <Link href="/dashboard/guild-hall" passHref>
+                    <Button variant="outline" className="h-auto py-4 px-6 border-2 border-blue-600 bg-white hover:bg-gray-100 text-gray-900">
+                        <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
+                            <Users className="h-12 w-12 text-blue-500" />
+                            <div>
+                                <h3 className="text-xl font-bold">The Guild Hall</h3>
+                                <p className="text-muted-foreground">Chat with your guild!</p>
+                            </div>
                         </div>
-                    </div>
-                </Button>
+                    </Button>
               </Link>
             <Button variant="outline" className="h-auto py-4 px-6 border-2 border-sky-600 bg-white hover:bg-gray-100 text-gray-900" onClick={() => setIsAvatarLogOpen(true)}>
                 <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
@@ -446,7 +446,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                     <div className="flex justify-center gap-8">
                         <Button
                             className="rounded-full w-32 h-32 border-4 border-white shadow-lg relative disabled:opacity-50"
-                            onClick={() => handleOpenPowerDialog('Veteran\'s Insight')}
+                            onClick={() => handleOpenPowerDialog("Veteran's Insight")}
                             disabled={student.level < 10}
                         >
                             <Image
