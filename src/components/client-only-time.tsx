@@ -16,8 +16,8 @@ export function ClientOnlyTime({ date }: ClientOnlyTimeProps) {
   }, []);
 
   if (!hasMounted) {
-    // Render a placeholder on the server and during initial client render
-    return <span>Loading...</span>;
+    // Render nothing on the server and during the initial client render
+    return null;
   }
 
   // Render the actual time distance only on the client after hydration
