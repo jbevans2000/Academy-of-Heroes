@@ -8,6 +8,7 @@ export interface Power {
     level: number;
     mpCost: number;
     type: PowerType;
+    outOfCombat?: boolean; // Can this power be used from the dashboard?
     target?: 'ally' | 'fallen';
     targetCount?: number;
     targetSelf?: boolean;
@@ -112,6 +113,7 @@ export const classPowers: ClassPowers = {
       mpCost: 0,
       type: 'support',
       isMultiStep: true,
+      outOfCombat: true,
     },
     {
       name: 'Berserker Strike',
@@ -137,7 +139,7 @@ export const classPowers: ClassPowers = {
     },
     {
       name: 'Inspiring Strike',
-      description: "You let out a mighty war cry, inspiring your allies to fight with renewed vigor. The party's Power Damage from spells is tripled for this round. (Max 2 uses per Guardian per battle)",
+      description: "You let out a mighty war cry, inspiring your allies with courage, tripling the power of their attacks! (Max 2 uses per Guardian per battle)",
       level: 17,
       mpCost: 35,
       type: 'damage',
@@ -167,6 +169,7 @@ export const classPowers: ClassPowers = {
       target: 'ally',
       targetCount: 2,
       targetSelf: true,
+      outOfCombat: true,
     },
     {
       name: 'Solar Empowerment',
@@ -195,6 +198,7 @@ export const classPowers: ClassPowers = {
       target: 'ally',
       targetSelf: true,
       targetCount: 1,
+      outOfCombat: true,
     },
     {
       name: 'Divine Judgment',
