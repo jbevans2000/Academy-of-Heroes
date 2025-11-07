@@ -12,13 +12,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Send, ArrowLeft, ShieldAlert, Trash2, Download } from 'lucide-react';
-import { sendGuildHallMessage, clearGuildHallChat } from '@/ai/flows/manage-messages';
+import { Loader2, Send, ArrowLeft, ShieldAlert, Users } from 'lucide-react';
+import { sendGuildHallMessage } from '@/ai/flows/manage-messages';
 import { cn } from '@/lib/utils';
 import { ClientOnlyTime } from '@/components/client-only-time';
 import type { Company, Student, Teacher } from '@/lib/data';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import jsPDF from 'jspdf';
+import Image from 'next/image';
 
 
 interface GuildHallMessage {
@@ -143,6 +144,7 @@ export default function GuildHallPage() {
         ? messages.filter(msg => msg.companyId === student.companyId || msg.isTeacher)
         : messages;
 
+    const currentCompany = student?.companyId ? companies.find(c => c.id === student.companyId) : null;
 
     return (
         <div className="relative flex min-h-screen w-full flex-col">
@@ -162,9 +164,20 @@ export default function GuildHallPage() {
                     <Button variant="outline" onClick={() => router.push('/dashboard')}>
                         <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
                     </Button>
+                    {isCompanyChatActive && (
+                        <div className="bg-primary/80 backdrop-blur-sm text-primary-foreground p-4 rounded-lg flex items-center gap-4">
+                            {currentCompany?.logoUrl && (
+                                <Image src={currentCompany.logoUrl} alt={currentCompany.name} width={40} height={40} className="rounded-full border-2 border-white"/>
+                            )}
+                            <div>
+                                <h3 className="font-bold">Company Chat Active</h3>
+                                <p className="text-sm">{currentCompany ? `You are in a private channel with ${currentCompany.name}.` : "You can only see messages from your Guild Leader."}</p>
+                            </div>
+                        </div>
+                    )}
                     <Card className="h-[75vh] flex flex-col bg-card/80 backdrop-blur-sm">
                         <CardHeader>
-                            <CardTitle>The Guild Hall {isCompanyChatActive && student?.companyId ? `- ${companies.find(c => c.id === student.companyId)?.name || 'Company'} Chat` : ''}</CardTitle>
+                            <CardTitle>The Guild Hall {isCompanyChatActive && currentCompany ? `- ${currentCompany.name} Chat` : ''}</CardTitle>
                             <CardDescription>A place for all guild members to communicate.</CardDescription>
                         </CardHeader>
                         <CardContent className="flex-grow overflow-hidden flex flex-col">

@@ -14,7 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Send, ArrowLeft, ShieldAlert, Trash2, Download } from 'lucide-react';
+import { Loader2, Send, ArrowLeft, ShieldAlert, Trash2, Download, Users } from 'lucide-react';
 import { sendGuildHallMessage, clearGuildHallChat } from '@/ai/flows/manage-messages';
 import { cn } from '@/lib/utils';
 import { ClientOnlyTime } from '@/components/client-only-time';
@@ -265,6 +265,12 @@ export default function GuildHallPage() {
                             </div>
                         </div>
                     </div>
+                    {isCompanyChatActive && (
+                        <div className="bg-primary/80 backdrop-blur-sm text-primary-foreground p-3 rounded-lg flex items-center justify-center gap-2">
+                            <Users className="h-5 w-5" />
+                            <h3 className="font-bold">Company Chat Mode is ACTIVE.</h3>
+                        </div>
+                    )}
                     <Card className="h-[75vh] flex flex-col bg-card/80 backdrop-blur-sm">
                         <CardHeader>
                             <CardTitle>The Guild Hall</CardTitle>
