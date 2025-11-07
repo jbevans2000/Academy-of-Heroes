@@ -109,6 +109,7 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
             );
           } else if (powerToCast.name === 'Provision') {
             const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            // Must be in the same company and cannot have received a provision recently.
             targets = targets.filter(s => s.companyId === student.companyId && (!s.lastReceivedVeteransInsight || s.lastReceivedVeteransInsight.toDate() < twentyFourHoursAgo));
           }
           
@@ -199,6 +200,32 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
           }
           handleConfirmClick([]);
           return;
+      } else if (powerToCast?.name === 'Arcane Redirect') {
+          const maxCanAfford = Math.floor(student.mp / (powerToCast.mpCost || 15));
+          const numToEmpower = Number(inputValue);
+          if (inputValue === '' || numToEmpower <= 0 || numToEmpower > maxCanAfford) {
+               toast({ variant: 'destructive', title: 'Cannot Cast', description: `You can empower between 1 and ${maxCanAfford} Mages.`});
+              return;
+          }
+           handleConfirmClick([], numToEmpower);
+      } else if (powerToCast?.name === 'Provision') {
+           const maxGold = Math.floor(student.gold * 0.25);
+           const goldToSend = Number(inputValue);
+           const cost = goldToSend + Math.ceil(goldToSend * 0.05);
+
+           if (inputValue === '' || goldToSend <= 0) {
+               toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter an amount of gold to send.'});
+               return;
+           }
+           if (student.gold < cost) {
+               toast({ variant: 'destructive', title: 'Insufficient Funds', description: `You need ${cost} gold for this transaction but only have ${student.gold}.` });
+               return;
+           }
+           if (goldToSend > maxGold) {
+               toast({ variant: 'destructive', title: 'Amount Too High', description: `You can send a maximum of ${maxGold} gold.` });
+               return;
+           }
+           setCurrentStep(2); // Proceed to target selection
       }
   };
 
@@ -225,6 +252,58 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
               </>
           )
       }
+      if (powerToCast?.name === 'Arcane Redirect') {
+            const costPerMage = powerToCast.mpCost || 15;
+            const maxCanAfford = Math.floor(student.mp / costPerMage);
+            const cost = (Number(inputValue) || 0) * costPerMage;
+
+            return (
+                <>
+                    <DialogHeader>
+                        <DialogTitle>Arcane Redirect</DialogTitle>
+                        <DialogDescription>
+                            Pledge your magic to empower allied Mages. For each successful Wildfire they cast, you will pay {costPerMage} MP and their spell's damage will be doubled.
+                        </DialogDescription>
+                    </DialogHeader>
+                     <div className="py-4 space-y-2">
+                        <Label htmlFor="mage-count">How many Mages will you empower?</Label>
+                        <Input id="mage-count" type="number" value={inputValue} onChange={e => setInputValue(e.target.value === '' ? '' : Number(e.target.value))} />
+                        <p className="text-sm">Potential Cost: <span className={cost > student.mp ? 'text-destructive' : 'text-primary'}>{cost} MP</span> (You have {student.mp} MP. You can empower up to {maxCanAfford} Mages)</p>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                        <Button onClick={handleNextStep} disabled={cost > student.mp || inputValue === '' || Number(inputValue) <= 0}>Confirm Pledge</Button>
+                    </DialogFooter>
+                </>
+            )
+      }
+       if (powerToCast?.name === 'Provision') {
+            const maxGold = Math.floor(student.gold * 0.25);
+            const goldToSend = Number(inputValue) || 0;
+            const fee = Math.ceil(goldToSend * 0.05);
+            const totalCost = goldToSend + fee;
+
+            return (
+                <>
+                    <DialogHeader>
+                        <DialogTitle>Provision Company Member</DialogTitle>
+                        <DialogDescription>
+                            Enter the amount of gold to send. You can send up to 25% of your current gold. A 5% transaction fee will be applied.
+                        </DialogDescription>
+                    </DialogHeader>
+                     <div className="py-4 space-y-2">
+                        <Label htmlFor="gold-amount">Gold to Send (Max: {maxGold})</Label>
+                        <Input id="gold-amount" type="number" value={inputValue} onChange={e => setInputValue(e.target.value === '' ? '' : Number(e.target.value))} />
+                        <p className="text-sm text-muted-foreground">Transaction Fee (5%): {fee} Gold</p>
+                        <p className="text-sm">Total Cost: <span className={totalCost > student.gold ? 'text-destructive font-bold' : 'text-primary font-semibold'}>{totalCost} Gold</span> (You have {student.gold} Gold)</p>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                        <Button onClick={handleNextStep} disabled={inputValue === '' || goldToSend <= 0 || goldToSend > maxGold || totalCost > student.gold}>Next</Button>
+                    </DialogFooter>
+                </>
+            )
+        }
       return null;
   }
 
@@ -296,7 +375,7 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
                 <AlertDialogHeader>
                     <AlertDialogTitle>Cast {powerToCast?.name}?</AlertDialogTitle>
                      <AlertDialogDescription>
-                        This will cost {powerToCast?.mpCost} MP. This action cannot be undone.
+                        This will cost {powerToCast?.name === 'Provision' ? `${(Number(inputValue) || 0) + Math.ceil((Number(inputValue) || 0) * 0.05)} Gold` : `${powerToCast?.mpCost} MP`}. This action cannot be undone.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                  <AlertDialogFooter>
