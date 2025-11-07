@@ -35,6 +35,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { AvatarLogDialog } from '@/components/dashboard/avatar-log-dialog';
 import { xpForLevel as defaultXpTable } from '@/lib/game-mechanics';
 import { OutOfCombatPowerDialog } from '@/components/dashboard/out-of-combat-power-dialog';
+import Image from 'next/image';
 
 interface DashboardClientProps {
   student: Student;
@@ -213,6 +214,9 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
       }
   }
 
+  const lesserHealUnlocked = student.level >= 2;
+  const focusedRestorationUnlocked = student.level >= 8;
+
   return (
     <>
       <AlertDialog open={isFreelancerAlertOpen} onOpenChange={setIsFreelancerAlertOpen}>
@@ -377,14 +381,63 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
           </TooltipProvider>
 
           {/* Out of Combat Powers Section */}
-          {(student.class === 'Healer' || student.class === 'Guardian') && !isTeacherPreview && (
-            <div className="pt-6">
-                 <Button size="lg" className="w-full py-8 text-lg justify-center bg-green-600 text-white hover:bg-green-700" onClick={() => setIsPowerDialogOpen(true)}>
-                    <Flame className="mr-4 h-8 w-8" />
-                    Cast Powers
-                </Button>
-            </div>
-          )}
+            {student.class === 'Healer' && !isTeacherPreview && (
+                <div className="pt-8 text-center">
+                    <h3 className="text-xl font-bold font-headline mb-4">Out of Combat Powers</h3>
+                    <div className="flex justify-center gap-8">
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    className="rounded-full w-32 h-32 border-4 border-white shadow-lg relative disabled:opacity-50"
+                                    onClick={() => setIsPowerDialogOpen(true)}
+                                    disabled={!lesserHealUnlocked || student.mp < 3}
+                                >
+                                    <Image
+                                        src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/2025-09-07T05%3A32%3A24_27616%2Ffocused%20restoration.jpg?alt=media&token=e71c9449-6b54-44eb-9c01-762797da1b6d"
+                                        alt="Lesser Heal"
+                                        layout="fill"
+                                        className="object-cover rounded-full"
+                                    />
+                                    {!lesserHealUnlocked && <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-full"><p className="text-white font-bold text-sm">Lvl 2</p></div>}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p className="font-bold">Lesser Heal</p>
+                                <p>Cost: 3 MP</p>
+                            </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                 <Button
+                                    className="rounded-full w-32 h-32 border-4 border-white shadow-lg relative disabled:opacity-50"
+                                    onClick={() => setIsPowerDialogOpen(true)}
+                                    disabled={!focusedRestorationUnlocked || student.mp < 12}
+                                >
+                                    <Image
+                                        src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/2025-09-07T05%3A32%3A24_27616%2FLesser%20Heal.jpg?alt=media&token=7d7d2076-1539-4a5b-8a38-255787527822"
+                                        alt="Focused Restoration"
+                                        layout="fill"
+                                        className="object-cover rounded-full"
+                                    />
+                                     {!focusedRestorationUnlocked && <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-full"><p className="text-white font-bold text-sm">Lvl 8</p></div>}
+                                </Button>
+                            </TooltipTrigger>
+                             <TooltipContent>
+                                <p className="font-bold">Focused Restoration</p>
+                                <p>Cost: 12 MP</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </div>
+                </div>
+            )}
+            {student.class === 'Guardian' && !isTeacherPreview && (
+                <div className="pt-6">
+                    <Button size="lg" className="w-full py-8 text-lg justify-center bg-green-600 text-white hover:bg-green-700" onClick={() => setIsPowerDialogOpen(true)}>
+                        <Flame className="mr-4 h-8 w-8" />
+                        Cast Powers
+                    </Button>
+                </div>
+            )}
           
         </div>
       </div>
