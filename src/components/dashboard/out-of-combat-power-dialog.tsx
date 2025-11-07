@@ -25,7 +25,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
-import { classPowers, type Power } from '@/lib/powers';
+import { OutOfCombatPower } from '@/lib/out-of-combat-powers';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Dices } from 'lucide-react';
 import { useOutOfCombatPower } from '@/ai/flows/use-out-of-combat-power';
@@ -38,7 +38,7 @@ interface OutOfCombatPowerDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   student: Student;
-  powerToCast: Power | null;
+  powerToCast: OutOfCombatPower | null;
 }
 
 // Fisher-Yates shuffle algorithm
@@ -284,7 +284,7 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
                 <AlertDialogHeader>
                     <AlertDialogTitle>Cast {powerToCast?.name}?</AlertDialogTitle>
                      <AlertDialogDescription>
-                        This will cost {powerToCast?.mpCost} MP. This action cannot be undone.
+                        This will cost {powerToCast?.name === 'Psychic Flare' ? '50% of your current MP' : `${powerToCast?.mpCost} MP`}. This action cannot be undone.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                  <AlertDialogFooter>

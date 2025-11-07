@@ -4,7 +4,7 @@
 import { doc, runTransaction, increment, arrayUnion } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
-import { classPowers, type Power } from '@/lib/powers';
+import { outOfCombatPowers } from '@/lib/out-of-combat-powers';
 import { logAvatarEvent } from '@/lib/avatar-log';
 
 interface ActionResponse {
@@ -31,19 +31,19 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
 
     try {
         return await runTransaction(db, async (transaction) => {
-            const casterRef = doc(db, 'teachers', teacherUid, 'students', casterUid);
-            const casterSnap = await transaction.get(casterRef);
-
-            if (!casterSnap.exists()) throw new Error("Caster not found.");
-            const caster = casterSnap.data() as Student;
-
-            const allPowers = Object.values(classPowers).flat();
+            const allPowers = Object.values(outOfCombatPowers).flat();
             const power = allPowers.find(p => p.name === powerName);
 
             if (!power) throw new Error("Power not found.");
-            if (!power.outOfCombat) throw new Error("This power cannot be used outside of combat.");
+            
+            const casterRef = doc(db, 'teachers', teacherUid, 'students', casterUid);
+            const casterSnap = await transaction.get(casterRef);
+            if (!casterSnap.exists()) throw new Error("Caster not found.");
+            
+            const caster = casterSnap.data() as Student;
+            
             if (caster.level < power.level) throw new Error("You have not learned this power yet.");
-            if (caster.mp < power.mpCost) throw new Error("Not enough MP to cast this spell.");
+            if (caster.mp < power.mpCost && power.name !== 'Psychic Flare') throw new Error("Not enough MP to cast this spell.");
 
             // --- Server-side validation and effect logic ---
 
@@ -55,7 +55,9 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
 
                 const targetRefs = targetUids.map(uid => doc(db, 'teachers', teacherUid, 'students', uid));
                 const targetSnaps = await Promise.all(targetRefs.map(ref => transaction.get(ref)));
-
+                
+                transaction.update(casterRef, { mp: increment(-power.mpCost) });
+                
                 let totalHealed = 0;
                 const healAmount = powerName === 'Lesser Heal'
                     ? rollDie(6) + caster.level
@@ -73,18 +75,18 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
                     transaction.update(targetRefs[index], { hp: newHp });
                 });
                 
-                transaction.update(casterRef, { mp: increment(-power.mpCost) });
-                
                 await logAvatarEvent(teacherUid, casterUid, { source: 'Spell', reason: `Cast ${powerName}` });
-                
                 return { success: true, message: `You cast ${powerName}, restoring a total of ${totalHealed} HP.` };
             }
             
             // MAGE
             if (powerName === 'Psionic Aura') {
                  if (!targets || targets.length === 0) throw new Error("No targets selected.");
+                 
                  const targetRefs = targets.map(uid => doc(db, 'teachers', teacherUid, 'students', uid));
                  const targetSnaps = await Promise.all(targetRefs.map(ref => transaction.get(ref)));
+
+                 transaction.update(casterRef, { mp: increment(-power.mpCost) });
 
                  const totalRestore = rollDie(6) + caster.level;
                  const restorePerTarget = Math.ceil(totalRestore / targets.length);
@@ -92,11 +94,11 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
                  targetSnaps.forEach((targetSnap, index) => {
                      if (!targetSnap.exists()) return;
                      const target = targetSnap.data() as Student;
+                     if (target.mp >= target.maxMp) return;
                      const newMp = Math.min(target.maxMp, target.mp + restorePerTarget);
                      transaction.update(targetRefs[index], { mp: newMp });
                  });
 
-                 transaction.update(casterRef, { mp: increment(-power.mpCost) });
                  await logAvatarEvent(teacherUid, casterUid, { source: 'Spell', reason: `Cast ${powerName}` });
                  return { success: true, message: `You cast ${powerName}, restoring magical energy to your allies.` };
             }
@@ -115,8 +117,6 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
                  if (caster.mp < actualCost) throw new Error("Not enough MP to cast this spell.");
 
                  if (targetData.mp >= targetData.maxMp * 0.5) {
-                    // This logic should ideally be client-side to prevent the transaction in the first place,
-                    // but we keep it here as a server-side safeguard.
                     return { success: false, error: `${targetData.characterName}'s magic is already potent enough. Your power was not consumed.` };
                  }
 
@@ -145,8 +145,6 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
                 return { success: true, message: `You converted ${hpToConvert} HP into ${mpGained} MP!` };
             }
 
-
-            // If no specific logic matched, it's an invalid out-of-combat power.
             throw new Error("This power's effect cannot be resolved outside of battle.");
         });
     } catch (error: any) {
