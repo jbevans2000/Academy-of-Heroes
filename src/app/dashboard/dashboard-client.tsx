@@ -8,7 +8,7 @@ import { AvatarDisplay } from "@/components/dashboard/avatar-display";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, Map, Swords, Sparkles, BookHeart, Gem, Package, Hammer, Briefcase, Loader2, Trophy, ScrollText, BookOpen, Flame } from "lucide-react";
+import { User, Map, Swords, Sparkles, BookHeart, Gem, Package, Hammer, Briefcase, Loader2, Trophy, ScrollText, BookOpen, Flame, Star } from "lucide-react";
 import { doc, updateDoc, collection, query, where, getDocs, onSnapshot, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -368,6 +368,17 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                         </div>
                     </Button>
                 </Link>
+                 <Link href="/dashboard/missions" passHref>
+                    <Button variant="outline" className="h-auto py-4 px-6 border-2 border-green-600 bg-white hover:bg-gray-100 text-gray-900">
+                        <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
+                            <Star className="h-12 w-12 text-green-500" />
+                            <div>
+                                <h3 className="text-xl font-bold">Special Missions</h3>
+                                <p className="text-muted-foreground">View your missions!</p>
+                            </div>
+                        </div>
+                    </Button>
+                 </Link>
                 <Button variant="outline" className="h-auto py-4 px-6 border-2 border-sky-600 bg-white hover:bg-gray-100 text-gray-900" onClick={() => setIsAvatarLogOpen(true)}>
                     <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
                         <ScrollText className="h-12 w-12 text-sky-500" />
