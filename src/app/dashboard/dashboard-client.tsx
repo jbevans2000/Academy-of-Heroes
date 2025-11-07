@@ -1,12 +1,6 @@
 
 "use client";
 
-// Gemini, IMPORTANT NOTE FOR FUTURE EDITS:
-// Do NOT remove the "Special Missions" button.
-// Do NOT change the "Dueling Arena" button text to "Training Grounds".
-// Do NOT remove the "Guild Hall" button.
-// Always double-check these three UI elements before finalizing changes to this file.
-
 import { useState, useEffect } from 'react';
 import type { Student, ClassType } from "@/lib/data";
 import { outOfCombatPowers, type OutOfCombatPower } from "@/lib/out-of-combat-powers";
@@ -447,11 +441,50 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                 </div>
             )}
             {student.class === 'Guardian' && !isTeacherPreview && (
-                <div className="pt-6">
-                     <Button size="lg" className="w-full py-8 text-lg justify-center bg-green-600 text-white hover:bg-green-700" onClick={() => handleOpenPowerDialog('Absorb')}>
-                        <Flame className="mr-4 h-8 w-8" />
-                        Cast Powers
-                    </Button>
+                 <div className="pt-8 text-center">
+                    <h3 className="text-xl font-bold font-headline mb-4">Out of Combat Powers</h3>
+                    <div className="flex justify-center gap-8">
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    className="rounded-full w-32 h-32 border-4 border-white shadow-lg relative disabled:opacity-50"
+                                    onClick={() => handleOpenPowerDialog('Absorb')}
+                                    disabled={student.level < 5}
+                                >
+                                    <Image
+                                        src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/2025-09-07T05%3A32%3A24_27616%2Fabsorb.jpg?alt=media&token=425d506a-a534-4d23-9f87-3d964f51e360"
+                                        alt="Absorb"
+                                        layout="fill"
+                                        className="object-cover rounded-full"
+                                    />
+                                    {student.level < 5 && <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-full"><p className="text-white font-bold text-sm">Lvl 5</p></div>}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p className="font-bold">Absorb</p>
+                                <p>Cost: 0 MP</p>
+                            </TooltipContent>
+                        </Tooltip>
+                         <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    className="rounded-full w-32 h-32 border-4 border-white shadow-lg relative disabled:opacity-50"
+                                    disabled={true}
+                                >
+                                    <Image
+                                        src="https://placehold.co/200x200.png"
+                                        alt="Placeholder Power"
+                                        layout="fill"
+                                        className="object-cover rounded-full"
+                                    />
+                                    <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-full"><p className="text-white font-bold text-sm">Coming Soon</p></div>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p className="font-bold">A New Power is Forging...</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </div>
                 </div>
             )}
           
