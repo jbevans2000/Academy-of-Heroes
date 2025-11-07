@@ -96,10 +96,14 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
               targets = targets.filter(s => s.hp < s.maxHp * 0.5);
           } else if (powerToCast.name === 'Lesser Heal') {
               targets = targets.filter(s => s.hp < s.maxHp);
+          } else if (powerToCast.name === 'Psionic Aura') {
+            targets = targets.filter(s => s.uid !== student.uid && s.mp <= s.maxMp * 0.75);
+          } else if (powerToCast.name === 'Psychic Flare') {
+            targets = targets.filter(s => s.uid !== student.uid && s.mp < s.maxMp * 0.5);
           }
           setEligibleTargets(targets);
       }
-  }, [powerToCast, companyMembers]);
+  }, [powerToCast, companyMembers, student.uid]);
 
   const handleTargetSelect = (uid: string) => {
       const targetCount = powerToCast?.targetCount || 1;
@@ -206,18 +210,22 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
     }
 
     const renderStep2 = () => {
-        const targetCount = powerToCast?.targetCount || 1;
+        if (!powerToCast) return null;
+        
+        const targetCount = powerToCast.targetCount || 1;
         const canSelectMax = eligibleTargets.length >= targetCount;
-        const isSelectionComplete = powerToCast?.target
+        const isSelectionComplete = powerToCast.target
             ? (canSelectMax 
                     ? selectedTargets.length === targetCount 
                     : selectedTargets.length > 0 && selectedTargets.length <= eligibleTargets.length)
             : true;
 
+        const isMpPower = powerToCast.name === 'Psionic Aura' || powerToCast.name === 'Psychic Flare';
+
         return (
             <>
               <DialogHeader>
-                  <DialogTitle>Select Target(s) for {powerToCast?.name}</DialogTitle>
+                  <DialogTitle>Select Target(s) for {powerToCast.name}</DialogTitle>
                    <DialogDescription>
                       Select up to {targetCount} target(s).
                   </DialogDescription>
@@ -233,14 +241,16 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
                           <Label htmlFor={`target-${member.uid}`} className="w-full cursor-pointer">
                               <div className="flex justify-between items-center">
                                   <span>{member.characterName}</span>
-                                  <span className="text-xs text-muted-foreground">{member.hp}/{member.maxHp} HP</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {isMpPower ? `${member.mp}/${member.maxMp} MP` : `${member.hp}/${member.maxHp} HP`}
+                                  </span>
                               </div>
                           </Label>
                       </div>
                   )) : <p className="text-center text-muted-foreground">No eligible targets found.</p>}
               </ScrollArea>
                <DialogFooter className="sm:justify-between">
-                  {powerToCast?.target && (
+                  {powerToCast.target && (
                        <Button variant="outline" onClick={handleLetFateDecide} disabled={isCasting}>
                           {isCasting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Dices className="mr-2 h-4 w-4" />}
                           Let Fate Decide
@@ -257,7 +267,7 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
 
   return (
     <>
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <Dialog open={isOpen && !isConfirming} onOpenChange={(open) => { if(!open) onOpenChange(false); }}>
             <DialogContent className="sm:max-w-md">
                {powerToCast?.isMultiStep && currentStep === 1 ? renderStep1() : renderStep2()}
             </DialogContent>
