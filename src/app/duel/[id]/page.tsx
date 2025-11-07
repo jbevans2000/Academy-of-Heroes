@@ -364,6 +364,17 @@ export default function DuelPage() {
     const handleDuelStart = useCallback(async (duelData: DuelState) => {
         if (!teacherUid || !duelRef || !duelSettings) return;
         try {
+             // Fetch questions BEFORE the transaction
+            const activeSectionsSnapshot = await getDocs(query(collection(db, 'teachers', teacherUid, 'duelQuestionSections'), where('isActive', '==', true)));
+            const allQuestions: DuelQuestion[] = [];
+            for (const sectionDoc of activeSectionsSnapshot.docs) {
+                const questionsSnapshot = await getDocs(collection(sectionDoc.ref, 'questions'));
+                questionsSnapshot.forEach(qDoc => allQuestions.push({id: qDoc.id, ...qDoc.data()} as DuelQuestion));
+            }
+            const shuffled = allQuestions.sort(() => 0.5 - Math.random());
+            const totalQuestionsNeeded = (duelSettings.numNormalQuestions ?? 10) + (duelSettings.numSuddenDeathQuestions ?? 10);
+            const selectedQuestions = shuffled.slice(0, totalQuestionsNeeded).map(q => ({...q, id: q.id}));
+
             await runTransaction(db, async (transaction) => {
                 const duelDocForTransaction = await transaction.get(duelRef);
                 if (!duelDocForTransaction.exists()) throw new Error("Duel disappeared.");
@@ -383,8 +394,6 @@ export default function DuelPage() {
                     throw new Error("A duelist could not be found.");
                 }
 
-                const challengerData = challengerDoc.data();
-                const opponentData = opponentDoc.data();
                 const cost = currentDuelData.cost || 0;
                 
                 if (cost > 0) {
@@ -397,25 +406,11 @@ export default function DuelPage() {
                 
                 const duelUpdates: Partial<DuelState> = { 
                     costsDeducted: true,
-                    timerEndsAt: Timestamp.fromMillis(Date.now() + 60000)
+                    timerEndsAt: Timestamp.fromMillis(Date.now() + 60000),
+                    questions: selectedQuestions,
+                    currentQuestionIndex: 0,
+                    answers: { [currentDuelData.challengerUid]: [], [currentDuelData.opponentUid]: [] }
                 };
-
-                 if (!currentDuelData.questions || currentDuelData.questions.length === 0) {
-                    const activeSectionsSnapshot = await getDocs(query(collection(db, 'teachers', teacherUid, 'duelQuestionSections'), where('isActive', '==', true)));
-                    const allQuestions: DuelQuestion[] = [];
-                    for (const sectionDoc of activeSectionsSnapshot.docs) {
-                        const questionsSnapshot = await getDocs(collection(sectionDoc.ref, 'questions'));
-                        questionsSnapshot.forEach(qDoc => allQuestions.push({id: qDoc.id, ...qDoc.data()} as DuelQuestion));
-                    }
-                    
-                    const shuffled = allQuestions.sort(() => 0.5 - Math.random());
-                    const totalQuestionsNeeded = (duelSettings.numNormalQuestions ?? 10) + (duelSettings.numSuddenDeathQuestions ?? 10);
-                    const selectedQuestions = shuffled.slice(0, totalQuestionsNeeded);
-                    
-                    duelUpdates.questions = selectedQuestions.map(q => ({...q, id: q.id}));
-                    duelUpdates.currentQuestionIndex = 0;
-                    duelUpdates.answers = { [currentDuelData.challengerUid]: [], [currentDuelData.opponentUid]: [] };
-                }
                 
                 transaction.update(duelRef, duelUpdates);
             });
@@ -854,7 +849,7 @@ export default function DuelPage() {
                                             key={index}
                                             variant={selectedAnswer === index ? 'default' : 'outline'}
                                             onClick={() => setSelectedAnswer(index)}
-                                            className="h-auto py-4"
+                                            className="h-auto py-4 whitespace-normal justify-start text-left"
                                         >
                                             {answer}
                                         </Button>
