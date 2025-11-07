@@ -100,8 +100,7 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
           } else if (powerToCast.name === 'Psionic Aura') {
             targets = targets.filter(s => s.uid !== student.uid && s.mp <= s.maxMp * 0.75);
           } else if (powerToCast.name === 'Psychic Flare') {
-            // No client-side filtering. Show all company members.
-            targets = companyMembers;
+            targets = targets.filter(s => s.mp < s.maxMp * 0.5);
           }
           
           if (!powerToCast.targetSelf) {
