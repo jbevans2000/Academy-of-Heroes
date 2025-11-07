@@ -218,7 +218,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
   const focusedRestorationUnlocked = student.level >= 8;
 
   return (
-    <>
+    <TooltipProvider>
       <AlertDialog open={isFreelancerAlertOpen} onOpenChange={setIsFreelancerAlertOpen}>
           <AlertDialogContent>
               <AlertDialogHeader>
@@ -337,65 +337,63 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
               student={student}
               levelingTable={levelingTable}
           />
-          <TooltipProvider>
-              <div className="flex justify-center flex-wrap pt-6 gap-4">
-                  <Link href={`/armory${isTeacherPreview ? teacherPreviewQuery : ''}`} passHref>
-                      <Button variant="outline" className="h-auto py-4 px-6 border-2 border-amber-600 bg-white hover:bg-gray-100 text-gray-900">
-                          <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
-                              <Gem className="h-12 w-12 text-amber-500" />
-                              <div>
-                                  <h3 className="text-xl font-bold">The Vault</h3>
-                                  <p className="text-muted-foreground">Spend your gold!</p>
-                              </div>
+          <div className="flex justify-center flex-wrap pt-6 gap-4">
+              <Link href={`/armory${isTeacherPreview ? teacherPreviewQuery : ''}`} passHref>
+                  <Button variant="outline" className="h-auto py-4 px-6 border-2 border-amber-600 bg-white hover:bg-gray-100 text-gray-900">
+                      <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
+                          <Gem className="h-12 w-12 text-amber-500" />
+                          <div>
+                              <h3 className="text-xl font-bold">The Vault</h3>
+                              <p className="text-muted-foreground">Spend your gold!</p>
                           </div>
-                      </Button>
-                  </Link>
-                  
-                  <Link href={`/dashboard/leaderboard${isTeacherPreview ? teacherPreviewQuery : ''}`} passHref>
-                      <Button variant="outline" className="h-auto py-4 px-6 border-2 border-yellow-400 bg-white hover:bg-gray-100 text-gray-900">
-                           <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
-                              <Trophy className="h-12 w-12 text-yellow-400" />
-                              <div>
-                                  <h3 className="text-xl font-bold">Leaderboards</h3>
-                                  <p className="text-muted-foreground">View top heroes!</p>
-                              </div>
+                      </div>
+                  </Button>
+              </Link>
+              
+              <Link href={`/dashboard/leaderboard${isTeacherPreview ? teacherPreviewQuery : ''}`} passHref>
+                  <Button variant="outline" className="h-auto py-4 px-6 border-2 border-yellow-400 bg-white hover:bg-gray-100 text-gray-900">
+                       <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
+                          <Trophy className="h-12 w-12 text-yellow-400" />
+                          <div>
+                              <h3 className="text-xl font-bold">Leaderboards</h3>
+                              <p className="text-muted-foreground">View top heroes!</p>
                           </div>
-                      </Button>
-                  </Link>
+                      </div>
+                  </Button>
+              </Link>
 
-                  <Link href={`/dashboard/inventory${isTeacherPreview ? teacherPreviewQuery : ''}`} passHref>
-                      <Button variant="outline" className="h-auto py-4 px-6 border-2 border-purple-600 bg-white hover:bg-gray-100 text-gray-900">
-                          <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
-                              <Package className="h-12 w-12 text-purple-500" />
-                              <div>
-                                  <h3 className="text-xl font-bold">My Inventory</h3>
-                                  <p className="text-muted-foreground">View your items!</p>
-                              </div>
+              <Link href={`/dashboard/inventory${isTeacherPreview ? teacherPreviewQuery : ''}`} passHref>
+                  <Button variant="outline" className="h-auto py-4 px-6 border-2 border-purple-600 bg-white hover:bg-gray-100 text-gray-900">
+                      <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
+                          <Package className="h-12 w-12 text-purple-500" />
+                          <div>
+                              <h3 className="text-xl font-bold">My Inventory</h3>
+                              <p className="text-muted-foreground">View your items!</p>
                           </div>
-                      </Button>
-                  </Link>
-                   <Link href="/dashboard/missions" passHref>
-                    <Button variant="outline" className="h-auto py-4 px-6 border-2 border-green-600 bg-white hover:bg-gray-100 text-gray-900">
-                        <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
-                            <Star className="h-12 w-12 text-green-500" />
-                            <div>
-                                <h3 className="text-xl font-bold">Special Missions</h3>
-                                <p className="text-muted-foreground">View your missions!</p>
-                            </div>
-                        </div>
-                    </Button>
-                 </Link>
-                <Button variant="outline" className="h-auto py-4 px-6 border-2 border-sky-600 bg-white hover:bg-gray-100 text-gray-900" onClick={() => setIsAvatarLogOpen(true)}>
+                      </div>
+                  </Button>
+              </Link>
+               <Link href="/dashboard/missions" passHref>
+                <Button variant="outline" className="h-auto py-4 px-6 border-2 border-green-600 bg-white hover:bg-gray-100 text-gray-900">
                     <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
-                        <ScrollText className="h-12 w-12 text-sky-500" />
+                        <Star className="h-12 w-12 text-green-500" />
                         <div>
-                            <h3 className="text-xl font-bold">Avatar Log</h3>
-                            <p className="text-muted-foreground">See your history.</p>
+                            <h3 className="text-xl font-bold">Special Missions</h3>
+                            <p className="text-muted-foreground">View your missions!</p>
                         </div>
                     </div>
                 </Button>
-              </div>
-          </TooltipProvider>
+             </Link>
+            <Button variant="outline" className="h-auto py-4 px-6 border-2 border-sky-600 bg-white hover:bg-gray-100 text-gray-900" onClick={() => setIsAvatarLogOpen(true)}>
+                <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
+                    <ScrollText className="h-12 w-12 text-sky-500" />
+                    <div>
+                        <h3 className="text-xl font-bold">Avatar Log</h3>
+                        <p className="text-muted-foreground">See your history.</p>
+                    </div>
+                </div>
+            </Button>
+          </div>
 
           {/* Out of Combat Powers Section */}
           {student.class === 'Healer' && !isTeacherPreview && (
@@ -457,6 +455,6 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
             )}
         </div>
       </div>
-    </>
+    </TooltipProvider>
   );
 }
