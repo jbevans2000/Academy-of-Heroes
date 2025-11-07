@@ -107,6 +107,9 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
                 s.level < student.level && 
                 (!s.lastReceivedVeteransInsight || s.lastReceivedVeteransInsight.toDate() < twentyFourHoursAgo)
             );
+          } else if (powerToCast.name === 'Provision') {
+            const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            targets = targets.filter(s => s.companyId === student.companyId && (!s.lastReceivedVeteransInsight || s.lastReceivedVeteransInsight.toDate() < twentyFourHoursAgo));
           }
           
           if (!powerToCast.targetSelf) {
@@ -198,95 +201,88 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
           return;
       }
   };
-    
-    const dynamicMpCost = useMemo(() => {
-        if (powerToCast?.name === 'Veteran\'s Insight') {
-            return Math.ceil(student.maxMp * 0.20);
-        }
-        return powerToCast?.mpCost;
-    }, [powerToCast, student.maxMp]);
 
-    const renderStep1 = () => {
-        if (powerToCast?.name === 'Absorb') {
-            const mpNeeded = student.maxMp - student.mp;
-            const maxHpToConvert = Math.min(student.hp - 1, mpNeeded * 2);
-            
-            return (
-                <>
-                    <DialogHeader>
-                        <DialogTitle>Convert HP to MP</DialogTitle>
-                        <DialogDescription>How many hit points do you want to convert into magic points? The cost is 2 HP for every 1 MP gained.</DialogDescription>
-                    </DialogHeader>
-                     <div className="py-4">
-                        <Label htmlFor="absorb-amount">HP to Convert (Max: {maxHpToConvert})</Label>
-                        <Input id="absorb-amount" type="number" value={inputValue} onChange={e => setInputValue(Number(e.target.value))} max={maxHpToConvert} />
-                        <p className="text-sm text-muted-foreground mt-1">You need {mpNeeded} MP to be full. You can convert up to {maxHpToConvert} HP.</p>
+  const renderStep1 = () => {
+      if (powerToCast?.name === 'Absorb') {
+          const mpNeeded = student.maxMp - student.mp;
+          const maxHpToConvert = Math.min(student.hp - 1, mpNeeded * 2);
+          
+          return (
+              <>
+                  <DialogHeader>
+                      <DialogTitle>Convert HP to MP</DialogTitle>
+                      <DialogDescription>How many hit points do you want to convert into magic points? The cost is 2 HP for every 1 MP gained.</DialogDescription>
+                  </DialogHeader>
+                   <div className="py-4">
+                      <Label htmlFor="absorb-amount">HP to Convert (Max: {maxHpToConvert})</Label>
+                      <Input id="absorb-amount" type="number" value={inputValue} onChange={e => setInputValue(Number(e.target.value))} max={maxHpToConvert} />
+                      <p className="text-sm text-muted-foreground mt-1">You need {mpNeeded} MP to be full. You can convert up to {maxHpToConvert} HP.</p>
+                  </div>
+                  <DialogFooter>
+                      <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                      <Button onClick={handleNextStep}>Convert</Button>
+                  </DialogFooter>
+              </>
+          )
+      }
+      return null;
+  }
+
+  const renderStep2 = () => {
+      if (!powerToCast) return null;
+      
+      const targetCount = powerToCast.targetCount || 1;
+      const canSelectMax = eligibleTargets.length >= targetCount;
+      const isSelectionComplete = powerToCast.target
+          ? (canSelectMax 
+                  ? selectedTargets.length === targetCount 
+                  : selectedTargets.length > 0 && selectedTargets.length <= eligibleTargets.length)
+          : true;
+
+      const isMpPower = powerToCast.name === 'Psionic Aura' || powerToCast.name === 'Psychic Flare';
+
+      return (
+          <>
+            <DialogHeader>
+                <DialogTitle>Select Target(s) for {powerToCast.name}</DialogTitle>
+                 <DialogDescription>
+                    Select up to {targetCount} target(s).
+                </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="h-60 rounded-md border p-4">
+                {eligibleTargets.length > 0 ? eligibleTargets.map(member => (
+                    <div key={member.uid} className="flex items-center space-x-2 p-2 hover:bg-secondary rounded-md">
+                        <Checkbox 
+                            id={`target-${member.uid}`} 
+                            checked={selectedTargets.includes(member.uid)}
+                            onCheckedChange={() => handleTargetSelect(member.uid)}
+                        />
+                        <Label htmlFor={`target-${member.uid}`} className="w-full cursor-pointer">
+                            <div className="flex justify-between items-center">
+                                <span>{member.characterName} (Lvl {member.level})</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {isMpPower ? `${member.mp}/${member.maxMp} MP` : `${member.hp}/${member.maxHp} HP`}
+                                </span>
+                            </div>
+                        </Label>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                        <Button onClick={handleNextStep}>Convert</Button>
-                    </DialogFooter>
-                </>
-            )
-        }
-        return null;
-    }
-
-    const renderStep2 = () => {
-        if (!powerToCast) return null;
-        
-        const targetCount = powerToCast.targetCount || 1;
-        const canSelectMax = eligibleTargets.length >= targetCount;
-        const isSelectionComplete = powerToCast.target
-            ? (canSelectMax 
-                    ? selectedTargets.length === targetCount 
-                    : selectedTargets.length > 0 && selectedTargets.length <= eligibleTargets.length)
-            : true;
-
-        const isMpPower = powerToCast.name === 'Psionic Aura' || powerToCast.name === 'Psychic Flare';
-
-        return (
-            <>
-              <DialogHeader>
-                  <DialogTitle>Select Target(s) for {powerToCast.name}</DialogTitle>
-                   <DialogDescription>
-                      Select up to {targetCount} target(s).
-                  </DialogDescription>
-              </DialogHeader>
-              <ScrollArea className="h-60 rounded-md border p-4">
-                  {eligibleTargets.length > 0 ? eligibleTargets.map(member => (
-                      <div key={member.uid} className="flex items-center space-x-2 p-2 hover:bg-secondary rounded-md">
-                          <Checkbox 
-                              id={`target-${member.uid}`} 
-                              checked={selectedTargets.includes(member.uid)}
-                              onCheckedChange={() => handleTargetSelect(member.uid)}
-                          />
-                          <Label htmlFor={`target-${member.uid}`} className="w-full cursor-pointer">
-                              <div className="flex justify-between items-center">
-                                  <span>{member.characterName} (Lvl {member.level})</span>
-                                  <span className="text-xs text-muted-foreground">
-                                    {isMpPower ? `${member.mp}/${member.maxMp} MP` : `${member.hp}/${member.maxHp} HP`}
-                                  </span>
-                              </div>
-                          </Label>
-                      </div>
-                  )) : <p className="text-center text-muted-foreground">No eligible targets found.</p>}
-              </ScrollArea>
-               <DialogFooter className="sm:justify-between">
-                  {powerToCast.target && (
-                       <Button variant="outline" onClick={handleLetFateDecide} disabled={isCasting}>
-                          {isCasting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Dices className="mr-2 h-4 w-4" />}
-                          Let Fate Decide
-                      </Button>
-                  )}
-                  <Button type="button" onClick={() => setIsConfirming(true)} disabled={!isSelectionComplete || isCasting}>
-                      {isCasting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                      Confirm Selection ({selectedTargets.length}/{canSelectMax ? targetCount : eligibleTargets.length})
-                  </Button>
-              </DialogFooter>
-          </>
-        )
-    }
+                )) : <p className="text-center text-muted-foreground">No eligible targets found.</p>}
+            </ScrollArea>
+             <DialogFooter className="sm:justify-between">
+                {powerToCast.target && (
+                     <Button variant="outline" onClick={handleLetFateDecide} disabled={isCasting}>
+                        {isCasting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Dices className="mr-2 h-4 w-4" />}
+                        Let Fate Decide
+                    </Button>
+                )}
+                <Button type="button" onClick={() => setIsConfirming(true)} disabled={!isSelectionComplete || isCasting}>
+                    {isCasting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                    Confirm Selection ({selectedTargets.length}/{canSelectMax ? targetCount : eligibleTargets.length})
+                </Button>
+            </DialogFooter>
+        </>
+      )
+  }
 
   return (
     <>
@@ -300,7 +296,7 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
                 <AlertDialogHeader>
                     <AlertDialogTitle>Cast {powerToCast?.name}?</AlertDialogTitle>
                      <AlertDialogDescription>
-                        This will cost {dynamicMpCost} MP. This action cannot be undone.
+                        This will cost {powerToCast?.mpCost} MP. This action cannot be undone.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                  <AlertDialogFooter>
