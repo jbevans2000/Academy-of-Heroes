@@ -462,7 +462,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                             </TooltipTrigger>
                             <TooltipContent>
                                 <p className="font-bold">Veteran's Insight</p>
-                                <p>Cost: 20% Max MP</p>
+                                <p>Provide a small amount of XP to a lower level guild member.<br /> Cost 20% of your maximum magic points.</p>
                             </TooltipContent>
                         </Tooltip>
                          <Tooltip>

@@ -93,6 +93,8 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
   useEffect(() => {
       if (powerToCast) {
           let targets = companyMembers;
+          const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
           // Apply power-specific eligibility filters
           if (powerToCast.name === 'Focused Restoration') {
               targets = targets.filter(s => s.hp < s.maxHp * 0.5);
@@ -103,13 +105,11 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
           } else if (powerToCast.name === 'Psychic Flare') {
             targets = targets.filter(s => s.mp < s.maxMp * 0.5);
           } else if (powerToCast.name === 'Veteran\'s Insight') {
-            const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
             targets = targets.filter(s => 
                 s.level < student.level && 
                 (!s.lastReceivedVeteransInsight || s.lastReceivedVeteransInsight.toDate() < twentyFourHoursAgo)
             );
           } else if (powerToCast.name === 'Provision') {
-            const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
             // Must be in the same company and cannot have received a provision recently.
             targets = targets.filter(s => 
                 s.companyId === student.companyId &&

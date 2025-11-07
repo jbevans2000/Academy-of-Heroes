@@ -66,6 +66,14 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
                     throw new Error("A single target and a valid gold amount are required.");
                 }
 
+                if (caster.lastUsedProvision) {
+                    const lastUsed = caster.lastUsedProvision.toDate();
+                    const now = new Date();
+                    if (now.getTime() - lastUsed.getTime() < 24 * 60 * 60 * 1000) {
+                        throw new Error("You can only use Provision once every 24 hours.");
+                    }
+                }
+
                 const targetUid = targets[0];
                 if (caster.uid === targetUid) throw new Error("You cannot provision yourself.");
 
@@ -74,6 +82,14 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
 
                 if (!targetSnap.exists()) throw new Error("Target student not found.");
                 const targetData = targetSnap.data() as Student;
+                
+                if (targetData.lastReceivedProvision) {
+                    const lastReceived = targetData.lastReceivedProvision.toDate();
+                    const now = new Date();
+                     if (now.getTime() - lastReceived.getTime() < 24 * 60 * 60 * 1000) {
+                        throw new Error(`${targetData.characterName} has already received a provision recently and cannot receive another yet.`);
+                    }
+                }
 
                 if (caster.companyId !== targetData.companyId) {
                     throw new Error("You can only provision members of your own company.");
@@ -91,8 +107,8 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
                     throw new Error(`You do not have enough gold for this transaction (Cost: ${totalCost} Gold).`);
                 }
 
-                transaction.update(casterRef, { gold: increment(-totalCost) });
-                transaction.update(targetRef, { gold: increment(inputValue) });
+                transaction.update(casterRef, { gold: increment(-totalCost), lastUsedProvision: serverTimestamp() });
+                transaction.update(targetRef, { gold: increment(inputValue), lastReceivedProvision: serverTimestamp() });
                 
                 await logAvatarEvent(teacherUid, casterUid, { source: 'Spell', gold: -totalCost, reason: `Provisioned ${targetData.characterName}.` });
                 await logAvatarEvent(teacherUid, targetUid, { source: 'Spell', gold: inputValue, reason: `Received provision from ${caster.characterName}.` });
