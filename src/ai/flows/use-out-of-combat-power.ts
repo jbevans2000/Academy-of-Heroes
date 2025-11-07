@@ -63,6 +63,10 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
                 if (!targets || targets.length === 0) throw new Error("No targets selected.");
                 if (targets.length > (power.targetCount || 1)) throw new Error("Too many targets selected.");
 
+                // --- FIX: READ ALL TARGETS BEFORE ANY WRITES ---
+                const targetSnaps = await Promise.all(targets.map(uid => transaction.get(doc(db, 'teachers', teacherUid, 'students', uid))));
+
+                // --- NOW PERFORM WRITES ---
                 transaction.update(casterRef, { mp: increment(-power.mpCost) });
                 
                 let totalHealed = 0;
@@ -72,10 +76,8 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
                     : rollDie(8) + rollDie(8) + rollDie(8) + caster.level;
 
                 const healPerTarget = Math.ceil(healAmount / targets.length);
-                
-                const targetSnaps = await Promise.all(targets.map(uid => transaction.get(doc(db, 'teachers', teacherUid, 'students', uid))));
 
-                targetSnaps.forEach((targetSnap, index) => {
+                targetSnaps.forEach((targetSnap) => {
                     if (!targetSnap.exists()) return; 
                     const target = targetSnap.data() as Student;
                     targetNames.push(target.characterName);
@@ -93,13 +95,15 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
             if (power.name === 'Psionic Aura') {
                  if (!targets || targets.length === 0) throw new Error("No targets selected.");
                  
+                 // --- FIX: READ ALL TARGETS BEFORE ANY WRITES ---
+                 const targetSnaps = await Promise.all(targets.map(uid => transaction.get(doc(db, 'teachers', teacherUid, 'students', uid))));
+
+                 // --- NOW PERFORM WRITES ---
                  transaction.update(casterRef, { mp: increment(-power.mpCost) });
 
                  const totalRestore = rollDie(6) + caster.level;
                  const restorePerTarget = Math.ceil(totalRestore / targets.length);
                  let targetNames: string[] = [];
-
-                 const targetSnaps = await Promise.all(targets.map(uid => transaction.get(doc(db, 'teachers', teacherUid, 'students', uid))));
 
                  targetSnaps.forEach((targetSnap) => {
                      if (!targetSnap.exists()) return;
@@ -118,6 +122,8 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
                  if (!targets || targets.length !== 1) throw new Error("Must select exactly one target.");
                  const targetUid = targets[0];
                  const targetRef = doc(db, 'teachers', teacherUid, 'students', targetUid);
+
+                 // --- FIX: READ ALL DOCS BEFORE WRITES ---
                  const targetSnap = await transaction.get(targetRef);
 
                  if (!targetSnap.exists()) throw new Error("Target not found.");
@@ -129,7 +135,8 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
                  if (targetData.mp >= targetData.maxMp * 0.5) {
                     return { success: false, error: `${targetData.characterName}'s magic is already potent enough. Your power was not consumed.` };
                  }
-
+                 
+                 // --- NOW PERFORM WRITES ---
                  transaction.update(casterRef, { mp: increment(-actualCost) });
                  transaction.update(targetRef, { mp: targetData.maxMp });
 
@@ -154,6 +161,9 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
                 const xpToAward = (caster.level || 1) * 10;
                 let awardedCount = 0;
                 const targetNames: string[] = [];
+                
+                // --- Perform all writes AFTER all reads ---
+                const updatesToWrite: { ref: any, data: any }[] = [];
 
                 for (const targetSnap of targetSnaps) {
                     if (!targetSnap.exists()) continue;
@@ -175,7 +185,7 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
                     const levelUpdates = handleLevelChange(target, newXp, levelingTable);
                     const finalUpdates = { ...levelUpdates, lastReceivedVeteransInsight: serverTimestamp() };
                     
-                    transaction.update(targetSnap.ref, finalUpdates);
+                    updatesToWrite.push({ ref: targetSnap.ref, data: finalUpdates });
                     
                     awardedCount++;
                     targetNames.push(target.characterName);
@@ -185,10 +195,14 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
                     throw new Error("No eligible targets found for the buff. MP was not consumed.");
                 }
 
-                // 3. Apply cost and cooldown to caster
+                // 3. Apply cost and cooldown to caster and execute all target updates
                 transaction.update(casterRef, { 
                     mp: increment(-dynamicCost),
                     lastUsedVeteransInsight: serverTimestamp(),
+                });
+
+                updatesToWrite.forEach(update => {
+                    transaction.update(update.ref, update.data);
                 });
                 
                 await logAvatarEvent(teacherUid, casterUid, { source: 'Spell', reason: `Cast ${powerName} on ${targetNames.join(', ')}.` });
