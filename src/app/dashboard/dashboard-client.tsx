@@ -3,12 +3,13 @@
 
 // Gemini, IMPORTANT NOTE FOR FUTURE EDITS:
 // Do NOT remove the "Special Missions" button.
-// Do NOT change the "Dueling Arena" button text.
+// Do NOT change the "Dueling Arena" button text to "Training Grounds".
 // Do NOT remove the "Guild Hall" button.
 // Always double-check these three UI elements before finalizing changes to this file.
 
 import { useState, useEffect } from 'react';
 import type { Student } from "@/lib/data";
+import type { Power } from "@/lib/powers";
 import { StatsCard } from "@/components/dashboard/stats-card";
 import { AvatarDisplay } from "@/components/dashboard/avatar-display";
 import { Button } from "@/components/ui/button";
@@ -68,6 +69,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
   const [isDailyTrainingEnabled, setIsDailyTrainingEnabled] = useState(true);
   const [levelingTable, setLevelingTable] = useState(defaultXpTable);
   const [isPowerDialogOpen, setIsPowerDialogOpen] = useState(false);
+  const [powerToCast, setPowerToCast] = useState<Power | null>(null);
 
   useEffect(() => {
     const fetchTeacherSettings = async () => {
@@ -220,6 +222,17 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
       }
   }
 
+  const handleOpenPowerDialog = (powerName: 'Lesser Heal' | 'Focused Restoration' | 'Absorb') => {
+      const power = {
+          'Lesser Heal': { name: 'Lesser Heal', level: 2, mpCost: 3, target: 'ally', targetCount: 2, targetSelf: true, outOfCombat: true, type: 'healing', description: '' },
+          'Focused Restoration': { name: 'Focused Restoration', level: 8, mpCost: 12, target: 'ally', targetCount: 1, targetSelf: true, outOfCombat: true, type: 'healing', description: '' },
+          'Absorb': { name: 'Absorb', level: 5, mpCost: 0, isMultiStep: true, outOfCombat: true, type: 'support', description: '' }
+      }[powerName];
+
+      setPowerToCast(power);
+      setIsPowerDialogOpen(true);
+  };
+  
   const lesserHealUnlocked = student.level >= 2;
   const focusedRestorationUnlocked = student.level >= 8;
 
@@ -279,6 +292,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
         isOpen={isPowerDialogOpen}
         onOpenChange={setIsPowerDialogOpen}
         student={student}
+        powerToCast={powerToCast}
       />
 
       <div className="p-4 md:p-6 lg:p-8">
@@ -379,7 +393,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                       </div>
                   </Button>
               </Link>
-               <Link href="/dashboard/missions" passHref>
+              <Link href="/dashboard/missions" passHref>
                 <Button variant="outline" className="h-auto py-4 px-6 border-2 border-green-600 bg-white hover:bg-gray-100 text-gray-900">
                     <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
                         <Star className="h-12 w-12 text-green-500" />
@@ -389,7 +403,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                         </div>
                     </div>
                 </Button>
-             </Link>
+              </Link>
             <Button variant="outline" className="h-auto py-4 px-6 border-2 border-sky-600 bg-white hover:bg-gray-100 text-gray-900" onClick={() => setIsAvatarLogOpen(true)}>
                 <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
                     <ScrollText className="h-12 w-12 text-sky-500" />
@@ -410,7 +424,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                             <TooltipTrigger asChild>
                                 <Button
                                     className="rounded-full w-32 h-32 border-4 border-white shadow-lg relative disabled:opacity-50"
-                                    onClick={() => setIsPowerDialogOpen(true)}
+                                    onClick={() => handleOpenPowerDialog('Lesser Heal')}
                                     disabled={!lesserHealUnlocked || student.mp < 3}
                                 >
                                     <Image
@@ -431,7 +445,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                             <TooltipTrigger asChild>
                                  <Button
                                     className="rounded-full w-32 h-32 border-4 border-white shadow-lg relative disabled:opacity-50"
-                                    onClick={() => setIsPowerDialogOpen(true)}
+                                    onClick={() => handleOpenPowerDialog('Focused Restoration')}
                                     disabled={!focusedRestorationUnlocked || student.mp < 12}
                                 >
                                     <Image
@@ -453,12 +467,13 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
             )}
             {student.class === 'Guardian' && !isTeacherPreview && (
                 <div className="pt-6">
-                     <Button size="lg" className="w-full py-8 text-lg justify-center bg-green-600 text-white hover:bg-green-700" onClick={() => setIsPowerDialogOpen(true)}>
+                     <Button size="lg" className="w-full py-8 text-lg justify-center bg-green-600 text-white hover:bg-green-700" onClick={() => handleOpenPowerDialog('Absorb')}>
                         <Flame className="mr-4 h-8 w-8" />
                         Cast Powers
                     </Button>
                 </div>
             )}
+          
         </div>
       </div>
     </TooltipProvider>
