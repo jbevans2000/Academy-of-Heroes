@@ -8,7 +8,7 @@
 // Always double-check these three UI elements before finalizing changes to this file.
 
 import { useState, useEffect } from 'react';
-import type { Student } from "@/lib/data";
+import type { Student, ClassType } from "@/lib/data";
 import type { Power } from "@/lib/powers";
 import { StatsCard } from "@/components/dashboard/stats-card";
 import { AvatarDisplay } from "@/components/dashboard/avatar-display";
@@ -222,19 +222,33 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
       }
   }
 
-  const handleOpenPowerDialog = (powerName: 'Lesser Heal' | 'Focused Restoration' | 'Absorb') => {
-      const power = {
-          'Lesser Heal': { name: 'Lesser Heal', level: 2, mpCost: 3, target: 'ally', targetCount: 2, targetSelf: true, outOfCombat: true, type: 'healing', description: '' },
-          'Focused Restoration': { name: 'Focused Restoration', level: 8, mpCost: 12, target: 'ally', targetCount: 1, targetSelf: true, outOfCombat: true, type: 'healing', description: '' },
-          'Absorb': { name: 'Absorb', level: 5, mpCost: 0, isMultiStep: true, outOfCombat: true, type: 'support', description: '' }
-      }[powerName];
+  const handleOpenPowerDialog = (powerName: string) => {
+      const classPowers = {
+          'Healer': [
+            { name: 'Lesser Heal', level: 2, mpCost: 3, target: 'ally', targetCount: 2, targetSelf: true, outOfCombat: true, type: 'healing', description: '' },
+            { name: 'Focused Restoration', level: 8, mpCost: 12, target: 'ally', targetCount: 1, targetSelf: true, outOfCombat: true, type: 'healing', description: '' }
+          ],
+          'Guardian': [
+            { name: 'Absorb', level: 5, mpCost: 0, isMultiStep: true, outOfCombat: true, type: 'support', description: '' }
+          ],
+          'Mage': [
+            { name: 'Psionic Aura', level: 2, mpCost: 4, target: 'ally', targetCount: 2, targetSelf: false, outOfCombat: true, type: 'support', description: '' },
+            { name: 'Psychic Flare', level: 9, mpCost: 20, isMultiStep: true, target: 'ally', targetCount: 1, targetSelf: false, outOfCombat: true, type: 'support', description: '' }
+          ]
+      };
+      
+      const power = (classPowers[student.class as keyof typeof classPowers] || []).find(p => p.name === powerName);
 
-      setPowerToCast(power);
-      setIsPowerDialogOpen(true);
+      if (power) {
+        setPowerToCast(power as Power);
+        setIsPowerDialogOpen(true);
+      }
   };
   
   const lesserHealUnlocked = student.level >= 2;
   const focusedRestorationUnlocked = student.level >= 8;
+  const psionicAuraUnlocked = student.level >= 2;
+  const psychicFlareUnlocked = student.level >= 9;
 
   return (
     <TooltipProvider>
@@ -460,6 +474,55 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                              <TooltipContent>
                                 <p className="font-bold">Focused Restoration</p>
                                 <p>Cost: 12 MP</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </div>
+                </div>
+            )}
+             {student.class === 'Mage' && !isTeacherPreview && (
+                <div className="pt-8 text-center">
+                    <h3 className="text-xl font-bold font-headline mb-4">Out of Combat Powers</h3>
+                    <div className="flex justify-center gap-8">
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    className="rounded-full w-32 h-32 border-4 border-white shadow-lg relative disabled:opacity-50"
+                                    onClick={() => handleOpenPowerDialog('Psionic Aura')}
+                                    disabled={!psionicAuraUnlocked || student.mp < 4}
+                                >
+                                    <Image
+                                        src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/2025-09-07T05%3A32%3A24_27616%2Fpsionic%20aura.jpg?alt=media&token=d122945d-944b-4007-adc4-1330763dae70"
+                                        alt="Psionic Aura"
+                                        layout="fill"
+                                        className="object-cover rounded-full"
+                                    />
+                                    {!psionicAuraUnlocked && <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-full"><p className="text-white font-bold text-sm">Lvl 2</p></div>}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p className="font-bold">Psionic Aura</p>
+                                <p>Cost: 4 MP</p>
+                            </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                 <Button
+                                    className="rounded-full w-32 h-32 border-4 border-white shadow-lg relative disabled:opacity-50"
+                                    onClick={() => handleOpenPowerDialog('Psychic Flare')}
+                                    disabled={!psychicFlareUnlocked || student.mp < 20}
+                                >
+                                    <Image
+                                        src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/2025-09-07T05%3A32%3A24_27616%2Fpsychic%20flare.jpg?alt=media&token=1b1d3051-2030-452c-94d8-06109e632e95"
+                                        alt="Psychic Flare"
+                                        layout="fill"
+                                        className="object-cover rounded-full"
+                                    />
+                                     {!psychicFlareUnlocked && <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-full"><p className="text-white font-bold text-sm">Lvl 9</p></div>}
+                                </Button>
+                            </TooltipTrigger>
+                             <TooltipContent>
+                                <p className="font-bold">Psychic Flare</p>
+                                <p>Cost: 50% of Current MP (min 20)</p>
                             </TooltipContent>
                         </Tooltip>
                     </div>
