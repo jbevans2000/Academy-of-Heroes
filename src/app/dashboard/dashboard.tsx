@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -6,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { doc, onSnapshot, getDoc, updateDoc, serverTimestamp, Timestamp, collection, query, where, getDocs, deleteField } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
-import type { Student, Company } from '@/lib/data';
+import type { Student, Company, ClassType } from '@/lib/data';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { DashboardClient } from './dashboard-client';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -23,6 +24,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { MeditationChamber } from '@/components/dashboard/meditation-chamber';
+import { calculateHpGain, calculateMpGain } from '@/lib/game-mechanics';
 
 
 const isSameDay = (d1: Date, d2: Date) => {
@@ -40,12 +42,22 @@ interface TeacherData {
     worldMapUrl?: string;
 }
 
+const levelUpImages: Record<ClassType, string> = {
+    Guardian: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Level%20Up%20Images%2FGuardian%20Level%20Up%20(1).jpg?alt=media&token=2446c953-f51a-4d2e-95d5-00330b6aa765',
+    Healer: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Level%20Up%20Images%2FHealer%20Level%20up.jpg?alt=media&token=b4bd3813-5f33-4abb-a119-0dee5a074b52',
+    Mage: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Level%20Up%20Images%2FMage%20Level%20Up.jpg?alt=media&token=c231c545-339e-49d4-9a24-7c2d83effd24',
+    '': '', // Fallback
+};
+
+
 export default function Dashboard() {
   const [student, setStudent] = useState<Student | null>(null);
+  const [previousStudentState, setPreviousStudentState] = useState<Student | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
   const [teacherData, setTeacherData] = useState<TeacherData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showApprovedDialog, setShowApprovedDialog] = useState(false);
+  const [showLevelUpDialog, setShowLevelUpDialog] = useState(false);
 
   // Daily Reminder State
   const [showReminderDialog, setShowReminderDialog] = useState(false);
@@ -165,6 +177,7 @@ export default function Dashboard() {
                   await updateDoc(studentRef, updates);
                   // The onSnapshot listener will pick up this change and update the state.
               } else {
+                 setPreviousStudentState(student);
                  setStudent(studentData);
               }
               // --- END REGENERATION LOGIC ---
@@ -204,6 +217,13 @@ export default function Dashboard() {
     return () => authUnsubscribe();
   }, [router, toast]);
   
+  // Effect to specifically check for level-up
+  useEffect(() => {
+    if (student && student.unseenLevelUp) {
+      setShowLevelUpDialog(true);
+    }
+  }, [student]);
+
   const handleCloseApprovedDialog = async () => {
     setShowApprovedDialog(false);
     if (student) {
@@ -216,6 +236,14 @@ export default function Dashboard() {
     }
     router.replace('/dashboard', { scroll: false });
   };
+
+  const handleCloseLevelUpDialog = async () => {
+    setShowLevelUpDialog(false);
+    if (student) {
+      const studentRef = doc(db, 'teachers', student.teacherUid, 'students', student.uid);
+      await updateDoc(studentRef, { unseenLevelUp: false });
+    }
+  }
   
   const approvedClassName = searchParams.get('className');
   const backgroundUrl = company?.backgroundUrl || teacherData?.worldMapUrl || 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2FChatGPT%20Image%20Sep%2027%2C%202025%2C%2009_44_04%20AM.png?alt=media&token=0920ef19-d5d9-43b1-bab7-5ab134373ed3';
@@ -233,7 +261,7 @@ export default function Dashboard() {
         </div>
     );
   }
-
+  
   if (student.isInMeditationChamber) {
     return (
         <MeditationChamber student={student} teacherUid={student.teacherUid} />
@@ -260,6 +288,27 @@ export default function Dashboard() {
           <AlertDialogFooter>
             <AlertDialogAction onClick={handleCloseApprovedDialog}>Begin Your Quest</AlertDialogAction>
           </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showLevelUpDialog} onOpenChange={setShowLevelUpDialog}>
+        <AlertDialogContent className="p-0 border-0 max-w-lg overflow-hidden">
+            <div className="relative aspect-[3/4]">
+                 <Image src={levelUpImages[student.class] || levelUpImages['']} alt="Level Up!" fill className="object-cover" />
+                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-6 flex flex-col justify-end text-white">
+                    <h2 className="text-4xl font-headline text-shadow-lg">LEVEL UP!</h2>
+                     <p className="text-xl mt-1 text-shadow-lg">Congratulations {student.characterName}, you have achieved Level {student.level}!</p>
+                     {previousStudentState && (
+                        <div className="mt-4 text-base space-y-1">
+                            <p>Max HP: <span className="font-bold">{previousStudentState.maxHp} &rarr; {student.maxHp} (+{student.maxHp - previousStudentState.maxHp})</span></p>
+                            <p>Max MP: <span className="font-bold">{previousStudentState.maxMp} &rarr; {student.maxMp} (+{student.maxMp - previousStudentState.maxMp})</span></p>
+                        </div>
+                    )}
+                 </div>
+            </div>
+            <AlertDialogFooter className="p-4 bg-background">
+                <AlertDialogAction onClick={handleCloseLevelUpDialog}>Continue Your Adventure!</AlertDialogAction>
+            </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 

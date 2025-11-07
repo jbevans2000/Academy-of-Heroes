@@ -1,4 +1,5 @@
 
+
 import type { ClassType, Student } from "./data";
 
 export const MAX_LEVEL = 30;
@@ -152,6 +153,7 @@ export function handleLevelChange(studentData: Student, newXp: number, customXpT
     if (newLevel > currentLevel) {
         const levelsGained = newLevel - currentLevel;
         updates.level = newLevel;
+        updates.unseenLevelUp = true; // Set the flag for the UI to catch
         // Correctly increment max stats by ADDING gains to existing values
         updates.maxHp = (studentData.maxHp || calculateBaseMaxHp(studentData.class, currentLevel, 'hp')) + calculateHpGain(studentData.class, levelsGained);
         updates.maxMp = (studentData.maxMp || calculateBaseMaxHp(studentData.class, currentLevel, 'mp')) + calculateMpGain(studentData.class, levelsGained);

@@ -55,6 +55,7 @@ export type Student = {
     rewardedSideQuestChapters?: string[]; // For tracking one-time side quest rewards
     hubsCompleted: number; // The order number of the last hub completed
     isNewlyApproved?: boolean;
+    unseenLevelUp?: boolean; // New flag for level up notification
     lastChapterCompletion?: any; // Firestore ServerTimestamp
     lastDailyRegen?: any; // Firestore ServerTimestamp
     lastDailyTraining?: any; // Firestore ServerTimestamp
