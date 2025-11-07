@@ -33,7 +33,7 @@ export const outOfCombatPowers: ClassOutOfCombatPowers = {
       name: 'Focused Restoration',
       description: 'You point your healing energy towards a single ally, restoring a large amount of their health. Ally must have less than 50% health.',
       level: 8,
-      mpCost: 12,
+      mpCost: 20,
       target: 'ally',
       targetCount: 1,
       targetSelf: true,
@@ -49,6 +49,7 @@ export const outOfCombatPowers: ClassOutOfCombatPowers = {
       target: 'ally',
       targetSelf: false,
       targetCount: 2,
+      outOfCombat: true,
       imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/2025-09-07T05%3A32%3A24_27616%2Fpsionic%20aura.jpg?alt=media&token=d122945d-944b-4007-adc4-1330763dae70',
     },
     {
@@ -59,6 +60,7 @@ export const outOfCombatPowers: ClassOutOfCombatPowers = {
       target: 'ally',
       targetSelf: false,
       targetCount: 1,
+      outOfCombat: true,
       imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/2025-09-07T05%3A32%3A24_27616%2Fpsychic%20flare.jpg?alt=media&token=1b1d3051-2030-452c-94d8-06109e632e95'
     },
   ],
