@@ -473,7 +473,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                                     disabled={student.level < 4}
                                 >
                                     <Image
-                                        src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Button%20Images%2Fenvato-labs-ai-89196b01-5079-4560-844c-2234c899c750.jpg?alt=media&token=e9f42d2a-4632-474c-8349-9d5696d53952"
+                                        src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Backgrounds%2Fenvato-labs-image-edit%20(39).png?alt=media&token=edd59486-2ed8-48d5-9d3b-63ea5996df52"
                                         alt="Provision"
                                         layout="fill"
                                         className="object-cover rounded-full"
@@ -483,7 +483,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                             </TooltipTrigger>
                             <TooltipContent>
                                 <p className="font-bold">Provision</p>
-                                <p>Cost: 5% of amount sent</p>
+                                <p>Give gold to fellow Company Member</p>
                             </TooltipContent>
                         </Tooltip>
                     </div>

@@ -61,6 +61,8 @@ export type Student = {
     lastDailyTraining?: any; // Firestore ServerTimestamp
     lastUsedVeteransInsight?: any; // Timestamp for Guardian's power cooldown
     lastReceivedVeteransInsight?: any; // Timestamp for receiving the benefit
+    lastUsedProvision?: any; // Timestamp for Provision caster cooldown
+    lastReceivedProvision?: any; // Timestamp for Provision target cooldown
     companyId?: string;
     inBattle: boolean; 
     inDuel?: boolean;

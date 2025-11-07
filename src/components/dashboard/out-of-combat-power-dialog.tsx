@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -110,7 +111,10 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
           } else if (powerToCast.name === 'Provision') {
             const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
             // Must be in the same company and cannot have received a provision recently.
-            targets = targets.filter(s => s.companyId === student.companyId && (!s.lastReceivedVeteransInsight || s.lastReceivedVeteransInsight.toDate() < twentyFourHoursAgo));
+            targets = targets.filter(s => 
+                s.companyId === student.companyId &&
+                (!s.lastReceivedProvision || s.lastReceivedProvision.toDate() < twentyFourHoursAgo)
+            );
           }
           
           if (!powerToCast.targetSelf) {
@@ -288,7 +292,7 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
                     <DialogHeader>
                         <DialogTitle>Provision Company Member</DialogTitle>
                         <DialogDescription>
-                            Enter the amount of gold to send. You can send up to 25% of your current gold. A 5% transaction fee will be applied.
+                            You may send some gold to a fellow company member. You can send up to 25% of your current gold. A 5% transaction fee will be applied.
                         </DialogDescription>
                     </DialogHeader>
                      <div className="py-4 space-y-2">
