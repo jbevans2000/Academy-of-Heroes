@@ -14,7 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Send, ArrowLeft, ShieldAlert, Trash2 } from 'lucide-react';
+import { Loader2, Send, ArrowLeft, ShieldAlert, Trash2, Download } from 'lucide-react';
 import { sendGuildHallMessage, clearGuildHallChat } from '@/ai/flows/manage-messages';
 import { cn } from '@/lib/utils';
 import { ClientOnlyTime } from '@/components/client-only-time';
@@ -31,6 +31,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import jsPDF from 'jspdf';
 
 
 interface GuildHallMessage {
@@ -156,6 +157,43 @@ export default function GuildHallPage() {
         }
     }
     
+    const handleDownloadChat = () => {
+        const doc = new jsPDF();
+        let y = 15;
+        const pageHeight = doc.internal.pageSize.height;
+        const margin = 15;
+
+        doc.setFontSize(16);
+        doc.text("Guild Hall Chat Transcript", margin, y);
+        y += 20;
+
+        doc.setFontSize(10);
+
+        messages.forEach(msg => {
+            if (y > pageHeight - margin) {
+                doc.addPage();
+                y = margin;
+            }
+            const date = msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleString() : 'Pending...';
+            const messageHeader = `[${date}] ${msg.senderName}:`;
+            doc.text(messageHeader, margin, y);
+            y += 6;
+
+            const splitText = doc.splitTextToSize(msg.text, 180);
+            splitText.forEach((line: string) => {
+                 if (y > pageHeight - margin) {
+                    doc.addPage();
+                    y = margin;
+                }
+                doc.text(line, margin + 5, y);
+                y += 6;
+            })
+            y += 4; // Extra space between messages
+        });
+
+        doc.save(`guild-hall-chat-${new Date().toISOString().split('T')[0]}.pdf`);
+    };
+
     const getCompanyColor = (companyId?: string): React.CSSProperties => {
         if (companyId === 'teacher') return { backgroundColor: 'black' };
         if (!companyId) return { backgroundColor: 'gray' };
@@ -186,11 +224,14 @@ export default function GuildHallPage() {
                             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Podium
                         </Button>
                          <div className="flex items-center space-x-4">
+                             <Button variant="secondary" onClick={handleDownloadChat} disabled={messages.length === 0}>
+                                <Download className="mr-2 h-4 w-4" />
+                                Download Chat
+                            </Button>
                              <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <Button variant="destructive" disabled={isClearing}>
                                         {isClearing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                                        Clear Chat
                                     </Button>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
