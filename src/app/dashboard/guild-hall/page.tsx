@@ -107,7 +107,7 @@ export default function GuildHallPage() {
             await sendGuildHallMessage({
                 teacherUid: student.teacherUid,
                 senderUid: user.uid,
-                senderName: student.characterName,
+                senderName: `${student.studentName} (${student.characterName})`,
                 text: newMessage,
                 isTeacher: false,
                 companyId: student.companyId,
