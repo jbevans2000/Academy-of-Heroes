@@ -43,31 +43,34 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
             const caster = casterSnap.data() as Student;
             
             if (caster.level < power.level) throw new Error("You have not learned this power yet.");
-            if (caster.mp < power.mpCost && power.name !== 'Psychic Flare') throw new Error("Not enough MP to cast this spell.");
+            
+            const dynamicCost = power.name === 'Psychic Flare' ? Math.max(20, Math.floor(caster.mp * 0.5)) : power.mpCost;
+
+            if (caster.mp < dynamicCost) throw new Error("Not enough MP to cast this spell.");
 
             // --- Server-side validation and effect logic ---
 
-            // HEALER
-            if (powerName === 'Lesser Heal' || powerName === 'Focused Restoration') {
-                const targetUids = targets;
-                if (!targetUids || targetUids.length === 0) throw new Error("No targets selected.");
-                if (targetUids.length > (power.targetCount || 1)) throw new Error("Too many targets selected.");
+            if (power.name === 'Lesser Heal' || power.name === 'Focused Restoration') {
+                if (!targets || targets.length === 0) throw new Error("No targets selected.");
+                if (targets.length > (power.targetCount || 1)) throw new Error("Too many targets selected.");
 
-                const targetRefs = targetUids.map(uid => doc(db, 'teachers', teacherUid, 'students', uid));
+                const targetRefs = targets.map(uid => doc(db, 'teachers', teacherUid, 'students', uid));
                 const targetSnaps = await Promise.all(targetRefs.map(ref => transaction.get(ref)));
                 
                 transaction.update(casterRef, { mp: increment(-power.mpCost) });
                 
                 let totalHealed = 0;
-                const healAmount = powerName === 'Lesser Heal'
+                let targetNames: string[] = [];
+                const healAmount = power.name === 'Lesser Heal'
                     ? rollDie(6) + caster.level
                     : rollDie(8) + rollDie(8) + rollDie(8) + caster.level;
 
-                const healPerTarget = Math.ceil(healAmount / targetUids.length);
+                const healPerTarget = Math.ceil(healAmount / targets.length);
                 
                 targetSnaps.forEach((targetSnap, index) => {
                     if (!targetSnap.exists()) return; 
                     const target = targetSnap.data() as Student;
+                    targetNames.push(target.characterName);
                     if (target.hp >= target.maxHp) return;
 
                     const newHp = Math.min(target.maxHp, target.hp + healPerTarget);
@@ -76,11 +79,10 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
                 });
                 
                 await logAvatarEvent(teacherUid, casterUid, { source: 'Spell', reason: `Cast ${powerName}` });
-                return { success: true, message: `You cast ${powerName}, restoring a total of ${totalHealed} HP.` };
+                return { success: true, message: `You cast ${powerName}, restoring a total of ${totalHealed} HP to ${targetNames.join(', ')}.` };
             }
             
-            // MAGE
-            if (powerName === 'Psionic Aura') {
+            if (power.name === 'Psionic Aura') {
                  if (!targets || targets.length === 0) throw new Error("No targets selected.");
                  
                  const targetRefs = targets.map(uid => doc(db, 'teachers', teacherUid, 'students', uid));
@@ -90,20 +92,22 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
 
                  const totalRestore = rollDie(6) + caster.level;
                  const restorePerTarget = Math.ceil(totalRestore / targets.length);
+                 let targetNames: string[] = [];
 
                  targetSnaps.forEach((targetSnap, index) => {
                      if (!targetSnap.exists()) return;
                      const target = targetSnap.data() as Student;
+                     targetNames.push(target.characterName);
                      if (target.mp >= target.maxMp) return;
                      const newMp = Math.min(target.maxMp, target.mp + restorePerTarget);
                      transaction.update(targetRefs[index], { mp: newMp });
                  });
 
                  await logAvatarEvent(teacherUid, casterUid, { source: 'Spell', reason: `Cast ${powerName}` });
-                 return { success: true, message: `You cast ${powerName}, restoring magical energy to your allies.` };
+                 return { success: true, message: `You cast ${powerName}, restoring ${restorePerTarget} MP to ${targetNames.join(', ')}.` };
             }
 
-            if (powerName === 'Psychic Flare') {
+            if (power.name === 'Psychic Flare') {
                  if (!targets || targets.length !== 1) throw new Error("Must select exactly one target.");
                  const targetUid = targets[0];
                  const targetRef = doc(db, 'teachers', teacherUid, 'students', targetUid);
@@ -112,7 +116,6 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
                  if (!targetSnap.exists()) throw new Error("Target not found.");
                  const targetData = targetSnap.data() as Student;
                  
-                 // Cost is 50% of the CASTER's current MP
                  const actualCost = Math.max(20, Math.floor(caster.mp * 0.5));
                  if (caster.mp < actualCost) throw new Error("Not enough MP to cast this spell.");
 
@@ -127,8 +130,7 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
                  return { success: true, message: `You cast Psychic Flare, restoring ${targetData.characterName} to full MP!` };
             }
 
-            // GUARDIAN
-            if (powerName === 'Absorb') {
+            if (power.name === 'Absorb') {
                 const hpToConvert = inputValue || 0;
                 if (hpToConvert <= 0 || hpToConvert >= caster.hp) {
                     throw new Error("Invalid HP amount to convert.");

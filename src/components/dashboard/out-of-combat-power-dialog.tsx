@@ -98,7 +98,7 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
           } else if (powerToCast.name === 'Lesser Heal') {
               targets = targets.filter(s => s.hp < s.maxHp);
           } else if (powerToCast.name === 'Psionic Aura') {
-            targets = targets.filter(s => s.uid !== student.uid && s.mp <= s.maxMp * 0.75);
+            targets = targets.filter(s => s.mp <= s.maxMp * 0.75);
           } else if (powerToCast.name === 'Psychic Flare') {
             targets = targets.filter(s => s.mp < s.maxMp * 0.5);
           }
@@ -162,7 +162,11 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
         });
         
         if (result.success) {
-            toast({ title: 'Power Cast!', description: result.message });
+            toast({
+              title: 'Power Cast!',
+              description: result.message,
+              duration: Infinity, // Make it persistent
+            });
         } else {
             throw new Error(result.error);
         }
