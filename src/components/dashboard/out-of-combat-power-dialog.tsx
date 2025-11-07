@@ -101,6 +101,12 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
             targets = targets.filter(s => s.mp <= s.maxMp * 0.75);
           } else if (powerToCast.name === 'Psychic Flare') {
             targets = targets.filter(s => s.mp < s.maxMp * 0.5);
+          } else if (powerToCast.name === 'Veteran\'s Insight') {
+            const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            targets = targets.filter(s => 
+                s.level < student.level && 
+                (!s.lastReceivedVeteransInsight || s.lastReceivedVeteransInsight.toDate() < twentyFourHoursAgo)
+            );
           }
           
           if (!powerToCast.targetSelf) {
@@ -109,7 +115,7 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
 
           setEligibleTargets(targets);
       }
-  }, [powerToCast, companyMembers, student.uid]);
+  }, [powerToCast, companyMembers, student.uid, student.level]);
 
   const handleTargetSelect = (uid: string) => {
       const targetCount = powerToCast?.targetCount || 1;
@@ -165,7 +171,7 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
             toast({
               title: 'Power Cast!',
               description: result.message,
-              duration: Infinity, // Make it persistent
+              duration: 5000,
             });
         } else {
             throw new Error(result.error);
@@ -192,6 +198,13 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
           return;
       }
   };
+    
+    const dynamicMpCost = useMemo(() => {
+        if (powerToCast?.name === 'Veteran\'s Insight') {
+            return Math.ceil(student.maxMp * 0.20);
+        }
+        return powerToCast?.mpCost;
+    }, [powerToCast, student.maxMp]);
 
     const renderStep1 = () => {
         if (powerToCast?.name === 'Absorb') {
@@ -250,7 +263,7 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
                           />
                           <Label htmlFor={`target-${member.uid}`} className="w-full cursor-pointer">
                               <div className="flex justify-between items-center">
-                                  <span>{member.characterName}</span>
+                                  <span>{member.characterName} (Lvl {member.level})</span>
                                   <span className="text-xs text-muted-foreground">
                                     {isMpPower ? `${member.mp}/${member.maxMp} MP` : `${member.hp}/${member.maxHp} HP`}
                                   </span>
@@ -287,7 +300,7 @@ export function OutOfCombatPowerDialog({ isOpen, onOpenChange, student, powerToC
                 <AlertDialogHeader>
                     <AlertDialogTitle>Cast {powerToCast?.name}?</AlertDialogTitle>
                      <AlertDialogDescription>
-                        This will cost {powerToCast?.name === 'Psychic Flare' ? '50% of your current MP' : `${powerToCast?.mpCost} MP`}. This action cannot be undone.
+                        This will cost {dynamicMpCost} MP. This action cannot be undone.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                  <AlertDialogFooter>
