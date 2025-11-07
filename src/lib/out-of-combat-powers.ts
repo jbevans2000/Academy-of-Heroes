@@ -46,9 +46,11 @@ export const outOfCombatPowers: ClassOutOfCombatPowers = {
       description: 'You call upon the leylines to recharge the arcane potential of TWO Allies. Targets must be at or below 75% of their max MP.',
       level: 2,
       mpCost: 4,
+      type: 'support',
       target: 'ally',
       targetSelf: false,
       targetCount: 2,
+      outOfCombat: true,
       imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/2025-09-07T05%3A32%3A24_27616%2Fpsionic%20aura.jpg?alt=media&token=d122945d-944b-4007-adc4-1330763dae70',
     },
     {
@@ -56,10 +58,12 @@ export const outOfCombatPowers: ClassOutOfCombatPowers = {
       description: "You channel a beam of restorative arcane energies into an ally, restoring them to full magic points. Target must be below 50% MP. This power costs 50% of your current Magic Points, with a minimum cost of 20 MP.",
       level: 9,
       mpCost: 20, // Min cost, actual is dynamic
+      type: 'support',
       target: 'ally',
       targetSelf: true, // Can target self
       targetCount: 1,
-      imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/2025-09-07T05%3A32%3A24_27616%2Fpsychic%20flare.jpg?alt=media&token=1b1d3051-2030-452c-94d8-06109e632e95' // Placeholder
+      outOfCombat: true,
+      imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/2025-09-07T05%3A32%3A24_27616%2Fpsychic%20flare.jpg?alt=media&token=1b1d3051-2030-452c-94d8-06109e632e95'
     },
   ],
   Guardian: [
@@ -73,5 +77,16 @@ export const outOfCombatPowers: ClassOutOfCombatPowers = {
       targetSelf: false,
       imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Button%20Images%2Fimage-gen.png?alt=media&token=79f0f06f-61e6-4326-b2b9-bcb4b789e38e',
     },
+    {
+      name: 'Provision',
+      description: 'Send gold to a company member. Costs a 5% transaction fee. Can only be used once every 24 hours, and a member can only receive a provision once every 24 hours. You can send a maximum of 25% of your current gold.',
+      level: 4,
+      mpCost: 0,
+      target: 'ally',
+      targetCount: 1,
+      targetSelf: false,
+      isMultiStep: true,
+      imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Button%20Images%2Fenvato-labs-ai-89196b01-5079-4560-844c-2234c899c750.jpg?alt=media&token=e9f42d2a-4632-474c-8349-9d5696d53952',
+    }
   ],
 };
