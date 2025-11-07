@@ -12,12 +12,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Send, ArrowLeft, ShieldAlert } from 'lucide-react';
-import { sendGuildHallMessage } from '@/ai/flows/manage-messages';
+import { Loader2, Send, ArrowLeft, ShieldAlert, Trash2, Download } from 'lucide-react';
+import { sendGuildHallMessage, clearGuildHallChat } from '@/ai/flows/manage-messages';
 import { cn } from '@/lib/utils';
 import { ClientOnlyTime } from '@/components/client-only-time';
 import type { Company, Student, Teacher } from '@/lib/data';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import jsPDF from 'jspdf';
+
 
 interface GuildHallMessage {
     id: string;
@@ -151,7 +153,7 @@ export default function GuildHallPage() {
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     backgroundAttachment: 'fixed',
-                    opacity: 0.6,
+                    opacity: 0.4,
                 }}
             />
             <DashboardHeader />
