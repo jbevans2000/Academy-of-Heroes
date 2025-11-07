@@ -38,6 +38,7 @@ export const classPowers: ClassPowers = {
       target: 'ally',
       targetSelf: false,
       targetCount: 2,
+      outOfCombat: true,
     },
     {
       name: 'Sorcerer’s Intuition',
@@ -55,6 +56,7 @@ export const classPowers: ClassPowers = {
       target: 'ally',
       targetSelf: false,
       targetCount: 1,
+      outOfCombat: true,
     },
      {
       name: 'Elemental Fusion',
