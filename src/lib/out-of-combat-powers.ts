@@ -23,7 +23,7 @@ export const outOfCombatPowers: ClassOutOfCombatPowers = {
       name: 'Lesser Heal',
       description: 'You call upon the powers of life to soothe your party’s wounds!',
       level: 2,
-      mpCost: 3,
+      mpCost: 10,
       target: 'ally',
       targetCount: 2,
       targetSelf: true,
@@ -82,7 +82,7 @@ export const outOfCombatPowers: ClassOutOfCombatPowers = {
       targetCount: 1,
       targetSelf: false,
       isMultiStep: true,
-      imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Button%20Images%2Fenvato-labs-image-edit%20(39).png?alt=media&token=e56349f8-2967-4d07-a74a-35153ee89046',
+      imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Guardian%20Backgrounds%2Fenvato-labs-image-edit%20(39).png?alt=media&token=edd59486-2ed8-48d5-9d3b-63ea5996df52',
     }
   ],
 };
