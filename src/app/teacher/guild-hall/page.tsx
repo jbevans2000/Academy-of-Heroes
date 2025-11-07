@@ -157,8 +157,8 @@ export default function GuildHallPage() {
     }
     
     const getCompanyColor = (companyId?: string): React.CSSProperties => {
-        if (!companyId) return {};
-        if (companyId === 'teacher') return { backgroundColor: 'hsl(var(--primary))' };
+        if (companyId === 'teacher') return { backgroundColor: 'black' };
+        if (!companyId) return { backgroundColor: 'gray' };
         const company = companies.find(c => c.id === companyId);
         return company?.color ? { backgroundColor: company.color } : {};
     };
