@@ -9,7 +9,7 @@ import { AvatarDisplay } from "@/components/dashboard/avatar-display";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, Map, Swords, Sparkles, BookHeart, Gem, Package, Hammer, Briefcase, Loader2, Trophy, ScrollText, BookOpen, Flame, Star, Users } from "lucide-react";
+import { User, Map, Swords, Sparkles, BookHeart, Gem, Package, Hammer, Briefcase, Loader2, Trophy, ScrollText, BookOpen, Flame, Star } from "lucide-react";
 import { doc, updateDoc, collection, query, where, getDocs, onSnapshot, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -386,7 +386,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
               <Link href="/dashboard/guild-hall" passHref>
                     <Button variant="outline" className="h-auto py-4 px-6 border-2 border-blue-600 bg-white hover:bg-gray-100 text-gray-900">
                         <div className="relative cursor-pointer transition-transform hover:scale-105 flex items-center gap-4">
-                            <Users className="h-12 w-12 text-blue-500" />
+                            <Briefcase className="h-12 w-12 text-blue-500" />
                             <div>
                                 <h3 className="text-xl font-bold">The Guild Hall</h3>
                                 <p className="text-muted-foreground">Chat with your guild!</p>
@@ -406,48 +406,48 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
           </div>
 
           {/* Out of Combat Powers Section */}
-            {(student.class === 'Healer' || student.class === 'Mage') && !isTeacherPreview && (
-                <div className="pt-8 text-center">
-                    <h3 className="text-xl font-bold font-headline mb-4">Out of Combat Powers</h3>
-                    <div className="flex justify-center gap-8">
-                       {(outOfCombatPowers[student.class] || []).map(power => {
-                           const isUnlocked = student.level >= power.level;
-                           const hasEnoughMp = student.mp >= power.mpCost;
-                           return (
-                                <Tooltip key={power.name}>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            className="rounded-full w-32 h-32 border-4 border-white shadow-lg relative disabled:opacity-50"
-                                            onClick={() => handleOpenPowerDialog(power.name)}
-                                            disabled={!isUnlocked || !hasEnoughMp}
-                                        >
-                                            <Image
-                                                src={power.imageUrl}
-                                                alt={power.name}
-                                                layout="fill"
-                                                className="object-cover rounded-full"
-                                            />
-                                            {!isUnlocked && <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-full"><p className="text-white font-bold text-sm">Lvl {power.level}</p></div>}
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p className="font-bold">{power.name}</p>
-                                        <p>Cost: {power.name === 'Psychic Flare' ? '50% of Current MP' : `${power.mpCost} MP`}</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                           )
-                       })}
-                    </div>
+          {(student.class === 'Healer' || student.class === 'Mage') && !isTeacherPreview && (
+            <div className="pt-8 text-center">
+                <h3 className="text-xl font-bold font-headline mb-4">Out of Combat Powers</h3>
+                <div className="flex justify-center gap-8">
+                   {(outOfCombatPowers[student.class] || []).map(power => {
+                       const isUnlocked = student.level >= power.level;
+                       const hasEnoughMp = student.mp >= power.mpCost;
+                       return (
+                            <Tooltip key={power.name}>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        className="rounded-full w-32 h-32 border-4 border-white shadow-lg relative disabled:opacity-50"
+                                        onClick={() => handleOpenPowerDialog(power.name)}
+                                        disabled={!isUnlocked || !hasEnoughMp}
+                                    >
+                                        <Image
+                                            src={power.imageUrl}
+                                            alt={power.name}
+                                            layout="fill"
+                                            className="object-cover rounded-full"
+                                        />
+                                        {!isUnlocked && <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-full"><p className="text-white font-bold text-sm">Lvl {power.level}</p></div>}
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p className="font-bold">{power.name}</p>
+                                    <p>Cost: {power.name === 'Psychic Flare' ? '50% of Current MP' : `${power.mpCost} MP`}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                       )
+                   })}
                 </div>
-            )}
-            {student.class === 'Guardian' && !isTeacherPreview && (
+            </div>
+          )}
+          {student.class === 'Guardian' && !isTeacherPreview && (
                  <div className="pt-8 text-center">
                     <h3 className="text-xl font-bold font-headline mb-4">Out of Combat Powers</h3>
                     <div className="flex justify-center gap-8">
                         <Button
                             className="rounded-full w-32 h-32 border-4 border-white shadow-lg relative disabled:opacity-50"
                             onClick={() => handleOpenPowerDialog("Veteran's Insight")}
-                            disabled={student.level < 10}
+                            disabled={student.level < 3}
                         >
                             <Image
                                 src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Button%20Images%2Fimage-gen.png?alt=media&token=79f0f06f-61e6-4326-b2b9-bcb4b789e38e"
@@ -455,7 +455,7 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                                 layout="fill"
                                 className="object-cover rounded-full"
                             />
-                            {student.level < 10 && <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-full"><p className="text-white font-bold text-sm">Lvl 10</p></div>}
+                            {student.level < 3 && <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-full"><p className="text-white font-bold text-sm">Lvl 3</p></div>}
                         </Button>
                          <Tooltip>
                             <TooltipTrigger asChild>

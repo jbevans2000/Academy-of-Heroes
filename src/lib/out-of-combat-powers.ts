@@ -46,34 +46,32 @@ export const outOfCombatPowers: ClassOutOfCombatPowers = {
       description: 'You call upon the leylines to recharge the arcane potential of TWO Allies. Targets must be at or below 75% of their max MP.',
       level: 2,
       mpCost: 4,
-      type: 'support',
       target: 'ally',
       targetSelf: false,
       targetCount: 2,
-      outOfCombat: true,
+      imageUrl: 'https://placehold.co/200x200.png' // Placeholder
     },
     {
       name: 'Psychic Flare',
       description: "You channel a beam of restorative arcane energies into an ally, restoring them to full magic points. Target must be below 50% MP. This power costs 50% of your current Magic Points, with a minimum cost of 20 MP.",
       level: 9,
       mpCost: 20, // Min cost, actual is dynamic
-      type: 'support',
       target: 'ally',
       targetSelf: true, // Can target self
       targetCount: 1,
-      outOfCombat: true,
+      imageUrl: 'https://placehold.co/200x200.png' // Placeholder
     },
   ],
   Guardian: [
     {
       name: 'Veteran\'s Insight',
       description: 'Share your experience with up to 3 lower-level company members, granting each an XP boost. Costs 20% of your max MP and can be used once per day.',
-      level: 10,
+      level: 3,
       mpCost: 0, // This is dynamic, but the field is required.
       target: 'ally',
       targetCount: 3,
       targetSelf: false,
-      imageUrl: 'https://placehold.co/200x200.png',
+      imageUrl: 'https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Button%20Images%2Fimage-gen.png?alt=media&token=79f0f06f-61e6-4326-b2b9-bcb4b789e38e',
     },
   ],
 };
