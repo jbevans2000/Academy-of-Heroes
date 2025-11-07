@@ -19,7 +19,7 @@ interface UsePowerInput {
     casterUid: string;
     powerName: string;
     targets: string[];
-    inputValue?: number; // For powers like 'Absorb'
+    inputValue?: number; // For powers like 'Absorb' or 'Provision'
 }
 
 const rollDie = (sides: number) => Math.floor(Math.random() * sides) + 1;
@@ -57,7 +57,48 @@ export async function useOutOfCombatPower(input: UsePowerInput): Promise<ActionR
                 dynamicCost = Math.ceil(caster.maxMp * 0.20);
             }
 
-            if (caster.mp < dynamicCost) throw new Error("Not enough MP to cast this spell.");
+            if (caster.mp < dynamicCost && power.name !== 'Provision' && power.name !== 'Absorb') {
+                throw new Error("Not enough MP to cast this spell.");
+            }
+            
+            if (power.name === 'Provision') {
+                if (!targets || targets.length !== 1 || !inputValue || inputValue <= 0) {
+                    throw new Error("A single target and a valid gold amount are required.");
+                }
+
+                const targetUid = targets[0];
+                if (caster.uid === targetUid) throw new Error("You cannot provision yourself.");
+
+                const targetRef = doc(db, 'teachers', teacherUid, 'students', targetUid);
+                const targetSnap = await transaction.get(targetRef);
+
+                if (!targetSnap.exists()) throw new Error("Target student not found.");
+                const targetData = targetSnap.data() as Student;
+
+                if (caster.companyId !== targetData.companyId) {
+                    throw new Error("You can only provision members of your own company.");
+                }
+
+                const maxGoldToSend = Math.floor(caster.gold * 0.25);
+                if (inputValue > maxGoldToSend) {
+                    throw new Error(`You can send a maximum of ${maxGoldToSend} gold.`);
+                }
+                
+                const fee = Math.ceil(inputValue * 0.05);
+                const totalCost = inputValue + fee;
+
+                if (caster.gold < totalCost) {
+                    throw new Error(`You do not have enough gold for this transaction (Cost: ${totalCost} Gold).`);
+                }
+
+                transaction.update(casterRef, { gold: increment(-totalCost) });
+                transaction.update(targetRef, { gold: increment(inputValue) });
+                
+                await logAvatarEvent(teacherUid, casterUid, { source: 'Spell', gold: -totalCost, reason: `Provisioned ${targetData.characterName}.` });
+                await logAvatarEvent(teacherUid, targetUid, { source: 'Spell', gold: inputValue, reason: `Received provision from ${caster.characterName}.` });
+
+                return { success: true, message: `You have successfully sent ${inputValue} Gold to ${targetData.characterName}!` };
+            }
 
             if (power.name === 'Lesser Heal' || power.name === 'Focused Restoration') {
                 if (!targets || targets.length === 0) throw new Error("No targets selected.");
