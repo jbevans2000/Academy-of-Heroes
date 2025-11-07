@@ -469,19 +469,21 @@ export function DashboardClient({ student, isTeacherPreview = false }: Dashboard
                             <TooltipTrigger asChild>
                                 <Button
                                     className="rounded-full w-32 h-32 border-4 border-white shadow-lg relative disabled:opacity-50"
-                                    disabled={true}
+                                    onClick={() => handleOpenPowerDialog("Provision")}
+                                    disabled={student.level < 4}
                                 >
                                     <Image
-                                        src="https://placehold.co/200x200.png"
-                                        alt="Placeholder Power"
+                                        src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Button%20Images%2Fenvato-labs-ai-89196b01-5079-4560-844c-2234c899c750.jpg?alt=media&token=e9f42d2a-4632-474c-8349-9d5696d53952"
+                                        alt="Provision"
                                         layout="fill"
                                         className="object-cover rounded-full"
                                     />
-                                    <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-full"><p className="text-white font-bold text-sm">Coming Soon</p></div>
+                                    {student.level < 4 && <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-full"><p className="text-white font-bold text-sm">Lvl 4</p></div>}
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                                <p className="font-bold">A New Power is Forging...</p>
+                                <p className="font-bold">Provision</p>
+                                <p>Cost: 5% of amount sent</p>
                             </TooltipContent>
                         </Tooltip>
                     </div>
