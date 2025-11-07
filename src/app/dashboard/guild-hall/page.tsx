@@ -16,7 +16,7 @@ import { Loader2, Send, ArrowLeft, ShieldAlert } from 'lucide-react';
 import { sendGuildHallMessage } from '@/ai/flows/manage-messages';
 import { cn } from '@/lib/utils';
 import { ClientOnlyTime } from '@/components/client-only-time';
-import type { Company, Student } from '@/lib/data';
+import type { Company, Student, Teacher } from '@/lib/data';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface GuildHallMessage {
@@ -38,7 +38,7 @@ export default function GuildHallPage() {
     const [newMessage, setNewMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
-    const [isChatEnabled, setIsChatEnabled] = useState(true);
+    const [teacherData, setTeacherData] = useState<Teacher | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [companies, setCompanies] = useState<Company[]>([]);
     
@@ -69,7 +69,7 @@ export default function GuildHallPage() {
         const teacherRef = doc(db, 'teachers', student.teacherUid);
         const unsubTeacher = onSnapshot(teacherRef, (docSnap) => {
             if (docSnap.exists()) {
-                setIsChatEnabled(docSnap.data().isChatEnabled ?? true);
+                setTeacherData(docSnap.data() as Teacher);
             }
         });
 
@@ -133,6 +133,14 @@ export default function GuildHallPage() {
         return company?.color ? { backgroundColor: company.color } : {};
     };
 
+    const isChatEnabled = teacherData?.isChatEnabled ?? true;
+    const isCompanyChatActive = teacherData?.isCompanyChatActive ?? false;
+
+    const filteredMessages = isCompanyChatActive && student?.companyId
+        ? messages.filter(msg => msg.companyId === student.companyId || msg.isTeacher)
+        : messages;
+
+
     return (
         <div className="relative flex min-h-screen w-full flex-col">
             <div 
@@ -153,7 +161,7 @@ export default function GuildHallPage() {
                     </Button>
                     <Card className="h-[75vh] flex flex-col bg-card/80 backdrop-blur-sm">
                         <CardHeader>
-                            <CardTitle>The Guild Hall</CardTitle>
+                            <CardTitle>The Guild Hall {isCompanyChatActive && student?.companyId ? `- ${companies.find(c => c.id === student.companyId)?.name || 'Company'} Chat` : ''}</CardTitle>
                             <CardDescription>A place for all guild members to communicate.</CardDescription>
                         </CardHeader>
                         <CardContent className="flex-grow overflow-hidden flex flex-col">
@@ -172,7 +180,7 @@ export default function GuildHallPage() {
                             ) : (
                                 <ScrollArea className="flex-grow pr-4 -mr-4">
                                     <div className="space-y-4">
-                                        {messages.map(msg => (
+                                        {filteredMessages.map(msg => (
                                             <div key={msg.id} className="flex items-start gap-3">
                                                 <div className="w-8 h-8 rounded-full flex-shrink-0" style={getCompanyColor(msg.companyId)} />
                                                 <div className="flex-grow">

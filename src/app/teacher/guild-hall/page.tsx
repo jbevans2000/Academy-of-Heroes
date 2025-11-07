@@ -47,7 +47,7 @@ export default function GuildHallPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [teacher, setTeacher] = useState<User | null>(null);
-    const [teacherData, setTeacherData] = useState<{ name: string, isChatEnabled?: boolean } | null>(null);
+    const [teacherData, setTeacherData] = useState<{ name: string, isChatEnabled?: boolean, isCompanyChatActive?: boolean } | null>(null);
     const [messages, setMessages] = useState<GuildHallMessage[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
@@ -73,7 +73,7 @@ export default function GuildHallPage() {
         const teacherRef = doc(db, 'teachers', teacher.uid);
         const unsubTeacher = onSnapshot(teacherRef, (docSnap) => {
             if (docSnap.exists()) {
-                setTeacherData(docSnap.data() as { name: string, isChatEnabled?: boolean });
+                setTeacherData(docSnap.data() as { name: string, isChatEnabled?: boolean, isCompanyChatActive?: boolean });
             }
         });
         
@@ -131,11 +131,12 @@ export default function GuildHallPage() {
         }
     };
 
-    const handleToggleChat = async (enabled: boolean) => {
+    const handleToggleSetting = async (field: 'isChatEnabled' | 'isCompanyChatActive', enabled: boolean) => {
         if (!teacher) return;
         const teacherRef = doc(db, 'teachers', teacher.uid);
-        await updateDoc(teacherRef, { isChatEnabled: enabled });
-        toast({ title: `Chat is now ${enabled ? 'ENABLED' : 'DISABLED'}` });
+        await updateDoc(teacherRef, { [field]: enabled });
+        let featureName = field === 'isChatEnabled' ? 'Chat' : 'Company Chat';
+        toast({ title: `${featureName} is now ${enabled ? 'ENABLED' : 'DISABLED'}` });
     };
     
      const handleClearChat = async () => {
@@ -155,18 +156,15 @@ export default function GuildHallPage() {
         }
     }
     
-    const getCompanyColor = (companyId?: string): string => {
-        if (!companyId) return 'bg-gray-200';
-        const company = companies.find(c => c.id === companyId);
-        return company?.color ? '' : 'bg-gray-200'; // Return empty string if color is HSL
-    };
-
-    const getCompanyStyle = (companyId?: string): React.CSSProperties => {
+    const getCompanyColor = (companyId?: string): React.CSSProperties => {
         if (!companyId) return {};
         if (companyId === 'teacher') return { backgroundColor: 'hsl(var(--primary))' };
         const company = companies.find(c => c.id === companyId);
         return company?.color ? { backgroundColor: company.color } : {};
     };
+    
+    const isChatEnabled = teacherData?.isChatEnabled ?? true;
+    const isCompanyChatActive = teacherData?.isCompanyChatActive ?? false;
 
     return (
         <div className="relative flex min-h-screen w-full flex-col">
@@ -212,9 +210,17 @@ export default function GuildHallPage() {
                             </AlertDialog>
                             <div className="flex items-center space-x-2">
                                 <Switch
+                                    id="company-chat-enabled"
+                                    checked={isCompanyChatActive}
+                                    onCheckedChange={(checked) => handleToggleSetting('isCompanyChatActive', checked)}
+                                />
+                                <Label htmlFor="company-chat-enabled">Company Chat Only</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Switch
                                     id="chat-enabled"
-                                    checked={teacherData?.isChatEnabled ?? true}
-                                    onCheckedChange={handleToggleChat}
+                                    checked={isChatEnabled}
+                                    onCheckedChange={(checked) => handleToggleSetting('isChatEnabled', checked)}
                                 />
                                 <Label htmlFor="chat-enabled">Chat Enabled for Students</Label>
                             </div>
@@ -235,7 +241,7 @@ export default function GuildHallPage() {
                                     ) : (
                                         messages.map(msg => (
                                             <div key={msg.id} className="flex items-start gap-3">
-                                                <div className="w-8 h-8 rounded-full flex-shrink-0" style={getCompanyStyle(msg.companyId)} />
+                                                <div className="w-8 h-8 rounded-full flex-shrink-0" style={getCompanyColor(msg.companyId)} />
                                                 <div className="flex-grow">
                                                     <div className="flex items-baseline gap-2">
                                                         <span className="font-bold">{msg.senderName}</span>

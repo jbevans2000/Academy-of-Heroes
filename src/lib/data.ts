@@ -29,6 +29,7 @@ export type Teacher = {
     hasUnreadAdminMessages?: boolean;
     lastSeenBroadcastTimestamp?: any;
     isChatEnabled?: boolean;
+    isCompanyChatActive?: boolean;
 }
 
 export type Student = {
