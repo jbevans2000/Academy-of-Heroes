@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { Suspense, lazy } from 'react';
@@ -88,6 +89,7 @@ export function AvatarDisplay({ student }: AvatarDisplayProps) {
         || equippedPet?.transforms?.[petTransformKey] 
         || { x: 50, y: 50, scale: 40, rotation: 0 };
 
+  const shadowMarks = student.shadowMarks || 0;
 
   return (
     <div className="flex justify-center items-center py-4">
@@ -95,6 +97,20 @@ export function AvatarDisplay({ student }: AvatarDisplayProps) {
              {isFallen && (
                 <div className="absolute inset-0 z-20 bg-black/70 flex items-center justify-center">
                     <p className="text-5xl font-bold text-red-600 font-headline animate-pulse">FALLEN</p>
+                </div>
+            )}
+             {shadowMarks > 0 && (
+                <div className="absolute top-2 right-2 z-30 flex flex-col gap-1">
+                    {Array.from({ length: shadowMarks }).map((_, i) => (
+                        <Image
+                            key={i}
+                            src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Button%20Images%2FShadow%20Mark.png?alt=media&token=adac1479-10f4-4ed4-afda-5498e5e27a33"
+                            alt="Shadow Mark"
+                            width={32}
+                            height={32}
+                            className="drop-shadow-lg"
+                        />
+                    ))}
                 </div>
             )}
             {showCustomCharacter && equipment.bodyId && allBodies.length > 0 ? (

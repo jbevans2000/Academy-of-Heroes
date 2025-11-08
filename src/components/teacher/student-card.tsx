@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -6,7 +7,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Student, Company, QuestHub, Chapter } from '@/lib/data';
-import { Star, Coins, User, Sword, Trophy, Heart, Zap, Loader2, Edit, Settings, Briefcase, FileText, Eye, EyeOff, MessageSquare, BookOpen, ShieldCheck, Moon, UserCheck, LogOut } from 'lucide-react';
+import { Star, Coins, User, Sword, Trophy, Heart, Zap, Loader2, Edit, Settings, Briefcase, FileText, Eye, EyeOff, MessageSquare, BookOpen, ShieldCheck, Moon, UserCheck, LogOut, AlertCircle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -33,7 +34,7 @@ import { cn } from '@/lib/utils';
 import { Label } from '../ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { TeacherNotesDialog } from './teacher-notes-dialog';
-import { toggleStudentVisibility, updateStudentDetails, setMeditationStatus, forceStudentLogout } from '@/ai/flows/manage-student';
+import { toggleStudentVisibility, updateStudentDetails, setMeditationStatus, forceStudentLogout, addShadowMark, removeShadowMark } from '@/ai/flows/manage-student';
 import { SetQuestProgressDialog } from './set-quest-progress-dialog';
 import { setStudentStat } from '@/ai/flows/manage-student-stats';
 import { Textarea } from '../ui/textarea';
@@ -422,6 +423,7 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [isQuestProgressOpen, setIsQuestProgressOpen] = useState(false);
   const [isMeditationDialogOpen, setIsMeditationDialogOpen] = useState(false);
+  const [isMarking, setIsMarking] = useState<'add' | 'remove' | null>(null);
   
   const { toast } = useToast();
 
@@ -497,6 +499,22 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
         }
     };
 
+    const handleMark = async (type: 'add' | 'remove') => {
+        setIsMarking(type);
+        try {
+            const result = type === 'add'
+                ? await addShadowMark({ teacherUid, studentUid: student.uid })
+                : await removeShadowMark({ teacherUid, studentUid: student.uid });
+            if (!result.success) {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message });
+        } finally {
+            setIsMarking(null);
+        }
+    }
+
 
   const avatarBorderColor = {
     Mage: 'border-blue-600',
@@ -504,6 +522,8 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
     Guardian: 'border-amber-500',
     '': 'border-transparent',
   }[student.class];
+
+  const shadowMarks = student.shadowMarks || 0;
 
   return (
     <>
@@ -567,6 +587,19 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
                 <div className="flex-grow space-y-1">
                     <EditableText student={student} field="characterName" label="Character Name" icon={<Sword className="w-5 h-5" />} teacherUid={teacherUid} />
                     <EditableText student={student} field="studentName" label="Student Name" icon={<User className="w-5 h-5" />} teacherUid={teacherUid} />
+                    {shadowMarks > 0 && (
+                        <div className="flex gap-1 pt-1">
+                            {Array.from({ length: shadowMarks }).map((_, i) => (
+                                <Image
+                                    key={i}
+                                    src="https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Button%20Images%2FShadow%20Mark.png?alt=media&token=adac1479-10f4-4ed4-afda-5498e5e27a33"
+                                    alt="Shadow Mark"
+                                    width={20}
+                                    height={20}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </div>
             </CardHeader>
             <CardContent className="p-4 flex-grow grid grid-cols-2 gap-x-4 gap-y-3 text-lg">
@@ -609,6 +642,15 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
                      <DropdownMenuContent align="end">
                         <DropdownMenuItem onSelect={() => setIsNotesOpen(true)}><FileText className="mr-2 h-4 w-4"/> View/Edit Notes</DropdownMenuItem>
                         <DropdownMenuItem onSelect={() => setIsQuestProgressOpen(true)}><BookOpen className="mr-2 h-4 w-4" /> Set Quest Progress</DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onSelect={() => handleMark('add')} disabled={isMarking === 'add' || (student.shadowMarks || 0) >= 3}>
+                            {isMarking === 'add' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <AlertCircle className="mr-2 h-4 w-4"/>}
+                            Add Shadow Mark
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleMark('remove')} disabled={isMarking === 'remove' || (student.shadowMarks || 0) <= 0} className="text-green-600 focus:text-green-700">
+                           {isMarking === 'remove' ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}
+                           Remove Shadow Mark
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         {student.isInMeditationChamber ? (
                              <DropdownMenuItem onSelect={handleReleaseFromMeditation} className="text-green-600 focus:text-green-700">

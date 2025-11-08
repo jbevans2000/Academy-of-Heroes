@@ -135,6 +135,7 @@ export type Student = {
     meditationDuration?: number | null; // Duration in minutes
     meditationShowTimer?: boolean; // Show timer to student
     forceLogout?: boolean; // Flag to trigger client-side logout
+    shadowMarks?: number;
 }
 
 export type PendingStudent = {

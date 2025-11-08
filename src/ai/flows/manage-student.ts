@@ -11,7 +11,7 @@
  * - getStudentStatus: Fetches the enabled/disabled status of a student's account.
  * - clearGameLog: Deletes all entries from the game log.
  */
-import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch, getDoc, runTransaction, arrayUnion, arrayRemove, setDoc, deleteField, query, where, Timestamp } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch, getDoc, runTransaction, arrayUnion, arrayRemove, setDoc, deleteField, query, where, Timestamp, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirebaseAdminApp } from '@/lib/firebase-admin';
@@ -287,8 +287,43 @@ export async function forceStudentLogout(input: ForceLogoutInput): Promise<Actio
   }
 }
 
+interface ShadowMarkInput {
+  teacherUid: string;
+  studentUid: string;
+}
 
+export async function addShadowMark(input: ShadowMarkInput): Promise<ActionResponse> {
+    const { teacherUid, studentUid } = input;
+    try {
+        const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
+        const studentSnap = await getDoc(studentRef);
+        if (!studentSnap.exists()) throw new Error('Student not found.');
+        
+        const currentMarks = studentSnap.data().shadowMarks || 0;
+        if (currentMarks >= 3) return { success: false, error: 'Student already has the maximum number of Shadow Marks.' };
 
+        await updateDoc(studentRef, { shadowMarks: increment(1) });
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message || 'Failed to add Shadow Mark.' };
+    }
+}
 
+export async function removeShadowMark(input: ShadowMarkInput): Promise<ActionResponse> {
+    const { teacherUid, studentUid } = input;
+    try {
+        const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
+        const studentSnap = await getDoc(studentRef);
+        if (!studentSnap.exists()) throw new Error('Student not found.');
+        
+        const currentMarks = studentSnap.data().shadowMarks || 0;
+        if (currentMarks <= 0) return { success: false, error: 'Student has no Shadow Marks to remove.' };
+        
+        await updateDoc(studentRef, { shadowMarks: increment(-1) });
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message || 'Failed to remove Shadow Mark.' };
+    }
+}
 
     
