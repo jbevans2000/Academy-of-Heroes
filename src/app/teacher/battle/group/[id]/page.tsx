@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -37,7 +36,7 @@ interface Battle {
 interface BattleResult {
     questionIndex: number;
     isCorrect: boolean;
-    participants: string[]; // UIDs of students who got it right
+    participants: string[]; // UIDs of students who got it right/wrong
 }
 
 // Fisher-Yates shuffle algorithm
@@ -105,6 +104,7 @@ export default function GroupBattlePage() {
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [battleResults, setBattleResults] = useState<BattleResult[]>([]);
     const [lastRoundDamageDealt, setLastRoundDamageDealt] = useState<{ amount: number; recipients: string } | null>(null);
+    const [lastRoundRewardGiven, setLastRoundRewardGiven] = useState<{ xp: number; gold: number; recipients: string } | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
     // Mode-specific state
@@ -219,43 +219,42 @@ export default function GroupBattlePage() {
         const isCorrect = selectedAnswerIndex === battle.questions[currentQuestionIndex].correctAnswerIndex;
         
         let participants: string[] = [];
-        let damageRecipients: string[] = [];
-        let damageRecipientName = '';
+        let participantGroupName = '';
+
+        if (mode === 'guild') {
+            participants = presentStudents.map(s => s.uid);
+            participantGroupName = "The entire guild";
+        } else if (mode === 'company') {
+            const currentCompany = companyRotation[currentQuestionIndex % companyRotation.length];
+            participants = presentStudents.filter(s => s.companyId === currentCompany.id).map(s => s.uid);
+            participantGroupName = `Company: ${currentCompany.name}`;
+        } else if (mode === 'individual') {
+            const currentStudent = individualRotation[currentQuestionIndex % individualRotation.length];
+            participants = [currentStudent.uid];
+            participantGroupName = `Hero: ${currentStudent.characterName}`;
+        }
 
         if(isCorrect) {
-            if (mode === 'guild') {
-                participants = presentStudents.map(s => s.uid);
-            } else if (mode === 'company') {
-                const currentCompany = companyRotation[currentQuestionIndex % companyRotation.length];
-                participants = presentStudents.filter(s => s.companyId === currentCompany.id).map(s => s.uid);
-            } else if (mode === 'individual') {
-                const currentStudent = individualRotation[currentQuestionIndex % individualRotation.length];
-                participants = [currentStudent.uid];
-            }
-        } else {
-            // Damage logic
-            const damageAmount = battle.questions[currentQuestionIndex].damage || 1;
-            if (mode === 'guild') {
-                damageRecipients = presentStudents.map(s => s.uid);
-                damageRecipientName = "The entire guild";
-            } else if (mode === 'company') {
-                const currentCompany = companyRotation[currentQuestionIndex % companyRotation.length];
-                damageRecipients = presentStudents.filter(s => s.companyId === currentCompany.id).map(s => s.uid);
-                damageRecipientName = `Company: ${currentCompany.name}`;
-            } else if (mode === 'individual') {
-                const currentStudent = individualRotation[currentQuestionIndex % individualRotation.length];
-                damageRecipients = [currentStudent.uid];
-                damageRecipientName = `Hero: ${currentStudent.characterName}`;
-            }
-            
-            if (damageRecipients.length > 0) {
+            if (participants.length > 0 && (xpPerAnswer > 0 || goldPerAnswer > 0)) {
                 await updateStudentStats({
                     teacherUid: teacher.uid,
-                    studentUids: damageRecipients,
+                    studentUids: participants,
+                    xp: xpPerAnswer,
+                    gold: goldPerAnswer,
+                    reason: `Correct answer in group battle: ${battle.battleName}`
+                });
+                 setLastRoundRewardGiven({ xp: xpPerAnswer, gold: goldPerAnswer, recipients: participantGroupName });
+            }
+        } else {
+            const damageAmount = battle.questions[currentQuestionIndex].damage || 1;
+            if (participants.length > 0 && damageAmount > 0) {
+                await updateStudentStats({
+                    teacherUid: teacher.uid,
+                    studentUids: participants,
                     hp: -damageAmount,
                     reason: `Incorrect answer in group battle: ${battle.battleName}`
                 });
-                setLastRoundDamageDealt({ amount: damageAmount, recipients: damageRecipientName });
+                setLastRoundDamageDealt({ amount: damageAmount, recipients: participantGroupName });
             }
         }
         
@@ -267,6 +266,7 @@ export default function GroupBattlePage() {
         setIsSubmitted(false);
         setSelectedAnswerIndex(null);
         setLastRoundDamageDealt(null);
+        setLastRoundRewardGiven(null);
         
         if (mode === 'individual' && currentQuestionIndex >= presentStudents.length - 1) {
             setIndividualRotation(shuffleArray(presentStudents));
@@ -284,38 +284,25 @@ export default function GroupBattlePage() {
         setIsSaving(true);
         
         const batch = writeBatch(db);
-        const correctAnswersByStudent: { [uid: string]: number } = {};
-
-        battleResults.forEach(result => {
-            if (result.isCorrect) {
-                result.participants.forEach(uid => {
-                    if (!correctAnswersByStudent[uid]) correctAnswersByStudent[uid] = 0;
-                    correctAnswersByStudent[uid]++;
-                });
-            }
-        });
         
         const presentUids = presentStudents.map(s => s.uid);
 
         presentStudents.forEach(student => {
             const studentRef = doc(db, 'teachers', teacher.uid, 'students', student.uid);
-            const correctCount = correctAnswersByStudent[student.uid] || 0;
-            const xpToAdd = (correctCount * xpPerAnswer) + xpParticipation;
-            const goldToAdd = (correctCount * goldPerAnswer) + goldParticipation;
 
-            if(xpToAdd > 0) {
-                batch.update(studentRef, { xp: (student.xp || 0) + xpToAdd });
+            if(xpParticipation > 0) {
+                batch.update(studentRef, { xp: student.xp + xpParticipation });
                 logAvatarEvent(teacher.uid, student.uid, {
-                    source: 'Group Battle',
-                    xp: xpToAdd,
+                    source: 'Group Battle Participation',
+                    xp: xpParticipation,
                     reason: `Completed battle: ${battle.battleName}`
                 });
             }
-            if(goldToAdd > 0) {
-                batch.update(studentRef, { gold: (student.gold || 0) + goldToAdd });
+            if(goldParticipation > 0) {
+                batch.update(studentRef, { gold: student.gold + goldParticipation });
                  logAvatarEvent(teacher.uid, student.uid, {
-                    source: 'Group Battle',
-                    gold: goldToAdd,
+                    source: 'Group Battle Participation',
+                    gold: goldParticipation,
                     reason: `Completed battle: ${battle.battleName}`
                 });
             }
@@ -340,7 +327,7 @@ export default function GroupBattlePage() {
 
             await batch.commit();
             await logGameEvent(teacher.uid, 'BOSS_BATTLE', `Group Battle "${battle.battleName}" completed.`);
-            toast({ title: 'Summary Saved & Rewards Bestowed!', description: 'Student XP and Gold have been updated.' });
+            toast({ title: 'Summary Saved & Rewards Bestowed!', description: 'Student participation rewards have been awarded.' });
             router.push(`/teacher/battle/group-summary/${newSummaryDoc.id}`);
 
         } catch (error) {
@@ -440,7 +427,7 @@ export default function GroupBattlePage() {
                         <CardFooter className="flex-col gap-4">
                             <Button size="lg" onClick={handleSaveSummary} disabled={isSaving}>
                                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                                Save to Archives & Bestow Rewards
+                                Save to Archives & Bestow Participation Reward
                             </Button>
                             <Button variant="link" onClick={() => router.push('/teacher/battles')}>
                                 Exit Without Saving
@@ -461,6 +448,9 @@ export default function GroupBattlePage() {
                                         <>
                                             <CheckCircle className="h-24 w-24 mx-auto text-green-400" />
                                             <p className="text-5xl font-bold mt-4 text-green-300">Correct!</p>
+                                            {lastRoundRewardGiven && (
+                                                <p className="text-lg mt-2 text-yellow-300">{lastRoundRewardGiven.recipients} gained {lastRoundRewardGiven.xp} XP and {lastRoundRewardGiven.gold} Gold!</p>
+                                            )}
                                         </>
                                     ) : (
                                         <>
@@ -508,5 +498,3 @@ export default function GroupBattlePage() {
         </div>
     )
 }
-
-    
