@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -595,6 +596,7 @@ export function StudentCard({ student, isSelected, onSelect, teacherUid, onSendM
                                     alt="Shadow Mark"
                                     width={20}
                                     height={20}
+                                    className="drop-shadow-[0_0_2px_#ffffff] drop-shadow-[0_0_2px_#ffffff]"
                                 />
                             ))}
                         </div>

@@ -108,7 +108,7 @@ export function AvatarDisplay({ student }: AvatarDisplayProps) {
                             alt="Shadow Mark"
                             width={32}
                             height={32}
-                            className="drop-shadow-lg"
+                            className="drop-shadow-[0_0_2px_#ffffff] drop-shadow-[0_0_2px_#ffffff]"
                         />
                     ))}
                 </div>
