@@ -48,7 +48,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff, MessageSquare, Heart, Zap as ZapIcon, Trophy, HeartPulse, Filter, Moon, UserCheck, LogOut, Save, BarChart } from 'lucide-react';
+import { Loader2, Star, Coins, UserX, Swords, BookOpen, Wrench, ChevronDown, Copy, Check, X, Bell, SortAsc, Trash2, DatabaseZap, BookHeart, Users, ShieldAlert, Gift, Gamepad2, School, Archive, Briefcase, Eye, EyeOff, MessageSquare, Heart, Zap as ZapIcon, Trophy, HeartPulse, Filter, Moon, UserCheck, LogOut, Save, BarChart, Search } from 'lucide-react';
 import { logGameEvent } from '@/lib/gamelog';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { setMeditationStatus, toggleStudentVisibility, setBulkMeditationStatus, releaseAllFromMeditation } from '@/ai/flows/manage-student';
@@ -157,8 +157,10 @@ export default function Dashboard() {
   const [bulkMeditationMessage, setBulkMeditationMessage] = useState('');
   const [bulkMeditationDuration, setBulkMeditationDuration] = useState<number | string>('');
 
-
   const [isReleasingAll, setIsReleasingAll] = useState(false);
+
+  // New state for search
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -311,6 +313,14 @@ export default function Dashboard() {
   const sortedStudents = useMemo(() => {
     let filteredStudents = students.filter(s => !s.isArchived && (showHidden ? s.isHidden : !s.isHidden));
 
+    if (searchTerm.trim() !== '') {
+        const lowercasedQuery = searchTerm.toLowerCase();
+        filteredStudents = filteredStudents.filter(student =>
+            student.studentName.toLowerCase().includes(lowercasedQuery) ||
+            student.characterName.toLowerCase().includes(lowercasedQuery)
+        );
+    }
+
     if (!companyFilters.includes('all')) {
         filteredStudents = filteredStudents.filter(s => {
             const isFreelancer = !s.companyId;
@@ -371,7 +381,7 @@ export default function Dashboard() {
       default:
         return { type: 'flat', data: filteredStudents };
     }
-  }, [students, sortOrder, companies, showHidden, companyFilters]);
+  }, [students, sortOrder, companies, showHidden, companyFilters, searchTerm]);
   
   const handleCompanyFilterChange = (filterId: string) => {
     if (filterId === 'all') {
@@ -974,6 +984,17 @@ export default function Dashboard() {
                             ))}
                         </DropdownMenuContent>
                     </DropdownMenu>
+                    
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Input
+                            type="search"
+                            placeholder="Search by name or character..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-10 text-black border-black"
+                        />
+                    </div>
 
                     {pendingStudents.length > 0 && (
                         <Button variant="secondary" onClick={() => setIsApprovalDialogOpen(true)} className="border-black border">
@@ -1258,4 +1279,3 @@ export default function Dashboard() {
   );
 }
 
-    
