@@ -7,8 +7,6 @@
 
 # The region to deploy servers.
 region: us-central1
-# The service account to use with this backend.
-serviceAccount: firebase-frameworks-mziuf
 # The number of instances to run.
 minInstances: 0
 # The maximum number of instances to run.
