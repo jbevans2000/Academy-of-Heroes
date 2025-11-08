@@ -101,6 +101,21 @@
   .formatted-content a {
     @apply text-primary hover:underline;
   }
+
+  /* Font Family Mappings for Rich Text Content */
+  .formatted-content [style*="font-family: Lora"] {
+    font-family: var(--font-lora), serif !important;
+  }
+  .formatted-content [style*="font-family: Cinzel"] {
+    font-family: var(--font-cinzel), serif !important;
+  }
+  .formatted-content [style*="font-family: 'Uncial Antiqua'"] {
+    font-family: var(--font-uncial-antiqua), cursive !important;
+  }
+  .formatted-content [style*="font-family: MedievalSharp"] {
+    font-family: var(--font-medieval-sharp), cursive !important;
+  }
+  
   .prose p.indent-8 {
     text-indent: 2rem;
   }
