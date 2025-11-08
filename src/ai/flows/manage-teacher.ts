@@ -114,11 +114,13 @@ export async function updateLevelingTable(input: UpdateLevelingTableInput): Prom
 
 export async function deleteTeacher(teacherUid: string): Promise<ActionResponse> {
     try {
-        // Find all students of the teacher to delete their global metadata
+        // Step 1: Delete the user from Firebase Authentication
+        await auth.deleteUser(teacherUid);
+
+        // Step 2: Delete all Firestore data associated with the teacher
         const studentsSnapshot = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
         const studentUids = studentsSnapshot.docs.map(doc => doc.id);
         
-        // Delete all of the teacher's subcollections and the teacher document itself from Firestore
         const teacherRef = doc(db, 'teachers', teacherUid);
         const subcollections = ['students', 'pendingStudents', 'boons', 'pendingBoonRequests', 'boonTransactions', 'gameLog', 'bossBattles', 'savedBattles', 'questHubs', 'chapters', 'companies', 'groupBattleSummaries'];
 
@@ -132,10 +134,8 @@ export async function deleteTeacher(teacherUid: string): Promise<ActionResponse>
             }
         }
         
-        // After subcollections are gone, delete the main teacher doc
         await deleteDoc(teacherRef);
         
-        // Delete the global student metadata documents
         if (studentUids.length > 0) {
             const studentMetaBatch = writeBatch(db);
             studentUids.forEach(uid => {
@@ -145,7 +145,7 @@ export async function deleteTeacher(teacherUid: string): Promise<ActionResponse>
             await studentMetaBatch.commit();
         }
         
-        return { success: true, message: "Teacher data has been removed from Firestore. The authentication records remain." };
+        return { success: true, message: "Teacher account and all associated data have been permanently deleted." };
 
     } catch (error: any) {
         console.error("Error deleting teacher:", error);
