@@ -14,10 +14,6 @@ import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch, getDoc, run
 import { db } from '@/lib/firebase';
 import { adminApp, adminAuth as auth } from '@/lib/firebaseAdmin';
 
-// Debug block — remove after you confirm
-import * as gcpMetadata from 'gcp-metadata';
-import { GoogleAuth } from 'google-auth-library';
-
 
 interface ActionResponse {
   success: boolean;
@@ -349,40 +345,10 @@ interface ModerateStudentInput {
     action: 'ban' | 'unban' | 'delete';
 }
 
-async function _debugAdminIdentity(studentUid: string) {
-  const onGcp = await gcpMetadata.isAvailable().catch(() => false);
-  const projId = onGcp ? await gcpMetadata.project('project-id') : process.env.GOOGLE_CLOUD_PROJECT;
-  const saEmail = onGcp ? await gcpMetadata.instance('service-accounts/default/email') : '(local)';
-
-  // Try an access token via ADC and show which audience it’s for
-  const adc = await new GoogleAuth({
-    scopes: ['https://www.googleapis.com/auth/cloud-platform']
-  }).getClient();
-  const token = await (adc as any).getAccessToken().catch((e: any) => ({ error: String(e) }));
-
-  // Try a harmless Admin Auth read (same permission surface as deleteUser)
-  let getUserOk = false, getUserErr = '';
-  try {
-    // Use the actual studentUid from the action
-    await auth.getUser(studentUid);
-    getUserOk = true;
-  } catch (e: any) {
-    getUserErr = e?.message ?? String(e);
-  }
-
-  console.log('[ADMIN DEBUG] projectId:', projId);
-  console.log('[ADMIN DEBUG] serviceAccountEmail:', saEmail);
-  console.log('[ADMIN DEBUG] accessToken:', typeof token === 'string' ? token.slice(0, 20) + '…' : token);
-  console.log('[ADMIN DEBUG] getUserOk:', getUserOk, 'getUserErr:', getUserErr);
-}
-
-
 export async function moderateStudent(input: ModerateStudentInput): Promise<ActionResponse> {
     const { teacherUid, studentUid, action } = input;
     const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
     const globalStudentRef = doc(db, 'students', studentUid);
-
-    await _debugAdminIdentity(studentUid);
 
     try {
         switch (action) {
@@ -409,5 +375,12 @@ export async function moderateStudent(input: ModerateStudentInput): Promise<Acti
         return { success: false, error: error.message || `Failed to ${action} student.` };
     }
 }
-
+async function unarchiveStudent(arg0: { teacherUid: string; studentUid: string; }) {
+    throw new Error("Function not implemented.");
+}
     
+async function clearGameLog(arg0: { teacherUid: string; }) {
+    throw new Error("Function not implemented.");
+}
+    
+
