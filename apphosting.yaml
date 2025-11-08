@@ -18,7 +18,7 @@ memory: 256Mi
 # The number of concurrent requests to allow per instance.
 concurrency: 80
 # The service account to use with this backend.
-serviceAccount: firebase-app-hosting-compute@academy-heroes-mziuf.iam.gserviceaccount.com
+serviceAccount: firebase-adminsdk-mziuf@academy-heroes-mziuf.iam.gserviceaccount.com
 # The environment variables to set.
 # These can be referenced using process.env['NAME_OF_YOUR_VARIABLE']
 # in your code.
