@@ -819,6 +819,16 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 mb-6">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Input
+                            type="search"
+                            placeholder="Search by name or character..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-10 text-black border-black"
+                        />
+                    </div>
                     <Button 
                         onClick={handleSelectAllToggle}
                         disabled={students.length === 0}
@@ -985,17 +995,6 @@ export default function Dashboard() {
                         </DropdownMenuContent>
                     </DropdownMenu>
                     
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <Input
-                            type="search"
-                            placeholder="Search by name or character..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10 text-black border-black"
-                        />
-                    </div>
-
                     {pendingStudents.length > 0 && (
                         <Button variant="secondary" onClick={() => setIsApprovalDialogOpen(true)} className="border-black border">
                             <Bell className="mr-2 h-4 w-4 animate-pulse" />
@@ -1278,4 +1277,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
