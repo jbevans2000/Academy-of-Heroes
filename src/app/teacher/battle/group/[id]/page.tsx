@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -18,6 +19,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { updateStudentStats } from '@/ai/flows/manage-student-stats';
+import { logAvatarEvent } from '@/lib/avatar-log';
 
 interface Question {
   questionText: string;
@@ -38,6 +40,15 @@ interface BattleResult {
     isCorrect: boolean;
     participants: string[]; // UIDs of students who got it right/wrong
 }
+
+// New type for reward accumulation
+interface AccumulatedRewards {
+    [studentUid: string]: {
+        xp: number;
+        gold: number;
+    };
+}
+
 
 // Fisher-Yates shuffle algorithm
 const shuffleArray = <T,>(array: T[]): T[] => {
@@ -106,6 +117,7 @@ export default function GroupBattlePage() {
     const [lastRoundDamageDealt, setLastRoundDamageDealt] = useState<{ amount: number; recipients: string } | null>(null);
     const [lastRoundRewardGiven, setLastRoundRewardGiven] = useState<{ xp: number; gold: number; recipients: string } | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [accumulatedRewards, setAccumulatedRewards] = useState<AccumulatedRewards>({});
 
     // Mode-specific state
     const mode = searchParams.get('mode') || 'guild';
@@ -213,6 +225,27 @@ export default function GroupBattlePage() {
         setGameState('battle');
     };
 
+    const finalizeAndLogRewards = async () => {
+        if (!teacher || !battle) return;
+
+        for (const studentUid in accumulatedRewards) {
+            const rewards = accumulatedRewards[studentUid];
+            if (rewards.xp > 0 || rewards.gold > 0) {
+                await logAvatarEvent(teacher.uid, studentUid, {
+                    source: 'Group Battle',
+                    xp: rewards.xp,
+                    gold: rewards.gold,
+                    reason: `For performance in ${battle.battleName}`
+                });
+            }
+        }
+    };
+    
+    const handleEndBattleEarly = async () => {
+        await finalizeAndLogRewards();
+        router.push('/teacher/battles');
+    };
+
 
     const handleSubmitAnswer = async () => {
         if (selectedAnswerIndex === null || !battle || !teacher) return;
@@ -244,6 +277,15 @@ export default function GroupBattlePage() {
                     reason: `Correct answer in group battle: ${battle.battleName}`
                 });
                  setLastRoundRewardGiven({ xp: xpPerAnswer, gold: goldPerAnswer, recipients: participantGroupName });
+                 setAccumulatedRewards(prev => {
+                    const newRewards = { ...prev };
+                    participants.forEach(uid => {
+                        if (!newRewards[uid]) newRewards[uid] = { xp: 0, gold: 0 };
+                        newRewards[uid].xp += xpPerAnswer;
+                        newRewards[uid].gold += goldPerAnswer;
+                    });
+                    return newRewards;
+                });
             }
         } else {
             const damageAmount = battle.questions[currentQuestionIndex].damage || 1;
@@ -292,21 +334,25 @@ export default function GroupBattlePage() {
 
             if(xpParticipation > 0) {
                 batch.update(studentRef, { xp: student.xp + xpParticipation });
-                logAvatarEvent(teacher.uid, student.uid, {
-                    source: 'Group Battle Participation',
-                    xp: xpParticipation,
-                    reason: `Completed battle: ${battle.battleName}`
+                setAccumulatedRewards(prev => {
+                    const newRewards = { ...prev };
+                    if (!newRewards[student.uid]) newRewards[student.uid] = { xp: 0, gold: 0 };
+                    newRewards[student.uid].xp += xpParticipation;
+                    return newRewards;
                 });
             }
             if(goldParticipation > 0) {
                 batch.update(studentRef, { gold: student.gold + goldParticipation });
-                 logAvatarEvent(teacher.uid, student.uid, {
-                    source: 'Group Battle Participation',
-                    gold: goldParticipation,
-                    reason: `Completed battle: ${battle.battleName}`
+                 setAccumulatedRewards(prev => {
+                    const newRewards = { ...prev };
+                    if (!newRewards[student.uid]) newRewards[student.uid] = { xp: 0, gold: 0 };
+                    newRewards[student.uid].gold += goldParticipation;
+                    return newRewards;
                 });
             }
         });
+        
+        await finalizeAndLogRewards();
 
         try {
             const summaryRef = collection(db, 'teachers', teacher.uid, 'groupBattleSummaries');
@@ -406,7 +452,7 @@ export default function GroupBattlePage() {
                 priority
             />
             <div className="absolute top-4 left-4 z-10">
-                 <Button variant="outline" onClick={() => router.push('/teacher/battles')}>
+                 <Button variant="outline" onClick={handleEndBattleEarly}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     End Battle Early
                 </Button>
