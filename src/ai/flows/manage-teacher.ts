@@ -5,12 +5,8 @@
  */
 import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { getAuth } from 'firebase-admin/auth';
-import { adminApp } from '@/ai/genkit';
+import { auth } from '@/ai/genkit';
 import { logGameEvent } from '@/lib/gamelog';
-
-// Initialize the Firebase Admin App
-const auth = getAuth(adminApp);
 
 
 interface ActionResponse {

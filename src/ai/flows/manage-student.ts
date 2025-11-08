@@ -12,11 +12,9 @@
  */
 import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch, getDoc, runTransaction, arrayUnion, arrayRemove, setDoc, deleteField, query, where, Timestamp, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { getAuth } from 'firebase-admin/auth';
-import { adminApp } from '@/ai/genkit';
+import { auth } from '@/ai/genkit';
 
-// Initialize the Firebase Admin App
-const auth = getAuth(adminApp);
+
 
 
 interface ActionResponse {
