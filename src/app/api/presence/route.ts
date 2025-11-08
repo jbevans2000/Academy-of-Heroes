@@ -15,9 +15,9 @@ export async function POST(request: Request) {
     const adminApp = getFirebaseAdminApp();
     const db = getFirestore(adminApp);
 
-    const presenceRef = doc(db, 'teachers', teacherUid, 'presence', 'online');
+    const presenceRef = db.doc(`teachers/${teacherUid}/presence/online`);
 
-    await setDoc(presenceRef, {
+    await presenceRef.set({
         onlineStatus: {
             [studentUid]: {
                 status: status,

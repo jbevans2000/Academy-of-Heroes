@@ -1,5 +1,4 @@
 
-
 'use server';
 /**
  * @fileOverview A server-side flow for managing student accounts and data.
@@ -14,10 +13,10 @@
 import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch, getDoc, runTransaction, arrayUnion, arrayRemove, setDoc, deleteField, query, where, Timestamp, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getAuth } from 'firebase-admin/auth';
-import { getFirebaseAdminApp } from '@/lib/firebase-admin';
+import { adminApp } from '@/ai/genkit';
 
 // Initialize the Firebase Admin App
-getFirebaseAdminApp();
+getAuth(adminApp);
 
 
 interface ActionResponse {
@@ -325,5 +324,3 @@ export async function removeShadowMark(input: ShadowMarkInput): Promise<ActionRe
         return { success: false, error: e.message || 'Failed to remove Shadow Mark.' };
     }
 }
-
-    

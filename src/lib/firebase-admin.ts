@@ -1,15 +1,11 @@
 
-import { initializeApp, getApp, getApps, type App } from 'firebase-admin/app';
+import { adminApp } from '@/ai/genkit';
+import { type App } from 'firebase-admin/app';
 
-// It's safe to call this multiple times; it will return the existing app instance
-// on subsequent calls.
+/**
+ * Provides the singleton instance of the Firebase Admin App, initialized in genkit.ts.
+ * @returns {App} The initialized Firebase Admin App.
+ */
 export function getFirebaseAdminApp(): App {
-  if (getApps().length > 0) {
-    return getApp();
-  }
-
-  // When running in a Google Cloud environment (like App Hosting),
-  // initializeApp() with no arguments will automatically use the
-  // environment's service account credentials.
-  return initializeApp();
+  return adminApp;
 }

@@ -6,11 +6,11 @@
 import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getAuth } from 'firebase-admin/auth';
-import { getFirebaseAdminApp } from '@/lib/firebase-admin';
+import { adminApp } from '@/ai/genkit';
 import { logGameEvent } from '@/lib/gamelog';
 
 // Initialize the Firebase Admin App
-getFirebaseAdminApp();
+getAuth(adminApp);
 
 
 interface ActionResponse {
@@ -117,7 +117,7 @@ export async function updateLevelingTable(input: UpdateLevelingTableInput): Prom
 
 
 export async function deleteTeacher(teacherUid: string): Promise<ActionResponse> {
-    const auth = getAuth(getFirebaseAdminApp());
+    const auth = getAuth(adminApp);
 
     try {
         // Find all students of the teacher to delete their global metadata
