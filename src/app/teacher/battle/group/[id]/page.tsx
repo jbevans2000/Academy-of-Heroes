@@ -132,20 +132,16 @@ export default function GroupBattlePage() {
 
     const audioRef = useRef<HTMLAudioElement>(null);
     
-    // This is the list of students relevant for the current battle setup.
     const relevantStudents = useMemo(() => {
         let studentsToList = allStudents.filter(student => !student.isHidden);
 
-        if (mode === 'company' || mode === 'individual') { // Also filter by company for individual mode now
+        if (mode === 'company' || mode === 'individual') {
             studentsToList = studentsToList.filter(student => companyIds.includes(student.companyId || ''));
         }
-
-        // Alphabetize by student name
-        studentsToList.sort((a, b) => a.studentName.localeCompare(b.studentName));
         
         return studentsToList;
     }, [allStudents, mode, companyIds]);
-
+    
     const presentStudents = useMemo(() => {
         return relevantStudents.filter(s => !absentStudentUids.includes(s.uid));
     }, [relevantStudents, absentStudentUids]);
@@ -254,35 +250,37 @@ export default function GroupBattlePage() {
         if (selectedAnswerIndex === null || !battle || !teacher) return;
         const isCorrect = selectedAnswerIndex === battle.questions[currentQuestionIndex].correctAnswerIndex;
         
-        let participants: string[] = [];
+        let participantsToAffect: Student[] = [];
         let participantGroupName = '';
 
         if (mode === 'guild') {
-            participants = presentStudents.map(s => s.uid);
+            participantsToAffect = presentStudents;
             participantGroupName = "The entire guild";
         } else if (mode === 'company') {
             const currentCompany = companyRotation[currentQuestionIndex % companyRotation.length];
-            participants = presentStudents.filter(s => s.companyId === currentCompany.id).map(s => s.uid);
+            participantsToAffect = presentStudents.filter(s => s.companyId === currentCompany.id);
             participantGroupName = `Company: ${currentCompany.name}`;
         } else if (mode === 'individual') {
             const currentStudent = individualRotation[currentQuestionIndex % individualRotation.length];
-            participants = [currentStudent.uid];
+            participantsToAffect = [currentStudent];
             participantGroupName = `Hero: ${currentStudent.characterName}`;
         }
+        
+        const participantUids = participantsToAffect.map(s => s.uid);
 
         if(isCorrect) {
-            if (participants.length > 0 && (xpPerAnswer > 0 || goldPerAnswer > 0)) {
+            if (participantUids.length > 0 && (xpPerAnswer > 0 || goldPerAnswer > 0)) {
                 await updateStudentStats({
                     teacherUid: teacher.uid,
-                    studentUids: participants,
+                    studentUids: participantUids,
                     xp: xpPerAnswer,
                     gold: goldPerAnswer,
-                    reason: `Correct answer in group battle: ${battle.battleName}`
+                    reason: `Group Battle: ${battle.battleName}` // Changed reason
                 });
                  setLastRoundRewardGiven({ xp: xpPerAnswer, gold: goldPerAnswer, recipients: participantGroupName });
                  setAccumulatedRewards(prev => {
                     const newRewards = { ...prev };
-                    participants.forEach(uid => {
+                    participantUids.forEach(uid => {
                         if (!newRewards[uid]) newRewards[uid] = { xp: 0, gold: 0 };
                         newRewards[uid].xp += xpPerAnswer;
                         newRewards[uid].gold += goldPerAnswer;
@@ -292,10 +290,10 @@ export default function GroupBattlePage() {
             }
         } else {
             const damageAmount = battle.questions[currentQuestionIndex].damage || 1;
-            if (participants.length > 0 && damageAmount > 0) {
+            if (participantUids.length > 0 && damageAmount > 0) {
                 await updateStudentStats({
                     teacherUid: teacher.uid,
-                    studentUids: participants,
+                    studentUids: participantUids,
                     hp: -damageAmount,
                     reason: `Incorrect answer in group battle: ${battle.battleName}`
                 });
@@ -303,7 +301,7 @@ export default function GroupBattlePage() {
             }
         }
         
-        setBattleResults(prev => [...prev, { questionIndex: currentQuestionIndex, isCorrect, participants }]);
+        setBattleResults(prev => [...prev, { questionIndex: currentQuestionIndex, isCorrect, participants: participantUids }]);
         setIsSubmitted(true);
     };
 
@@ -417,7 +415,7 @@ export default function GroupBattlePage() {
                         <CardDescription>Check the box next to any students who are not present. They will be excluded from participation and rewards.</CardDescription>
                     </CardHeader>
                     <CardContent className="max-h-[50vh] overflow-y-auto space-y-2">
-                        {relevantStudents.map(student => (
+                        {relevantStudents.sort((a, b) => a.studentName.localeCompare(b.studentName)).map(student => (
                             <div key={student.uid} className="flex items-center space-x-2 p-2 rounded-md border">
                                 <Checkbox
                                     id={`student-${student.uid}`}
@@ -564,6 +562,3 @@ export default function GroupBattlePage() {
         </div>
     )
 }
-
-
-    
