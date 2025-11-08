@@ -1,3 +1,4 @@
+
 # The presence of this file turns on App Hosting.
 # To learn more, read the documentation:
 # https://firebase.google.com/docs/hosting/frameworks/app-hosting-diff
@@ -22,6 +23,9 @@ serviceAccount: firebase-adminsdk-fbsvc@academy-heroes-mziuf.iam.gserviceaccount
 # The environment variables to set.
 # These can be referenced using process.env['NAME_OF_YOUR_VARIABLE']
 # in your code.
+env:
+  - variable: FIREBASE_PROJECT_ID
+    value: academy-heroes-mziuf
 # Specifies a schedule for a job to run.
 # The schedule is in cron format.
 # schedule:
