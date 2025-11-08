@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { doc, getDoc, addDoc, collection, serverTimestamp, getDocs, writeBatch } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
@@ -10,7 +10,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Swords, CheckCircle, XCircle, Trophy, Loader2, Save, Users, Shield } from 'lucide-react';
+import { ArrowLeft, Swords, CheckCircle, XCircle, Trophy, Loader2, Save, Users, Shield, Music, VolumeX, Volume1, Volume2 as VolumeIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
@@ -18,6 +18,7 @@ import { logAvatarEvent } from '@/lib/avatar-log';
 import type { Student, Company } from '@/lib/data';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
 
 interface Question {
   questionText: string;
@@ -29,6 +30,7 @@ interface Battle {
   battleName: string;
   bossImageUrl: string;
   questions: Question[];
+  musicUrl?: string;
 }
 
 interface BattleResult {
@@ -46,6 +48,39 @@ const shuffleArray = <T,>(array: T[]): T[] => {
     }
     return newArray;
 };
+
+function VolumeControl({ audioRef }: { audioRef: React.RefObject<HTMLAudioElement> }) {
+    const [volume, setVolume] = useState(20); // Start at a reasonable volume
+
+    const handleVolumeChange = (value: number[]) => {
+        const newVolume = value[0];
+        setVolume(newVolume);
+        if (audioRef.current) {
+            audioRef.current.volume = newVolume / 100;
+        }
+    };
+    
+    const getVolumeIcon = () => {
+        if (volume === 0) return <VolumeX className="h-6 w-6" />;
+        if (volume <= 50) return <Volume1 className="h-6 w-6" />;
+        return <VolumeIcon className="h-6 w-6" />;
+    };
+
+    return (
+        <div className="fixed bottom-4 right-4 z-50 w-48 p-4 rounded-lg bg-black/50 backdrop-blur-sm text-white">
+            <p className="text-xs text-center mb-1">Volume</p>
+            <div className="flex items-center gap-2">
+                {getVolumeIcon()}
+                <Slider
+                    value={[volume]}
+                    onValueChange={handleVolumeChange}
+                    max={100}
+                    step={1}
+                />
+            </div>
+        </div>
+    );
+}
 
 
 export default function GroupBattlePage() {
@@ -80,6 +115,8 @@ export default function GroupBattlePage() {
 
     const [companyRotation, setCompanyRotation] = useState<Company[]>([]);
     const [individualRotation, setIndividualRotation] = useState<Student[]>([]);
+
+    const audioRef = useRef<HTMLAudioElement>(null);
     
     // This is the list of students relevant for the current battle setup.
     const relevantStudents = useMemo(() => {
@@ -137,6 +174,20 @@ export default function GroupBattlePage() {
         };
         fetchBattleData();
     }, [battleId, teacher, router, toast]);
+
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio || !battle?.musicUrl) return;
+
+        if (gameState === 'battle' || gameState === 'finished') {
+            if (audio.src !== battle.musicUrl) {
+                audio.src = battle.musicUrl;
+            }
+             audio.play().catch(e => console.error("Audio play failed:", e));
+        } else {
+            audio.pause();
+        }
+    }, [gameState, battle?.musicUrl]);
     
     const handleStartBattle = () => {
         if (mode === 'company') {
@@ -328,6 +379,8 @@ export default function GroupBattlePage() {
 
     return (
         <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-gray-900 p-4">
+            <audio ref={audioRef} loop />
+            {battle.musicUrl && <VolumeControl audioRef={audioRef} />}
             <Image
                 src={battle.bossImageUrl || 'https://placehold.co/1200x800.png'}
                 alt={battle.battleName}
