@@ -134,13 +134,16 @@ export default function GroupBattlePage() {
     
     // This is the list of students relevant for the current battle setup.
     const relevantStudents = useMemo(() => {
-        return allStudents.filter(student => {
-            if (student.isHidden) return false; // Always exclude hidden students
-            if (mode === 'company' || mode === 'individual') { // Also filter by company for individual mode now
-                return companyIds.includes(student.companyId || '');
-            }
-            return true; // For 'guild' mode, include all non-hidden students
-        });
+        let studentsToList = allStudents.filter(student => !student.isHidden);
+
+        if (mode === 'company' || mode === 'individual') { // Also filter by company for individual mode now
+            studentsToList = studentsToList.filter(student => companyIds.includes(student.companyId || ''));
+        }
+
+        // Alphabetize by student name
+        studentsToList.sort((a, b) => a.studentName.localeCompare(b.studentName));
+        
+        return studentsToList;
     }, [allStudents, mode, companyIds]);
 
     const presentStudents = useMemo(() => {
@@ -375,7 +378,7 @@ export default function GroupBattlePage() {
                 goldPerAnswer,
                 xpParticipation,
                 goldParticipation,
-                responsesByRound: battleResults, // Use the correct key here
+                responsesByRound: battleResults,
                 presentStudentUids: presentUids,
                 completedAt: serverTimestamp(),
             });
@@ -423,7 +426,7 @@ export default function GroupBattlePage() {
                                     onCheckedChange={() => handleToggleStudentAbsence(student.uid)}
                                 />
                                 <Label htmlFor={`student-${student.uid}`} className="flex-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                    {student.characterName} ({student.studentName})
+                                    {student.studentName} ({student.characterName})
                                 </Label>
                             </div>
                         ))}
