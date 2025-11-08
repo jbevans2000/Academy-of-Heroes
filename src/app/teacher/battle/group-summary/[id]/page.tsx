@@ -45,7 +45,7 @@ interface GroupBattleSummary {
     goldPerAnswer: number;
     xpParticipation: number;
     goldParticipation: number;
-    results: BattleResult[];
+    responsesByRound: BattleResult[];
     presentStudentUids: string[];
 }
 
@@ -135,7 +135,7 @@ export default function GroupBattleSummaryPage() {
             </CardHeader>
             <CardContent>
                  <ul className="space-y-2">
-                    {summary.results.map(result => (
+                    {summary.responsesByRound.map(result => (
                         <li key={result.questionIndex} className="flex items-center gap-4 p-2 bg-secondary rounded-md">
                             {result.isCorrect ? <CheckCircle className="h-5 w-5 text-green-500" /> : <XCircle className="h-5 w-5 text-destructive" />}
                             <p><strong>Q{result.questionIndex + 1}:</strong> {getQuestionText(result.questionIndex)}</p>
@@ -153,7 +153,7 @@ export default function GroupBattleSummaryPage() {
     const renderCompanySummary = () => {
          const companyResults: { [companyId: string]: { name: string, logoUrl?: string, correct: number, incorrect: number } } = {};
          
-         summary.results.forEach(result => {
+         summary.responsesByRound.forEach(result => {
             const studentId = result.participants[0];
             const student = allStudents.find(s => s.uid === studentId);
             if (!student?.companyId) return;
@@ -193,7 +193,7 @@ export default function GroupBattleSummaryPage() {
             <CardHeader><CardTitle>Individual Hero Performance</CardTitle></CardHeader>
             <CardContent>
                  <ul className="space-y-3">
-                    {summary.results.map(result => {
+                    {summary.responsesByRound.map(result => {
                          const student = allStudents.find(s => s.uid === result.participants[0]);
                          if (!student) return null;
                          return (
