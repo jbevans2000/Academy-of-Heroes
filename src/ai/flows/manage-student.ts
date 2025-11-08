@@ -322,3 +322,58 @@ export async function removeShadowMark(input: ShadowMarkInput): Promise<ActionRe
         return { success: false, error: e.message || 'Failed to remove Shadow Mark.' };
     }
 }
+
+interface PasswordResetInput {
+    studentUid: string;
+    newPassword?: string;
+}
+
+export async function resetStudentPassword(input: PasswordResetInput): Promise<ActionResponse> {
+    if (!input.newPassword || input.newPassword.length < 6) {
+        return { success: false, error: "Password must be at least 6 characters long." };
+    }
+    try {
+        await auth.updateUser(input.studentUid, { password: input.newPassword });
+        return { success: true, message: "Student password has been reset." };
+    } catch (e: any) {
+        console.error("Error in resetStudentPassword:", e);
+        return { success: false, error: e.message || 'Failed to reset student password in Firebase Auth.' };
+    }
+}
+
+interface ModerateStudentInput {
+    teacherUid: string;
+    studentUid: string;
+    action: 'ban' | 'unban' | 'delete';
+}
+
+export async function moderateStudent(input: ModerateStudentInput): Promise<ActionResponse> {
+    const { teacherUid, studentUid, action } = input;
+    const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
+    const globalStudentRef = doc(db, 'students', studentUid);
+
+    try {
+        switch (action) {
+            case 'ban':
+                await auth.updateUser(studentUid, { disabled: true });
+                await updateDoc(studentRef, { isArchived: true });
+                return { success: true, message: 'Student account has been archived and disabled.' };
+            case 'unban':
+                await auth.updateUser(studentUid, { disabled: false });
+                await updateDoc(studentRef, { isArchived: false });
+                 return { success: true, message: 'Student account has been restored.' };
+            case 'delete':
+                await auth.deleteUser(studentUid);
+                const batch = writeBatch(db);
+                batch.delete(studentRef);
+                batch.delete(globalStudentRef);
+                await batch.commit();
+                return { success: true, message: 'Student account and all data permanently deleted.' };
+            default:
+                return { success: false, error: 'Invalid action.' };
+        }
+    } catch (error: any) {
+        console.error(`Error performing '${action}' on student ${studentUid}:`, error);
+        return { success: false, error: error.message || `Failed to ${action} student.` };
+    }
+}
