@@ -12,7 +12,7 @@
  */
 import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch, getDoc, runTransaction, arrayUnion, arrayRemove, setDoc, deleteField, query, where, Timestamp, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { auth } from '@/ai/genkit';
+import { adminAuth as auth } from '@/lib/firebaseAdmin';
 
 
 

@@ -5,7 +5,7 @@
  */
 import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { auth } from '@/ai/genkit';
+import { adminAuth as auth } from '@/lib/firebaseAdmin';
 import { logGameEvent } from '@/lib/gamelog';
 
 
