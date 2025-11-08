@@ -10,7 +10,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Swords, CheckCircle, XCircle, Trophy, Loader2, Save, Users, Shield, Music, VolumeX, Volume1, Volume2 as VolumeIcon } from 'lucide-react';
+import { ArrowLeft, Swords, CheckCircle, XCircle, Trophy, Loader2, Save, Users, Shield, Music, VolumeX, Volume1, Volume2 as VolumeIcon, MessageSquareOff, LayoutDashboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
@@ -328,7 +328,6 @@ export default function GroupBattlePage() {
         if (!teacher || !battle) return;
         setIsSaving(true);
         
-        // This is a new batch, separate from any per-round updates.
         const finalBatch = writeBatch(db);
         
         const presentUids = presentStudents.map(s => s.uid);
@@ -343,7 +342,6 @@ export default function GroupBattlePage() {
             if (goldParticipation > 0) goldToAdd += goldParticipation;
 
             if (xpToAdd > 0) {
-                 finalBatch.update(studentRef, { xp: student.xp + xpToAdd });
                  setAccumulatedRewards(prev => {
                     const newRewards = { ...prev };
                     if (!newRewards[student.uid]) newRewards[student.uid] = { xp: 0, gold: 0 };
@@ -352,7 +350,6 @@ export default function GroupBattlePage() {
                 });
             }
             if (goldToAdd > 0) {
-                finalBatch.update(studentRef, { gold: student.gold + goldToAdd });
                  setAccumulatedRewards(prev => {
                     const newRewards = { ...prev };
                     if (!newRewards[student.uid]) newRewards[student.uid] = { xp: 0, gold: 0 };
@@ -360,13 +357,15 @@ export default function GroupBattlePage() {
                     return newRewards;
                 });
             }
+             if (xpToAdd > 0 || goldToAdd > 0) {
+                finalBatch.update(studentRef, { xp: student.xp + xpToAdd, gold: student.gold + goldToAdd });
+            }
         });
         
         try {
             await finalBatch.commit();
             await finalizeAndLogRewards();
 
-            // Now save the summary document
             const summaryRef = collection(db, 'teachers', teacher.uid, 'groupBattleSummaries');
             const newSummaryDoc = await addDoc(summaryRef, {
                 battleName: battle.battleName,
@@ -431,8 +430,18 @@ export default function GroupBattlePage() {
                             </div>
                         ))}
                     </CardContent>
-                    <CardFooter>
+                    <CardFooter className="flex-col gap-2">
                         <Button className="w-full" onClick={handleStartBattle}>Begin Battle ({presentStudents.length} Present)</Button>
+                        <div className="flex w-full gap-2">
+                             <Button variant="outline" className="w-full" onClick={() => router.push('/teacher/battles')}>
+                                <ArrowLeft className="mr-2 h-4 w-4" />
+                                Back to All Battles
+                            </Button>
+                            <Button variant="outline" className="w-full" onClick={() => router.push('/teacher/dashboard')}>
+                                <LayoutDashboard className="mr-2 h-4 w-4" />
+                                Return to Podium
+                            </Button>
+                        </div>
                     </CardFooter>
                 </Card>
             </div>
@@ -555,3 +564,6 @@ export default function GroupBattlePage() {
         </div>
     )
 }
+
+
+    
