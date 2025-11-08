@@ -14,16 +14,17 @@ import { ArrowLeft, Swords, CheckCircle, XCircle, Trophy, Loader2, Save, Users, 
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { logGameEvent } from '@/lib/gamelog';
-import { logAvatarEvent } from '@/lib/avatar-log';
 import type { Student, Company } from '@/lib/data';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
+import { updateStudentStats } from '@/ai/flows/manage-student-stats';
 
 interface Question {
   questionText: string;
   answers: string[];
   correctAnswerIndex: number;
+  damage: number;
 }
 
 interface Battle {
@@ -103,6 +104,7 @@ export default function GroupBattlePage() {
     const [selectedAnswerIndex, setSelectedAnswerIndex] = useState<number | null>(null);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [battleResults, setBattleResults] = useState<BattleResult[]>([]);
+    const [lastRoundDamageDealt, setLastRoundDamageDealt] = useState<{ amount: number; recipients: string } | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
     // Mode-specific state
@@ -212,11 +214,13 @@ export default function GroupBattlePage() {
     };
 
 
-    const handleSubmitAnswer = () => {
-        if (selectedAnswerIndex === null || !battle) return;
+    const handleSubmitAnswer = async () => {
+        if (selectedAnswerIndex === null || !battle || !teacher) return;
         const isCorrect = selectedAnswerIndex === battle.questions[currentQuestionIndex].correctAnswerIndex;
         
         let participants: string[] = [];
+        let damageRecipients: string[] = [];
+        let damageRecipientName = '';
 
         if(isCorrect) {
             if (mode === 'guild') {
@@ -228,6 +232,31 @@ export default function GroupBattlePage() {
                 const currentStudent = individualRotation[currentQuestionIndex % individualRotation.length];
                 participants = [currentStudent.uid];
             }
+        } else {
+            // Damage logic
+            const damageAmount = battle.questions[currentQuestionIndex].damage || 1;
+            if (mode === 'guild') {
+                damageRecipients = presentStudents.map(s => s.uid);
+                damageRecipientName = "The entire guild";
+            } else if (mode === 'company') {
+                const currentCompany = companyRotation[currentQuestionIndex % companyRotation.length];
+                damageRecipients = presentStudents.filter(s => s.companyId === currentCompany.id).map(s => s.uid);
+                damageRecipientName = `Company: ${currentCompany.name}`;
+            } else if (mode === 'individual') {
+                const currentStudent = individualRotation[currentQuestionIndex % individualRotation.length];
+                damageRecipients = [currentStudent.uid];
+                damageRecipientName = `Hero: ${currentStudent.characterName}`;
+            }
+            
+            if (damageRecipients.length > 0) {
+                await updateStudentStats({
+                    teacherUid: teacher.uid,
+                    studentUids: damageRecipients,
+                    hp: -damageAmount,
+                    reason: `Incorrect answer in group battle: ${battle.battleName}`
+                });
+                setLastRoundDamageDealt({ amount: damageAmount, recipients: damageRecipientName });
+            }
         }
         
         setBattleResults(prev => [...prev, { questionIndex: currentQuestionIndex, isCorrect, participants }]);
@@ -237,6 +266,7 @@ export default function GroupBattlePage() {
     const handleNextQuestion = () => {
         setIsSubmitted(false);
         setSelectedAnswerIndex(null);
+        setLastRoundDamageDealt(null);
         
         if (mode === 'individual' && currentQuestionIndex >= presentStudents.length - 1) {
             setIndividualRotation(shuffleArray(presentStudents));
@@ -437,6 +467,9 @@ export default function GroupBattlePage() {
                                             <XCircle className="h-24 w-24 mx-auto text-red-400" />
                                             <p className="text-5xl font-bold mt-4 text-red-300">Incorrect!</p>
                                             <p className="text-xl mt-2 text-white">The correct answer was: <span className="font-bold">{currentQuestion.answers[currentQuestion.correctAnswerIndex]}</span></p>
+                                            {lastRoundDamageDealt && (
+                                                <p className="text-lg mt-2 text-yellow-300">{lastRoundDamageDealt.recipients} took {lastRoundDamageDealt.amount} damage!</p>
+                                            )}
                                         </>
                                     )}
                                      <Button size="lg" className="mt-8" onClick={handleNextQuestion}>
@@ -475,3 +508,5 @@ export default function GroupBattlePage() {
         </div>
     )
 }
+
+    
