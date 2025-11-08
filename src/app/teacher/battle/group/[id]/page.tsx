@@ -325,36 +325,45 @@ export default function GroupBattlePage() {
         if (!teacher || !battle) return;
         setIsSaving(true);
         
-        const batch = writeBatch(db);
+        // This is a new batch, separate from any per-round updates.
+        const finalBatch = writeBatch(db);
         
         const presentUids = presentStudents.map(s => s.uid);
 
         presentStudents.forEach(student => {
             const studentRef = doc(db, 'teachers', teacher.uid, 'students', student.uid);
 
-            if(xpParticipation > 0) {
-                batch.update(studentRef, { xp: student.xp + xpParticipation });
-                setAccumulatedRewards(prev => {
-                    const newRewards = { ...prev };
-                    if (!newRewards[student.uid]) newRewards[student.uid] = { xp: 0, gold: 0 };
-                    newRewards[student.uid].xp += xpParticipation;
-                    return newRewards;
-                });
-            }
-            if(goldParticipation > 0) {
-                batch.update(studentRef, { gold: student.gold + goldParticipation });
+            let xpToAdd = 0;
+            let goldToAdd = 0;
+            
+            if (xpParticipation > 0) xpToAdd += xpParticipation;
+            if (goldParticipation > 0) goldToAdd += goldParticipation;
+
+            if (xpToAdd > 0) {
+                 finalBatch.update(studentRef, { xp: student.xp + xpToAdd });
                  setAccumulatedRewards(prev => {
                     const newRewards = { ...prev };
                     if (!newRewards[student.uid]) newRewards[student.uid] = { xp: 0, gold: 0 };
-                    newRewards[student.uid].gold += goldParticipation;
+                    newRewards[student.uid].xp += xpToAdd;
+                    return newRewards;
+                });
+            }
+            if (goldToAdd > 0) {
+                finalBatch.update(studentRef, { gold: student.gold + goldToAdd });
+                 setAccumulatedRewards(prev => {
+                    const newRewards = { ...prev };
+                    if (!newRewards[student.uid]) newRewards[student.uid] = { xp: 0, gold: 0 };
+                    newRewards[student.uid].gold += goldToAdd;
                     return newRewards;
                 });
             }
         });
         
-        await finalizeAndLogRewards();
-
         try {
+            await finalBatch.commit();
+            await finalizeAndLogRewards();
+
+            // Now save the summary document
             const summaryRef = collection(db, 'teachers', teacher.uid, 'groupBattleSummaries');
             const newSummaryDoc = await addDoc(summaryRef, {
                 battleName: battle.battleName,
@@ -366,12 +375,11 @@ export default function GroupBattlePage() {
                 goldPerAnswer,
                 xpParticipation,
                 goldParticipation,
-                results: battleResults,
+                responsesByRound: battleResults, // Use the correct key here
                 presentStudentUids: presentUids,
                 completedAt: serverTimestamp(),
             });
 
-            await batch.commit();
             await logGameEvent(teacher.uid, 'BOSS_BATTLE', `Group Battle "${battle.battleName}" completed.`);
             toast({ title: 'Summary Saved & Rewards Bestowed!', description: 'Student participation rewards have been awarded.' });
             router.push(`/teacher/battle/group-summary/${newSummaryDoc.id}`);
