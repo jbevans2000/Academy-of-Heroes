@@ -1,7 +1,6 @@
 
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
-import { firebase } from '@genkit-ai/firebase';
 import { adminApp, adminAuth } from '@/lib/firebaseAdmin';
 
 // This will use the environment variable provided by next.config.ts OR the App Hosting secret.
@@ -24,7 +23,6 @@ export const auth = adminAuth;
 
 export const ai = genkit({
   plugins: [
-    firebase(), // Uses the already-initialized Admin app from firebaseAdmin.ts
     googleAI({
       apiKey: process.env.GEMINI_API_KEY,
     }),
