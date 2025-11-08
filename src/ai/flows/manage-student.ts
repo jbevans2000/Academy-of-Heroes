@@ -8,7 +8,6 @@
  * - resetStudentPassword: Resets a student's password in Firebase Auth.
  * - moderateStudent: Bans, unbans, or deletes a student's account.
  * - getStudentStatus: Fetches the enabled/disabled status of a student's account.
- * - clearGameLog: Deletes all entries from the game log.
  */
 import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch, getDoc, runTransaction, arrayUnion, arrayRemove, setDoc, deleteField, query, where, Timestamp, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -375,12 +374,3 @@ export async function moderateStudent(input: ModerateStudentInput): Promise<Acti
         return { success: false, error: error.message || `Failed to ${action} student.` };
     }
 }
-async function unarchiveStudent(arg0: { teacherUid: string; studentUid: string; }) {
-    throw new Error("Function not implemented.");
-}
-    
-async function clearGameLog(arg0: { teacherUid: string; }) {
-    throw new Error("Function not implemented.");
-}
-    
-
