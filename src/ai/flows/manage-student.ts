@@ -16,7 +16,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { adminApp } from '@/ai/genkit';
 
 // Initialize the Firebase Admin App
-getAuth(adminApp);
+const auth = getAuth(adminApp);
 
 
 interface ActionResponse {
@@ -241,7 +241,7 @@ export async function releaseAllFromMeditation(input: { teacherUid: string }): P
         });
 
         await batch.commit();
-        return { success: true, message: `Released ${querySnapshot.size} student(s) from the Meditation Chamber.` };
+        return { success: true, message: `Released ${'${querySnapshot.size}'} student(s) from the Meditation Chamber.` };
     } catch (error: any) {
         console.error("Error releasing all students from meditation:", error);
         return { success: false, error: "An unexpected error occurred while releasing students." };

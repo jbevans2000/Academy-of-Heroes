@@ -10,7 +10,7 @@ import { adminApp } from '@/ai/genkit';
 import { logGameEvent } from '@/lib/gamelog';
 
 // Initialize the Firebase Admin App
-getAuth(adminApp);
+const auth = getAuth(adminApp);
 
 
 interface ActionResponse {
@@ -87,7 +87,7 @@ export async function updateDailyRegen(input: UpdateRegenInput): Promise<ActionR
         await updateDoc(teacherRef, {
             dailyRegenPercentage: regenPercentage,
         });
-        await logGameEvent(teacherUid, 'GAMEMASTER', `Set daily HP/MP regeneration to ${regenPercentage}%.`);
+        await logGameEvent(teacherUid, 'GAMEMASTER', `Set daily HP/MP regeneration to ${'${regenPercentage}'}%.`);
         return { success: true, message: 'Daily regeneration rate updated!' };
     } catch (e: any) {
         console.error("Error in updateDailyRegen:", e);
@@ -117,8 +117,6 @@ export async function updateLevelingTable(input: UpdateLevelingTableInput): Prom
 
 
 export async function deleteTeacher(teacherUid: string): Promise<ActionResponse> {
-    const auth = getAuth(adminApp);
-
     try {
         // Find all students of the teacher to delete their global metadata
         const studentsSnapshot = await getDocs(collection(db, 'teachers', teacherUid, 'students'));
