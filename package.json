@@ -50,7 +50,6 @@
     "firebase-admin": "^12.2.0",
     "gcp-metadata": "^6.1.0",
     "genkit": "latest",
-    "google-auth-library": "^9.11.0",
     "html-to-image": "^1.11.11",
     "jspdf": "^2.5.1",
     "lucide-react": "^0.475.0",
@@ -78,3 +77,5 @@
     "typescript": "^5"
   }
 }
+
+    

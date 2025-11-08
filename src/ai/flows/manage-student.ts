@@ -12,12 +12,11 @@
  */
 import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch, getDoc, runTransaction, arrayUnion, arrayRemove, setDoc, deleteField, query, where, Timestamp, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { adminAuth as auth } from '@/lib/firebaseAdmin';
+import { adminApp, adminAuth as auth } from '@/lib/firebaseAdmin';
 
 // Debug block — remove after you confirm
 import * as gcpMetadata from 'gcp-metadata';
-import { google } from 'google-auth-library';
-import { adminApp } from '@/lib/firebaseAdmin';
+import { GoogleAuth } from 'google-auth-library';
 
 
 interface ActionResponse {
@@ -356,7 +355,7 @@ async function _debugAdminIdentity(studentUid: string) {
   const saEmail = onGcp ? await gcpMetadata.instance('service-accounts/default/email') : '(local)';
 
   // Try an access token via ADC and show which audience it’s for
-  const adc = await new google.auth.GoogleAuth({
+  const adc = await new GoogleAuth({
     scopes: ['https://www.googleapis.com/auth/cloud-platform']
   }).getClient();
   const token = await (adc as any).getAccessToken().catch((e: any) => ({ error: String(e) }));
@@ -410,3 +409,5 @@ export async function moderateStudent(input: ModerateStudentInput): Promise<Acti
         return { success: false, error: error.message || `Failed to ${action} student.` };
     }
 }
+
+    
