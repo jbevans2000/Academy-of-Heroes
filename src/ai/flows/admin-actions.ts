@@ -112,37 +112,3 @@ export async function deleteStudent({ teacherUid, studentUid }: DeleteStudentInp
         return { success: false, error: error.message || 'An unknown error occurred while deleting the student.' };
     }
 }
-
-export async function deleteStudentDataOnly({ teacherUid, studentUid }: DeleteStudentInput): Promise<ActionResponse> {
-     if (!teacherUid || !studentUid) {
-        return { success: false, error: "Teacher and Student UIDs are required." };
-    }
-    
-    try {
-        // This function will NOT delete the auth user.
-        
-        // Delete all student subcollections.
-        const subcollections = ['messages', 'avatarLog'];
-        for (const subcollection of subcollections) {
-            await deleteCollection(`teachers/${teacherUid}/students/${studentUid}/${subcollection}`);
-        }
-
-        const batch = adminDb.batch();
-
-        // Delete the main student document from the teacher's subcollection.
-        const studentRef = adminDb.doc(`teachers/${teacherUid}/students/${studentUid}`);
-        batch.delete(studentRef);
-
-        // Delete the global lookup document. This is crucial to prevent re-entry issues.
-        const globalStudentRef = adminDb.doc(`students/${studentUid}`);
-        batch.delete(globalStudentRef);
-
-        await batch.commit();
-
-        return { success: true, message: "Student game data has been deleted. Their login still exists but is now orphaned." };
-
-    } catch (error: any) {
-        console.error("Error deleting student data:", error);
-        return { success: false, error: error.message || 'An unknown error occurred while deleting the student data.' };
-    }
-}

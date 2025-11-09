@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, getDocs, writeBatch, doc } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
@@ -24,7 +24,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Trash2, Loader2, DatabaseZap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { deleteStudentDataOnly } from '@/ai/flows/admin-actions';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function DataManagementPage() {
@@ -62,25 +61,41 @@ export default function DataManagementPage() {
     const activeStudents = useMemo(() => students.filter(s => !s.isHidden), [students]);
     const hiddenStudents = useMemo(() => students.filter(s => s.isHidden), [students]);
 
+    // NEW: Client-side deletion function
     const handleDelete = async () => {
         if (!teacher || !studentToDelete) return;
-
         setIsDeleting(true);
+        
         try {
-            const result = await deleteStudentDataOnly({
-                teacherUid: teacher.uid,
-                studentUid: studentToDelete.uid,
+            const batch = writeBatch(db);
+            const studentRef = doc(db, 'teachers', teacher.uid, 'students', studentToDelete.uid);
+            
+            // Subcollections to delete
+            const subcollections = ['messages', 'avatarLog'];
+            for (const sub of subcollections) {
+                const subRef = collection(studentRef, sub);
+                const snapshot = await getDocs(subRef);
+                snapshot.docs.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+            }
+
+            // Delete the main student document
+            batch.delete(studentRef);
+
+            // Delete the global student lookup document
+            const globalStudentRef = doc(db, 'students', studentToDelete.uid);
+            batch.delete(globalStudentRef);
+
+            await batch.commit();
+
+            toast({
+                title: 'Student Data Deleted',
+                description: `All game data for ${studentToDelete.studentName} has been removed.`,
             });
 
-            if (result.success) {
-                toast({
-                    title: 'Student Data Deleted',
-                    description: `All game data for ${studentToDelete.studentName} has been removed.`,
-                });
-            } else {
-                throw new Error(result.error);
-            }
         } catch (error: any) {
+            console.error("Error deleting student data:", error);
             toast({
                 variant: 'destructive',
                 title: 'Deletion Failed',
@@ -91,6 +106,7 @@ export default function DataManagementPage() {
             setStudentToDelete(null);
         }
     };
+
 
     const renderStudentTable = (studentList: Student[]) => {
         if (studentList.length === 0) {
