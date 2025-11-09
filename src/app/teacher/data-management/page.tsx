@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -79,6 +78,8 @@ export default function DataManagementPage() {
                     description: `${studentToDelete.studentName}'s data has been cleared. Their login will be deleted on their next attempt.`,
                     duration: 8000,
                 });
+                // Manually remove student from local state for immediate UI update
+                setStudents(prev => prev.filter(s => s.uid !== studentToDelete.uid));
             } else {
                 throw new Error(result.error || 'An unknown error occurred during deletion.');
             }
