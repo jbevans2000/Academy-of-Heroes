@@ -52,8 +52,6 @@ export function ManageStudentDialog({ isOpen, onOpenChange, student, setStudents
 
   // Ban/Unban/Delete State
   const [isModerating, setIsModerating] = useState(false);
-  const [isBanConfirmOpen, setIsBanConfirmOpen] = useState(false);
-  const [isUnbanConfirmOpen, setIsUnbanConfirmOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   
   useEffect(() => {
@@ -120,7 +118,7 @@ export function ManageStudentDialog({ isOpen, onOpenChange, student, setStudents
     }
   }
   
-  const handleModerateStudent = async (action: 'ban' | 'unban' | 'delete') => {
+  const handleModerateStudent = async (action: 'delete') => {
       setIsModerating(true);
       try {
           const result = await StudentManager.moderateStudent({
@@ -134,8 +132,6 @@ export function ManageStudentDialog({ isOpen, onOpenChange, student, setStudents
               onOpenChange(false); // Close dialog on success
               if (action === 'delete') {
                   setStudents(prev => prev.filter(s => s.uid !== student.uid));
-              } else {
-                   setStudents(prev => prev.map(s => s.uid === student.uid ? { ...s, isArchived: action === 'ban' } : s));
               }
           } else {
               throw new Error(result.error);
@@ -145,8 +141,6 @@ export function ManageStudentDialog({ isOpen, onOpenChange, student, setStudents
           toast({ variant: 'destructive', title: 'Action Failed', description: error.message });
       } finally {
           setIsModerating(false);
-          setIsBanConfirmOpen(false);
-          setIsUnbanConfirmOpen(false);
           setIsDeleteConfirmOpen(false);
       }
   }
@@ -223,15 +217,6 @@ export function ManageStudentDialog({ isOpen, onOpenChange, student, setStudents
             </TabsContent>
             <TabsContent value="status" className="pt-4">
                 <div className="space-y-4">
-                    {student.isArchived ? (
-                         <Button onClick={() => setIsUnbanConfirmOpen(true)} className="w-full bg-green-600 hover:bg-green-700">
-                             <UserCheck className="mr-2 h-4 w-4" /> Restore Student Account
-                         </Button>
-                    ) : (
-                         <Button onClick={() => setIsBanConfirmOpen(true)} variant="destructive" className="w-full">
-                            <ShieldOff className="mr-2 h-4 w-4" /> Archive Student Account
-                        </Button>
-                    )}
                     <Button onClick={() => setIsDeleteConfirmOpen(true)} variant="destructive" className="w-full">
                         <Trash2 className="mr-2 h-4 w-4" /> Permanently Delete Student
                     </Button>
@@ -240,37 +225,7 @@ export function ManageStudentDialog({ isOpen, onOpenChange, student, setStudents
           </Tabs>
         </DialogContent>
       </Dialog>
-
-       <AlertDialog open={isBanConfirmOpen} onOpenChange={setIsBanConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Archive {student.characterName}'s Account?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Archiving an account will prevent the student from logging in. You can restore their account later from the "Archived Heroes" tool. Are you sure?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleModerateStudent('ban')} className="bg-destructive hover:bg-destructive/90">Archive Account</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
       
-      <AlertDialog open={isUnbanConfirmOpen} onOpenChange={setIsUnbanConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Restore {student.characterName}'s Account?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will re-enable the student's account, allowing them to log in again.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleModerateStudent('unban')}>Restore Account</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

@@ -6,7 +6,7 @@
  *
  * - updateStudentDetails: Updates a student's name in Firestore.
  * - resetStudentPassword: Resets a student's password in Firebase Auth.
- * - moderateStudent: Bans, unbans, or deletes a student's account.
+ * - moderateStudent: Deletes a student's account.
  * - getStudentStatus: Fetches the enabled/disabled status of a student's account.
  */
 import { doc, updateDoc, collection, getDocs, writeBatch, getDoc, runTransaction, arrayUnion, arrayRemove, setDoc, deleteField, query, where, Timestamp, increment, getFirestore as getClientFirestore } from 'firebase/firestore';
@@ -342,7 +342,7 @@ export async function resetStudentPassword(input: PasswordResetInput): Promise<A
 interface ModerateStudentInput {
     teacherUid: string;
     studentUid: string;
-    action: 'ban' | 'unban' | 'delete';
+    action: 'delete';
 }
 
 export async function moderateStudent(input: ModerateStudentInput): Promise<ActionResponse> {
@@ -354,14 +354,6 @@ export async function moderateStudent(input: ModerateStudentInput): Promise<Acti
         const globalStudentRef = adminDb.doc(`students/${studentUid}`);
 
         switch (action) {
-            case 'ban':
-                await auth.updateUser(studentUid, { disabled: true });
-                await studentRef.update({ isArchived: true });
-                return { success: true, message: 'Student account has been archived and disabled.' };
-            case 'unban':
-                await auth.updateUser(studentUid, { disabled: false });
-                await studentRef.update({ isArchived: false });
-                 return { success: true, message: 'Student account has been restored.' };
             case 'delete':
                 await auth.deleteUser(studentUid);
                 const batch = adminDb.batch();
