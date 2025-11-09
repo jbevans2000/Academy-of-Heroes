@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview A server-side flow for managing student accounts and data.
@@ -8,10 +7,8 @@
  * - resetStudentPassword: Resets a student's password in Firebase Auth.
  * - getStudentStatus: Fetches the enabled/disabled status of a student's account.
  */
-import { doc, updateDoc, collection, getDocs, writeBatch, getDoc, runTransaction, arrayUnion, arrayRemove, setDoc, deleteField, query, where, Timestamp, increment, getFirestore as getClientFirestore } from 'firebase/firestore';
+import { doc, updateDoc, collection, getDocs, writeBatch, getDoc, runTransaction, arrayUnion, arrayRemove, setDoc, deleteField, query, where, Timestamp, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { adminApp, adminAuth as auth } from '@/lib/firebaseAdmin';
-import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
 
 
 interface ActionResponse {
