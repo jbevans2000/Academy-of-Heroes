@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { collection, onSnapshot, query, orderBy, getDocs, writeBatch, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
@@ -25,6 +25,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Trash2, Loader2, DatabaseZap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { deleteStudent } from '@/ai/flows/admin-actions';
+
 
 export default function DataManagementPage() {
     const router = useRouter();
@@ -61,45 +63,32 @@ export default function DataManagementPage() {
     const activeStudents = useMemo(() => students.filter(s => !s.isHidden), [students]);
     const hiddenStudents = useMemo(() => students.filter(s => s.isHidden), [students]);
 
-    // NEW: Client-side deletion function
     const handleDelete = async () => {
         if (!teacher || !studentToDelete) return;
         setIsDeleting(true);
         
         try {
-            const batch = writeBatch(db);
-            const studentRef = doc(db, 'teachers', teacher.uid, 'students', studentToDelete.uid);
-            
-            // Subcollections to delete
-            const subcollections = ['messages', 'avatarLog'];
-            for (const sub of subcollections) {
-                const subRef = collection(studentRef, sub);
-                const snapshot = await getDocs(subRef);
-                snapshot.docs.forEach(doc => {
-                    batch.delete(doc.ref);
-                });
-            }
-
-            // Delete the main student document
-            batch.delete(studentRef);
-
-            // Delete the global student lookup document
-            const globalStudentRef = doc(db, 'students', studentToDelete.uid);
-            batch.delete(globalStudentRef);
-
-            await batch.commit();
-
-            toast({
-                title: 'Student Data Deleted',
-                description: `All game data for ${studentToDelete.studentName} has been removed.`,
+            const result = await deleteStudent({
+                teacherUid: teacher.uid,
+                studentUid: studentToDelete.uid
             });
 
+            if (result.success) {
+                toast({
+                    title: 'Student Deleted',
+                    description: `${studentToDelete.studentName}'s account and all associated data have been permanently deleted.`,
+                });
+                // The onSnapshot listener will automatically update the UI
+            } else {
+                throw new Error(result.error || 'An unknown error occurred during deletion.');
+            }
+
         } catch (error: any) {
-            console.error("Error deleting student data:", error);
+            console.error("Error deleting student:", error);
             toast({
                 variant: 'destructive',
                 title: 'Deletion Failed',
-                description: error.message || 'Could not delete student data.',
+                description: error.message,
             });
         } finally {
             setIsDeleting(false);
@@ -134,7 +123,7 @@ export default function DataManagementPage() {
                                     size="sm"
                                     onClick={() => setStudentToDelete(student)}
                                 >
-                                    <Trash2 className="mr-2 h-4 w-4" /> Delete Data
+                                    <Trash2 className="mr-2 h-4 w-4" /> Delete Account
                                 </Button>
                             </TableCell>
                         </TableRow>
@@ -158,7 +147,7 @@ export default function DataManagementPage() {
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2"><DatabaseZap /> Data Management</CardTitle>
                                 <CardDescription>
-                                    Use this tool to permanently delete a student's game data from Firestore. This action removes them from your dashboard but does NOT delete their login account. This is useful if a student has created a new account and you need to clean up the old one.
+                                    Use this tool to permanently delete a student's login account and all of their associated game data.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -192,13 +181,13 @@ export default function DataManagementPage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will permanently delete all Firestore game data for <strong className="font-bold">{studentToDelete?.studentName} ({studentToDelete?.characterName})</strong>. Their login account will remain, but they will be removed from your dashboard. This action cannot be undone.
+                            This will permanently delete the login account and all game data for <strong className="font-bold">{studentToDelete?.studentName} ({studentToDelete?.characterName})</strong>. This action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                            {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Yes, Delete Data'}
+                            {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Yes, Delete Account & Data'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
