@@ -66,24 +66,14 @@ export default function InactiveAccountsPage() {
                 const hasNoChapters = chaptersSnapshot.empty;
                 const hasNoBoons = boonsSnapshot.empty;
 
-                if (hasOneOrFewerStudents) {
-                    reasons.push('1 or fewer students');
-                }
-                if (hasNoPendingStudents) {
-                    reasons.push('No pending students');
-                }
-                if (hasNoCreatedHubs) {
-                    reasons.push('No custom Quest Hubs');
-                }
-                if (hasNoChapters) {
-                    reasons.push('No Chapters');
-                }
-                if (hasNoBoons) {
-                    reasons.push('No custom rewards');
-                }
+                if (hasOneOrFewerStudents) reasons.push('1 or fewer students');
+                if (hasNoPendingStudents) reasons.push('No pending students');
+                if (hasNoCreatedHubs) reasons.push('No custom Quest Hubs');
+                if (hasNoChapters) reasons.push('No Chapters');
+                if (hasNoBoons) reasons.push('No custom rewards');
 
-                // Corrected Logic: A teacher is inactive if they have 1 or fewer students AND at least one other inactivity reason.
-                if (hasOneOrFewerStudents && (hasNoPendingStudents || hasNoCreatedHubs || hasNoChapters || hasNoBoons)) {
+                // A teacher is inactive if they meet ANY of the criteria.
+                if (reasons.length > 0) {
                     isTeacherInactive = true;
                 }
                 
