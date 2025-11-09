@@ -1,316 +1,340 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { Loader2, User, KeyRound, Shield, Heart, Wand, ArrowLeft, PlusCircle, Upload, FileText, CheckCircle, Trash2 } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import Papa from 'papaparse';
+import { v4 as uuidv4 } from 'uuid';
+import type { ClassType } from '@/lib/data';
+import { avatarData } from '@/lib/avatars';
 import { validateClassCode } from '@/ai/flows/validate-class-code';
 import { createStudentDocuments } from '@/ai/flows/create-student';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import type { ClassType } from '@/lib/data';
-import { avatarData } from '@/lib/avatars';
-import { Loader2, BookUser, CheckCircle, Upload, Download, ArrowLeft } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import Link from 'next/link';
 
-
-interface NewStudentData {
-  id: string;
-  name: string;
-  classType: ClassType;
-  loginMethod: 'email' | 'alias';
-  loginId: string;
-  password?: string;
+interface StudentData {
+    id: string;
+    name: string;
+    class: ClassType;
+    loginMethod: 'email' | 'alias';
+    loginId: string;
+    password?: string;
 }
 
-const csvTemplate = "Student Name,Class,Login ID,Password\nJohn Doe,Guardian,johnd,password123\nJane Smith,Mage,jane.smith@example.com,password456";
+const csvTemplate = `Student Name,Class,Login ID,Password
+Example Student,Mage,example@email.com,password123
+Another Student,Guardian,another_username,password456
+`;
 
 export default function BulkAddPage() {
     const router = useRouter();
     const { toast } = useToast();
-    
-    // Page State
-    const [guildCode, setGuildCode] = useState('');
-    const [isCodeValidated, setIsCodeValidated] = useState(false);
+
+    // UI State
+    const [isLoading, setIsLoading] = useState(false);
     const [isCheckingCode, setIsCheckingCode] = useState(false);
-    const [isProcessing, setIsProcessing] = useState(false);
+    const [isCodeValidated, setIsCodeValidated] = useState(false);
 
-    // Manual Entry State
-    const [manualStudents, setManualStudents] = useState<NewStudentData[]>([]);
+    // Form State
+    const [classCode, setClassCode] = useState('');
+    const [manualStudents, setManualStudents] = useState<StudentData[]>([]);
+    const [csvData, setCsvData] = useState<StudentData[]>([]);
 
-    // CSV Entry State
-    const [csvData, setCsvData] = useState<NewStudentData[]>([]);
-    const [csvFile, setCsvFile] = useState<File | null>(null);
-    const [csvError, setCsvError] = useState<string | null>(null);
+    useEffect(() => {
+        // Add one empty student row by default for manual entry
+        if (manualStudents.length === 0) {
+            setManualStudents([{ id: uuidv4(), name: '', class: '', loginMethod: 'alias', loginId: '' }]);
+        }
+    }, [manualStudents.length]);
 
     const handleValidateCode = async () => {
-        if (!guildCode.trim()) {
-            toast({ variant: 'destructive', title: 'Guild Code Required' });
+        if (!classCode.trim()) {
+            toast({ variant: 'destructive', title: 'Guild Code Required', description: 'Please enter a code to validate.' });
             return;
         }
         setIsCheckingCode(true);
         try {
-            const result = await validateClassCode(guildCode);
+            const result = await validateClassCode(classCode);
             if (result.isValid) {
                 setIsCodeValidated(true);
-                toast({ title: 'Guild Code Validated!', description: 'You may now add students.' });
+                toast({ title: 'Guild Code Valid!', description: 'You may now fill out the rest of the form.' });
             } else {
-                toast({ variant: 'destructive', title: 'Invalid Guild Code' });
+                setIsCodeValidated(false);
+                toast({ variant: 'destructive', title: 'Invalid Guild Code', description: 'That code was not found. Please check with your Guild Leader and try again.' });
             }
         } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Validation Error', description: error.message });
+            toast({ variant: 'destructive', title: 'Validation Failed', description: error.message });
         } finally {
             setIsCheckingCode(false);
         }
     };
     
     const handleAddManualStudent = () => {
-        setManualStudents(prev => [...prev, { id: Date.now().toString(), name: '', classType: '', loginMethod: 'alias', loginId: '', password: ''}]);
-    }
-
-    const handleManualStudentChange = (id: string, field: keyof NewStudentData, value: string) => {
-        setManualStudents(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
+        setManualStudents(prev => [...prev, { id: uuidv4(), name: '', class: '', loginMethod: 'alias', loginId: '' }]);
     };
 
     const handleRemoveManualStudent = (id: string) => {
-        setManualStudents(prev => prev.filter(s => s.id !== id));
+        if (manualStudents.length > 1) {
+            setManualStudents(prev => prev.filter(student => student.id !== id));
+        }
     };
-    
-    const handleCsvUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+
+    const handleManualStudentChange = (id: string, field: keyof StudentData, value: string | ClassType) => {
+        setManualStudents(prev => prev.map(student => student.id === id ? { ...student, [field]: value } : student));
+    };
+
+    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
-        setCsvFile(file);
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const text = e.target?.result as string;
-            try {
-                const rows = text.split('\n').filter(row => row.trim() !== '');
-                const header = rows.shift()?.split(',').map(h => h.trim());
-                if (!header || header.join(',') !== 'Student Name,Class,Login ID,Password') {
-                    throw new Error('Invalid CSV headers. Must be: Student Name,Class,Login ID,Password');
-                }
-                const students = rows.map((row, i) => {
-                    const [name, classType, loginId, password] = row.split(',').map(v => v.trim());
-                    if (!name || !classType || !loginId || !password) {
-                        throw new Error(`Row ${i + 2} is missing data.`);
-                    }
-                    if (!['Guardian', 'Healer', 'Mage'].includes(classType)) {
-                        throw new Error(`Invalid class '${classType}' on row ${i + 2}. Must be Guardian, Healer, or Mage.`);
-                    }
-                    const isEmail = loginId.includes('@');
-                    return {
-                        id: `csv-${i}`,
-                        name,
-                        classType: classType as ClassType,
-                        loginMethod: isEmail ? 'email' : 'alias',
-                        loginId,
-                        password
-                    };
-                });
-                setCsvData(students);
-                setCsvError(null);
-            } catch (error: any) {
-                setCsvError(error.message);
-                setCsvData([]);
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+                const parsedData = results.data.map((row: any) => ({
+                    id: uuidv4(),
+                    name: row['Student Name'] || '',
+                    class: (row['Class'] || '') as ClassType,
+                    loginMethod: (row['Login ID'] || '').includes('@') ? 'email' : 'alias',
+                    loginId: row['Login ID'] || '',
+                    password: row['Password'] || '',
+                }));
+                setCsvData(parsedData);
+            },
+            error: (error: any) => {
+                toast({ variant: 'destructive', title: 'CSV Parse Error', description: error.message });
             }
-        };
-        reader.readAsText(file);
+        });
     };
-
-    const processStudents = async (studentsToProcess: NewStudentData[]) => {
+    
+    const handleSubmit = async (studentsToCreate: StudentData[]) => {
         if (!isCodeValidated) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Guild code is not validated.' });
+            toast({ variant: 'destructive', title: 'Guild Code Not Validated' });
             return;
         }
 
-        const validStudents = studentsToProcess.filter(s => s.name && s.classType && s.loginId && s.password);
+        const validStudents = studentsToCreate.filter(s => s.name && s.class && s.loginId && s.password);
+
         if (validStudents.length === 0) {
-            toast({ variant: 'destructive', title: 'No Valid Students', description: 'Please add student information before submitting.' });
+            toast({ variant: 'destructive', title: 'No Valid Students', description: 'Please fill out all fields for at least one student.' });
             return;
         }
-        
-        setIsProcessing(true);
+
+        setIsLoading(true);
         let successCount = 0;
         let errorCount = 0;
 
         for (const student of validStudents) {
             try {
                 const finalEmail = student.loginMethod === 'email' ? student.loginId : `${student.loginId.toLowerCase().replace(/\s/g, '_')}@academy-heroes-mziuf.firebaseapp.com`;
+                
                 const userCredential = await createUserWithEmailAndPassword(auth, finalEmail, student.password!);
-                const user = userCredential.user;
-
+                
                 const result = await createStudentDocuments({
-                    classCode: guildCode,
-                    userUid: user.uid,
+                    classCode,
+                    userUid: userCredential.user.uid,
                     email: finalEmail,
                     studentId: student.loginId,
                     studentName: student.name,
-                    characterName: student.name, // As requested
-                    selectedClass: student.classType,
-                    selectedAvatar: avatarData[student.classType]?.[1]?.[0] || '', // First avatar of level 1
+                    characterName: student.name, // Character name defaults to student name
+                    selectedClass: student.class,
+                    selectedAvatar: avatarData[student.class]?.[1]?.[0] || '', // First avatar of the class
                 });
-                
-                if (!result.success) {
-                    throw new Error(result.error || `Could not create database entry for ${student.name}.`);
+
+                if (result.success) {
+                    successCount++;
+                } else {
+                    errorCount++;
+                    // Ideally, we'd delete the auth user here if Firestore creation fails, but it's complex.
+                    // For this tool, we'll log the error.
+                    console.error(`Failed to create Firestore doc for ${student.name}:`, result.error);
                 }
-                successCount++;
             } catch (error: any) {
                 errorCount++;
-                let desc = error.message;
-                if (error.code === 'auth/email-already-in-use') {
-                    desc = `${student.name}'s login ID is already taken.`;
-                }
-                toast({ variant: 'destructive', title: `Error with ${student.name}`, description: desc, duration: 8000 });
+                console.error(`Failed to create auth user for ${student.name}:`, error.code, error.message);
             }
         }
         
         toast({
-            title: 'Processing Complete',
-            description: `${successCount} student(s) successfully registered and sent for approval. ${errorCount} failed.`
+            title: 'Bulk Creation Complete',
+            description: `${successCount} student(s) created successfully. ${errorCount} failed. Check console for errors.`,
+            duration: 8000,
         });
 
-        if (errorCount === 0) {
-            setManualStudents([]);
-            setCsvData([]);
-            setCsvFile(null);
-        }
-        setIsProcessing(false);
+        // Clear forms
+        setManualStudents([{ id: uuidv4(), name: '', class: '', loginMethod: 'alias', loginId: '' }]);
+        setCsvData([]);
+
+        setIsLoading(false);
     };
 
-
     return (
-        <div className="flex items-center justify-center min-h-screen p-4 bg-muted/40">
-            <Card className="w-full max-w-4xl shadow-2xl">
-                 <CardHeader className="text-center">
-                    <CardTitle className="text-3xl font-headline text-primary">Bulk Student Registration</CardTitle>
-                    <CardDescription>Add multiple students to your guild at once. This page is for administrative use.</CardDescription>
+        <div className="flex min-h-screen w-full flex-col bg-muted/40">
+            <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+                 <h1 className="text-xl font-semibold">Bulk Student Creation Tool</h1>
+            </header>
+            <main className="flex-1 p-4 md:p-6 lg:p-8">
+                 <Card className="w-full max-w-4xl mx-auto">
+                <CardHeader>
+                    <CardTitle>Step 1: Validate Guild Code</CardTitle>
+                    <CardDescription>Enter the Guild Code for the class you want to add students to. This must be done before you can add any students.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="p-4 rounded-lg bg-secondary/50 border">
-                        <Label htmlFor="guild-code" className="text-lg font-semibold">Guild Code</Label>
-                        <div className="flex items-center gap-2 mt-2">
-                             <Input 
-                                id="guild-code"
-                                value={guildCode}
-                                onChange={(e) => setGuildCode(e.target.value.toUpperCase())}
-                                placeholder="Enter a valid Guild Code..."
-                                disabled={isCodeValidated || isCheckingCode}
-                             />
-                              <Button onClick={handleValidateCode} disabled={isCheckingCode || !guildCode.trim()}>
-                                {isCheckingCode ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : isCodeValidated ? <CheckCircle className="mr-2 h-4 w-4"/> : null}
-                                {isCodeValidated ? 'Validated' : 'Validate'}
-                            </Button>
-                        </div>
-                    </div>
-                    
-                    <div className={!isCodeValidated ? 'opacity-50 pointer-events-none' : ''}>
-                        <Tabs defaultValue="manual">
-                            <TabsList className="grid w-full grid-cols-2">
-                                <TabsTrigger value="manual">Manual Entry</TabsTrigger>
-                                <TabsTrigger value="csv">CSV Upload</TabsTrigger>
-                            </TabsList>
-                            <TabsContent value="manual" className="mt-4">
-                                <ScrollArea className="h-72 w-full">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Student Name</TableHead>
-                                                <TableHead>Class</TableHead>
-                                                <TableHead>Login Method</TableHead>
-                                                <TableHead>Login ID</TableHead>
-                                                <TableHead>Password</TableHead>
-                                                <TableHead></TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {manualStudents.map(student => (
-                                                <TableRow key={student.id}>
-                                                    <TableCell><Input value={student.name} onChange={(e) => handleManualStudentChange(student.id, 'name', e.target.value)} /></TableCell>
-                                                    <TableCell>
-                                                        <Select value={student.classType} onValueChange={(v) => handleManualStudentChange(student.id, 'classType', v)}>
-                                                            <SelectTrigger><SelectValue placeholder="Class" /></SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="Guardian">Guardian</SelectItem>
-                                                                <SelectItem value="Healer">Healer</SelectItem>
-                                                                <SelectItem value="Mage">Mage</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <RadioGroup value={student.loginMethod} onValueChange={(v) => handleManualStudentChange(student.id, 'loginMethod', v)} className="flex">
-                                                            <div className="flex items-center space-x-1"><RadioGroupItem value="alias" id={`alias-${student.id}`} /><Label htmlFor={`alias-${student.id}`}>Username</Label></div>
-                                                            <div className="flex items-center space-x-1"><RadioGroupItem value="email" id={`email-${student.id}`} /><Label htmlFor={`email-${student.id}`}>Email</Label></div>
-                                                        </RadioGroup>
-                                                    </TableCell>
-                                                    <TableCell><Input value={student.loginId} onChange={(e) => handleManualStudentChange(student.id, 'loginId', e.target.value)} /></TableCell>
-                                                    <TableCell><Input type="password" value={student.password} onChange={(e) => handleManualStudentChange(student.id, 'password', e.target.value)} /></TableCell>
-                                                    <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveManualStudent(student.id)}><Trash2 className="h-4 w-4"/></Button></TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </ScrollArea>
-                                <div className="flex justify-between items-center mt-4">
-                                     <Button variant="outline" onClick={handleAddManualStudent}>Add Student Row</Button>
-                                      <Button onClick={() => processStudents(manualStudents)} disabled={isProcessing}>
-                                        {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                                        Add {manualStudents.length} Student(s)
-                                    </Button>
-                                </div>
-                            </TabsContent>
-                            <TabsContent value="csv" className="mt-4 space-y-4">
-                                <div>
-                                    <Label htmlFor="csv-file">Upload CSV File</Label>
-                                    <Input id="csv-file" type="file" accept=".csv" onChange={handleCsvUpload} />
-                                </div>
-                                {csvError && <p className="text-sm text-destructive">{csvError}</p>}
-                                {csvData.length > 0 && (
-                                    <ScrollArea className="h-72 w-full">
-                                        <Table>
-                                            <TableHeader><TableRow><TableHead>Student Name</TableHead><TableHead>Class</TableHead><TableHead>Login ID</TableHead></TableRow></TableHeader>
-                                            <TableBody>
-                                                {csvData.map(s => <TableRow key={s.id}><TableCell>{s.name}</TableCell><TableCell>{s.classType}</TableCell><TableCell>{s.loginId}</TableCell></TableRow>)}
-                                            </TableBody>
-                                        </Table>
-                                    </ScrollArea>
-                                )}
-                                 <div className="flex justify-between items-center mt-4">
-                                    <a href={`data:text/csv;charset=utf-8,${encodeURIComponent(csvTemplate)}`} download="student_template.csv" className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
-                                        <Download className="mr-2 h-4 w-4" />
-                                        Download Template
-                                    </a>
-                                     <Button onClick={() => processStudents(csvData)} disabled={isProcessing || csvData.length === 0}>
-                                        {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                                        Add {csvData.length} Student(s) from CSV
-                                    </Button>
-                                </div>
-                            </TabsContent>
-                        </Tabs>
+                <CardContent>
+                    <div className="flex items-center gap-2 max-w-sm">
+                        <Input
+                            placeholder="ENTER GUILD CODE"
+                            value={classCode}
+                            onChange={(e) => setClassCode(e.target.value.toUpperCase())}
+                            disabled={isCheckingCode || isCodeValidated}
+                            className="h-12 text-lg tracking-widest font-bold text-center"
+                        />
+                        <Button onClick={handleValidateCode} disabled={isCheckingCode || !classCode.trim() || isCodeValidated}>
+                            {isCheckingCode ? <Loader2 className="h-4 w-4 animate-spin" /> : isCodeValidated ? <CheckCircle /> : 'Validate'}
+                        </Button>
                     </div>
                 </CardContent>
-                <CardFooter>
+            </Card>
+
+            <Tabs defaultValue="manual" className="w-full max-w-4xl mx-auto mt-6">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="manual" disabled={!isCodeValidated}>Manual Entry</TabsTrigger>
+                    <TabsTrigger value="csv" disabled={!isCodeValidated}>CSV Upload</TabsTrigger>
+                </TabsList>
+                <TabsContent value="manual">
+                    <Card className={!isCodeValidated ? 'opacity-50 pointer-events-none' : ''}>
+                        <CardHeader>
+                            <CardTitle>Add Students Manually</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Student Name</TableHead>
+                                        <TableHead>Class</TableHead>
+                                        <TableHead>Login Method</TableHead>
+                                        <TableHead>Username / Email</TableHead>
+                                        <TableHead>Password</TableHead>
+                                        <TableHead></TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {manualStudents.map((student) => (
+                                        <TableRow key={student.id}>
+                                            <TableCell><Input value={student.name} onChange={(e) => handleManualStudentChange(student.id, 'name', e.target.value)} /></TableCell>
+                                            <TableCell>
+                                                <Select value={student.class} onValueChange={(value) => handleManualStudentChange(student.id, 'class', value)}>
+                                                    <SelectTrigger><SelectValue placeholder="Class" /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="Guardian">Guardian</SelectItem>
+                                                        <SelectItem value="Healer">Healer</SelectItem>
+                                                        <SelectItem value="Mage">Mage</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </TableCell>
+                                            <TableCell>
+                                                <RadioGroup value={student.loginMethod} onValueChange={(value) => handleManualStudentChange(student.id, 'loginMethod', value)} className="flex">
+                                                    <div className="flex items-center space-x-2"><RadioGroupItem value="alias" id={`alias-${student.id}`} /><Label htmlFor={`alias-${student.id}`}>Alias</Label></div>
+                                                    <div className="flex items-center space-x-2"><RadioGroupItem value="email" id={`email-${student.id}`} /><Label htmlFor={`email-${student.id}`}>Email</Label></div>
+                                                </RadioGroup>
+                                            </TableCell>
+                                            <TableCell><Input value={student.loginId} onChange={(e) => handleManualStudentChange(student.id, 'loginId', e.target.value)} /></TableCell>
+                                            <TableCell><Input type="password" value={student.password} onChange={(e) => handleManualStudentChange(student.id, 'password', e.target.value)} /></TableCell>
+                                            <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveManualStudent(student.id)}><Trash2 className="h-4 w-4"/></Button></TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                            <Button variant="outline" onClick={handleAddManualStudent} className="mt-4">
+                                <PlusCircle className="mr-2 h-4 w-4" /> Add Row
+                            </Button>
+                        </CardContent>
+                        <CardFooter>
+                            <Button onClick={() => handleSubmit(manualStudents)} disabled={isLoading}>
+                                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                                Create Manually Added Students
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="csv">
+                     <Card className={!isCodeValidated ? 'opacity-50 pointer-events-none' : ''}>
+                        <CardHeader>
+                            <CardTitle>Upload Students via CSV</CardTitle>
+                            <CardDescription>
+                                Upload a CSV file with the columns: `Student Name`, `Class`, `Login ID`, `Password`.
+                                The class must be one of: Guardian, Healer, Mage.
+                            </CardDescription>
+                            <Button variant="link" onClick={() => {
+                                const blob = new Blob([csvTemplate], { type: 'text/csv;charset=utf-8;' });
+                                const link = document.createElement("a");
+                                const url = URL.createObjectURL(blob);
+                                link.setAttribute("href", url);
+                                link.setAttribute("download", "student_template.csv");
+                                link.style.visibility = 'hidden';
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                            }}>
+                                <FileText className="mr-2 h-4 w-4"/> Download Template
+                            </Button>
+                        </CardHeader>
+                        <CardContent>
+                            <Input type="file" accept=".csv" onChange={handleFileUpload} />
+                            {csvData.length > 0 && (
+                                <div className="mt-4">
+                                    <h4 className="font-semibold">Parsed Data ({csvData.length} students)</h4>
+                                     <ScrollArea className="h-48 mt-2 border rounded-md">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Name</TableHead>
+                                                    <TableHead>Class</TableHead>
+                                                    <TableHead>Login ID</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {csvData.map((student, i) => (
+                                                    <TableRow key={i}>
+                                                        <TableCell>{student.name}</TableCell>
+                                                        <TableCell>{student.class}</TableCell>
+                                                        <TableCell>{student.loginId}</TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                     </ScrollArea>
+                                </div>
+                            )}
+                        </CardContent>
+                        <CardFooter>
+                            <Button onClick={() => handleSubmit(csvData)} disabled={isLoading || csvData.length === 0}>
+                                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                                Create Students from CSV
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                </TabsContent>
+            </Tabs>
+             <Card className="mt-6">
+                <CardFooter className="flex justify-start p-4">
                     <Button variant="link" className="text-muted-foreground" asChild>
                         <Link href="/"><ArrowLeft className="mr-2 h-4 w-4" />Back to Home</Link>
                     </Button>
                 </CardFooter>
             </Card>
+            </main>
         </div>
     );
 }
+
