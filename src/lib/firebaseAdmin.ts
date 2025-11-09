@@ -6,39 +6,44 @@ import { getFirestore } from 'firebase-admin/firestore';
 
 const globalForAdmin = globalThis as unknown as { __ADMIN_APP__?: App };
 
-let app: App | undefined = globalForAdmin.__ADMIN_APP__;
-let adminDb: ReturnType<typeof getFirestore> | undefined;
+function getFirebaseAdminApp() {
+    if (globalForAdmin.__ADMIN_APP__) {
+        return globalForAdmin.__ADMIN_APP__;
+    }
 
-if (process.env.NODE_ENV === 'production' && !globalForAdmin.__ADMIN_APP__) {
-  const serviceAccount = JSON.parse(
-    process.env.SERVICE_ACCOUNT_KEY as string
-  );
-  app = initializeApp({
-    credential: cert(serviceAccount),
-    projectId: process.env.GOOGLE_CLOUD_PROJECT,
-  });
-  globalForAdmin.__ADMIN_APP__ = app;
-} else if (process.env.NODE_ENV !== 'production') {
-  if (!globalForAdmin.__ADMIN_APP__) {
+    if (getApps().length > 0) {
+        const existingApp = getApps()[0];
+        if (existingApp) {
+             globalForAdmin.__ADMIN_APP__ = existingApp;
+             return existingApp;
+        }
+    }
+    
+    let serviceAccount;
     try {
-      const serviceAccount = require('../../../firebase-service-account.json');
-      app = initializeApp({
+        if (process.env.SERVICE_ACCOUNT_KEY) {
+            serviceAccount = JSON.parse(process.env.SERVICE_ACCOUNT_KEY);
+        } else {
+             // Fallback for local development if firebase-service-account.json exists
+             serviceAccount = require('../../../firebase-service-account.json');
+        }
+    } catch (e) {
+        console.error("Service account key not found or invalid. Please ensure SERVICE_ACCOUNT_KEY secret is set in production, or firebase-service-account.json exists for local dev.");
+        throw new Error("Firebase Admin SDK initialization failed: Service Account credentials are not available.");
+    }
+    
+    const newApp = initializeApp({
         credential: cert(serviceAccount),
         projectId: process.env.GOOGLE_CLOUD_PROJECT,
-      });
-      globalForAdmin.__ADMIN_APP__ = app;
-    } catch (e) {
-      console.error(
-        'Could not load firebase-service-account.json. Please ensure you have this file for local development.'
-      );
-    }
-  } else {
-    app = globalForAdmin.__ADMIN_APP__;
-  }
+    });
+
+    globalForAdmin.__ADMIN_APP__ = newApp;
+    return newApp;
 }
 
-const adminApp = app!;
-const adminAuth = getAuth(adminApp);
-adminDb = getFirestore(adminApp);
 
-export { adminApp, adminAuth, adminDb };
+const adminApp = getFirebaseAdminApp();
+const adminAuth = getAuth(adminApp);
+const adminDb = getFirestore(adminApp);
+
+export { adminApp, adminAuth, adminDb, getFirebaseAdminApp };
