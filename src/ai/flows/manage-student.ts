@@ -319,21 +319,3 @@ export async function removeShadowMark(input: ShadowMarkInput): Promise<ActionRe
         return { success: false, error: e.message || 'Failed to remove Shadow Mark.' };
     }
 }
-
-interface PasswordResetInput {
-    studentUid: string;
-    newPassword?: string;
-}
-
-export async function resetStudentPassword(input: PasswordResetInput): Promise<ActionResponse> {
-    if (!input.newPassword || input.newPassword.length < 6) {
-        return { success: false, error: "Password must be at least 6 characters long." };
-    }
-    try {
-        await auth.updateUser(input.studentUid, { password: input.newPassword });
-        return { success: true, message: "Student password has been reset." };
-    } catch (e: any) {
-        console.error("Error in resetStudentPassword:", e);
-        return { success: false, error: e.message || 'Failed to reset student password in Firebase Auth.' };
-    }
-}
