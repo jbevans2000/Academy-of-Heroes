@@ -3,14 +3,16 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { onAuthStateChanged, type User } from 'firebase/auth';
+import { TeacherHeader } from '@/components/teacher/teacher-header';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Trash2, Loader2, DatabaseZap } from 'lucide-react';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
-import { TeacherHeader } from '@/components/teacher/teacher-header';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { onAuthStateChanged, type User } from 'firebase/auth';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,10 +24,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Trash2, Loader2, DatabaseZap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Skeleton } from '@/components/ui/skeleton';
-import { initiateStudentDeletion } from '@/ai/flows/manage-student';
+import { deleteStudent } from '@/ai/flows/admin-actions';
 
 
 export default function DataManagementPage() {
@@ -68,23 +68,23 @@ export default function DataManagementPage() {
         setIsDeleting(true);
         
         try {
-            const result = await initiateStudentDeletion({
+            const result = await deleteStudent({
                 teacherUid: teacher.uid,
                 studentUid: studentToDelete.uid
             });
 
             if (result.success) {
                 toast({
-                    title: 'Deletion Initiated',
-                    description: `${studentToDelete.studentName}'s account is now flagged. It will be permanently deleted upon their next login attempt.`,
+                    title: 'Student Deleted',
+                    description: `${studentToDelete.studentName}'s account and all associated data have been permanently deleted.`,
                     duration: 8000,
                 });
             } else {
-                throw new Error(result.error || 'An unknown error occurred during deletion initiation.');
+                throw new Error(result.error || 'An unknown error occurred during deletion.');
             }
 
         } catch (error: any) {
-            console.error("Error initiating student deletion:", error);
+            console.error("Error deleting student:", error);
             toast({
                 variant: 'destructive',
                 title: 'Deletion Failed',
@@ -181,13 +181,13 @@ export default function DataManagementPage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will flag the account for <strong className="font-bold">{studentToDelete?.studentName} ({studentToDelete?.characterName})</strong> for deletion. The account and all associated data will be permanently removed the next time this user attempts to log in. This action cannot be undone.
+                            This will permanently delete the account and all associated data for <strong className="font-bold">{studentToDelete?.studentName} ({studentToDelete?.characterName})</strong>. This action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                            {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Yes, Flag for Deletion'}
+                            {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Yes, Permanently Delete'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
