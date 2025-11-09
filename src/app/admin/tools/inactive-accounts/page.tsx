@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -25,6 +24,7 @@ interface InactiveTeacher {
     className: string;
     createdAt: Date | null;
     inactivityReasons: string[];
+    studentCount: number;
 }
 
 interface InactiveStudent extends Student {
@@ -58,27 +58,21 @@ export default function InactiveAccountsPage() {
                 const chaptersSnapshot = await getDocs(collection(db, 'teachers', teacherId, 'chapters'));
                 const boonsSnapshot = await getDocs(collection(db, 'teachers', teacherId, 'boons'));
                 
-                let isTeacherInactive = false;
-                
                 const hasOneOrFewerStudents = studentsSnapshot.size <= 1;
                 const hasNoPendingStudents = pendingStudentsSnapshot.empty;
                 const hasNoCreatedHubs = hubsSnapshot.empty || (hubsSnapshot.size === 1 && hubsSnapshot.docs[0].data().name === 'Independent Chapters');
                 const hasNoChapters = chaptersSnapshot.empty;
                 const hasNoBoons = boonsSnapshot.empty;
-
+                
                 if (hasOneOrFewerStudents) reasons.push('1 or fewer students');
                 if (hasNoPendingStudents) reasons.push('No pending students');
                 if (hasNoCreatedHubs) reasons.push('No custom Quest Hubs');
                 if (hasNoChapters) reasons.push('No Chapters');
                 if (hasNoBoons) reasons.push('No custom rewards');
-
+                
                 // A teacher is inactive if they meet ANY of the criteria.
                 if (reasons.length > 0) {
-                    isTeacherInactive = true;
-                }
-                
-                if (isTeacherInactive) {
-                    foundInactiveTeachers.push({
+                     foundInactiveTeachers.push({
                         id: teacherId,
                         name: teacherData.name,
                         email: teacherData.email,
@@ -86,6 +80,7 @@ export default function InactiveAccountsPage() {
                         className: teacherData.className,
                         createdAt: teacherData.createdAt?.toDate() || null,
                         inactivityReasons: reasons,
+                        studentCount: studentsSnapshot.size,
                     });
                 }
                 
@@ -156,6 +151,7 @@ export default function InactiveAccountsPage() {
                     <TableHead>Guild Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Date Registered</TableHead>
+                    <TableHead>Student Count</TableHead>
                     <TableHead>Inactivity Criteria</TableHead>
                     <TableHead>Teacher UID</TableHead>
                 </TableRow>
@@ -168,6 +164,7 @@ export default function InactiveAccountsPage() {
                         <TableCell>{t.className}</TableCell>
                         <TableCell>{t.email}</TableCell>
                         <TableCell>{t.createdAt ? format(t.createdAt, 'PP') : 'N/A'}</TableCell>
+                        <TableCell className="text-center font-bold">{t.studentCount}</TableCell>
                         <TableCell>
                             <ul className="list-disc list-inside text-xs">
                                 {t.inactivityReasons.map(reason => <li key={reason}>{reason}</li>)}
