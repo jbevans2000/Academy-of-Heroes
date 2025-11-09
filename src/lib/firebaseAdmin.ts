@@ -1,3 +1,4 @@
+
 // src/lib/firebaseAdmin.ts
 import type { App } from 'firebase-admin/app';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
@@ -31,7 +32,7 @@ function getFirebaseAdminApp() {
     
     // Check if any apps are already initialized to prevent re-initialization.
     if (getApps().length > 0) {
-        const existingApp = getApps()[0];
+        const existingApp = getApps().find(app => app.name === '[DEFAULT]');
         if (existingApp) {
              globalForAdmin.__ADMIN_APP__ = existingApp;
              return existingApp;
