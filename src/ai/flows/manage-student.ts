@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A server-side flow for managing student accounts and data.
@@ -325,7 +326,11 @@ interface InitiateStudentDeletionInput {
 
 export async function initiateStudentDeletion(input: InitiateStudentDeletionInput): Promise<ActionResponse> {
     try {
-        await adminDb.collection('deleted-users').doc(input.studentUid).set({ deletionRequested: true });
+        // This function now uses the standard CLIENT-SIDE SDK, not the admin SDK.
+        await setDoc(doc(db, 'deleted-users', input.studentUid), { 
+            deletionRequested: true,
+            teacherUid: input.teacherUid, // Store for potential logging
+        });
         return { success: true };
     } catch (e: any) {
         console.error("Error flagging student for deletion:", e);
@@ -348,5 +353,7 @@ export async function unarchiveStudent(input: UnarchiveStudentInput): Promise<Ac
         return { success: false, error: e.message || 'Failed to unarchive student.' };
     }
 }
+
+    
 
     
