@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { collection, getDocs, doc, getDoc, query, orderBy, Timestamp } from 'firebase/firestore';
@@ -15,6 +15,8 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { ArrowLeft, Loader2, ListChecks } from 'lucide-react';
 import type { Student } from '@/lib/data';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+
 
 interface InactiveTeacher {
     id: string;
@@ -57,7 +59,9 @@ export default function InactiveAccountsPage() {
                 const chaptersSnapshot = await getDocs(collection(db, 'teachers', teacherId, 'chapters'));
                 const boonsSnapshot = await getDocs(collection(db, 'teachers', teacherId, 'boons'));
                 
-                const hasOneOrFewerStudents = studentsSnapshot.size <= 1;
+                const studentCount = studentsSnapshot.size;
+                const hasOneOrFewerStudents = studentCount <= 1;
+                // A teacher starts with one default hub, so we check if there are more than 1, or if the single one is not the default.
                 const hasNoCreatedHubs = hubsSnapshot.empty || (hubsSnapshot.size === 1 && hubsSnapshot.docs[0].data().name === 'Independent Chapters');
                 const hasNoChapters = chaptersSnapshot.empty;
                 const hasNoBoons = boonsSnapshot.empty;
@@ -77,7 +81,7 @@ export default function InactiveAccountsPage() {
                         className: teacherData.className,
                         createdAt: teacherData.createdAt?.toDate() || null,
                         inactivityReasons: reasons,
-                        studentCount: studentsSnapshot.size,
+                        studentCount: studentCount,
                     });
                 }
                 
@@ -132,6 +136,18 @@ export default function InactiveAccountsPage() {
         });
         return () => unsubscribe();
     }, [router, fetchInactiveData]);
+    
+    const studentsByTeacher = useMemo(() => {
+        return inactiveStudents.reduce((acc, student) => {
+            const teacherName = student.teacherName || 'Unknown Teacher';
+            if (!acc[teacherName]) {
+                acc[teacherName] = [];
+            }
+            acc[teacherName].push(student);
+            return acc;
+        }, {} as Record<string, InactiveStudent[]>);
+    }, [inactiveStudents]);
+
 
     if (!user) {
         return (
@@ -174,31 +190,38 @@ export default function InactiveAccountsPage() {
         </Table>
     );
 
-    const renderStudentTable = () => (
-        <Table>
-            <TableHeader>
-                <TableRow>
-                    <TableHead>Student Name</TableHead>
-                    <TableHead>Character Name</TableHead>
-                    <TableHead>Teacher</TableHead>
-                    <TableHead>Inactivity Criteria</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {inactiveStudents.map(s => (
-                    <TableRow key={s.uid}>
-                        <TableCell>{s.studentName}</TableCell>
-                        <TableCell>{s.characterName}</TableCell>
-                        <TableCell>{s.teacherName}</TableCell>
-                         <TableCell>
-                             <ul className="list-disc list-inside text-xs">
-                                {s.inactivityReasons.map(reason => <li key={reason}>{reason}</li>)}
-                            </ul>
-                        </TableCell>
-                    </TableRow>
-                ))}
-            </TableBody>
-        </Table>
+    const renderStudentAccordion = () => (
+        <Accordion type="multiple" className="w-full">
+            {Object.entries(studentsByTeacher).map(([teacherName, students]) => (
+                <AccordionItem value={teacherName} key={teacherName}>
+                    <AccordionTrigger>{teacherName} ({students.length} inactive)</AccordionTrigger>
+                    <AccordionContent>
+                         <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Student Name</TableHead>
+                                    <TableHead>Character Name</TableHead>
+                                    <TableHead>Inactivity Criteria</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {students.map(s => (
+                                    <TableRow key={s.uid}>
+                                        <TableCell>{s.studentName}</TableCell>
+                                        <TableCell>{s.characterName}</TableCell>
+                                         <TableCell>
+                                             <ul className="list-disc list-inside text-xs">
+                                                {s.inactivityReasons.map(reason => <li key={reason}>{reason}</li>)}
+                                            </ul>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </AccordionContent>
+                </AccordionItem>
+            ))}
+        </Accordion>
     );
 
     return (
@@ -232,7 +255,7 @@ export default function InactiveAccountsPage() {
                                         {inactiveTeachers.length > 0 ? renderTeacherTable() : <p className="text-center text-muted-foreground p-8">No inactive teachers found.</p>}
                                     </TabsContent>
                                     <TabsContent value="students" className="mt-4">
-                                        {inactiveStudents.length > 0 ? renderStudentTable() : <p className="text-center text-muted-foreground p-8">No inactive students found.</p>}
+                                        {inactiveStudents.length > 0 ? renderStudentAccordion() : <p className="text-center text-muted-foreground p-8">No inactive students found.</p>}
                                     </TabsContent>
                                 </Tabs>
                             )}
