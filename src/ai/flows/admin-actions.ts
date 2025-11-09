@@ -3,9 +3,7 @@
 /**
  * @fileOverview A secure, server-side flow for admin-only actions like deleting users.
  */
-import { adminAuth } from '@/lib/firebaseAdmin';
-import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
-import { collection, doc, getDocs, writeBatch, deleteField } from 'firebase-firestore';
+import { adminAuth, adminDb } from '@/lib/firebaseAdmin';
 
 interface ActionResponse {
   success: boolean;
@@ -13,11 +11,9 @@ interface ActionResponse {
   error?: string;
 }
 
-const db = getAdminFirestore();
-
 // Helper function to recursively delete subcollections.
 async function deleteCollection(collectionPath: string, batchSize: number = 100) {
-    const collectionRef = db.collection(collectionPath);
+    const collectionRef = adminDb.collection(collectionPath);
     const query = collectionRef.limit(batchSize);
 
     return new Promise((resolve, reject) => {
@@ -32,7 +28,7 @@ async function deleteQueryBatch(query: FirebaseFirestore.Query, resolve: (value:
         return resolve(0);
     }
 
-    const batch = db.batch();
+    const batch = adminDb.batch();
     snapshot.docs.forEach(doc => {
         batch.delete(doc.ref);
     });
@@ -67,7 +63,7 @@ export async function deleteTeacher(teacherUid: string): Promise<ActionResponse>
         }
 
         // Finally, delete the main teacher document.
-        await db.collection('teachers').doc(teacherUid).delete();
+        await adminDb.collection('teachers').doc(teacherUid).delete();
 
         return { success: true, message: "Teacher and all associated data have been deleted." };
     } catch (error: any) {
@@ -97,14 +93,14 @@ export async function deleteStudent({ teacherUid, studentUid }: DeleteStudentInp
             await deleteCollection(`teachers/${teacherUid}/students/${studentUid}/${subcollection}`);
         }
 
-        const batch = db.batch();
+        const batch = adminDb.batch();
 
         // Delete the main student document.
-        const studentRef = db.doc(`teachers/${teacherUid}/students/${studentUid}`);
+        const studentRef = adminDb.doc(`teachers/${teacherUid}/students/${studentUid}`);
         batch.delete(studentRef);
 
         // Delete the global lookup document.
-        const globalStudentRef = db.doc(`students/${studentUid}`);
+        const globalStudentRef = adminDb.doc(`students/${studentUid}`);
         batch.delete(globalStudentRef);
 
         await batch.commit();
@@ -131,14 +127,14 @@ export async function deleteStudentDataOnly({ teacherUid, studentUid }: DeleteSt
             await deleteCollection(`teachers/${teacherUid}/students/${studentUid}/${subcollection}`);
         }
 
-        const batch = db.batch();
+        const batch = adminDb.batch();
 
         // Delete the main student document from the teacher's subcollection.
-        const studentRef = db.doc(`teachers/${teacherUid}/students/${studentUid}`);
+        const studentRef = adminDb.doc(`teachers/${teacherUid}/students/${studentUid}`);
         batch.delete(studentRef);
 
         // Delete the global lookup document. This is crucial to prevent re-entry issues.
-        const globalStudentRef = db.doc(`students/${studentUid}`);
+        const globalStudentRef = adminDb.doc(`students/${studentUid}`);
         batch.delete(globalStudentRef);
 
         await batch.commit();

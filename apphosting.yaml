@@ -29,6 +29,7 @@ env:
     value: academy-heroes-mziuf
   - variable: FIREBASE_PROJECT_ID
     value: academy-heroes-mziuf
+  - secret: SERVICE_ACCOUNT_KEY
 # Specifies a schedule for a job to run.
 # The schedule is in cron format.
 # schedule:
