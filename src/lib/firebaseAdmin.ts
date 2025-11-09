@@ -10,26 +10,32 @@ function getFirebaseAdminApp() {
     if (globalForAdmin.__ADMIN_APP__) {
         return globalForAdmin.__ADMIN_APP__;
     }
-
+    
+    let serviceAccount;
+    // In a deployed environment (like App Hosting), the secret will be in process.env
+    if (process.env.SERVICE_ACCOUNT_KEY) {
+        serviceAccount = JSON.parse(process.env.SERVICE_ACCOUNT_KEY);
+    } else {
+        // Fallback for local development if the JSON file exists.
+        try {
+             serviceAccount = require('../../../firebase-service-account.json');
+        } catch (e) {
+            console.error(
+                "Service account key not found. " +
+                "For local development, ensure 'firebase-service-account.json' is in the root directory. " +
+                "For production, ensure the 'SERVICE_ACCOUNT_KEY' secret is set."
+            );
+            throw new Error("Firebase Admin SDK initialization failed: Service Account credentials are not available.");
+        }
+    }
+    
+    // Check if any apps are already initialized to prevent re-initialization.
     if (getApps().length > 0) {
         const existingApp = getApps()[0];
         if (existingApp) {
              globalForAdmin.__ADMIN_APP__ = existingApp;
              return existingApp;
         }
-    }
-    
-    let serviceAccount;
-    try {
-        if (process.env.SERVICE_ACCOUNT_KEY) {
-            serviceAccount = JSON.parse(process.env.SERVICE_ACCOUNT_KEY);
-        } else {
-             // Fallback for local development if firebase-service-account.json exists
-             serviceAccount = require('../../../firebase-service-account.json');
-        }
-    } catch (e) {
-        console.error("Service account key not found or invalid. Please ensure SERVICE_ACCOUNT_KEY secret is set in production, or firebase-service-account.json exists for local dev.");
-        throw new Error("Firebase Admin SDK initialization failed: Service Account credentials are not available.");
     }
     
     const newApp = initializeApp({

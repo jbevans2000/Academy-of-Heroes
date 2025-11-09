@@ -30,6 +30,7 @@ env:
   - variable: FIREBASE_PROJECT_ID
     value: academy-heroes-mziuf
   - secret: SERVICE_ACCOUNT_KEY
+  - secret: GEMINI_API_KEY
 # Specifies a schedule for a job to run.
 # The schedule is in cron format.
 # schedule:
