@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -5,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Trash2, Loader2, DatabaseZap, ArchiveRestore, EyeOff, Eye, UserX, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Trash2, Loader2, DatabaseZap, ArchiveRestore, EyeOff, Eye, UserX, AlertCircle, Archive } from 'lucide-react';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
@@ -181,7 +182,7 @@ export default function DataManagementPage() {
                                         size="sm"
                                         onClick={() => { setStudentToAction(student); setIsDataDeleteDialogOpen(true); }}
                                     >
-                                        <Trash2 className="mr-2 h-4 w-4" /> Archive Data
+                                        <Trash2 className="mr-2 h-4 w-4" /> Delete Student Data
                                     </Button>
                                    </>
                                )}
@@ -228,15 +229,15 @@ export default function DataManagementPage() {
                 <TeacherHeader />
                 <main className="flex-1 p-4 md:p-6 lg:p-8">
                     <div className="w-full max-w-4xl mx-auto space-y-6">
-                        <Button variant="outline" onClick={() => router.push('/teacher/tools')}>
+                        <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
                             <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to All Tools
+                            Back to Podium
                         </Button>
                         <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2"><DatabaseZap /> Data Management</CardTitle>
+                                <CardTitle className="flex items-center gap-2"><Archive /> Retire Heroes & Manage Archives</CardTitle>
                                 <CardDescription>
-                                    Use this tool to archive a student's data or permanently delete their login account. Archiving removes them from the main dashboard but preserves their data. Deleting their account is permanent.
+                                    Retire heroes from your active roster. Archiving a hero preserves their data but removes them from the main dashboard. From the archives, you may choose to permanently delete their login account.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -289,5 +290,3 @@ export default function DataManagementPage() {
         </>
     );
 }
-
-    
