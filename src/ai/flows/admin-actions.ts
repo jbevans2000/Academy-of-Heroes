@@ -3,7 +3,7 @@
 /**
  * @fileOverview A secure, server-side flow for admin-only actions like deleting users.
  */
-import { doc, writeBatch } from 'firebase/firestore';
+import { doc, writeBatch, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { adminDb } from '@/lib/firebaseAdmin';
 
