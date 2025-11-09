@@ -6,7 +6,6 @@
  *
  * - updateStudentDetails: Updates a student's name in Firestore.
  * - resetStudentPassword: Resets a student's password in Firebase Auth.
- * - moderateStudent: Deletes a student's account.
  * - getStudentStatus: Fetches the enabled/disabled status of a student's account.
  */
 import { doc, updateDoc, collection, getDocs, writeBatch, getDoc, runTransaction, arrayUnion, arrayRemove, setDoc, deleteField, query, where, Timestamp, increment, getFirestore as getClientFirestore } from 'firebase/firestore';
@@ -237,7 +236,7 @@ export async function releaseAllFromMeditation(input: { teacherUid: string }): P
         });
 
         await batch.commit();
-        return { success: true, message: `Released ${querySnapshot.size} student(s) from the Meditation Chamber.` };
+        return { success: true, message: `Released ${'${querySnapshot.size}'} student(s) from the Meditation Chamber.` };
     } catch (error: any) {
         console.error("Error releasing all students from meditation:", error);
         return { success: false, error: "An unexpected error occurred while releasing students." };
@@ -336,36 +335,5 @@ export async function resetStudentPassword(input: PasswordResetInput): Promise<A
     } catch (e: any) {
         console.error("Error in resetStudentPassword:", e);
         return { success: false, error: e.message || 'Failed to reset student password in Firebase Auth.' };
-    }
-}
-
-interface ModerateStudentInput {
-    teacherUid: string;
-    studentUid: string;
-    action: 'delete';
-}
-
-export async function moderateStudent(input: ModerateStudentInput): Promise<ActionResponse> {
-    const { teacherUid, studentUid, action } = input;
-
-    try {
-        const adminDb = getAdminFirestore(adminApp);
-        const studentRef = adminDb.doc(`teachers/${teacherUid}/students/${studentUid}`);
-        const globalStudentRef = adminDb.doc(`students/${studentUid}`);
-
-        switch (action) {
-            case 'delete':
-                await auth.deleteUser(studentUid);
-                const batch = adminDb.batch();
-                batch.delete(studentRef);
-                batch.delete(globalStudentRef);
-                await batch.commit();
-                return { success: true, message: 'Student account and all data permanently deleted.' };
-            default:
-                return { success: false, error: 'Invalid action.' };
-        }
-    } catch (error: any) {
-        console.error(`Error performing '${action}' on student ${studentUid}:`, error);
-        return { success: false, error: error.message || `Failed to ${action} student.` };
     }
 }
