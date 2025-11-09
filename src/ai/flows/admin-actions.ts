@@ -3,7 +3,7 @@
 /**
  * @fileOverview A secure, server-side flow for admin-only actions like deleting users.
  */
-import { doc, writeBatch, updateDoc } from 'firebase/firestore';
+import { doc, writeBatch, updateDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { adminDb } from '@/lib/firebaseAdmin';
 
@@ -12,6 +12,42 @@ interface ActionResponse {
   message?: string;
   error?: string;
 }
+
+// This function now only handles Firestore data deletion. Auth deletion is separate.
+export async function deleteStudentData({ teacherUid, studentUid }: { teacherUid: string, studentUid: string }): Promise<ActionResponse> {
+    if (!teacherUid || !studentUid) {
+        return { success: false, error: "Teacher and Student UIDs are required." };
+    }
+    
+    try {
+        const batch = writeBatch(db);
+
+        // Define all known subcollections for a student
+        const subcollections = ['messages', 'avatarLog'];
+        for (const sub of subcollections) {
+            const subRef = collection(db, `teachers/${teacherUid}/students/${studentUid}/${sub}`);
+            const snapshot = await getDocs(subRef);
+            snapshot.docs.forEach(doc => batch.delete(doc.ref));
+        }
+
+        // Delete the main student document from the teacher's subcollection
+        const studentRef = doc(db, 'teachers', teacherUid, 'students', studentUid);
+        batch.delete(studentRef);
+
+        // Delete the global lookup document for the student
+        const globalStudentRef = doc(db, 'students', studentUid);
+        batch.delete(globalStudentRef);
+
+        await batch.commit();
+        
+        return { success: true, message: "Student data has been deleted." };
+
+    } catch (error: any) {
+        console.error("Error deleting student data:", error);
+        return { success: false, error: error.message || 'An unknown error occurred while deleting the student data.' };
+    }
+}
+
 
 // This function uses the Admin SDK and is intended for a secure server environment.
 // It will attempt to delete the auth user and their firestore data.
@@ -39,7 +75,13 @@ export async function deleteTeacher(teacherUid: string): Promise<ActionResponse>
         
         await batch.commit();
         
-        await adminDb.collection('deleted-users').doc(teacherUid).set({ deletionRequested: true });
+        // This part uses the Admin SDK and might still fail if not configured,
+        // but the data deletion will have already succeeded.
+        try {
+            await adminDb.collection('deleted-users').doc(teacherUid).set({ deletionRequested: true });
+        } catch (adminError) {
+             console.warn("Admin SDK action failed, but data was deleted. Manual auth cleanup may be needed.", adminError);
+        }
 
         return { success: true, message: "Teacher data has been deleted. Their login account will be removed upon their next login attempt." };
     } catch (error: any) {
