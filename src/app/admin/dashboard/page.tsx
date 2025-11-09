@@ -22,6 +22,7 @@ import { getAdminNotepadContent, updateAdminNotepadContent } from '@/ai/flows/ma
 import { getKnownBugsContent, updateKnownBugsContent } from '@/ai/flows/manage-known-bugs';
 import { getUpcomingFeaturesContent, updateUpcomingFeaturesContent } from '@/ai/flows/manage-upcoming-features';
 import { markAllAdminMessagesAsRead } from '@/ai/flows/manage-admin-messages';
+import { deleteTeacher, deleteStudent } from '@/ai/flows/admin-actions';
 import { Loader2, ToggleLeft, ToggleRight, RefreshCw, Star, Bug, Lightbulb, Trash2, Diamond, Wrench, ChevronDown, Upload, TestTube2, CheckCircle, XCircle, Box, ArrowUpDown, Send, MessageCircle, HelpCircle, Edit, Reply, FileText, Save, CreditCard, View, Power } from 'lucide-react';
 import {
   DropdownMenu,
@@ -129,6 +130,10 @@ export default function AdminDashboardPage() {
     const [isSettingsLoading, setIsSettingsLoading] = useState(true);
     const [feedbackToDelete, setFeedbackToDelete] = useState<string | null>(null);
     const [isDeletingFeedback, setIsDeletingFeedback] = useState(false);
+
+    // Deletion state
+    const [userToDelete, setUserToDelete] = useState<{ type: 'teacher' | 'student', data: Teacher | Student } | null>(null);
+    const [isDeletingUser, setIsDeletingUser] = useState(false);
     
     // Maintenance Mode State
     const [isMaintenanceModeOn, setIsMaintenanceModeOn] = useState(false);
@@ -678,6 +683,32 @@ export default function AdminDashboardPage() {
             setFeedbackToDelete(null);
         }
     };
+    
+    const handleDeleteUser = async () => {
+        if (!userToDelete) return;
+        setIsDeletingUser(true);
+        
+        try {
+            let result;
+            if (userToDelete.type === 'teacher') {
+                result = await deleteTeacher(userToDelete.data.id!);
+            } else {
+                result = await deleteStudent({ teacherUid: (userToDelete.data as Student).teacherId, studentUid: userToDelete.data.uid });
+            }
+
+            if (result.success) {
+                toast({ title: `${userToDelete.type === 'teacher' ? 'Teacher' : 'Student'} Deleted`, description: result.message });
+                handleRefreshData();
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Deletion Failed', description: error.message });
+        } finally {
+            setIsDeletingUser(false);
+            setUserToDelete(null);
+        }
+    };
 
     const handleOpenMessageCenter = (teacherId?: string) => {
         const teacher = teacherId ? sortedTeachers.find(t => t.id === teacherId) : null;
@@ -1027,6 +1058,7 @@ export default function AdminDashboardPage() {
                                                     {columnVisibility.school && <TableHead><Button variant="ghost" onClick={() => requestSort('schoolName', 'teacher')}>School <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>}
                                                     {columnVisibility.studentCount && <TableHead><Button variant="ghost" onClick={() => requestSort('studentCount', 'teacher')}>Students <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>}
                                                     {columnVisibility.createdAt && <TableHead><Button variant="ghost" onClick={() => requestSort('createdAt', 'teacher')}>Date Created <ArrowUpDown className="ml-2 h-4 w-4" /></Button></TableHead>}
+                                                    <TableHead>Actions</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
@@ -1044,6 +1076,11 @@ export default function AdminDashboardPage() {
                                                         {columnVisibility.school && <TableCell>{teacher.schoolName}</TableCell>}
                                                         {columnVisibility.studentCount && <TableCell>{teacher.studentCount}</TableCell>}
                                                         {columnVisibility.createdAt && <TableCell>{teacher.createdAt ? format(teacher.createdAt, 'PP') : 'N/A'}</TableCell>}
+                                                        <TableCell>
+                                                            <Button variant="ghost" size="icon" onClick={() => setUserToDelete({ type: 'teacher', data: teacher })}>
+                                                                <Trash2 className="h-4 w-4 text-destructive"/>
+                                                            </Button>
+                                                        </TableCell>
                                                     </TableRow>
                                                 ))}
                                             </TableBody>
@@ -1089,6 +1126,7 @@ export default function AdminDashboardPage() {
                                                                     <TableHead>Login Alias</TableHead>
                                                                     <TableHead>Date Created</TableHead>
                                                                     <TableHead>Last Login</TableHead>
+                                                                    <TableHead>Actions</TableHead>
                                                                 </TableRow>
                                                             </TableHeader>
                                                             <TableBody>
@@ -1099,6 +1137,11 @@ export default function AdminDashboardPage() {
                                                                         <TableCell className="font-mono">{student.studentId}</TableCell>
                                                                         <TableCell>{student.createdAt ? format(student.createdAt, 'PP') : 'N/A'}</TableCell>
                                                                         <TableCell>{student.lastLogin ? format(student.lastLogin, 'PPp') : 'Never'}</TableCell>
+                                                                        <TableCell>
+                                                                            <Button variant="ghost" size="icon" onClick={() => setUserToDelete({ type: 'student', data: student })}>
+                                                                                <Trash2 className="h-4 w-4 text-destructive"/>
+                                                                            </Button>
+                                                                        </TableCell>
                                                                     </TableRow>
                                                                 ))}
                                                             </TableBody>
@@ -1243,6 +1286,24 @@ export default function AdminDashboardPage() {
                             )}
                         </CardContent>
                     </Card>
+                    <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure you want to delete this account?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will permanently delete the account for{' '}
+                                    <strong>{userToDelete?.type === 'teacher' ? (userToDelete.data as Teacher).name : (userToDelete.data as Student).characterName}</strong>
+                                    {' '}and all of their associated data. This action cannot be undone.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel disabled={isDeletingUser}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteUser} disabled={isDeletingUser} className="bg-destructive hover:bg-destructive/90">
+                                    {isDeletingUser ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Yes, Delete Permanently'}
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                     <AlertDialog open={!!feedbackToDelete} onOpenChange={(isOpen) => !isOpen && setFeedbackToDelete(null)}>
                         <AlertDialogContent>
                             <AlertDialogHeader>
@@ -1281,4 +1342,3 @@ export default function AdminDashboardPage() {
     );
 }
 
-    
