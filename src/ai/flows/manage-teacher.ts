@@ -3,10 +3,8 @@
 /**
  * @fileOverview A server-side flow for managing teacher accounts and data.
  */
-import { doc, updateDoc, deleteDoc, collection, getDocs, writeBatch, getFirestore as getClientFirestore } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { adminApp, adminAuth as auth } from '@/lib/firebaseAdmin';
-import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
 import { logGameEvent } from '@/lib/gamelog';
 
 
