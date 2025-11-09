@@ -370,10 +370,11 @@ export default function BulkAddPage() {
                         <CardContent className="space-y-4">
                             <ul className="list-disc list-inside bg-secondary p-4 rounded-md">
                                 <li><code className="font-semibold">Student Name</code></li>
-                                <li><code className="font-semibold">Class</code> (must be 'Guardian', 'Healer', or 'Mage')</li>
-                                <li><code className="font-semibold">Login ID</code> (can be a username or an email address)</li>
-                                <li><code className="font-semibold">Password</code> (must be at least 6 characters)</li>
-                                <li><code className="font-semibold">Character Name</code> (Optional, defaults to Student Name if blank)</li>
+                                <li><code className="font-semibold">Class</code> - Must be Guardian, Healer, or Mage - Incorrect spelling will result in account creation failure!</li>
+                                <li><code className="font-semibold">Login ID</code>  - Can be a username or an email address </li>
+                                <li><code className="font-semibold">Password</code>  - Must be at least 6 characters </li>
+                                <li><code className="font-semibold">Character Name</code>  - Optional - defaults to Student Name if blank </li>
+                                <li><code className="font-semibold">Avatar Image</code> - Will default to the first option, but can be changed on the student forge page after account creation.</li>
                             </ul>
                             <div className="flex items-center gap-4">
                                 <Label htmlFor="csv-upload" className="cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">

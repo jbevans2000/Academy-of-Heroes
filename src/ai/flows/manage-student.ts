@@ -359,6 +359,38 @@ export async function unarchiveStudent(input: UnarchiveStudentInput): Promise<Ac
     }
 }
 
+interface ClearGameLogInput {
+    teacherUid: string;
+}
+
+export async function clearGameLog(input: ClearGameLogInput): Promise<ActionResponse> {
+    const { teacherUid } = input;
+    if (!teacherUid) {
+        return { success: false, error: 'Teacher UID is required.' };
+    }
+
+    try {
+        const gameLogRef = collection(db, 'teachers', teacherUid, 'gameLog');
+        const snapshot = await getDocs(gameLogRef);
+
+        if (snapshot.empty) {
+            return { success: true, message: 'Game log is already empty.' };
+        }
+
+        const batch = writeBatch(db);
+        snapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+
+        await batch.commit();
+        return { success: true, message: 'Game log has been cleared.' };
+
+    } catch (error: any) {
+        console.error("Error clearing game log:", error);
+        return { success: false, error: 'An unexpected error occurred while clearing the game log.' };
+    }
+}
     
 
     
+
