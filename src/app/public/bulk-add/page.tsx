@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -9,20 +9,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, ArrowLeft, UserPlus, CheckCircle, Upload, Trash2, KeyRound } from 'lucide-react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Loader2, UserPlus, KeyRound, ShieldAlert, Mail, BookUser, ArrowLeft, Trash2, Shield, Heart, Wand, Upload } from 'lucide-react';
 import type { ClassType } from '@/lib/data';
 import { avatarData } from '@/lib/avatars';
 import { createStudentDocuments } from '@/ai/flows/create-student';
-import { validateClassCode } from '@/ai/flows/validate-class-code';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { downloadCsv } from '@/lib/utils';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { validateClassCode } from '@/ai/flows/validate-class-code';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
-interface NewStudentEntry {
-    id: number;
+interface NewStudent {
+    id: string;
     studentName: string;
     class: ClassType;
     loginMethod: 'email' | 'alias';
@@ -31,49 +30,36 @@ interface NewStudentEntry {
 }
 
 export default function BulkAddPage() {
+    const [guildCode, setGuildCode] = useState('');
+    const [isCodeValidated, setIsCodeValidated] = useState(false);
+    const [isCheckingCode, setIsCheckingCode] = useState(false);
+    const [students, setStudents] = useState<NewStudent[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [newStudent, setNewStudent] = useState<Omit<NewStudent, 'id'>>({
+        studentName: '',
+        class: '',
+        loginMethod: 'alias',
+        loginId: '',
+        password: ''
+    });
+
     const router = useRouter();
     const { toast } = useToast();
 
-    // Guild Code State
-    const [classCode, setClassCode] = useState('');
-    const [isCodeValidated, setIsCodeValidated] = useState(false);
-    const [isCheckingCode, setIsCheckingCode] = useState(false);
-
-    // Form & Data State
-    const [students, setStudents] = useState<NewStudentEntry[]>([]);
-    const [nextId, setNextId] = useState(1);
-
-    // Process State
-    const [isLoading, setIsLoading] = useState(false);
-    const [results, setResults] = useState<{ [id: number]: { success: boolean; message: string } }>({});
-
-    const addStudentRow = () => {
-        setStudents([...students, { id: nextId, studentName: '', class: '', loginMethod: 'alias', loginId: '', password: '' }]);
-        setNextId(nextId + 1);
-    };
-
-    const handleStudentChange = (id: number, field: keyof NewStudentEntry, value: string) => {
-        setStudents(students.map(s => s.id === id ? { ...s, [field]: value } : s));
-    };
-
-    const removeStudentRow = (id: number) => {
-        setStudents(students.filter(s => s.id !== id));
-    };
-
     const handleValidateCode = async () => {
-        if (!classCode.trim()) {
-            toast({ variant: 'destructive', title: 'Guild Code Required' });
+        if (!guildCode.trim()) {
+            toast({ variant: 'destructive', title: 'Guild Code Required', description: 'Please enter a code to validate.' });
             return;
         }
         setIsCheckingCode(true);
         try {
-            const result = await validateClassCode(classCode);
+            const result = await validateClassCode(guildCode);
             if (result.isValid) {
                 setIsCodeValidated(true);
                 toast({ title: 'Guild Code Valid!', description: 'You may now add students.' });
             } else {
                 setIsCodeValidated(false);
-                toast({ variant: 'destructive', title: 'Invalid Guild Code' });
+                toast({ variant: 'destructive', title: 'Invalid Guild Code', description: 'That code was not found. Please check with your Guild Leader and try again.' });
             }
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Validation Failed', description: error.message });
@@ -81,220 +67,238 @@ export default function BulkAddPage() {
             setIsCheckingCode(false);
         }
     };
-    
-    const handleCsvUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
+
+    const handleAddStudent = () => {
+        if (!newStudent.studentName || !newStudent.class || !newStudent.loginId || !newStudent.password) {
+            toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill out all fields for the new student.' });
+            return;
+        }
+        setStudents(prev => [...prev, { id: crypto.randomUUID(), ...newStudent }]);
+        setNewStudent({ studentName: '', class: '', loginMethod: 'alias', loginId: '', password: '' });
+    };
+
+    const handleRemoveStudent = (id: string) => {
+        setStudents(prev => prev.filter(s => s.id !== id));
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = (e) => {
-            const text = e.target?.result as string;
-            const rows = text.split('\n').filter(row => row.trim() !== '');
-            const header = rows.shift()?.toLowerCase().split(',').map(h => h.trim()) || [];
-            
-            const expectedHeaders = ['student name', 'class', 'login id', 'password'];
-            if(JSON.stringify(header) !== JSON.stringify(expectedHeaders)) {
-                toast({ variant: 'destructive', title: 'Invalid CSV Header', description: 'Header must be: Student Name,Class,Login ID,Password' });
-                return;
-            }
+        reader.onload = (event) => {
+            const text = event.target?.result as string;
+            try {
+                const rows = text.split('\n').slice(1); // Skip header row
+                const newStudentsFromFile: NewStudent[] = rows.map(row => {
+                    const [name, studentClass, loginId, password] = row.split(',').map(s => s.trim());
+                    if (!name || !studentClass || !loginId || !password) return null;
+                    return {
+                        id: crypto.randomUUID(),
+                        studentName: name,
+                        class: studentClass as ClassType,
+                        loginMethod: 'alias', // Assume CSV uses aliases
+                        loginId,
+                        password,
+                    }
+                }).filter((s): s is NewStudent => s !== null);
 
-            const newStudentList: NewStudentEntry[] = rows.map((row, index) => {
-                const [name, className, loginId, password] = row.split(',');
-                const classType = className.trim() as ClassType;
-                return {
-                    id: nextId + index,
-                    studentName: name?.trim() || '',
-                    class: ['Guardian', 'Healer', 'Mage'].includes(classType) ? classType : '',
-                    loginMethod: 'alias', // Assume alias for CSV
-                    loginId: loginId?.trim() || '',
-                    password: password?.trim() || '',
-                };
-            });
-            
-            setStudents(prev => [...prev, ...newStudentList]);
-            setNextId(prev => prev + newStudentList.length);
+                setStudents(prev => [...prev, ...newStudentsFromFile]);
+                toast({ title: 'CSV Processed', description: `${newStudentsFromFile.length} students were added from the file.` });
+
+            } catch (error) {
+                toast({ variant: 'destructive', title: 'Error Processing CSV', description: 'Please check the file format.' });
+            }
         };
         reader.readAsText(file);
     };
 
-    const handleDownloadTemplate = () => {
-        const headers = ['Student Name', 'Class', 'Login ID', 'Password'];
-        const data = [
-            ['John Doe', 'Guardian', 'johndoe123', 'password123'],
-            ['Jane Smith', 'Mage', 'janesmith456', 'password456'],
-        ];
-        downloadCsv(data, headers, 'student_template.csv');
-    };
-
-    const handleSubmit = async () => {
-        const validStudents = students.filter(s => s.studentName && s.class && s.loginId && s.password);
-
-        if (validStudents.length === 0) {
-            toast({ variant: 'destructive', title: 'No Valid Students', description: 'Please fill out all fields for at least one student.' });
+    const handleBulkCreate = async () => {
+        if (students.length === 0) {
+            toast({ variant: 'destructive', title: 'No Students', description: 'Please add at least one student to create.' });
             return;
         }
-
         setIsLoading(true);
-        setResults({});
 
-        for (const student of validStudents) {
+        const creationPromises = students.map(async (student) => {
             try {
                 const finalEmail = student.loginMethod === 'email' ? student.loginId : `${student.loginId.toLowerCase().replace(/\s/g, '_')}@academy-heroes-mziuf.firebaseapp.com`;
+                
                 const userCredential = await createUserWithEmailAndPassword(auth, finalEmail, student.password!);
                 const user = userCredential.user;
-
+                
                 const result = await createStudentDocuments({
-                    classCode,
+                    classCode: guildCode,
                     userUid: user.uid,
                     email: finalEmail,
                     studentId: student.loginId,
                     studentName: student.studentName,
-                    characterName: student.studentName, // Character name defaults to student name
+                    characterName: student.studentName, // Per requirement
                     selectedClass: student.class,
-                    selectedAvatar: avatarData[student.class]?.[1]?.[0] || '', // First avatar of level 1
+                    selectedAvatar: avatarData[student.class]?.[1]?.[0] || '', // Per requirement
                 });
-                
-                 if (!result.success) throw new Error(result.error);
 
-                setResults(prev => ({ ...prev, [student.id]: { success: true, message: 'Success!' } }));
-                
-                 // Sign out the newly created user immediately to keep the admin session
-                await auth.signOut();
-
-            } catch (error: any) {
-                let errorMessage = error.message;
-                 if (error.code === 'auth/email-already-in-use') {
-                    errorMessage = 'Email/Username already exists.';
+                if (!result.success) {
+                    throw new Error(result.error || `Could not save data for ${student.studentName}.`);
                 }
-                setResults(prev => ({ ...prev, [student.id]: { success: false, message: errorMessage } }));
+
+                return { success: true, name: student.studentName };
+            } catch (error: any) {
+                let reason = 'An unknown error occurred.';
+                if (error.code === 'auth/email-already-in-use') {
+                    reason = 'This username/email is already taken.';
+                } else if (error.code) {
+                    reason = error.code;
+                }
+                return { success: false, name: student.studentName, reason };
             }
+        });
+
+        const results = await Promise.all(creationPromises);
+        const successfulCreations = results.filter(r => r.success);
+        const failedCreations = results.filter(r => !r.success);
+
+        if (successfulCreations.length > 0) {
+            toast({
+                title: 'Bulk Creation Complete!',
+                description: `${successfulCreations.length} student(s) have been created and are awaiting approval.`
+            });
         }
 
+        if (failedCreations.length > 0) {
+            failedCreations.forEach(fail => {
+                toast({
+                    variant: 'destructive',
+                    title: `Failed to create ${fail.name}`,
+                    description: fail.reason
+                });
+            });
+        }
+        setStudents([]); // Clear list after processing
         setIsLoading(false);
-        toast({ title: 'Bulk Creation Complete', description: 'Check the results below. You can now close this page.' });
     };
 
-    useEffect(addStudentRow, []); // Add one empty row on initial load
-
     return (
-        <div className="flex min-h-screen w-full flex-col bg-muted/40">
-            <main className="flex-1 p-4 md:p-6 lg:p-8">
-                <div className="w-full max-w-6xl mx-auto space-y-6">
-                    <Button variant="outline" onClick={() => router.push('/')}>
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Home
-                    </Button>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-3xl">Bulk Add Students</CardTitle>
-                            <CardDescription>
-                                Create multiple student accounts at once. All created accounts will be sent to the appropriate teacher's dashboard for approval. This tool is for administrator use only.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2 text-center bg-primary/10 p-4 rounded-lg">
-                                <Label htmlFor="class-code" className="text-lg font-semibold">Step 1: Validate Guild Code</Label>
-                                <div className="flex justify-center items-center gap-2">
-                                    <Input 
-                                        id="class-code" 
-                                        placeholder="ENTER GUILD CODE" 
-                                        value={classCode} 
-                                        onChange={(e) => setClassCode(e.target.value.toUpperCase())} 
-                                        disabled={isCheckingCode || isCodeValidated} 
-                                        className="max-w-xs mx-auto text-center h-12 text-lg tracking-widest font-bold"
-                                    />
-                                    <Button onClick={handleValidateCode} disabled={isCheckingCode || !classCode.trim() || isCodeValidated}>
-                                        {isCheckingCode ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Validate Code'}
-                                    </Button>
-                                    {isCodeValidated && <CheckCircle className="h-8 w-8 text-green-500" />}
+        <div className="flex items-center justify-center min-h-screen p-4 bg-muted">
+            <Card className="w-full max-w-4xl shadow-2xl">
+                <CardHeader className="text-center">
+                    <CardTitle className="text-3xl font-headline text-primary">Bulk Add Students</CardTitle>
+                    <CardDescription>A public tool for quickly creating multiple student accounts under a single guild code.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="p-4 border rounded-lg bg-secondary space-y-2">
+                        <Label htmlFor="class-code" className="text-lg font-semibold flex items-center justify-center gap-2"><BookUser /> Guild Code</Label>
+                        <p className="text-sm text-center text-muted-foreground">This code is required to ensure students are added to the correct guild. The fields below will be disabled until a valid code is entered.</p>
+                        <div className="flex justify-center items-center gap-2">
+                            <Input 
+                                id="class-code" 
+                                placeholder="ENTER GUILD CODE" 
+                                value={guildCode} 
+                                onChange={(e) => setGuildCode(e.target.value.toUpperCase())} 
+                                disabled={isCheckingCode || isCodeValidated} 
+                                className="max-w-xs mx-auto text-center h-12 text-lg tracking-widest font-bold"
+                            />
+                            <Button onClick={handleValidateCode} disabled={isCheckingCode || !guildCode.trim() || isCodeValidated}>
+                                {isCheckingCode ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Validate Code'}
+                            </Button>
+                        </div>
+                    </div>
+                    
+                    <fieldset disabled={!isCodeValidated || isLoading} className="space-y-4">
+                        <Tabs defaultValue="manual">
+                            <TabsList className="grid w-full grid-cols-2">
+                                <TabsTrigger value="manual">Manual Entry</TabsTrigger>
+                                <TabsTrigger value="csv">CSV Upload</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="manual" className="p-4 border rounded-b-md">
+                                <h3 className="font-semibold mb-4">Add a Student</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Student Full Name</Label>
+                                        <Input value={newStudent.studentName} onChange={e => setNewStudent(s => ({...s, studentName: e.target.value}))} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Class</Label>
+                                        <Select value={newStudent.class} onValueChange={v => setNewStudent(s => ({...s, class: v as ClassType}))}>
+                                            <SelectTrigger><SelectValue placeholder="Select Class..."/></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="Guardian"><Shield className="w-4 h-4 mr-2" />Guardian</SelectItem>
+                                                <SelectItem value="Healer"><Heart className="w-4 h-4 mr-2" />Healer</SelectItem>
+                                                <SelectItem value="Mage"><Wand className="w-4 h-4 mr-2" />Mage</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Login Method</Label>
+                                        <RadioGroup value={newStudent.loginMethod} onValueChange={v => setNewStudent(s => ({...s, loginMethod: v as 'alias' | 'email'}))} className="flex space-x-4 pt-2">
+                                            <div className="flex items-center space-x-2"><RadioGroupItem value="alias" id="login-alias"/><Label htmlFor="login-alias">Username</Label></div>
+                                            <div className="flex items-center space-x-2"><RadioGroupItem value="email" id="login-email"/><Label htmlFor="login-email">Email</Label></div>
+                                        </RadioGroup>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>{newStudent.loginMethod === 'email' ? 'Email' : 'Username'}</Label>
+                                        <Input value={newStudent.loginId} onChange={e => setNewStudent(s => ({...s, loginId: e.target.value}))} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Password</Label>
+                                        <Input type="text" value={newStudent.password} onChange={e => setNewStudent(s => ({...s, password: e.target.value}))} placeholder="e.g., student ID"/>
+                                    </div>
+                                    <div className="flex items-end">
+                                        <Button onClick={handleAddStudent} className="w-full">Add Student to List</Button>
+                                    </div>
                                 </div>
-                            </div>
+                            </TabsContent>
+                             <TabsContent value="csv" className="p-4 border rounded-b-md space-y-4">
+                                <h3 className="font-semibold">Upload from CSV</h3>
+                                <p className="text-sm text-muted-foreground">The CSV file must have headers: `Student Name`, `Class`, `Login ID`, `Password`. Class must be one of: Guardian, Healer, Mage.</p>
+                                <Input type="file" accept=".csv" onChange={handleFileChange} />
+                                <a href="/bulk-add-template.csv" download className="text-sm text-primary underline">Download Template</a>
+                            </TabsContent>
+                        </Tabs>
 
-                            <Tabs defaultValue="manual" className={!isCodeValidated ? 'opacity-50 pointer-events-none' : ''}>
-                                <TabsList className="grid w-full grid-cols-2">
-                                    <TabsTrigger value="manual">Manual Entry</TabsTrigger>
-                                    <TabsTrigger value="csv">CSV Upload</TabsTrigger>
-                                </TabsList>
-                                <TabsContent value="manual" className="space-y-4">
-                                     <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Student Name</TableHead>
-                                                <TableHead>Class</TableHead>
-                                                <TableHead>Login Method</TableHead>
-                                                <TableHead>Username / Email</TableHead>
-                                                <TableHead>Password</TableHead>
-                                                <TableHead>Status</TableHead>
-                                                <TableHead></TableHead>
+                        <div className="space-y-4 pt-4">
+                            <h3 className="font-semibold text-lg">Students to be Created ({students.length})</h3>
+                            <div className="max-h-60 overflow-y-auto border rounded-md">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Student Name</TableHead>
+                                            <TableHead>Class</TableHead>
+                                            <TableHead>Login ID</TableHead>
+                                            <TableHead>Actions</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {students.map(student => (
+                                            <TableRow key={student.id}>
+                                                <TableCell>{student.studentName}</TableCell>
+                                                <TableCell>{student.class}</TableCell>
+                                                <TableCell>{student.loginId}</TableCell>
+                                                <TableCell>
+                                                    <Button variant="destructive" size="icon" onClick={() => handleRemoveStudent(student.id)}>
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </TableCell>
                                             </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {students.map(student => (
-                                                <TableRow key={student.id}>
-                                                    <TableCell><Input value={student.studentName} onChange={e => handleStudentChange(student.id, 'studentName', e.target.value)} /></TableCell>
-                                                    <TableCell>
-                                                        <Select value={student.class} onValueChange={v => handleStudentChange(student.id, 'class', v)}>
-                                                            <SelectTrigger><SelectValue placeholder="Class"/></SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="Guardian">Guardian</SelectItem>
-                                                                <SelectItem value="Healer">Healer</SelectItem>
-                                                                <SelectItem value="Mage">Mage</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <RadioGroup value={student.loginMethod} onValueChange={v => handleStudentChange(student.id, 'loginMethod', v)} className="flex gap-2">
-                                                            <div className="flex items-center space-x-1"><RadioGroupItem value="alias" id={`alias-${student.id}`} /><Label htmlFor={`alias-${student.id}`}>Alias</Label></div>
-                                                            <div className="flex items-center space-x-1"><RadioGroupItem value="email" id={`email-${student.id}`} /><Label htmlFor={`email-${student.id}`}>Email</Label></div>
-                                                        </RadioGroup>
-                                                    </TableCell>
-                                                     <TableCell><Input value={student.loginId} onChange={e => handleStudentChange(student.id, 'loginId', e.target.value)} placeholder={student.loginMethod === 'email' ? 'student@email.com' : 'username123'} /></TableCell>
-                                                     <TableCell>
-                                                        <div className="relative">
-                                                            <Input type="text" value={student.password || ''} onChange={e => handleStudentChange(student.id, 'password', e.target.value)} placeholder="Suggest: ID#" />
-                                                        </div>
-                                                     </TableCell>
-                                                     <TableCell>
-                                                        {results[student.id] && (
-                                                            <span className={results[student.id].success ? 'text-green-600' : 'text-destructive'}>
-                                                                {results[student.id].message}
-                                                            </span>
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell><Button variant="ghost" size="icon" onClick={() => removeStudentRow(student.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                     </Table>
-                                     <Button onClick={addStudentRow} variant="outline"><PlusCircle className="mr-2 h-4 w-4" /> Add Row</Button>
-                                </TabsContent>
-                                <TabsContent value="csv" className="space-y-4 text-center">
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle>Upload a CSV File</CardTitle>
-                                            <CardDescription>
-                                                The file must have the headers: `Student Name`, `Class`, `Login ID`, `Password`. `Class` must be Guardian, Healer, or Mage. `Login ID` will be treated as a username.
-                                            </CardDescription>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <Input type="file" accept=".csv" onChange={handleCsvUpload} />
-                                        </CardContent>
-                                        <CardFooter>
-                                            <Button onClick={handleDownloadTemplate} variant="secondary">Download Template</Button>
-                                        </CardFooter>
-                                    </Card>
-                                </TabsContent>
-                            </Tabs>
-                            <div className="flex justify-end pt-4">
-                                <Button size="lg" onClick={handleSubmit} disabled={!isCodeValidated || isLoading}>
-                                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UserPlus className="mr-2 h-4 w-4" />}
-                                    Create All Student Accounts
-                                </Button>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                                {students.length === 0 && <p className="text-center text-muted-foreground p-4">No students added yet.</p>}
                             </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            </main>
+                        </div>
+
+                    </fieldset>
+                </CardContent>
+                <CardFooter className="flex-col gap-4">
+                     <Button size="lg" onClick={handleBulkCreate} disabled={!isCodeValidated || students.length === 0 || isLoading}>
+                        {isLoading ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <UserPlus className="mr-2 h-6 w-6" />}
+                        Create All {students.length} Students
+                    </Button>
+                     <Button variant="link" className="text-muted-foreground" asChild>
+                        <Link href="/"><ArrowLeft className="mr-2 h-4 w-4" />Back to Home</Link>
+                    </Button>
+                </CardFooter>
+            </Card>
         </div>
     );
 }
