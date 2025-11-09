@@ -64,8 +64,8 @@ export default function InactiveAccountsPage() {
                 const hasNoPendingStudents = pendingStudentsSnapshot.empty;
                 if (hasNoPendingStudents) reasons.push('No pending students');
                 
-                const hasNoHubs = hubsSnapshot.empty;
-                if (hasNoHubs) reasons.push('No Quest Hubs');
+                const hasNoCreatedHubs = hubsSnapshot.empty || (hubsSnapshot.size === 1 && hubsSnapshot.docs[0].data().name === 'Independent Chapters');
+                if (hasNoCreatedHubs) reasons.push('No custom Quest Hubs');
 
                 const hasNoChapters = chaptersSnapshot.empty;
                  if (hasNoChapters) reasons.push('No Chapters');
@@ -73,7 +73,7 @@ export default function InactiveAccountsPage() {
                 const hasNoBoons = boonsSnapshot.empty;
                  if (hasNoBoons) reasons.push('No custom rewards');
                 
-                const isTeacherInactive = hasOneOrFewerStudents && (hasNoPendingStudents || hasNoHubs || hasNoChapters || hasNoBoons);
+                const isTeacherInactive = hasOneOrFewerStudents && (hasNoPendingStudents || hasNoCreatedHubs || hasNoChapters || hasNoBoons);
                 
                 if (isTeacherInactive) {
                     foundInactiveTeachers.push({
