@@ -8,7 +8,7 @@
  * - resetStudentPassword: Resets a student's password in Firebase Auth.
  * - getStudentStatus: Fetches the enabled/disabled status of a student's account.
  */
-import { doc, updateDoc, collection, getDocs, writeBatch, getDoc, runTransaction, arrayUnion, arrayRemove, setDoc, deleteField, query, where, Timestamp, increment } from 'firebase/firestore';
+import { doc, updateDoc, collection, getDocs, writeBatch, getDoc, runTransaction, arrayUnion, arrayRemove, setDoc, deleteField, query, where, Timestamp, increment, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { adminDb } from '@/lib/firebaseAdmin';
 
@@ -326,11 +326,16 @@ interface InitiateStudentDeletionInput {
 
 export async function initiateStudentDeletion(input: InitiateStudentDeletionInput): Promise<ActionResponse> {
     try {
-        // This function now uses the standard CLIENT-SIDE SDK, not the admin SDK.
+        // Flag the user for deletion
         await setDoc(doc(db, 'deleted-users', input.studentUid), { 
             deletionRequested: true,
-            teacherUid: input.teacherUid, // Store for potential logging
+            teacherUid: input.teacherUid,
         });
+
+        // Also delete their final record from the teacher's subcollection
+        const studentRef = doc(db, 'teachers', input.teacherUid, 'students', input.studentUid);
+        await deleteDoc(studentRef);
+        
         return { success: true };
     } catch (e: any) {
         console.error("Error flagging student for deletion:", e);
