@@ -71,7 +71,7 @@ export default function ArchivedHeroesPage() {
             <div
                 className="absolute inset-0 -z-10"
                 style={{
-                    backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds/envato-labs-ai-b2ed6807-b64f-48e1-9b8c-a2d0b719db78.jpg?alt=media&token=793c0484-06f3-49ab-9557-9ca0a9b0f6bf')`,
+                    backgroundImage: `url('https://firebasestorage.googleapis.com/v0/b/academy-heroes-mziuf.firebasestorage.app/o/Web%20Backgrounds%2Fenvato-labs-ai-b2ed6807-b64f-48e1-9b8c-a2d0b719db78.jpg?alt=media&token=793c0484-06f3-49ab-9557-9ca0a9b0f6bf')`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                 }}
@@ -80,9 +80,9 @@ export default function ArchivedHeroesPage() {
             <TeacherHeader />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="w-full max-w-4xl mx-auto space-y-6">
-                    <Button variant="outline" onClick={() => router.push('/teacher/tools')}>
+                    <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to All Tools
+                        Back to Podium
                     </Button>
                     <Card className="shadow-2xl">
                         <CardHeader>
@@ -91,7 +91,7 @@ export default function ArchivedHeroesPage() {
                                 <div>
                                     <CardTitle className="text-3xl">Archived Heroes</CardTitle>
                                     <CardDescription>
-                                        This is a list of student accounts that have been archived after a data migration. Their login is disabled.
+                                        This is a list of student accounts whose classroom data has been archived. Their login is disabled. You can restore them or flag their account for permanent deletion.
                                     </CardDescription>
                                 </div>
                             </div>

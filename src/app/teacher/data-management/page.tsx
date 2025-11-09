@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -5,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Trash2, Loader2, DatabaseZap } from 'lucide-react';
+import { ArrowLeft, Trash2, Loader2, DatabaseZap, ArchiveRestore } from 'lucide-react';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
@@ -24,7 +25,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { deleteStudent } from '@/ai/flows/admin-actions';
+import { deleteStudentData } from '@/ai/flows/admin-actions';
+import { initiateStudentDeletion } from '@/ai/flows/manage-student';
 
 
 export default function DataManagementPage() {
@@ -34,8 +36,15 @@ export default function DataManagementPage() {
     const [teacher, setTeacher] = useState<User | null>(null);
     const [students, setStudents] = useState<Student[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
+    
+    // Dialog states
+    const [studentToAction, setStudentToAction] = useState<Student | null>(null);
+    const [isDataDeleteDialogOpen, setIsDataDeleteDialogOpen] = useState(false);
+    const [isFlagConfirmOpen, setIsFlagConfirmOpen] = useState(false);
+
+    // Loading states
+    const [isDeletingData, setIsDeletingData] = useState(false);
+    const [isFlagging, setIsFlagging] = useState(false);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -58,44 +67,75 @@ export default function DataManagementPage() {
         });
         return () => unsubscribe();
     }, [teacher]);
+    
+    const activeStudents = useMemo(() => students.filter(s => !s.isArchived), [students]);
+    const archivedStudents = useMemo(() => students.filter(s => s.isArchived), [students]);
 
-    const activeStudents = useMemo(() => students.filter(s => !s.isHidden && !s.isArchived), [students]);
-    const hiddenStudents = useMemo(() => students.filter(s => s.isHidden && !s.isArchived), [students]);
-
-    const handleDelete = async () => {
-        if (!teacher || !studentToDelete) return;
-        setIsDeleting(true);
+    const handleDeleteData = async () => {
+        if (!teacher || !studentToAction) return;
+        setIsDeletingData(true);
         
         try {
-            const result = await deleteStudent({
+            const result = await deleteStudentData({
                 teacherUid: teacher.uid,
-                studentUid: studentToDelete.uid
+                studentUid: studentToAction.uid
             });
 
             if (result.success) {
                 toast({
-                    title: 'Deletion Initiated',
-                    description: `${studentToDelete.studentName}'s data has been cleared. Their login will be deleted on their next attempt.`,
-                    duration: 8000,
+                    title: 'Data Archived',
+                    description: `${studentToAction.studentName}'s classroom data has been archived. You can now flag their login for permanent deletion.`,
+                    duration: 6000,
                 });
-                // Manually remove student from local state for immediate UI update
-                setStudents(prev => prev.filter(s => s.uid !== studentToDelete.uid));
             } else {
-                throw new Error(result.error || 'An unknown error occurred during deletion.');
+                throw new Error(result.error || 'An unknown error occurred during data archiving.');
             }
-
         } catch (error: any) {
-            console.error("Error deleting student:", error);
+            console.error("Error deleting student data:", error);
             toast({
                 variant: 'destructive',
                 title: 'Deletion Failed',
                 description: error.message,
             });
         } finally {
-            setIsDeleting(false);
-            setStudentToDelete(null);
+            setIsDeletingData(false);
+            setIsDataDeleteDialogOpen(false);
+            setStudentToAction(null);
         }
     };
+
+    const handleFlagForRemoval = async () => {
+        if (!teacher || !studentToAction) return;
+        setIsFlagging(true);
+        try {
+            const result = await initiateStudentDeletion({
+                teacherUid: teacher.uid,
+                studentUid: studentToAction.uid,
+            });
+
+            if (result.success) {
+                 toast({
+                    title: 'Account Flagged for Deletion',
+                    description: `${studentToAction.studentName}'s login will be deleted on their next attempt.`,
+                    duration: 8000,
+                });
+                // Remove the student from the local state to update UI immediately
+                setStudents(prev => prev.filter(s => s.uid !== studentToAction.uid));
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Flagging Failed',
+                description: error.message,
+            });
+        } finally {
+            setIsFlagging(false);
+            setIsFlagConfirmOpen(false);
+            setStudentToAction(null);
+        }
+    }
 
 
     const renderStudentTable = (studentList: Student[]) => {
@@ -119,13 +159,23 @@ export default function DataManagementPage() {
                             <TableCell>{student.characterName}</TableCell>
                             <TableCell>{student.level}</TableCell>
                             <TableCell className="text-right">
-                                <Button 
-                                    variant="destructive" 
-                                    size="sm"
-                                    onClick={() => setStudentToDelete(student)}
-                                >
-                                    <Trash2 className="mr-2 h-4 w-4" /> Delete Account
-                                </Button>
+                                {!student.isArchived ? (
+                                    <Button 
+                                        variant="destructive" 
+                                        size="sm"
+                                        onClick={() => { setStudentToAction(student); setIsDataDeleteDialogOpen(true); }}
+                                    >
+                                        <Trash2 className="mr-2 h-4 w-4" /> Delete Data
+                                    </Button>
+                                ) : (
+                                     <Button 
+                                        variant="destructive" 
+                                        size="sm"
+                                        onClick={() => { setStudentToAction(student); setIsFlagConfirmOpen(true); }}
+                                    >
+                                        <Trash2 className="mr-2 h-4 w-4" /> Flag for Removal
+                                    </Button>
+                                )}
                             </TableCell>
                         </TableRow>
                     ))}
@@ -139,7 +189,7 @@ export default function DataManagementPage() {
             <div className="flex min-h-screen w-full flex-col bg-muted/40">
                 <TeacherHeader />
                 <main className="flex-1 p-4 md:p-6 lg:p-8">
-                    <div className="max-w-4xl mx-auto space-y-6">
+                    <div className="w-full max-w-4xl mx-auto space-y-6">
                         <Button variant="outline" onClick={() => router.push('/teacher/dashboard')}>
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             Back to Podium
@@ -148,7 +198,9 @@ export default function DataManagementPage() {
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2"><DatabaseZap /> Data Management</CardTitle>
                                 <CardDescription>
-                                    Use this tool to permanently delete a student's login account and all of their associated game data.
+                                    Use this two-step process to permanently delete student accounts.
+                                    <br /><strong>Step 1:</strong> Delete the student's classroom data. This archives their account.
+                                    <br /><strong>Step 2:</strong> Flag the archived account for permanent login removal.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -162,13 +214,13 @@ export default function DataManagementPage() {
                                     <Tabs defaultValue="active">
                                         <TabsList className="grid w-full grid-cols-2">
                                             <TabsTrigger value="active">Active Students ({activeStudents.length})</TabsTrigger>
-                                            <TabsTrigger value="hidden">Hidden Students ({hiddenStudents.length})</TabsTrigger>
+                                            <TabsTrigger value="archived">Archived Students ({archivedStudents.length})</TabsTrigger>
                                         </TabsList>
                                         <TabsContent value="active">
                                             {renderStudentTable(activeStudents)}
                                         </TabsContent>
-                                        <TabsContent value="hidden">
-                                            {renderStudentTable(hiddenStudents)}
+                                        <TabsContent value="archived">
+                                            {renderStudentTable(archivedStudents)}
                                         </TabsContent>
                                     </Tabs>
                                 )}
@@ -177,18 +229,36 @@ export default function DataManagementPage() {
                     </div>
                 </main>
             </div>
-             <AlertDialog open={!!studentToDelete} onOpenChange={() => setStudentToDelete(null)}>
+            
+            <AlertDialog open={isDataDeleteDialogOpen} onOpenChange={setIsDataDeleteDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogTitle>Delete Student Data for {studentToAction?.characterName}?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will permanently delete all data for <strong className="font-bold">{studentToDelete?.studentName} ({studentToDelete?.characterName})</strong> and their account will be deleted upon their next login attempt. This action cannot be undone.
+                            This will delete all of this student's classroom data (progress, inventory, etc.) and move them to the "Archived" tab. Their login account will NOT be deleted yet. This is the first step in the permanent deletion process.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                            {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Yes, Delete Data & Flag Account'}
+                        <AlertDialogCancel disabled={isDeletingData}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteData} disabled={isDeletingData} className="bg-destructive hover:bg-destructive/90">
+                            {isDeletingData ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Yes, Delete Data'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            
+             <AlertDialog open={isFlagConfirmOpen} onOpenChange={setIsFlagConfirmOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Flag {studentToAction?.characterName} for Final Removal?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                           This will permanently flag the student's login account for deletion. The next time they try to log in, their account will be erased. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isFlagging}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleFlagForRemoval} disabled={isFlagging} className="bg-destructive hover:bg-destructive/90">
+                            {isFlagging ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Yes, Flag for Removal'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

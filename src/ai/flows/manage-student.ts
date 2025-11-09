@@ -10,6 +10,7 @@
  */
 import { doc, updateDoc, collection, getDocs, writeBatch, getDoc, runTransaction, arrayUnion, arrayRemove, setDoc, deleteField, query, where, Timestamp, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { adminDb } from '@/lib/firebaseAdmin';
 
 
 interface ActionResponse {
@@ -325,11 +326,26 @@ interface InitiateStudentDeletionInput {
 
 export async function initiateStudentDeletion(input: InitiateStudentDeletionInput): Promise<ActionResponse> {
     try {
-        const studentRef = doc(db, 'teachers', input.teacherUid, 'students', input.studentUid);
-        await updateDoc(studentRef, { deletionRequested: true });
+        await adminDb.collection('deleted-users').doc(input.studentUid).set({ deletionRequested: true });
         return { success: true };
     } catch (e: any) {
         console.error("Error flagging student for deletion:", e);
         return { success: false, error: e.message || 'Failed to flag student for deletion.' };
+    }
+}
+
+interface UnarchiveStudentInput {
+    teacherUid: string;
+    studentUid: string;
+}
+
+export async function unarchiveStudent(input: UnarchiveStudentInput): Promise<ActionResponse> {
+    try {
+        const studentRef = doc(db, 'teachers', input.teacherUid, 'students', input.studentUid);
+        await updateDoc(studentRef, { isArchived: false });
+        return { success: true };
+    } catch (e: any) {
+        console.error("Error unarchiving student:", e);
+        return { success: false, error: e.message || 'Failed to unarchive student.' };
     }
 }
